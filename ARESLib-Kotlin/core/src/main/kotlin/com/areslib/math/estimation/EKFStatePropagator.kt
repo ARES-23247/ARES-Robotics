@@ -229,6 +229,8 @@ object EKFStatePropagator {
 
     /**
      * Re-propagates the pose history and covariance buffer from a delayed vision measurement timestamp to the present frame.
+     * Non-finite replay results leave the live pose/covariance unchanged. Scratch history may
+     * contain partial results after failure and must remain separate from live history.
      *
      * @param state Active EKF pose estimator state snapshot.
      * @param closestIndex Buffer index of the historical pose entry matching the vision observation timestamp.
@@ -253,11 +255,39 @@ object EKFStatePropagator {
         scratchCov2: Matrix3x3,
         intervalFraction: Double = 0.0
     ) {
+        tryRepropagateHistory(state, state.history, closestIndex, baseEntry, dxX, dxY, dxZ,
+            updatedCovariance, baseQ, scratchHistory, scratchCov2, intervalFraction)
+    }
+
+    /**
+     * Replays into caller-owned scratch space and publishes pose/covariance only on success.
+     * Source and scratch buffers may alias; original adjacent poses are retained as scalars
+     * for legacy entries without recorded motion. Failed scratch results must be discarded.
+     */
+    internal fun tryRepropagateHistory(
+        state: PoseEstimatorState,
+        sourceHistory: HistoryBuffer,
+        closestIndex: Int,
+        baseEntry: PoseHistoryEntry,
+        dxX: Double, dxY: Double, dxZ: Double,
+        updatedCovariance: Matrix3x3,
+        baseQ: Matrix3x3,
+        scratchHistory: HistoryBuffer,
+        scratchCov2: Matrix3x3,
+        intervalFraction: Double = 0.0
+    ): Boolean {
         var currentX = baseEntry.x + dxX
         var currentY = baseEntry.y + dxY
-        var currentHeadingRad = wrapAngle(baseEntry.headingRad + dxZ)
+        val correctedHeading = baseEntry.headingRad + dxZ
+        if (!currentX.isFinite() || !currentY.isFinite() || !correctedHeading.isFinite()) return false
+        var currentHeadingRad = wrapAngle(correctedHeading)
 
         scratchCov2.setTo(updatedCovariance)
+        if (!finiteCovariance(scratchCov2)) return false
+        var previousRawX = sourceHistory[closestIndex].x
+        var previousRawY = sourceHistory[closestIndex].y
+        var previousRawHeading = sourceHistory[closestIndex].headingRad
+        if (!previousRawX.isFinite() || !previousRawY.isFinite() || !previousRawHeading.isFinite()) return false
 
         if (intervalFraction <= 0.0) {
             scratchHistory.updateEntryDirect(
@@ -272,17 +302,24 @@ object EKFStatePropagator {
             )
         }
 
-        for (i in (closestIndex + 1) until state.history.size) {
-            val prevRaw = state.history[i - 1]
-            val currRaw = state.history[i]
+        for (i in (closestIndex + 1) until sourceHistory.size) {
+            val currRaw = sourceHistory[i]
+            val rawX = currRaw.x
+            val rawY = currRaw.y
+            val rawHeading = currRaw.headingRad
+            if (!rawX.isFinite() || !rawY.isFinite() || !rawHeading.isFinite()) return false
             var twistX = currRaw.deltaXRobot
             var twistY = currRaw.deltaYRobot
-            var deltaHeading = if (currRaw.hasMotion) currRaw.deltaHeadingRad else wrapAngle(currRaw.headingRad - prevRaw.headingRad)
+            val rawHeadingDifference = rawHeading - previousRawHeading
+            var deltaHeading = if (currRaw.hasMotion) currRaw.deltaHeadingRad else {
+                if (rawHeadingDifference.isFinite()) wrapAngle(rawHeadingDifference)
+                else wrapAngle(wrapAngle(rawHeading) - wrapAngle(previousRawHeading))
+            }
             if (!currRaw.hasMotion) {
-                val originalFieldDx = currRaw.x - prevRaw.x
-                val originalFieldDy = currRaw.y - prevRaw.y
-                val originalCos = kotlin.math.cos(prevRaw.headingRad)
-                val originalSin = kotlin.math.sin(prevRaw.headingRad)
+                val originalFieldDx = rawX - previousRawX
+                val originalFieldDy = rawY - previousRawY
+                val originalCos = kotlin.math.cos(previousRawHeading)
+                val originalSin = kotlin.math.sin(previousRawHeading)
                 val robotArcDx = originalFieldDx * originalCos + originalFieldDy * originalSin
                 val robotArcDy = -originalFieldDx * originalSin + originalFieldDy * originalCos
                 if (kotlin.math.abs(deltaHeading) < 1e-6) {
@@ -296,6 +333,7 @@ object EKFStatePropagator {
                     twistY = (-c * robotArcDx + s * robotArcDy) / determinant
                 }
             }
+            if (!twistX.isFinite() || !twistY.isFinite() || !deltaHeading.isFinite()) return false
             val fraction = if (i == closestIndex + 1 && intervalFraction > 0.0) 1.0 - intervalFraction else 1.0
             twistX *= fraction
             twistY *= fraction
@@ -318,20 +356,24 @@ object EKFStatePropagator {
 
             currentX += correctedFieldDx
             currentY += correctedFieldDy
-            currentHeadingRad = wrapAngle(currentHeadingRad + deltaHeading)
+            val replayHeading = currentHeadingRad + deltaHeading
+            if (!currentX.isFinite() || !currentY.isFinite() || !replayHeading.isFinite()) return false
+            currentHeadingRad = wrapAngle(replayHeading)
 
             val scale = currRaw.qScale * fraction
             val headingScale = currRaw.effectiveQHeadingScale * fraction
+            if (!scale.isFinite() || scale < 0.0 || !headingScale.isFinite() || headingScale < 0.0) return false
             propagateCovariance(
                 scratchCov2.m00, scratchCov2.m01, scratchCov2.m02,
                 scratchCov2.m10, scratchCov2.m11, scratchCov2.m12,
                 scratchCov2.m20, scratchCov2.m21, scratchCov2.m22,
                 -correctedFieldDy, correctedFieldDx, baseQ, scale, headingScale, scratchCov2
             )
+            if (!finiteCovariance(scratchCov2)) return false
 
             scratchHistory.updateEntryDirect(
                 i,
-                state.history[i].timestampMs,
+                currRaw.timestampMs,
                 currentX,
                 currentY,
                 currentHeadingRad,
@@ -339,6 +381,9 @@ object EKFStatePropagator {
                 currRaw.qScale,
                 currRaw.effectiveQHeadingScale
             )
+            previousRawX = rawX
+            previousRawY = rawY
+            previousRawHeading = rawHeading
         }
 
         // Apply back to state
@@ -355,5 +400,12 @@ object EKFStatePropagator {
         state.covarianceArray[6] = scratchCov2.m20
         state.covarianceArray[7] = scratchCov2.m21
         state.covarianceArray[8] = scratchCov2.m22
+        return true
     }
+
+    private fun finiteCovariance(p: Matrix3x3): Boolean =
+        p.m00.isFinite() && p.m01.isFinite() && p.m02.isFinite() &&
+            p.m10.isFinite() && p.m11.isFinite() && p.m12.isFinite() &&
+            p.m20.isFinite() && p.m21.isFinite() && p.m22.isFinite() &&
+            p.m00 >= 0.0 && p.m11 >= 0.0 && p.m22 >= 0.0
 }

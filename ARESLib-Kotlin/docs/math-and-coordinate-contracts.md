@@ -46,6 +46,9 @@ Each `Store` privately owns a fixed history of timestamped pose/covariance snaps
 - Camera latency must be subtracted once at the hardware boundary.
 - The history and measurement must use the same field frame.
 - A pose reset must reset the estimator/history coherently; do not splice a new pose into old history.
+- Capture-time splitting and replay run in preallocated scratch history. Non-finite replay pose
+  or covariance, or invalid stored motion/noise scales, reject the correction as `invalid_replay`;
+  live pose, covariance and history remain unchanged. Diagnostic rejection fields may change.
 - Capture timestamps older than the most recently accepted vision observation are rejected as
   `vision_out_of_order`. Odometry replay cannot reconstruct later camera corrections, so accepting
   such a frame would erase information already fused. Independent observations at the same capture
@@ -56,11 +59,19 @@ Each `Store` privately owns a fixed history of timestamped pose/covariance snaps
 
 Vision input is rejected when required data is invalid, no tags are reported, ambiguity exceeds the configured maximum, the covariance cannot be inverted, the observation is outside the field/history contract, or its Mahalanobis innovation exceeds the configured threshold. `PoseEstimatorState.lastMeasurementAccepted` and `lastRejectionReason` are intended for diagnostics.
 
-The measurement standard-deviation vector contains standard deviations, not variances: X/Y are meters and heading is radians. The estimator squares/scales them when constructing measurement covariance.
+The measurement standard-deviation vector contains standard deviations, not variances: X/Y are meters and heading is radians. Baseline values use the distance/tag-count/incidence model before squaring. Store processing uses finite positive observation-specific standard deviations unchanged for each reported axis; only unspecified axes use the baseline model. This prevents applying range and tag-count uncertainty twice. MegaTag2 retains its deliberately uninformative heading variance. The Store's ambiguity limit reaches both gates, and unavailable ambiguity does not masquerade as a measured ratio.
 
 Innovation validity is checked even when statistical outlier gating is disabled. The NIS is
-computed by whitening the residual with the innovation covariance's Cholesky factor; only accepted
-observations need the inverse used for the Kalman gain. Turning odometry contributes to heading
+computed by whitening the residual with an independently axis-normalized innovation covariance's Cholesky factor;
+accepted observations use triangular solves for the Kalman gain without forming an inverse.
+Prior and corrected covariance must be finite, symmetric and positive semidefinite within
+dimensionless roundoff tolerance; zero-variance axes require zero cross covariance. Innovation
+pivots must be positive, without an absolute unit-dependent cutoff. Joseph covariance correction
+does not impose a variance floor that could increase a valid smaller prior. Unmapped target range
+uses all three target-space translation components and hypot avoids intermediate distance overflow.
+Known-tag baseline noise retains the planar robot-to-tag distance and yaw-incidence heuristic;
+it is not a calibrated three-dimensional camera error model.
+Turning odometry contributes to heading
 process noise even when an independent gyro-rate sample is unavailable.
 
 Forward, interpolated and replayed covariance updates share one allocation-free scalar

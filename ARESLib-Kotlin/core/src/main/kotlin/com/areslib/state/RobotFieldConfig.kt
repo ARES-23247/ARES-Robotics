@@ -200,27 +200,42 @@ data class RobotFieldConfig(
     /**
      * Resolves the starting pose based on the alliance's driver station wall.
      * Starts adjacent to the wall facing the field center.
+     * Uses the resolved field dimensions, with a 0.5 m FRC inset or the legacy
+     * 0.0288 m FTC/XRP inset, capped at half the relevant dimension for small fields.
+     * This positions a point; callers must account for the robot footprint and obstacles.
+     * Invalid explicit dimensions are rejected; zero retains the league default.
      */
     fun getInitialPose(alliance: Alliance): Pose2d {
+        require(widthMeters == 0.0 || widthMeters.isFinite() && widthMeters > 0.0) {
+            "Field width must be finite and positive, or zero for the league default"
+        }
+        require(heightMeters == 0.0 || heightMeters.isFinite() && heightMeters > 0.0) {
+            "Field height must be finite and positive, or zero for the league default"
+        }
+        val width = resolvedWidthMeters
+        val height = resolvedHeightMeters
         if (fieldType == FieldType.FRC) {
+            val inset = minOf(0.5, width / 2.0)
             return if (alliance == Alliance.BLUE) {
-                Pose2d(0.5, 4.1055, Rotation2d(0.0))
+                Pose2d(inset, height / 2.0, Rotation2d(0.0))
             } else {
-                Pose2d(16.041, 4.1055, Rotation2d(Math.PI))
+                Pose2d(width - inset, height / 2.0, Rotation2d(Math.PI))
             }
         }
 
         val side = if (alliance == Alliance.BLUE) blueDriverStation else redDriverStation
+        val wallX = (width / 2.0 - 0.0288).coerceAtLeast(0.0)
+        val wallY = (height / 2.0 - 0.0288).coerceAtLeast(0.0)
         
         // Calculate coordinate based on which side is the driver wall
         val startX = when (side) {
-            DriverStationSide.EAST -> 1.8
-            DriverStationSide.WEST -> -1.8
+            DriverStationSide.EAST -> wallX
+            DriverStationSide.WEST -> -wallX
             else -> 0.0
         }
         val startY = when (side) {
-            DriverStationSide.NORTH -> 1.8
-            DriverStationSide.SOUTH -> -1.8
+            DriverStationSide.NORTH -> wallY
+            DriverStationSide.SOUTH -> -wallY
             else -> 0.0
         }
         
@@ -279,11 +294,12 @@ data class RobotFieldConfig(
 }
 
 /**
- * Builds the immutable AprilTag pose lookup consumed by localization and simulation.
+ * Builds an independently owned AprilTag pose lookup consumed by localization and simulation.
  *
  * The canonical field document stores display-friendly degrees. Conversion to radians occurs once
  * at the runtime boundary; periodic vision code must reuse the returned map rather than rebuilding
  * it each frame.
+ * The returned poses are mutable workspaces; consumers must not mutate a shared lookup.
  */
 fun RobotFieldConfig.aprilTagPoseMap(): Map<Int, com.areslib.math.geometry.Pose3d> =
     LinkedHashMap<Int, com.areslib.math.geometry.Pose3d>(apriltags.size).also { poses ->
@@ -333,6 +349,7 @@ object RobotFieldManager {
     /**
      * Loads the field config from a JSON file.
      * Useful for loading dynamic configurations copied directly from ARESWEB.
+     * Rejects schema and semantic errors without replacing the last accepted configuration.
      */
     fun loadFromJsonFile(filePath: String): Boolean {
         return try {
@@ -340,6 +357,8 @@ object RobotFieldManager {
             if (!file.exists()) return false
             val jsonContent = file.readText()
             val loaded = RobotFieldDocument.decode(jsonContent)
+            val issues = RobotFieldValidator.validate(loaded)
+            require(issues.isEmpty()) { issues.first().message }
             activeConfig = loaded
             true
         } catch (e: Exception) {

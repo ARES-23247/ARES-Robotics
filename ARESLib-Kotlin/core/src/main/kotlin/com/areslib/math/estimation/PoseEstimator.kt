@@ -645,7 +645,10 @@ object PoseEstimator {
         )
     }
 
-    /** Scalar covariance overload for zero-allocation per-frame camera uncertainty. */
+    /**
+     * Scalar covariance overload without per-frame allocations. Scale flags select the baseline
+     * distance/tag/incidence model per axis; false uses observation-specific uncertainty unchanged.
+     */
     fun addVisionMeasurementDirect(
         state: PoseEstimatorState,
         measurement: VisionMeasurement,
@@ -655,7 +658,10 @@ object PoseEstimator {
         numTags: Int = 1,
         useMahalanobisRejection: Boolean = true,
         mahalanobisThreshold: Double = 12.0,
-        maxAmbiguity: Double = 0.2
+        maxAmbiguity: Double = 0.2,
+        scaleStdDevX: Boolean = true,
+        scaleStdDevY: Boolean = true,
+        scaleStdDevHeading: Boolean = true
     ): PoseEstimatorState {
         val scratch = threadScratchpad.get()
         return VisionMahalanobisFilter.processVisionMeasurement(
@@ -663,7 +669,7 @@ object PoseEstimator {
             useMahalanobisRejection, mahalanobisThreshold, maxAmbiguity,
             activeTags, Q, scratch.scratchR, scratch.scratchS, scratch.scratchSInv, scratch.scratchK,
             scratch.scratchCov, scratch.scratchHistory, scratch.scratchCov2,
-            scratch.scratchInterpolatedEntry
+            scratch.scratchInterpolatedEntry, scaleStdDevX, scaleStdDevY, scaleStdDevHeading
         )
     }
 }

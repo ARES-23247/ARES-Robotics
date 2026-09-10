@@ -2690,8 +2690,8 @@ public final class com/areslib/math/estimation/PoseEstimator {
 	public static synthetic fun addOdometryObservationDirect$default (Lcom/areslib/math/estimation/PoseEstimator;Lcom/areslib/math/estimation/PoseEstimatorState;JDDDDDDDDDZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
 	public final fun addVisionMeasurement (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;Lcom/areslib/math/geometry/Vector3;IZDD)Lcom/areslib/math/estimation/PoseEstimatorState;
 	public static synthetic fun addVisionMeasurement$default (Lcom/areslib/math/estimation/PoseEstimator;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;Lcom/areslib/math/geometry/Vector3;IZDDILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
-	public final fun addVisionMeasurementDirect (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDD)Lcom/areslib/math/estimation/PoseEstimatorState;
-	public static synthetic fun addVisionMeasurementDirect$default (Lcom/areslib/math/estimation/PoseEstimator;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public final fun addVisionMeasurementDirect (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDZZZ)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public static synthetic fun addVisionMeasurementDirect$default (Lcom/areslib/math/estimation/PoseEstimator;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDZZZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
 	public final fun getQTheta ()D
 	public final fun getQX ()D
 	public final fun getQY ()D
@@ -2927,7 +2927,8 @@ public final class com/areslib/math/estimation/StationaryCalibrationGate {
 
 public final class com/areslib/math/estimation/VisionMahalanobisFilter {
 	public static final field INSTANCE Lcom/areslib/math/estimation/VisionMahalanobisFilter;
-	public final fun processVisionMeasurement (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDLjava/util/Map;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/HistoryBuffer;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/PoseHistoryEntry;)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public final fun processVisionMeasurement (Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDLjava/util/Map;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/HistoryBuffer;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/PoseHistoryEntry;ZZZ)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public static synthetic fun processVisionMeasurement$default (Lcom/areslib/math/estimation/VisionMahalanobisFilter;Lcom/areslib/math/estimation/PoseEstimatorState;Lcom/areslib/state/VisionMeasurement;DDDIZDDLjava/util/Map;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/HistoryBuffer;Lcom/areslib/math/geometry/Matrix3x3;Lcom/areslib/math/estimation/PoseHistoryEntry;ZZZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
 }
 
 public final class com/areslib/math/estimation/VisionNoiseCalibrationFit {

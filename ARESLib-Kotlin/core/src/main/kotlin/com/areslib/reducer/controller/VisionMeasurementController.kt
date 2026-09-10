@@ -89,19 +89,23 @@ internal class StoreVisionMeasurementProcessor {
                 val reportedStdDevX = measurement.stdDevXMeters
                 val reportedStdDevY = measurement.stdDevYMeters
                 val reportedStdDevHeading = measurement.stdDevHeadingRadians
-                val stdDevX = if (reportedStdDevX.isFinite() && reportedStdDevX > 0.0) {
+                val hasReportedX = reportedStdDevX.isFinite() && reportedStdDevX > 0.0
+                val hasReportedY = reportedStdDevY.isFinite() && reportedStdDevY > 0.0
+                val hasReportedHeading = reportedStdDevHeading.isFinite() && reportedStdDevHeading > 0.0
+                val translationOnly = measurement.solverType == com.areslib.state.VisionSolverType.MEGATAG2
+                val stdDevX = if (hasReportedX) {
                     reportedStdDevX
                 } else {
                     defaultStdDevX
                 }
-                val stdDevY = if (reportedStdDevY.isFinite() && reportedStdDevY > 0.0) {
+                val stdDevY = if (hasReportedY) {
                     reportedStdDevY
                 } else {
                     defaultStdDevY
                 }
                 val stdDevHeading = when {
-                    measurement.solverType == com.areslib.state.VisionSolverType.MEGATAG2 -> 1.0e6
-                    reportedStdDevHeading.isFinite() && reportedStdDevHeading > 0.0 -> reportedStdDevHeading
+                    translationOnly -> 1.0e6
+                    hasReportedHeading -> reportedStdDevHeading
                     else -> defaultStdDevHeading
                 }
                 val nisThreshold = if (measurement.solverType == com.areslib.state.VisionSolverType.MEGATAG2) {
@@ -118,7 +122,11 @@ internal class StoreVisionMeasurementProcessor {
                     visionStdDevHeading = stdDevHeading,
                     numTags = measurement.tagCount.coerceAtLeast(1),
                     useMahalanobisRejection = true,
-                    mahalanobisThreshold = nisThreshold
+                    mahalanobisThreshold = nisThreshold,
+                    maxAmbiguity = state.vision.filterConfig.maxAmbiguity,
+                    scaleStdDevX = !hasReportedX,
+                    scaleStdDevY = !hasReportedY,
+                    scaleStdDevHeading = !translationOnly && !hasReportedHeading
                 )
                 lastAccepted = estimator.lastMeasurementAccepted
                 lastReason = estimator.lastRejectionReason
