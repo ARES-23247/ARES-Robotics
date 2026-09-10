@@ -3234,10 +3234,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "1fadb06cf81f45d783c8bbaa6f292d9d96f065ba808c468d92493ca0aa8c5ffb",
+      "sha256": "e9ff0c6d712e46a846323d792f7a3a5c6f6af53898fcf9454fd136bd27b99e7c",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3376,7 +3376,10 @@
         "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
         "docs/audits/estimator-numerics-audit.md",
         "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log",
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3514,10 +3517,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "5c64f3cd0f2106c67bb0f309acb83e653e536b3cf8edd0593bdd0f8c24872625",
+      "sha256": "f83938bacb20873153a02a638f5cde5d5e4b8823ecf73d49f7b850333316dbdc",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3556,7 +3559,10 @@
         "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
         "docs/audits/estimator-numerics-audit.md",
         "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log",
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -5366,7 +5372,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3f87eefc06b9812356c161b2b7e2db7b299d9eb21c3bf5b63e91359d876960af",
+      "sha256": "f59f188d7020a3952477fe35b69879a467d414768072295214e85f627850051d",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5393,7 +5399,8 @@
         "docs/audits/ftc-frame-lifecycle-audit.md: pass73 records and canonical self-fingerprint refreshed",
         "docs/audits/ftc-motor-polling-shutdown-audit.md: pass74 records and canonical self-fingerprint refreshed",
         "docs/audits/telemetry-mode-lifecycle-audit.md: pass75 records and canonical self-fingerprint refreshed",
-        "docs/audits/estimator-numerics-audit.md: pass76 records and canonical self-fingerprint refreshed"
+        "docs/audits/estimator-numerics-audit.md: pass76 records and canonical self-fingerprint refreshed",
+        "docs/audits/calibration-integrity-audit.md: pass77 file scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6821,6 +6828,214 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/LocalizationCalibration.kt": {
+      "sha256": "3f36cc1c412eed949c05ca21c36997c9cbae57d739bb73ccff0c5e536e9dff7f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full sample/capture, asynchronous recorder, report, fitter and CSV importer reviewed. Finite truth/chronology/file identity, sample and circular statistics, JSON nulls, streaming parser, exact unique innovation attribution and signed surveyed turns verified by failure-before and independent round-trip/numerical fixtures. Legacy missing heading flag keeps shortest-arc interpretation; endpoint routes cannot measure reversing travel. Shared logger lifecycle is delegated; no physical truth accuracy claimed.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/LocalizationCalibrationCli.kt": {
+      "sha256": "a74b2f10ee611875dc045f543bf0659e91ee830444660f463fe13ade1d0d4c7a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full argument/input/output flow reviewed. Missing input, equivalent input/output rejection and successful valid JSON output tested with temporary files. Canonical/same-file comparison protects source data before writes; offline-only IO. Malformed rows remain subject to shared parser/count warnings.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/LocalizationConsistencyEvaluator.kt": {
+      "sha256": "d6806bdc3d571e368a722c35fce65f51587ec895e958e6d3891c598be45e422b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full NIS/NEES ingestion, snapshots, reset, covariance validation and Cholesky solve reviewed. Independent correlated factor oracle, consistent scaling, invalid/asymmetric inputs, overflow-safe finite means and mixed DOF normalization verified. No allocations introduced in record paths; recorded statistics are evidence about the supplied model and surveyed truth, not a physical calibration guarantee.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/StationaryCalibrationGate.kt": {
+      "sha256": "2c14ffecf92ed8cab4562c82fded0953fbdcdac6013a140c6063cc1b1819a702",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full primitive gate reviewed and tested: valid/fresh/finite motion, explicit neutral control, speed thresholds, continuous 500ms dwell, stale/future/unknown feedback, interrupted loops, rollback and integer-boundary epochs. Allocation measurement passed across 10000 updates. Frontends supply cached observation timestamps and validity; no extra hardware reads.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/VisionReducer.kt": {
+      "sha256": "3c043ee26ed445c08439705134b8026fac586a701aff1812e82c84f4139e3fc8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full pure reducer and rolling immutable measurement publication read. Current innovation metadata is copied by value and invalidated on reset. Existing vision reducer/snapshot suites plus actual Store accepted, statistical rejection, early rejection, external-only and packet-reuse regressions passed. No new per-packet metadata allocation.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/controller/VisionMeasurementController.kt": {
+      "sha256": "45c7fd15ca6ab9d8dcaa535127e892492ae287b667d9ecf40dfc230778af2cc7",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full file read; current-batch innovation computation, exact identity ownership, translation/full-pose DOF, finite statistical rejection and early rejection paths traced and tested. Metadata references never escape processing and immutable values survive packet recycling. Broader camera-source sequencing, filter configuration and recovery interactions remain separate review/test scopes; full candidate tests alone do not close those scopes.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotState.kt": {
+      "sha256": "697a0f3bebf51e00a462010da803fa78e54e6cca97c90b16eab83ee7dcd92aa8",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Only VisionMeasurement/VisionState and DriveState portions inspected. Appended immutable flat NIS identity/statistic fields, zero DOF validity convention and reset semantics tested through Store. Cached measuredMotionValid and estimator timestamp routing traced for collection. Remaining state slices and complete file contracts unreviewed.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/CalibrationNumericsAuditTest.kt": {
+      "sha256": "c02e6bfe2845a70d59d479bff6e6018dcb5fb5d84333541dbe7de3dd6228c966",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All16 methods reviewed/executed: independent variance/circular/NEES references, finite extremes, route chronology and cross-file identity, parser/CLI, signed turn CSV round trips and legacy interpretation. Tests own temporary files; production math does not supply expected values.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/CalibrationNisAttributionAuditTest.kt": {
+      "sha256": "fd865ac84919ed5081fa8687adbf5934e1dc94501c3f94d5a3694bc9249fd2a9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All7 methods reviewed/executed against actual Store processing: default/external unavailable NIS, prefilter/local early rejection, statistical rejection retained, MT1/MT2 DOF and distance attribution, ambiguous identity, reset and pooled packet mutation.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/CalibrationStationaryGateAuditTest.kt": {
+      "sha256": "dddd76e215229e51bca6f7d4070a824f720b59c1c56d56e686a7ecc1e04ee0c2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All4 methods reviewed/executed: uninterrupted fresh dwell, invalid/future/stale/moving/default feedback, clock and integer boundaries, reset, and supported JVM allocation measurement. No sleeps or physical hardware.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/LocalizationCalibrationTest.kt": {
+      "sha256": "7f6a26ea236457692a0e3f9af5ea0c5c5428f261a2790c4f35444a3e0824a769",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full existing two-method recorder/fitter fixture reviewed/executed. Replaced unowned temporary directory with JUnit-managed TempDir; new audit fixtures supplement numerical and workflow boundaries.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/vision/FrcLocalizationCalibrationSession.kt": {
+      "sha256": "0f84903186e1439f928e3087bf55539682ae7dbcac382629f13eda26258ce021",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full lifecycle, surveyed pose editing, pending actions, gate, camera dedup/freshness and recorder flow reviewed. Six host tests cover normalized seeding with retained turns, atomic finite edits, stationary default/stale/moving feedback, explicit neutral confirmation, command intent, cancellation/run identity, type restriction and idempotent terminal close. Physical feedback reliability and actual robot UI operation require hardware validation.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/vision/FrcLocalizationCalibrationSessionTest.kt": {
+      "sha256": "8dbdb5057d350da3b74d1189573f23061ade19d4ab74082f4e7845863c88c2a9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All6 methods reviewed/executed; real Store and recorder CSV with owned TempDir, fake seed IO, explicit fresh motion observations and deterministic times. Three failure-before methods preserved; no sleeps, devices or simulator truth substitution.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESLocalizationCalibration.kt": {
+      "sha256": "224f2c95ea53ef4de443464c2a7190c7ed5d2803530c3eb2766c4cb272fe2d04",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full OpMode read. Shared gate, cached feedback validity/timestamp, EMA-compatible command thresholds, retained surveyed turns, deferred seed/checkpoints, run advancement, edit cancellation and telemetry wiring reviewed; FTC compilation/generated-project verification and shared gate tests pass. Full DSL button/loop interaction including simultaneous inputs and actual FTC pose seed lifecycle still requires targeted integration tests; hardware collection unobserved.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/StationaryCalibrationGateTest.kt": {
+      "sha256": "82edff2a6a5d6623a4c82c3619b0ea1cf876ce3b2253b8d201181bef9460d145",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Both methods read and passed using shared core gate, explicit valid fresh observations and continuous dwell. Covers driver/motion interruption, nonfinite speed and rollback; core audit adds stale/unknown/future/integer-boundary and allocation cases. Does not exercise whole OpMode DSL.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/robot/FrcLocalizationCalibrationControls.kt": {
+      "sha256": "3c9df351ddf9b342b314c7116601ae380712bcd8de5920b7f8db49dd09f6ac1d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full edge-map and telemetry wrapper read; production caller test lifecycle traced. Explicit neutral axes now feed session gate, readiness/pending state published; full FRC candidate compilation/tests pass. Direct controller edge integration, simultaneous edit/checkpoint requests and mode transition behavior are not directly exercised by these session fixtures.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/docs/localization-calibration.md": {
+      "sha256": "3e4099837bce8da0f2142d5ceb7c9eabafdf6c7d1ceb57cbd16b56df982c1dee",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full guide reconciled with source/tests: surveyed truth and signed turns, legacy CSV limitations, pending gate/cancel behavior, finite computed NIS including statistical rejects, JSON nulls, circular/sample statistics, local logging and offline fitting. Physical collection plan remains an external procedure.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/api/frc-hardware.api": {
+      "sha256": "2192b6e47680fa259f196a255fdb70e97d74a93187066e97d5ed57782d83672d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial.",
+      "evidence": [
+        "docs/audits/calibration-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "docs/audits/calibration-integrity-audit.md": {
+      "sha256": "b950112022f558f8ac28b69d44820af69014629ef7740bc69aab37b56681b112",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report reconciled with16 distinct failure-before methods,47 focused library tests, candidate identity and observed full validation. File and physical limitations explicit.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
       ]
     }
   }

@@ -1,8 +1,11 @@
 # Calibration ingestion, statistics and observation integrity
 
-Pass 77 in progress, 2026-09-10. All changes remain local; no candidate has been frozen.
+Pass 77, 2026-09-10. Source commit `98a46921`; library tree
+`069e87218ebf7d7abe1cc735bd039f42b4e3856b`; local candidate `17.0.3-rc.069e87218ebf`.
+This batch's validation is complete. The repository-wide audit remains open; nothing was pushed,
+merged, released or exercised on physical hardware.
 
-## Confirmed and fixed so far
+## Confirmed fixes
 
 - Empty/incomplete calibration reports threw while serializing NaN statistics. JSON now
   explicitly represents unavailable values as null. A single sample has unavailable sample
@@ -39,7 +42,7 @@ Pass 77 in progress, 2026-09-10. All changes remain local; no candidate has been
   FTC's smoothed commands use the stationary tolerances rather than exact floating-point zero.
   FRC close cancels pending work and prevents later seeds or recording.
 
-## Evidence so far
+## Validation evidence
 
 Sixteen distinct methods reproduced failures before their fixes: eight initial numerical/report
 cases, one independent-file route collision, one CLI overwrite, three NIS attribution cases,
@@ -52,17 +55,47 @@ The current focused run passed 41 core tests (including calibration, reducer, sn
 zero-allocation checks) and 6 FRC session tests. FTC's 2 gate tests and the FRC product's 134
 tests passed using explicit sibling-source substitution. Copied XML, hashes and logs are in
 `ARESLib-Kotlin/build/audit-pass77-workflow-evidence`. Core and FRC API dumps succeeded and
-their diffs were reviewed. Full candidate validation and file-ledger credit remain pending.
+their diffs were reviewed.
 
-## Remaining validation before freezing
+The frozen candidate passed full library tests, API checks, core/FRC Kover reports and local
+`publishReleaseValidation`, then dependency-ordered consumer validation with that exact version
+and isolated repository. Copied XML, hashes, logs, coverage reports and candidate POM are in
+`ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json` and sibling artifacts.
 
-- Core/FRC API snapshots have been regenerated and their diffs reviewed. Sample/capture,
-  VisionState constructor/copy and FRC periodic JVM descriptors changed; consumers must rebuild.
-- Complete any remaining capture-edge review, freeze source identity and run one candidate
-  library/API/coverage/publication and dependent consumer matrix. Focused sibling builds are
-  development evidence, not final candidate validation.
-- Reconcile file-ledger credit and final evidence only after that matrix succeeds. RobotState,
-  DriveReducer and ARESRobot were inspected only in relevant sections, not as whole files.
+| Validation group | Passed | Skipped |
+| --- | ---: | ---: |
+| ARESLib modules | 1,812 | 0 |
+| FTC product and simulator | 111 | 0 |
+| FRC product | 134 | 0 |
+| FTC starter and simulator | 14 | 0 |
+| FRC starter | 34 | 0 |
+| Studio shared, gateway and app | 1,790 | 6 |
+| Dashboard smoke task | 56 | 0 |
+| Dashboard performance task | 1 | 0 |
+
+All groups had zero failures/errors. Dashboard tasks overlap tests in the normal suite and are
+reported as separate executions, not additional unique coverage. Studio's six normal-suite skips
+were three optional starter-template integration tests, the native file chooser test, the hardware
+dashboard test, and the performance baseline test; the dedicated performance task passed. These
+results do not establish native-window interaction, fresh exported-template builds or hardware behavior.
+Source policy passed: 238 current documents checked, 38 explicitly historical records excluded.
+Library validation took 1m59s; the Studio candidate invocation took 3m55s on this host.
+
+Kover line evidence: fitter 113/113, CSV 42/42, CLI 21/21, stationary gate 26/26, VisionReducer 47/47,
+consistency evaluator 66/67 and FRC calibration session 105/114. Branches remain uncovered; line
+execution is not exhaustive correctness evidence. The gate allocation test passed across 10,000
+updates within its 4,096-byte allowance; this does not measure physical robot loop jitter.
+
+## Remaining file scopes and limitations
+
+- Sample/capture, VisionState constructor/copy and FRC periodic JVM descriptors changed. All
+  candidate consumers were rebuilt; unrelated public API inventory remains partial.
+- The FTC OpMode and FRC control wrapper were read, compiled and wired to the tested session/gate.
+  Direct button/loop integration, simultaneous inputs and the FTC seed lifecycle need targeted
+  integration tests. These files retain partial ledger status.
+- VisionMeasurementController's metadata paths were verified, but broader source sequencing,
+  recovery and filter configuration remain separate scopes. RobotState, DriveReducer and ARESRobot
+  were inspected only in relevant sections, not as whole files.
 
 These tests establish host behavior and numerical contracts; they do not establish physical
 calibration accuracy, measured robot loop jitter or reliable sensor feedback on actual hardware.
