@@ -349,8 +349,8 @@ class LimelightProxy(
 
     private companion object {
         const val FORWARDED_PORT_COUNT = 8
-        const val MIN_PORT_OFFSET = 1 - 5800
-        const val MAX_PORT_OFFSET = 65535 - (FORWARDED_PORT_COUNT - 1) - 5800
+        private const val MIN_PORT_OFFSET = 1 - 5800
+        private const val MAX_PORT_OFFSET = 65535 - (FORWARDED_PORT_COUNT - 1) - 5800
         const val COPY_DIRECTIONS = 2
         const val COPY_BUFFER_BYTES = 8_192
         const val MAX_CAMERAS = 4
