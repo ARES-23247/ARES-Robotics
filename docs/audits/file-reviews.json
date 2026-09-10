@@ -3183,10 +3183,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "304baa22bafcbc8ec2b483909e45f1c423827b94b9cbabab39b21829dddc72e7",
+      "sha256": "7d9b7bcb6a916c0fecd9cfc26985b71c24a9eb733607ca021897c4fa53ec4593",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library tree 4c7029b25c9ad93c819f71d739b214449992f891 bound to source 57ac1db7 and unique candidate 17.0.3-rc.4c7029b25c9a. Full library 1462 tests/API/core Kover/local publication passed; consumer evidence in pass55 report.",
+      "scope": "Exact library tree0303879d9315b7fcd2f1e43c3567a93b959a41b0 bound to sourced9d1a903 and candidate17.0.3-rc.0303879d9315. Full library1487tests/API/coreKover/isolatedpublication passed1m49; consumer evidence in pass56 report.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3246,7 +3246,12 @@
         "ARESLib-Kotlin/build/audit-pass55-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass55-library.log",
         "ARESLib-Kotlin/build/audit-pass55-verified-evidence",
-        "ARESLib-Kotlin/build/audit-pass55-policy.log"
+        "ARESLib-Kotlin/build/audit-pass55-policy.log",
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4954,6 +4959,138 @@
         "ARESLib-Kotlin/build/audit-pass55-studio.log",
         "ARESLib-Kotlin/build/audit-pass55-policy.log",
         "ARESLib-Kotlin/build/audit-pass55-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/Path.kt": {
+      "sha256": "1a58ab53806904dc2869de655ffbf207f548396c501d7b16ddbdefa0aa674f51",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full-file review of mutable DTOs, shared sampling selection, finite raw inputs, exact-point ownership, random/non-random list behavior, legacy reflection, windowed projection, geometry validation and explicit caller-maintained ordering limits. Full library validation passed; consumer results in pass56 report.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/PathNumerics.kt": {
+      "sha256": "082372afd788bf5e7808d2af85601b05db7215f58b0cb334864a2767181ec794",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full-file numerical review: convex finite interpolation, normalized shortest-angle interpolation, scaled projection, axis fast paths and overflowing-ratio fallback, with explicit floating-point cancellation limits. Decimal/scaled/subnormal/extreme tests and allocation probe passed.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/PathSamplingAuditTest.kt": {
+      "sha256": "9e176b1dc7e72d196ad0773f301b2b02dbde436176683284c0acaf4f4152b09e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-method test review: natural-spline tangent, logarithmic random-access point reads, duplicate-distance/wrap/bounds overload parity. Counted constant-time indexing fixture now explicitly implements RandomAccess; original read bound retained.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/FindClosestDistanceTest.kt": {
+      "sha256": "6160ea9656d76f8fe5c56e16f2c9aef613526167c2055e8ea68c837bf9d26ade",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eleven-method test review: helper geometry, straight/diagonal/L/U paths, endpoints, perpendicular offset, empty and singleton behavior. Tests pass; tolerances are coarse and do not establish arbitrary numerical or physical tracking correctness.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/PathSamplingBoundaryTest.kt": {
+      "sha256": "d4d10e30c79d801da9e515fd60f52bcd449c5b3a3b8ccbc75f874e60ed98a2d9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method regression review: tiny arc intervals, opposite finite extremes, angle normalization, invalid queries/raw fields and atomic outputs, exact alias and empty parity, unchanged-pose reuse.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/PathProjectionBoundaryTest.kt": {
+      "sha256": "55b8318054110f6b68715469c4c776ec9d52be10da6d62c1f0cbfa3b4a9a981b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method regression review: tiny/huge segments, tiny arc windows, out-of-range clamping, invalid finite/window contracts, beyond-Double.MAX separations and malformed visited geometry.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/PathNumericalOracleTest.kt": {
+      "sha256": "cbc557089d12870157f10cd38287bd1ec92d79d46c733831def14ea6172a1876",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-method oracle review: 2000 BigDecimal interpolation cases seed5601, 1000 decimal projection cases at three scales seed5602, subnormal oblique and irrelevant-perpendicular coordinates, overflowing ratios and reversed huge axes.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/PathStorageContractTest.kt": {
+      "sha256": "36bd2aa1f4a5224c8c1aa56fc0845ae87b1c105be336cb6ce2351da7acdb2a3b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method contract review: counted random-access window traversal, linked-list indexed-read limits, mutable list/point/data-class ownership, mirror independence and invalid raw fields, duplicate arc and zero-geometry behavior.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/PathQueryAllocationTest.kt": {
+      "sha256": "644165a0944954c991adcb81bcb7a6c99d112489b26ca294b2531becb73f4877",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-method probe review: five warmed/measured windows of varied in-place sampling/projection pairs, meaningful projected-distance checks, JVM capability assumption, prebuilt array inputs, escaped array calibration and explicit 4KiB/non-strict-window limits.",
+      "evidence": [
+        "docs/audits/path-distance-query-audit.md",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+      ]
+    },
+    "docs/audits/path-distance-query-audit.md": {
+      "sha256": "0cd90dcd2574154e209c59f35220f33197534bb00b3ae795f4dc2858a5825164",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full pass56 findings, ownership and numerical contracts, baseline/oracle/allocation evidence, API and dependency-ordered candidate gates, remaining work and coverage accounting reviewed against retained sources/logs.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass56-before.log",
+        "ARESLib-Kotlin/build/audit-pass56-expanded.log",
+        "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
+        "ARESLib-Kotlin/build/audit-pass56-library.log",
+        "ARESLib-Kotlin/build/audit-pass56-studio.log",
+        "ARESLib-Kotlin/build/audit-pass56-policy.log",
+        "ARESLib-Kotlin/build/audit-pass56-verified-evidence"
       ]
     }
   }
