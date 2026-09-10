@@ -60,3 +60,10 @@ retain partial file status rather than gaining complete review credit from focus
 Complete the frozen library/API publication and dependency-ordered consumer validation, then update
 the file ledger with exact evidence and remaining scope. All changes remain local.
 
+## Validation infrastructure correction
+
+The initial full suite exposed a fixed 100 ms sleep in the existing throwing-device polling test.
+It now waits up to two seconds for an observed healthy poll after a failing poll, with unconditional
+registry teardown. All 14 HardwareRegistry tests passed after this test-only correction. Production
+registry code was unchanged. This timing failure is recorded separately from the 28 SysId
+regression methods. The library candidate identity is regenerated to include the corrected test.

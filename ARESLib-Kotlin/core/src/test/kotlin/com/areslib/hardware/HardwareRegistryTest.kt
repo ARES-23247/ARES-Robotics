@@ -198,18 +198,29 @@ class HardwareRegistryTest {
 
     @Test
     fun `throwing polled device does not stop healthy devices`() {
+        val failedPoll = CountDownLatch(1)
+        val healthyAfterFailure = CountDownLatch(1)
         val throwing = object : SyncPolledDevice {
-            override fun pollSync() = error("sensor unavailable")
+            override fun pollSync() {
+                failedPoll.countDown()
+                error("sensor unavailable")
+            }
         }
-        val healthy = MockSyncPolledDevice()
+        val healthy = object : SyncPolledDevice {
+            override fun pollSync() {
+                if (failedPoll.count == 0L) healthyAfterFailure.countDown()
+            }
+        }
         registry.setPollingIntervalMs(10L)
 
-        registry.registerRoundRobinDevice(throwing)
-        registry.registerRoundRobinDevice(healthy)
-        Thread.sleep(100L)
-        registry.closeAll()
-
-        assertTrue(healthy.pollSyncCount > 0)
+        try {
+            registry.registerRoundRobinDevice(throwing)
+            registry.registerRoundRobinDevice(healthy)
+            assertTrue(healthyAfterFailure.await(2, TimeUnit.SECONDS),
+                "A healthy device must be polled after another device throws")
+        } finally {
+            registry.closeAll()
+        }
     }
 
     @Test
