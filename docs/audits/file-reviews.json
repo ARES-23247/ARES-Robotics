@@ -3211,10 +3211,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "d371fb2f2eda82716b399710d727c8c305e1bd4fbe6f7fddf82371c8d273dff4",
+      "sha256": "e43e24c96fa2579d6058a6d9ced97d4d8f930402b8b92ca5c6fbe75aa3d95f4f",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree b6b352cba4d472923053aeee89e289a40c3f4ab5 bound to sourceee982527 candidate17.0.3-rc.b6b352cba4d4;1647 library tests/API/core Kover/local publication and dependency-ordered consumer gates passed.",
+      "scope": "Exact tree 6802fc554f5d89cb470c33331ab2bb9a9d56ff96 bound to sourcedf9b95c6 candidate17.0.3-rc.6802fc554f5d;1662 library tests/API/core Kover/local publication and dependency-ordered consumer gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3319,7 +3319,11 @@
         "docs/audits/scalar-motion-gravity-audit.md",
         "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass67-library.log",
-        "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass67-verified-evidence",
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5270,7 +5274,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "7c3c32866dd3da11b6c8765308cfcee5f1ae4ea10d4e4a4ae7fd980fe0ed35c9",
+      "sha256": "f81dc7df5588c0d4570e6920bee5eda6263ab3ae91cb0b6cde4a1dd74e43c8ab",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5288,7 +5292,8 @@
         "docs/audits/indicator-task-timing-audit.md: pass64 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/weak-registry-clock-audit.md: pass65 records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/limelight-proxy-ownership-audit.md: pass66 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/scalar-motion-gravity-audit.md: pass67 records reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/scalar-motion-gravity-audit.md: pass67 records reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/coordinate-odometry-transform-audit.md: pass68 records reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5938,6 +5943,113 @@
         "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass67-library.log",
         "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/coordinate/AllianceMirroring.kt": {
+      "sha256": "24560602b92c0291bcbaa171a25b7ec8f7d8521facd16a6478b0d43dab2864a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file: explicit origin/symmetry and enum annotations, Blue identity without validation, Red finite pose/position/path validation, shared normalized heading/tangent transform, curvature parity, independent points/shared event ownership and linear iterator traversal. 53/53 lines,36/36 branches,6/6 methods. Caller-stable mutable inputs and event validation remain external contracts.",
+      "evidence": [
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/coordinate/CoordinateTransformers.kt": {
+      "sha256": "9c74d5683edb94a8306559779c6f0ea328275dc03b54c91bcbb24d51f0e2b5e4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file including four internal checks/angle helpers: finite raw inputs/results, positive used extents, exact Blue aliases, center/corner origin translation, rotational/reflectional signs and preserved raw orientation on origin shifts. Compatibility dimensions unchanged; vendor-frame/axis KDoc corrected. Object34/34 lines10/10 branches10/10 methods;helpers11/11 lines34/34 branches4/4 methods.",
+      "evidence": [
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/kinematics/OdometryMath.kt": {
+      "sha256": "5805bd6cf0018d7090fa235ad8d2d5a4be67bb1747572d8d5332db923ac3e277",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file: correct CCW vector rotation, scalar/object consistency, no accumulated pose or changing-heading SE2 integration, IEEE invalid propagation and immutable-result ownership. Runtime unchanged; false zero-allocation KDoc corrected.1500 inverse/norm checks;7/7 lines3/3 methods. Ten thousand escaping vectors measured320000bytes, scalar batches within bounded overhead gate.",
+      "evidence": [
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/coordinate/AllianceMirroringTest.kt": {
+      "sha256": "3041ef76265bd134fd3c34bce3723bab343d230f49876bfbbb8e6bb399c559d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-method fixture: Blue control, center rotation/reflection, curvature parity and explicit FTC-sized corner origin. Contradictory center-reflection comment corrected. Extended boundary fixture independently checks all modes, identity, invalid raw input and output ownership; combined focused/full gates passed.",
+      "evidence": [
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/coordinate/CoordinateTransformersTest.kt": {
+      "sha256": "9221e3239295d54565f428ecff31c87ac009bdf7e6cc849f4ab94eb996c5ea28",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full seven-method fixture reviewed unchanged: Blue/Red pose and translation, corner rotation/reflection, origin roundtrip and SetAlliance reducer integration. Combined expanded boundary and dependency-ordered consumer gates passed; does not confer full reducer/caller source credit.",
+      "evidence": [
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/OdometryMathTest.kt": {
+      "sha256": "9231a5200e5ab4d843f3cb308bace30169c42efa8466b2080d1ced6e3a523d9b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method fixture: existing zero/quarter rotations plus1500 seeded inverse/norm/scalar coherence checks, negative-quarter/half turns, nonfinite inputs and independent maximal/subnormal output values. Confirms vector rotation rather than integration; no sensor/hardware validation.",
+      "evidence": [
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/coordinate/CoordinateBoundaryTest.kt": {
+      "sha256": "483fe0e929a2532b3130e8e30ff73aa8a6ad7d8a942d93f29da60e004c8dd321",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full ten-method fixture: huge tangent/pose coherence, deterministic1000-point linked-list operation count, raw/dimension/output/path guards,800 matrix/involution cases, Blue aliases, translation/pose agreement, independent point/shared event ownership and raw-angle preservation/used-only extent checks. Initial7methods5fail2controls pass; allfinalpass.",
+      "evidence": [
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/coordinate/CoordinateAllocationTest.kt": {
+      "sha256": "de5d314e8aafc0a235d6aee95079ba8f00f86498ebcfc0e78899223c3a5bee4d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full allocation fixture: varying scalar X/Y pairs with separate volatile sinks, warmup/five fixed measured batches and escaping immutable vector control. Focus[0,0,0,248,0]bytes;10000vectors320000bytes. min<=256 and aggregate<=4096 scalar budget; explicit unsupported-counter skip. No every-call-zero or loop-latency claim.",
+      "evidence": [
+        "docs/audits/coordinate-odometry-transform-audit.md",
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "docs/audits/coordinate-odometry-transform-audit.md": {
+      "sha256": "6485fe4f89edff4cda6d182259a473b2b0812a9bd151ded3a542caa4139c5fcc",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report checked against five baseline failures, traversal counts, unchanged odometry formulas/measured allocation correction, focused coverage and full/API/policy/consumer evidence. Explicit frame differences, event aliasing, Blue no-validation, Red rejection and physical limitations retained.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass68-library.log",
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
       ]
     }
   }
