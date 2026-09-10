@@ -33,7 +33,24 @@ public API checks. Cases include fault latching, zero/repeated timestamps, arith
 overflow, post-close calls, failed neutralization, cached missing devices, concurrent lazy
 initialization/shutdown and actual termination of an owned mock-IMU polling worker.
 Pacing tests distinguish bounded completion from a multi-second park; they are not a
-20 ms scheduling-jitter benchmark. Final candidate validation is pending.
+20 ms scheduling-jitter benchmark.
+
+Source `4ed12b1f` pins library tree `8125d8df69fff72108da5efd9a765b879be472d2` and
+local candidate `17.0.3-rc.8125d8df69ff`. Full library tests/API/FTC coverage/local
+publication passed in 38 seconds: 1,723 methods, no failures/errors/skips. Serial
+consumer validation passed FTC 111, FRC 134, FTC starter 14 and FRC starter 34 methods,
+plus generated-project checks and FTC assembly. Studio validation passed with 1,790
+passing methods and six existing opt-in skips, 56 dashboard methods, one performance
+baseline, coverage/version/file-size gates. Its 20-second invocation reused unchanged
+test inputs through Gradle up-to-date checks; this is not a fresh execution of every test.
+Unchanged-input reuse in the library and other consumers is likewise recorded in logs.
+
+FTC Kover reports base robot 207/251 lines and 80/124 branches, initializer 40/41 lines
+and 25/32 branches, lifecycle controller 15/19 lines and 12/14 branches, and loop profiler
+20/24 lines and both branches. These counters do not establish full lifecycle or device
+coverage. Copied XML, hash manifests, coverage and final summaries are under
+`ARESLib-Kotlin/build/audit-pass73-verified-evidence`. Monorepo policy passed with 234
+current Markdown documents, 38 historical exclusions, source identity and archive checks.
 
 ## Scope limits and follow-up
 

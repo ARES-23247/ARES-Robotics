@@ -226,12 +226,15 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt": {
-      "sha256": "b3384f90a250d8e546b0f7cbd447a8b83019e0d329c903b502a2339103c61db6",
+      "sha256": "471dd608a88a267bc820226ee00f1ed20a846f948a843df182f8999901c747d2",
       "review": "partial",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "All declarations read in pass73 following earlier math/odometry passes. Validated first/zero/repeated/rewound/overflowed control timing, existing fatal latch/neutralization, cached sensor acquisition and terminal/idempotent close including failed neutralization. Candidate tests passed. Broader old/new robot replacement, in-flight callback versus close, inherited subsystem APIs, shared globals and registry resource ownership remain open; no physical timing claim.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/ftc-frame-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass73-focused.log"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/EstimateMotorIO.kt": {
@@ -254,11 +257,14 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcLoopTimingTest.kt": {
       "sha256": "8a3f809af3f334a5bd006f818d851195d4d7ac959c127edfe243a9cfba0cc88e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Both fixture methods reviewed and executed: pre-read sensor acquisition counted once in core duration/overruns and late asynchronous IMU timestamp evaluated at consumption. Owned robot shutdown and external pacing/clock restoration checked. No physical device timing evidence.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/ftc-frame-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass73-focused.log"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/EstimateMotorTimingTest.kt": {
@@ -3222,10 +3228,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "d4a5f37d81304ce14e1e077ab7345fc02fa04da6fe1e364cf851fa5b3c4562fe",
+      "sha256": "654466f644192c83138ea4980948d8527bd154ad606aff5d98051caa00009d80",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree ed23a4cf86cc59b47200d8aaf6a0e5b7a6220ebe, source d99cefb3, candidate17.0.3-rc.ed23a4cf86cc; full library/API/local publication and dependency-ordered consumer validation passed.",
+      "scope": "Library tree 8125d8df69fff72108da5efd9a765b879be472d2, source4ed12b1f, candidate 17.0.3-rc.8125d8df69ff; full library/API/local publication and serial consumer validation passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3352,7 +3358,10 @@
         "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
         "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
         "ARESLib-Kotlin/build/audit-pass72-library.log",
-        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json",
+        "docs/audits/ftc-frame-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass73-focused.log"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5333,7 +5342,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "c006144bb534b6fa8b9d5b92c202330a64a9de5778a1b772bee37ea06fa65e6b",
+      "sha256": "748e1a010a287f7b7247ba08a69ef26ae528bb2ad059beda5454fbad3cbc187c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5356,7 +5365,8 @@
         "docs/audits/geometry3d-numerics-audit.md: pass69 reviewed records and canonical self-fingerprint refreshed",
         "docs/audits/apriltag-interchange-audit.md: pass70 records and canonical self-fingerprint refreshed",
         "docs/audits/xrp-coordinate-contract-audit.md: pass71 verified records and canonical self-fingerprint refreshed",
-        "docs/audits/apriltag-import-frame-audit.md: pass72 records and canonical self-fingerprint refreshed"
+        "docs/audits/apriltag-import-frame-audit.md: pass72 records and canonical self-fingerprint refreshed",
+        "docs/audits/ftc-frame-lifecycle-audit.md: pass73 records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6375,6 +6385,60 @@
         "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
         "ARESLib-Kotlin/build/audit-pass72-library.log",
         "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/core/FtcHardwareInitializer.kt": {
+      "sha256": "aa772cf2f54543f7762e769cebf3fed8e693ba823bc97597cf00d68fc8f539b2",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full declaration read. Replaced teardown-triggered lazy initialization with initialized-resource snapshot; terminal getters and shared initialization/close lock retain warm lazy fast path. Missing sensors cached, racing initialization terminates, initialized mock IMU worker joined. All captured resources receive best-effort close. Global motor unregister ownership remains open; no hardware calibration claim.",
+      "evidence": [
+        "docs/audits/ftc-frame-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass73-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/core/FtcOpModeLifecycleController.kt": {
+      "sha256": "97fe713e2934a41086d3b2c77f8ba698ef97a1dcdf68d541c200376618bc8e2d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full declaration read. Desktop elapsed/sleep arithmetic now bounded across rewind/overflow; Android/external pacing ownership and interrupt flag retained. Init/update/close status writers traced to DSL/auto callers. Broader process-global enabled/status ownership during replacement remains open. Host regressions and candidate consumers passed; no device jitter benchmark.",
+      "evidence": [
+        "docs/audits/ftc-frame-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass73-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/FtcLoopProfiler.kt": {
+      "sha256": "140d0f11a4af65093fe2bca193824bfaca04cb69a1b741fa66e92122e564c121",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full accumulator/publication review: primitive phase cache, no hardware reads, nanosecond differences converted to milliseconds, strict greater-than-25ms cumulative overrun count. Existing integration tests verify pre-read cost counted once and overrun retention. Inputs are ordered RobotClock boundaries; Total excludes intervening caller work, publication overhead and sleep. Int count is diagnostic and scoped to an OpMode, not a lifetime-long exact counter. Full candidate validation passed.",
+      "evidence": [
+        "docs/audits/ftc-frame-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass73-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcFrameLifecycleAuditTest.kt": {
+      "sha256": "c9a65158ac87b902010d45460badbe6643584394ac4fc5f7b8a45eb2af91edb4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full sixteen-method regression fixture read/executed. Nine of eleven initial cases failed before fixes. Final tests cover timing discontinuity, overflow, zero/repeated time, fault latch, post-close rejection, idempotence, failed neutralization, preserved exception identity, unused/missing sensors, initialization race and observed owned IMU worker termination. Owned test threads joined and globals restored. Timing bounds detect excessive parks rather than scheduler jitter.",
+      "evidence": [
+        "docs/audits/ftc-frame-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass73-focused.log"
+      ]
+    },
+    "docs/audits/ftc-frame-lifecycle-audit.md": {
+      "sha256": "181b0c7f8cdada1b43b592cb153f6e4376b2120924dff96655fbc868cc5cdc51",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Batch report reconciled with source, copied baseline/focused/final evidence, counts and remaining ownership/physical limitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass73-focused.log"
       ]
     }
   }
