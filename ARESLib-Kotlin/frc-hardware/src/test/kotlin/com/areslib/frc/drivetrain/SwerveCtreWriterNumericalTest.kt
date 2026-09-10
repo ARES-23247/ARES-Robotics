@@ -11,6 +11,32 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 
 class SwerveCtreWriterNumericalTest {
+    @Test fun `field commands use the fixed field frame after upstream alliance transformation`() {
+        var observed: SwerveRequest? = null
+        val writer = SwerveCtreSpeedRequestWriter { observed = it }
+        for (sign in doubleArrayOf(1.0, -1.0)) {
+            writer.write(DriveState(xVelocityMetersPerSecond = sign * 2.0,
+                yVelocityMetersPerSecond = sign * 3.0, isFieldCentric = true), 1.0)
+            val request = assertInstanceOf(SwerveRequest.FieldCentric::class.java, observed)
+            assertEquals(SwerveRequest.ForwardPerspectiveValue.BlueAlliance, request.ForwardPerspective)
+            assertEquals(sign * 2.0, request.VelocityX)
+            assertEquals(sign * 3.0, request.VelocityY)
+        }
+    }
+
+    @Test fun `changing reference frames preserves velocity drive and position steering control`() {
+        var observed: SwerveRequest? = null
+        val writer = SwerveCtreSpeedRequestWriter { observed = it }
+        writer.write(DriveState(xVelocityMetersPerSecond = 1.0, isFieldCentric = true), 1.0)
+        val field = assertInstanceOf(SwerveRequest.FieldCentric::class.java, observed)
+        writer.write(DriveState(xVelocityMetersPerSecond = 1.0, isFieldCentric = false), 1.0)
+        val robot = assertInstanceOf(SwerveRequest.ApplyRobotSpeeds::class.java, observed)
+        assertEquals(com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType.Velocity, field.DriveRequestType)
+        assertEquals(field.DriveRequestType, robot.DriveRequestType)
+        assertEquals(com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType.Position, robot.SteerRequestType)
+        assertEquals(field.SteerRequestType, robot.SteerRequestType)
+    }
+
     @Test fun `both request frames match exact decimal scaling across finite exponents`() {
         val random = Random(5201L)
         var request: SwerveRequest? = null

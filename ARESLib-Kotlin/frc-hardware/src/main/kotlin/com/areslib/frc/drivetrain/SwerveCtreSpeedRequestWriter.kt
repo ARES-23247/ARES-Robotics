@@ -16,6 +16,8 @@ import java.util.function.Consumer
  * - Translation Velocities ($V_x, V_y$): Meters per second ($m/s$).
  * - Rotational Rate ($\omega$): Radians per second ($rad/s$).
  * - Angular Convention: **CCW-positive** standard.
+ * - Field commands use the fixed blue-alliance field frame; the input owner applies alliance
+ *   perspective once before dispatch. Both frames request velocity drive and position steering.
  *
  * ### Zero-GC Guarantee:
  * Normal writes reuse request objects and primitive speed storage. Invalid arguments and exception
@@ -38,12 +40,15 @@ class SwerveCtreSpeedRequestWriter internal constructor(
     })
 
     private val fieldCentricRequest = SwerveRequest.FieldCentric()
+        .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.BlueAlliance)
         .withDriveRequestType(com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType.Velocity)
         .withSteerRequestType(com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType.Position)
         .withDeadband(0.02)
         .withRotationalDeadband(0.02)
         .withDesaturateWheelSpeeds(true)
     private val robotSpeedsRequest = SwerveRequest.ApplyRobotSpeeds()
+        .withDriveRequestType(com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType.Velocity)
+        .withSteerRequestType(com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType.Position)
         .withDesaturateWheelSpeeds(true)
     private val brakeRequest = SwerveRequest.SwerveDriveBrake()
         .withDriveRequestType(com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType.Velocity)

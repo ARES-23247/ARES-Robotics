@@ -414,8 +414,12 @@ failure; a distinct cleanup failure is suppressed without self-suppression. An a
 brake is not immediately retried inside the same call. X-brake requests zero drive velocity and
 steering position control, not PWM-off for every actuator; actual stopping is not proven by return.
 
-Field-centric and robot-centric requests preserve their respective frames and reuse mutable
-request/speed objects. The writer and synchronous consumer share one loop; observers retaining
+Field-centric requests explicitly select Phoenix's fixed BlueAlliance perspective because ARES
+input owners already transform alliance-relative translation into the field frame. A drivetrain's
+operator-perspective setting must not rotate those commands again. Both field- and robot-centric
+requests use velocity drive and position steering control; selecting a coordinate frame must not
+switch to the vendor's default open-loop voltage drive mode. They reuse mutable request/speed
+objects. The writer and synchronous consumer share one loop; observers retaining
 request values must snapshot them during the call. Valid writes and safe requests have measured
 host zero-allocation paths; invalid arguments, exceptions and native execution are separate.
 Physical speed limits, configuration, feedback freshness and explicit enable/arm belong to the
