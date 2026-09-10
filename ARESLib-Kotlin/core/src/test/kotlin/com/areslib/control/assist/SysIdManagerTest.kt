@@ -56,10 +56,10 @@ class SysIdManagerTest {
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
         
         // Under limit (1.0m)
-        assertTrue(manager.checkSafety(1.0, 0.0, 0.0, 2000L))
+        assertTrue(manager.checkSafety(1.0, 0.0, 0.0, 2000L, currentAmps = 0.0))
         
         // Over limit (1.6m)
-        assertFalse(manager.checkSafety(1.6, 0.0, 0.0, 3000L))
+        assertFalse(manager.checkSafety(1.6, 0.0, 0.0, 3000L, currentAmps = 0.0))
     }
 
     @Test
@@ -68,15 +68,15 @@ class SysIdManagerTest {
         manager.start(SysIdMechanism.ANGULAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
         
         // Rotate 1 turn (2pi) - Safe
-        assertTrue(manager.checkSafety(0.0, 0.0, Math.PI, 2000L))
-        assertTrue(manager.checkSafety(0.0, 0.0, 0.0, 3000L))
+        assertTrue(manager.checkSafety(0.0, 0.0, Math.PI, 2000L, currentAmps = 0.0))
+        assertTrue(manager.checkSafety(0.0, 0.0, 0.0, 3000L, currentAmps = 0.0))
         
         // Rotate more than 2 turns (accumulate delta)
-        assertTrue(manager.checkSafety(0.0, 0.0, Math.PI, 4000L))
-        assertTrue(manager.checkSafety(0.0, 0.0, 0.0, 5000L))
+        assertTrue(manager.checkSafety(0.0, 0.0, Math.PI, 4000L, currentAmps = 0.0))
+        assertTrue(manager.checkSafety(0.0, 0.0, 0.0, 5000L, currentAmps = 0.0))
         
         // Accumulated delta should now exceed 4pi (each cycle is PI, so 5 * PI = 15.7 rad)
-        assertFalse(manager.checkSafety(0.0, 0.0, Math.PI, 6000L))
+        assertFalse(manager.checkSafety(0.0, 0.0, Math.PI, 6000L, currentAmps = 0.0))
     }
 
     @Test
@@ -85,17 +85,17 @@ class SysIdManagerTest {
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
         
         // Under 5s
-        assertTrue(manager.checkSafety(0.1, 0.0, 0.0, 5000L))
+        assertTrue(manager.checkSafety(0.1, 0.0, 0.0, 5000L, currentAmps = 0.0))
         
         // Over 5s
-        assertFalse(manager.checkSafety(0.1, 0.0, 0.0, 6001L))
+        assertFalse(manager.checkSafety(0.1, 0.0, 0.0, 6001L, currentAmps = 0.0))
     }
 
     @Test
     fun testStopAndInactiveState() {
         val manager = SysIdManager()
         // Inactive safety should be true
-        assertTrue(manager.checkSafety(1.0, 1.0, 1.0, 1000L))
+        assertTrue(manager.checkSafety(1.0, 1.0, 1.0, 1000L, currentAmps = 0.0))
         // Inactive update should be 0.0
         assertEquals(0.0, manager.update(1000L, 1.0))
 
@@ -135,15 +135,15 @@ class SysIdManagerTest {
         manager.maxPosition = 1.0
 
         manager.start(SysIdMechanism.ELEVATOR, SysIdRoutine.QUASISTATIC, 1000L, 0.0, 0.0, 0.0)
-        assertTrue(manager.checkSafety(0.5, 0.0, 0.0, 2000L))
+        assertTrue(manager.checkSafety(0.5, 0.0, 0.0, 2000L, currentAmps = 0.0))
 
         // Below min boundary
-        assertFalse(manager.checkSafety(-0.1, 0.0, 0.0, 2500L))
+        assertFalse(manager.checkSafety(-0.1, 0.0, 0.0, 2500L, currentAmps = 0.0))
         assertFalse(manager.isActive())
 
         // Re-arm and test max boundary
         manager.start(SysIdMechanism.ELEVATOR, SysIdRoutine.QUASISTATIC, 3000L, 0.0, 0.0, 0.0)
-        assertFalse(manager.checkSafety(1.1, 0.0, 0.0, 3500L))
+        assertFalse(manager.checkSafety(1.1, 0.0, 0.0, 3500L, currentAmps = 0.0))
         assertFalse(manager.isActive())
     }
 
@@ -152,7 +152,7 @@ class SysIdManagerTest {
         val manager = SysIdManager()
         manager.start(SysIdMechanism.LINEAR, SysIdRoutine.DYNAMIC, 1000L, 0.0, 0.0, 0.0)
 
-        assertFalse(manager.checkSafety(Double.NaN, 0.0, 0.0, 1100L))
+        assertFalse(manager.checkSafety(Double.NaN, 0.0, 0.0, 1100L, currentAmps = 0.0))
         assertFalse(manager.isActive())
         assertEquals(0.0, manager.currentVoltage)
     }

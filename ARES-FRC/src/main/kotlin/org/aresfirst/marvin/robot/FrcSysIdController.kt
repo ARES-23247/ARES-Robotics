@@ -76,8 +76,9 @@ class FrcSysIdController(
                         SysIdRoutine.valueOf(command.removePrefix("START_FLYWHEEL_"))
                     }.getOrDefault(SysIdRoutine.NONE)
                     if (routine != SysIdRoutine.NONE) {
-                        val pose = state.drive.poseEstimator.estimatedPose
-                        manager.start(SysIdMechanism.FLYWHEEL, routine, timestampMs, pose.x, pose.y, pose.heading.radians)
+                        val pose = state.drive.poseEstimator
+                        manager.start(SysIdMechanism.FLYWHEEL, routine, timestampMs,
+                            pose.estimatedPoseX, pose.estimatedPoseY, pose.estimatedPoseHeading)
                     }
                 }
                 command.startsWith("START_") -> telemetry.putString("SysId/Error", "UNSUPPORTED_FRC_MECHANISM")
@@ -89,9 +90,12 @@ class FrcSysIdController(
             telemetry.putDoubleArray("SysId/Data", emptySample)
             return
         }
-        val pose = state.drive.poseEstimator.estimatedPose
+        val pose = state.drive.poseEstimator
+        val currentAmps = flywheel.currentAmps
+        val validCurrent = flywheel.isCurrentReadingValid(currentAmps)
         if (!enabledForTuning || !powerSafe || !adapter.measurementValid ||
-            !manager.checkSafety(pose.x, pose.y, pose.heading.radians, timestampMs)) {
+            !manager.checkSafety(pose.estimatedPoseX, pose.estimatedPoseY, pose.estimatedPoseHeading, timestampMs,
+                if (validCurrent) currentAmps else Double.NaN)) {
             manager.stop()
             adapter.stop()
             telemetry.putString("SysId/Status", "NONE")
@@ -101,6 +105,7 @@ class FrcSysIdController(
                     !enabledForTuning -> "FRC_SYSID_REQUIRES_TEST_ENABLED"
                     !powerSafe -> "SYSID_POWER_DERATING_ABORT"
                     !adapter.measurementValid -> "INVALID_FLYWHEEL_MEASUREMENT"
+                    !validCurrent -> "INVALID_FLYWHEEL_CURRENT"
                     else -> "SYSID_ABORTED"
                 }
             )

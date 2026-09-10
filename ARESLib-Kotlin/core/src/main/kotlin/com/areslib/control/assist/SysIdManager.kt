@@ -2,7 +2,6 @@ package com.areslib.control.assist
 
 import com.areslib.math.wrapAngle
 import kotlin.math.abs
-import kotlin.math.sqrt
 
 /**
  * System Identification (SysId) Target Mechanism Type.
@@ -14,7 +13,7 @@ enum class SysIdMechanism {
     LINEAR,
     /** Rotational mechanism (drivetrain rotation) with velocity in $rad/s$ and angle in $rad$. */
     ANGULAR,
-    /** Flywheel mechanism with rotational velocity in $rad/s$ or $RPM$. */
+    /** Flywheel mechanism with rotational velocity in $rad/s$. Convert RPM at the hardware boundary. */
     FLYWHEEL,
     /** Vertical linear elevator with position in $m$, velocity in $m/s$, and gravity bias $k_G$. */
     ELEVATOR,
@@ -73,20 +72,23 @@ class SysIdManager {
     var currentVoltage = 0.0
         private set
 
-    /** Maximum allowed motor continuous current before tripwire abort ($A$). */
+    /** Finite positive maximum motor current before tripwire abort ($A$). */
     var maxCurrentAmps = 40.0
 
-    /** Minimum allowable position travel boundary ($m$ or $rad$). */
+    /** Finite minimum position boundary ($m$ or $rad$), no greater than [maxPosition]. */
     var minPosition = -Double.MAX_VALUE
 
-    /** Maximum allowable position travel boundary ($m$ or $rad$). */
+    /** Finite maximum position boundary ($m$ or $rad$), no less than [minPosition]. */
     var maxPosition = Double.MAX_VALUE
 
-    /** Maximum allowed continuous stall duration at or above [maxCurrentAmps] ($ms$). */
+    /** Nonnegative allowed stall duration at or above [maxCurrentAmps] ($ms$); zero trips immediately. */
     var stallTimeoutMs = 200L
 
-    private var stallStartTimeMs = -1L
+    private var stallStartTimeMs = 0L
+    private var stallActive = false
     private var lastTimeMs = 0L
+    private var lastSafetyTimeMs = 0L
+    private var hasVelocitySample = false
     private var lastVelocity = 0.0
     private var lastHeading = 0.0
 
@@ -94,7 +96,7 @@ class SysIdManager {
     var accumulatedHeadingChange = 0.0
         private set
 
-    /** Integrated total displacement during linear test ($m$). */
+    /** Signed right-endpoint velocity integral since the first sample ($m$ or $rad$). */
     var accumulatedPosition = 0.0
         private set
 
@@ -120,7 +122,8 @@ class SysIdManager {
         y: Double = 0.0,
         heading: Double = 0.0
     ) {
-        if (!x.isFinite() || !y.isFinite() || !heading.isFinite()) {
+        if (!validLimits() || !x.isFinite() || !y.isFinite() || !heading.isFinite() ||
+            x < minPosition || x > maxPosition) {
             stop()
             return
         }
@@ -132,12 +135,14 @@ class SysIdManager {
         startHeading = heading
         currentVoltage = 0.0
         lastTimeMs = timestampMs
+        lastSafetyTimeMs = timestampMs
+        hasVelocitySample = false
         lastVelocity = 0.0
         lastHeading = heading
         accumulatedHeadingChange = 0.0
         accumulatedPosition = 0.0
         calculatedAcceleration = 0.0
-        stallStartTimeMs = -1L
+        stallActive = false
     }
 
     /**
@@ -146,7 +151,7 @@ class SysIdManager {
     fun stop() {
         activeRoutine = SysIdRoutine.NONE
         currentVoltage = 0.0
-        stallStartTimeMs = -1L
+        stallActive = false
     }
 
     /**
@@ -162,7 +167,8 @@ class SysIdManager {
      * @param x Current robot X position or mechanism position ($m$ or $rad$).
      * @param y Current robot Y position in meters ($m$).
      * @param heading Current robot heading in radians ($rad$).
-     * @param currentAmps Current measured motor draw ($A$).
+     * @param currentAmps Fresh measured motor draw ($A$). Missing/non-finite/negative readings abort;
+     * callers must supply a cached reading whose hardware freshness contract has been checked.
      * @param timestampMs Current loop timestamp in milliseconds ($ms$).
      * @return `true` if operation is within safe bounds; `false` if a safety threshold was exceeded (must abort).
      */
@@ -171,31 +177,31 @@ class SysIdManager {
         y: Double,
         heading: Double,
         timestampMs: Long,
-        currentAmps: Double = 0.0
+        currentAmps: Double = Double.NaN
     ): Boolean {
         if (!isActive()) return true
 
-        if (!x.isFinite() || !y.isFinite() || !heading.isFinite() || timestampMs < startTimeMs) {
+        if (!validLimits() || !validTimestamp(timestampMs) ||
+            !x.isFinite() || !y.isFinite() || !heading.isFinite() ||
+            !currentAmps.isFinite() || currentAmps < 0.0) {
             stop()
             return false
         }
 
-        val elapsedSec = (timestampMs - startTimeMs) / 1000.0
-        if (elapsedSec > 5.0) {
-            stop()
-            return false // Time safety limit
-        }
+        lastSafetyTimeMs = timestampMs
 
         // Stall current watchdog
-        if (currentAmps.isFinite() && currentAmps >= maxCurrentAmps) {
-            if (stallStartTimeMs < 0L) {
+        if (currentAmps >= maxCurrentAmps) {
+            if (!stallActive) {
                 stallStartTimeMs = timestampMs
-            } else if (timestampMs - stallStartTimeMs >= stallTimeoutMs) {
+                stallActive = true
+            }
+            if (timestampMs - stallStartTimeMs >= stallTimeoutMs) {
                 stop()
                 return false // Stall current safety tripwire
             }
         } else {
-            stallStartTimeMs = -1L
+            stallActive = false
         }
 
         // Soft-stop position boundary limits
@@ -224,8 +230,8 @@ class SysIdManager {
             SysIdMechanism.LINEAR -> {
                 val dx = x - startX
                 val dy = y - startY
-                val dist = sqrt(dx * dx + dy * dy)
-                if (!dist.isFinite() || dist > 1.5) {
+                val distanceSquared = dx * dx + dy * dy
+                if (!distanceSquared.isFinite() || distanceSquared > 2.25) {
                     stop()
                     return false // Distance safety limit
                 }
@@ -245,6 +251,10 @@ class SysIdManager {
 
     /**
      * Updates numerical differentiation/integration state and computes current target output voltage.
+     * Repeated timestamps retain the previous sample; invalid settings, clock rollback or
+     * non-finite calculated statistics stop the routine before another nonzero command.
+     * The first measurement establishes the velocity baseline with zero displacement and
+     * acceleration. Later samples use a backward difference and right-endpoint integration.
      *
      * @param timestampMs Current timestamp in milliseconds ($ms$).
      * @param velocity Current measured velocity ($m/s$ for linear, $rad/s$ for angular).
@@ -253,25 +263,29 @@ class SysIdManager {
     fun update(timestampMs: Long, velocity: Double): Double {
         if (!isActive()) return 0.0
 
-        if (!velocity.isFinite() || timestampMs < startTimeMs || timestampMs < lastTimeMs) {
+        if (!validLimits() || !validTimestamp(timestampMs) || !velocity.isFinite()) {
             stop()
             return 0.0
         }
 
+        if (hasVelocitySample && timestampMs == lastTimeMs) return currentVoltage
         val elapsedSec = (timestampMs - startTimeMs) / 1000.0
-        if (elapsedSec > 5.0) {
-            stop()
-            return 0.0
-        }
         val dt = (timestampMs - lastTimeMs) / 1000.0
 
         // Calculate acceleration and integrate position
-        if (dt > 1e-4) {
-            accumulatedPosition += velocity * dt
-            calculatedAcceleration = (velocity - lastVelocity) / dt
+        if (hasVelocitySample && dt > 1e-4) {
+            val nextPosition = accumulatedPosition + velocity * dt
+            val nextAcceleration = (velocity - lastVelocity) / dt
+            if (!nextPosition.isFinite() || !nextAcceleration.isFinite()) {
+                stop()
+                return 0.0
+            }
+            accumulatedPosition = nextPosition
+            calculatedAcceleration = nextAcceleration
         }
         lastTimeMs = timestampMs
         lastVelocity = velocity
+        hasVelocitySample = true
 
         val isUnidirectional = activeMechanism == SysIdMechanism.FLYWHEEL || activeMechanism == SysIdMechanism.ELEVATOR
 
@@ -302,6 +316,16 @@ class SysIdManager {
         if (currentVoltage < -12.0) currentVoltage = -12.0
 
         return currentVoltage
+    }
+
+    private fun validLimits(): Boolean = maxCurrentAmps.isFinite() && maxCurrentAmps > 0.0 &&
+        stallTimeoutMs >= 0L && minPosition.isFinite() && maxPosition.isFinite() && minPosition <= maxPosition
+
+    private fun validTimestamp(timestampMs: Long): Boolean {
+        val elapsedMs = timestampMs - startTimeMs
+        // Subtraction overflow yields a negative elapsed interval and must not bypass timeout.
+        return timestampMs >= startTimeMs && timestampMs >= lastTimeMs && timestampMs >= lastSafetyTimeMs &&
+            elapsedMs >= 0L && elapsedMs <= 5000L
     }
 }
 

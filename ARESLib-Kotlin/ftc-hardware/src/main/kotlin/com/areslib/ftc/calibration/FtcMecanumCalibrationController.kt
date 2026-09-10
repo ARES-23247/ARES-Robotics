@@ -86,6 +86,8 @@ class FtcMecanumCalibrationController {
     private var calibrationStartTimeMs = 0L
     private val EMPTY_SYSID_DATA = DoubleArray(0)
     private val sysIdData = DoubleArray(5)
+    private var sysIdSampleValid = false
+    private var sysIdSampleTimeMs = 0L
     private val pinpointData = DoubleArray(5)
     private val trackWidthData = DoubleArray(7)
     private val visionData = DoubleArray(5)
@@ -210,9 +212,8 @@ class FtcMecanumCalibrationController {
             if (command.isNotBlank()) {
                 println("[ARES Calibration] Received command: $command")
             }
-            activeCalibration = "NONE"
-            sysIdManager.stop()
-            flywheelSysIdAdapter?.stop()
+            // A new mechanism must never inherit the previous mechanism's energized outputs.
+            stopAndNeutral(mecanumIO)
 
             when {
                 command == STOP_COMMAND -> {
@@ -246,12 +247,16 @@ class FtcMecanumCalibrationController {
                         val routine = enumValues<SysIdRoutine>().firstOrNull {
                             it.name == routineStr && it != SysIdRoutine.NONE
                         }
-                        if (mechanism == null || routine == null) {
+                        val supported = mechanism == SysIdMechanism.LINEAR || mechanism == SysIdMechanism.ANGULAR ||
+                            mechanism == SysIdMechanism.FLYWHEEL && flywheelIO != null
+                        if (mechanism == null || routine == null || !supported) {
                             networkArmed = false
                             stopAndNeutral(mecanumIO)
                             neutralizedDuringInputPass = true
                             telemetryManager.nt4.putBoolean("SysId/Armed", false)
-                            telemetryManager.nt4.putString("SysId/Error", "INVALID_COMMAND")
+                            telemetryManager.nt4.putString("SysId/Error",
+                                if (mechanism != null && routine != null && !supported) "UNSUPPORTED_SYSID_MECHANISM"
+                                else "INVALID_COMMAND")
                         } else {
                             val pose = store.state.drive.poseEstimator.estimatedPose
                             sysIdManager.start(
@@ -312,22 +317,57 @@ class FtcMecanumCalibrationController {
             return false
         }
 
-        val pose = store.state.drive.poseEstimator.estimatedPose
+        val drive = store.state.drive
+        val pose = drive.poseEstimator
         val timestamp = RobotClock.currentTimeMillis()
 
         if (sysIdManager.isActive()) {
+            if (!batteryVoltage.isFinite() || batteryVoltage <= 0.0) {
+                stopAndNeutral(mecanumIO)
+                telemetryManager.nt4.putString("SysId/Error", "SYSID_INVALID_SUPPLY")
+                return true
+            }
+            // FtcPowerManager distributes its global limit to every registered motor.
+            // Characterization requires full power for flywheel and drivetrain alike.
+            if (!fullSysIdPower(mecanumIO.flIO.powerScale) || !fullSysIdPower(mecanumIO.frIO.powerScale) ||
+                !fullSysIdPower(mecanumIO.rlIO.powerScale) || !fullSysIdPower(mecanumIO.rrIO.powerScale)) {
+                stopAndNeutral(mecanumIO)
+                telemetryManager.nt4.putString("SysId/Error", "SYSID_REQUIRES_FULL_POWER")
+                return true
+            }
             if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR || sysIdManager.activeMechanism == SysIdMechanism.ANGULAR) {
-                if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                // The configured limit is per motor. Any invalid cache propagates NaN and aborts.
+                val currentAmps = maxOf(
+                    maxOf(sysIdCurrent(mecanumIO.flIO), sysIdCurrent(mecanumIO.frIO)),
+                    maxOf(sysIdCurrent(mecanumIO.rlIO), sysIdCurrent(mecanumIO.rrIO)))
+                val observationTime = pose.lastObservationTimestampMs
+                val ageMs = timestamp - observationTime
+                val validMotion = drive.measuredMotionValid && observationTime >= 0L && timestamp >= observationTime &&
+                    ageMs >= 0L && ageMs <= MAX_SYSID_MOTION_AGE_MS && drive.odometryHeading.isFinite() &&
+                    drive.measuredFieldXVelocityMetersPerSecond.isFinite() &&
+                    drive.measuredFieldYVelocityMetersPerSecond.isFinite() &&
+                    drive.measuredAngularVelocityRadiansPerSecond.isFinite()
+                if (!validMotion || !sysIdManager.checkSafety(pose.estimatedPoseX, pose.estimatedPoseY,
+                        pose.estimatedPoseHeading, timestamp, currentAmps)) {
                     sysIdManager.stop()
                     mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                    telemetryManager.nt4.putString("SysId/Error",
+                        if (!validMotion) "INVALID_DRIVE_MEASUREMENT" else "SYSID_ABORTED")
                 } else {
                     val velocity = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
-                        store.state.drive.xVelocityMetersPerSecond
+                        // Velocities and heading belong to the same odometry observation frame.
+                        drive.measuredFieldXVelocityMetersPerSecond * kotlin.math.cos(drive.odometryHeading) +
+                            drive.measuredFieldYVelocityMetersPerSecond * kotlin.math.sin(drive.odometryHeading)
                     } else {
-                        store.state.drive.angularVelocityRadiansPerSecond
+                        drive.measuredAngularVelocityRadiansPerSecond
                     }
 
                     val voltage = sysIdManager.update(timestamp, velocity)
+                    if (kotlin.math.abs(voltage) > batteryVoltage) {
+                        stopAndNeutral(mecanumIO)
+                        telemetryManager.nt4.putString("SysId/Error", "SYSID_INSUFFICIENT_SUPPLY")
+                        return true
+                    }
                     val power = (voltage / batteryVoltage).coerceIn(-1.0, 1.0)
 
                     if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
@@ -335,18 +375,32 @@ class FtcMecanumCalibrationController {
                     } else {
                         mecanumIO.setMotorPowers(-power, power, -power, power)
                     }
+                    captureSysIdSample(timestamp, velocity)
                 }
             } else {
                 val adapter = flywheelSysIdAdapter
+                val currentAmps = flywheelIO?.let { sysIdCurrent(it) } ?: Double.NaN
                 if (adapter == null || !adapter.measurementValid ||
-                    !sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                    !sysIdManager.checkSafety(pose.estimatedPoseX, pose.estimatedPoseY,
+                        pose.estimatedPoseHeading, timestamp, currentAmps)) {
                     sysIdManager.stop()
                     adapter?.stop()
-                    telemetryManager.nt4.putString("SysId/Error", if (adapter == null) "NO_FLYWHEEL_ADAPTER" else "INVALID_FLYWHEEL_MEASUREMENT")
+                    telemetryManager.nt4.putString("SysId/Error", when {
+                        adapter == null -> "NO_FLYWHEEL_ADAPTER"
+                        !currentAmps.isFinite() -> "INVALID_FLYWHEEL_CURRENT"
+                        !adapter.measurementValid -> "INVALID_FLYWHEEL_MEASUREMENT"
+                        else -> "SYSID_ABORTED"
+                    })
                 } else {
                     val measuredVelocity = customSysIdVelocityProvider?.invoke() ?: adapter.velocity
                     val voltage = sysIdManager.update(timestamp, measuredVelocity)
+                    if (kotlin.math.abs(voltage) > batteryVoltage) {
+                        stopAndNeutral(mecanumIO)
+                        telemetryManager.nt4.putString("SysId/Error", "SYSID_INSUFFICIENT_SUPPLY")
+                        return true
+                    }
                     adapter.setCharacterizationVoltage(voltage)
+                    captureSysIdSample(timestamp, measuredVelocity)
                 }
             }
             return true
@@ -381,6 +435,30 @@ class FtcMecanumCalibrationController {
         return true
     }
 
+    /** Consume one cached current value and its freshness contract; never poll hardware here. */
+    private fun sysIdCurrent(source: com.areslib.hardware.CurrentSourceIO): Double {
+        val reading = source.currentAmps
+        return if (source.isCurrentReadingValid(reading)) reading else Double.NaN
+    }
+
+    private fun fullSysIdPower(scale: Double): Boolean = scale.isFinite() && scale in 0.999..1.0
+
+    /** One coherent signed sample; telemetry must not re-read providers or stamp it with a later time. */
+    private fun captureSysIdSample(timestamp: Long, velocity: Double) {
+        if (!sysIdManager.isActive()) {
+            sysIdSampleValid = false
+            return
+        }
+        if (sysIdSampleValid && timestamp == sysIdSampleTimeMs) return
+        sysIdSampleTimeMs = timestamp
+        sysIdData[0] = timestamp.toDouble()
+        sysIdData[1] = sysIdManager.currentVoltage
+        sysIdData[2] = sysIdManager.accumulatedPosition
+        sysIdData[3] = velocity
+        sysIdData[4] = sysIdManager.calculatedAcceleration
+        sysIdSampleValid = true
+    }
+
     /**
      * Publishes high-frequency calibration data streams (`"SysId/Data"`, `"SysId/Status"`) to NetworkTables and local disk logs.
      *
@@ -405,32 +483,9 @@ class FtcMecanumCalibrationController {
         telemetryManager.nt4.putBoolean("SysId/Armed", networkArmed)
         telemetryManager.nt4.putString("SysId/SupportedMechanisms", supportedMechanismsTelemetry)
         val dataLogging = telemetryManager.dataLoggingTelemetry
-        if (sysIdManager.isActive()) {
+        if (sysIdManager.isActive() && sysIdSampleValid) {
             dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
             telemetryManager.nt4.putString("SysId/Status", sysIdManager.activeRoutine.name)
-            val pose = store.state.drive.poseEstimator.estimatedPose
-            val position = when (sysIdManager.activeMechanism) {
-                SysIdMechanism.LINEAR -> {
-                    val dx = pose.x - sysIdManager.startX
-                    val dy = pose.y - sysIdManager.startY
-                    kotlin.math.sqrt(dx * dx + dy * dy)
-                }
-                SysIdMechanism.ANGULAR -> sysIdManager.accumulatedHeadingChange
-                SysIdMechanism.FLYWHEEL, SysIdMechanism.ELEVATOR, SysIdMechanism.ARM, SysIdMechanism.CUSTOM -> sysIdManager.accumulatedPosition
-            }
-
-            val velocity = when (sysIdManager.activeMechanism) {
-                SysIdMechanism.LINEAR -> store.state.drive.xVelocityMetersPerSecond
-                SysIdMechanism.ANGULAR -> store.state.drive.angularVelocityRadiansPerSecond
-                SysIdMechanism.FLYWHEEL, SysIdMechanism.ELEVATOR, SysIdMechanism.ARM, SysIdMechanism.CUSTOM ->
-                    customSysIdVelocityProvider?.invoke() ?: flywheelSysIdAdapter?.velocity ?: 0.0
-            }
-
-            sysIdData[0] = timestamp.toDouble()
-            sysIdData[1] = sysIdManager.currentVoltage
-            sysIdData[2] = position
-            sysIdData[3] = velocity
-            sysIdData[4] = sysIdManager.calculatedAcceleration
             dataLogging.putDoubleArray("SysId/Data", sysIdData)
             telemetryManager.nt4.putDoubleArray("SysId/Data", sysIdData)
         } else if (activeCalibration != "NONE") {
@@ -515,6 +570,7 @@ class FtcMecanumCalibrationController {
 
     private fun stopAndNeutral(mecanumIO: MecanumHardwareIO) {
         activeCalibration = "NONE"
+        sysIdSampleValid = false
         var firstFailure: Throwable? = null
         try {
             sysIdManager.stop()
@@ -560,6 +616,7 @@ class FtcMecanumCalibrationController {
         const val STOP_COMMAND = "STOP"
         const val MAX_ENABLE_TOKEN_LENGTH = 128
         const val ENABLE_LEASE_TIMEOUT_MS = 500L
+        const val MAX_SYSID_MOTION_AGE_MS = 100L
         const val INVALID_LEASE_SEQUENCE = -1.0
         const val MAX_SAFE_INTEGER = 9_007_199_254_740_991.0
     }
