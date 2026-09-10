@@ -43,7 +43,10 @@ data class PoseEstimatorSnapshot(
     val kalmanGain22: Double = 0.0,
     val lastMeasurementAccepted: Boolean = false,
     val lastRejectionReason: String? = null,
-    val lastObservationTimestampMs: Long = -1L
+    val lastObservationTimestampMs: Long = -1L,
+    /** Active dwell and recovery are explicit so zero remains a valid timestamp. */
+    val stationaryDwellActive: Boolean = stationarySinceMs != 0L,
+    val recoveryActive: Boolean = lastUnbeachedTimeMs != 0L
 ) {
     /** Allocating convenience view for non-hot-path callers. */
     val estimatedPose: Pose2d
@@ -137,6 +140,8 @@ internal fun PoseEstimatorState.reduxSnapshot(): PoseEstimatorSnapshot {
         kalmanGain22 = lastKalmanGain[8],
         lastMeasurementAccepted = lastMeasurementAccepted,
         lastRejectionReason = lastRejectionReason,
-        lastObservationTimestampMs = observationTimestampMs
+        lastObservationTimestampMs = observationTimestampMs,
+        stationaryDwellActive = stationaryDwellActive,
+        recoveryActive = recoveryActive
     )
 }

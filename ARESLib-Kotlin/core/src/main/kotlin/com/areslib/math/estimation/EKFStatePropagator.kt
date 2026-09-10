@@ -145,16 +145,37 @@ object EKFStatePropagator {
         val cosHeading = kotlin.math.cos(heading)
         val f02 = -arcX * sinHeading - arcY * cosHeading
         val f12 = arcX * cosHeading - arcY * sinHeading
-        val fp00 = covariance.m00 + f02 * covariance.m20
-        val fp01 = covariance.m01 + f02 * covariance.m21
-        val fp02 = covariance.m02 + f02 * covariance.m22
-        val fp10 = covariance.m10 + f12 * covariance.m20
-        val fp11 = covariance.m11 + f12 * covariance.m21
-        val fp12 = covariance.m12 + f12 * covariance.m22
-        val fp20 = covariance.m20
-        val fp21 = covariance.m21
-        val fp22 = covariance.m22
-        val qCrossScale = kotlin.math.sqrt(qScale.coerceAtLeast(0.0) * qHeadingScale.coerceAtLeast(0.0))
+        propagateCovariance(
+            covariance.m00, covariance.m01, covariance.m02,
+            covariance.m10, covariance.m11, covariance.m12,
+            covariance.m20, covariance.m21, covariance.m22,
+            f02, f12, baseQ, qScale, qHeadingScale, output
+        )
+    }
+
+    // Shared scalar kernel for forward, interpolated and replayed covariance.
+    // Snapshot inputs before writing output so all matrix scratchpads may alias.
+    private fun propagateCovariance(
+        p00: Double, p01: Double, p02: Double,
+        p10: Double, p11: Double, p12: Double,
+        p20: Double, p21: Double, p22: Double,
+        f02: Double, f12: Double,
+        baseQ: Matrix3x3, qScale: Double, qHeadingScale: Double,
+        output: Matrix3x3
+    ) {
+        val fp00 = p00 + f02 * p20
+        val fp01 = p01 + f02 * p21
+        val fp02 = p02 + f02 * p22
+        val fp10 = p10 + f12 * p20
+        val fp11 = p11 + f12 * p21
+        val fp12 = p12 + f12 * p22
+        val fp20 = p20
+        val fp21 = p21
+        val fp22 = p22
+        // D Q D uses sqrt(translationScale) * sqrt(headingScale). Forming
+        // the product before its square root can overflow or erase tiny noise.
+        val qCrossScale = kotlin.math.sqrt(qScale.coerceAtLeast(0.0)) *
+            kotlin.math.sqrt(qHeadingScale.coerceAtLeast(0.0))
         val m00 = fp00 + f02 * fp02 + baseQ.m00 * qScale
         val m01 = fp01 + f12 * fp02 + baseQ.m01 * qScale
         val m02 = fp02 + baseQ.m02 * qCrossScale
@@ -198,35 +219,12 @@ object EKFStatePropagator {
         val f02 = -deltaX * sinTheta - deltaY * cosTheta
         val f12 =  deltaX * cosTheta - deltaY * sinTheta
 
-        val fp00 = covarianceArray[0] + f02 * covarianceArray[6]
-        val fp01 = covarianceArray[1] + f02 * covarianceArray[7]
-        val fp02 = covarianceArray[2] + f02 * covarianceArray[8]
-        val fp10 = covarianceArray[3] + f12 * covarianceArray[6]
-        val fp11 = covarianceArray[4] + f12 * covarianceArray[7]
-        val fp12 = covarianceArray[5] + f12 * covarianceArray[8]
-        val fp20 = covarianceArray[6]
-        val fp21 = covarianceArray[7]
-        val fp22 = covarianceArray[8]
-
-        outCovariance.m00 = fp00 + f02 * fp02 + qMatrix.m00
-        outCovariance.m01 = fp01 + f12 * fp02 + qMatrix.m01
-        outCovariance.m02 = fp02 + qMatrix.m02
-        outCovariance.m10 = fp10 + f02 * fp12 + qMatrix.m10
-        outCovariance.m11 = fp11 + f12 * fp12 + qMatrix.m11
-        outCovariance.m12 = fp12 + qMatrix.m12
-        outCovariance.m20 = fp20 + f02 * fp22 + qMatrix.m20
-        outCovariance.m21 = fp21 + f12 * fp22 + qMatrix.m21
-        outCovariance.m22 = fp22 + qMatrix.m22
-
-        val sym01 = (outCovariance.m01 + outCovariance.m10) * 0.5
-        outCovariance.m01 = sym01
-        outCovariance.m10 = sym01
-        val sym02 = (outCovariance.m02 + outCovariance.m20) * 0.5
-        outCovariance.m02 = sym02
-        outCovariance.m20 = sym02
-        val sym12 = (outCovariance.m12 + outCovariance.m21) * 0.5
-        outCovariance.m12 = sym12
-        outCovariance.m21 = sym12
+        propagateCovariance(
+            covarianceArray[0], covarianceArray[1], covarianceArray[2],
+            covarianceArray[3], covarianceArray[4], covarianceArray[5],
+            covarianceArray[6], covarianceArray[7], covarianceArray[8],
+            f02, f12, qMatrix, 1.0, 1.0, outCovariance
+        )
     }
 
     /**
@@ -324,43 +322,12 @@ object EKFStatePropagator {
 
             val scale = currRaw.qScale * fraction
             val headingScale = currRaw.effectiveQHeadingScale * fraction
-            val crossScale = kotlin.math.sqrt(scale.coerceAtLeast(0.0) * headingScale.coerceAtLeast(0.0))
-            val reF02 = -correctedFieldDy
-            val reF12 = correctedFieldDx
-
-            val reFp00 = scratchCov2.m00 + reF02 * scratchCov2.m20
-            val reFp01 = scratchCov2.m01 + reF02 * scratchCov2.m21
-            val reFp02 = scratchCov2.m02 + reF02 * scratchCov2.m22
-            val reFp10 = scratchCov2.m10 + reF12 * scratchCov2.m20
-            val reFp11 = scratchCov2.m11 + reF12 * scratchCov2.m21
-            val reFp12 = scratchCov2.m12 + reF12 * scratchCov2.m22
-            val reFp20 = scratchCov2.m20
-            val reFp21 = scratchCov2.m21
-            val reFp22 = scratchCov2.m22
-
-            val newM00 = reFp00 + reF02 * reFp02 + baseQ.m00 * scale
-            val newM01 = reFp01 + reF12 * reFp02 + baseQ.m01 * scale
-            val newM02 = reFp02 + baseQ.m02 * crossScale
-            val newM10 = reFp10 + reF02 * reFp12 + baseQ.m10 * scale
-            val newM11 = reFp11 + reF12 * reFp12 + baseQ.m11 * scale
-            val newM12 = reFp12 + baseQ.m12 * crossScale
-            val newM20 = reFp20 + reF02 * reFp22 + baseQ.m20 * crossScale
-            val newM21 = reFp21 + reF12 * reFp22 + baseQ.m21 * crossScale
-            val newM22 = reFp22 + baseQ.m22 * headingScale
-
-            val sym01 = (newM01 + newM10) * 0.5
-            val sym02 = (newM02 + newM20) * 0.5
-            val sym12 = (newM12 + newM21) * 0.5
-
-            scratchCov2.m00 = newM00
-            scratchCov2.m01 = sym01
-            scratchCov2.m02 = sym02
-            scratchCov2.m10 = sym01
-            scratchCov2.m11 = newM11
-            scratchCov2.m12 = sym12
-            scratchCov2.m20 = sym02
-            scratchCov2.m21 = sym12
-            scratchCov2.m22 = newM22
+            propagateCovariance(
+                scratchCov2.m00, scratchCov2.m01, scratchCov2.m02,
+                scratchCov2.m10, scratchCov2.m11, scratchCov2.m12,
+                scratchCov2.m20, scratchCov2.m21, scratchCov2.m22,
+                -correctedFieldDy, correctedFieldDx, baseQ, scale, headingScale, scratchCov2
+            )
 
             scratchHistory.updateEntryDirect(
                 i,

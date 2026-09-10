@@ -30,6 +30,14 @@ The estimator applies the SE(2) exponential to form the constant-curvature local
 
 Invalid/non-finite motion or a non-positive `dtSeconds` leaves the estimator state unchanged. Tilt, angular disagreement, and motion rate scale process covariance. The beached state uses hysteresis and freezes odometry propagation until the robot recovers.
 
+Stationary dwell and post-beaching/reset recovery have explicit active flags, preserved
+through snapshots and workspace copies; timestamp zero is a valid start. Direct odometry
+restarts active timing intervals on clock rewind. Store-owned runtime observations reject
+duplicate/backward timestamps before subtraction and cap a large forward interval at the
+existing 100 ms limit. Pose reset clears stationary dwell and old vision diagnostics while
+retaining learned gyro bias. Bias learning evaluates its exponential weight only after the
+stationary dwell completes and correction is enabled.
+
 ## Delayed vision measurements
 
 Each `Store` privately owns a fixed history of timestamped pose/covariance snapshots. The history is not copied into Redux and is never shared between robot, simulator, or replay stores. A valid delayed measurement is applied at the nearest historical state, after which later robot-local arcs and process noise are replayed to the present. Therefore:
@@ -54,6 +62,20 @@ Innovation validity is checked even when statistical outlier gating is disabled.
 computed by whitening the residual with the innovation covariance's Cholesky factor; only accepted
 observations need the inverse used for the Kalman gain. Turning odometry contributes to heading
 process noise even when an independent gyro-rate sample is unavailable.
+
+Forward, interpolated and replayed covariance updates share one allocation-free scalar
+kernel for `F P F^T + D Q D`. Translation/heading cross terms use the product of the
+individual square roots, so finite noise scales do not overflow or disappear merely
+because their product exceeds the floating-point range. Value-returning `Matrix3x3`
+operators and inversion allocate; only the in-place scratchpad methods are allocation-free.
+Matrix inversion normalizes inputs and divides cofactors before restoring their scale.
+
+The scalar `KalmanFilter` seeds its first valid observation directly; `reset` supplies
+a prior for the next filtered update. Initial/reset state must be finite and covariance
+finite and nonnegative; an invalid reset throws before changing either. Invalid noise
+or observations suppress updates. Gain calculation rescales overflowing variance sums,
+and opposite-sign extreme measurements use a finite weighted combination instead of an
+overflowing residual. Ordinary updates retain their direct arithmetic path.
 
 ## Control, wheel limits, and sampled trajectories
 

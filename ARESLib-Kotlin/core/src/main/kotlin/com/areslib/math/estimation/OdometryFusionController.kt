@@ -135,6 +135,9 @@ object OdometryFusionController {
 
         var currentlyBeached = state.isBeached
         var unbeachedTime = state.lastUnbeachedTimeMs
+        var recoveryActive = state.recoveryActive
+        val clockMovedBack = state.history.isNotEmpty() &&
+            timestampMs < state.history[state.history.size - 1].timestampMs
 
         // Hysteresis logic
         when {
@@ -144,6 +147,7 @@ object OdometryFusionController {
             currentlyBeached && tiltDegrees < 12.0 -> {
                 currentlyBeached = false
                 unbeachedTime = timestampMs
+                recoveryActive = true
             }
         }
 
@@ -164,11 +168,15 @@ object OdometryFusionController {
             // A dwell that began before beaching must not satisfy the bias-learning gate on
             // the first post-recovery frame; require a fresh stationary dwell after recovery.
             state.stationarySinceMs = 0L
+            state.stationaryDwellActive = false
+            state.recoveryActive = false
             return state
         }
 
-        val timeSinceUnbeachedMs = timestampMs - unbeachedTime
-        val inRecovery = timeSinceUnbeachedMs < 500 && unbeachedTime != 0L
+        if (recoveryActive && (clockMovedBack || timestampMs < unbeachedTime)) {
+            unbeachedTime = timestampMs
+        }
+        val inRecovery = recoveryActive && !elapsedAtLeast(timestampMs, unbeachedTime, 500L)
 
         // Continuous covariance scaling
         var tiltScale = 1.0
@@ -197,12 +205,14 @@ object OdometryFusionController {
             odometryYawRate < 0.03 && kotlin.math.abs(gyroRateRadPerSec) < 0.08
         val stationarySince = when {
             !isStationary -> 0L
-            state.stationarySinceMs == 0L -> timestampMs
+            !state.stationaryDwellActive || clockMovedBack || timestampMs < state.stationarySinceMs -> timestampMs
             else -> state.stationarySinceMs
         }
-        val stationaryDwellComplete = isStationary && timestampMs - stationarySince >= 500L
-        val alpha = 1.0 - kotlin.math.exp(-dtSeconds / 5.0)
+        val stationaryDwellComplete = isStationary && elapsedAtLeast(timestampMs, stationarySince, 500L)
         val newBias = if (applyGyroBiasCorrection && stationaryDwellComplete) {
+            // Only evaluate the exponential when learning; expm1 also preserves
+            // small positive update weights that 1 - exp(-dt / 5) rounds to zero.
+            val alpha = -kotlin.math.expm1(-dtSeconds / 5.0)
             state.gyroBiasRadPerSec * (1.0 - alpha) + gyroRateRadPerSec * alpha
         } else {
             state.gyroBiasRadPerSec
@@ -235,10 +245,8 @@ object OdometryFusionController {
             kotlin.math.max(0.001, speed + kotlin.math.max(odometryYawRate, kotlin.math.abs(correctedGyroRate)))
         val translationProcessNoiseScale = tiltScale * slipScale * translationMovementScale * dtSeconds
         val headingProcessNoiseScale = tiltScale * slipScale * headingMovementScale * dtSeconds
-        val crossProcessNoiseScale = kotlin.math.sqrt(
-            translationProcessNoiseScale.coerceAtLeast(0.0) *
-                headingProcessNoiseScale.coerceAtLeast(0.0)
-        )
+        val crossProcessNoiseScale = kotlin.math.sqrt(translationProcessNoiseScale.coerceAtLeast(0.0)) *
+            kotlin.math.sqrt(headingProcessNoiseScale.coerceAtLeast(0.0))
         scratchQ.m00 *= translationProcessNoiseScale
         scratchQ.m01 *= translationProcessNoiseScale
         scratchQ.m10 *= translationProcessNoiseScale
@@ -328,7 +336,15 @@ object OdometryFusionController {
         state.lastUnbeachedTimeMs = unbeachedTime
         state.gyroBiasRadPerSec = newBias
         state.stationarySinceMs = stationarySince
+        state.stationaryDwellActive = isStationary
+        state.recoveryActive = inRecovery
 
         return state
+    }
+
+    private fun elapsedAtLeast(now: Long, since: Long, duration: Long): Boolean {
+        if (now < since) return false
+        val elapsed = now - since
+        return elapsed < 0L || elapsed >= duration
     }
 }

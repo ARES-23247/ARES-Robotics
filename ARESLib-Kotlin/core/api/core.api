@@ -2698,8 +2698,8 @@ public final class com/areslib/math/estimation/PoseEstimator {
 
 public final class com/areslib/math/estimation/PoseEstimatorSnapshot {
 	public fun <init> ()V
-	public fun <init> (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;J)V
-	public synthetic fun <init> (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;JZZ)V
+	public synthetic fun <init> (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;JZZIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()D
 	public final fun component10 ()D
 	public final fun component11 ()D
@@ -2726,14 +2726,16 @@ public final class com/areslib/math/estimation/PoseEstimatorSnapshot {
 	public final fun component30 ()Z
 	public final fun component31 ()Ljava/lang/String;
 	public final fun component32 ()J
+	public final fun component33 ()Z
+	public final fun component34 ()Z
 	public final fun component4 ()D
 	public final fun component5 ()D
 	public final fun component6 ()D
 	public final fun component7 ()D
 	public final fun component8 ()D
 	public final fun component9 ()D
-	public final fun copy (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;J)Lcom/areslib/math/estimation/PoseEstimatorSnapshot;
-	public static synthetic fun copy$default (Lcom/areslib/math/estimation/PoseEstimatorSnapshot;DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;JILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorSnapshot;
+	public final fun copy (DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;JZZ)Lcom/areslib/math/estimation/PoseEstimatorSnapshot;
+	public static synthetic fun copy$default (Lcom/areslib/math/estimation/PoseEstimatorSnapshot;DDDDDDDDDDDDZJDJDDDDDDDDDDDDDZLjava/lang/String;JZZIILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorSnapshot;
 	public final fun copyCovariance ()[D
 	public final fun copyKalmanGain ()[D
 	public final fun covarianceElement (I)D
@@ -2770,6 +2772,8 @@ public final class com/areslib/math/estimation/PoseEstimatorSnapshot {
 	public final fun getLastObservationTimestampMs ()J
 	public final fun getLastRejectionReason ()Ljava/lang/String;
 	public final fun getLastUnbeachedTimeMs ()J
+	public final fun getRecoveryActive ()Z
+	public final fun getStationaryDwellActive ()Z
 	public final fun getStationarySinceMs ()J
 	public fun hashCode ()I
 	public final fun isBeached ()Z
@@ -2779,8 +2783,8 @@ public final class com/areslib/math/estimation/PoseEstimatorSnapshot {
 
 public final class com/areslib/math/estimation/PoseEstimatorState {
 	public fun <init> ()V
-	public fun <init> (DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;)V
-	public synthetic fun <init> (DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;ZZ)V
+	public synthetic fun <init> (DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()D
 	public final fun component10 ()D
 	public final fun component11 ()D
@@ -2789,6 +2793,8 @@ public final class com/areslib/math/estimation/PoseEstimatorState {
 	public final fun component14 ()[D
 	public final fun component15 ()Z
 	public final fun component16 ()Ljava/lang/String;
+	public final fun component17 ()Z
+	public final fun component18 ()Z
 	public final fun component2 ()D
 	public final fun component3 ()D
 	public final fun component4 ()[D
@@ -2797,8 +2803,8 @@ public final class com/areslib/math/estimation/PoseEstimatorState {
 	public final fun component7 ()J
 	public final fun component8 ()D
 	public final fun component9 ()J
-	public final fun copy (DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;)Lcom/areslib/math/estimation/PoseEstimatorState;
-	public static synthetic fun copy$default (Lcom/areslib/math/estimation/PoseEstimatorState;DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public final fun copy (DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;ZZ)Lcom/areslib/math/estimation/PoseEstimatorState;
+	public static synthetic fun copy$default (Lcom/areslib/math/estimation/PoseEstimatorState;DDD[DLcom/areslib/math/estimation/HistoryBuffer;ZJDJDDDD[DZLjava/lang/String;ZZILjava/lang/Object;)Lcom/areslib/math/estimation/PoseEstimatorState;
 	public final fun deepCopy ()Lcom/areslib/math/estimation/PoseEstimatorState;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCovariance ()Lcom/areslib/math/geometry/Matrix3x3;
@@ -2818,6 +2824,8 @@ public final class com/areslib/math/estimation/PoseEstimatorState {
 	public final fun getLastObservationTimestampMs ()J
 	public final fun getLastRejectionReason ()Ljava/lang/String;
 	public final fun getLastUnbeachedTimeMs ()J
+	public final fun getRecoveryActive ()Z
+	public final fun getStationaryDwellActive ()Z
 	public final fun getStationarySinceMs ()J
 	public fun hashCode ()I
 	public final fun isBeached ()Z
@@ -2835,6 +2843,8 @@ public final class com/areslib/math/estimation/PoseEstimatorState {
 	public final fun setLastObservationTimestampMs (J)V
 	public final fun setLastRejectionReason (Ljava/lang/String;)V
 	public final fun setLastUnbeachedTimeMs (J)V
+	public final fun setRecoveryActive (Z)V
+	public final fun setStationaryDwellActive (Z)V
 	public final fun setStationarySinceMs (J)V
 	public fun toString ()Ljava/lang/String;
 }

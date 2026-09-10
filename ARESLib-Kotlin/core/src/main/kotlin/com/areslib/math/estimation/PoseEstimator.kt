@@ -368,7 +368,11 @@ data class PoseEstimatorState(
     var lastNormalizedInnovationSquared: Double = 0.0,
     var lastKalmanGain: DoubleArray = DoubleArray(9),
     var lastMeasurementAccepted: Boolean = false,
-    var lastRejectionReason: String? = null
+    var lastRejectionReason: String? = null,
+    /** Distinguishes an active stationary dwell at timestamp zero from no dwell. */
+    var stationaryDwellActive: Boolean = stationarySinceMs != 0L,
+    /** Whether post-beaching/reset recovery is still active, including when it began at zero. */
+    var recoveryActive: Boolean = lastUnbeachedTimeMs != 0L
 ) {
     /** Timestamp of the newest accepted drive observation; history itself is runtime-owned. */
     var lastObservationTimestampMs: Long = -1L
@@ -380,7 +384,7 @@ data class PoseEstimatorState(
      *
      * This is retained for direct estimator callers and tests. Redux reduction no longer invokes it
      * per frame: each [com.areslib.Store] owns one [PoseEstimatorRuntime], and published snapshots
-     * contain the shared read-only empty-history marker instead of cloning the 150-frame buffer.
+     * contain immutable scalar values while the 150-frame history remains runtime-owned.
      */
     fun deepCopy(): PoseEstimatorState = copy(
         covarianceArray = covarianceArray.copyOf(),
