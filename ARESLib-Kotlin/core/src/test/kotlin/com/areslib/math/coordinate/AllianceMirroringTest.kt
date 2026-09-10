@@ -43,7 +43,7 @@ class AllianceMirroringTest {
 
     @Test
     fun testReflectionalMirroring() {
-        // Reflectional symmetry: mirror reflection across x midline (y remains same, x flipped, yaw mirrored)
+        // Center-origin reflection across the X axis: x remains the same, y and yaw flip.
         val originalPose = Pose2d(1.0, 1.5, Rotation2d.fromDegrees(45.0))
         val mirroredPose = AllianceMirroring.mirror(originalPose, Alliance.RED, FieldSymmetry.MIRRORED, fieldLength, fieldWidth)
 

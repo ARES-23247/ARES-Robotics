@@ -4,19 +4,44 @@ import com.areslib.state.Alliance
 import com.areslib.math.geometry.*
 import com.areslib.math.wrapAngle
 
+internal fun coordinateExtent(value: Double): Double {
+    require(value.isFinite() && value > 0.0) { "Field extent must be finite and positive" }
+    return value
+}
+
+internal fun coordinatePose(x: Double, y: Double, rawHeading: Double): Pose2d {
+    require(x.isFinite() && y.isFinite() && rawHeading.isFinite()) { "Transformed pose must be finite" }
+    return Pose2d(x, y, Rotation2d(rawHeading))
+}
+
+internal fun coordinateTranslation(x: Double, y: Double): Translation2d {
+    require(x.isFinite() && y.isFinite()) { "Transformed position must be finite" }
+    return Translation2d(x, y)
+}
+
+/** Normalize before adding pi, which can disappear when added to a huge raw angle. */
+internal fun allianceHeading(raw: Double, symmetry: FieldSymmetry, origin: FieldOrigin): Double {
+    require(raw.isFinite()) { "Raw heading must be finite before alliance transformation" }
+    val angle = wrapAngle(raw)
+    return when (symmetry) {
+        FieldSymmetry.ROTATIONAL -> wrapAngle(angle + Math.PI)
+        FieldSymmetry.MIRRORED -> if (origin == FieldOrigin.CENTER) wrapAngle(-angle) else wrapAngle(Math.PI - angle)
+    }
+}
+
 /**
  * Coordinate System Origin Mapping and Field Origin Transformation Utilities.
  *
- * Converts spatial poses and translation vectors between **Center-Origin** reference frames
- * (AdvantageScope, Dyn4j simulator, WPILib EKF with origin at $(0,0)$ field center) and
- * **Corner-Origin** reference frames (PathPlanner, Driver Station layout with $(0,0)$ at bottom-right corner).
+ * Converts spatial poses between parallel-axis center-origin and minimum-X/minimum-Y
+ * corner-origin frames. These functions translate the origin; they do not rotate axes or
+ * choose a vendor's coordinate convention. Callers select dimensions for their field layout.
  *
  * ### Mathematical Formulations:
  * 1. **Center-to-Corner Transformation**:
  *    $$\mathbf{p}_{\text{corner}} = \begin{bmatrix} x_{\text{center}} + \frac{L_{\text{field}}}{2} \\ y_{\text{center}} + \frac{W_{\text{field}}}{2} \end{bmatrix}, \quad \theta_{\text{corner}} = \theta_{\text{center}}$$
  * 2. **Corner-to-Center Transformation**:
  *    $$\mathbf{p}_{\text{center}} = \begin{bmatrix} x_{\text{corner}} - \frac{L_{\text{field}}}{2} \\ y_{\text{corner}} - \frac{W_{\text{field}}}{2} \end{bmatrix}, \quad \theta_{\text{center}} = \theta_{\text{corner}}$$
- * 3. **Reflectional Mirroring Across X-Axis (PathPlanner Red Alliance)**:
+ * 3. **Reflection across the line x = fieldLength / 2**:
  *    $$x' = L_{\text{field}} - x, \quad y' = y, \quad \theta' = \text{wrapAngle}(\pi - \theta)$$
  *
  * ### Physical Constants & Units:
@@ -26,24 +51,28 @@ import com.areslib.math.wrapAngle
  * - Heading $(\theta)$: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
  *
  * @see AllianceMirroring
+ *
+ * Operations require finite results and finite raw headings; used field extents must be finite
+ * and positive. Invalid transformations throw IllegalArgumentException. Blue alliance methods
+ * return their original object without validation. New transformed poses/positions allocate.
  */
 object CoordinateTransformers {
     /** FTC competition field bounding side length ($12\,\text{ft} = 3.6576\,m$). */
     const val FTC_FIELD_SIZE = 3.6576
 
-    /** Standard FRC competition field length along X-axis ($16.54175\,m$). */
+    /** FRC compatibility-default field length along X-axis; use an explicit layout when different. */
     const val FRC_FIELD_LENGTH = 16.54175
 
-    /** Standard FRC competition field width along Y-axis ($8.21055\,m$). */
+    /** FRC compatibility-default field width along Y-axis; use an explicit layout when different. */
     const val FRC_FIELD_WIDTH = 8.21055
 
     /**
-     * Converts a Center-Origin pose (AdvantageScope/Dyn4j) to a Corner-Origin pose (PathPlanner).
+     * Translates a center-origin pose to the parallel-axis minimum-coordinate corner frame.
      *
      * @param centerPose Pose with origin at $(0,0)$ in the middle of the field.
      * @param fieldLength Bounding length of the field along X-axis in meters ($m$).
      * @param fieldWidth Bounding width of the field along Y-axis in meters ($m$).
-     * @return Pose mapped to PathPlanner's Bottom-Right corner origin in meters ($m$).
+     * @return Pose mapped to the minimum-X/minimum-Y corner origin in meters ($m$).
      */
     @JvmOverloads
     @JvmStatic
@@ -52,17 +81,17 @@ object CoordinateTransformers {
         fieldLength: Double = FTC_FIELD_SIZE,
         fieldWidth: Double = FTC_FIELD_SIZE
     ): Pose2d {
-        return Pose2d(
-            x = centerPose.x + (fieldLength / 2.0),
-            y = centerPose.y + (fieldWidth / 2.0),
-            heading = centerPose.heading
+        return coordinatePose(
+            x = centerPose.x + (coordinateExtent(fieldLength) / 2.0),
+            y = centerPose.y + (coordinateExtent(fieldWidth) / 2.0),
+            rawHeading = centerPose.heading.rawRadians
         )
     }
 
     /**
-     * Converts a Corner-Origin pose (PathPlanner) to a Center-Origin pose (AdvantageScope/Dyn4j).
+     * Translates a minimum-coordinate corner pose to the parallel-axis center frame.
      *
-     * @param cornerPose Pose with origin at $(0,0)$ at the bottom-right corner of the field.
+     * @param cornerPose Pose whose origin is the minimum-X/minimum-Y corner of the field.
      * @param fieldLength Bounding length of the field along X-axis in meters ($m$).
      * @param fieldWidth Bounding width of the field along Y-axis in meters ($m$).
      * @return Pose mapped to the center of the field in meters ($m$).
@@ -74,10 +103,10 @@ object CoordinateTransformers {
         fieldLength: Double = FTC_FIELD_SIZE,
         fieldWidth: Double = FTC_FIELD_SIZE
     ): Pose2d {
-        return Pose2d(
-            x = cornerPose.x - (fieldLength / 2.0),
-            y = cornerPose.y - (fieldWidth / 2.0),
-            heading = cornerPose.heading
+        return coordinatePose(
+            x = cornerPose.x - (coordinateExtent(fieldLength) / 2.0),
+            y = cornerPose.y - (coordinateExtent(fieldWidth) / 2.0),
+            rawHeading = cornerPose.heading.rawRadians
         )
     }
 
@@ -90,10 +119,10 @@ object CoordinateTransformers {
      */
     fun flipPoseRotational(pose: Pose2d, alliance: Alliance): Pose2d {
         if (alliance == Alliance.BLUE) return pose
-        return Pose2d(
+        return coordinatePose(
             x = -pose.x,
             y = -pose.y,
-            heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
+            rawHeading = allianceHeading(pose.heading.rawRadians, FieldSymmetry.ROTATIONAL, FieldOrigin.CENTER)
         )
     }
 
@@ -106,7 +135,7 @@ object CoordinateTransformers {
      */
     fun flipTranslationRotational(translation: Translation2d, alliance: Alliance): Translation2d {
         if (alliance == Alliance.BLUE) return translation
-        return Translation2d(-translation.x, -translation.y)
+        return coordinateTranslation(-translation.x, -translation.y)
     }
 
     /**
@@ -120,10 +149,10 @@ object CoordinateTransformers {
      */
     fun flipCornerPoseRotational(pose: Pose2d, alliance: Alliance, fieldLength: Double = FTC_FIELD_SIZE, fieldWidth: Double = FTC_FIELD_SIZE): Pose2d {
         if (alliance == Alliance.BLUE) return pose
-        return Pose2d(
-            x = fieldLength - pose.x,
-            y = fieldWidth - pose.y,
-            heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
+        return coordinatePose(
+            x = coordinateExtent(fieldLength) - pose.x,
+            y = coordinateExtent(fieldWidth) - pose.y,
+            rawHeading = allianceHeading(pose.heading.rawRadians, FieldSymmetry.ROTATIONAL, FieldOrigin.CORNER)
         )
     }
 
@@ -137,10 +166,10 @@ object CoordinateTransformers {
      */
     fun mirrorPoseReflectionalX(pose: Pose2d, alliance: Alliance, fieldLength: Double = FTC_FIELD_SIZE): Pose2d {
         if (alliance == Alliance.BLUE) return pose
-        return Pose2d(
-            x = fieldLength - pose.x,
+        return coordinatePose(
+            x = coordinateExtent(fieldLength) - pose.x,
             y = pose.y,
-            heading = Rotation2d(wrapAngle(Math.PI - pose.heading.radians))
+            rawHeading = allianceHeading(pose.heading.rawRadians, FieldSymmetry.MIRRORED, FieldOrigin.CORNER)
         )
     }
 
@@ -154,7 +183,7 @@ object CoordinateTransformers {
      */
     fun mirrorTranslationReflectionalX(translation: Translation2d, alliance: Alliance, fieldLength: Double = FTC_FIELD_SIZE): Translation2d {
         if (alliance == Alliance.BLUE) return translation
-        return Translation2d(fieldLength - translation.x, translation.y)
+        return coordinateTranslation(coordinateExtent(fieldLength) - translation.x, translation.y)
     }
 }
 

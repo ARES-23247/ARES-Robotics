@@ -21,8 +21,13 @@ import kotlin.math.sin
  * - Displacements ($\Delta d_{\text{forward}}, \Delta d_{\text{strafe}}, \Delta x, \Delta y$): Meters ($m$)
  * - Heading ($\theta$): Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
  *
- * ### Zero-GC Guarantee:
- * Uses primitive scalar trigonometry with zero object allocation.
+ * This rotates an already defined robot-frame vector at the supplied heading. It does not
+ * integrate a changing heading over the sample; use the estimator's SE(2) integration for that.
+ * Non-finite inputs propagate IEEE non-finite results and are not converted to valid zero motion.
+ *
+ * The X/Y scalar methods allocate no objects. [calculateDeltaPose] evaluates each trigonometric
+ * function once and allocates a fresh immutable Translation2d. Calling both scalar methods repeats
+ * the trigonometry; none of these methods provides a hardware loop-time guarantee.
  */
 object OdometryMath {
     /**
