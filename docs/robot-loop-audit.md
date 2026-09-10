@@ -565,3 +565,11 @@ until explicit recovery. Invalid pose resets preserve prior state; unmeasured vo
 Motor/servo commands and reflectance classification respect their domains while input fixtures
 preserve injected invalid feedback. Fixed-step fixture behavior and physical integration limits
 are explicit; the separate XRP physics engine and swerve solver remain pending.
+
+## Forty-sixth pass: XRP desktop control and field origins
+
+The [XRP simulation audit](audits/xrp-simulation-control-audit.md) adds canonical leased control,
+Store estimator provenance, estimator-relative steering and guaranteed loop cleanup. It fixes
+corner-origin wall placement that blocked mecanum motion, receiver time/type boundaries and a
+disabled-intent bypass. Buffered polling and direct wheel normalization reduce repeated work.
+Broader network lifecycle, extreme physics inputs and real-time/hardware validation remain open.

@@ -2356,10 +2356,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "fb245f1b842ca52cd4f7b184796a6b38d841efc79097662ffbfe4b86733f65f5",
+      "sha256": "cd03d0e1475e32c570f87f1aa2f6244f4eecfcccff2d1a689e3db90170fe3aff",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial. Pass 40 section and report link reviewed; accumulated root report remains partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 section and report link reviewed; accumulated root report remains partial. Pass 42 index/summary updated; final links/policy and exact-candidate consumer validation passed. Root report remains partial. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 wheel/XRP summary reviewed; root report retains prior partial scope. Pass 44 summary reviewed against four-motor and shared XRP refinements; root report retains partial scope. Pass 45 summary reviewed against lifecycle/double implementation and observed validation. Root report retains partial status.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2446,7 +2446,8 @@
         "ARESLib-Kotlin/build/audit-pass45-library.log",
         "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
-        "ARESLib-Kotlin/build/audit-pass45-policy.log"
+        "ARESLib-Kotlin/build/audit-pass45-policy.log",
+        "docs/audits/xrp-simulation-control-audit.md"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3108,10 +3109,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "317d4fddad794c552f0269c6d8c49a96348f234a29e8f97a513c27209dd8fc06",
+      "sha256": "1127d8914f4995e76b4e9755b12fff8e54a1afca0ce63b57576c6fbf5f0ed8f3",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry. Pass 40 joystick-conditioning and snapshot-ownership section reviewed against code, public API and executed tests. Other previously unreviewed sections remain partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 calibrated interpolation section reviewed against numeric contracts, lookup complexity and executed regressions. Remaining previously unreviewed sections remain partial. Pass 42 linkage sections reviewed: documented coordinate/numerical/simulation contracts and unchanged public method signatures; retained old JVM constant after ABI check revealed exposure. Remaining unrelated sections still require review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 wheel arithmetic and paired XRP output contract sections reviewed against implementation and numerical/failure/allocation tests. Other sections retain prior scope limits. Pass 44 XRP four-motor failure, constructor and direct power normalization sections reviewed against implementation and tests. Remaining sections retain prior scope. Pass 45 XRP JVM lifecycle and doubles section reviewed against source/tests and documented physical/model boundaries; remaining earlier document scopes retain partial status.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3156,14 +3157,15 @@
         "ARESLib-Kotlin/build/audit-pass45-library.log",
         "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
-        "ARESLib-Kotlin/build/audit-pass45-policy.log"
+        "ARESLib-Kotlin/build/audit-pass45-policy.log",
+        "docs/audits/xrp-simulation-control-audit.md"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "37167f2ea72a1f0e1cc91e1ecf3d0472a2c5fcfef9af06710f4b342e16de6792",
+      "sha256": "18412ecd5ca2c05a13f7e964b76f7890571791011c79a5ba05f23bd2ec53acd3",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 42 exact immutable candidate tree d10d866f79c622fcf1e16d83d7f745cc9ed87261 matches local library HEAD; unique prerelease 17.0.3-rc.d10d866f79c6 published locally after full gate. Planned stable bump retained; no remote release. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 exact source tree 0b8b3dd94d1cd16401327349589b52fa67f30505 matches source commit 4f661773 and candidate 17.0.3-rc.0b8b3dd94d1c. Pass 44 source commit 18293301 binds exact library tree 333960e4e8fc89db4f88098cd0a6c2898b14987b and final candidate 17.0.3-rc.333960e4e8fc; initial pass candidate superseded. Pass 45 source commit122eb8b2 binds tree5b0923c9b37a8e4dc4b28236f959feabaa84bdd2 and candidate17.0.3-rc.5b0923c9b37a.",
+      "scope": "Exact library tree 993368b5727a3b89625777d503ecf1a3f203ddf0 checked against source commit 00091bdf and local candidate 17.0.3-rc.993368b5727a; policy passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3208,7 +3210,8 @@
         "ARESLib-Kotlin/build/audit-pass45-library.log",
         "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
-        "ARESLib-Kotlin/build/audit-pass45-policy.log"
+        "ARESLib-Kotlin/build/audit-pass45-policy.log",
+        "docs/audits/xrp-simulation-control-audit.md"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3346,10 +3349,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "0e879b94d73331fac00961b11ba276e8ec499b952f31cd7acf769f9394679e0c",
+      "sha256": "c8b99503c6eac5b7067e74bc53d8fa2b6b3bf51c951c9462c1e0b9019bed4739",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 40 only InputMath API section reviewed: intentional additive processJoystickVectorInto method and default-argument bridge; existing signatures unchanged. Standalone full API check passed. Remaining snapshot entries need separate full review. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 InterpolatingTable and Interpolatable API sections inspected; constructor/get/put and interpolation signatures are unchanged and full apiCheck passed. Remaining API snapshot entries remain partial. Pass 42 linkage sections reviewed: documented coordinate/numerical/simulation contracts and unchanged public method signatures; retained old JVM constant after ABI check revealed exposure. Remaining unrelated sections still require review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 wheel-related public API checked unchanged by apiCheck; unrelated API surface remains pending.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3375,7 +3378,8 @@
         "ARESLib-Kotlin/build/audit-pass43-library.log",
         "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass43-studio.log",
-        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+        "ARESLib-Kotlin/build/audit-pass43-policy.log",
+        "docs/audits/xrp-simulation-control-audit.md"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -4129,6 +4133,141 @@
         "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
         "ARESLib-Kotlin/build/audit-pass45-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/networktables/NT4Server.kt": {
+      "sha256": "3da65c9514304dcfffdf4c41536eff2d7c32fb554a96c5687df526566f88b1dd",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/DriveFrameReceiver.kt": {
+      "sha256": "6de67d03c0d14ec2f2b09d6036152a7929196ad032268c3efc3ec99fd37b2a41",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full receiver/adapter review, focused tests, full library/API and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/SimInputBridge.kt": {
+      "sha256": "fcb6554a2bb40af10fd062424502e513b9329a3affa7c70b73dc4948e07f9e53",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full receiver/adapter review, focused tests, full library/API and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/telemetry/DriveFrameReceiverAuditTest.kt": {
+      "sha256": "5e3ad2031c525b53bedc1e12769f1b6c24b8a81d1fb4477a0b6a99fa56fe3ab5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/telemetry/DriveReceiverTimeAuditTest.kt": {
+      "sha256": "cc312c58aba6c35632c8197b5715e9d6094f33bc1f93b4e99e3a4e786f080220",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/api/simulator.api": {
+      "sha256": "b954fd6e2bb4f9f9b19e15929c73021221b2a8ad8e1fa874f086257c6105575b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/physics/SimPhysicsWorld.kt": {
+      "sha256": "4e0bbaeae0cdc75fdcdd4730a22e612ce76a13cadb2697a02b517e93732a0a60",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/xrp/XrpSimLauncher.kt": {
+      "sha256": "385b140e2dfb15bca85f1efb1b5786d7d5d55a9432804dd6f7b8790ec7db2313",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/xrp/XrpSimulationEngine.kt": {
+      "sha256": "4f7ef056659c06978490d25affaf62dfc0cff5348c03cdb77c5226f89f6ad72a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/physics/FieldWallOriginAuditTest.kt": {
+      "sha256": "7410418b232be27beaff22e81f5f2da378e31ff9386f98f97f21bce695a23f1f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpDriveLeaseAuditTest.kt": {
+      "sha256": "059c4bfa7ad61e6c5c2e4fcb325b7d67e6db6aaf6ee75569e302cf3991fff3c0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpSimulationBoundaryAuditTest.kt": {
+      "sha256": "914bfaed198855877e953b5db543ca750d8f94693d208af732b1f8ff53a984df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpSimulationE2ETest.kt": {
+      "sha256": "d12a26eb207009f53393938f8219aa6dc96d274f83d5fa53cc55e7b809be83dd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpSimulationEngineTest.kt": {
+      "sha256": "c078fdf2f0df349e37d9103dcdd4cee0691e7d78860b78cf1eb7ca695c302ce4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "docs/audits/xrp-simulation-control-audit.md": {
+      "sha256": "cc23b622e7a4b7bc61d4859b273caafd798ffb07d72895a48b5c05df9f5b0b06",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass 46 report reviewed against source diff, baseline logs, focused/full XML, API diff and dependency-ordered validation. Headless host evidence and unresolved scopes distinguished.",
+      "evidence": [
+        "docs/audits/xrp-simulation-control-audit.md"
       ]
     }
   }
