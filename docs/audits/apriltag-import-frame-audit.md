@@ -54,8 +54,24 @@ The API snapshot adds only `decodeForField` and `encodeWpilibForField`.
 
 Studio focused validation passed 35 methods: all 11 new import contracts and 24 nearby
 editor/catalog methods, plus the production file-size check. It used explicit sibling-source
-substitution for development; the required final candidate matrix remains pending. Singular
-pitch reference cases were subsequently added to the same core matrix fixture for final validation.
+substitution for development. Singular pitch reference cases subsequently added to the core
+matrix fixture also passed in final validation.
+
+Source `d99cefb3` binds library tree `ed23a4cf86cc59b47200d8aaf6a0e5b7a6220ebe` to local
+candidate `17.0.3-rc.ed23a4cf86cc`. Full library tests/API/Kover/local publication passed in
+2m 49s: 1,707 methods, no failures/errors/skips. Serial consumers passed FTC 111, FRC 134,
+FTC starter 14 and FRC starter 34 methods, with generated-project checks and FTC assembly.
+Studio reran shared/gateway/app tests: 1,790 passed and six existing opt-in skips; 56 dashboard
+methods, one performance baseline, coverage, version alignment and file-size gates passed.
+Studio took 8m 6s; no physical performance conclusion follows from this host build duration.
+
+Core Kover covers codec 238/239 lines, 211/218 branches and 28/28 methods; frame helper
+46/46 lines, 62/68 branches and 6/6 methods. Counts supplement the independent reference
+tests; they do not prove every possible input or custom frame convention. Logs, copied XML,
+hash manifests and summary are under `ARESLib-Kotlin/build/audit-pass72-verified-evidence`.
+Policy passed with 233 current Markdown documents, 38 historical exclusions, canonical source
+identity and archive checks. Appropriate unchanged-input Gradle cache/up-to-date reuse is
+explicit in `audit-pass72-{library,ftc,frc,ftc-starter,frc-starter,studio}.log` in the build folder.
 
 ## Scope limits
 

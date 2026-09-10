@@ -3151,10 +3151,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "7a0f843857b6a390b2b56d0b16ac1e63d1f10453850a1b804c95a83e582f103d",
+      "sha256": "f2fbc0d4f5b4b79a802c09f786a2efea4f31afc019f8d3b126b7a31f8ea5af26",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope. Pass72: Added map-interchange derivation, blue-wall alignment rule, yaw/extents transforms, precision/overflow behavior, source fmap dimension fallback and editor preview transaction semantics; verified against source/tests. Remaining accumulated document stays partial.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3212,14 +3212,20 @@
         "docs/audits/xrp-coordinate-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass71-focused.log",
         "ARESLib-Kotlin/build/audit-pass71-library.log",
-        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json",
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "6a478e2ac81493671276dbb01e4345f6be637a60ae2aa6a95bd89d19b5aaef51",
+      "sha256": "d4a5f37d81304ce14e1e077ab7345fc02fa04da6fe1e364cf851fa5b3c4562fe",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass71: Exact library tree 7e9a7fb40abdf83deda57873b7b9cc3dd2733e2e, source 2562db21, candidate 17.0.3-rc.7e9a7fb40abd; full library/API/publication and dependent consumer gates passed.",
+      "scope": "Library tree ed23a4cf86cc59b47200d8aaf6a0e5b7a6220ebe, source d99cefb3, candidate17.0.3-rc.ed23a4cf86cc; full library/API/local publication and dependency-ordered consumer validation passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3340,7 +3346,13 @@
         "docs/audits/xrp-coordinate-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass71-focused.log",
         "ARESLib-Kotlin/build/audit-pass71-library.log",
-        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json",
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3478,10 +3490,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "c8b99503c6eac5b7067e74bc53d8fa2b6b3bf51c951c9462c1e0b9019bed4739",
+      "sha256": "d801c4aa0502f09126ce74eb146b5b5d686e9695be66abb099923d4810001fe1",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3508,7 +3520,13 @@
         "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass43-studio.log",
         "ARESLib-Kotlin/build/audit-pass43-policy.log",
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -5315,7 +5333,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f93cf7b0003e264688f5b799fb24bfb7839c286de9f665df058902d590202f81",
+      "sha256": "c006144bb534b6fa8b9d5b92c202330a64a9de5778a1b772bee37ea06fa65e6b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5337,7 +5355,8 @@
         "docs/audits/coordinate-odometry-transform-audit.md: pass68 records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/geometry3d-numerics-audit.md: pass69 reviewed records and canonical self-fingerprint refreshed",
         "docs/audits/apriltag-interchange-audit.md: pass70 records and canonical self-fingerprint refreshed",
-        "docs/audits/xrp-coordinate-contract-audit.md: pass71 verified records and canonical self-fingerprint refreshed"
+        "docs/audits/xrp-coordinate-contract-audit.md: pass71 verified records and canonical self-fingerprint refreshed",
+        "docs/audits/apriltag-import-frame-audit.md: pass72 records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6156,10 +6175,10 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/AprilTagMapCodec.kt": {
-      "sha256": "26d48c8ec14da2fba9974e74364f289381792475e0586ca05dd3b0209db3ce6f",
-      "review": "partial",
+      "sha256": "d57ece87fcb1df9b0f36e1a0fd22a706e0a339b9b629d13f5ea5b11d2cf89182",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full declaration review and validated parser/math fixes: strict shapes/types/exact IDs, finite geometry/size/dimensions, shared stable quaternion/Euler conversion, rigid matrix validation, optional vendor field dimensions, owned results and sorted exports. 232/233 focused lines,208/216 branches,22/22 methods. PARTIAL: raw WPILib positions are passed into Studio FTC fields without a demonstrated frame mapping; next integration pass must resolve source/target axes and import dimension replacement; XRP project CENTER_ORIGIN_CCW also conflicts with prior JVM corner-origin contract. No HIL or complete format compatibility claim. Pass71: XRP center-origin contradiction resolved against canonical project metadata and independent raw fmap positions; only FRC translates. Prior WPILib axes and Studio source/target dimension concerns remain open.",
+      "scope": "Full declaration review across passes70-72: strict JSON shapes/numeric domains/IDs, finite valid geometry, quaternion/Euler/rigid matrix conversion, unit representability, metadata, owned results and sorted exports. Prior open XRP origin and Studio frame/dimension integration concerns resolved in71/72. New single-parse field-aware dispatch and WPILib export retain raw APIs. Independent matrix/corner, malformed format, extreme-value and editor transaction fixtures plus full candidate checks passed. This is reviewed/tested source, not proof of all custom vendor frames or physical calibration.",
       "evidence": [
         "docs/audits/apriltag-interchange-audit.md",
         "ARESLib-Kotlin/build/audit-pass70-final-focus-v2.log",
@@ -6168,7 +6187,13 @@
         "docs/audits/xrp-coordinate-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass71-focused.log",
         "ARESLib-Kotlin/build/audit-pass71-library.log",
-        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json",
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/AprilTagMapCodecTest.kt": {
@@ -6267,6 +6292,89 @@
         "ARESLib-Kotlin/build/audit-pass71-focused.log",
         "ARESLib-Kotlin/build/audit-pass71-library.log",
         "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/AprilTagMapFrames.kt": {
+      "sha256": "5747acccb33085ef0193056f309aa5fd2951061bbcaa65f2d8025f8e868469ab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full new helper review: blue-wall frame alignment, centered/corner translation, exact quarter-turn XY and yaw rotation, rectangular dimension mapping, same-frame precision preservation, per-axis fmap fallback and nonrepresentable-result rejection. 200 independent matrix cases include singular pitch in final suite; all four wall references, inverse export, source ARES metadata, tiny positions and huge yaw checked. No physical frame-registration claim.",
+      "evidence": [
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/AprilTagMapFrameTest.kt": {
+      "sha256": "16be30919a1dbe83eb75d57485668457b5db222cb0d125dea5aaac2a4579ab48",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full seven-method fixture reviewed/executed. Independent trigonometric matrix rows versus frame helper, all wall directions and singular pitches; same-frame tiny coordinates, source ARES metadata, partial fmap axes, malformed/ambiguous inputs, overflow and huge yaw. Corrected an initially malformed interpolated JSON fixture before accepted evidence.",
+      "evidence": [
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldAprilTagTransfer.kt": {
+      "sha256": "91e60b07d620b53aa320c459ce629dc9161ad2496ec4e7857303cea8d4a3e497",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full helper review and field-editor integration: explicit fmap/raw format selection, one strict auto-dispatch, full pose/metadata placement mapping, conflict IDs, omitted metadata/FTC size warnings, canonical frame-aware WPILib export. Ten original failures reproduced, eleven final import scenarios plus existing editor/catalog fixtures and full Studio candidate tests passed.",
+      "evidence": [
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt": {
+      "sha256": "9f8766c5388cfd2c8a3715b56d2b44c1be3c0b9dab5eff559f35cb5bf6d24b24",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Preview/apply/export plus applyEdit/undo/redo/load document-boundary sections traced. Import no longer changes active context, edits/history invalidate stale previews, no-op apply consumes preview without revision, source dimensions replace per axis and merge retains dimensions/IDs. Remaining view-model persistence, simulator publication and other interaction/lifecycle declarations are not fully reviewed.",
+      "evidence": [
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/AprilTagImportContractTest.kt": {
+      "sha256": "7aa0ec8bb7cc54dcc2bdfa60170b57c8cff26e136c594b8d7ad7fcef30fb9201",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eleven-method fixture review/execution: independent blue-corner references for FTC/XRP and all walls, inverse full-orientation export, source dimension replacement/partial axes/merge, ARES source frame, edit/undo invalidation, no-op revision preservation, recognized-format diagnostics and loaded-league protection. Per-test owned coroutine jobs canceled; no physical UI/HIL claim.",
+      "evidence": [
+        "docs/audits/apriltag-import-frame-audit.md",
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/apriltag-import-frame-audit.md": {
+      "sha256": "0f7a8516e2569bda305bae705b98555d4a2c75a116af94ec7b2c36c269375c89",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Complete batch report reconciled with source, official coordinate references, failure-before fixtures, focused and final candidate evidence, and scoped physical/lifecycle limitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass72-before.log",
+        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
+        "ARESLib-Kotlin/build/audit-pass72-library.log",
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
       ]
     }
   }
