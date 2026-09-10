@@ -617,3 +617,8 @@ The [CTRE writer audit](audits/ctre-swerve-writer-audit.md) adds local brake att
 motion and failed writes, preserves original errors, and lets explicit brake requests ignore
 unused invalid motion data. Numerical-oracle, request-reuse and allocation tests pass; surrounding
 bridge shutdown, feedback gating and physical stopping remain separate obligations.
+
+## Pass 53: FRC swerve bridge lifecycle and estimator boundary
+
+See [the bridge audit](audits/frc-swerve-bridge-audit.md) for shutdown, feedback gates, pose/vision
+validation, concurrency tests and the revised allocation-probe criterion with retained failures.
