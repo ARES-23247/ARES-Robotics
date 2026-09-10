@@ -2356,10 +2356,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "f5e05306bde3b7fd13bd50d943936d2b3c26092897df7e2e0066f297be6bd468",
+      "sha256": "f9f6b7289d6d4feb71fe72d2a61456a3615a713c23852b9f3a953fe651c6d66f",
       "review": "partial",
-      "validation": "passed",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed.",
+      "validation": "not-applicable",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2448,7 +2448,8 @@
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
         "docs/audits/xrp-simulation-control-audit.md",
-        "docs/audits/swerve-angle-audit.md"
+        "docs/audits/swerve-angle-audit.md",
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3110,10 +3111,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "6ac8feec9bf382a0dbce6be3caa1e57daf83d47692872957b996d6fa7e14c225",
+      "sha256": "c626b3a1463ec1e2d3ae5fbedb4d00caddeac732debfae8da73ed76f82df7f54",
       "review": "partial",
-      "validation": "passed",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed.",
+      "validation": "not-applicable",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3160,14 +3161,15 @@
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
         "docs/audits/xrp-simulation-control-audit.md",
-        "docs/audits/swerve-angle-audit.md"
+        "docs/audits/swerve-angle-audit.md",
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "2d622ce1617bfc64e76278f4133475d37f56538e249fd11e73af42d1b50df5ec",
+      "sha256": "30888772b19a28f9ff80ce03e6dbae789fbbd0b98a44b29a2801937535641f16",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library tree 0bce3f5a352271d33afd62524346e33456a9b6c8 matches source50e46196; candidate17.0.3-rc.0bce3f5a3522 passed full library/API/publication, robot/Studio consumer and policy gates.",
+      "scope": "Exact library source-tree identity d09ca4313af7d5236d0377d9a779fe8c2f06fef8 matches source commit 3707cf8d and unique locally validated candidate 17.0.3-rc.d09ca4313af7.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3214,7 +3216,8 @@
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
         "docs/audits/xrp-simulation-control-audit.md",
-        "docs/audits/swerve-angle-audit.md"
+        "docs/audits/swerve-angle-audit.md",
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4186,12 +4189,13 @@
       ]
     },
     "ARESLib-Kotlin/simulator/api/simulator.api": {
-      "sha256": "b954fd6e2bb4f9f9b19e15929c73021221b2a8ad8e1fa874f086257c6105575b",
+      "sha256": "c425488848340b9e0bc415a02f62c059c374646e36ff1c4f7371fb8c2732f46a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass 48: Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
       ]
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/physics/SimPhysicsWorld.kt": {
@@ -4354,6 +4358,114 @@
       "scope": "Pass 47 full test-source review and focused execution; two MathUtils test-local lambdas replaced with production assertions. Full library and exact-candidate consumer gates passed.",
       "evidence": [
         "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/api/ftc-hardware.api": {
+      "sha256": "e50d711209504a07cf0a4b676a90b1f6e2562b681d55f0caef19b357fc707710",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/SwerveModuleIOFtc.kt": {
+      "sha256": "ba1adec0665ee3ce20f6667a7e9c34bf104e5a3968e431ce27f5fa938ffa6988",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full adapter review: SDK/calibration conversion, acquisition-start freshness, finite paired output and cleanup, constructor/close ownership, throttled warnings and reusable loop state. Latch-controlled lifecycle tests and robot-thread allocation checks; physical SDK timing, controller arming and hardware response remain external.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SwerveFtcAllocationAuditTest.kt": {
+      "sha256": "2cd665a2cb371625f258c6d6a96a2c252de31978be120d50c82569447227c439",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution, including regression assertions, fixture ownership and cleanup; meaningful conversion, freshness, coupled output, failure, lifecycle or allocation checks as applicable. 23 focused methods passed, 22 newly added across four files.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SwerveFtcBoundaryAuditTest.kt": {
+      "sha256": "bf2d162f1fcfbbe567b4caf349fc48edec75dd6c045109936fbc62c565cea162",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution, including regression assertions, fixture ownership and cleanup; meaningful conversion, freshness, coupled output, failure, lifecycle or allocation checks as applicable. 23 focused methods passed, 22 newly added across four files.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SwerveFtcLifecycleAuditTest.kt": {
+      "sha256": "0eb0d35a3594826f551ffc68c6320047056026dbe33c7f935bb2565dea2d33f9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution, including regression assertions, fixture ownership and cleanup; meaningful conversion, freshness, coupled output, failure, lifecycle or allocation checks as applicable. 23 focused methods passed, 22 newly added across four files.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SwerveFtcSamplingAuditTest.kt": {
+      "sha256": "3b31e2e1f7a94f0dcd6212d93ea06ae02a58abaee004ca52546902121d22e3a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution, including regression assertions, fixture ownership and cleanup; meaningful conversion, freshness, coupled output, failure, lifecycle or allocation checks as applicable. 23 focused methods passed, 22 newly added across four files.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SwerveModuleIOFtcTest.kt": {
+      "sha256": "3cf05a3ebecf98fc79469702277a63bf8ad645836fd116f8a8eeefc7b54e56e7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test-file review and execution, including regression assertions, fixture ownership and cleanup; meaningful conversion, freshness, coupled output, failure, lifecycle or allocation checks as applicable. 23 focused methods passed, 22 newly added across four files.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/api/ftc-mocks.api": {
+      "sha256": "09b2b7cfc5061171a3eefc028c138f8ff2cc2dafb551112059b0cec6920aa50b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/MotorMocks.kt": {
+      "sha256": "520ece60c7a60ecab20e085c2229c4d6051258c8f57a83097c12a4d17780a9b5",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped SDK metadata additions only: motor configuration getter and analog maximum-voltage getter; cached SDK signatures and adapter tests verified. Remaining shared mock behavior still requires review.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/SensorMocks.kt": {
+      "sha256": "0139253afd1b6e33d89b47d9b574fff23a3d3a37ef6749021df82a459ec959f9",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped SDK metadata additions only: motor configuration getter and analog maximum-voltage getter; cached SDK signatures and adapter tests verified. Remaining shared mock behavior still requires review.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType.kt": {
+      "sha256": "3148e59ce256456e70f9fd8d2c3d93fba404a3775497dc169bf574d261bd9dc3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full minimal metadata-holder review; unknown default and getter/setter JVM descriptors checked against cached RobotCore 11.1.0. Adapter tests configure resolution; this is not complete SDK emulation.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+      ]
+    },
+    "docs/audits/ftc-swerve-io-audit.md": {
+      "sha256": "86cf312fab0af18e60b096022bf653b54e2a6a13f10192843873097a763a6690",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates.",
+      "evidence": [
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
       ]
     }
   }

@@ -581,3 +581,11 @@ mutation, small-command direction loss, stale reset angles, invalid optimizer in
 overflowing coupled calculations. Shared angle wrapping now preserves tiny angles and reduces
 large values before shifting. Numerical oracles, derivative-bound tests and measured buffered
 allocation support the changes; physical steering tracking and loop deadlines remain unproven.
+
+## Forty-eighth pass: FTC swerve module IO
+
+The [FTC swerve IO audit](audits/ftc-swerve-io-audit.md) replaces guessed encoder units with
+captured SDK metadata, expires old/slow samples, neutralizes coupled failures and makes close
+invalidate outputs and report worker join failures. Metadata caching and reusable loop state
+reduce repeated work. Mock failure/allocation tests pass; physical stop response, blocking SDK
+calls and controller-level enable/watchdog behavior remain distinct validation responsibilities.
