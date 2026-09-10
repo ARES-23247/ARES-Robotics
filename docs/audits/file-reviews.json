@@ -3151,10 +3151,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "cb3ff0196b2c170f22f800788ac071211703cf91964e0a94786ce75ede6425de",
+      "sha256": "7a0f843857b6a390b2b56d0b16ac1e63d1f10453850a1b804c95a83e582f103d",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3208,14 +3208,18 @@
         "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
         "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained",
         "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs",
-        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "e683931117f4d8ce5e86609d3ec618b7709c75a9bef614c75ed82a265f72e9dd",
+      "sha256": "6a478e2ac81493671276dbb01e4345f6be637a60ae2aa6a95bd89d19b5aaef51",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library tree3753101451c65933d5ba32870d491d661dee7c71 bound to sources11053dc7+54f14f85 and candidate17.0.3-rc.3753101451c6; full library/API/local publication and serial consumers validated in pass70.",
+      "scope": "Pass71: Exact library tree 7e9a7fb40abdf83deda57873b7b9cc3dd2733e2e, source 2562db21, candidate 17.0.3-rc.7e9a7fb40abd; full library/API/publication and dependent consumer gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3332,7 +3336,11 @@
         "docs/audits/apriltag-interchange-audit.md",
         "ARESLib-Kotlin/build/audit-pass70-final-focus-v2.log",
         "ARESLib-Kotlin/build/audit-pass70-library.log",
-        "ARESLib-Kotlin/build/audit-pass70-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass70-verified-evidence",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4314,12 +4322,16 @@
       ]
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/physics/SimPhysicsWorld.kt": {
-      "sha256": "4e0bbaeae0cdc75fdcdd4730a22e612ce76a13cadb2697a02b517e93732a0a60",
+      "sha256": "f03a526b01d3664439e8bc1d3e925c7d316633e3c9e962aa882cd219fbcacdd3",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass71: Full declaration read, center-origin XRP walls corrected and verified against canonical project metadata/Python bounds. Prior lifecycle, replacement transactionality and extreme physics parameter concerns remain open.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/xrp/XrpSimLauncher.kt": {
@@ -4332,21 +4344,29 @@
       ]
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/xrp/XrpSimulationEngine.kt": {
-      "sha256": "4f7ef056659c06978490d25affaf62dfc0cff5348c03cdb77c5226f89f6ad72a",
+      "sha256": "7c1f48c06b57cd526387489d6599410ca4a9709ee03bffea93f1ecea7e6a86a9",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass71: Full declaration read, XRP default geometry selected explicitly; common startup/reset helper uses current field dimensions and preserves neutral reset. Focused lease, motion, estimator provenance and E2E tests pass. Prior timing, publication and lifecycle limits remain open.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/physics/FieldWallOriginAuditTest.kt": {
-      "sha256": "7410418b232be27beaff22e81f5f2da378e31ff9386f98f97f21bce695a23f1f",
+      "sha256": "66488d513f24b39e279518f54e2892bdce49d8a0f61b7a56be49f3aa815421ac",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed. Pass71: Full one-method fixture review: equal-dimension league switches independently check wall extents and body count; XRP centered, FRC corner.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpDriveLeaseAuditTest.kt": {
@@ -4359,12 +4379,16 @@
       ]
     },
     "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpSimulationBoundaryAuditTest.kt": {
-      "sha256": "914bfaed198855877e953b5db543ca750d8f94693d208af732b1f8ff53a984df",
+      "sha256": "3f45d62c747129dc0bd1e1790a9f18264cae250e907285f2fcd71fb115a02dff",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed. Pass71: Full four-method fixture review; canonical spawn expectations corrected; estimator provenance, invalid step neutralization, invalid reset preservation and configuration rejection executed.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpSimulationE2ETest.kt": {
@@ -4377,21 +4401,29 @@
       ]
     },
     "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpSimulationEngineTest.kt": {
-      "sha256": "c078fdf2f0df349e37d9103dcdd4cee0691e7d78860b78cf1eb7ca695c302ce4",
+      "sha256": "e8547ec6820aa3a24735fefcc4b6847b6bcfb10c734c293719bcb97c2df4cfa9",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed.",
+      "scope": "Pass 46 full test-source review and execution; focused 34-method gate plus full library and consumer validation passed. Pass71: Full three-method fixture review; corrected spawn-based forward, CCW rotation and strafe expectations. These are host motion/telemetry checks, not physical accuracy or complete server lifecycle proof.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "docs/audits/xrp-simulation-control-audit.md": {
-      "sha256": "cc23b622e7a4b7bc61d4859b273caafd798ffb07d72895a48b5c05df9f5b0b06",
+      "sha256": "c46e485c9b145b699ff125ec25c9c9caeb25e19d7fe3b2829e5425742a8614ab",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Pass 46 report reviewed against source diff, baseline logs, focused/full XML, API diff and dependency-ordered validation. Headless host evidence and unresolved scopes distinguished.",
+      "scope": "Pass 46 report reviewed against source diff, baseline logs, focused/full XML, API diff and dependency-ordered validation. Headless host evidence and unresolved scopes distinguished. Pass71: Full historical report reread; explicit correction explains why prior corner-origin fixture evidence did not establish canonical XRP agreement. Historical validation claims preserved as historical.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/MathUtils.kt": {
@@ -5283,7 +5315,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "eec735b1aeabf97a8645a1682898088d902b5cf3c7e72452dfae0778c6485d8f",
+      "sha256": "f93cf7b0003e264688f5b799fb24bfb7839c286de9f665df058902d590202f81",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5304,7 +5336,8 @@
         "docs/audits/scalar-motion-gravity-audit.md: pass67 records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/coordinate-odometry-transform-audit.md: pass68 records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/geometry3d-numerics-audit.md: pass69 reviewed records and canonical self-fingerprint refreshed",
-        "docs/audits/apriltag-interchange-audit.md: pass70 records and canonical self-fingerprint refreshed"
+        "docs/audits/apriltag-interchange-audit.md: pass70 records and canonical self-fingerprint refreshed",
+        "docs/audits/xrp-coordinate-contract-audit.md: pass71 verified records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6123,15 +6156,19 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/AprilTagMapCodec.kt": {
-      "sha256": "a4c56ff3aef1ebcb2c7ff05437c92067f2f5289a8e819edb3df412d3135dca7a",
+      "sha256": "26d48c8ec14da2fba9974e74364f289381792475e0586ca05dd3b0209db3ce6f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full declaration review and validated parser/math fixes: strict shapes/types/exact IDs, finite geometry/size/dimensions, shared stable quaternion/Euler conversion, rigid matrix validation, optional vendor field dimensions, owned results and sorted exports. 232/233 focused lines,208/216 branches,22/22 methods. PARTIAL: raw WPILib positions are passed into Studio FTC fields without a demonstrated frame mapping; next integration pass must resolve source/target axes and import dimension replacement; XRP project CENTER_ORIGIN_CCW also conflicts with prior JVM corner-origin contract. No HIL or complete format compatibility claim.",
+      "scope": "Full declaration review and validated parser/math fixes: strict shapes/types/exact IDs, finite geometry/size/dimensions, shared stable quaternion/Euler conversion, rigid matrix validation, optional vendor field dimensions, owned results and sorted exports. 232/233 focused lines,208/216 branches,22/22 methods. PARTIAL: raw WPILib positions are passed into Studio FTC fields without a demonstrated frame mapping; next integration pass must resolve source/target axes and import dimension replacement; XRP project CENTER_ORIGIN_CCW also conflicts with prior JVM corner-origin contract. No HIL or complete format compatibility claim. Pass71: XRP center-origin contradiction resolved against canonical project metadata and independent raw fmap positions; only FRC translates. Prior WPILib axes and Studio source/target dimension concerns remain open.",
       "evidence": [
         "docs/audits/apriltag-interchange-audit.md",
         "ARESLib-Kotlin/build/audit-pass70-final-focus-v2.log",
         "ARESLib-Kotlin/build/audit-pass70-library.log",
-        "ARESLib-Kotlin/build/audit-pass70-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass70-verified-evidence",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/AprilTagMapCodecTest.kt": {
@@ -6147,15 +6184,19 @@
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/AprilTagMapBoundaryTest.kt": {
-      "sha256": "82e81ff2148d7b846e2db86548edab8b6c9d923c877c37a6ee12e7d176091139",
+      "sha256": "d7be19cc626bf2ead8d147c04e849e8512e54b4c76ce2b9005e84ea6920a146e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full nineteen-method regression fixture including helpers: seven initial failures plus valid control, separate dimensions and string-coercion failures, strict JSON/numeric/exact-ID/type/size/dimension boundaries,500seed7001 independent matrix cases, extreme quaternion scales and singular Euler preservation, owned imported lists and sorted LinkedList export, three-league fmap origins.42 focused tests passed with shared geometry; no latency/HIL claim.",
+      "scope": "Full nineteen-method regression fixture including helpers: seven initial failures plus valid control, separate dimensions and string-coercion failures, strict JSON/numeric/exact-ID/type/size/dimension boundaries,500seed7001 independent matrix cases, extreme quaternion scales and singular Euler preservation, owned imported lists and sorted LinkedList export, three-league fmap origins.42 focused tests passed with shared geometry; no latency/HIL claim. Pass71: Updated the three-league origin fixture to the independently established XRP center contract; focused codec tests and full suite passed. Other prior fixture scope retained.",
       "evidence": [
         "docs/audits/apriltag-interchange-audit.md",
         "ARESLib-Kotlin/build/audit-pass70-final-focus-v2.log",
         "ARESLib-Kotlin/build/audit-pass70-library.log",
-        "ARESLib-Kotlin/build/audit-pass70-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass70-verified-evidence",
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     },
     "docs/audits/apriltag-interchange-audit.md": {
@@ -6179,6 +6220,53 @@
         "ARESLib-Kotlin/build/audit-pass70-final-focus-v2.log",
         "ARESLib-Kotlin/build/audit-pass70-library.log",
         "ARESLib-Kotlin/build/audit-pass70-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/xrp/XrpFieldCoordinateContractTest.kt": {
+      "sha256": "93189ab019206aea044c1ceab6520537e35f22de2125b7da2068392a778bd41a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass71: Full new five-method fixture review and failure-before evidence: actual project center convention, exact walls, actual Orbit resource, raw fmap import/export positions, default XRP geometry and current-field network reset. Includes config/clock restoration; focused and full execution passed.",
+      "evidence": [
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/field-presets/xrp/orbit_odyssey_2026.json": {
+      "sha256": "a56a18b1a35f766cdfa16e1996df341a8ec98baee100ee403ea89b44dfba0c98",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass71: Entire resource read. Center translation verified semantically: only every tag/element/obstacle/waypoint XY and revision changed; all other values retained. Canonical validator/catalog, JVM contract and actual Python collision checks passed. Physical season calibration and driver-station side metadata versus named launch/tag positions remain unverified.",
+      "evidence": [
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/AprilTagMapPresetCatalogTest.kt": {
+      "sha256": "8797bb7a263569611bd179ca26b542394fbd63445fc283668ec2f3537260a734",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass71: Full two-method fixture review and Studio execution: all bundled maps readable, correctly typed, nonempty, canonical validation, unique catalog IDs/paths. Does not assert physical calibration or independent coordinate agreement.",
+      "evidence": [
+        "docs/audits/xrp-coordinate-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/xrp-coordinate-contract-audit.md": {
+      "sha256": "ae8b919ec28defc944f872caa36f0a443ad90ac139a21f961e2846b5103b7dd5",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass71: Full report checked against source, failed-before/focused/full/candidate evidence and explicit open integration, runtime and physical limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass71-focused.log",
+        "ARESLib-Kotlin/build/audit-pass71-library.log",
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
       ]
     }
   }
