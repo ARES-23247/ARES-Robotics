@@ -119,12 +119,16 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/PathfindToPoseTask.kt": {
-      "sha256": "81316cb44cf2dcb03a4e9c03920346d931f9dbd8bacb17fe5d852e6b5fa812b5",
+      "sha256": "d0a59bf244e8618bd38ae5958e30802fa6f7b1550ebfe6752e65fdadde7ecca5",
       "review": "partial",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Earlier changed-section review retained; pass62 delegate completion uses shared gate and propagates delegate failure during end. Existing pathfind lifecycle and full consumer suites passed. Planning/initialization/resource ownership and other behavior still require full-file audit.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/FilterRecoveryAuditTest.kt": {
@@ -3207,10 +3211,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "30d7a27ec58d9cc6cf6957c19692187016340f8629c1353371d261bb05d4a4d5",
+      "sha256": "7ebfc2a3dcc8d0a83772c637e0b8ba710beaee7c08cb47bf9ec31a961079439d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree93435bb3591c3ba31526115d4996a5e178610fba bound to source4a87a821 candidate17.0.3-rc.93435bb3591c;1546librarytests/API/coreKover/localpublication and dependency-ordered consumer gates passed. See pass61 report.",
+      "scope": "Exact tree 2b248e8b8af9109b9385dc3fa08aaed355744123 bound to source2eeb9c2a candidate17.0.3-rc.2b248e8b8af9;1566librarytests/API/coreKover/local publication and dependency-ordered consumer gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3291,7 +3295,11 @@
         "docs/audits/task-lifecycle-metadata-audit.md",
         "ARESLib-Kotlin/build/audit-pass61-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass61-library.log",
-        "ARESLib-Kotlin/build/audit-pass61-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass61-verified-evidence",
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5242,7 +5250,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "da944b43f56841c5c3a3eaf9b8a7f2c3eabd4695e02d52e672f4c3b565a88676",
+      "sha256": "36179cbc56ff8074a46d1655549a34718e3d84018d4ee3089974a3d648d9deb0",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5254,7 +5262,8 @@
         "docs/audits/holonomic-control-composition-audit.md: reviewed pass58 record updates and canonical self-fingerprint refresh",
         "docs/audits/path-task-loop-audit.md: pass59 records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/task-timeout-arithmetic-audit.md: pass60 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-lifecycle-metadata-audit.md: pass61 ledger entries reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/task-lifecycle-metadata-audit.md: pass61 ledger entries reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/task-completion-boundary-audit.md: pass62 ledger entries reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5352,8 +5361,8 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/Task.kt": {
-      "sha256": "737b62dbefef02dc7f1e5687630d73e2235f92a006fef6460238a7c737876f9f",
-      "scope": "Pass59 path timing/velocity/progress/marker ownership review retained; pass61 default initialize/cancel/reset now coordinated with watchdog metadata under one registry monitor. Virtual cleanup remains outside monitor and callable after own deadline removal.76focused/1546library/API/consumerspassed. Aggregate still partial: completion/callback semantics, resource ownership, watchdog lifecycle ordering and other abstractions require further audit.",
+      "sha256": "f089f1bb4e56ccccb615d5437760392b04cf2d92805cb5880abbb3eeafeb2532",
+      "scope": "Prior path timing/math/marker and initialize/cancel/reset metadata review retained. Pass62 default end coordinates terminal status/deadline; marker completion checks timeout/status and retains ownership through rejected or throwing normal cleanup. New completion/path regressions and all focused/full consumers passed. Aggregate remains partial for resource ownership, other tasks and callback concurrency.",
       "review": "partial",
       "validation": "passed",
       "evidence": [
@@ -5364,7 +5373,11 @@
         "docs/audits/task-lifecycle-metadata-audit.md",
         "ARESLib-Kotlin/build/audit-pass61-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass61-library.log",
-        "ARESLib-Kotlin/build/audit-pass61-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass61-verified-evidence",
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/FollowPathFailureTest.kt": {
@@ -5403,10 +5416,10 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskTimeoutManager.kt": {
-      "sha256": "1e76ea475a5ed0c5208002b6fa6c16ca1a9df9342efc651fbc9abb1c368b51af",
+      "sha256": "7febf83312bb154101ab09ba22195042163e56536ec42aea6baf3779edfae3a1",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Prior full pass60 timeout review retained; full source reread with new initializeTask/cancelTask/resetTask atomic metadata boundaries, lock ordering and callback exclusion reviewed. Forced old-watchdog interleavings and cleanup exceptions tested.69/69lines60/62branches16/16methods;76focused/1546library/API/consumerspassed. Arbitrary concurrent user lifecycle bodies are not supported by these watchdog gates.",
+      "scope": "Full prior arithmetic and lifecycle review refreshed after full reread. New permitsCompletion checks caller elapsed plus watchdog clock, latches timeout without callbacks. finishTask commits terminal status and removes deadline under monitor before callbacks. Exact equality, existing failure/cancellation, delayed predicates/end/callbacks tested.88/88lines80/84branches18/18methods focused;96focused/1566full/API/consumers passed. Arbitrary simultaneous user lifecycle bodies remain unsupported.",
       "evidence": [
         "docs/audits/task-timeout-arithmetic-audit.md",
         "ARESLib-Kotlin/build/audit-pass60-final-focus-complete.log",
@@ -5415,7 +5428,11 @@
         "docs/audits/task-lifecycle-metadata-audit.md",
         "ARESLib-Kotlin/build/audit-pass61-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass61-library.log",
-        "ARESLib-Kotlin/build/audit-pass61-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass61-verified-evidence",
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskTimeoutBoundaryTest.kt": {
@@ -5498,6 +5515,89 @@
         "ARESLib-Kotlin/build/audit-pass61-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass61-library.log",
         "ARESLib-Kotlin/build/audit-pass61-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskCompletion.kt": {
+      "sha256": "86cc36999e7814c9cca33ab9b731676a216db7b494e8ca38fa26a5b8869d19fa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire new helper reviewed: before/after predicate deadline and terminal-status gates, exceptions owned by caller, callbacks outside watchdog lock.3/3lines4/4branches1/1method.96 focused/1566 full tests and candidate consumers passed; warmed10Kchecks0bytes. Snapshot boundaries do not preempt blocked user code.",
+      "evidence": [
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskExecutor.kt": {
+      "sha256": "ffa9ae0d1b6ef164919d2c148ea2524d90d2f52a4a80c43cfa69c3f0b994bfe2",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass62 normal-completion boundary reviewed: check elapsed timeout/status before and after predicate, reject failed/cancelled status after end, abort queue and run interrupted cleanup.119/145lines47/70branches12/12methods focused. Timestamp arithmetic, suspension/preemption, callback reentrancy and broader cleanup remain separate full-file work.",
+      "evidence": [
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskGroupDispatcher.kt": {
+      "sha256": "05e430e0c1da98ca15a5fd3047e5166b478c591ccde940a22aff8f802a6b8752",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass62 sequential/parallel/race/deadline normal-completion traversal and parent/child timeout propagation reviewed. Four duplicated normal-end blocks consolidated with rejected/throwing end cleanup ownership. All four groups tested at overdue/equality/predicate failure/end crossing cases. Helper16/24lines5/10branches3/3methods. Group identity/equality, duplicate membership, initialization failure, time arithmetic and reentrancy remain partial.",
+      "evidence": [
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskCompletionBoundaryTest.kt": {
+      "sha256": "9abb2c143988f8023a79130b52ef1f879e22ba1658881d14fb064fb62a63704d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire16method file reviewed/executed: atomic end/deadline callbacks, prior status, interrupted end, overdue executor and4groups, predicate failure/time spent, rejected/throwing cleanup, equality, callback exception, parent deadline prevents next child init. Initial12methods11failed beforefix; separateparentcase1failed. Fixtureowns/resetstasks andmockclock.",
+      "evidence": [
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskCompletionPathTest.kt": {
+      "sha256": "eea2d2776da5333e7342824a00287a57047153990eb8e2ed1f8c290aad5ef958",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire3method file reviewed/executed: overdue marker, normal end crossing deadline, normal end throwing; failed path neutralizes drive and marker remains owned for exactly one interrupted cleanup. Namespaced test command registry cleared and owned executor/tasks reset; no HIL claim.",
+      "evidence": [
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskCompletionZeroGcTest.kt": {
+      "sha256": "07844e43a7e821cad9ee0a8ff51b1a7fbe100ef63b75082bee1e6d193240c598",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Entire allocation probe reviewed/executed: warmed10Kcompletionchecks measured0bytes in focused/full runs,256bytegate, explicit unsupported-counter skip, owned task/mockclock cleanup. Existing escaped-array calibration48K validates counter. No CPU speedup/hardware loop timing claim.",
+      "evidence": [
+        "docs/audits/task-completion-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+      ]
+    },
+    "docs/audits/task-completion-boundary-audit.md": {
+      "sha256": "e5d97cff65d99d597786efe65e51be9872d549ee5886819e3752bb419cc31940",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full report verified against source, reproduced baseline failures, observed focused/full/API/policy/consumer evidence and explicit coverage/lifecycle/hardware boundaries.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass62-library.log",
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
       ]
     }
   }
