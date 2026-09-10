@@ -3211,10 +3211,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "e43e24c96fa2579d6058a6d9ced97d4d8f930402b8b92ca5c6fbe75aa3d95f4f",
+      "sha256": "77ea93545c3f9d10aba7d184935ee30372c04d6f410dc28d1825ef4d871a6272",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree 6802fc554f5d89cb470c33331ab2bb9a9d56ff96 bound to sourcedf9b95c6 candidate17.0.3-rc.6802fc554f5d;1662 library tests/API/core Kover/local publication and dependency-ordered consumer gates passed.",
+      "scope": "Exact tree 16845252488e783efdf6b4b0ea4bf120f9fa1194 bound to sources e8077354+d3e6f2e9 candidate17.0.3-rc.16845252488e;1676 library tests/API/core Kover/local publication and dependency-ordered consumers passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3323,7 +3323,11 @@
         "docs/audits/coordinate-odometry-transform-audit.md",
         "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass68-library.log",
-        "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass68-verified-evidence",
+        "docs/audits/geometry3d-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass69-final-focus-v3.log",
+        "ARESLib-Kotlin/build/audit-pass69-library.log",
+        "ARESLib-Kotlin/build/audit-pass69-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5274,7 +5278,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f81dc7df5588c0d4570e6920bee5eda6263ab3ae91cb0b6cde4a1dd74e43c8ab",
+      "sha256": "16edbae690d6de5320e1eb7b1e3e90ba44f9b1c3ddd6021779bd78eed36e3e78",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5293,7 +5297,8 @@
         "docs/audits/weak-registry-clock-audit.md: pass65 records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/limelight-proxy-ownership-audit.md: pass66 records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/scalar-motion-gravity-audit.md: pass67 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/coordinate-odometry-transform-audit.md: pass68 records reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/coordinate-odometry-transform-audit.md: pass68 records reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/geometry3d-numerics-audit.md: pass69 reviewed records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6050,6 +6055,65 @@
         "ARESLib-Kotlin/build/audit-pass68-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass68-library.log",
         "ARESLib-Kotlin/build/audit-pass68-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/Geometry3d.kt": {
+      "sha256": "a50863ebcaef066ece2c890e1307fb37f0f3217ac3671b24b9e307d9ab38efc3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file: stable norm/normalization boundaries with ordinary fast paths, Hamilton order and unit-conjugate precondition, Euler matrix convention and coherent pitch singularities, pooled setter storage, shared Euler formula, scalar transform sandwich with bounded extreme-vector scaling, independent output ownership, planar/deep-copy compatibility and all declarations. 98/98 lines,40/40 branches,30/30 methods. Raw invalid compatibility fallbacks and ordinary arithmetic overflow remain documented; no HIL or zero-allocation claim for owned transform results.",
+      "evidence": [
+        "docs/audits/geometry3d-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass69-final-focus-v3.log",
+        "ARESLib-Kotlin/build/audit-pass69-library.log",
+        "ARESLib-Kotlin/build/audit-pass69-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/geometry/Geometry3dTest.kt": {
+      "sha256": "f2ebea619d696e98222bd998ba0cf7063c4188f3c2791689cb5e16522785f0da",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full existing four-method fixture read unchanged: quaternion normalization, three Euler axes, yaw-local transform composition and relative-frame translation. Expanded independent matrix/decimal/boundary fixtures cover full 3D and numerical limits; focused and full candidate validation passed.",
+      "evidence": [
+        "docs/audits/geometry3d-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass69-final-focus-v3.log",
+        "ARESLib-Kotlin/build/audit-pass69-library.log",
+        "ARESLib-Kotlin/build/audit-pass69-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/geometry/Geometry3dBoundaryTest.kt": {
+      "sha256": "6a48f3d77052397c9cc23023f71c0e8c080fa19d5ded5e093d7e392fc43d723b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full thirteen-method fixture: initial five methods reproduced four numerical failures with one legacy-invalid control; final exact-double BigDecimal oracles1000 norms/1000 quaternions,1000 independent Euler-matrix transform cases,2000 Euler getter/setter/identity cases, singular and near-singular pitch, Hamilton basis, alias independence/deep copy/projection, nonfinite/vector contracts. Deterministic seeds6901..6904; explicit tolerances and unit-rotation preconditions.",
+      "evidence": [
+        "docs/audits/geometry3d-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass69-final-focus-v3.log",
+        "ARESLib-Kotlin/build/audit-pass69-library.log",
+        "ARESLib-Kotlin/build/audit-pass69-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/geometry/Geometry3dAllocationTest.kt": {
+      "sha256": "1178b575ef81191a9bfa71eedcb877139962124aef6ac7943d7099a97b5f970f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full measured fixture: varying in-place Euler mutation/three scalar getters/normal and extreme vector norms with volatile sinks and ten warmup batches. Five10K scalar windows focus[240,0,0,0,0],full[120,0,0,0,0]; minimum<=256,total<=4096.10K owned pose results1760000bytes as positive control. Explicit unsupported-counter skip; no latency or every-call-zero claim.",
+      "evidence": [
+        "docs/audits/geometry3d-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass69-final-focus-v3.log",
+        "ARESLib-Kotlin/build/audit-pass69-library.log",
+        "ARESLib-Kotlin/build/audit-pass69-verified-evidence"
+      ]
+    },
+    "docs/audits/geometry3d-numerics-audit.md": {
+      "sha256": "7ac13128f28cd576fef043484b03ded2b579d4ccae832ddfcac9146037a83a1b",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report reconciled with four baseline failures, source-level temporary removals, mutable/unit/fallback contracts, exact focused coverage, decimal/matrix oracles and full library/API/policy/consumer evidence. All named local logs and XML snapshots retained; six opt-in Studio skips and physical timing/calibration limitations explicit.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass69-final-focus-v3.log",
+        "ARESLib-Kotlin/build/audit-pass69-library.log",
+        "ARESLib-Kotlin/build/audit-pass69-verified-evidence"
       ]
     }
   }
