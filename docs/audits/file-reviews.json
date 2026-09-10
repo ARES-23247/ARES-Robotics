@@ -2356,10 +2356,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "cd03d0e1475e32c570f87f1aa2f6244f4eecfcccff2d1a689e3db90170fe3aff",
+      "sha256": "f5e05306bde3b7fd13bd50d943936d2b3c26092897df7e2e0066f297be6bd468",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2447,7 +2447,8 @@
         "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/swerve-angle-audit.md"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3109,10 +3110,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "1127d8914f4995e76b4e9755b12fff8e54a1afca0ce63b57576c6fbf5f0ed8f3",
+      "sha256": "6ac8feec9bf382a0dbce6be3caa1e57daf83d47692872957b996d6fa7e14c225",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3158,14 +3159,15 @@
         "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/swerve-angle-audit.md"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "18412ecd5ca2c05a13f7e964b76f7890571791011c79a5ba05f23bd2ec53acd3",
+      "sha256": "2d622ce1617bfc64e76278f4133475d37f56538e249fd11e73af42d1b50df5ec",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library tree 993368b5727a3b89625777d503ecf1a3f203ddf0 checked against source commit 00091bdf and local candidate 17.0.3-rc.993368b5727a; policy passed.",
+      "scope": "Exact library tree 0bce3f5a352271d33afd62524346e33456a9b6c8 matches source50e46196; candidate17.0.3-rc.0bce3f5a3522 passed full library/API/publication, robot/Studio consumer and policy gates.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3211,7 +3213,8 @@
         "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass45-studio.log",
         "ARESLib-Kotlin/build/audit-pass45-policy.log",
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/swerve-angle-audit.md"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3782,31 +3785,33 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/SwerveModuleState.kt": {
-      "sha256": "eea039a9b699803a181bb546b2b77453825bbe96211dec313a602590d3b42751",
+      "sha256": "b0d68cce24d79c21ef61a39424a58d0cb6519037c57931a4825f400fc0849910",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 43 complete file review: wheel conventions, arithmetic range and cancellation, coupled normalization, buffer ownership, invalid inputs, allocations and public compatibility assessed. Focused and full-library tests passed; seeded exact-input oracles and warmed allocation windows have bounded coverage, with Kover gaps and physical limitations explicit in report.",
+      "scope": "Full mutable DTO and inline-angle ownership review; misleading allocation documentation corrected. Buffered and owning paths exercised. Full library/API and exact-candidate robot/Studio consumer gates passed.",
       "evidence": [
         "docs/audits/wheel-kinematics-xrp-audit.md",
         "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass43-library.log",
         "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass43-studio.log",
-        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+        "ARESLib-Kotlin/build/audit-pass43-policy.log",
+        "docs/audits/swerve-angle-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/SwerveKinematics.kt": {
-      "sha256": "a1a84112dd8fd44c58689596a4aab86d85cfd8c396ffd469b2dfcc2777f82473",
-      "review": "partial",
+      "sha256": "71637ebd2ce22e907672b499f600b8a125b29964b579fd5c8ba2ab4a2d1d2ce2",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 43 desaturation normalization reviewed and tested across finite extremes and invalid vectors. Steering generation, configuration ownership, acceleration/timing and replacement angle allocation remain pending; no whole-file completion credit.",
+      "scope": "Full inverse-kinematics, geometry ownership, buffer preconditions, neutralization, initial/reset seeding, optimizer, finite arithmetic, discrete rate limits and desaturation review. Focused regression/oracle/property/allocation tests passed. Full library/API and exact-candidate robot/Studio consumer gates passed.",
       "evidence": [
         "docs/audits/wheel-kinematics-xrp-audit.md",
         "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass43-library.log",
         "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass43-studio.log",
-        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+        "ARESLib-Kotlin/build/audit-pass43-policy.log",
+        "docs/audits/swerve-angle-audit.md"
       ]
     },
     "ARESLib-Kotlin/xrp-hardware/src/main/kotlin/com/areslib/xrp/hardware/XrpDifferentialHardwareIO.kt": {
@@ -4268,6 +4273,87 @@
       "scope": "Pass 46 report reviewed against source diff, baseline logs, focused/full XML, API diff and dependency-ordered validation. Headless host evidence and unresolved scopes distinguished.",
       "evidence": [
         "docs/audits/xrp-simulation-control-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/MathUtils.kt": {
+      "sha256": "8e017b63eecc213b89ba52a01f5729084f799846694ba6a44d4c9087bd5f8ba4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full angle wrapper review; represented-period decimal oracle, principal-interval bit preservation and legacy nonfinite fallback tested. Full library/API and exact-candidate robot/Studio consumer gates passed.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/SwerveAllocationAuditTest.kt": {
+      "sha256": "9de116c3e3f76a483f8f317e7c18a63951051eb2e83d24beeb4164edda0e6f09",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 47 full test-source review and focused execution; two MathUtils test-local lambdas replaced with production assertions. Full library and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/SwerveBoundaryAuditTest.kt": {
+      "sha256": "5eba5cfd5fe721a0460d011e22143cb92fd11eb55ea7fce47d1f670edbad011a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 47 full test-source review and focused execution; two MathUtils test-local lambdas replaced with production assertions. Full library and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/SwerveDynamicsAuditTest.kt": {
+      "sha256": "d7baee716f90433e8700969b1c31405fd1864154cf1f30f2b19f7c3b32eaa7e2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 47 full test-source review and focused execution; two MathUtils test-local lambdas replaced with production assertions. Full library and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/SwerveNumericalAuditTest.kt": {
+      "sha256": "c9e0f1f37a68e0dbf17ddbeec14f5a798b55600aefc67371e17e40c4c43a1136",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 47 full test-source review and focused execution; two MathUtils test-local lambdas replaced with production assertions. Full library and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/AnglePrecisionAuditTest.kt": {
+      "sha256": "ff5e5bae2a039df5938e90a0d9ac1dbc4b4ad880b29abef6f2df453e8320f35b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 47 full test-source review and focused execution; two MathUtils test-local lambdas replaced with production assertions. Full library and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/MathUtilsTest.kt": {
+      "sha256": "b4f1d8d0800676ab74178e4cd7f7c120a6788514247a25d01178e2f406f4c99e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 47 full test-source review and focused execution; two MathUtils test-local lambdas replaced with production assertions. Full library and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "docs/audits/swerve-angle-audit.md": {
+      "sha256": "b517d2c4174b82569b465a41622459d58256766583814d049493116e97207bbd",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass47 full report reviewed against source, baseline/focused/full XML, Kover and candidate consumer/policy logs. Actual host evidence and remaining limitations distinguished.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/SwerveKinematicsTest.kt": {
+      "sha256": "575c8ff0e14f221f03141698956ead1329ffe7296d928f3b7b1788553b0f5fb6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 47 full test-source review and focused execution; two MathUtils test-local lambdas replaced with production assertions. Full library and exact-candidate consumer gates passed.",
+      "evidence": [
+        "docs/audits/swerve-angle-audit.md"
       ]
     }
   }

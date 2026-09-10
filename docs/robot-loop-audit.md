@@ -573,3 +573,11 @@ Store estimator provenance, estimator-relative steering and guaranteed loop clea
 corner-origin wall placement that blocked mecanum motion, receiver time/type boundaries and a
 disabled-intent bypass. Buffered polling and direct wheel normalization reduce repeated work.
 Broader network lifecycle, extreme physics inputs and real-time/hardware validation remain open.
+
+## Forty-seventh pass: swerve inverse kinematics and angle precision
+
+The [swerve/angle audit](audits/swerve-angle-audit.md) fixes mutable geometry, partial output
+mutation, small-command direction loss, stale reset angles, invalid optimizer inputs and
+overflowing coupled calculations. Shared angle wrapping now preserves tiny angles and reduces
+large values before shifting. Numerical oracles, derivative-bound tests and measured buffered
+allocation support the changes; physical steering tracking and loop deadlines remain unproven.
