@@ -36,10 +36,16 @@ class MarvinShooterSubsystem(private val store: Store) {
     
     private var lastVx = 0.0
     private var lastVy = 0.0
-    private var lastVTime = 0.0
+    private var lastVTimeMs = 0L
+    private var hasMotionSample = false
+    private var accelerationX = 0.0
+    private var accelerationY = 0.0
 
     /** Cancels transfer ownership and clears feeder/floor outputs for trigger release. */
-    fun cancelTransfer() = feederController.cancelTransfer()
+    fun cancelTransfer() {
+        resetMotionSample()
+        feederController.cancelTransfer()
+    }
 
     /**
      * Calculates SOTM parameters from measured field-frame motion, dispatches shooter
@@ -54,34 +60,52 @@ class MarvinShooterSubsystem(private val store: Store) {
         runFloorRollers: Boolean = false
     ): Double {
         val driveState = store.state.drive
-        if (!driveState.measuredMotionValid) {
-            lastVx = 0.0
-            lastVy = 0.0
-            lastVTime = 0.0
-            clearShotResult(shotResult)
-            flywheelController.stop()
-            feederController.cancelTransfer()
+        val nowMs = com.areslib.util.RobotClock.currentTimeMillis()
+        val observedAt = driveState.poseEstimator.lastObservationTimestampMs
+        val ageMs = nowMs - observedAt
+        if (!driveState.measuredMotionValid || observedAt < 0L || nowMs < observedAt ||
+            ageMs < 0L || ageMs > MAX_MOTION_AGE_MS ||
+            hasMotionSample && observedAt < lastVTimeMs) {
+            shotResult.clear()
+            stopShot()
             return 0.0
         }
         val rx = driveState.measuredFieldXVelocityMetersPerSecond
         val ry = driveState.measuredFieldYVelocityMetersPerSecond
         val omega = driveState.measuredAngularVelocityRadiansPerSecond
         
-        val now = com.areslib.util.RobotClock.currentTimeMillis() / 1000.0
-        val dt = if (lastVTime > 0.0) now - lastVTime else 0.02
-        val ax = if (dt > 0.0) (rx - lastVx) / dt else 0.0
-        val ay = if (dt > 0.0) (ry - lastVy) / dt else 0.0
-        
-        lastVx = rx
-        lastVy = ry
-        lastVTime = now
+        if (!rx.isFinite() || !ry.isFinite() || !omega.isFinite()) {
+            shotResult.clear()
+            stopShot()
+            return 0.0
+        }
+        if (!hasMotionSample || observedAt > lastVTimeMs) {
+            val dtMs = observedAt - lastVTimeMs
+            // A first reading, or one after an observation gap, establishes a new baseline.
+            if (hasMotionSample && dtMs in 1L..MAX_MOTION_AGE_MS) {
+                val dt = dtMs / 1000.0
+                accelerationX = (rx - lastVx) / dt
+                accelerationY = (ry - lastVy) / dt
+            } else {
+                accelerationX = 0.0
+                accelerationY = 0.0
+            }
+            lastVx = rx
+            lastVy = ry
+            lastVTimeMs = observedAt
+            hasMotionSample = true
+        }
         
         // Project measured acceleration through the mechanism/control response delay.
-        scratchSpeeds.vxMetersPerSecond = rx + ax * ACCELERATION_LOOKAHEAD_SECONDS
-        scratchSpeeds.vyMetersPerSecond = ry + ay * ACCELERATION_LOOKAHEAD_SECONDS
+        scratchSpeeds.vxMetersPerSecond = lastVx + accelerationX * ACCELERATION_LOOKAHEAD_SECONDS
+        scratchSpeeds.vyMetersPerSecond = lastVy + accelerationY * ACCELERATION_LOOKAHEAD_SECONDS
         scratchSpeeds.omegaRadiansPerSecond = omega
         
         shotSetup.calculate(currentPose, scratchSpeeds, targetTranslation, shotResult)
+        if (!shotResult.isValid) {
+            stopShot()
+            return 0.0
+        }
         
         val targetRpm = shotResult.targetFlywheelRpm
         flywheelController.spinUp(targetRpm)
@@ -110,10 +134,15 @@ class MarvinShooterSubsystem(private val store: Store) {
         currentPose: Pose2d,
         targetTranslation: Translation2d
     ): Double {
+        resetMotionSample()
         scratchSpeeds.vxMetersPerSecond = 0.0
         scratchSpeeds.vyMetersPerSecond = 0.0
         scratchSpeeds.omegaRadiansPerSecond = 0.0
         shotSetup.calculate(currentPose, scratchSpeeds, targetTranslation, staticShotResult)
+        if (!staticShotResult.isValid) {
+            stopShot()
+            return 0.0
+        }
         val targetRpm = staticShotResult.targetFlywheelRpm
         val targetCowlRotations = staticShotResult.targetCowlAngleRotations
         
@@ -134,18 +163,20 @@ class MarvinShooterSubsystem(private val store: Store) {
         return rotation
     }
 
-    private fun clearShotResult(result: ShotResult) {
-        result.virtualTargetX = 0.0
-        result.virtualTargetY = 0.0
-        result.aimAngleRad = 0.0
-        result.robotTargetHeadingRad = 0.0
-        result.aimDistanceMeters = 0.0
-        result.targetFlywheelRpm = 0.0
-        result.targetCowlAngleRotations = 0.0
-        result.angularVelocityFeedforwardRadPerSec = 0.0
+    private fun resetMotionSample() {
+        hasMotionSample = false
+        accelerationX = 0.0
+        accelerationY = 0.0
+    }
+
+    private fun stopShot() {
+        resetMotionSample()
+        flywheelController.stop()
+        feederController.cancelTransfer()
     }
 
     private companion object {
+        private const val MAX_MOTION_AGE_MS = 100L
         const val ACCELERATION_LOOKAHEAD_SECONDS = 0.2
         const val AIM_KP = 4.0
     }

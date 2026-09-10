@@ -19,6 +19,150 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class MarvinMeasuredSotmRegressionTest {
+    private fun movingStore() = Store(RobotState(superstructure = SuperstructureState(custom = MarvinState()))) {
+        state, action -> MarvinReducer.reduce(state, action)
+    }
+
+    private fun observe(store: Store, timestamp: Long, vx: Double = 0.0, vy: Double = 0.0) {
+        store.dispatch(RobotAction.PoseUpdate(3.0, 2.0, 0.35, timestamp,
+            xVelocityMetersPerSecond = vx, yVelocityMetersPerSecond = vy, isExternalEstimate = true))
+    }
+
+    @Test
+    fun `first measured motion establishes acceleration baseline without a fictitious zero sample`() {
+        val store = movingStore()
+        observe(store, 1000L, 1.0, 2.0)
+        val result = ShotResult()
+        val pose = Pose2d(3.0, 2.0, Rotation2d(0.35))
+        val target = Translation2d(0.0, 5.0)
+        MarvinShooterSubsystem(store).updateShootOnTheMove(pose, target, result)
+        val expected = ShotResult()
+        ShotSetup(MarvinConfig.SHOT_CONFIG).calculate(pose, ChassisSpeeds(1.0, 2.0, 0.0), target, expected)
+        assertTrue(result.isValid)
+        assertShotEquals(expected, result)
+    }
+
+    @Test
+    fun `static aiming and trigger release reset moving acceleration history`() {
+        val store = movingStore()
+        val shooter = MarvinShooterSubsystem(store)
+        val pose = Pose2d(3.0, 2.0, Rotation2d(0.35))
+        val target = Translation2d(0.0, 5.0)
+        observe(store, 1000L, 1.0)
+        shooter.updateShootOnTheMove(pose, target, ShotResult())
+        shooter.updateStaticShoot(pose, target)
+        RobotClock.useMockTime(1020L)
+        observe(store, 1020L, 2.0)
+        val actual = ShotResult()
+        shooter.updateShootOnTheMove(pose, target, actual)
+        val expected = ShotResult()
+        ShotSetup(MarvinConfig.SHOT_CONFIG).calculate(pose, ChassisSpeeds(2.0, 0.0, 0.0), target, expected)
+        assertShotEquals(expected, actual)
+        shooter.cancelTransfer()
+        RobotClock.useMockTime(1040L)
+        observe(store, 1040L, 3.0)
+        shooter.updateShootOnTheMove(pose, target, actual)
+        ShotSetup(MarvinConfig.SHOT_CONFIG).calculate(pose, ChassisSpeeds(3.0, 0.0, 0.0), target, expected)
+        assertShotEquals(expected, actual)
+    }
+
+    @Test
+    fun `duplicate observation preserves acceleration while later observations advance it`() {
+        val store = movingStore()
+        val shooter = MarvinShooterSubsystem(store)
+        val pose = Pose2d(3.0, 2.0, Rotation2d(0.35))
+        val target = Translation2d(0.0, 5.0)
+        observe(store, 1000L)
+        shooter.updateShootOnTheMove(pose, target, ShotResult())
+        RobotClock.useMockTime(1020L)
+        observe(store, 1020L, 1.0)
+        val first = ShotResult()
+        shooter.updateShootOnTheMove(pose, target, first)
+        RobotClock.useMockTime(1030L)
+        val duplicate = ShotResult()
+        shooter.updateShootOnTheMove(pose, target, duplicate)
+        assertShotEquals(first, duplicate)
+        RobotClock.useMockTime(1040L)
+        observe(store, 1040L, 1.0)
+        val settled = ShotResult()
+        shooter.updateShootOnTheMove(pose, target, settled)
+        val expected = ShotResult()
+        ShotSetup(MarvinConfig.SHOT_CONFIG).calculate(pose, ChassisSpeeds(1.0, 0.0, 0.0), target, expected)
+        assertShotEquals(expected, settled)
+    }
+
+    @Test
+    fun `stale measured motion revokes firing even when the validity flag remains true`() {
+        val store = movingStore()
+        observe(store, 1000L)
+        val shooter = MarvinShooterSubsystem(store)
+        val pose = Pose2d(3.0, 2.0, Rotation2d(0.35))
+        val target = Translation2d(0.0, 5.0)
+        val result = ShotResult()
+        shooter.updateShootOnTheMove(pose, target, result)
+        RobotClock.useMockTime(1100L)
+        shooter.updateShootOnTheMove(pose, target, result)
+        assertTrue(result.isValid)
+        RobotClock.useMockTime(1101L)
+        assertEquals(0.0, shooter.updateShootOnTheMove(pose, target, result))
+        assertEquals(false, result.isValid)
+        assertEquals(false, store.state.superstructure.marvin.flywheelActive)
+        RobotClock.useMockTime(1120L)
+        observe(store, 1120L, 1.0)
+        shooter.updateShootOnTheMove(pose, target, result)
+        val expected = ShotResult()
+        ShotSetup(MarvinConfig.SHOT_CONFIG).calculate(pose, ChassisSpeeds(1.0, 0.0, 0.0), target, expected)
+        assertTrue(result.isValid)
+        assertShotEquals(expected, result)
+    }
+
+    @Test
+    fun `clock rollback cannot accept a future measured observation`() {
+        val store = movingStore()
+        observe(store, 1000L)
+        val shooter = MarvinShooterSubsystem(store)
+        val pose = Pose2d(3.0, 2.0, Rotation2d(0.35))
+        val target = Translation2d(0.0, 5.0)
+        val result = ShotResult()
+        shooter.updateShootOnTheMove(pose, target, result)
+        RobotClock.useMockTime(999L)
+        assertEquals(0.0, shooter.updateShootOnTheMove(pose, target, result))
+        assertEquals(false, result.isValid)
+        assertEquals(false, store.state.superstructure.marvin.flywheelActive)
+    }
+
+    @Test
+    fun `invalid static target cancels an already active shooter`() {
+        val store = Store(RobotState(superstructure = SuperstructureState(custom = MarvinState()))) {
+            state, action -> MarvinReducer.reduce(state, action)
+        }
+        val shooter = MarvinShooterSubsystem(store)
+        val pose = Pose2d(3.0, 2.0, Rotation2d(0.35))
+        shooter.updateStaticShoot(pose, Translation2d(0.0, 5.0))
+        assertTrue(store.state.superstructure.marvin.flywheelActive)
+        assertEquals(0.0, shooter.updateStaticShoot(pose, Translation2d(Double.NaN, 5.0)))
+        assertEquals(false, store.state.superstructure.marvin.flywheelActive)
+        assertEquals(0.0, store.state.superstructure.marvin.feeder.targetVelocityRps)
+    }
+
+    @Test
+    fun `invalid moving target clears result and cancels shooter intent`() {
+        val store = Store(RobotState(drive = DriveState(measuredMotionValid = true),
+            superstructure = SuperstructureState(custom = MarvinState()))) {
+            state, action -> MarvinReducer.reduce(state, action)
+        }
+        val shooter = MarvinShooterSubsystem(store)
+        val pose = Pose2d(3.0, 2.0, Rotation2d(0.35))
+        val result = ShotResult()
+        observe(store, 1000L)
+        shooter.updateShootOnTheMove(pose, Translation2d(0.0, 5.0), result)
+        assertTrue(result.isValid)
+        assertEquals(0.0, shooter.updateShootOnTheMove(pose, Translation2d(Double.NaN, 5.0), result))
+        assertEquals(false, result.isValid)
+        assertEquals(false, store.state.superstructure.marvin.flywheelActive)
+        assertEquals(0.0, store.state.superstructure.marvin.feeder.targetVelocityRps)
+    }
+
 
     @BeforeEach
     fun useDeterministicClock() {
@@ -52,6 +196,7 @@ class MarvinMeasuredSotmRegressionTest {
         val actual = ShotResult()
 
         // Prime the acceleration lookahead twice with a stationary measured chassis.
+        observe(store, 1000L)
         shooter.updateShootOnTheMove(pose, target, actual)
         RobotClock.useMockTime(1_020L)
         shooter.updateShootOnTheMove(pose, target, actual)
@@ -92,6 +237,9 @@ class MarvinMeasuredSotmRegressionTest {
         RobotClock.useMockTime(1_040L)
         shooter.updateShootOnTheMove(pose, target, actual)
         RobotClock.useMockTime(1_060L)
+        store.dispatch(RobotAction.PoseUpdate(pose.x, pose.y, pose.heading.radians, 1060L,
+            xVelocityMetersPerSecond = measuredVx, yVelocityMetersPerSecond = measuredVy,
+            angularVelocityRadiansPerSecond = measuredOmega, isExternalEstimate = true))
         shooter.updateShootOnTheMove(pose, target, actual)
 
         val measuredExpected = ShotResult()
@@ -121,6 +269,7 @@ class MarvinMeasuredSotmRegressionTest {
         val target = Translation2d(0.0, 5.547868)
         val result = ShotResult()
 
+        observe(store, 1000L)
         shooter.updateShootOnTheMove(pose, target, result)
         assertTrue(store.state.superstructure.marvin.flywheelActive)
 

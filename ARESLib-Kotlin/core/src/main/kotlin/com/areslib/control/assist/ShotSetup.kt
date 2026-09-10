@@ -21,6 +21,8 @@ import com.areslib.math.wrapAngle
  * @property angularVelocityFeedforwardRadPerSec Direct derivative feedforward rate for heading rotation in radians per second ($rad/s$).
  */
 class ShotResult {
+    /** True only after a finite, self-consistent solution has been written. */
+    var isValid: Boolean = false
     var virtualTargetX: Double = 0.0
     var virtualTargetY: Double = 0.0
     var aimAngleRad: Double = 0.0
@@ -29,6 +31,19 @@ class ShotResult {
     var targetFlywheelRpm: Double = 0.0
     var targetCowlAngleRotations: Double = 0.0
     var angularVelocityFeedforwardRadPerSec: Double = 0.0
+
+    /** Clears prior targets so failed calculations cannot retain an earlier valid shot. */
+    fun clear() {
+        isValid = false
+        virtualTargetX = 0.0
+        virtualTargetY = 0.0
+        aimAngleRad = 0.0
+        robotTargetHeadingRad = 0.0
+        aimDistanceMeters = 0.0
+        targetFlywheelRpm = 0.0
+        targetCowlAngleRotations = 0.0
+        angularVelocityFeedforwardRadPerSec = 0.0
+    }
 }
 
 /**
@@ -81,6 +96,10 @@ class ShotConfig(
         requireFinite(this.tofValues, "tofValues")
         requireFinite(this.shotRpm, "shotRpm")
         requireFinite(this.shotCowlRotations, "shotCowlRotations")
+        require(this.tofKeys.all { it >= 0.0 } && this.shotKeys.all { it >= 0.0 }) {
+            "Distance breakpoints must be non-negative"
+        }
+        require(this.tofValues.all { it >= 0.0 }) { "Flight times must be non-negative" }
     }
 
     private fun requireStrictlyIncreasingFinite(values: DoubleArray, name: String) {
@@ -100,30 +119,20 @@ class ShotConfig(
 }
 
 /**
- * Pure functional lookahead coordinate solver for Shoot-on-the-Move (SOTM).
+ * Latency-compensated shoot-on-the-move solver for a piecewise-linear flight-time model.
  *
- * Computes exact virtual target aiming vector, target flywheel RPM, cowl angle, and rotational feedforward ($\omega_{FF}$)
- * using an iterative latency-compensated lookahead convergence algorithm.
+ * Field velocity and chassis angular rate are held constant through the configured delay. Shooter
+ * position and tangential velocity include the rotated chassis offset. Each flight-time segment
+ * and both clamped tails are solved for an intercept; the earliest nonnegative flight time wins.
+ * Results are checked against the original table within a relative 1e-9 time tolerance.
  *
- * ### Mathematical Algorithm:
- * 1. **Phase Delay Compensation**:
- *    $$\mathbf{x}_{comp} = \mathbf{x}_{robot} + \mathbf{v}_{chassis} \cdot \Delta t_{delay}, \quad \theta_{comp} = \theta_{robot} + \omega_{chassis} \cdot \Delta t_{delay}$$
- * 2. **Shooter Offset Transformation**:
- *    $$\begin{bmatrix} o_{x,rot} \\ o_{y,rot} \end{bmatrix} = \begin{bmatrix} \cos\theta_{comp} & -\sin\theta_{comp} \\ \sin\theta_{comp} & \cos\theta_{comp} \end{bmatrix} \begin{bmatrix} o_x \\ o_y \end{bmatrix}$$
- *    $$\mathbf{x}_{shooter} = \mathbf{x}_{comp} + \mathbf{o}_{rot}$$
- * 3. **Field Velocity of Shooter**:
- *    $$v_{shooter,x} = v_{x,field} - \omega \cdot o_{y,rot}, \quad v_{shooter,y} = v_{y,field} + \omega \cdot o_{x,rot}$$
- * 4. **Iterative Lookahead Convergence (5 steps)**:
- *    $$\mathbf{x}_{virtual}^{(k+1)} = \mathbf{x}_{target} - \mathbf{v}_{shooter} \cdot \text{TOF}\left(\|\mathbf{x}_{virtual}^{(k)} - \mathbf{x}_{shooter}\|\right)$$
- * 5. **Heading Feedforward Calculation**:
- *    $$\omega_{FF} = \frac{-\Delta x_{final} \cdot v_{shooter,y} + \Delta y_{final} \cdot v_{shooter,x}}{\|\Delta \mathbf{x}_{final}\|^2}$$
+ * Heading feedforward differentiates the implicit intercept, including distance-dependent flight
+ * time and centripetal acceleration of the offset shooter. At table knots the selected segment's
+ * one-sided slope is used; endpoint-clamped slopes are zero. The rate is suppressed inside 5 cm
+ * where aiming direction is poorly conditioned. A singular derivative or invalid input invalidates
+ * the entire result. Physical drag, chassis acceleration and target motion are outside this model.
  *
- * ### Zero-GC Compliance:
- * Operates strictly using primitive calculations. Populates a pre-allocated [ShotResult] output container in-place.
- *
- * @param config Robot-specific physical geometry and ballistic calibration table [ShotConfig].
- * @see ShotConfig
- * @see ShotResult
+ * Calculation uses primitive local variables and caller-owned output storage without loop allocations.
  */
 class ShotSetup(private val config: ShotConfig) {
 
@@ -134,7 +143,7 @@ class ShotSetup(private val config: ShotConfig) {
      * @return Interpolated time-of-flight in seconds ($s$).
      */
     fun interpolateTof(distance: Double): Double {
-        return interpolate(config.tofKeys, config.tofValues, distance)
+        return interpolateValidated(config.tofKeys, config.tofValues, distance)
     }
 
     /**
@@ -144,7 +153,7 @@ class ShotSetup(private val config: ShotConfig) {
      * @return Interpolated flywheel target speed ($RPM$).
      */
     fun interpolateRpm(distance: Double): Double {
-        return interpolate(config.shotKeys, config.shotRpm, distance)
+        return interpolateValidated(config.shotKeys, config.shotRpm, distance)
     }
 
     /**
@@ -154,14 +163,15 @@ class ShotSetup(private val config: ShotConfig) {
      * @return Interpolated cowl mechanism position in rotations.
      */
     fun interpolateCowlRotations(distance: Double): Double {
-        return interpolate(config.shotKeys, config.shotCowlRotations, distance)
+        return interpolateValidated(config.shotKeys, config.shotCowlRotations, distance)
     }
 
     /**
-     * Performs a latency-compensated iterative convergence calculation for Shoot-on-the-Move (SOTM).
+     * Solves a latency-compensated intercept for Shoot-on-the-Move (SOTM).
      *
      * Computes virtual target coordinates, aim distance, heading orientation, flywheel RPM, cowl angle,
      * and rotational feedforward rate. Populates [result] in-place with zero heap allocations.
+     * Invalid or nonrepresentable solutions clear [result]; callers must check [ShotResult.isValid].
      *
      * @param robotPose Current estimated robot position and heading orientation on the field ($m, rad$).
      * @param fieldCentricSpeeds Current velocity vector of the chassis in field coordinates ($m/s, rad/s$).
@@ -174,6 +184,10 @@ class ShotSetup(private val config: ShotConfig) {
         target: Translation2d,
         result: ShotResult
     ) {
+        result.clear()
+        if (!robotPose.x.isFinite() || !robotPose.y.isFinite() || !robotPose.heading.radians.isFinite() ||
+            !fieldCentricSpeeds.vxMetersPerSecond.isFinite() || !fieldCentricSpeeds.vyMetersPerSecond.isFinite() ||
+            !fieldCentricSpeeds.omegaRadiansPerSecond.isFinite() || !target.x.isFinite() || !target.y.isFinite()) return
         val dtDelay = config.delayCompensationSeconds
 
         // 1. Compute phase delay compensated chassis position and heading
@@ -194,26 +208,19 @@ class ShotSetup(private val config: ShotConfig) {
         val shooterVx = fieldCentricSpeeds.vxMetersPerSecond - fieldCentricSpeeds.omegaRadiansPerSecond * rotOffsetY
         val shooterVy = fieldCentricSpeeds.vyMetersPerSecond + fieldCentricSpeeds.omegaRadiansPerSecond * rotOffsetX
 
-        // 4. Iterative solver for lookahead distance (5 loops)
-        var virtualTargetX = target.x
-        var virtualTargetY = target.y
-        var aimDistance: Double
-
-        for (i in 0 until 5) {
-            val dx = virtualTargetX - shooterX
-            val dy = virtualTargetY - shooterY
-            aimDistance = hypot(dx, dy)
-            val tof = interpolateTof(aimDistance)
-            val newVirtualX = target.x - shooterVx * tof
-            val newVirtualY = target.y - shooterVy * tof
-            virtualTargetX = 0.5 * virtualTargetX + 0.5 * newVirtualX
-            virtualTargetY = 0.5 * virtualTargetY + 0.5 * newVirtualY
-        }
+        // 4. Solve the piecewise-linear flight table, including endpoint-clamped intervals.
+        val tof = ShotInterceptSolver.flightTime(target.x - shooterX, target.y - shooterY,
+            shooterVx, shooterVy, config.tofKeys, config.tofValues)
+        if (!tof.isFinite()) return
+        val virtualTargetX = target.x - shooterVx * tof
+        val virtualTargetY = target.y - shooterVy * tof
 
         // 5. Final coordinates and aiming target heading calculations
         val dxFinal = virtualTargetX - shooterX
         val dyFinal = virtualTargetY - shooterY
-        aimDistance = hypot(dxFinal, dyFinal)
+        val aimDistance = hypot(dxFinal, dyFinal)
+        if (!aimDistance.isFinite() || aimDistance == 0.0 || !virtualTargetX.isFinite() || !virtualTargetY.isFinite()) return
+        if (abs(interpolateTof(aimDistance) - tof) > 1e-9 * max(1.0, tof)) return
 
         val aimAngle = atan2(dyFinal, dxFinal)
 
@@ -222,16 +229,33 @@ class ShotSetup(private val config: ShotConfig) {
 
         val wrappedRobotHeading = wrapAngle(robotTargetHeading)
 
-        // 6. Direct derivative for exact heading angular velocity feedforward
+        // 6. Differentiate q = target - shooter - velocity*TOF(|q|).
+        // Constant chassis field velocity/omega still gives centripetal acceleration at an offset shooter.
         val angularVelFF = if (aimDistance > 0.05) {
-            (-dxFinal * shooterVy + dyFinal * shooterVx) / (aimDistance * aimDistance)
+            val ux = dxFinal / aimDistance
+            val uy = dyFinal / aimDistance
+            val slope = tofSlope(aimDistance)
+            val omega = fieldCentricSpeeds.omegaRadiansPerSecond
+            val wx = -shooterVx + omega * omega * rotOffsetX * tof
+            val wy = -shooterVy + omega * omega * rotOffsetY * tof
+            val denominator = 1.0 + slope * (ux * shooterVx + uy * shooterVy)
+            if (!denominator.isFinite() || abs(denominator) < 1e-12) return
+            val distanceRate = (ux * wx + uy * wy) / denominator
+            (ux * (wy - shooterVy * slope * distanceRate) -
+                uy * (wx - shooterVx * slope * distanceRate)) / aimDistance
         } else {
             0.0
         }
 
         // 7. Map lookahead aimDistance to flywheel and cowl parameters
-        val targetRpm = interpolateRpm(aimDistance)
-        val targetCowlRotations = interpolateCowlRotations(aimDistance)
+        val shotIndex = segmentIndex(config.shotKeys, aimDistance)
+        val nextShotIndex = min(shotIndex + 1, config.shotKeys.lastIndex)
+        val shotFraction = fraction(config.shotKeys, shotIndex, nextShotIndex, aimDistance)
+        val targetRpm = (1.0 - shotFraction) * config.shotRpm[shotIndex] + shotFraction * config.shotRpm[nextShotIndex]
+        val targetCowlRotations = (1.0 - shotFraction) * config.shotCowlRotations[shotIndex] +
+            shotFraction * config.shotCowlRotations[nextShotIndex]
+        if (!targetRpm.isFinite() || !targetCowlRotations.isFinite() || !angularVelFF.isFinite() ||
+            !aimAngle.isFinite() || !wrappedRobotHeading.isFinite()) return
 
         // Write outputs
         result.virtualTargetX = virtualTargetX
@@ -242,6 +266,14 @@ class ShotSetup(private val config: ShotConfig) {
         result.targetFlywheelRpm = targetRpm
         result.targetCowlAngleRotations = targetCowlRotations
         result.angularVelocityFeedforwardRadPerSec = angularVelFF
+        result.isValid = true
+    }
+
+    private fun tofSlope(distance: Double): Double {
+        val keys = config.tofKeys
+        if (distance <= keys[0] || distance >= keys[keys.lastIndex]) return 0.0
+        val index = segmentIndex(keys, distance)
+        return (config.tofValues[index + 1] - config.tofValues[index]) / (keys[index + 1] - keys[index])
     }
 
     companion object {
@@ -255,21 +287,40 @@ class ShotSetup(private val config: ShotConfig) {
          * @return The interpolated output value.
          */
         fun interpolate(keys: DoubleArray, values: DoubleArray, x: Double): Double {
-            // NaN falls through every comparison below (all evaluate false), so handle it
-            // explicitly with a safe default rather than silently returning values[last].
-            if (x.isNaN()) return values[0]
+            require(keys.isNotEmpty() && keys.size == values.size) { "Interpolation arrays must be nonempty and equal sized" }
+            for (i in keys.indices) {
+                require(keys[i].isFinite() && values[i].isFinite()) { "Interpolation data must be finite" }
+                require(i == 0 || keys[i] > keys[i - 1]) { "Interpolation keys must increase strictly" }
+            }
+            return interpolateValidated(keys, values, x)
+        }
+
+        private fun interpolateValidated(keys: DoubleArray, values: DoubleArray, x: Double): Double {
+            if (x.isNaN()) return Double.NaN
             // Clamp at the LUT endpoints instead of extrapolating beyond them.
             if (x <= keys[0]) return values[0]
             if (x >= keys[keys.size - 1]) return values[values.size - 1]
-            for (i in 0 until keys.size - 1) {
-                if (x >= keys[i] && x <= keys[i + 1]) {
-                    val diff = keys[i + 1] - keys[i]
-                    if (diff <= 1e-9) return values[i]
-                    val t = (x - keys[i]) / diff
-                    return values[i] + t * (values[i + 1] - values[i])
-                }
+            val i = segmentIndex(keys, x)
+            val t = fraction(keys, i, i + 1, x)
+            return (1.0 - t) * values[i] + t * values[i + 1]
+        }
+
+        private fun fraction(keys: DoubleArray, lo: Int, hi: Int, x: Double): Double {
+            if (lo == hi || x <= keys[lo]) return 0.0
+            if (x >= keys[hi]) return 1.0
+            val diff = keys[hi] - keys[lo]
+            return if (diff.isFinite()) (x - keys[lo]) / diff else
+                (x * 0.5 - keys[lo] * 0.5) / (keys[hi] * 0.5 - keys[lo] * 0.5)
+        }
+
+        private fun segmentIndex(keys: DoubleArray, x: Double): Int {
+            var lo = 0
+            var hi = keys.lastIndex
+            while (hi - lo > 1) {
+                val mid = lo + (hi - lo) / 2
+                if (x < keys[mid]) hi = mid else lo = mid
             }
-            return values[values.size - 1]
+            return lo
         }
     }
 }

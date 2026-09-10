@@ -591,6 +591,7 @@ public final class com/areslib/control/assist/ShotConfig {
 
 public final class com/areslib/control/assist/ShotResult {
 	public fun <init> ()V
+	public final fun clear ()V
 	public final fun getAimAngleRad ()D
 	public final fun getAimDistanceMeters ()D
 	public final fun getAngularVelocityFeedforwardRadPerSec ()D
@@ -599,12 +600,14 @@ public final class com/areslib/control/assist/ShotResult {
 	public final fun getTargetFlywheelRpm ()D
 	public final fun getVirtualTargetX ()D
 	public final fun getVirtualTargetY ()D
+	public final fun isValid ()Z
 	public final fun setAimAngleRad (D)V
 	public final fun setAimDistanceMeters (D)V
 	public final fun setAngularVelocityFeedforwardRadPerSec (D)V
 	public final fun setRobotTargetHeadingRad (D)V
 	public final fun setTargetCowlAngleRotations (D)V
 	public final fun setTargetFlywheelRpm (D)V
+	public final fun setValid (Z)V
 	public final fun setVirtualTargetX (D)V
 	public final fun setVirtualTargetY (D)V
 }

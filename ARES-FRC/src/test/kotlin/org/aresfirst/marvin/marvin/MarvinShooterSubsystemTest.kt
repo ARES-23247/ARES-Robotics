@@ -274,6 +274,8 @@ class MarvinShooterSubsystemTest {
         val target = Translation2d(0.0, 5.547868)
         val pose = Pose2d(0.0, 0.0, Rotation2d(-Math.PI / 2.0))
 
+        store.dispatch(com.areslib.action.RobotAction.PoseUpdate(pose.x, pose.y, pose.heading.radians,
+            com.areslib.util.RobotClock.currentTimeMillis(), isExternalEstimate = true))
         shooter.updateShootOnTheMove(pose, target, shotResult)
         val targetRpm = shotResult.targetFlywheelRpm
         assertTrue(targetRpm > 100.0)

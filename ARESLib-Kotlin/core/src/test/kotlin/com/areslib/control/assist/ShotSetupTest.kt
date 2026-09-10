@@ -136,10 +136,22 @@ class ShotSetupTest {
         val result = ShotResult()
         shotSetup.calculate(robotPose, speeds, target, result)
         
-        // Assert exact, physically correct SOTM lead positions and TOF values
-        assertEquals(-0.987, result.virtualTargetY, 0.01)
-        assertEquals(-0.252, result.aimAngleRad, 0.01)
-        assertEquals(2.889, result.robotTargetHeadingRad, 0.01)
+        // Independently bracket flight time rather than preserving an unconverged iteration value.
+        var lo = 0.0
+        var hi = 1.0
+        repeat(80) {
+            val t = (lo + hi) / 2.0
+            val distance = hypot(4.044704, -2.0 * t - 0.044374)
+            // This case lies within the [4.0, 5.6] calibration segment.
+            val calibratedTime = 0.481 + (distance - 4.0) / 1.6 * (0.795 - 0.481)
+            if (t < calibratedTime) lo = t else hi = t
+        }
+        val expectedY = -(lo + hi)
+        val expectedAngle = atan2(expectedY - 0.044374, 4.044704)
+        assertTrue(result.isValid)
+        assertEquals(expectedY, result.virtualTargetY, 1e-10)
+        assertEquals(expectedAngle, result.aimAngleRad, 1e-10)
+        assertEquals(expectedAngle + PI, result.robotTargetHeadingRad, 1e-10)
         
         // Since robot is translating +Y, the shooter's velocity is +Y (2.0 m/s).
         // During the time of flight, the projectile gets carried along +Y.
