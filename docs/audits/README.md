@@ -69,7 +69,31 @@ review stays partial. Later edits to any bound value make the self-record stale 
 ledger input; JSON writes use atomic replacement so an interrupted write does not expose partial JSON.
 This is not a crash-durability or concurrent-editor transaction guarantee. Run against a stable checkout.
 
-## Choosing the next scope
+## Execution method for the active goal
+
+The full-coverage objective remains unchanged. Prioritize live robot control, estimation,
+hardware safety, loop timing, and confirmed cross-product contract disagreements, then finish
+the remaining tooling, application, configuration, documentation and resource review.
+
+- Review coherent batches of related files and resolve their connected findings together.
+  Use the inventory to avoid repeating completed reviews unless changed code, a dependency
+  change or contradictory evidence justifies reopening them.
+- Reproduce confirmed defects with focused regression tests and independent reference cases.
+  During implementation, run the affected tests and nearby contract tests. Do not expand a
+  pass merely to increase a coverage percentage or add tests that repeat the implementation.
+- Once a batch is stable, run its required affected-module checks and, for library changes,
+  publish one uniquely identified local candidate and validate consumers in dependency order.
+  Repeat broad validation only when a code change invalidates that evidence, a gate fails, or
+  an unresolved integration concern requires it. Preserve required release and safety gates.
+- Reuse valid evidence for unchanged inputs. Documentation-only and ledger-only edits need
+  their own appropriate checks, not another complete robot/Studio build matrix.
+- Keep accounting proportional: one concise report per coherent batch, with findings, actual
+  checks, source identity and remaining limitations. Refresh the ledger at verified checkpoints;
+  retain detailed logs locally without repeatedly reproducing them in reports or conversation.
+- Revisit earlier conclusions when independent evidence contradicts them. A passing round trip
+  does not establish agreement with a physical coordinate frame or another product's contract.
+
+## Selecting files within a batch
 
 Use the current inventory's `pending`, `partial`, and `stale` entries as the work queue. Follow each
 record's linked reports for findings, source/candidate identity, validation commands and remaining

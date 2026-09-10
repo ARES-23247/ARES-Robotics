@@ -483,10 +483,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "2f45552f20da6fc3579434bacaf50bdfb6f5bf765b01955521fe24f8aa596373",
+      "sha256": "4414d82b5f86cb71960ff0bccfe0e1dc131310babaaf02a1a17299a6ca4c3b4d",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full guidance review/update: explicit scope/evidence types, self-hash representation and refresh, link ownership, atomic-write/concurrency limits, appropriate validation dispositions and current ledger-driven work queue. Stale duplicate status narrative removed while unresolved validation concerns remain explicit.",
+      "scope": "Full guidance review/update: explicit scope/evidence types, self-hash representation and refresh, link ownership, atomic-write/concurrency limits, appropriate validation dispositions and current ledger-driven work queue. Stale duplicate status narrative removed while unresolved validation concerns remain explicit. User-approved execution method: prioritize live robot risks and contract conflicts, batch related fixes, focused iteration, one required broad validation matrix per stable library batch, evidence reuse for unchanged inputs, proportional ledger/reporting; full objective and required gates preserved.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -588,7 +588,8 @@
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
         "ARESLib-Kotlin/build/audit-pass57-policy.log",
-        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence",
+        "ARESLib-Kotlin/build/audit-method-doc-links.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -5282,7 +5283,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "7a49cff3b94c1b8d9eaa45deb3230c91a674c69ff7db6c3d7e28861ace39aaea",
+      "sha256": "eec735b1aeabf97a8645a1682898088d902b5cf3c7e72452dfae0778c6485d8f",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
