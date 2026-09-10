@@ -424,3 +424,36 @@ request values must snapshot them during the call. Valid writes and safe request
 host zero-allocation paths; invalid arguments, exceptions and native execution are separate.
 Physical speed limits, configuration, feedback freshness and explicit enable/arm belong to the
 owning hardware/controller lifecycle and are not established by finite command values alone.
+
+## FRC swerve bridge lifecycle and estimator inputs
+
+`FRCSwerveHardwareIO` serializes refresh, cached reads, writes, estimator operations and close.
+Motion is permitted only with fresh signal and pose/motion snapshots and no reported drive/steer
+hardware, brownout or temperature faults. A denied write selects X-brake even when its unused
+motion data is invalid. Refresh immediately brakes on invalid feedback; acquisition exceptions
+also attempt brake and preserve the original cause. This gate does not establish robot enable,
+configuration correctness, or whole-robot fault recovery. Those remain explicit owner contracts.
+
+Close first revokes cached feedback, then attempts brake and native destruction once. It attempts
+destruction even if brake fails, preserving distinct cleanup failures without self-suppression.
+Repeated close/safe calls do not access native resources. Closed getters report unavailable data;
+history reads return false; writes, refresh and estimator mutation reject the call. Destruction
+is not retried after an exception because the vendor may already have partially destroyed resources.
+Successful construction transfers close ownership; unrelated access to the native drivetrain must
+not race this bridge. Lock waits and native calls have no measured deadline bound and cannot replace
+an independent hardware watchdog. A request/close result does not prove physical stopping.
+
+Vision and seed poses require finite X/Y and **raw** heading before wrapping. `Rotation2d.radians`
+can turn a nonfinite input into the legacy zero fallback and must not be used to validate raw data.
+Vision timestamps remain finite Phoenix-epoch seconds supplied by the caller; no latency is
+subtracted here. Explicit standard deviations must be finite and positive. Invalid covariance
+is rejected instead of silently using retained vendor covariance. Historical sampling writes all
+three finite coordinates only on success and preserves caller storage on absence, invalid values
+or exceptions. Hard pose reset revokes the old cache and brakes before the native reset; a new
+valid refresh is required before motion resumes.
+
+Cached getter allocation probes use five equal windows, requiring at least one zero-byte window
+and at most 64 KiB total transient allocation, matching the existing CTRE writer probe. This is
+weaker than requiring every window to be zero; small nonzero results are retained and reported.
+The shared probe is calibrated against empty work and an escaping allocation on every iteration.
+It does not measure native IO allocation, lock contention deadlines or physical loop timing.

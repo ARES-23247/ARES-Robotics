@@ -66,3 +66,15 @@ internal class PhoenixReaderFixture {
         return original
     }
 }
+
+/** Scopes vendor-clock stubbing and restores the shared robot clock even when an assertion fails. */
+internal fun withPhoenixBridge(block: (PhoenixReaderFixture, com.areslib.frc.FRCSwerveHardwareIO) -> Unit) {
+    com.areslib.util.RobotClock.useMockTime(1000)
+    try {
+        mockStatic(com.ctre.phoenix6.Utils::class.java).use { clock ->
+            clock.`when`<Double> { com.ctre.phoenix6.Utils.getCurrentTimeSeconds() }.thenReturn(100.0)
+            val fixture = PhoenixReaderFixture()
+            block(fixture, com.areslib.frc.FRCSwerveHardwareIO(fixture.drivetrain))
+        }
+    } finally { com.areslib.util.RobotClock.useSystemTime() }
+}

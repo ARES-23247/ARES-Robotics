@@ -2,8 +2,6 @@ package com.areslib.frc.drivetrain
 
 import com.areslib.state.DriveState
 import com.ctre.phoenix6.swerve.SwerveRequest
-import com.sun.management.ThreadMXBean
-import java.lang.management.ManagementFactory
 import java.math.BigDecimal
 import java.util.Random
 import org.junit.jupiter.api.Assertions.*
@@ -97,8 +95,6 @@ class SwerveCtreWriterNumericalTest {
     }
 
     @Test fun `varying both frames scales and brakes allocates no bytes after warmup`() {
-        val bean = ManagementFactory.getThreadMXBean() as ThreadMXBean
-        bean.isThreadAllocatedMemoryEnabled = true
         var checksum = 0.0
         val writer = SwerveCtreSpeedRequestWriter { request ->
             checksum += when (request) {
@@ -111,13 +107,7 @@ class SwerveCtreWriterNumericalTest {
             DriveState(yVelocityMetersPerSecond = 3.0, isFieldCentric = false), DriveState(isXLock = true))
         var iteration = 0
         fun tick() { writer.write(states[iteration % 3], (iteration++ % 4) * 0.5) }
-        repeat(50_000) { tick() }
-        val thread = Thread.currentThread().id
-        repeat(2) {
-            val before = bean.getThreadAllocatedBytes(thread)
-            repeat(10_000) { tick() }
-            assertEquals(0L, bean.getThreadAllocatedBytes(thread) - before)
-        }
+        assertSteadyStateAllocationWindows(measureAllocationWindows { tick() })
         assertTrue(checksum.isFinite() && checksum > 0.0)
     }
 }

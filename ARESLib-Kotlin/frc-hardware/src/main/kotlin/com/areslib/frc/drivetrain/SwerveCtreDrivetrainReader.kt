@@ -41,14 +41,26 @@ class SwerveCtreDrivetrainReader internal constructor(private val source: Swerve
     /** All configured signals were successfully refreshed, finite and within their age limits. */
     val encoderPositionsValid: Boolean get() = signalsFresh()
     val currentMeasurementsValid: Boolean get() = signalsFresh()
+    /** Cached output gate: fresh signals/motion and no reported drive or steer faults. */
+    internal val motionAllowed: Boolean
+        get() {
+            if (!signalsFresh() || !stateFresh()) return false
+            for (index in 12 until 36) if (values[index] != 0.0) return false
+            return true
+        }
+
+    /** Lifecycle owner revokes all cached feedback before releasing the native drivetrain. */
+    internal fun invalidate() {
+        signalsReady = false
+        stateReady = false
+    }
     /** Conservative age of the oldest cached absolute encoder, or infinity when unavailable. */
     val signalLatencyMs: Double
         get() = if (signalsFresh()) encoderAgeMs + elapsedMs() else Double.POSITIVE_INFINITY
 
     /** Revokes prior validity before IO; a failed acquisition cannot publish a partial snapshot. */
     fun refresh() {
-        signalsReady = false
-        stateReady = false
+        invalidate()
         startedMs = RobotClock.currentTimeMillis()
         for (index in 0 until 36) source.refresh(index)
         // Phoenix's owning copy avoids aliasing its mutable state updated by native telemetry.
