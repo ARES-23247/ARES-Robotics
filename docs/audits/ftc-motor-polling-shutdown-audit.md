@@ -48,7 +48,22 @@ SDK read, reader replacement, unrelated motor ownership, exact zero, retained wr
 stall boundaries and clock discontinuity. A signed-zero assertion was corrected to use
 numerical zero equality; it was not a remaining hardware-output error.
 The public API change only adds AutoCloseable/close to the two CR-servo adapter classes.
-Final candidate validation is pending.
+
+Source `0e101c66` pins library tree `f433673160a3bf61ec21057d90b5a5de41b5c268` and
+local candidate `17.0.3-rc.f433673160a3`. Full library validation passed in 38 seconds:
+1,737 methods, no failures/errors/skips, API checks, FTC Kover and isolated publication.
+Serial consumers passed FTC 111, FRC 134, FTC starter 14 and FRC starter 34 methods,
+generated-project checks and FTC assembly. Studio passed with 1,790 passing methods and
+six existing opt-in skips, 56 dashboard methods, one performance baseline, coverage,
+version alignment and file-size checks. Its 15-second invocation reused unchanged test
+inputs; other valid Gradle cache/up-to-date reuse is also explicit in the recorded logs.
+
+FTC Kover covers motor controller 87/92 lines and 47/58 branches, CR-servo controller
+34/36 lines and 9/18 branches, reader 43/44 lines and 23/34 branches, and sensor initializer
+38/39 lines and 25/32 branches. These are host coverage counters, not proof of all device
+failure modes. Copied XML, hash manifests, coverage and verified summary are under
+`ARESLib-Kotlin/build/audit-pass74-verified-evidence`. Monorepo policy passed with 235
+current Markdown documents, 38 historical exclusions, source identity and archive checks.
 
 ## Remaining scope
 
