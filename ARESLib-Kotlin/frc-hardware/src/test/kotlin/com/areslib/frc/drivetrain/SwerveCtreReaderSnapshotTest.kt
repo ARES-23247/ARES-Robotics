@@ -50,6 +50,7 @@ class SwerveCtreReaderSnapshotTest {
         assertEquals(0.6, first.angularVelocityRadiansPerSecond)
         assertSame(first, reader.read())
         assertEquals(1, source.stateCalls)
+        assertEquals(1, source.timeCaptures)
         assertTrue(source.refreshCalls.all { it == 1 })
         assertTrue(source.valueCalls.all { it == 1 })
         reader.refresh()
@@ -145,6 +146,7 @@ class SwerveCtreReaderSnapshotTest {
         }
         assertEquals(70_000.0, checksum)
         assertEquals(2, source.stateCalls)
+        assertEquals(2, source.timeCaptures)
         assertTrue(source.valueCalls.all { it == 2 })
     }
 }

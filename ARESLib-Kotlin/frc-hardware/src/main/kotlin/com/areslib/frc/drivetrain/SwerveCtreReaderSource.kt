@@ -9,6 +9,8 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain
 internal interface SwerveCtreReaderSource {
     fun configure(): Boolean
     fun refresh(index: Int)
+    /** Capture the vendor clock once, after refreshing signals and acquiring state. */
+    fun captureTime()
     fun statusOk(index: Int): Boolean
     fun value(index: Int): Double
     fun latencySeconds(index: Int): Double
@@ -19,6 +21,7 @@ internal interface SwerveCtreReaderSource {
 
 /** Owns cloned signal caches, borrowing the drivetrain and its devices without closing them. */
 internal class PhoenixSwerveReaderSource(private val drivetrain: SwerveDrivetrain<*, *, *>) : SwerveCtreReaderSource {
+    private var vendorNowSeconds = Double.NaN
     private val signals: Array<StatusSignal<*>> = Array(36) { index ->
         val module = if (index < 8 || index >= 12) drivetrain.getModule(index % 4) else null
         val signal = when (index) {
@@ -53,12 +56,13 @@ internal class PhoenixSwerveReaderSource(private val drivetrain: SwerveDrivetrai
     }
 
     override fun refresh(index: Int) { signals[index].refresh() }
+    override fun captureTime() { vendorNowSeconds = Utils.getCurrentTimeSeconds() }
     override fun statusOk(index: Int) = signals[index].status.isOK
     override fun value(index: Int) = signals[index].valueAsDouble
-    override fun latencySeconds(index: Int) = signals[index].timestamp.latency
+    override fun latencySeconds(index: Int) = vendorNowSeconds - signals[index].timestamp.time
     override fun timestampValid(index: Int) = signals[index].timestamp.isValid
     // Phoenix documents this owning copy for thread-safe consumption. It allocates.
     override fun state(): SwerveDrivetrain.SwerveDriveState = drivetrain.stateCopy
     override fun stateAgeSeconds(state: SwerveDrivetrain.SwerveDriveState) =
-        Utils.getCurrentTimeSeconds() - state.Timestamp
+        vendorNowSeconds - state.Timestamp
 }

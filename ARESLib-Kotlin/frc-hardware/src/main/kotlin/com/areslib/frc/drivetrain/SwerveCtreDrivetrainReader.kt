@@ -50,12 +50,16 @@ class SwerveCtreDrivetrainReader internal constructor(private val source: Swerve
         signalsReady = false
         stateReady = false
         startedMs = RobotClock.currentTimeMillis()
+        for (index in 0 until 36) source.refresh(index)
+        // Phoenix's owning copy avoids aliasing its mutable state updated by native telemetry.
+        val state = source.state()
+        // Use one vendor timebase reading for the whole acquired frame, after all IO completes.
+        source.captureTime()
         var valid = true
         var fastAge = 0.0
         var faultAge = 0.0
         var encoderAge = 0.0
         for (index in 0 until 36) {
-            source.refresh(index)
             val value = source.value(index)
             val ageSeconds = source.latencySeconds(index)
             val limitSeconds = if (index < 12) FAST_AGE_MS / 1000.0 else FAULT_AGE_MS / 1000.0
@@ -70,8 +74,6 @@ class SwerveCtreDrivetrainReader internal constructor(private val source: Swerve
             if (index in 4..7) encoderAge = maxOf(encoderAge, ageMs)
         }
 
-        // Phoenix's owning copy avoids aliasing its mutable state updated by native telemetry.
-        val state = source.state()
         val ageSeconds = source.stateAgeSeconds(state)
         val x = state.Pose.x
         val y = state.Pose.y

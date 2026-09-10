@@ -59,6 +59,7 @@ internal class AuditCtreSource : SwerveCtreReaderSource {
     val stateValue = SwerveDrivetrain.SwerveDriveState().apply { ModuleStates = Array(4) { SwerveModuleState() } }
     var failure: Throwable? = null
     var stateCalls = 0
+    var timeCaptures = 0
     val refreshCalls = IntArray(36)
     val valueCalls = IntArray(36)
     val statuses = BooleanArray(36) { true }
@@ -70,6 +71,7 @@ internal class AuditCtreSource : SwerveCtreReaderSource {
     var onRefresh: ((Int) -> Unit)? = null
     override fun configure(): Boolean { configureCalls++; return configured }
     override fun refresh(index: Int) { refreshCalls[index]++; onRefresh?.invoke(index); failure?.let { throw it } }
+    override fun captureTime() { timeCaptures++ }
     override fun statusOk(index: Int) = statuses[index]
     override fun value(index: Int): Double { valueCalls[index]++; return values[index] }
     override fun latencySeconds(index: Int) = ages[index]

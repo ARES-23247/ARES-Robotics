@@ -384,7 +384,9 @@ own validation. CAN parsing is a setup operation, not part of the checked period
 
 `SwerveCtreDrivetrainReader.refresh()` revokes prior validity, samples each of its 36 cloned
 status signals once and takes one owning vendor state copy. Getters never refresh signals or
-fetch vendor state. Status, timestamp validity, finite values and age bounds are all required.
+fetch vendor state. One vendor clock read after acquisition supplies the shared age reference;
+per-signal age checks do not repeat native clock calls. Status, timestamp validity, finite values
+and age bounds are all required.
 Fast current/encoder/IMU measurements and vendor motion expire after 100 ms; 4 Hz diagnostic
 signals expire after 750 ms. Cached age conservatively includes RobotClock elapsed time since
 acquisition started; clock rewind/overflow and late refreshes cannot renew validity.
