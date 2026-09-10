@@ -172,3 +172,51 @@ For every estimator, controller, profile, or trajectory change, verify:
 - Delayed-data replay uses the same process-noise scaling as forward propagation.
 - Tests cover straight motion, pure rotation, curved motion, wraparound, delayed measurements, and invalid inputs.
 - Hot-path convenience overloads do not conceal allocation in the loop.
+
+## Two-link arm geometry and deterministic plant
+
+Joint 1 is measured CCW from +X; joint 2 is relative to link 1. All angles are radians,
+lengths meters, masses kilograms and torques N m. Geometry permits zero masses; the dynamic
+plant requires positive masses. Its centroidal rod inertias are mL²/12, even with a supplied
+COM offset. Custom inertias, gearbox backlash, friction beyond viscous damping, flex and motor
+electrical/back-EMF dynamics are not modeled. Calibrate torque-per-volt and damping against
+measured motion before treating a desktop simulation as hardware evidence.
+
+Reachability and inverse kinematics share one normalized workspace test, with eight ulps of
+normalized outer-radius roundoff. Finite lengths/targets avoid squaring overflow/underflow;
+accepted boundary roundoff clamps to the physical interval. Elbow-up uses negative relative
+elbow angles and elbow-down positive. An extremely short link below the normalized Double
+range has unresolved orientation; its branch is selected at a right angle while preserving
+the dominant link direction. Maximum physical reach may itself exceed Double range.
+
+Buffered forward kinematics, Jacobian and gravity overloads require sufficient output length
+before writing, leave trailing elements unchanged and allocate no temporary outputs. Object/
+array-returning overloads allocate their documented results. Finite angle-sum overflow uses
+trigonometric addition identities. Cached scaled coefficients retain determinant/gravity
+products beyond intermediate Double range and combine opposing gravity terms before final
+conversion. Results still have floating-point rounding error; ill-conditioned cancellation
+is not an arbitrary-precision guarantee. Nonfinite raw angles yield NaN; genuinely out-of-range
+final components may be infinite. Validate raw outputs before commanding hardware.
+
+Singularity proximity is abs(sin(elbow)) < threshold, independent of link scale. Threshold
+must be finite and nonnegative; zero disables the strict band. Nonfinite joint angles
+conservatively report near-singular. This predicate does not prove feedback freshness or
+permission to enable actuators.
+
+The single-owner plant caches immutable inertia/gravity terms and uses a positive-term Schur
+complement instead of subtracting two squared-inertia terms or imposing an absolute determinant
+cutoff. Effective inertia/gravity coefficients must be representable; unsupported coefficient
+ranges fail at construction. Valid external dt is finite (0, 0.1] seconds. Each call takes at
+most 50 equal semi-implicit substeps, each at most 2 ms apart subject to floating rounding.
+Nonfinite voltages individually become zero, and finite voltages clamp to +/-12 V. Startup and
+reset obey both hard stops; outward velocity is removed at a stop while inward velocity remains.
+A nonfinite integration result fails before commit and rolls back the entire external step,
+including any earlier substeps. Reset rejects invalid state before mutation. Very stiff or
+energetic systems may require a smaller timestep; finite results do not imply numerical stability.
+The former MIN_INERTIA_DETERMINANT JVM constant remains only for binary compatibility.
+
+Generated mock refresh neutralizes outputs, invalidates feedback/current and latches the
+output fault before propagating a failed plant step. It does not stamp failed feedback as
+fresh. Studio's local lab stops, clears voltage controls, retains the last committed displayed
+pose and requires explicit reset after a numerical failure. These are local simulation paths,
+not physical robot safety validation.

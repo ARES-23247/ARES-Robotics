@@ -47,11 +47,19 @@ internal object SubsystemMockIoRenderer {
         val linkageRefresh = if (document.linkage.enabled) {
             val linkage = document.linkage
             """
-                linkagePlant.step(
-                    ${requireNotNull(linkage.joint1ActuatorId)}Command,
-                    ${requireNotNull(linkage.joint2ActuatorId)}Command,
-                    simulationStepSeconds,
-                )
+                try {
+                    linkagePlant.step(
+                        ${requireNotNull(linkage.joint1ActuatorId)}Command,
+                        ${requireNotNull(linkage.joint2ActuatorId)}Command,
+                        simulationStepSeconds,
+                    )
+                } catch (failure: RuntimeException) {
+                    feedbackValid = false
+                    currentReadingValid = false
+                    outputFaultLatched = true
+                    safe()
+                    throw failure
+                }
                 ${requireNotNull(linkage.joint1AngleFieldId)} = linkagePlant.joint1PositionRad
                 ${requireNotNull(linkage.joint2AngleFieldId)} = linkagePlant.joint2PositionRad
             """.trimIndent()

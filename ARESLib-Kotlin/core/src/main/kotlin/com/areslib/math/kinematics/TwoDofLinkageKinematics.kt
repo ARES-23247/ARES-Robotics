@@ -1,8 +1,8 @@
 package com.areslib.math.kinematics
 
-import kotlin.math.acos
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -67,8 +67,25 @@ enum class ElbowConfiguration {
 /**
  * Analytical kinematics, Jacobian singularity checking, and Lagrangian gravity feedforward solver
  * for 2-DOF planar linkages and articulated robotic arms.
+ *
+ * Raw forward/Jacobian/gravity results use IEEE Double values: unknown angles produce NaN,
+ * and genuinely unrepresentable final components may be infinite. Callers must validate
+ * outputs before treating them as actuator commands. Buffered overloads write only their
+ * documented elements and reject short buffers before mutation. Instances are immutable.
  */
 class TwoDofLinkageKinematics(val params: TwoDofLinkageParameters) {
+    private val lengthScale = maxOf(params.l1, params.l2)
+    private val scaledL1 = params.l1 / lengthScale
+    private val scaledL2 = params.l2 / lengthScale
+    private val scaledShortLink = minOf(scaledL1, scaledL2)
+    private val scaledMinimumReach = kotlin.math.abs(scaledL1 - scaledL2)
+    private val scaledMaximumReach = scaledL1 + scaledL2
+    private val workspaceRoundoff = 8.0 * Math.ulp(scaledMaximumReach)
+    private val determinantCoefficient = LinkageCoefficient.product(params.l1, params.l2)
+    private val proximalGravity = LinkageCoefficient.product(params.m1, params.rc1, params.g)
+    private val translatedGravity = LinkageCoefficient.product(params.m2, params.l1, params.g)
+    private val distalGravity = LinkageCoefficient.product(params.m2, params.rc2, params.g)
+
 
     /**
      * Computes the Cartesian (X, Y) position of the end-effector from joint angles.
@@ -76,27 +93,50 @@ class TwoDofLinkageKinematics(val params: TwoDofLinkageParameters) {
      * X = L1 * cos(theta1) + L2 * cos(theta1 + theta2)
      * Y = L1 * sin(theta1) + L2 * sin(theta1 + theta2)
      */
-    fun forwardKinematics(theta1: Double, theta2: Double): LinkageEndEffectorPose {
-        val x = params.l1 * cos(theta1) + params.l2 * cos(theta1 + theta2)
-        val y = params.l1 * sin(theta1) + params.l2 * sin(theta1 + theta2)
-        return LinkageEndEffectorPose(x, y)
-    }
+    fun forwardKinematics(theta1: Double, theta2: Double): LinkageEndEffectorPose =
+        geometry(theta1, theta2) { c1, s1, c12, s12 ->
+            LinkageEndEffectorPose(params.l1 * c1 + params.l2 * c12, params.l1 * s1 + params.l2 * s12)
+        }
 
     /** Allocation-free forward kinematics for periodic simulation/control paths. */
     fun forwardKinematics(theta1: Double, theta2: Double, output: DoubleArray) {
         require(output.size >= 2) { "Forward-kinematics output requires two elements" }
-        output[0] = params.l1 * cos(theta1) + params.l2 * cos(theta1 + theta2)
-        output[1] = params.l1 * sin(theta1) + params.l2 * sin(theta1 + theta2)
+        geometry(theta1, theta2) { c1, s1, c12, s12 ->
+            output[0] = params.l1 * c1 + params.l2 * c12
+            output[1] = params.l1 * s1 + params.l2 * s12
+        }
+    }
+
+    private inline fun <T> geometry(theta1: Double, theta2: Double,
+                                   result: (Double, Double, Double, Double) -> T): T {
+        val c1 = cos(theta1)
+        val s1 = sin(theta1)
+        val sum = theta1 + theta2
+        if (sum.isFinite()) return result(c1, s1, cos(sum), sin(sum))
+        val c2 = cos(theta2)
+        val s2 = sin(theta2)
+        return result(c1, s1, c1 * c2 - s1 * s2, s1 * c2 + c1 * s2)
     }
 
     /**
-     * Checks whether a target (X, Y) point lies within the physical reachability envelope.
+     * Checks whether a finite target lies within the workspace, allowing eight ulps of
+     * normalized outer-radius roundoff. Uses the same boundary contract as inverse kinematics.
      */
-    fun isReachable(x: Double, y: Double): Boolean {
-        val rSq = x * x + y * y
-        val minR = params.minReach
-        val maxR = params.maxReach
-        return rSq >= (minR * minR - 1e-7) && rSq <= (maxR * maxR + 1e-7)
+    fun isReachable(x: Double, y: Double): Boolean = elbowCosine(x, y).isFinite()
+
+    // One common workspace contract for reachability and IK. Scaling prevents squared
+    // lengths from overflowing/underflowing; the tolerance is roundoff in normalized units.
+    private fun elbowCosine(x: Double, y: Double): Double {
+        if (!x.isFinite() || !y.isFinite()) return Double.NaN
+        val radius = hypot(x / lengthScale, y / lengthScale)
+        if (!radius.isFinite() || radius < scaledMinimumReach - workspaceRoundoff ||
+            radius > scaledMaximumReach + workspaceRoundoff) return Double.NaN
+        // For a link smaller than the normalized Double domain, the workspace is
+        // indistinguishable from a circle at this precision. Choose a finite elbow branch.
+        if (scaledShortLink == 0.0) return 0.0
+        // (r² - 1 - b²) / (2b), factored to retain small r-1 offsets and avoid b² underflow.
+        return (0.5 * (((radius - 1.0) / scaledShortLink) * (radius + 1.0) - scaledShortLink))
+            .coerceIn(-1.0, 1.0)
     }
 
     /**
@@ -105,30 +145,22 @@ class TwoDofLinkageKinematics(val params: TwoDofLinkageParameters) {
      * @param x Target X position in meters.
      * @param y Target Y position in meters.
      * @param config Geometric solution branch (Elbow Up vs Elbow Down).
-     * @return [LinkageJointAngles] if point is reachable, or null if target is outside workspace.
+     * @return [LinkageJointAngles] if point is reachable, or null for a nonfinite/outside target.
+     * Boundary roundoff is clamped to the workspace. When one link is below the normalized
+     * Double domain, its angular contribution is unresolved and a right-angle elbow is selected.
      */
     fun inverseKinematics(x: Double, y: Double, config: ElbowConfiguration = ElbowConfiguration.ELBOW_UP): LinkageJointAngles? {
-        if (!x.isFinite() || !y.isFinite()) return null
-        val rSq = x * x + y * y
-        val l1 = params.l1
-        val l2 = params.l2
-
-        val cosTheta2 = (rSq - l1 * l1 - l2 * l2) / (2.0 * l1 * l2)
-        if (cosTheta2 < -1.0 - 1e-6 || cosTheta2 > 1.0 + 1e-6) {
-            return null
+        val clampedCos = elbowCosine(x, y)
+        if (!clampedCos.isFinite()) return null
+        val sinTheta2Mag = sqrt((1.0 - clampedCos) * (1.0 + clampedCos))
+        val sinTheta2 = when (config) {
+            ElbowConfiguration.ELBOW_UP -> -sinTheta2Mag
+            ElbowConfiguration.ELBOW_DOWN -> sinTheta2Mag
         }
-        val clampedCos = cosTheta2.coerceIn(-1.0, 1.0)
-        val sinTheta2Mag = sqrt(1.0 - clampedCos * clampedCos)
-
-        val theta2 = when (config) {
-            ElbowConfiguration.ELBOW_UP -> -atan2(sinTheta2Mag, clampedCos)
-            ElbowConfiguration.ELBOW_DOWN -> atan2(sinTheta2Mag, clampedCos)
-        }
-
-        val k1 = l1 + l2 * cos(theta2)
-        val k2 = l2 * sin(theta2)
-        val gamma = atan2(k2, k1)
-        val theta1 = atan2(y, x) - gamma
+        val theta2 = atan2(sinTheta2, clampedCos)
+        val k1 = scaledL1 + scaledL2 * clampedCos
+        val k2 = scaledL2 * sinTheta2
+        val theta1 = atan2(y, x) - atan2(k2, k1)
 
         return LinkageJointAngles(theta1, theta2)
     }
@@ -138,38 +170,21 @@ class TwoDofLinkageKinematics(val params: TwoDofLinkageParameters) {
      *
      * [vx; vy] = J * [theta1_dot; theta2_dot]
      */
-    fun jacobian(theta1: Double, theta2: Double): Array<DoubleArray> {
-        val l1 = params.l1
-        val l2 = params.l2
-        val s1 = sin(theta1)
-        val c1 = cos(theta1)
-        val s12 = sin(theta1 + theta2)
-        val c12 = cos(theta1 + theta2)
-        return arrayOf(
-            doubleArrayOf(-l1 * s1 - l2 * s12, -l2 * s12),
-            doubleArrayOf(l1 * c1 + l2 * c12, l2 * c12),
-        )
-    }
+    fun jacobian(theta1: Double, theta2: Double): Array<DoubleArray> =
+        geometry(theta1, theta2) { c1, s1, c12, s12 ->
+            arrayOf(doubleArrayOf(-params.l1 * s1 - params.l2 * s12, -params.l2 * s12),
+                doubleArrayOf(params.l1 * c1 + params.l2 * c12, params.l2 * c12))
+        }
 
     /** Allocation-free row-major 2x2 Jacobian: `[j11, j12, j21, j22]`. */
     fun jacobian(theta1: Double, theta2: Double, output: DoubleArray) {
         require(output.size >= 4) { "Jacobian output requires four elements" }
-        val l1 = params.l1
-        val l2 = params.l2
-        val s1 = sin(theta1)
-        val c1 = cos(theta1)
-        val s12 = sin(theta1 + theta2)
-        val c12 = cos(theta1 + theta2)
-
-        val j11 = -l1 * s1 - l2 * s12
-        val j12 = -l2 * s12
-        val j21 = l1 * c1 + l2 * c12
-        val j22 = l2 * c12
-
-        output[0] = j11
-        output[1] = j12
-        output[2] = j21
-        output[3] = j22
+        geometry(theta1, theta2) { c1, s1, c12, s12 ->
+            output[0] = -params.l1 * s1 - params.l2 * s12
+            output[1] = -params.l2 * s12
+            output[2] = params.l1 * c1 + params.l2 * c12
+            output[3] = params.l2 * c12
+        }
     }
 
     /**
@@ -178,15 +193,18 @@ class TwoDofLinkageKinematics(val params: TwoDofLinkageParameters) {
      * Singularity occurs when theta2 is 0 or ±π (arm fully outstretched or fully folded back).
      */
     fun jacobianDeterminant(theta2: Double): Double {
-        return params.l1 * params.l2 * sin(theta2)
+        return determinantCoefficient.times(sin(theta2))
     }
 
     /**
-     * Detects if the mechanism is operating in or near a kinematic singularity where joint velocities diverge.
+     * Detects proximity using `abs(sin(theta2)) < threshold`, independent of length units.
+     * Threshold must be finite and non-negative; zero disables the strict proximity band.
+     * Unknown joint angles conservatively report near-singular.
      */
     fun isNearSingularity(theta1: Double, theta2: Double, threshold: Double = 0.05): Boolean {
-        val det = kotlin.math.abs(jacobianDeterminant(theta2))
-        return det < threshold * params.l1 * params.l2
+        require(threshold.isFinite() && threshold >= 0.0) { "Singularity threshold must be finite and non-negative" }
+        if (!theta1.isFinite() || !theta2.isFinite()) return true
+        return kotlin.math.abs(sin(theta2)) < threshold
     }
 
     /**
@@ -197,28 +215,20 @@ class TwoDofLinkageKinematics(val params: TwoDofLinkageParameters) {
      *
      * @return DoubleArray of size 2 containing [torque1_Nm, torque2_Nm].
      */
-    fun gravityTorque(theta1: Double, theta2: Double): DoubleArray {
-        val c1 = cos(theta1)
-        val c12 = cos(theta1 + theta2)
-        val g = params.g
-        val g1 = (params.m1 * params.rc1 + params.m2 * params.l1) * g * c1 +
-            (params.m2 * params.rc2) * g * c12
-        val g2 = (params.m2 * params.rc2) * g * c12
-        return doubleArrayOf(g1, g2)
+    fun gravityTorque(theta1: Double, theta2: Double): DoubleArray = gravity(theta1, theta2) { g1, g2 ->
+        doubleArrayOf(g1, g2)
     }
 
     /** Allocation-free gravity torque vector `[joint1Nm, joint2Nm]`. */
     fun gravityTorque(theta1: Double, theta2: Double, output: DoubleArray) {
         require(output.size >= 2) { "Gravity-torque output requires two elements" }
+        gravity(theta1, theta2) { g1, g2 -> output[0] = g1; output[1] = g2 }
+    }
+
+    private inline fun <T> gravity(theta1: Double, theta2: Double, result: (Double, Double) -> T): T {
         val c1 = cos(theta1)
-        val c12 = cos(theta1 + theta2)
-        val g = params.g
-
-        val g1 = (params.m1 * params.rc1 + params.m2 * params.l1) * g * c1 +
-            (params.m2 * params.rc2) * g * c12
-        val g2 = (params.m2 * params.rc2) * g * c12
-
-        output[0] = g1
-        output[1] = g2
+        val c12 = linkageCosSum(theta1, theta2)
+        return result(LinkageCoefficient.sum(proximalGravity, c1, translatedGravity, c1, distalGravity, c12),
+            distalGravity.times(c12))
     }
 }

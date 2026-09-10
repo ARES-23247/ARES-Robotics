@@ -211,20 +211,15 @@ private fun LinkagePhysicsLab(linkage: SubsystemLinkageDocument) {
         return
     }
     val kinematics = remember(linkage) { TwoDofLinkageKinematics(plant.params.linkage) }
-    var voltage1 by remember(plant) { mutableStateOf(0.0) }
-    var voltage2 by remember(plant) { mutableStateOf(0.0) }
-    var running by remember(plant) { mutableStateOf(false) }
-    var theta1 by remember(plant) { mutableStateOf(plant.joint1PositionRad) }
-    var theta2 by remember(plant) { mutableStateOf(plant.joint2PositionRad) }
-
-    LaunchedEffect(plant, running, voltage1, voltage2) {
-        while (running) {
-            plant.step(voltage1, voltage2, 0.02)
-            theta1 = plant.joint1PositionRad
-            theta2 = plant.joint2PositionRad
+    val lab = remember(plant) { LinkagePhysicsLabState(plant) }
+    LaunchedEffect(lab, lab.running, lab.voltage1, lab.voltage2) {
+        while (lab.running) {
+            lab.advance()
             delay(20L)
         }
     }
+    val theta1 = lab.theta1
+    val theta2 = lab.theta2
 
     val pose = kinematics.forwardKinematics(theta1, theta2)
     val torques = kinematics.gravityTorque(theta1, theta2)
@@ -236,24 +231,20 @@ private fun LinkagePhysicsLab(linkage: SubsystemLinkageDocument) {
         }
         StatusText(if (singular) "Near singularity" else "Kinematics healthy", error = singular)
     }
+    lab.fault?.let { StatusText(it, error = true) }
     LinkageCanvas(plant.params.linkage, theta1, theta2)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
         Metric("End effector", "%.2f, %.2f m".format(pose.x, pose.y), AresTextPrimary)
         Metric("Gravity torque 1", "%.2f N·m".format(torques[0]), AresCyan)
         Metric("Gravity torque 2", "%.2f N·m".format(torques[1]), AresGold)
     }
-    VoltageSlider("Joint 1 accepted voltage", voltage1) { voltage1 = it }
-    VoltageSlider("Joint 2 accepted voltage", voltage2) { voltage2 = it }
+    VoltageSlider("Joint 1 accepted voltage", lab.voltage1) { lab.voltage1 = it }
+    VoltageSlider("Joint 2 accepted voltage", lab.voltage2) { lab.voltage2 = it }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = { running = !running }) { Text(if (running) "Pause" else "Run physics") }
-        OutlinedButton(onClick = {
-            running = false
-            voltage1 = 0.0
-            voltage2 = 0.0
-            plant.reset()
-            theta1 = plant.joint1PositionRad
-            theta2 = plant.joint2PositionRad
-        }) { Text("Reset safely") }
+        Button(onClick = lab::toggleRunning, enabled = lab.fault == null) {
+            Text(if (lab.running) "Pause" else "Run physics")
+        }
+        OutlinedButton(onClick = lab::reset) { Text("Reset safely") }
     }
 }
 
@@ -262,18 +253,22 @@ private fun LinkageCanvas(params: TwoDofLinkageParameters, theta1: Double, theta
     Box(Modifier.fillMaxWidth().height(250.dp).background(AresBackground, RoundedCornerShape(8.dp)).border(1.dp, AresBorder, RoundedCornerShape(8.dp))) {
         Canvas(Modifier.matchParentSize()) {
             val origin = Offset(size.width / 2f, size.height * .76f)
-            val scale = size.height * .58f / params.maxReach.toFloat()
-            val maxRadius = params.maxReach.toFloat() * scale
+            val lengthScale = maxOf(params.l1, params.l2)
+            val normalizedL1 = params.l1 / lengthScale
+            val normalizedL2 = params.l2 / lengthScale
+            val maxRadius = size.height * .58f
+            val link1Pixels = (normalizedL1 / (normalizedL1 + normalizedL2) * maxRadius).toFloat()
+            val link2Pixels = (normalizedL2 / (normalizedL1 + normalizedL2) * maxRadius).toFloat()
             drawCircle(AresCyan.copy(alpha = .08f), maxRadius, origin)
             drawCircle(AresCyan.copy(alpha = .35f), maxRadius, origin, style = Stroke(1.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))))
             val elbow = Offset(
-                origin.x + params.l1.toFloat() * cos(theta1).toFloat() * scale,
-                origin.y - params.l1.toFloat() * sin(theta1).toFloat() * scale,
+                origin.x + link1Pixels * cos(theta1).toFloat(),
+                origin.y - link1Pixels * sin(theta1).toFloat(),
             )
-            val end = Offset(
-                elbow.x + params.l2.toFloat() * cos(theta1 + theta2).toFloat() * scale,
-                elbow.y - params.l2.toFloat() * sin(theta1 + theta2).toFloat() * scale,
-            )
+            val sum = theta1 + theta2
+            val c12 = if (sum.isFinite()) cos(sum) else cos(theta1) * cos(theta2) - sin(theta1) * sin(theta2)
+            val s12 = if (sum.isFinite()) sin(sum) else sin(theta1) * cos(theta2) + cos(theta1) * sin(theta2)
+            val end = Offset(elbow.x + link2Pixels * c12.toFloat(), elbow.y - link2Pixels * s12.toFloat())
             drawLine(AresBorder, Offset(0f, origin.y), Offset(size.width, origin.y), 2f)
             drawLine(AresCyan, origin, elbow, 7f, StrokeCap.Round)
             drawLine(AresGold, elbow, end, 6f, StrokeCap.Round)
