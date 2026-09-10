@@ -134,6 +134,9 @@ oracles and fail-closed generated mock/Studio preview behavior.
 Pass 43 covers [wheel kinematics and paired XRP outputs](wheel-kinematics-xrp-audit.md): stable
 means/ratios, coupled normalization, preserved turn ratios, failure cleanup and measured
 standard-drive allocation. Full swerve steering and the remaining XRP IO/simulation follow next.
+Pass 44 covers [XRP mecanum output handling](xrp-mecanum-output-audit.md): four-motor
+saturation, complete failure cleanup, safe constructor validation and direct power normalization
+without subnormal intermediate loss. Full swerve and remaining XRP sensor/motor/robot reviews follow.
 Next is remaining kinematics/estimation; the AresGamepad DSL and remaining controller
 connection/age ownership also need separate full reviews.
 Studio follow-ups include cross-policy consistency, remaining lifecycle and global retention,

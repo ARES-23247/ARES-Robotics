@@ -548,3 +548,11 @@ XRP differential drive preserves requested turn ratios during saturation, reuses
 and attempts both neutral outputs on paired write/refresh failures. Raw IO does not establish
 controller enable or feedback freshness. Full swerve steering and remaining XRP IO/physics
 reviews continue; physical loop timings and motor response remain unmeasured.
+
+## Forty-fourth pass: XRP mecanum outputs
+
+The [XRP mecanum audit](audits/xrp-mecanum-output-audit.md) preserves commanded wheel ratios,
+neutralizes invalid vectors and attempts every motor stop after incomplete writes or refreshes.
+Both XRP drive implementations validate constructor arguments without invoking subclass getters
+and compute normalized power directly, avoiding subnormal speed rounding and redundant scaling.
+Numerical, failure-injection and allocation tests pass; physical behavior remains unmeasured.
