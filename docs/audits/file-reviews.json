@@ -3211,10 +3211,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "95aef48afac8cac1d0a3c1c6b36c9a3aa1604c9411cea3303f18b72369a090d1",
+      "sha256": "d92f5b91fc69515182f2e6f8ccc140639cd8c1ee03f253cdc2df001f00540955",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree 834f69846257195a49791b74f6a68b2c01c8eb55 bound to source f66f6f84 candidate17.0.3-rc.834f69846257;1624 library tests/API/core Kover/local publication and dependency-ordered consumer gates passed.",
+      "scope": "Exact tree 4323b89fc6450894bf4011edde60f0a73d7a154e bound to source66d6432e candidate17.0.3-rc.4323b89fc645;1633 library tests/API/core+FTC Kover/local publication and dependency-ordered consumer gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3311,7 +3311,11 @@
         "docs/audits/weak-registry-clock-audit.md",
         "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass65-library.log",
-        "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass65-verified-evidence",
+        "docs/audits/limelight-proxy-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass66-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass66-library.log",
+        "ARESLib-Kotlin/build/audit-pass66-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5262,7 +5266,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "397b7f1d038d3537c4362f2a0bd9e31f759605ea86f9db4443760ae01513f9d0",
+      "sha256": "e86e7a015fcfe9b9bfbcacece6d0192ad4a800336e1a459d560d48adee362e22",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5278,7 +5282,8 @@
         "docs/audits/task-completion-boundary-audit.md: pass62 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/task-group-ownership-audit.md: pass63 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/indicator-task-timing-audit.md: pass64 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/weak-registry-clock-audit.md: pass65 records reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/weak-registry-clock-audit.md: pass65 records reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/limelight-proxy-ownership-audit.md: pass66 records reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5822,6 +5827,41 @@
         "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass65-library.log",
         "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/LimelightProxy.kt": {
+      "sha256": "4dd6fd612a88f1cc9550ed123521ec1083aadd3f028fce255c09db39d5122b5f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass66 camera snapshot/port interval validation, synchronous bind rollback, bounded copy queue, exact-once pending/running direction ownership and stop/registration exclusion reviewed and tested. Full source read but discovery, interruption, multi-camera USB address selection and clock-domain lifecycle edges still need audit. Main75/108 lines; connection27/27; direction15/15; forwarder23/26 in focus. No live camera or wall-time guarantee under frozen mock clock.",
+      "evidence": [
+        "docs/audits/limelight-proxy-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass66-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass66-library.log",
+        "ARESLib-Kotlin/build/audit-pass66-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/telemetry/LimelightProxyTest.kt": {
+      "sha256": "567b01a40788d26454321df7e40721f3c049210f4058b749f6f0453510b11170",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eleven-method fixture: existing caps/restart, six reproduced mutation/bind/configuration/queued ownership defects, blocked-running permit retention, actual bounded queue and 100003-byte seeded bidirectional loopback transfer. Held executor and reflection outside runtime; port reservation order corrected and nano deadlines use subtraction. Eleven focused and 1633 full library tests passed; discovery excluded.",
+      "evidence": [
+        "docs/audits/limelight-proxy-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass66-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass66-library.log",
+        "ARESLib-Kotlin/build/audit-pass66-verified-evidence"
+      ]
+    },
+    "docs/audits/limelight-proxy-ownership-audit.md": {
+      "sha256": "cc28fae5314f4fa7237a54ccd1d9dfa29ee361ab080691385980b3dc8112f0b0",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report checked against baseline six failures, final eleven tests, exact queue/state implementation, unchanged final API, policy and immutable candidate consumer evidence. Explicitly preserves partial source credit and discovery/replay clock/hardware limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass66-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass66-library.log",
+        "ARESLib-Kotlin/build/audit-pass66-verified-evidence"
       ]
     }
   }
