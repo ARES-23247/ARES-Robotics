@@ -11,12 +11,16 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/drivetrain/HolonomicDriveController.kt": {
-      "sha256": "5c63a72574baea1c9461d0e8aa463626f0c08ae232220640ae63a991dd04c3e9",
-      "review": "partial",
+      "sha256": "01d0899f6a2ddc0aa06d18b4b301d83535349af09076f3769943a775808e6e13",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Full file: overload/raw-heading contract, active feedback status, invalid-frame reset, scaled field rotation/discretization/final norm bound, centripetal limit, telemetry failure, output ownership and O(1) work. Pass58 100 focused and 1506 full library tests, API and candidate consumers passed; 111/117 lines,84/136 branches. External enable/freshness and hardware timing excluded.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/filters/Debouncer.kt": {
@@ -134,11 +138,15 @@
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/drivetrain/RobotLoopMathTest.kt": {
       "sha256": "a66c98e0bb333c8114a06d3cd3741a3074d4ce3f01d105fccbf5b644787850ef",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "All four tests reviewed and executed: reusable output ownership/reset, signed curvature/reverse speed, post-discretization clamp and allocation/latency probe. Measured20k reused calls0bytes;4KiB gate unchanged, no physical timing claim.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/safety/CurrentBudgetManagerTest.kt": {
@@ -809,15 +817,19 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt": {
-      "sha256": "f76fb9d06e92552a9f98e74f92eb42eb19e8cb2af493fd85101cf4fbc3f28e74",
+      "sha256": "355796a1505873550df7b8bda972f8e5ecff24a8b2c1faeb15baf919bbee29d2",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source reviewed: P/I/D law and units, retained-integral saturation behavior, sign-aware anti-windup, disabled terms, history reset, interval validation, periodic difference arithmetic and hot-path work. All 763 core tests pass; PID coverage 90/90 executable lines and 129/140 branches. Missing branches and physical limits remain explicit.",
+      "scope": "Prior full PID review preserved; full source reread and internal success/failure status paths audited. Valid deadzone zero differs from rejected neutral; reset clears status. Pass58 library/API/consumers passed;95/95 lines,133/140 branches. No public API change.",
       "evidence": [
         "docs/audits/pid-controller-audit.md",
         "ARESLib-Kotlin/build/audit-pass12-library.log",
         "ARESLib-Kotlin/build/audit-pass12-baseline.xml",
-        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml",
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerBoundaryTest.kt": {
@@ -3195,10 +3207,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "7d9b7bcb6a916c0fecd9cfc26985b71c24a9eb733607ca021897c4fa53ec4593",
+      "sha256": "f60d9a9b582cc6a4d9ecab08378e17fe2b15438b73ab58d81e33b9134c21e9a2",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library tree0303879d9315b7fcd2f1e43c3567a93b959a41b0 bound to sourced9d1a903 and candidate17.0.3-rc.0303879d9315. Full library1487tests/API/coreKover/isolatedpublication passed1m49; consumer evidence in pass56 report.",
+      "scope": "Exact tree d620adab542d7af72bbfd1296fd485a4b0b2dba5 bound to source5b7f8468 candidate17.0.3-rc.d620adab542d; full1506 library tests/API/Kover/publication and dependency-ordered consumer validation passed. See pass58 report.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3263,7 +3275,11 @@
         "ARESLib-Kotlin/build/audit-pass56-final-focus-complete.log",
         "ARESLib-Kotlin/build/audit-pass56-library.log",
         "ARESLib-Kotlin/build/audit-pass56-verified-evidence",
-        "ARESLib-Kotlin/build/audit-pass56-policy.log"
+        "ARESLib-Kotlin/build/audit-pass56-policy.log",
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5214,7 +5230,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3815daab039e298f0e72903c867db9fc6eff04edc1f761e9390f0231a4fe3216",
+      "sha256": "d149b09acc3153a80d9eadf3186984ae0273565892e968c63ecebf4514b8ab34",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5222,7 +5238,8 @@
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
         "ARESLib-Kotlin/build/audit-pass57-policy.log",
-        "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass57-verified-evidence",
+        "docs/audits/holonomic-control-composition-audit.md: reviewed pass58 record updates and canonical self-fingerprint refresh"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5234,6 +5251,89 @@
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
         "ARESLib-Kotlin/build/audit-pass57-policy.log",
         "ARESLib-Kotlin/build/audit-pass57-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/LinearADRC.kt": {
+      "sha256": "5f600939f288054c74e06f64f511a448bc657defe55d68086a8836bcca57793a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass58 composition validation and atomic observer-state commitment reviewed and tested. Invalid configuration/data/arithmetic resets to finite measurement and reports invalid status; negative gain and zero bandwidth supported. Observer discretization/saturation dynamics and continuous extreme arithmetic require a separate full audit.72/73 lines93/122 branches exercised.",
+      "evidence": [
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/drivetrain/HolonomicDriveControllerTest.kt": {
+      "sha256": "e3bba0bcab2177614c976dca05aaef71a90ac66cacbeb55f03d03c44ba4770f6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All five original controller regression methods reviewed and executed.",
+      "evidence": [
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/LinearADRCTest.kt": {
+      "sha256": "ede5a5fedc57ad2174c494ca3d286972c66171b2cf7f2c5e2db8e15621215f24",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All seven existing ADRC tests reviewed and executed: calculation/reset, saturation, continuous wrap, disturbance toy plant, invalid input and retuning. This suite is not proof of physical observer fidelity.",
+      "evidence": [
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/drivetrain/HolonomicControlBoundaryTest.kt": {
+      "sha256": "fcd000a6963ee8d0c7243c6812ec9d17c02f4c9c8c34d8e6e561c914d59d906c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All ten new boundary methods reviewed and executed, including raw-heading rejection, invalid PID/ADRC composition, history recovery, subtraction overflow, curve-ratio underflow, overload consistency and large commands.",
+      "evidence": [
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/drivetrain/HolonomicControlNumericsTest.kt": {
+      "sha256": "d73fbf351223c63dd46e73d60fbdd669818c13491f60c60f921787d76b44fc9d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All five tests reviewed and executed: 3000 seeded independent inverse-SE2 oracle cases, overflowing vector norm and rotated direction, immediate status capture, telemetry exception identity/neutralization and tangent/reverse semantics.",
+      "evidence": [
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/FeedbackCompositionStatusTest.kt": {
+      "sha256": "23737aa8726fab4ecb4479445725554d5ef6cb358afa6e262e621e6ed730e27e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All four tests reviewed and executed: PID status/deadzone/repair, ADRC atomic overflow recovery, invalid state/limits/ranges and valid negative gain/zero bandwidth. Signed zero assertion corrected without production change.",
+      "evidence": [
+        "docs/audits/holonomic-control-composition-audit.md",
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+      ]
+    },
+    "docs/audits/holonomic-control-composition-audit.md": {
+      "sha256": "f238ba301d238ba29e32c84862dface3030508e08f44b85def419e566d939543",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full report checked against pass58 source, failing/passing tests, measured loop evidence, API checks, consumer logs and explicit remaining review/hardware boundaries.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass58-library.log",
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
       ]
     }
   }
