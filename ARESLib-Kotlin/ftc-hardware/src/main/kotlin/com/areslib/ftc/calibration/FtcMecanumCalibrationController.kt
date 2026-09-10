@@ -616,7 +616,7 @@ class FtcMecanumCalibrationController {
         const val STOP_COMMAND = "STOP"
         const val MAX_ENABLE_TOKEN_LENGTH = 128
         const val ENABLE_LEASE_TIMEOUT_MS = 500L
-        const val MAX_SYSID_MOTION_AGE_MS = 100L
+        private const val MAX_SYSID_MOTION_AGE_MS = 100L
         const val INVALID_LEASE_SEQUENCE = -1.0
         const val MAX_SAFE_INTEGER = 9_007_199_254_740_991.0
     }
