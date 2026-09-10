@@ -10,6 +10,9 @@ import com.areslib.math.geometry.Pose2d
  *
  * This allows clean decoupling of the swerve drivetrain logic from CTRE/REV hardware,
  * facilitating unit testing, simulation, and future cross-platform (FTC/FRC) swerve support.
+ * Cached module arrays contain four entries in front-left, front-right, rear-left, rear-right
+ * order. Getters write those entries only, preserving any trailing caller storage. Refresh and
+ * reads share one owning loop; validity flags do not establish freshness across concurrent updates.
  */
 interface SwerveHardwareIO : SubsystemIO {
     companion object {
@@ -53,23 +56,21 @@ interface SwerveHardwareIO : SubsystemIO {
      */
     fun write(driveState: DriveState, powerScale: Double)
 
-    /** Gets measured motor supply currents. */
+    /** Gets four cached motor supply currents in amperes; [out] must have at least four entries. */
     fun getCurrents(out: DoubleArray)
 
     /** Whether the last hardware refresh produced a fresh current snapshot. */
     val currentMeasurementsValid: Boolean
 
-    /** Checked cached-current read; invalid hardware must not be represented as a healthy zero. */
-    fun getCurrentsIfValid(out: DoubleArray): Boolean {
-        if (!currentMeasurementsValid) {
-            out.fill(Double.NaN)
-            return false
-        }
-        getCurrents(out)
-        return true
-    }
+    /**
+     * Checks the validity flag and all four cached values. Incomplete/non-finite/invalid snapshots
+     * become four NaNs. A getter failure also clears those entries before propagating unchanged.
+     * Short buffers reject before mutation; trailing storage is preserved by conforming getters.
+     */
+    fun getCurrentsIfValid(out: DoubleArray): Boolean =
+        readCheckedSwerveSnapshot(out, currentMeasurementsValid) { getCurrents(it) }
 
-    /** Gets measured absolute encoder positions. */
+    /** Gets four cached absolute encoder positions in rotations into [out] (size at least four). */
     fun getEncoderPositions(out: DoubleArray)
 
     /** Whether the last hardware refresh produced a trustworthy encoder snapshot. */
@@ -77,16 +78,10 @@ interface SwerveHardwareIO : SubsystemIO {
 
     /**
      * Checked cached read. Invalid hardware is represented as an unavailable sample, never a
-     * healthy zero.
+     * healthy zero. Buffer, completeness and failure semantics match [getCurrentsIfValid].
      */
-    fun getEncoderPositionsIfValid(out: DoubleArray): Boolean {
-        if (!encoderPositionsValid) {
-            out.fill(Double.NaN)
-            return false
-        }
-        getEncoderPositions(out)
-        return true
-    }
+    fun getEncoderPositionsIfValid(out: DoubleArray): Boolean =
+        readCheckedSwerveSnapshot(out, encoderPositionsValid) { getEncoderPositions(it) }
 
     /** Gets gyro absolute pitch degrees. */
     val pitchDegrees: Double
@@ -140,4 +135,28 @@ interface SwerveHardwareIO : SubsystemIO {
 
     /** Gets the signal latency in milliseconds of the swerve sensors. */
     val signalLatencyMs: Double
+}
+
+/** Inlined to avoid closures or temporary arrays in the periodic checked-read path. */
+private inline fun readCheckedSwerveSnapshot(
+    out: DoubleArray,
+    valid: Boolean,
+    read: (DoubleArray) -> Unit
+): Boolean {
+    require(out.size >= 4) { "Swerve output must contain four modules" }
+    out.fill(Double.NaN, 0, 4)
+    if (!valid) return false
+    try {
+        read(out)
+    } catch (failure: Throwable) {
+        out.fill(Double.NaN, 0, 4)
+        throw failure
+    }
+    for (index in 0 until 4) {
+        if (!out[index].isFinite()) {
+            out.fill(Double.NaN, 0, 4)
+            return false
+        }
+    }
+    return true
 }

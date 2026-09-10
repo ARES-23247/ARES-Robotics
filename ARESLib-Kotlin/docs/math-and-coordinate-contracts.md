@@ -358,3 +358,24 @@ the prior command. There is no universal safe servo angle, and retaining a prior
 not a PWM-off operation. Channel identity and physical output safety belong to the integration.
 The standard lifecycle/valid-command paths reuse storage under host allocation tests; failure
 exceptions and manually replaced pose snapshots may allocate.
+
+## Shared four-module swerve IO and configuration
+
+`SwerveHardwareIO` module buffers use front-left/front-right/rear-left/rear-right order.
+Currents are amperes; absolute encoder positions are rotations. Checked getters require at
+least four entries, preserve trailing storage when the underlying getter honors that contract,
+and return true only for a valid flag plus four finite values. Invalid, incomplete or failed
+reads clear all four entries to NaN; getter exceptions propagate unchanged. These are cached,
+single-loop checks, not a physical freshness watchdog or an actuator-enable decision.
+
+Telemetry implementations must snapshot retained arrays before returning, as required by
+`ITelemetry`. The checked read path reuses caller storage; telemetry key construction and backend
+publication are outside its allocation guarantee. Covariance-unaware implementations still
+receive accepted vision pose/timestamp once through the documented fallback.
+
+`SwerveModuleConfig` constructor/copy require nonblank identities and finite geometry/calibration.
+FTC hardware names remain verbatim. CAN getters reject malformed, overflowing or negative numeric
+identities instead of substituting device zero; explicit zero remains valid at this shared boundary.
+Vendor-specific address ranges, bus/device uniqueness, geometry plausibility and physical calibration
+are platform responsibilities. Reflection/unsafe deserializers that bypass constructors need their
+own validation. CAN parsing is a setup operation, not part of the checked periodic measurement path.

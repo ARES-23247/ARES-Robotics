@@ -4,7 +4,10 @@ import com.google.gson.annotations.SerializedName
 
 /**
  * Serializable sensory inputs for a single swerve module.
- * Adheres to the Logged IO pattern.
+ * Adheres to the Logged IO pattern. Mutable, caller-owned storage reused by the robot loop.
+ * Values use motor-shaft radians, radians/second and absolute steering radians, respectively.
+ * A numeric default or retained prior value is not valid feedback: check the associated flag
+ * and the producer's acquisition timestamp in RobotClock milliseconds before using it for control.
  */
 data class SwerveModuleInputs(
     @SerializedName("drivePositionRads") var drivePositionRads: Double = 0.0,
@@ -27,6 +30,9 @@ interface SwerveModuleIO {
 
     /**
      * Commands motor duty-cycle powers for drive and steer actuators.
+     * The default owns no actuators and does nothing, for sensor-only fixtures. Actuating adapters
+     * must override this method and enforce their configuration, feedback and safe-output contract.
+     * Calling the default is not evidence that a physical output was applied or neutralized.
      */
     fun setDesiredPower(drivePower: Double, steerPower: Double) {}
 }
