@@ -18,7 +18,10 @@ import java.util.function.Consumer
  * - Angular Convention: **CCW-positive** standard.
  *
  * ### Zero-GC Guarantee:
- * Reuses internal request objects (`fieldCentricRequest`, `robotSpeedsRequest`, `scratchSpeeds`) to ensure zero-GC heap allocations during 50Hz control cycles.
+ * Normal writes reuse request objects and primitive speed storage. Invalid arguments and exception
+ * paths may allocate. The writer is single-loop-owned; the synchronous consumer must consume or
+ * snapshot mutable request values before returning. Native execution and physical timing are
+ * separate from host allocation checks. Enable/arm and vehicle speed limits belong to the owner.
  *
  * @param drivetrain Physical CTRE [SwerveDrivetrain] instance.
  *
@@ -48,41 +51,59 @@ class SwerveCtreSpeedRequestWriter internal constructor(
     private val scratchSpeeds = ChassisSpeeds()
 
     /**
-     * Safes the drivetrain with CTRE's physical X-brake request.
+     * Requests CTRE's X-brake: zero drive speed with active steering position control.
      *
      * A zero-speed request leaves the modules at their prior steering targets and can overwrite an
      * already-commanded X lock when [com.areslib.hardware.HardwareRegistry.safeAll] runs. The brake
      * request is therefore the fail-safe primitive as well as the operator-facing X-brake command.
-     * Zero-GC allocation.
+     * Reuses the brake object; consumer/native execution is outside the allocation claim.
      */
     fun safe() {
         setControl.accept(brakeRequest)
     }
 
     /**
-     * Dispatches the target chassis speeds to the CTRE drivetrain.
-     * Switches transparently between field-centric and robot-centric requests.
+     * Dispatches finite target chassis speeds with finite scale clamped to [0, 1]. Explicit X-brake
+     * ignores unused motion/scale fields. Invalid motion requests attempt the same brake before
+     * throwing; failed motion writes attempt brake and retain their original exception, with a
+     * distinct cleanup failure suppressed. A successful request is not proof of physical stopping.
      * 
      * @param state The target [DriveState] containing $m/s$ and $rad/s$ requests.
      */
     fun write(state: DriveState, powerScale: Double) {
-        if (!powerScale.isFinite()) {
-            throw IllegalArgumentException("Swerve power scale must be finite")
+        if (state.isXLock || state.driveMode == com.areslib.state.DriveMode.X_BRAKE) {
+            safe()
+            return
+        }
+        if (!powerScale.isFinite() || !state.xVelocityMetersPerSecond.isFinite() ||
+            !state.yVelocityMetersPerSecond.isFinite() || !state.angularVelocityRadiansPerSecond.isFinite()) {
+            failSafe(IllegalArgumentException("Swerve motion components and power scale must be finite"))
         }
         val appliedScale = powerScale.coerceIn(0.0, 1.0)
-        if (state.isXLock || state.driveMode == com.areslib.state.DriveMode.X_BRAKE) {
-            setControl.accept(brakeRequest)
-        } else if (state.isFieldCentric) {
-            fieldCentricRequest.VelocityX = state.xVelocityMetersPerSecond * appliedScale
-            fieldCentricRequest.VelocityY = state.yVelocityMetersPerSecond * appliedScale
-            fieldCentricRequest.RotationalRate = state.angularVelocityRadiansPerSecond * appliedScale
-            setControl.accept(fieldCentricRequest)
-        } else {
-            scratchSpeeds.vxMetersPerSecond = state.xVelocityMetersPerSecond * appliedScale
-            scratchSpeeds.vyMetersPerSecond = state.yVelocityMetersPerSecond * appliedScale
-            scratchSpeeds.omegaRadiansPerSecond = state.angularVelocityRadiansPerSecond * appliedScale
-            robotSpeedsRequest.Speeds = scratchSpeeds
-            setControl.accept(robotSpeedsRequest)
+        try {
+            if (state.isFieldCentric) {
+                fieldCentricRequest.VelocityX = state.xVelocityMetersPerSecond * appliedScale
+                fieldCentricRequest.VelocityY = state.yVelocityMetersPerSecond * appliedScale
+                fieldCentricRequest.RotationalRate = state.angularVelocityRadiansPerSecond * appliedScale
+                setControl.accept(fieldCentricRequest)
+            } else {
+                scratchSpeeds.vxMetersPerSecond = state.xVelocityMetersPerSecond * appliedScale
+                scratchSpeeds.vyMetersPerSecond = state.yVelocityMetersPerSecond * appliedScale
+                scratchSpeeds.omegaRadiansPerSecond = state.angularVelocityRadiansPerSecond * appliedScale
+                robotSpeedsRequest.Speeds = scratchSpeeds
+                setControl.accept(robotSpeedsRequest)
+            }
+        } catch (failure: Throwable) {
+            failSafe(failure)
         }
+    }
+
+    private fun failSafe(failure: Throwable): Nothing {
+        try {
+            safe()
+        } catch (cleanup: Throwable) {
+            if (cleanup !== failure) failure.addSuppressed(cleanup)
+        }
+        throw failure
     }
 }

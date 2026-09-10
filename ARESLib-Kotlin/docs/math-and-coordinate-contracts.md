@@ -404,3 +404,19 @@ odometry-owned yaw/rate update frequencies. Native state is acquired through `ge
 avoid sharing CTRE's mutable callback state. That copy allocates; changed immutable ARES motion
 snapshots also allocate. Cached getters and unchanged ARES snapshots reuse storage. Real CAN timing,
 bus loading, device response and whole-loop allocation need hardware/runtime measurement.
+
+## CTRE swerve output writer
+
+Explicit X-brake requests do not depend on unused motion fields or power scale. Normal motion
+requires finite X/Y/omega and finite scale, then clamps the scale to [0, 1]. Invalid input attempts
+X-brake before throwing. A failed motion write also attempts brake and rethrows the original
+failure; a distinct cleanup failure is suppressed without self-suppression. An already-failed
+brake is not immediately retried inside the same call. X-brake requests zero drive velocity and
+steering position control, not PWM-off for every actuator; actual stopping is not proven by return.
+
+Field-centric and robot-centric requests preserve their respective frames and reuse mutable
+request/speed objects. The writer and synchronous consumer share one loop; observers retaining
+request values must snapshot them during the call. Valid writes and safe requests have measured
+host zero-allocation paths; invalid arguments, exceptions and native execution are separate.
+Physical speed limits, configuration, feedback freshness and explicit enable/arm belong to the
+owning hardware/controller lifecycle and are not established by finite command values alone.

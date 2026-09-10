@@ -7,12 +7,15 @@ import java.lang.management.ManagementFactory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assumptions.assumeTrue
 
 class SwerveCtreZeroGcTest {
     @Test
     fun `scaled periodic writer reuses mutable CTRE requests`() {
-        val allocationBean = ManagementFactory.getThreadMXBean() as? ThreadMXBean ?: return
-        if (!allocationBean.isThreadAllocatedMemorySupported) return
+        val candidate = ManagementFactory.getThreadMXBean()
+        assumeTrue(candidate is ThreadMXBean && candidate.isThreadAllocatedMemorySupported,
+            "Thread allocation measurement is unavailable on this JVM")
+        val allocationBean = candidate as ThreadMXBean
         if (!allocationBean.isThreadAllocatedMemoryEnabled) {
             allocationBean.isThreadAllocatedMemoryEnabled = true
         }
