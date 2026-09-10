@@ -3211,10 +3211,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "d92f5b91fc69515182f2e6f8ccc140639cd8c1ee03f253cdc2df001f00540955",
+      "sha256": "d371fb2f2eda82716b399710d727c8c305e1bd4fbe6f7fddf82371c8d273dff4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree 4323b89fc6450894bf4011edde60f0a73d7a154e bound to source66d6432e candidate17.0.3-rc.4323b89fc645;1633 library tests/API/core+FTC Kover/local publication and dependency-ordered consumer gates passed.",
+      "scope": "Exact tree b6b352cba4d472923053aeee89e289a40c3f4ab5 bound to sourceee982527 candidate17.0.3-rc.b6b352cba4d4;1647 library tests/API/core Kover/local publication and dependency-ordered consumer gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3315,7 +3315,11 @@
         "docs/audits/limelight-proxy-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass66-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass66-library.log",
-        "ARESLib-Kotlin/build/audit-pass66-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass66-verified-evidence",
+        "docs/audits/scalar-motion-gravity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass67-library.log",
+        "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5266,7 +5270,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e86e7a015fcfe9b9bfbcacece6d0192ad4a800336e1a459d560d48adee362e22",
+      "sha256": "7c3c32866dd3da11b6c8765308cfcee5f1ae4ea10d4e4a4ae7fd980fe0ed35c9",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5283,7 +5287,8 @@
         "docs/audits/task-group-ownership-audit.md: pass63 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/indicator-task-timing-audit.md: pass64 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/weak-registry-clock-audit.md: pass65 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/limelight-proxy-ownership-audit.md: pass66 records reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/limelight-proxy-ownership-audit.md: pass66 records reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/scalar-motion-gravity-audit.md: pass67 records reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5862,6 +5867,77 @@
         "ARESLib-Kotlin/build/audit-pass66-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass66-library.log",
         "ARESLib-Kotlin/build/audit-pass66-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/kinematics/KinematicsMath.kt": {
+      "sha256": "c109c465e5d22e3373a305a4605597d1684b00052314453c430a3b45d543b91f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file: nonnegative speed convention, finite-input/finite-output fallback, zero-motion shortcut, ordinary positive normal fast path, exponent scaling and compensated product/sum cancellation. Independent exact-radicand 1500-case test plus extremes and spline regressions. 21/21 lines,34/34 branches,1/1 method. No physical dynamic-model or latency claim.",
+      "evidence": [
+        "docs/audits/scalar-motion-gravity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass67-library.log",
+        "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/GravityFeedforward.kt": {
+      "sha256": "89ddeeaea75deed6ec4a65b214a7664986f15e4b658bc40ee2411e67eec29ed9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file: constant elevator, payload-adaptive scaling, signed gain/factor/count conventions, cancellation compensation, finite output fallback and extreme arm-angle difference identity. 1500 exact-decimal payload cases and 450/550-digit independent arm oracle. 24/24 lines,42/42 branches,5/5 methods; callers retain actuator/enable/freshness responsibility.",
+      "evidence": [
+        "docs/audits/scalar-motion-gravity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass67-library.log",
+        "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/DoubleProducts.kt": {
+      "sha256": "d7a802653e42fa12eef7d88587598ba2d203f0b9399aed34b72810e5fd799571",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full internal seven-line Dekker product-residual helper, safely scaled caller preconditions and Android API24 compatibility reviewed. Exact BigDecimal residual equality over 5000 cases, indirect calculator tests and allocation probe. No arbitrary-input FMA guarantee; no runtime arbitrary-precision allocation. 7/7 lines,1/1 method.",
+      "evidence": [
+        "docs/audits/scalar-motion-gravity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass67-library.log",
+        "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/ScalarMotionBoundaryTest.kt": {
+      "sha256": "fd515499da4329b3adaddadb97f7bea002a06f5fe51111e4704a11136cfd527e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full twelve-method fixture: exact Double-to-BigDecimal radicands/products, 80-digit sqrt, 1500+1500 seeded exponent cases,5000 exact residual cases, signed/zero/nonfinite/overflow/subnormal/cancellation inputs and independent extreme cosine constant. Initial eight methods all failed; final twelve pass. Test-only BigDecimal/host math do not enter Android runtime.",
+      "evidence": [
+        "docs/audits/scalar-motion-gravity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass67-library.log",
+        "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/ScalarMotionAllocationTest.kt": {
+      "sha256": "f1510953436e9ad452f0435d5890850b379e3a3022976b55d72d5ed076590288",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-method fixture: varying normal/scaled inputs, three separately consumed volatile results per iteration, ten warm batches/five measured batches, min<=256 and aggregate<=4096 bytes; escaped-array calibration>=48000 and unsupported-counter assumption. Focus[344,0,0,0,0] records occasional overhead; no every-invocation-zero or runtime-latency claim.",
+      "evidence": [
+        "docs/audits/scalar-motion-gravity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass67-library.log",
+        "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
+      ]
+    },
+    "docs/audits/scalar-motion-gravity-audit.md": {
+      "sha256": "26bec66b4a8f030f2d762c030fbbb4d4e372b21509742707908e9797ad92e249",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report reviewed against eight baseline failures, final 47-test scope, exact-decimal and independent cosine evidence, measured allocation bounds, Android FMA API restriction, full/API/policy/consumer results and physical/model limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass67-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass67-library.log",
+        "ARESLib-Kotlin/build/audit-pass67-verified-evidence"
       ]
     }
   }
