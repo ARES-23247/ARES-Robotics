@@ -3207,10 +3207,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "f60d9a9b582cc6a4d9ecab08378e17fe2b15438b73ab58d81e33b9134c21e9a2",
+      "sha256": "3c26cb6b8ee3545b3f4d0de1c18db47b37621588f0e74747bab034f80b599977",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree d620adab542d7af72bbfd1296fd485a4b0b2dba5 bound to source5b7f8468 candidate17.0.3-rc.d620adab542d; full1506 library tests/API/Kover/publication and dependency-ordered consumer validation passed. See pass58 report.",
+      "scope": "Exact library tree3258b9d59e51c6df5f73692b83230ea304a08995 bound to source48b876f5 candidate17.0.3-rc.3258b9d59e51;1521librarytests/API/coreKover/localpublication and dependency-ordered consumers passed. See pass59 report.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3279,7 +3279,11 @@
         "docs/audits/holonomic-control-composition-audit.md",
         "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass58-library.log",
-        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence",
+        "docs/audits/path-task-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass59-expanded.log",
+        "ARESLib-Kotlin/build/audit-pass59-library.log",
+        "ARESLib-Kotlin/build/audit-pass59-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5230,7 +5234,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "d149b09acc3153a80d9eadf3186984ae0273565892e968c63ecebf4514b8ab34",
+      "sha256": "66d70eb0cd55ea56b8c9727570d8d54c883c8ce2111c3f8194e3ca4f581dfaba",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5239,7 +5243,8 @@
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
         "ARESLib-Kotlin/build/audit-pass57-policy.log",
         "ARESLib-Kotlin/build/audit-pass57-verified-evidence",
-        "docs/audits/holonomic-control-composition-audit.md: reviewed pass58 record updates and canonical self-fingerprint refresh"
+        "docs/audits/holonomic-control-composition-audit.md: reviewed pass58 record updates and canonical self-fingerprint refresh",
+        "docs/audits/path-task-loop-audit.md: pass59 records reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5334,6 +5339,53 @@
         "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass58-library.log",
         "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/Task.kt": {
+      "sha256": "f952d342f2f5ab4ad1d82b7969998055c78148ee0ccaf5c0b1b39d5db377acb3",
+      "scope": "Pass59 FollowPathTask timing, authored velocity/progress, marker scheduling, primitive child elapsed time, setup validation, failure neutralization and partial-initializer cleanup reviewed and tested. Entire aggregate read, but remaining Task abstractions, callback reentrancy, marker resource ownership, watchdog and unified execution-validity boundaries still require audit.71focused/1521library tests/API/consumerspassed; FollowPathTask194/208lines149/228branches15/15methods.",
+      "review": "partial",
+      "validation": "passed",
+      "evidence": [
+        "docs/audits/path-task-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass59-expanded.log",
+        "ARESLib-Kotlin/build/audit-pass59-library.log",
+        "ARESLib-Kotlin/build/audit-pass59-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/FollowPathFailureTest.kt": {
+      "sha256": "269ebe7b9f9c632ea8f2defa6e9417fd457e4bab70d0d43a0da7d333a84474a8",
+      "scope": "All four existing tests fully reviewed and executed: empty/blocked paths prevent sequence continuation, interrupted velocity-hold neutralizes, failed child event invokes cleanup exactly once. This is not all lifecycle interleavings.",
+      "review": "reviewed",
+      "validation": "passed",
+      "evidence": [
+        "docs/audits/path-task-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass59-expanded.log",
+        "ARESLib-Kotlin/build/audit-pass59-library.log",
+        "ARESLib-Kotlin/build/audit-pass59-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/FollowPathLoopBoundaryTest.kt": {
+      "sha256": "cbd5a72d0cf99320df7175d895c1fe29529b2d1214f33035059a22d101aba516",
+      "scope": "All15newtests fully reviewed and executed: clockzero/repeated/rollback/overflow, failed parent/child output, authored reverse/zero/small velocity, pause child elapsed time, marker stable order/snapshot/10000marker20idle-loopreadcount, partial initializer cleanup, hold invalidpose, duplicate ownership and invalidthresholds. No physical timing guarantee.",
+      "review": "reviewed",
+      "validation": "passed",
+      "evidence": [
+        "docs/audits/path-task-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass59-expanded.log",
+        "ARESLib-Kotlin/build/audit-pass59-library.log",
+        "ARESLib-Kotlin/build/audit-pass59-verified-evidence"
+      ]
+    },
+    "docs/audits/path-task-loop-audit.md": {
+      "sha256": "b20ef7963c905538db518da0e2eb8db8ebffec7ace04dccf89ddc73620b3ce5e",
+      "scope": "Full report checked against pass59 source/test failures and successes, complexity and allocation boundaries, API/candidate/consumer logs and remaining review limitations.",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass59-expanded.log",
+        "ARESLib-Kotlin/build/audit-pass59-library.log",
+        "ARESLib-Kotlin/build/audit-pass59-verified-evidence"
       ]
     }
   }
