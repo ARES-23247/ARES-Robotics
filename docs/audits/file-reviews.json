@@ -3231,10 +3231,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "4ec34c009bc6d683cbf7da8b8b52d8584c2b4e1b8b38c84697a8b8fc5dcd3e72",
+      "sha256": "49c2d3e828f322bb0be6ef886f1a657ae36fadfcdb287d284f2e947688422108",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3367,7 +3367,10 @@
         "ARESLib-Kotlin/build/audit-pass73-focused.log",
         "docs/audits/ftc-motor-polling-shutdown-audit.md",
         "ARESLib-Kotlin/build/audit-pass74-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass74-focused.log"
+        "ARESLib-Kotlin/build/audit-pass74-focused.log",
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3505,10 +3508,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "d801c4aa0502f09126ce74eb146b5b5d686e9695be66abb099923d4810001fe1",
+      "sha256": "a677336dfc6de67f494dbf1a64e9ac818a8f2493c71a57a6d70b9966e50a3f5d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3541,7 +3544,10 @@
         "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
         "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
         "ARESLib-Kotlin/build/audit-pass72-library.log",
-        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json",
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -5351,7 +5357,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "6cc6631631e3b735355e5f45b3392f766f44f5fd757cfb9e7f6726b927b1e686",
+      "sha256": "27a60fa988ed85df09c9f83c21d49180b13299be4c704f3a945504227bd4f98d",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5376,7 +5382,8 @@
         "docs/audits/xrp-coordinate-contract-audit.md: pass71 verified records and canonical self-fingerprint refreshed",
         "docs/audits/apriltag-import-frame-audit.md: pass72 records and canonical self-fingerprint refreshed",
         "docs/audits/ftc-frame-lifecycle-audit.md: pass73 records and canonical self-fingerprint refreshed",
-        "docs/audits/ftc-motor-polling-shutdown-audit.md: pass74 records and canonical self-fingerprint refreshed"
+        "docs/audits/ftc-motor-polling-shutdown-audit.md: pass74 records and canonical self-fingerprint refreshed",
+        "docs/audits/telemetry-mode-lifecycle-audit.md: pass75 records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6520,6 +6527,126 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass74-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass74-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/logging/DataLoggingTelemetry.kt": {
+      "sha256": "a65172d3e4f28bfc2e7acfb48690bff1344569521ffb8d198983067cd5ee81ab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full single-owner wrapper lifecycle reviewed: mode capture and pending-frame isolation, first/rewound/overflowed timestamp gates, ordinary throttling, pooled map ownership, terminal publication, final pending flush, idempotent close and backend teardown. Forty-six related focused methods and complete candidate matrix passed. Overall concurrent mutation is not a supported contract; getters continue delegating after close and final disk drain is intentionally unbounded.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/logging/ARESDataLogger.kt": {
+      "sha256": "9a0665f3cd17636417ba34ea8cc4e929efc4d33c0b750a3a92aa3553e71154eb",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full declaration read; changed pooled mode-envelope ownership, bounded queue/drop accounting, worker mode rotation and sink retry, lossless Double serialization, accepted-frame drain and lifecycle paths reviewed/tested. Broader disk failure, retention, finalization and recovery cases remain open. Initial construction and final drain still perform IO; no filesystem latency or power-loss durability guarantee.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/ActionLogger.kt": {
+      "sha256": "aceed394eaf3cca923da4ea3b42cd50b5d32c4db4cee160e4a94e4c523992340",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full declaration read; pooled detached-action/mode envelopes, beginMode and explicit-mode enqueue, single-worker ordered file rotation, existing mutable action snapshots and final accepted-record drain reviewed/tested. Broader encoding, disk failure, retention and finalization cases remain open. Initial file creation and final stop may block on disk.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/HardwareRegistry.kt": {
+      "sha256": "efffdf4dce90c67dc1231fb4f96b2dce8e4051249ce7c68d53d90402f634d654",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Shutdown ordering reviewed and independently tested: registered devices close before auxiliary drains; shared identities close once; repeated close and best-effort teardown retain existing behavior. Generic registry mutation, worker concurrency and broader resource contracts remain open.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/FtcTelemetryManager.kt": {
+      "sha256": "77af37e171a26242ee365bfb9d056c722f6d70035f72aa8593937637c56c9555",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full declaration read. Stable action logger, action-time mode capture, nonblocking mode publication, exceptional forwarding restoration, owned-listener detachment/successor preservation, latest pending DS snapshot, literal SDK overload, zero/rewound/overflow timing gate and terminal close reviewed. Seven lifecycle fixtures passed. Broader global status/proxy ownership and concurrent publisher lifecycle remain open; bounded DS join cannot cancel an unresponsive SDK call.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/logging/TelemetryLifecycleAuditTest.kt": {
+      "sha256": "48ec544c1fd12b1d582cb57dcc8bd3e18e35d7453ac4d6a7bbf398a25157d1e8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All eight fixtures reviewed/executed: zero/rewind/overflow gates, closed publication and idempotent backend, blocked-writer mode transition and exact values, finite numeric extremes/signed zero/subnormal round trips, pending-mode isolation and final throttled flush. Owned latch/thread cleanup and temporary logs; no wall-clock robot performance claim.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/HardwareRegistryShutdownAuditTest.kt": {
+      "sha256": "7bc43b2ff23ab076d1db484cde3113300bfbd1534c57b281ec8426ae08c9c068",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Independent blocked-service shutdown fixture failed before fix and passed afterward. Asserts device closure before service drain, shared identity once and repeated-close behavior; owned closer is released and joined.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/action/ActionLoggerTest.kt": {
+      "sha256": "bb6e132aec52b61e770998e41b1cbe9f38edb853df005eb81c8aef8d055f5267",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method fixture reviewed/executed. Existing detached mutable actions and same-epoch path collision checks retained; new blocked writer verifies producer return and exact queued action timestamp-to-mode association with no dropped records.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcTelemetryLifecycleAuditTest.kt": {
+      "sha256": "f69757bd532e77c79a2b1602e8383ca041e293781a8d2b2a915f0e74d8bccaf8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full seven-method fixture reviewed/executed: blocked action writer, action before new-mode publish, failed custom publisher recovery, terminal close/owned callback, successor listener, latest DS snapshot and literal percent text with zero/rewound timestamps. Fixture restores clock/status and closes owned managers. Baseline slow-console failure exposed overload selection; final test also verifies latest-state delivery.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/docs/telemetry-and-logging.md": {
+      "sha256": "e565f9a730d65dafad6a1074215e2f4a2c2e7873a616de9f3bd88da85e946c9f",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Changed logging paragraphs reconciled with mode-envelope workers, lossless numeric text, pending flush, single-owner wrapper lifecycle and shutdown/IO limitations. Other telemetry/protocol sections remain separate scopes.",
+      "evidence": [
+        "docs/audits/telemetry-mode-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "docs/audits/telemetry-mode-lifecycle-audit.md": {
+      "sha256": "3ba79c24f9f653ee98ccc3539754ba990eca1aff18ba1e8375f5a3d3fa67e2df",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Findings and limits reconciled with baseline failures, 46 focused checks, source candidate identity and verified library/consumer/policy evidence.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
       ]
     }
   }

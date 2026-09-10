@@ -40,7 +40,17 @@ checks and seven FTC lifecycle checks. Tests use owned latches/threads and tempo
 log directories, verify exact mode/value attribution after a blocked writer, retain
 enqueue-time mutable-action snapshots, and check shutdown ordering and deduplication.
 The additive API contains ActionLogger.beginMode and explicit-mode logAction only.
-Final candidate validation is pending.
+Source commit `dc648502` fixes library tree
+`309e4e975b3b54b36e3fcdf1d4897eab7b30a29d`, validated as local candidate
+`17.0.3-rc.309e4e975b3b`. Full library/API/Kover/local-publication validation passed
+1,754 tests in 2m 4s. Dependent validation passed FTC 111, FRC 134, FTC starter 14,
+FRC starter 34, Studio 1,790 with six skips, dashboard 56 and performance baseline one.
+Studio completed in 3m 28s; unchanged-input task/cache results were reused normally.
+Repository policy verified 236 current documents and 38 historical exclusions.
+Copied XML, hash manifests, core/FTC Kover reports and successful build logs are retained
+under `ARESLib-Kotlin/build/audit-pass75-verified-evidence/`; `summary.json` binds the
+source tree, candidate POM, test totals and log hashes. No failed or errored tests remain
+in that evidence. These results establish host/simulator behavior, not physical timing.
 
 ## Scope limits
 
