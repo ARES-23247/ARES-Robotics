@@ -63,10 +63,10 @@ open class StandardXrpDifferentialHardwareIO(
     override val leftMotor: XrpMotorIO = XrpMotorDouble(1),
     override val rightMotor: XrpMotorIO = XrpMotorDouble(2),
     trackWidthMeters: Double = 0.155,
-    override val wheelRadiusMeters: Double = 0.030
+    wheelRadiusMeters: Double = 0.030
 ) : XrpDifferentialHardwareIO {
-    init {
-        require(wheelRadiusMeters.isFinite() && wheelRadiusMeters > 0.0) {
+    override val wheelRadiusMeters: Double = wheelRadiusMeters.also { radius ->
+        require(radius.isFinite() && radius > 0.0) {
             "wheelRadiusMeters must be finite and positive"
         }
     }

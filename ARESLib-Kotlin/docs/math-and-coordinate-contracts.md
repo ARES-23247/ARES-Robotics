@@ -244,17 +244,19 @@ are clamped to the requested bound for rounding. Unscaled immutable wheel values
 scaled values are independently allocated. Buffered methods reject undersized arrays before
 mutation and leave trailing elements untouched.
 
-The standard XRP differential IO reuses a two-element wheel buffer, reads each chassis field
-once per drive call, scales wheels together before converting to motor power, and rejects
-invalid chassis fields or nonfinite/nonpositive maximum linear speed by commanding both motors
-neutral. Its wheel radius must be finite and positive. Raw setPowers clamps each explicitly
-requested finite power, neutralizing the pair if either is invalid. Failed paired writes or
-incomplete motor refresh attempt both stops before propagating the original failure. stop
-attempts both motors and retains secondary failures as suppressed exceptions. Failed stop
-attempts do not prove physical motors reached neutral.
+Standard XRP differential and mecanum IO reuse two- and four-element wheel buffers, read each
+chassis field once per drive call, and scale wheels together before converting to motor power.
+Invalid chassis fields or nonfinite/nonpositive maximum linear speed command every coupled
+motor neutral. Constructor wheel-radius arguments must be finite and positive; validation
+does not call an overridable getter before subclass initialization. Subclasses own any overridden
+configuration. Raw setPowers clamps each explicitly requested finite power, neutralizing the
+complete vector if any component is invalid. Failed writes or incomplete motor refresh attempt
+every stop before propagating the original failure. stop attempts every motor and retains
+secondary failures as suppressed exceptions, without self-suppressing a reused exception.
+Failed stop attempts do not prove physical motors reached neutral.
 
-The standard drive path is single-owner and allocation-free under the measured host fixtures.
-The interface default drive allocates scratch for custom implementations; getWheelDistances
+The standard drive paths are single-owner and allocation-free under the measured host fixtures.
+Interface default drive methods allocate scratch for custom implementations; getWheelDistances
 returns an allocated Pair, and chassis-returning math overloads allocate their result. Motor
 fields consumed for wheel distances are expected to be cached by the concrete adapter. This
 raw IO layer does not grant enable, establish feedback freshness or own the robot's fault latch;
