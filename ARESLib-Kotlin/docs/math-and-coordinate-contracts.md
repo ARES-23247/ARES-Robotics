@@ -268,6 +268,23 @@ raw IO layer does not grant enable, establish feedback freshness or own the robo
 those remain the controller/adapter's responsibility. Swerve speed normalization preserves
 angle references; the remaining steering solver's allocation and dynamics need a separate review.
 
+## XRP desktop simulation and network control
+
+The desktop XRP engine receives canonical v2 drive frames through its own `DriveFrameReceiver`.
+A new session needs a neutral handshake; retained frames do not renew the 500 ms receiver-time
+lease. Expiry, invalid payloads and disabled teleop neutralize output. Store intent alone does
+not confer network authority. Raw power fixtures are available before network ownership or
+after an explicit pose reset; they are not a physical hardware control API.
+
+Commands enter Store as joystick intent, and field-relative steering uses Store estimator
+heading. Ideal optical pose observations enter Store through `PoseUpdate` with no independent
+IMU measurement. Packed telemetry keeps physical truth, Store estimate and Store odometry
+separate. This velocity-driven Dyn4j model includes collision/damping, but no motor torque,
+slip or sensor noise. Accepted step duration is finite and in (0, 0.1] seconds; observations
+use accumulated simulation milliseconds. This does not establish real-time or sub-millisecond
+estimator accuracy. FTC walls use a center origin; XRP/FRC walls follow their corner-origin
+field documents, including when switching league without changing dimensions.
+
 ## XRP JVM lifecycle and device doubles
 
 XrpBaseRobot is an IO lifecycle foundation, not the exported MicroPython runtime or the full

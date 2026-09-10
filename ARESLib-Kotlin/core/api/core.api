@@ -6856,6 +6856,17 @@ public abstract interface class com/areslib/telemetry/AresGamepad$StickConsumer 
 	public abstract fun accept (DD)V
 }
 
+public final class com/areslib/telemetry/DriveFrameReceiver {
+	public fun <init> ()V
+	public final fun acceptFrame ([DJ)Lcom/areslib/telemetry/SimInputBridge$CommandFrame;
+	public static synthetic fun acceptFrame$default (Lcom/areslib/telemetry/DriveFrameReceiver;[DJILjava/lang/Object;)Lcom/areslib/telemetry/SimInputBridge$CommandFrame;
+	public final fun copyAcknowledgement ([DJ)I
+	public static synthetic fun copyAcknowledgement$default (Lcom/areslib/telemetry/DriveFrameReceiver;[DJILjava/lang/Object;)I
+	public final fun currentFrame (J)Lcom/areslib/telemetry/SimInputBridge$CommandFrame;
+	public static synthetic fun currentFrame$default (Lcom/areslib/telemetry/DriveFrameReceiver;JILjava/lang/Object;)Lcom/areslib/telemetry/SimInputBridge$CommandFrame;
+	public final fun reset ()V
+}
+
 public abstract interface class com/areslib/telemetry/GamepadAxisSource {
 	public abstract fun read (Lcom/areslib/telemetry/GamepadState;)F
 }

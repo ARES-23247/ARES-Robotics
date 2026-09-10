@@ -85,7 +85,8 @@ class XrpSimulationEngineTest {
         engine.resetPose(0.35, 0.7112, 0.0)
 
         // Command pure lateral strafe: vx=0, vy=0.5, omega=0
-        val driveFrame = doubleArrayOf(0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        engine.processDriveFrame(doubleArrayOf(2.0, 41.0, 0.0, 0.0, 0.0, 0.0, 0.0, 8.0))
+        val driveFrame = doubleArrayOf(2.0, 41.0, 1.0, 20.0, 0.0, 0.5, 0.0, 8.0)
         engine.processDriveFrame(driveFrame)
 
         for (i in 0 until 10) {

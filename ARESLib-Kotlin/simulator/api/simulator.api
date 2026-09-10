@@ -565,6 +565,7 @@ public final class com/areslib/sim/xrp/XrpSimulationEngine {
 	public final fun getRightPower ()D
 	public final fun getRlPower ()D
 	public final fun getRrPower ()D
+	public final fun getStore ()Lcom/areslib/Store;
 	public final fun getTrackWidthMeters ()D
 	public final fun getWheelBaseMeters ()D
 	public final fun getWheelRadiusMeters ()D
@@ -585,5 +586,6 @@ public final class com/areslib/sim/xrp/XrpSimulationEngine {
 	public final fun setRrPower (D)V
 	public final fun step (D)V
 	public static synthetic fun step$default (Lcom/areslib/sim/xrp/XrpSimulationEngine;DILjava/lang/Object;)V
+	public final fun stop ()V
 }
 

@@ -5,91 +5,97 @@ import com.areslib.networktables.NT4Server
 import com.areslib.sim.cli.SimCliParser
 import com.areslib.sim.network.TelemetryPublisher
 import com.areslib.state.RobotFieldDocument
+import com.areslib.state.RobotFieldManager
+import com.areslib.telemetry.TelemetryTopicConstants
 import com.areslib.util.RobotClock
-import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Desktop simulation launcher entry point for XRP robots.
- *
- * Can be executed headlessly or directly from ARES Robotics Studio.
- */
+/** Single-owner desktop XRP simulation loop, paced nominally at 50 Hz. */
 object XrpSimLauncher {
-    @Volatile
-    var isRunning = true
+    @Volatile var isRunning = true
+    private val runActive = AtomicBoolean(false)
 
     @JvmStatic
     fun main(args: Array<String>) {
-        println("Starting ARES XRP Desktop Simulation...")
-        val cliArgs = SimCliParser.parseArgs(args)
-        val fieldConfig = SimCliParser.loadFieldConfig(cliArgs.fieldConfigArg)
-
+        check(runActive.compareAndSet(false, true)) { "An XRP simulation loop is already running" }
+        val previousConfig = RobotFieldManager.activeConfig
+        var ownedConfig = previousConfig
+        var ownedServer: NT4Server? = null
+        var engine: XrpSimulationEngine? = null
+        var failure: Throwable? = null
+        val shutdownHook = Thread { isRunning = false }
+        var hookRegistered = false
         try {
+            isRunning = true
+            val mecanum = args.any { it.equals("--mecanum", ignoreCase = true) }
+            val cliArgs = SimCliParser.parseArgs(args.filterNot { it.equals("--mecanum", ignoreCase = true) }.toTypedArray())
+            require(cliArgs.opModeClassName == null) { "XRP simulation does not run FTC OpModes" }
+            val fieldConfig = SimCliParser.loadFieldConfig(cliArgs.fieldConfigArg)
+            ownedConfig = RobotFieldManager.activeConfig
             if (NT4Instance.defaultInstance.defaultServer == null) {
-                NT4Instance.defaultInstance.startServer("0.0.0.0", 5810)
-                println("[XRP Simulator] NT4 Server started on port 5810")
+                ownedServer = NT4Instance.defaultInstance.startServer("127.0.0.1", 5810)
             }
-        } catch (e: Exception) {
-            println("[XRP Simulator] Warning starting NT4 server: ${e.message}")
-        }
-
-        val nt4Telemetry = com.areslib.telemetry.NT4Telemetry()
-        val networkStatePublisher = com.areslib.telemetry.ARESNetworkStatePublisher(nt4Telemetry)
-        TelemetryPublisher.init(nt4Telemetry, networkStatePublisher)
-
-        val drivetrainType = if (args.any { it.equals("--mecanum", ignoreCase = true) }) {
-            XrpDrivetrainType.MECANUM
-        } else {
-            XrpDrivetrainType.DIFFERENTIAL
-        }
-
-        println("[XRP Simulator] Drivetrain mode: $drivetrainType")
-        val engine = XrpSimulationEngine(
-            drivetrainType = drivetrainType,
-            activeConfig = fieldConfig
-        )
-
-        Runtime.getRuntime().addShutdownHook(Thread {
-            println("[XRP Simulator] Shutting down simulation...")
+            val telemetry = com.areslib.telemetry.NT4Telemetry()
+            TelemetryPublisher.init(telemetry, com.areslib.telemetry.ARESNetworkStatePublisher(telemetry))
+            val simulation = XrpSimulationEngine(
+                drivetrainType = if (mecanum) XrpDrivetrainType.MECANUM else XrpDrivetrainType.DIFFERENTIAL,
+                activeConfig = fieldConfig
+            )
+            engine = simulation
+            ownedConfig = RobotFieldManager.activeConfig
+            Runtime.getRuntime().addShutdownHook(shutdownHook)
+            hookRegistered = true
+            val driveFrame = DoubleArray(8)
+            val malformedFrame = DoubleArray(0)
+            println("[XRP Simulator] ${simulation.drivetrainType} simulation awaiting neutral v2 handshake.")
+            while (isRunning && !Thread.currentThread().isInterrupted) {
+                val started = RobotClock.nanoTime()
+                val count = NT4Server.copyDoubleArray(TelemetryTopicConstants.DRIVE_INPUT_FRAME, driveFrame)
+                if (count != -1) simulation.processDriveFrame(if (count == 8) driveFrame else malformedFrame)
+                TelemetryPublisher.pollWebFieldConfig()?.let { json ->
+                    val document = RobotFieldDocument.decode(json)
+                    simulation.physicsWorld.loadFieldElements(document)
+                    ownedConfig = RobotFieldManager.activeConfig
+                }
+                simulation.step(0.02)
+                simulation.publishTelemetry()
+                val remainingNanos = 20_000_000L - (RobotClock.nanoTime() - started).coerceAtLeast(0L)
+                if (remainingNanos > 0L) {
+                    try { Thread.sleep(remainingNanos / 1_000_000L, (remainingNanos % 1_000_000L).toInt()) }
+                    catch (_: InterruptedException) { Thread.currentThread().interrupt(); break }
+                }
+            }
+        } catch (caught: Throwable) {
+            failure = caught
+            throw caught
+        } finally {
             isRunning = false
-        })
-
-        println("[XRP Simulator] Simulation running at 50Hz. Awaiting Studio commands.")
-
-        val loopPeriodMs = 20L
-        while (isRunning) {
-            val startTime = System.currentTimeMillis()
-
-            // 1. Poll incoming leased drive frame double[8]
-            val driveFrame = NT4Server.getDoubleArray("ARES/Input/driveFrame", DoubleArray(0))
-            if (driveFrame.isNotEmpty()) {
-                engine.processDriveFrame(driveFrame)
-            }
-
-            // 2. Poll field configuration updates from Studio
-            TelemetryPublisher.pollWebFieldConfig()?.let { configJson ->
-                try {
-                    val updatedDoc = RobotFieldDocument.decode(configJson)
-                    engine.physicsWorld.loadFieldElements(updatedDoc)
-                } catch (e: Exception) {
-                    System.err.println("[XRP Simulator] Error updating field config: ${e.message}")
+            var cleanupFailure: Throwable? = null
+            fun cleanup(action: () -> Unit) {
+                try { action() } catch (caught: Throwable) {
+                    val first = cleanupFailure
+                    if (first == null) cleanupFailure = caught else if (caught !== first) first.addSuppressed(caught)
                 }
             }
-
-            // 3. Step physics
-            engine.step(0.02)
-
-            // 4. Publish telemetry
-            engine.publishTelemetry()
-
-            // Pace 50Hz loop
-            val elapsed = System.currentTimeMillis() - startTime
-            val sleepTime = loopPeriodMs - elapsed
-            if (sleepTime > 0) {
-                try {
-                    Thread.sleep(sleepTime)
-                } catch (_: InterruptedException) {
-                    break
+            cleanup { engine?.stop() }
+            cleanup { engine?.publishTelemetry() }
+            if (hookRegistered) cleanup {
+                try { Runtime.getRuntime().removeShutdownHook(shutdownHook) } catch (_: IllegalStateException) { /* JVM shutdown */ }
+            }
+            cleanup {
+                val server = ownedServer
+                if (server != null && NT4Server.getInstance() === server) {
+                    server.stop()
+                    NT4Server.resetSharedState()
                 }
+            }
+            cleanup { if (RobotFieldManager.activeConfig === ownedConfig) RobotFieldManager.setActiveConfig(previousConfig) }
+            runActive.set(false)
+            val cleanupError = cleanupFailure
+            if (cleanupError != null) {
+                val primary = failure
+                if (primary == null) throw cleanupError
+                if (cleanupError !== primary) primary.addSuppressed(cleanupError)
             }
         }
     }

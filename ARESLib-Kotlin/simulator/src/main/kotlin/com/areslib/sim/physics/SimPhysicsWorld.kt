@@ -6,6 +6,7 @@ import com.areslib.sim.field.FieldElementLoader
 import com.areslib.sim.field.FieldObstacleLoader
 import com.areslib.sim.network.NT4FieldPublisher
 import com.areslib.state.Alliance
+import com.areslib.state.FieldType
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldManager
@@ -18,10 +19,11 @@ import org.dyn4j.geometry.Vector2
 import java.io.File
 
 /**
- * Owns the center-origin Dyn4j top-down world and its robot/field bodies.
+ * Owns the Dyn4j top-down world and its robot/field bodies.
  *
  * Distances are meters and body rotations are CCW-positive radians. Field boundaries follow the
- * active canonical document dimensions in the center-origin frame. [loadFieldElements] removes prior dynamic field content
+ * active canonical document dimensions: FTC uses a center origin; XRP/FRC use a corner origin.
+ * [loadFieldElements] removes prior dynamic field content
  * before loading a supplied configuration; when no configuration is supplied it searches the
  * running project's canonical assets before developer-only fallbacks and leaves a missing/invalid
  * asset category empty.
@@ -47,6 +49,7 @@ class SimPhysicsWorld @kotlin.jvm.JvmOverloads constructor(
 
     private var fieldWidth = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
     private var fieldHeight = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE
+    private var cornerOrigin = false
 
     init {
         world.setGravity(Vector2(0.0, 0.0))
@@ -94,7 +97,8 @@ class SimPhysicsWorld @kotlin.jvm.JvmOverloads constructor(
         if (activeConfig != null) {
             loadedFieldConfig = activeConfig
             RobotFieldManager.setActiveConfig(activeConfig)
-            rebuildWallsIfDimensionsChanged(activeConfig.resolvedWidthMeters, activeConfig.resolvedHeightMeters)
+            rebuildWallsIfChanged(activeConfig.resolvedWidthMeters, activeConfig.resolvedHeightMeters,
+                activeConfig.fieldType != FieldType.FTC)
             val obstacles = FieldObstacleLoader.loadObstacles(world, activeConfig.obstacles)
             activeObstacles.addAll(obstacles)
             val elements = FieldElementLoader.loadElements(world, activeConfig.elementTypes, activeConfig.elements)
@@ -126,20 +130,23 @@ class SimPhysicsWorld @kotlin.jvm.JvmOverloads constructor(
     }
 
 
-    private fun rebuildWallsIfDimensionsChanged(width: Double, height: Double) {
-        if (width == fieldWidth && height == fieldHeight) return
-        rebuildWalls(width, height)
+    private fun rebuildWallsIfChanged(width: Double, height: Double, atCorner: Boolean) {
+        if (width == fieldWidth && height == fieldHeight && atCorner == cornerOrigin) return
+        rebuildWalls(width, height, atCorner)
     }
 
-    private fun rebuildWalls(width: Double, height: Double) {
+    private fun rebuildWalls(width: Double, height: Double, atCorner: Boolean = false) {
         fieldWalls.forEach(world::removeBody)
         fieldWalls.clear()
         fieldWidth = width
         fieldHeight = height
+        cornerOrigin = atCorner
 
         val halfW = width / 2.0
         val halfH = height / 2.0
         val thickness = 0.1
+        val centerX = if (atCorner) halfW else 0.0
+        val centerY = if (atCorner) halfH else 0.0
 
         val walls = listOf(
             Geometry.createRectangle(width, thickness) to Vector2(0.0, halfH + thickness / 2.0),
@@ -152,7 +159,7 @@ class SimPhysicsWorld @kotlin.jvm.JvmOverloads constructor(
             val wallBody = Body()
             wallBody.addFixture(shape)
             wallBody.setMass(MassType.INFINITE)
-            wallBody.transform.setTranslation(pos)
+            wallBody.transform.setTranslation(pos.x + centerX, pos.y + centerY)
             world.addBody(wallBody)
             fieldWalls += wallBody
         }

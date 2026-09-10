@@ -1028,7 +1028,8 @@ class NT4Server(
         /**
          * Copies a retained double-array value into caller-owned storage without allocating.
          *
-         * @return source element count, or `-1` when the topic has no published double-array value.
+         * @return source element count, `-1` when no value is published, or `-2` for a published
+         * value of the wrong type. Control receivers must distinguish invalid input from absence.
          * Callers must reject a count larger than [destination] because only the fitting prefix is
          * copied.
          */
@@ -1037,7 +1038,7 @@ class NT4Server(
             if (serverInstance == null) return -1
             val entry = getEntryFlexible(topic) ?: return -1
             if (!entry.hasValue) return -1
-            val source = (entry.value as? NT4Value.DoubleArrayVal)?.borrowedArray() ?: return -1
+            val source = (entry.value as? NT4Value.DoubleArrayVal)?.borrowedArray() ?: return -2
             source.copyInto(destination, endIndex = minOf(source.size, destination.size))
             return source.size
         }
