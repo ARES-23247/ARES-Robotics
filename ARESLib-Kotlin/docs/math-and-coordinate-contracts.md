@@ -267,3 +267,32 @@ fields consumed for wheel distances are expected to be cached by the concrete ad
 raw IO layer does not grant enable, establish feedback freshness or own the robot's fault latch;
 those remain the controller/adapter's responsibility. Swerve speed normalization preserves
 angle references; the remaining steering solver's allocation and dynamics need a separate review.
+
+## XRP JVM lifecycle and device doubles
+
+XrpBaseRobot is an IO lifecycle foundation, not the exported MicroPython runtime or the full
+physics simulator. It does not estimate pose or measure battery voltage: pose is explicitly
+reset by a caller and unmeasured battery voltage is NaN. Pose reset validates all three finite
+components before replacing the previous snapshot. Concrete integrations own feedback validity,
+leased/armed output gating and any overridden lifecycle methods.
+
+Mode changes neutralize before entering INIT/AUTO/TELEOP; a failed neutral boundary leaves
+DISABLED. Stop marks DISABLED before attempting neutral. Periodic validates a finite positive
+dt, neutralizes INIT/DISABLED before any refresh, and refreshes drivetrain and sensors once on
+success. Any failed tick marks DISABLED and attempts neutral before propagating its original
+exception, suppressing a distinct cleanup failure. A later successful tick does not re-enable.
+This is attempted neutral on exception, not proof that a failing physical device stopped.
+
+IO update has no timestep argument. The default motor double advances exactly one 20 ms fixture
+step per call with ideal velocity effort * 30 rad/s, irrespective of wall time or periodic dt.
+Its finite commands clamp to [-1, 1] and nonfinite commands neutralize; unknown injected position
+remains unknown through update/stop. This is not an inertia, back-EMF or physical motor model.
+Sensor doubles retain injected cached values, including invalid values, with no-op refresh.
+Line detection uses valid normalized reflectance above 0.5 (0 white, 1 black); false alone is
+not proof of valid off-line feedback. Controllers must validate raw readings before motion.
+
+Servo double positions clamp finite commands to [0, 1]; nonfinite commands throw before changing
+the prior command. There is no universal safe servo angle, and retaining a prior position is
+not a PWM-off operation. Channel identity and physical output safety belong to the integration.
+The standard lifecycle/valid-command paths reuse storage under host allocation tests; failure
+exceptions and manually replaced pose snapshots may allocate.
