@@ -751,9 +751,10 @@ public final class com/areslib/ftc/hardware/FtcAnalogSensor : java/lang/AutoClos
 	public final fun getVoltage ()D
 }
 
-public final class com/areslib/ftc/hardware/FtcCRServo : com/areslib/hardware/actuator/MotorIO {
+public final class com/areslib/ftc/hardware/FtcCRServo : com/areslib/hardware/actuator/MotorIO, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/CRServo;Lcom/areslib/hardware/actuator/MotorIO;)V
 	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/CRServo;Lcom/areslib/hardware/actuator/MotorIO;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
 	public fun getCurrentAmps ()D
 	public fun getCurrentReadingValid ()Z
 	public fun getPosition ()D
@@ -1275,9 +1276,10 @@ public final class com/areslib/ftc/hardware/rev/RevBulkDataReader {
 	public final fun unregisterMotor (Lcom/areslib/ftc/hardware/rev/RevMotorController;)V
 }
 
-public final class com/areslib/ftc/hardware/rev/RevCRServoController : com/areslib/hardware/actuator/MotorIO {
+public final class com/areslib/ftc/hardware/rev/RevCRServoController : com/areslib/hardware/actuator/MotorIO, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/CRServo;Lcom/areslib/hardware/actuator/MotorIO;)V
 	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/CRServo;Lcom/areslib/hardware/actuator/MotorIO;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
 	public fun getCurrentAmps ()D
 	public fun getCurrentReadingValid ()Z
 	public fun getPosition ()D

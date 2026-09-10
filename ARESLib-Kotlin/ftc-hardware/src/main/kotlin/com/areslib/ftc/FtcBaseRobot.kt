@@ -576,7 +576,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         closeBestEffort(
             { safeHardware() },
             { lifecycleController.close() },
-            { telemetryManager.close() },
+            { hardwareRegistry.closeAll() },
             { hardwareInitializer.close() }
         )
     }

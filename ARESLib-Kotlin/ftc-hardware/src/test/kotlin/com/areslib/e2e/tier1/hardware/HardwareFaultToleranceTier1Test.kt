@@ -14,6 +14,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class MockFtcMotorEx : DcMotorEx {
     override val currentPosition: Int = 0
@@ -50,7 +53,8 @@ class MockFtcCRServo : CRServo {
 }
 
 class MockIMU : IMU {
-    var shouldThrow = false
+    @Volatile var shouldThrow = false
+    val failedRead = CountDownLatch(1)
     var mockYaw = 1.0
     var mockPitch = 0.5
     var mockRoll = 0.2
@@ -62,7 +66,10 @@ class MockIMU : IMU {
     override fun resetYaw() {}
 
     override fun getRobotYawPitchRollAngles(): YawPitchRollAngles {
-        if (shouldThrow) throw RuntimeException("I2C Disconnect / Timeout!")
+        if (shouldThrow) {
+            failedRead.countDown()
+            throw RuntimeException("I2C Disconnect / Timeout!")
+        }
         return YawPitchRollAngles(AngleUnit.RADIANS, mockYaw, mockPitch, mockRoll, 0L)
     }
 
@@ -73,13 +80,19 @@ class MockIMU : IMU {
 }
 
 class HardwareFaultToleranceTier1Test {
+    private val resources = mutableListOf<AutoCloseable>()
+
+    @AfterEach fun closeOwnedResourcesAndRestoreClock() {
+        try { resources.asReversed().forEach { it.close() } }
+        finally { com.areslib.util.RobotClock.useSystemTime() }
+    }
 
     @Test
     fun nonfiniteActuatorCommandsFailClosed() {
         val mockMotor = MockFtcMotorEx()
-        val motor = FtcMotor(mockMotor)
+        val motor = FtcMotor(mockMotor).also { resources.add(it) }
         val mockServo = MockFtcCRServo()
-        val servo = FtcCRServo(mockServo)
+        val servo = FtcCRServo(mockServo).also { resources.add(it) }
 
         try {
             motor.power = 0.4
@@ -109,7 +122,7 @@ class HardwareFaultToleranceTier1Test {
     @Test
     fun testMotorStallDetection_tripsOnStall() {
         val mockMotor = MockFtcMotorEx()
-        val ftcMotor = FtcMotor(mockMotor)
+        val ftcMotor = FtcMotor(mockMotor).also { resources.add(it) }
 
         // Set power to high (> 0.5) but velocity to low (< 10)
         mockMotor.mockVelocity = 5.0
@@ -137,7 +150,7 @@ class HardwareFaultToleranceTier1Test {
     @Test
     fun testMotorStallAutoRecovery_resetsOnHealthyVelocity() {
         val mockMotor = MockFtcMotorEx()
-        val ftcMotor = FtcMotor(mockMotor)
+        val ftcMotor = FtcMotor(mockMotor).also { resources.add(it) }
 
         // Force stall
         mockMotor.mockVelocity = 5.0
@@ -162,7 +175,7 @@ class HardwareFaultToleranceTier1Test {
     @Test
     fun testMotorCurrentSpikeLimit_tripsVirtualBreaker() {
         val mockMotor = MockFtcMotorEx()
-        val ftcMotor = FtcMotor(mockMotor)
+        val ftcMotor = FtcMotor(mockMotor).also { resources.add(it) }
 
         // Set current to dangerously high (> 9.2A)
         mockMotor.mockCurrentAmps = 10.0
@@ -177,7 +190,7 @@ class HardwareFaultToleranceTier1Test {
     @Test
     fun testImuDisconnect_gracefullySwallowsTimeoutExceptions() {
         val mockIMU = MockIMU()
-        val ftcImu = FtcImu(mockIMU)
+        val ftcImu = FtcImu(mockIMU).also { resources.add(it) }
         val inputs = ImuInputs()
 
         // Verify normal reading works
@@ -187,6 +200,7 @@ class HardwareFaultToleranceTier1Test {
 
         // Simulate I2C disconnect / throw
         mockIMU.shouldThrow = true
+        assertTrue(mockIMU.failedRead.await(2, TimeUnit.SECONDS), "Background worker must observe the disconnect")
         
         // Call updateInputs, should NOT throw
         assertDoesNotThrow {

@@ -94,15 +94,11 @@ class FtcHardwareInitializer(
             )
         }
         var firstFailure: Throwable? = null
-        try {
-            for (resource in resources) {
-                try { resource?.close() }
-                catch (failure: Throwable) {
-                    if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
-                }
+        for (resource in resources) {
+            try { resource?.close() }
+            catch (failure: Throwable) {
+                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
             }
-        } finally {
-            com.areslib.ftc.hardware.FtcMotor.unregisterAll()
         }
         firstFailure?.let { throw it }
     }

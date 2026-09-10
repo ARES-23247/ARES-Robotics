@@ -97,6 +97,14 @@ class FtcFrameLifecycleAuditTest {
         assertEquals(1, robot.safeCalls)
     }
 
+    @Test fun `robot shutdown closes its registered resources exactly once`() = withRobot { robot ->
+        var closures = 0
+        robot.hardwareRegistry.registerCloseable(AutoCloseable { closures++ })
+        robot.close()
+        robot.close()
+        assertEquals(1, closures)
+    }
+
     @Test fun `failed neutralization still closes the lifecycle and inhibits later updates`() = withRobot { robot ->
         val failure = IllegalStateException("neutralization failed")
         robot.safetyFailure = failure
