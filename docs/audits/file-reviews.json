@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "f5e1467e0ca28403313ef6f88db104c74304af355a66b1b41e245add96895e36",
+      "sha256": "f2312c412f0294c9713c9520f240caa77ad93f50ef9f200228377af79709033e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes. Pass 40 joystick/adapter scope recorded, with next interpolation/kinematics and separate DSL/controller ownership work retained alongside earlier open scopes. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 interpolation scope recorded, including insertion/read tradeoff and big-number costs; remaining kinematics/estimation, DSL and controller ownership queue retained. Pass 42 index/summary updated; final links/policy and exact-candidate consumer validation passed. Root report remains partial. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes. Pass 40 joystick/adapter scope recorded, with next interpolation/kinematics and separate DSL/controller ownership work retained alongside earlier open scopes. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 interpolation scope recorded, including insertion/read tradeoff and big-number costs; remaining kinematics/estimation, DSL and controller ownership queue retained. Pass 42 index/summary updated; final links/policy and exact-candidate consumer validation passed. Root report remains partial. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 scope and remaining swerve/XRP review queue recorded; exact-candidate consumer and policy gates passed.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -541,7 +541,13 @@
         "ARESLib-Kotlin/build/audit-pass42-library-final.log",
         "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass42-studio.log",
-        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+        "ARESLib-Kotlin/build/audit-pass42-policy.log",
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2338,10 +2344,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "ba601466e49577b6b4aa90cad5f74bacf25bff04b76420045e719e7b7d7917fc",
+      "sha256": "6f3139d96a1c48100ca42e2634bae29cf3a9db6bd5e04ba00581f5501008e933",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial. Pass 40 section and report link reviewed; accumulated root report remains partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 section and report link reviewed; accumulated root report remains partial. Pass 42 index/summary updated; final links/policy and exact-candidate consumer validation passed. Root report remains partial. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial. Pass 40 section and report link reviewed; accumulated root report remains partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 section and report link reviewed; accumulated root report remains partial. Pass 42 index/summary updated; final links/policy and exact-candidate consumer validation passed. Root report remains partial. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 wheel/XRP summary reviewed; root report retains prior partial scope.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2410,7 +2416,13 @@
         "ARESLib-Kotlin/build/audit-pass42-library-final.log",
         "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass42-studio.log",
-        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+        "ARESLib-Kotlin/build/audit-pass42-policy.log",
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3072,10 +3084,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "47f1e3fd0f8ebc15e7c90adbe7fb0b01013535f57719603158d1aa0a582ed803",
+      "sha256": "f84c6a2fd5c46d173f32f0e4dcab87313cb4c789fe53e31d962d02b69edd2ffe",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry. Pass 40 joystick-conditioning and snapshot-ownership section reviewed against code, public API and executed tests. Other previously unreviewed sections remain partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 calibrated interpolation section reviewed against numeric contracts, lookup complexity and executed regressions. Remaining previously unreviewed sections remain partial. Pass 42 linkage sections reviewed: documented coordinate/numerical/simulation contracts and unchanged public method signatures; retained old JVM constant after ABI check revealed exposure. Remaining unrelated sections still require review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry. Pass 40 joystick-conditioning and snapshot-ownership section reviewed against code, public API and executed tests. Other previously unreviewed sections remain partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 calibrated interpolation section reviewed against numeric contracts, lookup complexity and executed regressions. Remaining previously unreviewed sections remain partial. Pass 42 linkage sections reviewed: documented coordinate/numerical/simulation contracts and unchanged public method signatures; retained old JVM constant after ABI check revealed exposure. Remaining unrelated sections still require review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 wheel arithmetic and paired XRP output contract sections reviewed against implementation and numerical/failure/allocation tests. Other sections retain prior scope limits.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3102,14 +3114,20 @@
         "ARESLib-Kotlin/build/audit-pass42-library-final.log",
         "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass42-studio.log",
-        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+        "ARESLib-Kotlin/build/audit-pass42-policy.log",
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "cec213fa1b820c88ec86e2db95675503bf26547e4d3c8f4c6c7b5968e8b0c836",
+      "sha256": "74459001a88715ffb4054bfdd1387bd750948cdac338da67c646677182c62b95",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 42 exact immutable candidate tree d10d866f79c622fcf1e16d83d7f745cc9ed87261 matches local library HEAD; unique prerelease 17.0.3-rc.d10d866f79c6 published locally after full gate. Planned stable bump retained; no remote release. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "scope": "Pass 42 exact immutable candidate tree d10d866f79c622fcf1e16d83d7f745cc9ed87261 matches local library HEAD; unique prerelease 17.0.3-rc.d10d866f79c6 published locally after full gate. Planned stable bump retained; no remote release. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 exact source tree 0b8b3dd94d1cd16401327349589b52fa67f30505 matches source commit 4f661773 and candidate 17.0.3-rc.0b8b3dd94d1c.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3136,7 +3154,13 @@
         "ARESLib-Kotlin/build/audit-pass42-library-final.log",
         "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass42-studio.log",
-        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+        "ARESLib-Kotlin/build/audit-pass42-policy.log",
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3277,7 +3301,7 @@
       "sha256": "0e879b94d73331fac00961b11ba276e8ec499b952f31cd7acf769f9394679e0c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 40 only InputMath API section reviewed: intentional additive processJoystickVectorInto method and default-argument bridge; existing signatures unchanged. Standalone full API check passed. Remaining snapshot entries need separate full review. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 InterpolatingTable and Interpolatable API sections inspected; constructor/get/put and interpolation signatures are unchanged and full apiCheck passed. Remaining API snapshot entries remain partial. Pass 42 linkage sections reviewed: documented coordinate/numerical/simulation contracts and unchanged public method signatures; retained old JVM constant after ABI check revealed exposure. Remaining unrelated sections still require review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "scope": "Pass 40 only InputMath API section reviewed: intentional additive processJoystickVectorInto method and default-argument bridge; existing signatures unchanged. Standalone full API check passed. Remaining snapshot entries need separate full review. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 InterpolatingTable and Interpolatable API sections inspected; constructor/get/put and interpolation signatures are unchanged and full apiCheck passed. Remaining API snapshot entries remain partial. Pass 42 linkage sections reviewed: documented coordinate/numerical/simulation contracts and unchanged public method signatures; retained old JVM constant after ABI check revealed exposure. Remaining unrelated sections still require review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits. Pass 43 wheel-related public API checked unchanged by apiCheck; unrelated API surface remains pending.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3297,7 +3321,13 @@
         "ARESLib-Kotlin/build/audit-pass42-library-final.log",
         "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass42-studio.log",
-        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+        "ARESLib-Kotlin/build/audit-pass42-policy.log",
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -3613,6 +3643,258 @@
         "ARESLib-Kotlin/build/audit-pass42-library-final.log",
         "ARESLib-Kotlin/build/audit-pass42-studio.log",
         "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/DifferentialDriveKinematics.kt": {
+      "sha256": "84abcf69e3b1dbe258a356cf5b22a02e414d62a50027755d0e18120733a98e1b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete file review: wheel conventions, arithmetic range and cancellation, coupled normalization, buffer ownership, invalid inputs, allocations and public compatibility assessed. Focused and full-library tests passed; seeded exact-input oracles and warmed allocation windows have bounded coverage, with Kover gaps and physical limitations explicit in report.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/DifferentialWheelSpeeds.kt": {
+      "sha256": "10d93eb6dc87dff4930fe8a091fec7bff83d6696dfaac2b7bbe55b151d28a4d8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete file review: wheel conventions, arithmetic range and cancellation, coupled normalization, buffer ownership, invalid inputs, allocations and public compatibility assessed. Focused and full-library tests passed; seeded exact-input oracles and warmed allocation windows have bounded coverage, with Kover gaps and physical limitations explicit in report.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/MecanumKinematics.kt": {
+      "sha256": "1010aa7053d45f5dcf0da4aaf3097b0343ae333519b35dfe13c92e1f1f7c0275",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete file review: wheel conventions, arithmetic range and cancellation, coupled normalization, buffer ownership, invalid inputs, allocations and public compatibility assessed. Focused and full-library tests passed; seeded exact-input oracles and warmed allocation windows have bounded coverage, with Kover gaps and physical limitations explicit in report.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/MecanumWheelSpeeds.kt": {
+      "sha256": "7f4ea93b0c845e77c3ccaed4631f12a8d0bb743821087e08eeee9abeb2b79e01",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete file review: wheel conventions, arithmetic range and cancellation, coupled normalization, buffer ownership, invalid inputs, allocations and public compatibility assessed. Focused and full-library tests passed; seeded exact-input oracles and warmed allocation windows have bounded coverage, with Kover gaps and physical limitations explicit in report.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/WheelSpeedNormalization.kt": {
+      "sha256": "d0c6901c7ab13709247ef629fba71d7fe9289b166b1c4521d38190c4301cfe0d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete file review: wheel conventions, arithmetic range and cancellation, coupled normalization, buffer ownership, invalid inputs, allocations and public compatibility assessed. Focused and full-library tests passed; seeded exact-input oracles and warmed allocation windows have bounded coverage, with Kover gaps and physical limitations explicit in report.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/WheelKinematicsMath.kt": {
+      "sha256": "651dc6787ba693964b85260f720c2a6035f2cbb68000704439b0346382fb27cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete file review: wheel conventions, arithmetic range and cancellation, coupled normalization, buffer ownership, invalid inputs, allocations and public compatibility assessed. Focused and full-library tests passed; seeded exact-input oracles and warmed allocation windows have bounded coverage, with Kover gaps and physical limitations explicit in report.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/SwerveModuleState.kt": {
+      "sha256": "eea039a9b699803a181bb546b2b77453825bbe96211dec313a602590d3b42751",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete file review: wheel conventions, arithmetic range and cancellation, coupled normalization, buffer ownership, invalid inputs, allocations and public compatibility assessed. Focused and full-library tests passed; seeded exact-input oracles and warmed allocation windows have bounded coverage, with Kover gaps and physical limitations explicit in report.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/SwerveKinematics.kt": {
+      "sha256": "a1a84112dd8fd44c58689596a4aab86d85cfd8c396ffd469b2dfcc2777f82473",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 43 desaturation normalization reviewed and tested across finite extremes and invalid vectors. Steering generation, configuration ownership, acceleration/timing and replacement angle allocation remain pending; no whole-file completion credit.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/xrp-hardware/src/main/kotlin/com/areslib/xrp/hardware/XrpDifferentialHardwareIO.kt": {
+      "sha256": "974ae2ed29781f272091fd4d218324d712f7cc37825c8770d40ac1c956ba5077",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete interface and standard implementation reviewed: coupled drive saturation, finite configuration/commands, paired output and refresh failure cleanup, independent stop attempts, cached distance units and scratch ownership. Hardware enable/freshness/latching remains external. Standard drive allocation test and failure regressions passed; default-interface/getter/cleanup coverage gaps remain explicit.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/WheelMathAllocationAuditTest.kt": {
+      "sha256": "a5e5ec58118c69404ec1c154670dcd44ffd01e22ee8fdb52819e6891e5a8f11e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete test file reviewed and executed. Fixtures, expected values, failure assertions, buffer ownership, numeric tolerances and host allocation scope assessed; no physical or exhaustive-domain claim.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/WheelMathBoundaryAuditTest.kt": {
+      "sha256": "0700ba9e0a37465348c363c37595d11129c3e3cc24bba688ef787ec78081ee27",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete test file reviewed and executed. Fixtures, expected values, failure assertions, buffer ownership, numeric tolerances and host allocation scope assessed; no physical or exhaustive-domain claim.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/WheelMathOracleAuditTest.kt": {
+      "sha256": "62c0c55e2cebb632d13f285cb795673b67db5daf9bba8c53cd7c73756f99c009",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete test file reviewed and executed. Fixtures, expected values, failure assertions, buffer ownership, numeric tolerances and host allocation scope assessed; no physical or exhaustive-domain claim.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/xrp-hardware/src/test/kotlin/com/areslib/xrp/hardware/XrpDifferentialAllocationAuditTest.kt": {
+      "sha256": "25158569bb849d7c0ccf1753b13ae8ac1c322046052a2bd482848d08e34b4668",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete test file reviewed and executed. Fixtures, expected values, failure assertions, buffer ownership, numeric tolerances and host allocation scope assessed; no physical or exhaustive-domain claim.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/xrp-hardware/src/test/kotlin/com/areslib/xrp/hardware/XrpDifferentialOutputAuditTest.kt": {
+      "sha256": "7f781e4971b789ea87977219b96d7754b797557335f9e855aaae94daa1714c53",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete test file reviewed and executed. Fixtures, expected values, failure assertions, buffer ownership, numeric tolerances and host allocation scope assessed; no physical or exhaustive-domain claim.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/DifferentialDriveKinematicsTest.kt": {
+      "sha256": "77d7cbc225f38f2d01156e29bf152f051f3fe394e3bc38d622c97d55e6cf84c2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete test file reviewed and executed. Fixtures, expected values, failure assertions, buffer ownership, numeric tolerances and host allocation scope assessed; no physical or exhaustive-domain claim.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/xrp-hardware/src/test/kotlin/com/areslib/xrp/XrpHardwareTest.kt": {
+      "sha256": "6ab3676a2a5745bd88a8efcc4a3152ac2cff0c75b6243bba0f8ac9edb8b859e0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 complete test file reviewed and executed. Fixtures, expected values, failure assertions, buffer ownership, numeric tolerances and host allocation scope assessed; no physical or exhaustive-domain claim.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/xrp-hardware/api/xrp-hardware.api": {
+      "sha256": "734ea3253c3d1634442ad7f885a44478bcae258f4c869821d360b371c5af8b1f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 43 differential IO public API checked unchanged by apiCheck; other published XRP declarations remain pending.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
+      ]
+    },
+    "docs/audits/wheel-kinematics-xrp-audit.md": {
+      "sha256": "c8ef3b06317e4787eee87f9ee8f4ebf99b47ad571cefaa23fca27832aa7c038d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 43 report checked against source and preserved before/after tests, numerical/allocation limits, exact-candidate evidence and remaining coverage gaps. Full library, exact-candidate consumer and policy gates passed; final inventory and limitations recorded.",
+      "evidence": [
+        "docs/audits/wheel-kinematics-xrp-audit.md",
+        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass43-library.log",
+        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass43-studio.log",
+        "ARESLib-Kotlin/build/audit-pass43-policy.log"
       ]
     }
   }

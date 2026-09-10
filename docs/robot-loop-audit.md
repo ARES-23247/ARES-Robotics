@@ -539,3 +539,12 @@ nonfinite integration commits. Cached coefficients and a stable inertia solve re
 substep work. Generated mocks neutralize before propagating simulation failures; the local
 Studio lab stops and requires reset. Numerical oracles and measured allocation support the
 changes; physical characterization and exhaustive numerical-domain coverage remain open.
+
+## Forty-third pass: wheel kinematics and paired XRP outputs
+
+The [wheel/XRP audit](audits/wheel-kinematics-xrp-audit.md) preserves finite means, angular
+ratios and normalized speeds through overflowing/subnormal intermediate arithmetic. Standard
+XRP differential drive preserves requested turn ratios during saturation, reuses wheel scratch,
+and attempts both neutral outputs on paired write/refresh failures. Raw IO does not establish
+controller enable or feedback freshness. Full swerve steering and remaining XRP IO/physics
+reviews continue; physical loop timings and motor response remain unmeasured.
