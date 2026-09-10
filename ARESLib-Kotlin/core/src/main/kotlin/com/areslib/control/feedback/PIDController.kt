@@ -33,6 +33,10 @@ class PIDController(
     var i: Double,
     var d: Double
 ) {
+    /** Internal composition status: neutral output alone does not imply a valid calculation. */
+    internal var lastCalculationValid: Boolean = false
+        private set
+
     private var prevMeasurement: Double = 0.0
     private var totalError: Double = 0.0
     private var setpoint: Double = 0.0
@@ -110,6 +114,7 @@ class PIDController(
      * first outputs after every reset.
      */
     fun reset() {
+        lastCalculationValid = false
         prevMeasurement = 0.0
         totalError = 0.0
         filteredDerivative = 0.0
@@ -146,6 +151,7 @@ class PIDController(
      * @return Computed control effort output $u(k)$.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
+        lastCalculationValid = false
         if (!measurement.isFinite() || !setpoint.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
             !p.isFinite() || !i.isFinite() || !d.isFinite() || !deadzone.isFinite() || deadzone < 0.0 ||
             !outputLimitsValid || !integralLimitsValid || !continuousInputValid
@@ -160,6 +166,7 @@ class PIDController(
             prevMeasurement = measurement
             filteredDerivative = 0.0
             isFirstStep = false
+            lastCalculationValid = true
             return 0.0
         }
 
@@ -200,6 +207,7 @@ class PIDController(
         filteredDerivative = nextDerivative
         prevMeasurement = measurement
         isFirstStep = false
+        lastCalculationValid = true
         return output
     }
 

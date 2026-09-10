@@ -25,6 +25,12 @@ import kotlin.math.abs
  * - Observer Bandwidth ($\omega_o$): Radians per second ($rad/s$), typically set to $\omega_o \approx (3 \dots 5) \cdot \omega_c$
  * - Timestep ($\Delta t$): Seconds ($s$)
  *
+ * Calculation rejects non-finite data/state, negative bandwidths, overflowing cached observer gains,
+ * invalid limits/continuous ranges, and unrepresentable intermediate results. Rejection returns zero
+ * and resets the observer to the finite measurement (or zero). The existing numerical operating
+ * range requires |b0| > 1e-9 and continuous period > 1e-9. Zero bandwidth is allowed.
+ * Observer updates commit together only after all next-state values are finite.
+ *
  * @property b0 Estimated system input gain parameter ($\Delta \text{velocity} / \Delta \text{voltage}$).
  * @property omegaC Controller tracking bandwidth in radians per second ($rad/s$).
  * @property omegaO Extended state observer bandwidth in radians per second ($rad/s$).
@@ -34,6 +40,10 @@ class LinearADRC(
     omegaC: Double,
     omegaO: Double
 ) {
+    /** Internal composition status, false for rejected configuration or arithmetic. */
+    internal var lastCalculationValid: Boolean = false
+        private set
+
     var b0: Double = b0
         set(value) {
             field = value
@@ -103,6 +113,7 @@ class LinearADRC(
      * @param measurement Measured plant output value to reset observer position to.
      */
     fun reset(measurement: Double) {
+        lastCalculationValid = false
         xHat1 = measurement
         xHat2 = 0.0
         uPrev = 0.0
@@ -117,12 +128,18 @@ class LinearADRC(
      * @return Commanded control effort $u(k)$ (e.g. Volts or duty cycle).
      */
     fun calculate(target: Double, measurement: Double, dtSeconds: Double): Double {
+        lastCalculationValid = false
         if (!target.isFinite() || !measurement.isFinite() ||
             !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
-            !b0.isFinite() || !omegaC.isFinite() || !omegaO.isFinite()
+            !b0.isFinite() || abs(b0) <= 1e-9 || !omegaC.isFinite() || omegaC < 0.0 ||
+            !omegaO.isFinite() || omegaO < 0.0 || !l1.isFinite() || !l2.isFinite() ||
+            !xHat1.isFinite() || !xHat2.isFinite() ||
+            minOutput == Double.POSITIVE_INFINITY || maxOutput == Double.NEGATIVE_INFINITY ||
+            (!minOutput.isNaN() && !maxOutput.isNaN() && minOutput > maxOutput) ||
+            (isContinuous && (!continuousMin.isFinite() || !continuousMax.isFinite() ||
+                !(continuousMax - continuousMin).isFinite() || continuousMax - continuousMin <= 1e-9))
         ) {
-            uPrev = 0.0
-            return 0.0
+            return neutralAndReset(measurement)
         }
 
         var actualTarget = target
@@ -140,10 +157,12 @@ class LinearADRC(
 
         val observerError = actualMeasurement - xHat1
 
-        xHat1 += (xHat2 + b0 * uPrev + l1 * observerError) * dtSeconds
+        val nextXHat1 = xHat1 + (xHat2 + b0 * uPrev + l1 * observerError) * dtSeconds
         
-        val u0 = kp * (actualTarget - xHat1)
+        val u0 = kp * (actualTarget - nextXHat1)
         val uUnsat = (u0 - xHat2) * invB0
+
+        if (!nextXHat1.isFinite() || !uUnsat.isFinite()) return neutralAndReset(measurement)
 
         val u = when {
             !minOutput.isNaN() && uUnsat < minOutput -> minOutput
@@ -152,12 +171,22 @@ class LinearADRC(
         }
 
         val isSaturated = u != uUnsat
-        if (!isSaturated || kotlin.math.sign(observerError) != kotlin.math.sign(u - uUnsat)) {
-            xHat2 += (l2 * observerError) * dtSeconds
-        }
+        val nextXHat2 = if (!isSaturated || kotlin.math.sign(observerError) != kotlin.math.sign(u - uUnsat)) {
+            xHat2 + (l2 * observerError) * dtSeconds
+        } else xHat2
+        if (!u.isFinite() || !nextXHat2.isFinite()) return neutralAndReset(measurement)
+
+        xHat1 = nextXHat1
+        xHat2 = nextXHat2
 
         uPrev = u
+        lastCalculationValid = true
         return u
+    }
+
+    private fun neutralAndReset(measurement: Double): Double {
+        reset(if (measurement.isFinite()) measurement else 0.0)
+        return 0.0
     }
 
     private fun wrapToHalfRange(value: Double, range: Double): Double {

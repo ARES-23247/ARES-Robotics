@@ -89,8 +89,8 @@ class HolonomicDriveController(
         progressPercentage: Double = 0.0
     ): ChassisSpeeds {
         return calculateDirect(
-            currentPose.x, currentPose.y, currentPose.heading.radians,
-            targetPose.x, targetPose.y, targetHeading.radians,
+            currentPose.x, currentPose.y, currentPose.heading.rawRadians,
+            targetPose.x, targetPose.y, targetHeading.rawRadians,
             targetVelocityMps, dtSeconds, pathTangentRadians, curvature, maxCentripetalAccel, progressPercentage
         )
     }
@@ -133,7 +133,16 @@ class HolonomicDriveController(
         }
     }
 
-    /** Allocation-free loop entry point. The caller owns [out]; no returned snapshot is reused. */
+    /**
+     * O(1) loop entry point with caller-owned output and no controller-side allocation.
+     * Invalid inputs, active feedback configuration/arithmetic, or unrepresentable combined effort
+     * neutralize all axes and clear feedback history. NaN tangent alone requests the legacy fallback:
+     * position-error direction beyond 1 cm, otherwise target heading. Finite angles are normalized
+     * consistently with Rotation2d. Curvature limits feedforward only; the final translation limit
+     * includes feedback and inverse-SE(2) discretization. Telemetry backend costs are caller-owned.
+     * Use separate stateful feedback instances per axis. Telemetry exceptions clear output/history
+     * and propagate. This calculator supplies neither enable/freshness gating nor an angular speed cap.
+     */
     internal fun calculateInto(
         out: ChassisSpeeds,
         currentX: Double,
@@ -159,51 +168,56 @@ class HolonomicDriveController(
             !maxCentripetalAccel.isFinite() || maxCentripetalAccel <= 0.0 ||
             !maxOutputMps.isFinite() || maxOutputMps <= 0.0 || !progressPercentage.isFinite()
         ) {
+            resetFeedback(currentX, currentY, currentHeadingRad)
             return
         }
 
         val xError = targetX - currentX
         val yError = targetY - currentY
+        if (!xError.isFinite() || !yError.isFinite()) {
+            resetFeedback(currentX, currentY, currentHeadingRad)
+            return
+        }
+        val currentHeading = com.areslib.math.wrapAngle(currentHeadingRad)
+        val targetHeading = com.areslib.math.wrapAngle(targetHeadingRad)
 
         val pathTangent = if (!pathTangentRadians.isNaN()) {
-            pathTangentRadians
+            com.areslib.math.wrapAngle(pathTangentRadians)
         } else {
             val distanceToTarget = kotlin.math.hypot(xError, yError)
             if (distanceToTarget > 0.01) {
                 kotlin.math.atan2(yError, xError)
             } else {
-                targetHeadingRad
+                targetHeading
             }
         }
 
         val cosTangent = cos(pathTangent)
         val sinTangent = sin(pathTangent)
 
-        telemetry?.let { tel ->
-            val lateralError = xError * sinTangent - yError * cosTangent
-            val angularError = com.areslib.math.wrapAngle(targetHeadingRad - currentHeadingRad)
-            tel.putNumber("PathError/LateralMeters", lateralError)
-            tel.putNumber("PathError/AngularDegrees", Math.toDegrees(angularError))
-            tel.putNumber("PathError/XErrorMeters", xError)
-            tel.putNumber("PathError/YErrorMeters", yError)
-            tel.putNumber("PathError/ProgressPercentage", progressPercentage)
-        }
-
         val xFeedback = xAdrc?.calculate(targetX, currentX, dtSeconds)
             ?: xController.calculate(currentX, targetX, dtSeconds)
+
+        val xValid = xAdrc?.lastCalculationValid ?: xController.lastCalculationValid
 
         val yFeedback = yAdrc?.calculate(targetY, currentY, dtSeconds)
             ?: yController.calculate(currentY, targetY, dtSeconds)
 
-        val thetaFeedback = thetaAdrc?.calculate(targetHeadingRad, currentHeadingRad, dtSeconds)
-            ?: thetaController.calculate(currentHeadingRad, targetHeadingRad, dtSeconds)
+        val yValid = yAdrc?.lastCalculationValid ?: yController.lastCalculationValid
 
-        if (!xFeedback.isFinite() || !yFeedback.isFinite() || !thetaFeedback.isFinite()) {
+        val thetaFeedback = thetaAdrc?.calculate(targetHeading, currentHeading, dtSeconds)
+            ?: thetaController.calculate(currentHeading, targetHeading, dtSeconds)
+
+        if (!xValid || !yValid ||
+            !(thetaAdrc?.lastCalculationValid ?: thetaController.lastCalculationValid) ||
+            !xFeedback.isFinite() || !yFeedback.isFinite() || !thetaFeedback.isFinite()
+        ) {
+            resetFeedback(currentX, currentY, currentHeading)
             return
         }
 
         val limitedVelocity = if (curvature != 0.0) {
-            val maxVel = kotlin.math.sqrt(maxCentripetalAccel / kotlin.math.abs(curvature))
+            val maxVel = kotlin.math.sqrt(maxCentripetalAccel) / kotlin.math.sqrt(kotlin.math.abs(curvature))
             targetVelocityMps.coerceIn(-maxVel, maxVel)
         } else {
             targetVelocityMps
@@ -215,20 +229,62 @@ class HolonomicDriveController(
         val fieldRelativeX = xFF + xFeedback
         val fieldRelativeY = yFF + yFeedback
 
-        val cosHeading = cos(currentHeadingRad)
-        val sinHeading = sin(currentHeadingRad)
+        if (!fieldRelativeX.isFinite() || !fieldRelativeY.isFinite()) {
+            resetFeedback(currentX, currentY, currentHeading)
+            return
+        }
 
-        val vxRobot = fieldRelativeX * cosHeading + fieldRelativeY * sinHeading
-        val vyRobot = -fieldRelativeX * sinHeading + fieldRelativeY * cosHeading
+        val cosHeading = cos(currentHeading)
+        val sinHeading = sin(currentHeading)
+        // Rotate and discretize a scaled vector; large finite commands must not overflow before
+        // the final norm limit. Both operations are linear in translation, so restore scale last.
+        val fieldScale = maxOf(kotlin.math.abs(fieldRelativeX), kotlin.math.abs(fieldRelativeY))
+        val divisor = if (fieldScale == 0.0) 1.0 else fieldScale
+        val scaledX = fieldRelativeX / divisor
+        val scaledY = fieldRelativeY / divisor
+        val vxRobot = scaledX * cosHeading + scaledY * sinHeading
+        val vyRobot = -scaledX * sinHeading + scaledY * cosHeading
 
         ChassisSpeeds.discretizeInto(vxRobot, vyRobot, thetaFeedback, dtSeconds, out)
-        // Discretization can increase translation magnitude while turning. Bound the final
-        // commanded twist, preserving direction, rather than only its continuous precursor.
-        val magnitude = kotlin.math.hypot(out.vxMetersPerSecond, out.vyMetersPerSecond)
-        if (magnitude > maxOutputMps) {
-            val scale = maxOutputMps / magnitude
-            out.vxMetersPerSecond *= scale
-            out.vyMetersPerSecond *= scale
+        if (out.omegaRadiansPerSecond != thetaFeedback) {
+            resetFeedback(currentX, currentY, currentHeading)
+            return
         }
+        val component = maxOf(kotlin.math.abs(out.vxMetersPerSecond), kotlin.math.abs(out.vyMetersPerSecond))
+        if (component > 0.0) {
+            val unitX = out.vxMetersPerSecond / component
+            val unitY = out.vyMetersPerSecond / component
+            val limit = maxOutputMps / kotlin.math.hypot(unitX, unitY)
+            val amplitude = minOf(component * fieldScale, limit)
+            out.vxMetersPerSecond = unitX * amplitude
+            out.vyMetersPerSecond = unitY * amplitude
+        }
+        try {
+            telemetry?.let { tel ->
+                val lateralError = xError * sinTangent - yError * cosTangent
+                val angularError = com.areslib.math.wrapAngle(targetHeading - currentHeading)
+                tel.putNumber("PathError/LateralMeters", lateralError)
+                tel.putNumber("PathError/AngularDegrees", Math.toDegrees(angularError))
+                tel.putNumber("PathError/XErrorMeters", xError)
+                tel.putNumber("PathError/YErrorMeters", yError)
+                tel.putNumber("PathError/ProgressPercentage", progressPercentage)
+            }
+        } catch (failure: Throwable) {
+            out.vxMetersPerSecond = 0.0
+            out.vyMetersPerSecond = 0.0
+            out.omegaRadiansPerSecond = 0.0
+            resetFeedback(currentX, currentY, currentHeading)
+            throw failure
+        }
+
+    }
+
+    private fun resetFeedback(x: Double, y: Double, heading: Double) {
+        xController.reset()
+        yController.reset()
+        thetaController.reset()
+        xAdrc?.reset(if (x.isFinite()) x else 0.0)
+        yAdrc?.reset(if (y.isFinite()) y else 0.0)
+        thetaAdrc?.reset(if (heading.isFinite()) com.areslib.math.wrapAngle(heading) else 0.0)
     }
 }
