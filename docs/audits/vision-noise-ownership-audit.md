@@ -1,7 +1,8 @@
 # Vision noise numerics and field-map ownership
 
-Pass 78 in progress, 2026-09-10. Changes remain local and unfrozen; no candidate validation
-or file-ledger credit has been claimed for this pass.
+Pass 78, 2026-09-10. Source is frozen in local commit `f31729ac67ed03a3a5e5682e055f107bc99de009`.
+Library tree `3324d86a8226cad3a1aff3481f30867759f80224` identifies local candidate
+`17.0.3-rc.3324d86a8226`. No push, merge, release or physical hardware operation was performed.
 
 ## Confirmed corrections
 
@@ -41,7 +42,7 @@ or file-ledger credit has been claimed for this pass.
   preserves the accepted configuration when dimensions, duplicate tags or other field data fail.
   The AprilTag lookup documentation now identifies its independently owned, mutable pose values.
 
-## Evidence so far
+## Validation evidence
 
 Seventeen distinct methods failed before their fixes: seven numerical/covariance/range cases,
 two repeated observation-uncertainty cases, two ambiguity-contract cases, four field-boundary
@@ -59,7 +60,32 @@ regressions. A closed-form rotated trajectory and covariance case also verifies 
 of legacy entries without stored motion. Copied XML, log and source hashes are recorded in
 `ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/`.
 
-## Remaining scope before the candidate matrix
+The frozen candidate passed the dependency-ordered matrix:
+
+| Scope | Passed | Skipped |
+|---|---:|---:|
+| Full library | 1,832 | 0 |
+| FTC | 111 | 0 |
+| FRC | 134 | 0 |
+| FTC starter | 14 | 0 |
+| FRC starter | 34 | 0 |
+| Studio shared/gateway/app | 1,790 | 6 |
+| Dashboard smoke | 56 | 0 |
+| Dashboard performance baseline | 1 | 0 |
+
+All reported suites had zero failures/errors. API checks, library coverage reports, isolated local
+publication, generated-project verification, FTC assembly, Studio coverage gate, source policy and
+documentation links passed. Library validation took 1m48s; Studio validation took 3m30s. XML,
+coverage, logs, hashes and the candidate POM are copied under
+`ARESLib-Kotlin/build/audit-pass78-verified-evidence/`, with `summary.json` as the entry point.
+
+The six normal Studio skips were three optional fresh-template integration tests, the native file
+chooser, hardware telemetry and the performance baseline. The baseline passed in its dedicated
+task. This batch did not run the other five skipped workflows or claim a usable Studio window.
+Existing FTC/FRC season loader tests verify the shared loader and tag conversion against the same
+candidate; core-only coverage does not instrument those consumer executions.
+
+## Scope and limitations
 
 - FieldLayouts and the facade retain the explicit process-global activeTags map, configured by
   FTC/FRC startup. Store-owned history does not imply store-owned field configuration. No supported
@@ -68,8 +94,8 @@ of legacy entries without stored motion. Copied XML, log and source hashes are r
   the file-loading fix does not make all configuration objects deeply immutable.
 - Known-tag baseline noise retains its planar distance/yaw-incidence heuristic. Physical accuracy
   of this model needs calibrated camera evidence; reported observation uncertainty bypasses it.
-- Complete API snapshots, source identity, the full dependency-ordered candidate matrix and ledger
-  reconciliation once the batch is stable. New optional parameters change JVM descriptors.
+- New optional parameters change JVM descriptors; existing binary consumers must be rebuilt.
+  API snapshots and source identity are frozen with the candidate.
 - Geometry.kt and its existing four-method fixture were read; default-locale formatting needs a
   contract decision before treating its fixed-decimal test expectation as a production defect.
 

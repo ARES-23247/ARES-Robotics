@@ -3160,10 +3160,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "bc49ae6c23802c46cd3f2b897228077912a5ee518e0e27be9d5ee3bcd79e69d9",
+      "sha256": "40f7191298c9b5f66f2f17146f35c20761854e063c3e70c591666680d25572fd",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope. Pass72: Added map-interchange derivation, blue-wall alignment rule, yaw/extents transforms, precision/overflow behavior, source fmap dimension fallback and editor preview transaction semantics; verified against source/tests. Remaining accumulated document stays partial. Pass76: Updated numerical kernel, scalar lifecycle and timing/snapshot sections reconciled with source and tests. Explicit allocation, reset, clock and source-ownership limits retained; broader document topics remain separate scopes.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope. Pass72: Added map-interchange derivation, blue-wall alignment rule, yaw/extents transforms, precision/overflow behavior, source fmap dimension fallback and editor preview transaction semantics; verified against source/tests. Remaining accumulated document stays partial. Pass76: Updated numerical kernel, scalar lifecycle and timing/snapshot sections reconciled with source and tests. Explicit allocation, reset, clock and source-ownership limits retained; broader document topics remain separate scopes. Pass78: Vision sections updated for reported noise, independent-axis normalization, Joseph covariance, ambiguity and atomic scratch replay. Known-tag planar heuristic documented. Rest of guide retains prior review scope.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3230,14 +3230,17 @@
         "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json",
         "docs/audits/estimator-numerics-audit.md",
         "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log",
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "e9ff0c6d712e46a846323d792f7a3a5c6f6af53898fcf9454fd136bd27b99e7c",
+      "sha256": "c1e652f793b296be8225e0f439ba2beec97d6042310e61fdf2312ce745af1525",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3379,7 +3382,10 @@
         "ARESLib-Kotlin/build/audit-pass76-final-focused.log",
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3517,10 +3523,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "f83938bacb20873153a02a638f5cde5d5e4b8823ecf73d49f7b850333316dbdc",
+      "sha256": "958e177ce441ef42913567acfba29e0b56e7d6390f2371dfc7a9b2be3f06d75d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial. Pass78: Only changed vision descriptors reviewed: appended per-axis noise flags and Kotlin default bridge. API check and rebuilt candidate consumers passed. Remaining generated API inventory retains partial scope.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3562,7 +3568,10 @@
         "ARESLib-Kotlin/build/audit-pass76-final-focused.log",
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -5372,7 +5381,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f59f188d7020a3952477fe35b69879a467d414768072295214e85f627850051d",
+      "sha256": "e5d263492d081bf7fed685f6d0b478488fe5fc35e4d554c5917659dc2f71b63a",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5400,7 +5409,8 @@
         "docs/audits/ftc-motor-polling-shutdown-audit.md: pass74 records and canonical self-fingerprint refreshed",
         "docs/audits/telemetry-mode-lifecycle-audit.md: pass75 records and canonical self-fingerprint refreshed",
         "docs/audits/estimator-numerics-audit.md: pass76 records and canonical self-fingerprint refreshed",
-        "docs/audits/calibration-integrity-audit.md: pass77 file scopes and canonical self-fingerprint refreshed"
+        "docs/audits/calibration-integrity-audit.md: pass77 file scopes and canonical self-fingerprint refreshed",
+        "docs/audits/vision-noise-ownership-audit.md: pass78 file scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6689,14 +6699,17 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/EKFStatePropagator.kt": {
-      "sha256": "ad8b5ea74d60caa56c4143d42d1ad607328018b8f9c5050bcc1cfe092c5bf16a",
+      "sha256": "6327fd6538a6c665b802e78bfff7fb498a4728dcdc5e0aed099dc70bdb55d23b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full declarations read. Forward/interpolated/replayed F P F transpose plus D Q D unified in one primitive kernel; independent dense correlated covariance, midpoint/chord fractional replay, stored and reconstructed motion, Q/output aliasing and extreme process-scale tests pass. Cross-scale overflow/underflow fixed without allocations. Broader public invalid-history/index/fraction and insertion ownership boundaries remain unverified; callers own valid chronological history.",
+      "scope": "Full declarations read. Forward/interpolated/replayed F P F transpose plus D Q D unified in one primitive kernel; independent dense correlated covariance, midpoint/chord fractional replay, stored and reconstructed motion, Q/output aliasing and extreme process-scale tests pass. Cross-scale overflow/underflow fixed without allocations. Broader public invalid-history/index/fraction and insertion ownership boundaries remain unverified; callers own valid chronological history. Pass78: Replay transaction and interpolation integration reviewed. Scratch/source aliasing retains original adjacent raw poses; invalid pose/covariance/motion/noise does not publish live correction. Closed-form legacy replay and exact/fractional rejected replay tests pass with existing dense process-noise and arc oracles. Public Unit descriptor preserved. Whole-file historical scope remains partial; no broader claim from module test success.",
       "evidence": [
         "docs/audits/estimator-numerics-audit.md",
         "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log",
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/OdometryFusionController.kt": {
@@ -6711,14 +6724,17 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimator.kt": {
-      "sha256": "454268bc5a2ef12d79da24e164a1c890975fa114fce4327248358e0b266b4df7",
+      "sha256": "c87188d5013a30adbf0b4faaf77daa9bea24b5e4fc556de4aeac2057982bddf5",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full declarations read across this batch. Runtime-state copy ownership, timing flags and facade delegation traced; deep copies preserve zero-time dwell/recovery and isolate history/matrices. Corrected stale snapshot-ownership documentation. Public history capacity/insertion/borrowed-entry alias boundaries, global calibration mutation and full vision dependency behavior remain separate scopes.",
+      "scope": "Full declarations read across this batch. Runtime-state copy ownership, timing flags and facade delegation traced; deep copies preserve zero-time dwell/recovery and isolate history/matrices. Corrected stale snapshot-ownership documentation. Public history capacity/insertion/borrowed-entry alias boundaries, global calibration mutation and full vision dependency behavior remain separate scopes. Pass78: History insert/copy/update, scalar vision facade and global activeTags ownership inspected. Three per-axis baseline flags reach the filter; source-compatible defaults retain baseline behavior, JVM descriptors changed and consumers rebuilt. Remaining state/runtime/API portions retain prior partial scope.",
       "evidence": [
         "docs/audits/estimator-numerics-audit.md",
         "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log",
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimatorRuntime.kt": {
@@ -6886,14 +6902,17 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/controller/VisionMeasurementController.kt": {
-      "sha256": "45c7fd15ca6ab9d8dcaa535127e892492ae287b667d9ecf40dfc230778af2cc7",
+      "sha256": "402ea666c330437f4ad60a9407c4d2d33c85c8ed27124703296d7eecc5f8b86d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full file read; current-batch innovation computation, exact identity ownership, translation/full-pose DOF, finite statistical rejection and early rejection paths traced and tested. Metadata references never escape processing and immutable values survive packet recycling. Broader camera-source sequencing, filter configuration and recovery interactions remain separate review/test scopes; full candidate tests alone do not close those scopes.",
+      "scope": "Full file read; current-batch innovation computation, exact identity ownership, translation/full-pose DOF, finite statistical rejection and early rejection paths traced and tested. Metadata references never escape processing and immutable values survive packet recycling. Broader camera-source sequencing, filter configuration and recovery interactions remain separate review/test scopes; full candidate tests alone do not close those scopes. Pass78: Reported positive finite observation standard deviations bypass geometric noise inflation per axis; unspecified axes retain baseline model and MT2 heading stays uninformative. Store-configured ambiguity limit reaches the inner filter and unavailable ambiguity is ignored consistently. Actual Store tests pass; broader camera-source/recovery interactions remain partial.",
       "evidence": [
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotState.kt": {
@@ -7036,6 +7055,159 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt": {
+      "sha256": "de7eab1ad1604ba578cce5f430d36c22c7851a002000a35be20f2f4cc7a7e02f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full filter read: guards, range/incidence and ambiguity, reported versus baseline noise, independent axis normalization, residual whitening, triangular gain solve, Joseph update and atomic delayed replay. Seventeen batch failure-before methods and independent dense/global/mixed-axis oracles plus existing vision/zero-allocation checks passed. Known-tag planar noise remains an empirical heuristic; no physical calibration claim. Final line coverage is recorded in the copied core Kover report.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotFieldConfig.kt": {
+      "sha256": "1f43c82b6a915595784b52159b49bc1203fba27cb09a07ec18355eb453076ee9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full DTOs, dimension defaults, starting pose, joystick transforms, tag lookup, document codec and manager read. Starting pose respects centered FTC/XRP and corner-origin FRC dimensions, preserves wall insets and rejects invalid dimensions. File loading validates before global assignment. Full config/document regression suites and consumer loaders verify metadata, degree conversion, invalid field rejection and canonical layouts. Map poses are independently owned mutable values, not deeply immutable; manual assignment is a compiled-code boundary. No robot-footprint clearance or physical field calibration asserted.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotFieldValidation.kt": {
+      "sha256": "932e172793139bbf740833f46f8a02449da362002a09c99e139b1c5860f03bd8",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full validator read. Dimension, field type, tag requirement/metadata/family/duplicate/finite checks and placement references traced with core and FTC/FRC consumer tests. Obstacle/type/waypoint validation reviewed statically; dedicated adversarial coverage for every shape/physics combination remains open. Core coverage 102/118 lines; line coverage does not establish every predicate combination.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/ValidatedRobotFieldLoader.kt": {
+      "sha256": "55b49e6e3ac64f404df0828638b98a60ab2b0014cdfb21b5609c539dc52a9897",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full decode-validate-reject boundary read. FTC/FRC season loader adapters invoke it directly; candidate tests verify valid decode/tag conversion, malformed JSON, wrong league, duplicate/nonfinite tags and missing required tags. Core Kover does not instrument execution from consumer tests; this is consumer behavioral evidence, not core line coverage.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/Geometry.kt": {
+      "sha256": "185c24befcadee94731437d2dde489809d523472c3eb7ed52494f0cb52f861b6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full geometry value types and human formatter read. Norm uses hypot, rotations use canonical wrap and trig, pose translation extraction allocates by design. Existing four-method GeometryTest passed. Human formatting retains default locale; no locale-independent serialization contract or hot-loop formatting claim.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/coordinate/FieldLayouts.kt": {
+      "sha256": "8fa866d5613f35269bb96bb2c97202064915756beabc2a465b89caef88bdcfb3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full static layout tables and selector read. Startup/facade consumers traced; maps and mutable pose values are process-global legacy configuration. Existing vision/layout consumers passed. These illustrative layouts are not attested official season surveys; season loaders supply canonical field data.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/VisionNoiseNumericsAuditTest.kt": {
+      "sha256": "6b6cc25a5adc804476031810f58fcf6fe4d043d70d0465145fe2704fa1083e8d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All12 methods read/executed: range, ambiguity, malformed/singular/indefinite covariance, small/large global scale, dense independent inverse oracle, variance floor, mixed-axis gain/posterior/NIS, failed replay atomicity and closed-form in-place legacy replay. Test allocations remain outside measured runtime.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/VisionObservationNoiseAuditTest.kt": {
+      "sha256": "b98fcbd07655f59ec3557d077516070bd3093a37e3524137e4f5a74e02feaba5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All4 actual Store methods read/executed: full and partial observation-specific noise, configured ambiguity limit and unavailable ambiguity metadata.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/RobotFieldBoundaryAuditTest.kt": {
+      "sha256": "04ecb8477ad9f3e3ab78a870b39dc45753216ea539fd341ebe0597eaeebbb038",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All4 methods read/executed: centered field/alliance/wall bounds and direction, FRC custom/tiny dimensions, invalid dimensions, semantic file rejection preserving accepted config. Temporary files and global manager restoration scoped to test.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/RobotFieldConfigTest.kt": {
+      "sha256": "5c5965d741a310af7ef912c8f71b19782d41e0f90ad333c72b96360fda7cb42f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eight-method fixture read and executed: FTC/FRC initial poses and joystick mapping, JSON metadata, obstacle rasterization and field-derived costmap integration.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/RobotFieldDocumentTest.kt": {
+      "sha256": "57688ae1f6d3d94981a4ffb4f4cb288413c91ecd6e7576d69c62a7e90125cb27",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-method fixture read/executed: square FTC default, current metadata round trip, unsupported future schema rejection.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/RobotFieldValidationTest.kt": {
+      "sha256": "fbe36ba72f5ed708aad65cbc3e3061e40bff763a55775527ebf19336b818f783",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method fixture read/executed: tag requirement/duplicate/nonfinite, family aliases and unknown detector, dimensions, missing element references. Broader validator predicate coverage remains in its production partial record.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/geometry/GeometryTest.kt": {
+      "sha256": "df3f15e2ead97be1cac6d449c7e67f2ad459b929c103394d2fa871098c7c2e39",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method geometry fixture read/executed; angle wrapping/trig, norm, translation and current-locale human formatting. No cross-locale formatting guarantee.",
+      "evidence": [
+        "docs/audits/vision-noise-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/vision-noise-ownership-audit.md": {
+      "sha256": "ccaabb9dac0d5c89ad793f9018712e30ca79e525b85951be6867a41c527bf7e6",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled batch findings,17 failure-before methods,107 focused tests, source/candidate identity, full observed validation and physical/partial-scope limitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
       ]
     }
   }
