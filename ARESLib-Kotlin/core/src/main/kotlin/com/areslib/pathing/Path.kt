@@ -3,7 +3,7 @@ package com.areslib.pathing
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import kotlin.math.hypot
-import com.areslib.math.wrapAngle
+import java.util.RandomAccess
 
 /**
  * Trajectory Discrete Point State Representation.
@@ -44,7 +44,7 @@ class MutablePathPoint {
     var curvature: Double = 0.0
     var tangentRadians: Double = 0.0
 
-    /** Converts this mutable container into an immutable [PathPoint]. */
+    /** Allocates an independent mutable [PathPoint] and immutable pose value. */
     fun toPathPoint(): PathPoint = PathPoint(
         Pose2d(x, y, Rotation2d(headingRad)),
         velocityMps,
@@ -54,12 +54,15 @@ class MutablePathPoint {
     )
 
     /**
-     * Copies values from this container into pre-allocated [out] [PathPoint] without heap allocation.
+     * Copies values into [out], allocating an immutable Pose2d only when its coordinates or raw heading change.
+     * Moving samples still allocate a pose; use primitive fields directly for allocation-free loops.
      *
      * @param out Destination pre-allocated [PathPoint] instance.
      */
     fun copyInto(out: PathPoint) {
-        out.pose = Pose2d(x, y, Rotation2d(headingRad))
+        if (out.pose.x != x || out.pose.y != y || out.pose.heading.rawRadians != headingRad) {
+            out.pose = Pose2d(x, y, Rotation2d(headingRad))
+        }
         out.velocityMps = velocityMps
         out.distanceMeters = distanceMeters
         out.curvature = curvature
@@ -68,250 +71,203 @@ class MutablePathPoint {
 }
 
 /**
- * Parameterized Trajectory Path Representation.
+ * Distance-parameterized path with caller-owned point and event lists and mutable point payloads.
+ * Distances must be finite, nonnegative and nondecreasing; sampled geometry/velocity/curvature/
+ * raw angles must be finite. Callers must preserve these invariants and not mutate during queries.
+ * Queries check the points they visit, not the entire list, so an unvisited malformed point is not
+ * necessarily detected. Sampling interpolates scalar fields independently and angles on shortest arcs.
  *
- * Stores ordered sequences of trajectory points [PathPoint] and markers [PathEvent].
- * Supports distance-parameterized sampling via linear interpolation.
- *
- * ### Mathematical Formulations:
- * Interpolation parameter $t \in [0.0, 1.0]$ between segment points $\mathbf{P}_k$ and $\mathbf{P}_{k+1}$:
- * $$t = \frac{s_{\text{query}} - s_k}{s_{k+1} - s_k}$$
- * Interp Position:
- * $$\mathbf{x}(t) = (1-t) \mathbf{x}_k + t \mathbf{x}_{k+1}$$
- * Interp Heading:
- * $$\theta(t) = \theta_k + t \cdot \text{wrapAngle}(\theta_{k+1} - \theta_k)$$
- *
- * @property points Ordered list of discrete trajectory points [PathPoint].
- * @property events Ordered list of distance-triggered marker events [PathEvent].
+ * Random-access lists support O(log N) sampling and O(log N + K) windowed projection, where K is
+ * the number of intersecting segments. Other lists use linear traversal instead of indexed searches;
+ * their iterators may allocate. Use random-access storage for allocation-free in-place queries.
+ * Constructor/copy/destructuring/equality and mutable payload ownership retain data-class semantics.
  */
 data class Path(
     val points: List<PathPoint>,
     val events: List<PathEvent> = emptyList()
 ) {
-
     /**
-     * Interpolates to find the target PathPoint at a given distance along the path.
+     * Finite-distance sampling clamped to endpoints. Empty paths return a zero state. Endpoint and
+     * exact interior knots return the original mutable point; only interior interpolation allocates.
+     * At interior duplicate distances the first matching knot wins; the final endpoint clamp returns
+     * the final point. Returned aliases must not be mutated while another caller samples this path.
      */
-    fun sampleAtDistance(distanceMeters: Double): PathPoint {
-        if (points.isEmpty()) return PathPoint(Pose2d(0.0, 0.0, Rotation2d.fromDegrees(0.0)), 0.0)
-        if (distanceMeters <= points.first().distanceMeters) return points.first()
-        if (distanceMeters >= points.last().distanceMeters) return points.last()
-
-        val i = segmentIndex(distanceMeters)
-        if (i >= 0) {
-            val p1 = points[i]
-            val p2 = points[i + 1]
-
-            if (distanceMeters >= p1.distanceMeters && distanceMeters <= p2.distanceMeters) {
-                val denom = p2.distanceMeters - p1.distanceMeters
-                val t = if (kotlin.math.abs(denom) < 1e-6) 0.0 else (distanceMeters - p1.distanceMeters) / denom
-                
-                val interpX = p1.pose.x + (p2.pose.x - p1.pose.x) * t
-                val interpY = p1.pose.y + (p2.pose.y - p1.pose.y) * t
-                
-                // For simplicity, linearly interpolate heading. In a production system, use AngleMath.lerp.
-                val deltaHeading = p2.pose.heading.radians - p1.pose.heading.radians
-                // Normalize delta
-                val normDelta = wrapAngle(deltaHeading)
-                
-                val interpHeading = Rotation2d(p1.pose.heading.radians + normDelta * t)
-                val interpVel = p1.velocityMps + (p2.velocityMps - p1.velocityMps) * t
-                val interpCurvature = p1.curvature + (p2.curvature - p1.curvature) * t
-                
-                // Interpolate tangent with angle wrapping
-                val deltaTangent = p2.tangentRadians - p1.tangentRadians
-                val normTangentDelta = wrapAngle(deltaTangent)
-                val interpTangent = p1.tangentRadians + normTangentDelta * t
-                
-                return PathPoint(
-                    Pose2d(interpX, interpY, interpHeading),
-                    interpVel,
-                    distanceMeters,
-                    interpCurvature,
-                    interpTangent
-                )
-            }
+    fun sampleAtDistance(distanceMeters: Double): PathPoint = sample(
+        distanceMeters,
+        exact = { it ?: PathPoint(Pose2d(), 0.0) },
+        between = { before, after, t ->
+            PathPoint(
+                Pose2d(pathLerp(before.pose.x, after.pose.x, t), pathLerp(before.pose.y, after.pose.y, t),
+                    Rotation2d(pathAngleLerp(before.pose.heading.rawRadians, after.pose.heading.rawRadians, t))),
+                pathLerp(before.velocityMps, after.velocityMps, t), distanceMeters,
+                pathLerp(before.curvature, after.curvature, t),
+                pathAngleLerp(before.tangentRadians, after.tangentRadians, t)
+            )
         }
-        return points.last()
-    }
+    )
 
-    /**
-     * Interpolates in-place to find the target state without heap allocations.
-     */
+    /** Same sampling contract, writing primitives after validation; errors leave [out] unchanged. */
     fun sampleAtDistance(distanceMeters: Double, out: MutablePathPoint) {
-        if (points.isEmpty()) {
-            out.x = 0.0; out.y = 0.0; out.headingRad = 0.0
-            out.velocityMps = 0.0; out.distanceMeters = distanceMeters; out.curvature = 0.0
-            out.tangentRadians = 0.0
-            return
-        }
-        if (distanceMeters <= points.first().distanceMeters) {
-            val first = points.first()
-            out.x = first.pose.x; out.y = first.pose.y; out.headingRad = first.pose.heading.radians
-            out.velocityMps = first.velocityMps; out.distanceMeters = first.distanceMeters; out.curvature = first.curvature
-            out.tangentRadians = first.tangentRadians
-            return
-        }
-        if (distanceMeters >= points.last().distanceMeters) {
-            val last = points.last()
-            out.x = last.pose.x; out.y = last.pose.y; out.headingRad = last.pose.heading.radians
-            out.velocityMps = last.velocityMps; out.distanceMeters = last.distanceMeters; out.curvature = last.curvature
-            out.tangentRadians = last.tangentRadians
-            return
-        }
-
-        val i = segmentIndex(distanceMeters)
-        if (i >= 0) {
-            val p1 = points[i]
-            val p2 = points[i + 1]
-
-            if (distanceMeters >= p1.distanceMeters && distanceMeters <= p2.distanceMeters) {
-                val denom = p2.distanceMeters - p1.distanceMeters
-                val t = if (kotlin.math.abs(denom) < 1e-6) 0.0 else (distanceMeters - p1.distanceMeters) / denom
-                
-                out.x = p1.pose.x + (p2.pose.x - p1.pose.x) * t
-                out.y = p1.pose.y + (p2.pose.y - p1.pose.y) * t
-                
-                val deltaHeading = p2.pose.heading.radians - p1.pose.heading.radians
-                val normDelta = wrapAngle(deltaHeading)
-                out.headingRad = p1.pose.heading.radians + normDelta * t
-                
-                out.velocityMps = p1.velocityMps + (p2.velocityMps - p1.velocityMps) * t
-                out.distanceMeters = distanceMeters
-                out.curvature = p1.curvature + (p2.curvature - p1.curvature) * t
-                
-                val deltaTangent = p2.tangentRadians - p1.tangentRadians
-                val normTangentDelta = wrapAngle(deltaTangent)
-                out.tangentRadians = p1.tangentRadians + normTangentDelta * t
-                return
-            }
-        }
-        val last = points.last()
-        out.x = last.pose.x; out.y = last.pose.y; out.headingRad = last.pose.heading.radians
-        out.velocityMps = last.velocityMps; out.distanceMeters = last.distanceMeters; out.curvature = last.curvature
-        out.tangentRadians = last.tangentRadians
+        sample(distanceMeters, exact = { point ->
+            out.x = point?.pose?.x ?: 0.0
+            out.y = point?.pose?.y ?: 0.0
+            out.headingRad = point?.pose?.heading?.radians ?: 0.0
+            out.velocityMps = point?.velocityMps ?: 0.0
+            out.distanceMeters = point?.distanceMeters ?: 0.0
+            out.curvature = point?.curvature ?: 0.0
+            out.tangentRadians = point?.tangentRadians ?: 0.0
+        }, between = { before, after, t ->
+            out.x = pathLerp(before.pose.x, after.pose.x, t)
+            out.y = pathLerp(before.pose.y, after.pose.y, t)
+            out.headingRad = pathAngleLerp(before.pose.heading.rawRadians, after.pose.heading.rawRadians, t)
+            out.velocityMps = pathLerp(before.velocityMps, after.velocityMps, t)
+            out.distanceMeters = distanceMeters
+            out.curvature = pathLerp(before.curvature, after.curvature, t)
+            out.tangentRadians = pathAngleLerp(before.tangentRadians, after.tangentRadians, t)
+        })
     }
 
-    /** Finds the first segment ending at or beyond the query in O(log N) point reads. */
-    private fun segmentIndex(distanceMeters: Double): Int {
-        if (distanceMeters.isNaN()) return -1
+    private inline fun <T> sample(
+        distance: Double, exact: (PathPoint?) -> T, between: (PathPoint, PathPoint, Double) -> T
+    ): T {
+        require(distance.isFinite()) { "Path sample distance must be finite" }
+        if (points.isEmpty()) return exact(null)
+        val first = points.first()
+        val last = points.last()
+        requirePoint(first)
+        requirePoint(last)
+        require(last.distanceMeters >= first.distanceMeters) { "Path distances must be nondecreasing" }
+        if (distance <= first.distanceMeters) return exact(first)
+        if (distance >= last.distanceMeters) return exact(last)
+        val end = firstEndAtOrAfter(distance)
+        val before = points[end - 1]
+        val after = points[end]
+        requirePoint(before)
+        requirePoint(after)
+        require(before.distanceMeters <= distance && distance <= after.distanceMeters &&
+            after.distanceMeters >= before.distanceMeters) { "Path points do not bracket the sample" }
+        if (distance == after.distanceMeters) return exact(after)
+        val t = (distance - before.distanceMeters) / (after.distanceMeters - before.distanceMeters)
+        return between(before, after, t)
+    }
+
+    /** Lower bound among segment ends, preserving duplicate-knot order. */
+    private fun firstEndAtOrAfter(distance: Double): Int {
+        if (points !is RandomAccess) {
+            var index = 0
+            for (point in points) {
+                requireDistance(point)
+                if (index > 0 && point.distanceMeters >= distance) return index
+                index++
+            }
+            return points.lastIndex
+        }
         var low = 1
         var high = points.lastIndex
         while (low < high) {
             val middle = low + (high - low) / 2
-            if (points[middle].distanceMeters < distanceMeters) low = middle + 1 else high = middle
+            val point = points[middle]
+            requireDistance(point)
+            if (point.distanceMeters < distance) low = middle + 1 else high = middle
         }
-        return low - 1
+        return low
     }
 
+    /** Legacy center-origin X-axis reflection: preserves X, negates Y, heading, tangent and curvature. */
+    fun mirrorForBlueAlliance(): Path = mirrorAcrossXAxis()
+
     /**
-     * Creates a mirrored version of this path across the X-axis for the Blue Alliance.
-     * FTC Field coordinates: Red is -Y, Blue is +Y.
-     * Mirroring across the X-axis negates Y coordinates, headings, tangents, and curvatures.
+     * Same legacy center-origin X-axis reflection as [mirrorForBlueAlliance]. Neither method knows
+     * field dimensions or the current alliance. For corner-origin FRC fields use
+     * [com.areslib.math.coordinate.AllianceMirroring] with an explicit field origin and symmetry.
      */
-    fun mirrorForBlueAlliance(): Path {
-        val mirroredPoints = points.map { p ->
-            PathPoint(
-                pose = Pose2d(p.pose.x, -p.pose.y, Rotation2d(-p.pose.heading.radians)),
-                velocityMps = p.velocityMps,
-                distanceMeters = p.distanceMeters,
-                curvature = -p.curvature,
-                tangentRadians = -p.tangentRadians
-            )
-        }
-        return Path(mirroredPoints, events)
-    }
+    fun mirrorForRedAlliance(): Path = mirrorAcrossXAxis()
+
+    private fun mirrorAcrossXAxis(): Path = Path(points.map { point ->
+        requirePoint(point)
+        PathPoint(Pose2d(point.pose.x, -point.pose.y, Rotation2d(-point.pose.heading.radians)),
+            point.velocityMps, point.distanceMeters, -point.curvature, -point.tangentRadians)
+    }, events)
 
     /**
-     * Creates a mirrored version of this path across the X-axis for the Red Alliance.
+     * Projects finite field coordinates onto the nearest path segment within a finite ordered arc
+     * window. The window is clamped to the actual path extent; an empty path returns zero. Equal
+     * computed separations retain the earliest visited segment. Geometry and distance of visited
+     * points are validated. Other point fields are irrelevant to this geometric query.
      *
-     * PathPlanner paths are authored from the BLUE alliance perspective.
-     * For RED alliance, the path is mirrored across the X-axis (field mirror symmetry):
-     * - X is preserved
-     * - Y is negated
-     * - Heading and tangent angles are negated
-     * - Curvature sign is flipped (reflection inverts curvature)
-     * - Distance along the path is preserved
-     */
-    fun mirrorForRedAlliance(): Path {
-        val mirroredPoints = points.map { p ->
-            PathPoint(
-                pose = Pose2d(p.pose.x, -p.pose.y, Rotation2d(-p.pose.heading.radians)),
-                velocityMps = p.velocityMps,
-                distanceMeters = p.distanceMeters,
-                curvature = -p.curvature,
-                tangentRadians = -p.tangentRadians
-            )
-        }
-        return Path(mirroredPoints, events)
-    }
-
-    /**
-     * Finds the arc-length distance along this path that is closest to the given field position.
-     * Uses point-to-segment projection with sub-sample interpolation for accuracy.
-     * 
-     * This is used for **closest-point projection**: given the robot's actual position,
-     * find where on the planned path it currently is, enabling path resumption
-     * or start-offset correction.
-     *
-     * @param x field X coordinate in meters
-     * @param y field Y coordinate in meters
-     * @return arc-length distance (meters) of the closest point on the path
+     * Normalized projection and hypot avoid arbitrary small-segment cutoffs and squared-distance
+     * overflow. Extremely unequal/cancelling coordinates remain subject to floating-point rounding.
      */
     fun findClosestDistance(
-        x: Double, 
-        y: Double, 
-        minDistance: Double = 0.0, 
-        maxDistance: Double = Double.MAX_VALUE
+        x: Double, y: Double, minDistance: Double = 0.0, maxDistance: Double = Double.MAX_VALUE
     ): Double {
+        require(x.isFinite() && y.isFinite() && minDistance.isFinite() && maxDistance.isFinite() &&
+            minDistance <= maxDistance) { "Projection requires finite coordinates and an ordered finite window" }
         if (points.isEmpty()) return 0.0
-        if (points.size == 1) return points[0].distanceMeters
-
-        var bestDist2 = Double.MAX_VALUE
-        var bestArcLength = if (minDistance == 0.0) 0.0 else minDistance
-
-        // Project onto each segment and find the nearest point
-        for (i in 0 until points.size - 1) {
-            val p1 = points[i]
-            val p2 = points[i + 1]
-
-            // Skip segments completely outside the search window
-            if (p2.distanceMeters < minDistance || p1.distanceMeters > maxDistance) {
-                continue
+        val first = points.first()
+        val last = points.last()
+        requireGeometry(first)
+        requireGeometry(last)
+        require(last.distanceMeters >= first.distanceMeters) { "Path distances must be nondecreasing" }
+        val lower = minDistance.coerceIn(first.distanceMeters, last.distanceMeters)
+        val upper = maxDistance.coerceIn(first.distanceMeters, last.distanceMeters)
+        if (lower == upper) return lower
+        var bestDistance = Double.POSITIVE_INFINITY
+        var bestOverflow = false
+        var bestArcLength = lower
+        visitSegments(lower, upper) { before, after ->
+            val span = after.distanceMeters - before.distanceMeters
+            val minT = if (span > 0.0 && before.distanceMeters < lower) (lower - before.distanceMeters) / span else 0.0
+            val maxT = if (span > 0.0 && after.distanceMeters > upper) (upper - before.distanceMeters) / span else 1.0
+            val t = pathProjectionFraction(x, y, before.pose.x, before.pose.y, after.pose.x, after.pose.y)
+                .coerceIn(minT, maxT)
+            val closestX = pathLerp(before.pose.x, after.pose.x, t)
+            val closestY = pathLerp(before.pose.y, after.pose.y, t)
+            var separation = hypot(x - closestX, y - closestY)
+            val overflow = !separation.isFinite()
+            if (overflow) {
+                // One common power-of-two scale keeps distances beyond MAX_VALUE comparable.
+                separation = hypot(x * 0.25 - closestX * 0.25, y * 0.25 - closestY * 0.25)
             }
-
-            // Segment vector
-            val segX = p2.pose.x - p1.pose.x
-            val segY = p2.pose.y - p1.pose.y
-            val segLen2 = segX * segX + segY * segY
-
-            val denom = p2.distanceMeters - p1.distanceMeters
-            val minT = if (p1.distanceMeters < minDistance && denom > 1e-6) (minDistance - p1.distanceMeters) / denom else 0.0
-            val maxT = if (p2.distanceMeters > maxDistance && denom > 1e-6) (maxDistance - p1.distanceMeters) / denom else 1.0
-
-            // Project query point onto segment, clamped to valid window [minT, maxT]
-            val t = when {
-                segLen2 < 1e-12 -> minT  // degenerate segment
-                else -> {
-                    val dotProduct = (x - p1.pose.x) * segX + (y - p1.pose.y) * segY
-                    (dotProduct / segLen2).coerceIn(minT, maxT)
-                }
-            }
-
-            // Closest point on segment
-            val closestX = p1.pose.x + segX * t
-            val closestY = p1.pose.y + segY * t
-            val dx = x - closestX
-            val dy = y - closestY
-            val d2 = dx * dx + dy * dy
-
-            if (d2 < bestDist2) {
-                bestDist2 = d2
-                // Interpolate arc-length between the two path points
-                bestArcLength = p1.distanceMeters + denom * t
+            if (bestDistance == Double.POSITIVE_INFINITY ||
+                (bestOverflow && !overflow) || (bestOverflow == overflow && separation < bestDistance)) {
+                bestDistance = separation
+                bestOverflow = overflow
+                bestArcLength = pathLerp(before.distanceMeters, after.distanceMeters, t).coerceIn(lower, upper)
             }
         }
-
         return bestArcLength
+    }
+
+    private inline fun visitSegments(lower: Double, upper: Double, visit: (PathPoint, PathPoint) -> Unit) {
+        val randomAccess = points is RandomAccess
+        var index = if (randomAccess) firstEndAtOrAfter(lower) else 1
+        val iterator = if (randomAccess) null else points.iterator()
+        var before = iterator?.next() ?: points[index - 1]
+        while (index < points.size) {
+            val after = iterator?.next() ?: points[index]
+            requireGeometry(before)
+            requireGeometry(after)
+            require(after.distanceMeters >= before.distanceMeters) { "Path distances must be nondecreasing" }
+            if (before.distanceMeters > upper) break
+            if (after.distanceMeters >= lower) visit(before, after)
+            before = after
+            index++
+        }
+    }
+
+    private fun requireDistance(point: PathPoint) {
+        require(point.distanceMeters.isFinite() && point.distanceMeters >= 0.0) { "Path distance must be finite and nonnegative" }
+    }
+
+    private fun requireGeometry(point: PathPoint) {
+        requireDistance(point)
+        require(point.pose.x.isFinite() && point.pose.y.isFinite()) { "Path coordinates must be finite" }
+    }
+
+    private fun requirePoint(point: PathPoint) {
+        requireGeometry(point)
+        require(point.pose.heading.rawRadians.isFinite() && point.velocityMps.isFinite() &&
+            point.curvature.isFinite() && point.tangentRadians.isFinite()) { "Path sample fields must be finite" }
     }
 }
