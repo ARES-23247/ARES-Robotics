@@ -74,11 +74,11 @@ interface Task {
     val requiredResources: Long get() = TaskResources.NONE
 
     /**
-     * Marks the task running, records its timeout origin, and returns no actions by default.
+     * Marks the task running and records its timeout origin atomically with respect to watchdog
+     * scans. Returns no actions by default. Overrides must call this before publishing work.
      */
     fun initialize(state: RobotState): List<RobotAction> {
-        TaskStateMachine.transitionTo(this, TaskStatus.RUNNING)
-        TaskTimeoutManager.start(this)
+        TaskTimeoutManager.initializeTask(this)
         return emptyList()
     }
 
@@ -126,9 +126,13 @@ interface Task {
         return emptyList()
     }
 
-    /** Marks the task cancelled without invoking [end] or dispatching cleanup actions. */
+    /**
+     * Atomically removes the deadline and marks cancellation, then releases runtime metadata.
+     * Does not invoke [end] or dispatch hardware cleanup actions. An overriding metadata cleanup
+     * failure cannot leave this task's old watchdog deadline armed.
+     */
     fun cancel() {
-        TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+        TaskTimeoutManager.cancelTask(this)
         releaseRuntimeState()
     }
 
@@ -138,9 +142,12 @@ interface Task {
         TaskCallbacks.reset(this)
     }
 
-    /** Removes status, timeout, and callback state so this instance can be configured again. */
+    /**
+     * Atomically removes this task's status and deadline, then invokes virtual metadata cleanup
+     * (including callback removal). A cleanup exception propagates without rearming the old deadline.
+     */
     fun reset() {
-        TaskStateMachine.reset(this)
+        TaskTimeoutManager.resetTask(this)
         releaseRuntimeState()
     }
 

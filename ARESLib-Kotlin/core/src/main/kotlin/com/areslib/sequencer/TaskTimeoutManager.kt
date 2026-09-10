@@ -103,6 +103,27 @@ object TaskTimeoutManager {
         if (updated.expired) TaskStateMachine.markFailed(task)
     }
 
+    /** Publishes a fresh status and deadline together relative to watchdog scans. */
+    @Synchronized
+    internal fun initializeTask(task: Task) {
+        TaskStateMachine.transitionTo(task, TaskStatus.RUNNING)
+        start(task)
+    }
+
+    /** Removes an old deadline before publishing cancellation, including cleanup failures. */
+    @Synchronized
+    internal fun cancelTask(task: Task) {
+        states.remove(task)
+        TaskStateMachine.transitionTo(task, TaskStatus.CANCELLED)
+    }
+
+    /** Removes an old deadline and its observable status together before virtual cleanup. */
+    @Synchronized
+    internal fun resetTask(task: Task) {
+        states.remove(task)
+        TaskStateMachine.reset(task)
+    }
+
     /** Records [RobotClock.currentTimeMillis] as [task]'s watchdog origin. */
     @Synchronized
     fun start(task: Task) {
