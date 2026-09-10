@@ -304,6 +304,17 @@ fun Pose3d.relativeTo(other: Pose3d): Transform3d {
 // result allocates: no pure-vector quaternion, products, or conjugate temporaries.
 // Like the public Hamilton product, arithmetic overflow/nonfinite inputs propagate.
 private fun rotateTranslation(q: Quaternion, x: Double, y: Double, z: Double): Translation3d {
+    val scale = max(abs(x), max(abs(y), abs(z)))
+    if (scale.isFinite() && (scale > Double.MAX_VALUE / 4.0 || scale > 0.0 && scale < java.lang.Double.MIN_NORMAL * 4.0)) {
+        // A unit quaternion can rotate a finite vector even when sandwich intermediates
+        // overflow or underflow. Normalize only these extremes; recursion is exactly one
+        // level because the largest normalized component is one. Reuse the owned result.
+        val rotated = rotateTranslation(q, x / scale, y / scale, z / scale)
+        rotated.x *= scale
+        rotated.y *= scale
+        rotated.z *= scale
+        return rotated
+    }
     val aw = -q.x * x - q.y * y - q.z * z
     val ax = q.w * x + q.y * z - q.z * y
     val ay = q.w * y - q.x * z + q.z * x

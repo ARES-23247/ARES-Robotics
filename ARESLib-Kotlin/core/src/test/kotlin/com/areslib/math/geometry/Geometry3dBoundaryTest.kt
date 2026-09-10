@@ -8,6 +8,17 @@ import kotlin.math.*
 import kotlin.test.*
 
 class Geometry3dBoundaryTest {
+    @Test fun `cyclic rotation preserves maximal and subnormal finite translations`() {
+        // This exact unit quaternion cycles (x, y, z) to (z, x, y).
+        val rotation = Rotation3d(Quaternion(0.5, 0.5, 0.5, 0.5))
+        for (scale in doubleArrayOf(Double.MAX_VALUE, Double.MIN_VALUE)) {
+            for (input in listOf(Translation3d(scale, scale, scale), Translation3d(scale, 0.0, 0.0))) {
+                val expected = Translation3d(input.z, input.x, input.y)
+                assertEquals(expected, Pose3d(rotation = rotation).transformBy(Transform3d(input)).translation)
+            }
+        }
+    }
+
     @Test fun `translation norm preserves large and tiny finite lengths`() {
         for (scale in doubleArrayOf(1e200, 1e-200, Double.MIN_VALUE)) {
             assertEquals(5.0, Translation3d(3 * scale, 4 * scale, 0.0).norm / scale, 1e-14)
@@ -172,6 +183,8 @@ class Geometry3dBoundaryTest {
             assertTrue(Translation3d(v[0], v[1], v[2]).norm.isNaN())
             v[axis] = Double.POSITIVE_INFINITY
             assertEquals(Double.POSITIVE_INFINITY, Translation3d(v[0], v[1], v[2]).norm)
+            val invalidTransform = Pose3d().transformBy(Transform3d(Translation3d(v[0], v[1], v[2])))
+            assertTrue(!invalidTransform.x.isFinite() || !invalidTransform.y.isFinite() || !invalidTransform.z.isFinite())
             v[(axis + 1) % 3] = Double.NaN
             assertTrue(Translation3d(v[0], v[1], v[2]).norm.isNaN())
             val angles = DoubleArray(3); angles[axis] = Double.NaN
