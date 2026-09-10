@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "8bc3ca19c7082b2eaec93c25ad5c15ee00421006b7340743fb954a08b6cb4cad",
+      "sha256": "f5e1467e0ca28403313ef6f88db104c74304af355a66b1b41e245add96895e36",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes. Pass 40 joystick/adapter scope recorded, with next interpolation/kinematics and separate DSL/controller ownership work retained alongside earlier open scopes. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 interpolation scope recorded, including insertion/read tradeoff and big-number costs; remaining kinematics/estimation, DSL and controller ownership queue retained.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes. Pass 40 joystick/adapter scope recorded, with next interpolation/kinematics and separate DSL/controller ownership work retained alongside earlier open scopes. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 interpolation scope recorded, including insertion/read tradeoff and big-number costs; remaining kinematics/estimation, DSL and controller ownership queue retained. Pass 42 index/summary updated; final links/policy and exact-candidate consumer validation passed. Root report remains partial. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -536,7 +536,12 @@
         "ARESLib-Kotlin/build/audit-pass41-library.log",
         "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
-        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -674,14 +679,19 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/SubsystemGeneratorCharacterizationTest.kt": {
-      "sha256": "5847a5a969603f52983e9b468f3a0fa6ded3c5426aca6429bd1498769bafec55",
+      "sha256": "3e7881bdee05344cb52a7b1b78fa8cefa614e12cd38fcd2018fb8e7cd228ce91",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full deterministic manifest test reviewed in pass 10. Both fingerprints updated after reviewing shared-profile emitted changes and passing behavioral tests. Final 76-test codegen suite passes. Hash checks supplement compiled behavior.",
+      "scope": "Pass 42 complete test file reviewed and executed. Compiled emitted Kotlin verifies failed refresh neutralization/validity/latch behavior; deterministic all-template manifests cover generated content/ordering and were updated for the reviewed guard change. Physical adapter hardware remains untested. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
       "evidence": [
         "docs/audits/motion-profile-audit.md",
         "ARESLib-Kotlin/build/audit-pass11-final-focused.log",
-        "ARESLib-Kotlin/core/build/reports/kover/report.xml"
+        "ARESLib-Kotlin/core/build/reports/kover/report.xml",
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
       ]
     },
     "docs/audits/kotlin-subsystem-control-audit.md": {
@@ -2328,10 +2338,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "319d35fa789dbf129cf5fa3f990f5d4889c7af10e91774b6ca4958341aa6990c",
+      "sha256": "ba601466e49577b6b4aa90cad5f74bacf25bff04b76420045e719e7b7d7917fc",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial. Pass 40 section and report link reviewed; accumulated root report remains partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 section and report link reviewed; accumulated root report remains partial.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial. Pass 40 section and report link reviewed; accumulated root report remains partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 section and report link reviewed; accumulated root report remains partial. Pass 42 index/summary updated; final links/policy and exact-candidate consumer validation passed. Root report remains partial. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2395,7 +2405,12 @@
         "ARESLib-Kotlin/build/audit-pass41-library.log",
         "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
-        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3057,10 +3072,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "09a3d544bc6bafe2474ebff49e876c805684e610af4fad39fe587e48fc54189a",
+      "sha256": "47f1e3fd0f8ebc15e7c90adbe7fb0b01013535f57719603158d1aa0a582ed803",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry. Pass 40 joystick-conditioning and snapshot-ownership section reviewed against code, public API and executed tests. Other previously unreviewed sections remain partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 calibrated interpolation section reviewed against numeric contracts, lookup complexity and executed regressions. Remaining previously unreviewed sections remain partial.",
+      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry. Pass 40 joystick-conditioning and snapshot-ownership section reviewed against code, public API and executed tests. Other previously unreviewed sections remain partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 calibrated interpolation section reviewed against numeric contracts, lookup complexity and executed regressions. Remaining previously unreviewed sections remain partial. Pass 42 linkage sections reviewed: documented coordinate/numerical/simulation contracts and unchanged public method signatures; retained old JVM constant after ABI check revealed exposure. Remaining unrelated sections still require review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3082,14 +3097,19 @@
         "ARESLib-Kotlin/build/audit-pass41-library.log",
         "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
-        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "6c5d1be0e32b085c2019eb5d5a0ce630baf3ea836fd862943c621cb95a0c7c8b",
+      "sha256": "cec213fa1b820c88ec86e2db95675503bf26547e4d3c8f4c6c7b5968e8b0c836",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 39 complete source-identity file reviewed: exact HEAD library subtree f252cc83428a90552c129f0a28269a4b152b3302 matches candidate 17.0.3-rc.f252cc83428a and dependency-ordered validation. Pass 40 exact HEAD library subtree 0d599b7bafbba3ab6c8fd1a887c4790f42352075 matches candidate 17.0.3-rc.0d599b7bafbb; policy and dependency-ordered library/robot checks passed. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 exact HEAD library subtree 79a4fed61c3df9be85d2c020100feff27c80158b matches candidate 17.0.3-rc.79a4fed61c3d and dependency-ordered library/robot validation.",
+      "scope": "Pass 42 exact immutable candidate tree d10d866f79c622fcf1e16d83d7f745cc9ed87261 matches local library HEAD; unique prerelease 17.0.3-rc.d10d866f79c6 published locally after full gate. Planned stable bump retained; no remote release. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3111,7 +3131,12 @@
         "ARESLib-Kotlin/build/audit-pass41-library.log",
         "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
-        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3252,7 +3277,7 @@
       "sha256": "0e879b94d73331fac00961b11ba276e8ec499b952f31cd7acf769f9394679e0c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 40 only InputMath API section reviewed: intentional additive processJoystickVectorInto method and default-argument bridge; existing signatures unchanged. Standalone full API check passed. Remaining snapshot entries need separate full review. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 InterpolatingTable and Interpolatable API sections inspected; constructor/get/put and interpolation signatures are unchanged and full apiCheck passed. Remaining API snapshot entries remain partial.",
+      "scope": "Pass 40 only InputMath API section reviewed: intentional additive processJoystickVectorInto method and default-argument bridge; existing signatures unchanged. Standalone full API check passed. Remaining snapshot entries need separate full review. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 InterpolatingTable and Interpolatable API sections inspected; constructor/get/put and interpolation signatures are unchanged and full apiCheck passed. Remaining API snapshot entries remain partial. Pass 42 linkage sections reviewed: documented coordinate/numerical/simulation contracts and unchanged public method signatures; retained old JVM constant after ABI check revealed exposure. Remaining unrelated sections still require review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3267,7 +3292,12 @@
         "ARESLib-Kotlin/build/audit-pass41-library.log",
         "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
-        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -3369,6 +3399,220 @@
         "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
         "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/kinematics/TwoDofLinkageKinematics.kt": {
+      "sha256": "8210402c64cdbc18cbdaf0a95c602ce3065cba1087c040fddc5f9cee5c9934a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42. Complete file including parameter/coordinate models reviewed: normalized common workspace and IK, branch conventions, dimensionless singularity, raw IEEE validity, scaled determinant/gravity and shared allocating/buffered geometry. Seeded inverse, energy/derivative and range oracles plus allocation passed. Physical/output validity and ill-conditioned arithmetic limits documented. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/kinematics/TwoDofLinkagePlant.kt": {
+      "sha256": "899e57e6b701bdc66aeff90cd6c127bbb42f37ed64b40a04cbbd42766260cc62",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42. Complete parameters and simulator reviewed: immutable cached inertias, physical Schur derivation, coefficient representability, voltage/time domains, bounded equal substeps, startup/reset/hard stops, finite integration and external-step rollback. Static equilibrium, energy oracle, explicit later-substep failure and allocation passed. Model/precision/HIL limits documented; legacy compiler-emitted constant retained only for ABI. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/kinematics/LinkageCoefficient.kt": {
+      "sha256": "23ed7fde2868c548a86f46761d32abe9fd8759b654220e74c7527b6801d94fb7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42. Complete internal coefficient arithmetic and cosine-sum helper reviewed: cold exponent representation, ordinary fast products, scaled recovery, compensated largest-first addition, zero/nonfinite semantics and immutable ownership. Exact-decimal products/sums, cancellation/subnormal fixtures and warmed allocation passed; finite oracle tolerances do not guarantee correctly rounded arbitrary cancellation. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/TwoDofLinkageKinematicsTest.kt": {
+      "sha256": "75d29df46809ac1261f6d28553e58e32a31252c4de5564585577f4e92a90e922",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed: fixture domains, meaningful assertions, numeric tolerances, independence and finite scope assessed. Oracle samples/allocation windows are bounded host evidence; no exhaustive input or physical timing claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/TwoDofLinkagePlantTest.kt": {
+      "sha256": "31b5ade449e8a5dcd08a5db161e1c2f228b0e303416aded9f4486120f5423bd6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed: fixture domains, meaningful assertions, numeric tolerances, independence and finite scope assessed. Oracle samples/allocation windows are bounded host evidence; no exhaustive input or physical timing claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/TwoDofLinkageBoundaryAuditTest.kt": {
+      "sha256": "3cc1e99dbad656fe24f4d8b0ddcb728c3d4f2d9fe999191114e8402e47b51d9b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed: fixture domains, meaningful assertions, numeric tolerances, independence and finite scope assessed. Oracle samples/allocation windows are bounded host evidence; no exhaustive input or physical timing claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/TwoDofLinkagePlantBoundaryAuditTest.kt": {
+      "sha256": "5791a02f0d4d764f0d72f90e21831a75f79e3b40d36a899bdf83b7d8186566dc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed: fixture domains, meaningful assertions, numeric tolerances, independence and finite scope assessed. Oracle samples/allocation windows are bounded host evidence; no exhaustive input or physical timing claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/TwoDofLinkageRangeAuditTest.kt": {
+      "sha256": "7dc469b7aca4a9680b81e3ba7f39a534a0844fedde0b656a5554af29d5dffd7e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed: fixture domains, meaningful assertions, numeric tolerances, independence and finite scope assessed. Oracle samples/allocation windows are bounded host evidence; no exhaustive input or physical timing claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/TwoDofLinkageOracleAuditTest.kt": {
+      "sha256": "18cc9a0020779967a758a00505a41919ac6f3887ba232160717f4fee13555f73",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed: fixture domains, meaningful assertions, numeric tolerances, independence and finite scope assessed. Oracle samples/allocation windows are bounded host evidence; no exhaustive input or physical timing claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/TwoDofLinkageAllocationAuditTest.kt": {
+      "sha256": "dffe19582afc98a25a447675f3c6aeb28c8de6e51cc84abe230632a941a71380",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed: fixture domains, meaningful assertions, numeric tolerances, independence and finite scope assessed. Oracle samples/allocation windows are bounded host evidence; no exhaustive input or physical timing claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/kinematics/LinkageCoefficientAuditTest.kt": {
+      "sha256": "806852bd4e73acc03e25be4fa99bb304d0cdadce0e0f93b93847b5c598f813bc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed: fixture domains, meaningful assertions, numeric tolerances, independence and finite scope assessed. Oracle samples/allocation windows are bounded host evidence; no exhaustive input or physical timing claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/LinkageMockFailureAuditTest.kt": {
+      "sha256": "43f68b75c56e97129fbc9eb345ee51ad406f4ec5230e34354d0c9c559ba3654e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 42 complete test file reviewed and executed. Compiled emitted Kotlin verifies failed refresh neutralization/validity/latch behavior; deterministic all-template manifests cover generated content/ordering and were updated for the reviewed guard change. Physical adapter hardware remains untested. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemMockIoRenderer.kt": {
+      "sha256": "fedfdf5f41cfb1d831ca454cb966ae6b8171753339f20be60544b9ecefaea19a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 42 linkage construction/refresh boundary reviewed. Failed step invalidates feedback/current, latches and neutralizes before rethrow; compiled generated FTC mock verifies invalid-time and numerical-overflow paths. Remaining generic mock/homing/recovery/follower/registry lifecycle behavior needs its own full review. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/linkage/LinkagePhysicsLabState.kt": {
+      "sha256": "4764e2b2012692145004f75752381aa44ffcebd013eff442a9c87f51298f4f38",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Complete local preview state owner reviewed: run/pause, committed pose, numerical fault stop/voltage neutralization, reset-gated restart and explicit reset. Headless behavioral tests passed in the exact-candidate Studio gate. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/linkage/LinkagePhysicsLabStateTest.kt": {
+      "sha256": "fdca6849de6f547c7f371654bf67351a17d147b5c22a13a94011c9c1fba3cfa2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Complete test file reviewed: paused no-op, running motion, reset neutralization and real-plant numerical failure/restart behavior. Execution passed in the exact-candidate Studio gate. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/linkage/LinkageEditorCanvas.kt": {
+      "sha256": "b6ac0eb6afc688e8435829a5fae4b56e940dbb9ecdf744831988038f55fb0058",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 42 physics-lab state integration, failure feedback, run/reset controls and normalized Float canvas geometry reviewed. Remaining authoring controls, render/interaction and desktop lifecycle require full review; no visible UI claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "evidence": [
+        "docs/audits/two-link-arm-audit.md",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+      ]
+    },
+    "docs/audits/two-link-arm-audit.md": {
+      "sha256": "e5548dfb3f0d6686ce803f5f0f9e59bad027b8f6e297366878bd10d9d71c56a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Complete pass 42 report reviewed against source, preserved failures, numerical/energy/allocation oracles, compiled generated mock, complete library/candidate-consumer gates and inventory. Explicit numerical/model/physical/UI/coverage limits and remaining goal scopes retained.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+        "ARESLib-Kotlin/build/audit-pass42-studio.log",
+        "ARESLib-Kotlin/build/audit-pass42-policy.log"
       ]
     }
   }

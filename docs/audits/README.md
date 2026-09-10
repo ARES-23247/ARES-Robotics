@@ -128,6 +128,9 @@ trigger isolation and immutable snapshot ownership with measured intermediate al
 Pass 41 covers [calibrated interpolation](calibrated-interpolation-audit.md): preserved numeric
 key precision, invalid-key handling, one bounded search, exact-value ownership and measured
 primitive-key query allocation. The insertion/read tradeoff and big-number costs are explicit.
+Pass 42 covers [two-link arm math and simulation](two-link-arm-audit.md): scale-safe geometry,
+finite transactional plant state, cached inertia coefficients, independent energy/numerical
+oracles and fail-closed generated mock/Studio preview behavior.
 Next is remaining kinematics/estimation; the AresGamepad DSL and remaining controller
 connection/age ownership also need separate full reviews.
 Studio follow-ups include cross-policy consistency, remaining lifecycle and global retention,

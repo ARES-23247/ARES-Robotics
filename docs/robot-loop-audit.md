@@ -530,3 +530,12 @@ and decimal key intervals, rescales overflowing floating spans, rejects invalid 
 keys and returns no command for invalid queries. One ordered search replaces repeated tree
 lookups, trading linear insertion for efficient repeated reads. Value construction and
 arbitrary-precision arithmetic may allocate; hardware loop timing remains unmeasured.
+
+## Forty-second pass: two-link arm math and simulation
+
+The [two-link arm audit](audits/two-link-arm-audit.md) fixes scale-dependent workspace and
+singularity errors, intermediate product/angle overflow, invalid startup/reset states and
+nonfinite integration commits. Cached coefficients and a stable inertia solve reduce repeated
+substep work. Generated mocks neutralize before propagating simulation failures; the local
+Studio lab stops and requires reset. Numerical oracles and measured allocation support the
+changes; physical characterization and exhaustive numerical-domain coverage remain open.
