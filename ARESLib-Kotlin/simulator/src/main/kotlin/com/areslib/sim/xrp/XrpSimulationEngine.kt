@@ -13,6 +13,7 @@ import com.areslib.math.wrapAngle
 import com.areslib.networktables.NT4Server
 import com.areslib.sim.physics.SimPhysicsWorld
 import com.areslib.state.RobotFieldConfig
+import com.areslib.state.FieldType
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
@@ -87,8 +88,19 @@ class XrpSimulationEngine(
     private var sequence: Long = 0L
 
     init {
-        physicsWorld.loadFieldElements(activeConfig)
-        resetPose(0.35, 0.7112, 0.0) // default spawn on XRP field
+        // An unspecified XRP field must not discover a sibling FTC season's assets.
+        physicsWorld.loadFieldElements(activeConfig ?: RobotFieldConfig(fieldType = FieldType.XRP))
+        resetToFieldStart()
+    }
+
+    /** Fixture launch 0.35 m from the negative-X edge, centered in Y, facing positive X. */
+    private fun resetToFieldStart() {
+        val field = requireNotNull(physicsWorld.loadedFieldConfig)
+        val halfLength = field.resolvedWidthMeters * 0.5
+        val fromEdge = minOf(0.35, halfLength)
+        val isCorner = field.fieldType == FieldType.FRC
+        resetPose(if (isCorner) fromEdge else fromEdge - halfLength,
+            if (isCorner) field.resolvedHeightMeters * 0.5 else 0.0, 0.0)
     }
 
     fun resetPose(x: Double, y: Double, headingRad: Double) {
@@ -289,7 +301,7 @@ class XrpSimulationEngine(
             store.dispatch(driveIntent)
             val alliance = if (command.isRedAlliance) Alliance.RED else Alliance.BLUE
             if (store.state.drive.alliance != alliance) store.dispatch(RobotAction.SetAlliance(alliance, simulationTimeMs.toLong()))
-            if (command.isPoseReset) { resetPose(0.35, 0.7112, 0.0); networkControlOwned = true; return }
+            if (command.isPoseReset) { resetToFieldStart(); networkControlOwned = true; return }
         }
         // Store intent is not authority: another producer cannot override a disabled/expired lease.
         if (!command.isTeleopMode || command.sessionNonce <= 0L) {

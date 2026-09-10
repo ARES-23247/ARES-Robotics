@@ -139,15 +139,15 @@ object AprilTagMapCodec {
     /**
      * Decodes a Limelight map into the canonical coordinate frame of [field].
      *
-     * Limelight `.fmap` transforms use a field-center origin. ARES FTC fields use that same origin,
-     * while ARES FRC and XRP fields use their corner origins. The target field dimensions are
-     * therefore required to translate FRC and XRP positions without guessing.
+     * Limelight `.fmap` transforms use a field-center origin. ARES FTC and XRP fields use that
+     * same origin, while ARES FRC fields use a corner origin. The target field dimensions are
+     * therefore required to translate FRC positions without guessing.
      */
     @JvmStatic
     fun decodeLimelightFmapForField(json: String, field: RobotFieldConfig): AprilTagMapImportResult {
         requireFieldDimensions(field)
         val decoded = decodeLimelightFmap(json)
-        if (field.fieldType == FieldType.FTC) return decoded
+        if (field.fieldType != FieldType.FRC) return decoded
         val halfLength = field.resolvedWidthMeters * 0.5
         val halfWidth = field.resolvedHeightMeters * 0.5
         return decoded.copy(
@@ -189,7 +189,7 @@ object AprilTagMapCodec {
     @JvmStatic
     fun encodeLimelightFmap(field: RobotFieldConfig): String {
         requireFieldDimensions(field)
-        val tags = if (field.fieldType == FieldType.FTC) {
+        val tags = if (field.fieldType != FieldType.FRC) {
             field.apriltags
         } else {
             val halfLength = field.resolvedWidthMeters * 0.5

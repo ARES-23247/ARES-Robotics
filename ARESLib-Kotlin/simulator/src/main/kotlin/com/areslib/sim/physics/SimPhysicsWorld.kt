@@ -22,7 +22,7 @@ import java.io.File
  * Owns the Dyn4j top-down world and its robot/field bodies.
  *
  * Distances are meters and body rotations are CCW-positive radians. Field boundaries follow the
- * active canonical document dimensions: FTC uses a center origin; XRP/FRC use a corner origin.
+ * active canonical document dimensions: FTC/XRP use a center origin; FRC uses a corner origin.
  * [loadFieldElements] removes prior dynamic field content
  * before loading a supplied configuration; when no configuration is supplied it searches the
  * running project's canonical assets before developer-only fallbacks and leaves a missing/invalid
@@ -98,7 +98,7 @@ class SimPhysicsWorld @kotlin.jvm.JvmOverloads constructor(
             loadedFieldConfig = activeConfig
             RobotFieldManager.setActiveConfig(activeConfig)
             rebuildWallsIfChanged(activeConfig.resolvedWidthMeters, activeConfig.resolvedHeightMeters,
-                activeConfig.fieldType != FieldType.FTC)
+                activeConfig.fieldType == FieldType.FRC)
             val obstacles = FieldObstacleLoader.loadObstacles(world, activeConfig.obstacles)
             activeObstacles.addAll(obstacles)
             val elements = FieldElementLoader.loadElements(world, activeConfig.elementTypes, activeConfig.elements)

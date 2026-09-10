@@ -2,6 +2,13 @@
 
 Pass 46, 2026-09-10. Local branch `codex/robot-loop-math-audit`.
 
+Correction from pass 71: this pass inferred XRP's coordinate convention from a legacy
+spawn and preset. Canonical project metadata and the Python collision implementation instead
+require a center origin. The corner-origin wall change below was incorrect and has been
+replaced together with the inconsistent spawn/preset and fmap conversion. See
+[the XRP coordinate contract audit](xrp-coordinate-contract-audit.md). The historical tests
+below proved consistency with those old fixtures, not agreement with the canonical frame.
+
 ## Findings and changes
 
 - XRP interpreted the first values of a legacy three-value payload as velocity and could

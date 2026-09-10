@@ -13,8 +13,8 @@ class XrpSimulationBoundaryAuditTest {
             engine.otosX = 2.0
             engine.publishTelemetry()
             val frame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", doubleArrayOf())
-            assertEquals(0.35, frame[0], 1e-12)
-            assertEquals(0.35, frame[3], 1e-12)
+            assertEquals(-0.92, frame[0], 1e-12)
+            assertEquals(-0.92, frame[3], 1e-12)
         } finally {
             NT4Server.getInstance()?.stop()
             NT4Server.resetSharedState()
@@ -33,7 +33,7 @@ class XrpSimulationBoundaryAuditTest {
     @Test fun `invalid reset does not corrupt the physical pose`() {
         val engine = XrpSimulationEngine()
         assertFailsWith<IllegalArgumentException> { engine.resetPose(Double.NaN, 0.0, 0.0) }
-        assertEquals(0.35, engine.physicsWorld.robotBody.transform.translationX, 1e-12)
+        assertEquals(-0.92, engine.physicsWorld.robotBody.transform.translationX, 1e-12)
     }
 
     @Test fun `invalid simulated speed and radius configuration rejects at construction`() {

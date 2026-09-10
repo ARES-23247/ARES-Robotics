@@ -13,8 +13,8 @@ class FieldWallOriginAuditTest {
             val physics = SimPhysicsWorld()
             for (type in listOf(FieldType.XRP, FieldType.FTC, FieldType.FRC, FieldType.FTC)) {
                 physics.loadFieldElements(RobotFieldConfig(fieldType = type, widthMeters = 2.54, heightMeters = 1.4224))
-                val cx = if (type == FieldType.FTC) 0.0 else 1.27
-                val cy = if (type == FieldType.FTC) 0.0 else 0.7112
+                val cx = if (type == FieldType.FRC) 1.27 else 0.0
+                val cy = if (type == FieldType.FRC) 0.7112 else 0.0
                 val centers = physics.fieldWalls.map { it.transform.translation }
                 assertEquals(cx, centers[0].x, 1e-12, "$type top X")
                 assertEquals(cy + 0.7112 + 0.05, centers[0].y, 1e-12, "$type top Y")

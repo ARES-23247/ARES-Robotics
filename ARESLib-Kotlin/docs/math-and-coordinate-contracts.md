@@ -327,8 +327,12 @@ IMU measurement. Packed telemetry keeps physical truth, Store estimate and Store
 separate. This velocity-driven Dyn4j model includes collision/damping, but no motor torque,
 slip or sensor noise. Accepted step duration is finite and in (0, 0.1] seconds; observations
 use accumulated simulation milliseconds. This does not establish real-time or sub-millisecond
-estimator accuracy. FTC walls use a center origin; XRP/FRC walls follow their corner-origin
-field documents, including when switching league without changing dimensions.
+estimator accuracy. FTC and XRP walls use a center origin; FRC walls use a corner origin,
+including when switching league without changing dimensions. XRP startup without an explicit
+field uses XRP dimensions rather than discovering sibling FTC assets. Its fixture launch/reset
+is centered in Y, facing positive X, 0.35 m from the negative-X boundary (or at field center
+when the half-length is smaller). Reset uses the currently loaded field dimensions. This is
+a fixture pose, not a collision-free placement guarantee for arbitrary obstacles or chassis sizes.
 
 ## XRP JVM lifecycle and device doubles
 
