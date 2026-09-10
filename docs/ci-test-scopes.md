@@ -17,8 +17,8 @@ rules. Each run writes the selected scopes to the GitHub Actions job summary.
 | Studio `app/` | `:app:test` | Dashboard, autonomous authoring, and complete package verification |
 | Studio `gateway/` | `:gateway:test` | JVM CodeQL; no dashboard, autonomous, or package job |
 | Studio `shared/` or root build configuration | `:shared:test :app:test :gateway:test` | Dashboard, autonomous, and package verification |
-| Root `docs/`, root Markdown guidance, `.agents/`, Studio `docs/` | Source/release policy checks | No product tests |
-| `release/`, `scripts/`, `.github/workflows/`, shared build inputs, unknown root files | Full matrix | All integration and package checks |
+| Root `docs/`, root `*.md` guidance, `.agents/`, Studio `docs/`, root `.gitignore`, Dependabot configuration | Source/release policy checks | No product tests |
+| `release/`, `scripts/`, `.github/workflows/`, root `.gitattributes`, shared build inputs, unknown root files | Full matrix | All integration and package checks |
 
 Multiple changes select the union of their scopes. Starter changes also test their Studio consumer:
 Studio imports, generates, and embeds those projects. Documentation under source/resource directories
@@ -38,6 +38,10 @@ is the synthetic merge tree, and for merge groups it is the queue tree against `
 Checkout fetches full history. The local Git diff has no API changed-file count limit; NUL-delimited
 paths preserve unusual filenames, and disabling rename detection includes both the old and new path.
 Missing/invalid SHAs or a failed diff fail classification rather than reporting no changes.
+Object IDs must have exactly 40 or 64 hexadecimal characters. Git paths retain their literal
+characters: backslashes in POSIX filenames are not converted into directory separators.
+Root `.gitattributes` changes require full validation because attributes can change checked-out
+bytes and archive contents, as described in the [Git attributes reference](https://git-scm.com/docs/gitattributes).
 
 Workflows always start. Individual jobs skip when unaffected; there are no workflow-level path
 filters. GitHub documents why skipped workflow runs can leave required checks pending, while skipped

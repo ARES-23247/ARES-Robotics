@@ -25,7 +25,9 @@ def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> di
         return result
 
     for raw_path in paths:
-        path = raw_path.replace("\\", "/")
+        # Git uses '/' separators on every host. A backslash is a literal filename byte on
+        # POSIX, not a Windows separator to normalize into a policy-only directory.
+        path = raw_path
         if not path:
             continue
         if path.startswith("ARESLib-Kotlin/"):
@@ -86,7 +88,7 @@ def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> di
 
 def _requires_full_matrix(path: str) -> bool:
     full_prefixes = ("release/", "build-logic/", "templates/", "scripts/", ".github/workflows/")
-    full_files = {"build.ps1", "setup.ps1", "setup.sh", "verify-autos.ps1", "verify-autos.sh"}
+    full_files = {"build.ps1", "setup.ps1", "setup.sh", "verify-autos.ps1", "verify-autos.sh", ".gitattributes"}
     return path.startswith(full_prefixes) or path in full_files
 
 
@@ -97,14 +99,14 @@ def _is_policy_only(path: str) -> bool:
         or path.startswith(".agents/")
         or path.startswith("docs/")
         or path == ".github/dependabot.yml"
-        or path in {".gitignore", ".gitattributes"}
+        or path == ".gitignore"
     )
 
 
 def _git_changed_paths(base_sha: str, head_sha: str) -> list[str]:
     if not base_sha or not head_sha:
         raise ValueError("Review classification requires both base and head SHAs")
-    if not all(re.fullmatch(r"[0-9a-fA-F]{40,64}", sha) for sha in (base_sha, head_sha)):
+    if not all(re.fullmatch(r"(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})", sha) for sha in (base_sha, head_sha)):
         raise ValueError("Expected full hexadecimal Git object IDs")
     completed = subprocess.run(
         # Both sides of a rename must be classified, including moves between products.
