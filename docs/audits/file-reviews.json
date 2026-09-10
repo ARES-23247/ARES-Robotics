@@ -458,10 +458,10 @@
       ]
     },
     "docs/audits/README.md": {
-      "sha256": "76c4c274d2821cb4e8d2c905541a78491584990a08aeb1f83730dbd224418058",
+      "sha256": "8bc3ca19c7082b2eaec93c25ad5c15ee00421006b7340743fb954a08b6cb4cad",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes. Pass 40 joystick/adapter scope recorded, with next interpolation/kinematics and separate DSL/controller ownership work retained alongside earlier open scopes. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "scope": "Full work queue reviewed through pass 24: latency/appender findings separated from older manual transaction cleanup, coordinator and dashboard sampling, memory, cloud/identity and robot/hardware scopes. Prior intermittent failures and opt-in tests remain open. Pass 25 scope and subsequent diagnostics/schema/health work queue updated. Pass 26 scope and remaining health-card/diagnostics work queue updated. Pass 27 shared health scope and selected-session/mission follow-up updated. Pass 28 mission/alert presentation results and remaining alert-engine/timeline work queue updated. Pass 29 occurrence/peak/persistence scope added, with source windows, failure recovery and timeline work still open. Pass 30 source/publication scope and remaining window/freshness/upstream ownership work queue recorded. Pass 31 bounded loop-window results and remaining motor-window/configuration/freshness/persistence work queue added. Pass 32 motor evidence/window scope and subsequent persistence/composite queue updated. Pass 33 persistence recovery/shutdown scope and remaining composite/global-retention work queue updated. Pass 34 scalar-source/unit/domain scope and remaining loop/motor/platform work queue updated. Pass 35 platform/battery findings and remaining policy-validation/context queue updated. Pass 36 configuration-loading scope and remaining specialized/cross-policy work queue updated. Pass 37 diagnostic configuration/source-ownership scope and next audio/lifecycle/policy queue updated. Pass 38 audio timing/resource scope recorded; next pass returns to core filter arithmetic and repeated hot-path work while retaining remaining Studio scopes. Pass 39 filter scope and numerical/allocation evidence added; next joystick/adapter/interpolation and remaining kinematics/estimation work queue retains all earlier open scopes. Pass 40 joystick/adapter scope recorded, with next interpolation/kinematics and separate DSL/controller ownership work retained alongside earlier open scopes. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 interpolation scope recorded, including insertion/read tradeoff and big-number costs; remaining kinematics/estimation, DSL and controller ownership queue retained.",
       "evidence": [
         "docs/audits/database-metrics-actions-audit.md",
         "ARESLib-Kotlin/build/audit-pass24-before.log",
@@ -529,7 +529,14 @@
         "ARESLib-Kotlin/build/audit-pass40-library.log",
         "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass40-policy.log",
-        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+        "ARESLib-Kotlin/build/audit-pass40-studio.log",
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
       ]
     },
     "docs/audits/xrp-transport-audit.md": {
@@ -2321,10 +2328,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "cf7d82202c50b0b7c0cd708b9f3faa0098ced4dbbb158df9c0120d688b59f174",
+      "sha256": "319d35fa789dbf129cf5fa3f990f5d4889c7af10e91774b6ca4958341aa6990c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial. Pass 40 section and report link reviewed; accumulated root report remains partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "scope": "Only the pass 30 section and its report link reviewed in this accounting entry. Earlier accumulated report sections retain their own linked evidence but this root report has not received a full-file evidence review. Pass 31 section and report link reviewed; earlier accumulated root-report scope remains partial. Pass 32 section and report link reviewed; accumulated root report remains partial. Pass 33 section and report link reviewed; earlier accumulated report remains partial. Pass 34 section and report link reviewed; accumulated root report remains partial. Pass 35 section and report link reviewed; accumulated root report remains partial. Pass 36 section and link reviewed; accumulated root report remains partial. Pass 37 section and link reviewed; accumulated root report remains partial. Pass 38 section and report link reviewed; accumulated root report remains partial. Pass 39 section and report link reviewed; accumulated root report remains partial. Pass 40 section and report link reviewed; accumulated root report remains partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 section and report link reviewed; accumulated root report remains partial.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2381,7 +2388,14 @@
         "ARESLib-Kotlin/build/audit-pass40-library.log",
         "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass40-policy.log",
-        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+        "ARESLib-Kotlin/build/audit-pass40-studio.log",
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3043,10 +3057,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "8e9aeb21c48480dc48e510b54dee26f20ab07e782336ec0bf14f27ffa39416d5",
+      "sha256": "09a3d544bc6bafe2474ebff49e876c805684e610af4fad39fe587e48fc54189a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry. Pass 40 joystick-conditioning and snapshot-ownership section reviewed against code, public API and executed tests. Other previously unreviewed sections remain partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "scope": "Pass 39 primitive-filter section reviewed against implementations and executed tests. Remaining coordinate/estimator/trajectory sections have not received full-file review in this entry. Pass 40 joystick-conditioning and snapshot-ownership section reviewed against code, public API and executed tests. Other previously unreviewed sections remain partial. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 calibrated interpolation section reviewed against numeric contracts, lookup complexity and executed regressions. Remaining previously unreviewed sections remain partial.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3061,14 +3075,21 @@
         "ARESLib-Kotlin/build/audit-pass40-library.log",
         "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass40-policy.log",
-        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+        "ARESLib-Kotlin/build/audit-pass40-studio.log",
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "755dd5304482ac84662f1e8c62009d614f4c248fa0cf56ef0d996ee51e7b79fa",
+      "sha256": "6c5d1be0e32b085c2019eb5d5a0ce630baf3ea836fd862943c621cb95a0c7c8b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 39 complete source-identity file reviewed: exact HEAD library subtree f252cc83428a90552c129f0a28269a4b152b3302 matches candidate 17.0.3-rc.f252cc83428a and dependency-ordered validation. Pass 40 exact HEAD library subtree 0d599b7bafbba3ab6c8fd1a887c4790f42352075 matches candidate 17.0.3-rc.0d599b7bafbb; policy and dependency-ordered library/robot checks passed. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "scope": "Pass 39 complete source-identity file reviewed: exact HEAD library subtree f252cc83428a90552c129f0a28269a4b152b3302 matches candidate 17.0.3-rc.f252cc83428a and dependency-ordered validation. Pass 40 exact HEAD library subtree 0d599b7bafbba3ab6c8fd1a887c4790f42352075 matches candidate 17.0.3-rc.0d599b7bafbb; policy and dependency-ordered library/robot checks passed. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 exact HEAD library subtree 79a4fed61c3df9be85d2c020100feff27c80158b matches candidate 17.0.3-rc.79a4fed61c3d and dependency-ordered library/robot validation.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3083,7 +3104,14 @@
         "ARESLib-Kotlin/build/audit-pass40-library.log",
         "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass40-policy.log",
-        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+        "ARESLib-Kotlin/build/audit-pass40-studio.log",
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3224,7 +3252,7 @@
       "sha256": "0e879b94d73331fac00961b11ba276e8ec499b952f31cd7acf769f9394679e0c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 40 only InputMath API section reviewed: intentional additive processJoystickVectorInto method and default-argument bridge; existing signatures unchanged. Standalone full API check passed. Remaining snapshot entries need separate full review. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open.",
+      "scope": "Pass 40 only InputMath API section reviewed: intentional additive processJoystickVectorInto method and default-argument bridge; existing signatures unchanged. Standalone full API check passed. Remaining snapshot entries need separate full review. Final full Studio consumer gate also passed against the same candidate; six existing opt-in skips remain open. Pass 41 InterpolatingTable and Interpolatable API sections inspected; constructor/get/put and interpolation signatures are unchanged and full apiCheck passed. Remaining API snapshot entries remain partial.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3232,7 +3260,14 @@
         "ARESLib-Kotlin/build/audit-pass40-library.log",
         "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass40-policy.log",
-        "ARESLib-Kotlin/build/audit-pass40-studio.log"
+        "ARESLib-Kotlin/build/audit-pass40-studio.log",
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -3248,6 +3283,92 @@
         "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass40-studio.log",
         "ARESLib-Kotlin/build/audit-pass40-policy.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/InterpolatingTable.kt": {
+      "sha256": "d0d344b7ec480b23c8bb6a42f98404ed86353eac5e380bd4b1a429ca75ba9419",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 41 full-file review: Interpolatable ownership, numeric key domains/order, exact/clamped result identity, preserved primitive/big-number intervals, one binary search and calibration insertion/read tradeoff. Boundary/oracle/allocation tests, full library/API and robot candidate checks passed. Big-number and value allocation, physical timing and concurrent mutation remain explicitly outside the primitive read guarantee.",
+      "evidence": [
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/InterpolatingTableTest.kt": {
+      "sha256": "960b7d6696a0b46063688daa6cef246fe1a1bc3e62a447d12ca812d1d81b716b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 41 full test-file review: fixtures, interval/ordering/identity assertions, independent precision oracles, search-count bound or internal allocation measurement inspected and executed in focused and full core suites without skips. Caller boxing/output allocation and finite fixture limits are explicit.",
+      "evidence": [
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/InterpolatingTableAuditTest.kt": {
+      "sha256": "cf9c5ca282f72978f48aae2f860bc5b13c2332d657d248e231a83b5f5b0d045b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 41 full test-file review: fixtures, interval/ordering/identity assertions, independent precision oracles, search-count bound or internal allocation measurement inspected and executed in focused and full core suites without skips. Caller boxing/output allocation and finite fixture limits are explicit.",
+      "evidence": [
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/InterpolatingTableOracleTest.kt": {
+      "sha256": "48a923ec1af503db70ce33201d2e82cf6a28e11dbfc25bd64a9f4854d7df38a1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 41 full test-file review: fixtures, interval/ordering/identity assertions, independent precision oracles, search-count bound or internal allocation measurement inspected and executed in focused and full core suites without skips. Caller boxing/output allocation and finite fixture limits are explicit.",
+      "evidence": [
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/InterpolatingTableAllocationTest.kt": {
+      "sha256": "bdb7f4aac07079c50f6a8fd33d3e13bde7a79987d474f4861cee09cb6c0dc13b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 41 full test-file review: fixtures, interval/ordering/identity assertions, independent precision oracles, search-count bound or internal allocation measurement inspected and executed in focused and full core suites without skips. Caller boxing/output allocation and finite fixture limits are explicit.",
+      "evidence": [
+        "docs/audits/calibrated-interpolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass41-before.log",
+        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+        "ARESLib-Kotlin/build/audit-pass41-library.log",
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
+      ]
+    },
+    "docs/audits/calibrated-interpolation-audit.md": {
+      "sha256": "66ce381f8e8704851277941f1549af4ec1d062db2b52e297d23f8475476ea54c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Complete pass 41 report reviewed against source, baseline/focused/full library and exact-candidate consumers, preserved interrupted/standby failure evidence, primary Windows standby events, passing unchanged Studio rerun and inventory. Hardware and universal numeric/concurrency coverage remain explicitly excluded.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log"
       ]
     }
   }

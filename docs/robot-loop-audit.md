@@ -522,3 +522,11 @@ inputs and triggers, preserves full travel for valid narrow deadbands and reject
 exponents. A reusable output API removes intermediate vector allocation from FTC polling while
 preserving independently owned immutable snapshots. Domain checks do not establish controller
 freshness or replace connection, enable and lease checks.
+
+## Forty-first pass: calibrated interpolation
+
+The [interpolation audit](audits/calibrated-interpolation-audit.md) preserves large-integer
+and decimal key intervals, rescales overflowing floating spans, rejects invalid calibration
+keys and returns no command for invalid queries. One ordered search replaces repeated tree
+lookups, trading linear insertion for efficient repeated reads. Value construction and
+arbitrary-precision arithmetic may allocate; hardware loop timing remains unmeasured.
