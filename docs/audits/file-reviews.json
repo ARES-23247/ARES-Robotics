@@ -3211,10 +3211,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "49813fb17ba7ee49ee65d9a927aaef6930d7676eb59fa0f6d7e834113240b150",
+      "sha256": "95aef48afac8cac1d0a3c1c6b36c9a3aa1604c9411cea3303f18b72369a090d1",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact tree 94c8d572d10f182fef61add31d207c88c7ab5add bound to source7728c07e candidate17.0.3-rc.94c8d572d10f;1610librarytests/API/coreKover/localpublication and dependency-ordered consumer gates passed.",
+      "scope": "Exact tree 834f69846257195a49791b74f6a68b2c01c8eb55 bound to source f66f6f84 candidate17.0.3-rc.834f69846257;1624 library tests/API/core Kover/local publication and dependency-ordered consumer gates passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3307,7 +3307,11 @@
         "docs/audits/indicator-task-timing-audit.md",
         "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass64-library.log",
-        "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass64-verified-evidence",
+        "docs/audits/weak-registry-clock-audit.md",
+        "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass65-library.log",
+        "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5258,7 +5262,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "aee0c903ae351403d3da0b6cdd0804fc978b2c5e24b62926f679dc1934137f6a",
+      "sha256": "397b7f1d038d3537c4362f2a0bd9e31f759605ea86f9db4443760ae01513f9d0",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5273,7 +5277,8 @@
         "docs/audits/task-lifecycle-metadata-audit.md: pass61 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/task-completion-boundary-audit.md: pass62 ledger entries reviewed and canonical self-fingerprint refreshed",
         "docs/audits/task-group-ownership-audit.md: pass63 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/indicator-task-timing-audit.md: pass64 ledger entries reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/indicator-task-timing-audit.md: pass64 ledger entries reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/weak-registry-clock-audit.md: pass65 records reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -5746,6 +5751,77 @@
         "ARESLib-Kotlin/build/audit-pass64-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass64-library.log",
         "ARESLib-Kotlin/build/audit-pass64-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/WeakIdentityMap.kt": {
+      "sha256": "ddc20373fe270483a4abbb6446cf2c9b3b6947c9726becc4c79adc29d1ed70a5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file: identity and null-value semantics, synchronization, weak-key/strong-value ownership, stable collection compaction, queue delays and visitor contract. Regression proves 512-key cleanup 131840 to 1024 entry operations; 39/39 lines,28/28 branches,8/8 methods. No actual GC latency or hardware timing claim.",
+      "evidence": [
+        "docs/audits/weak-registry-clock-audit.md",
+        "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass65-library.log",
+        "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/util/RobotClock.kt": {
+      "sha256": "ba90775dac3fe066ca1626dcd1390ad782a09a3bf54b0bcccb8e451d36b332c4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file: immutable volatile publication per getter, mock conversion modulo 2^64, short signed-wrap elapsed intervals, fixed live wall anchor and mode ownership. Runtime unchanged; documentation clarified. 12/12 lines,4/4 branches,6/6 methods. No multi-getter transaction or unlimited elapsed range claim.",
+      "evidence": [
+        "docs/audits/weak-registry-clock-audit.md",
+        "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass65-library.log",
+        "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/util/RobotClockContractTest.kt": {
+      "sha256": "48a3552cfad514b8e6a59036a2c568b5f6f16d82144efa9b90813bc43b05c54c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full ten-method fixture: exact mock/action timestamps, mode changes, advance/rewind, bounded live subtraction, BigInteger low-bit oracle over 2005 values, six wrap intervals, concurrent publication and fixed-anchor brackets. Threads stopped/joined; clock restored. No host-clock mutation or physical drift test.",
+      "evidence": [
+        "docs/audits/weak-registry-clock-audit.md",
+        "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass65-library.log",
+        "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/WeakIdentityMapTest.kt": {
+      "sha256": "0357394804615195a2de198451d727b86c4b3ec1f356a844d1e9908e9bdfc074",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full seven-method fixture: deterministic test-only weak-reference clear/enqueue and private ArrayList operation counts, mixed compaction, late notifications, identity/null semantics, visitor exception lock release and concurrent independent keys. Baseline six pass/one complexity failure; all final pass. No forced-GC timing dependence.",
+      "evidence": [
+        "docs/audits/weak-registry-clock-audit.md",
+        "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass65-library.log",
+        "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/RegistryClockAllocationTest.kt": {
+      "sha256": "7f6d3dcb4996533dd3b253d43ce04c66e2342c7eec10f69bc2e642d920e89576",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-method fixture: precreated mixed registry batches, warmed clock batches with all five samples retained, <=256-byte minimum and <=4096 aggregate clock gates, <=256 registry gate, escaped-array calibration and explicit unsupported-counter skip. Initial 792/624-byte failures retained, final full live [744,0,0,0,0], mock/cleanup zero. Does not prove every invocation zero allocation.",
+      "evidence": [
+        "docs/audits/weak-registry-clock-audit.md",
+        "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass65-library.log",
+        "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
+      ]
+    },
+    "docs/audits/weak-registry-clock-audit.md": {
+      "sha256": "c93536d3dff29d3b3241c9b56e1f361359e2612be279f855738f7b9fcf9f156a",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report checked against baseline/final operation evidence, clock arithmetic and official JVM contract, initial allocation failures, calibrated final bounds, focused/full/API/policy/consumer results and explicit GC/physical limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass65-final-focus.log",
+        "ARESLib-Kotlin/build/audit-pass65-library.log",
+        "ARESLib-Kotlin/build/audit-pass65-verified-evidence"
       ]
     }
   }
