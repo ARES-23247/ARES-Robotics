@@ -56,32 +56,22 @@ class MathUtilsTest {
     }
 
     @Test
-    fun `test lerp bounds and out of range`() {
-        // Mock lerp behaviour or test actual lerp if present
-        val testLerp = { a: Double, b: Double, t: Double -> 
-            when {
-                t <= 0.0 -> a
-                t >= 1.0 -> b
-                else -> a + t * (b - a)
-            }
+    fun `wrapping preserves orientation across ordinary full turns`() {
+        for (turns in -100..100) {
+            val angle = 0.4 + turns * (2.0 * Math.PI)
+            assertEquals(0.4, wrapAngle(angle), 1e-13)
+            assertEquals(Math.cos(angle), Math.cos(wrapAngle(angle)), 1e-13)
+            assertEquals(Math.sin(angle), Math.sin(wrapAngle(angle)), 1e-13)
         }
-        assertEquals(0.0, testLerp(0.0, 10.0, 0.0), 1e-6)
-        assertEquals(10.0, testLerp(0.0, 10.0, 1.0), 1e-6)
-        assertEquals(10.0, testLerp(0.0, 10.0, 1.5), 1e-6)
-        assertEquals(0.0, testLerp(0.0, 10.0, -0.5), 1e-6)
     }
 
     @Test
-    fun `test clamp at exact boundaries`() {
-        val testClamp = { v: Double, min: Double, max: Double ->
-            when {
-                v < min -> min
-                v > max -> max
-                else -> v
-            }
+    fun `wrapping is idempotent at principal interval neighbors`() {
+        for (angle in listOf(Math.nextDown(-Math.PI), Math.nextUp(-Math.PI),
+            Math.nextDown(Math.PI), Math.nextUp(Math.PI), -0.0, 1e-200)) {
+            val once = wrapAngle(angle)
+            assertEquals(once.toRawBits(), wrapAngle(once).toRawBits())
+            kotlin.test.assertTrue(once >= -Math.PI && once < Math.PI)
         }
-        assertEquals(5.0, testClamp(5.0, 0.0, 10.0), 1e-6)
-        assertEquals(0.0, testClamp(0.0, 0.0, 10.0), 1e-6)
-        assertEquals(10.0, testClamp(10.0, 0.0, 10.0), 1e-6)
     }
 }

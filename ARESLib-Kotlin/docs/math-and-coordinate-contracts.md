@@ -268,6 +268,28 @@ raw IO layer does not grant enable, establish feedback freshness or own the robo
 those remain the controller/adapter's responsibility. Swerve speed normalization preserves
 angle references; the remaining steering solver's allocation and dynamics need a separate review.
 
+## Swerve inverse kinematics and angle wrapping
+
+`SwerveKinematics` owns immutable module geometry and requires finite, nonnegative steering
+velocity, steering acceleration and drive acceleration limits. Its first nonzero call after
+construction/reset seeds ideal targets; an initial zero command seeds rest for a rate-limited
+start. Subsequent updates bound signed drive-speed change, steering velocity and steering
+velocity change. This is a discrete limiter and may overshoot a steering target while braking.
+It does not prove actual steering tracking, enable state or physical motor response.
+
+Zero commands, invalid commands/time and unrepresentable module vectors neutralize the coupled
+drive vector immediately, hold valid previous angles and clear steering velocity. Reset clears
+all history. Output buffers require distinct, nonnull states for every module and reject before
+mutation; trailing capacity remains untouched. The duplicate check uses six identity comparisons
+for four modules, and N(N-1)/2 generally. Owning overloads allocate; the buffered path reuses
+storage. `Rotation2d` is an inline value class in module state, so field replacement is not
+itself boxed allocation. Real hardware timing remains an independent validation requirement.
+
+Angle wrapping preserves already-normalized Double values and reduces large inputs modulo
+the represented Double period before shifting into [-pi, pi). It is not arbitrary-precision
+reduction by mathematical pi. The legacy nonfinite-input fallback is zero; consumers must
+validate raw measurements before wrapping. A finite wrapped angle is not a validity signal.
+
 ## XRP desktop simulation and network control
 
 The desktop XRP engine receives canonical v2 drive frames through its own `DriveFrameReceiver`.

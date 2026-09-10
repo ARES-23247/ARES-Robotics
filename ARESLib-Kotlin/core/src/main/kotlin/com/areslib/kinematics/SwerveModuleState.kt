@@ -14,8 +14,8 @@ import com.areslib.math.geometry.Rotation2d
  *
  * ### Storage ownership:
  * Mutable fields allow callers to reuse module-state instances and arrays. Speed normalization
- * preserves the angle reference. Reusing this container alone does not make steering generation
- * allocation-free: constructing replacement [Rotation2d] values can still allocate.
+ * preserves the angle value. [Rotation2d] is an inline value class stored as a primitive here;
+ * replacing this field does not itself require a boxed angle. Owning arrays/state copies allocate.
  *
  * @property speedMetersPerSecond Target wheel drive velocity in meters per second ($m/s$).
  * @property angle Target module steering orientation as a [Rotation2d] instance ($rad$, CCW positive).
