@@ -457,3 +457,46 @@ and at most 64 KiB total transient allocation, matching the existing CTRE writer
 weaker than requiring every window to be zero; small nonzero results are retained and reported.
 The shared probe is calibrated against empty work and an escaping allocation on every iteration.
 It does not measure native IO allocation, lock contention deadlines or physical loop timing.
+
+## Canonical trajectory ownership and numerical sampling
+
+`TimedTrajectory` snapshots state/event lists and nested module-force lists. Normal states whose
+force list is already the immutable empty list are reused. Input lists must not mutate during
+construction/copy. The owned state list supports random access, so binary-search sampling does not
+degrade to indexed linked-list traversal. Exact knots and endpoints return stored states; interior
+samples allocate and independently interpolate scalar fields. Opposite-sign scalar endpoints use
+a convex weighted sum to avoid overflowing their difference. Heading and tangent interpolate along
+the shortest wrapped arc; force feedforwards retain nearest-sample selection, choosing the later
+sample at midpoint ties. This interpolation is not integration of continuous dynamics.
+
+Raw pose headings must be finite before wrapping, and trajectory distance must be nonnegative.
+Value equality, hash, copy, string and destructuring methods are retained, but `TimedTrajectory`
+is now an ordinary Kotlin class so its reflection `isData` flag changes. Its public API signatures
+remain checked. Converting to the distance-based `Path` rejects an unrepresentable speed magnitude;
+that adapter still discards time, acceleration and module-force information by design.
+
+## Bounded spatial generation and timing
+
+Requests and direct spatial generation enforce a 100,000-sample budget before allocating sampled
+points. A segment uses at least two subdivisions so short rest-to-rest moves have an intermediate
+velocity sample. Subdivision counts round up to respect spacing. Direct spatial generation retains
+its legacy invalid-spacing fallback; canonical requests reject invalid spacing explicitly.
+Finite geometry that cannot fit the budget or numeric representation is rejected with an exception
+at the direct spatial API, or a diagnostic at the canonical provider. Duplicate provider-engine
+registrations are rejected, and provider capability is checked once per candidate per request.
+
+The jerk-limited provider preserves each translated waypoint's heading, interpolating it over
+that segment's distance. Coincident waypoints with different headings require rotation without
+translation and receive an unsupported-request diagnostic. Positive tiny distances, speeds and
+curvatures are no longer treated as zero. Centripetal speed limits apply at every nonzero curvature.
+Heading work is hoisted out of the spatial loop; segment counts and input snapshots avoid repeated
+distance calculations, capacity growth and indexed traversal of caller linked lists.
+
+Segment time uses a normalized trapezoidal speed calculation without a minimum-time floor.
+Angular-acceleration scaling checks the angular velocities actually emitted in states at their
+own intervals. Square/cube roots are applied before division to avoid overflowing a ratio whose
+root is representable. Uniform time stretching continues to scale velocity, acceleration and jerk
+coherently. Cumulative times must remain finite and strictly distinguishable. These are discrete
+finite-difference bounds on a piecewise-linear spatial seed; they do not prove continuous jerk,
+force feasibility, smooth corner traversal or physical robot tracking. Requested entry/exit speeds
+may be reduced by uniform time stretching, with a handover warning retained.
