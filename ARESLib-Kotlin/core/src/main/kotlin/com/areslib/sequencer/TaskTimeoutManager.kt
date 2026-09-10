@@ -124,6 +124,40 @@ object TaskTimeoutManager {
         TaskStateMachine.reset(task)
     }
 
+    /** Checks both elapsed domains before completion; lifecycle owners deliver failure callbacks. */
+    @Synchronized
+    internal fun permitsCompletion(task: Task, elapsedMs: Long): Boolean {
+        val status = TaskStateMachine.getStatus(task)
+        if (status == TaskStatus.FAILED || status == TaskStatus.CANCELLED) return false
+        val current = states[task] ?: return true
+        if (elapsedMs < 0L || elapsedMs > current.timeoutMs ||
+            expiredNow(current, RobotClock.currentTimeMillis())) {
+            current.expired = true
+            current.watchdogReported = true
+            TaskStateMachine.markFailed(task)
+            return false
+        }
+        return true
+    }
+
+    /**
+     * Commits terminal status and removes its deadline under the watchdog monitor. A normal end
+     * cannot rescue an expired/failed/cancelled task. Callbacks must run after this method returns.
+     */
+    @Synchronized
+    internal fun finishTask(task: Task, interrupted: Boolean): TaskStatus {
+        val previous = TaskStateMachine.getStatus(task)
+        val current = states.remove(task)
+        val status = when {
+            previous == TaskStatus.FAILED -> TaskStatus.FAILED
+            interrupted || previous == TaskStatus.CANCELLED -> TaskStatus.CANCELLED
+            current != null && expiredNow(current, RobotClock.currentTimeMillis()) -> TaskStatus.FAILED
+            else -> TaskStatus.COMPLETED
+        }
+        TaskStateMachine.transitionTo(task, status)
+        return status
+    }
+
     /** Records [RobotClock.currentTimeMillis] as [task]'s watchdog origin. */
     @Synchronized
     fun start(task: Task) {

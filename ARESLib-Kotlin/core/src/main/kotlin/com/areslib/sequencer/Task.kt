@@ -112,16 +112,18 @@ interface Task {
 
     /**
      * Finalizes the task. Interrupted endings become cancelled unless the task already failed;
-     * normal endings become completed and invoke the completion callback.
+     * normal endings complete only if no failure, cancellation or expired deadline has won.
+     * The deadline is removed with the status transition before any callback runs. Callbacks run
+     * outside the watchdog monitor; owners still perform virtual cleanup and inspect final status.
      */
     fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        if (interrupted) {
-            if (TaskStateMachine.getStatus(this) != TaskStatus.FAILED) {
-                TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+        val status = TaskTimeoutManager.finishTask(this, interrupted)
+        if (!interrupted) {
+            when (status) {
+                TaskStatus.COMPLETED -> TaskCallbacks.invokeComplete(this)
+                TaskStatus.FAILED -> TaskCallbacks.invokeFail(this)
+                else -> Unit
             }
-        } else {
-            TaskStateMachine.transitionTo(this, TaskStatus.COMPLETED)
-            TaskCallbacks.invokeComplete(this)
         }
         return emptyList()
     }
@@ -546,15 +548,15 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             val cmdTask = entry.task
             val cmdElapsed = entry.elapsedMs
             if (consumeFailedEvent(i, cmdTask, state)) break
-            val completed = cmdTask.isCompleted(state, cmdElapsed)
+            val completed = cmdTask.completionReady(state, cmdElapsed)
             if (consumeFailedEvent(i, cmdTask, state)) break
             if (completed) {
-                try {
-                    actionsList.addAll(cmdTask.end(state, interrupted = false))
-                } finally {
-                    cmdTask.releaseRuntimeState()
-                    activeEventTasks.removeAt(i)
-                }
+                // Keep ownership until normal end succeeds. Rejected/throwing endings still
+                // need interrupted cleanup, including a marker's own mechanism outputs.
+                actionsList.addAll(cmdTask.end(state, interrupted = false))
+                if (consumeFailedEvent(i, cmdTask, state)) break
+                cmdTask.releaseRuntimeState()
+                activeEventTasks.removeAt(i)
             } else {
                 actionsList.addAll(cmdTask.execute(state, cmdElapsed))
                 if (consumeFailedEvent(i, cmdTask, state)) break

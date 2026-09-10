@@ -162,7 +162,7 @@ class TaskExecutor {
                 }
                 val elapsed = currentTimestampMs - activeTaskStartTimeMs
                 val isCompleted = try {
-                    task.isCompleted(state, elapsed)
+                    task.completionReady(state, elapsed)
                 } catch (e: Exception) {
                     System.err.println("TaskExecutor: Exception in task.isCompleted for task ${task.name}: ${e.message}")
                     e.printStackTrace()
@@ -187,6 +187,17 @@ class TaskExecutor {
                         e.printStackTrace()
                         actions = addActions(actions, handleTaskFailure(task, state))
                         break
+                    }
+                    when (TaskStateMachine.getStatus(task)) {
+                        TaskStatus.FAILED -> {
+                            actions = addActions(actions, handleTaskFailure(task, state))
+                            break
+                        }
+                        TaskStatus.CANCELLED -> {
+                            actions = addActions(actions, handleTaskCancellation(task, state))
+                            break
+                        }
+                        else -> Unit
                     }
                     task.releaseRuntimeState()
                     activeTask = null

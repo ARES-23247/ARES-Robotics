@@ -86,7 +86,7 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         if (TaskStateMachine.getStatus(this) == TaskStatus.FAILED) return false
         val delegate = delegateTask ?: return true
-        val completed = delegate.isCompleted(state, elapsedMs)
+        val completed = delegate.completionReady(state, elapsedMs)
         if (!completed && TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
             propagateDelegateFailure(delegate)
         }
@@ -121,6 +121,9 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
         // Delegate cleanup runs first so a throwing cleanup still leaves this wrapper
         // eligible for a terminal status via the default implementation.
         val delegateActions = delegateTask?.end(state, interrupted) ?: emptyList()
+        delegateTask?.let { delegate ->
+            if (TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) propagateDelegateFailure(delegate)
+        }
         return delegateActions + super.end(state, interrupted)
     }
 
