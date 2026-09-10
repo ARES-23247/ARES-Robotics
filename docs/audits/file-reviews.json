@@ -3160,10 +3160,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "f2fbc0d4f5b4b79a802c09f786a2efea4f31afc019f8d3b126b7a31f8ea5af26",
+      "sha256": "bc49ae6c23802c46cd3f2b897228077912a5ee518e0e27be9d5ee3bcd79e69d9",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope. Pass72: Added map-interchange derivation, blue-wall alignment rule, yaw/extents transforms, precision/overflow behavior, source fmap dimension fallback and editor preview transaction semantics; verified against source/tests. Remaining accumulated document stays partial.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope. Pass72: Added map-interchange derivation, blue-wall alignment rule, yaw/extents transforms, precision/overflow behavior, source fmap dimension fallback and editor preview transaction semantics; verified against source/tests. Remaining accumulated document stays partial. Pass76: Updated numerical kernel, scalar lifecycle and timing/snapshot sections reconciled with source and tests. Explicit allocation, reset, clock and source-ownership limits retained; broader document topics remain separate scopes.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3227,14 +3227,17 @@
         "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
         "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
         "ARESLib-Kotlin/build/audit-pass72-library.log",
-        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json",
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "49c2d3e828f322bb0be6ef886f1a657ae36fadfcdb287d284f2e947688422108",
+      "sha256": "1fadb06cf81f45d783c8bbaa6f292d9d96f065ba808c468d92493ca0aa8c5ffb",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3370,7 +3373,10 @@
         "ARESLib-Kotlin/build/audit-pass74-focused.log",
         "docs/audits/telemetry-mode-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3508,10 +3514,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "a677336dfc6de67f494dbf1a64e9ac818a8f2493c71a57a6d70b9966e50a3f5d",
+      "sha256": "5c64f3cd0f2106c67bb0f309acb83e653e536b3cf8edd0593bdd0f8c24872625",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3547,7 +3553,10 @@
         "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json",
         "docs/audits/telemetry-mode-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -5357,7 +5366,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "27a60fa988ed85df09c9f83c21d49180b13299be4c704f3a945504227bd4f98d",
+      "sha256": "3f87eefc06b9812356c161b2b7e2db7b299d9eb21c3bf5b63e91359d876960af",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5383,7 +5392,8 @@
         "docs/audits/apriltag-import-frame-audit.md: pass72 records and canonical self-fingerprint refreshed",
         "docs/audits/ftc-frame-lifecycle-audit.md: pass73 records and canonical self-fingerprint refreshed",
         "docs/audits/ftc-motor-polling-shutdown-audit.md: pass74 records and canonical self-fingerprint refreshed",
-        "docs/audits/telemetry-mode-lifecycle-audit.md: pass75 records and canonical self-fingerprint refreshed"
+        "docs/audits/telemetry-mode-lifecycle-audit.md: pass75 records and canonical self-fingerprint refreshed",
+        "docs/audits/estimator-numerics-audit.md: pass76 records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6647,6 +6657,170 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/Matrix3x3.kt": {
+      "sha256": "97be62aedf5c8a0bb5a00ece1a53b1555ce0b026b19c85af46432c0f2e6d649e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full matrix/vector declarations reviewed. Independent indexed matrix products/addition/subtraction/scaling/transpose and in-place mutations, vector products, known singular case and inverse identities over seven numerical scales tested. Fixed reciprocal intermediate overflow when all inverse entries remain representable; allocation documentation corrected. Existing normalized near-singular determinant cutoff remains the public policy, not a general condition-number guarantee.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/KalmanFilter.kt": {
+      "sha256": "d5bc584090552e166d667595e7dd3a35a6145d2b8aee84763efce010d1a48030",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full scalar lifecycle and arithmetic reviewed: first measurement seeding, noise suppression, configured-error clear, reset, normal prediction/correction, overflowed variance sums, opposite extreme measurements, and posterior underflow. Independent 60-digit recurrence and targeted observable second-update regressions passed. Initial/reset state and covariance now fail before mutation if invalid; ordinary path stays allocation-free.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/EKFStatePropagator.kt": {
+      "sha256": "ad8b5ea74d60caa56c4143d42d1ad607328018b8f9c5050bcc1cfe092c5bf16a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full declarations read. Forward/interpolated/replayed F P F transpose plus D Q D unified in one primitive kernel; independent dense correlated covariance, midpoint/chord fractional replay, stored and reconstructed motion, Q/output aliasing and extreme process-scale tests pass. Cross-scale overflow/underflow fixed without allocations. Broader public invalid-history/index/fraction and insertion ownership boundaries remain unverified; callers own valid chronological history.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/OdometryFusionController.kt": {
+      "sha256": "de7e14d344a459810bc04d6b57a6ac3e355669402fa7d611854ea100bc4f5e38",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full declarations read; numerical noise scaling, zero-time/rewound/overflowed stationary and recovery intervals, motion interruption, invalid-input retention, gyro-source separation and bias learning reviewed/tested. Explicit active flags preserve zero epochs; exponent evaluated only during learning with stable expm1. Existing correlated noise and dense propagation tests pass. Broader physical calibration, arbitrary finite amplitude overflow and history sequencing contracts remain open; no hardware timing claim.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimator.kt": {
+      "sha256": "454268bc5a2ef12d79da24e164a1c890975fa114fce4327248358e0b266b4df7",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full declarations read across this batch. Runtime-state copy ownership, timing flags and facade delegation traced; deep copies preserve zero-time dwell/recovery and isolate history/matrices. Corrected stale snapshot-ownership documentation. Public history capacity/insertion/borrowed-entry alias boundaries, global calibration mutation and full vision dependency behavior remain separate scopes.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimatorRuntime.kt": {
+      "sha256": "fb945cdab924a40d4a70d82f107dedce48c4fecfeb41e402ddb07afb4bc786de",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full routing/workspace declarations reviewed. Backwards/duplicate timestamps compare before subtraction; forward overflow uses existing100ms cap. Reset clears old dwell/vision diagnostics, enables recovery at zero and retains gyro bias. Snapshot hydration preserves explicit timing flags and independent arrays. Focused Store snapshot/external-estimator and complete candidate tests passed. Broader external-source sequencing, vision-controller behavior and restoration of negative-timestamp histories remain open.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimatorSnapshot.kt": {
+      "sha256": "e6318cabf97f2ea9c5de51bc69d346862401542f72df10d0ef343fceecd42f1c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full immutable snapshot/view/copy/index declarations and reduxSnapshot conversion reviewed. All nine covariance/gain fields retain ownership after mutable workspace/history changes or mutation of returned views/arrays. Latest history timestamp captured by value. Zero-time dwell/recovery flags survive hydration and deep copy; other state routing validated by Store snapshot/external-estimator fixtures. Snapshot intentionally excludes past trajectory and camera corrections.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/EstimatorNumericsAuditTest.kt": {
+      "sha256": "a3da84296d6e3e4cf7e5fc97523b6a5a74a029da1eaec519d905fae4b5f78b14",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All14 methods reviewed/executed: seven numerical failure-before cases plus dense independent operations, scale identities, 60-digit recurrence, invalid seeds/observations/noise, covariance aliasing and fractional replay using an independent arc formulation. Fixed seeds; no production helper supplies expected results. Extreme values establish arithmetic behavior rather than physical operating envelopes.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/EstimatorTimingOwnershipAuditTest.kt": {
+      "sha256": "0fe54febc194139f09a097484eb8ef7a1b0e0fe7d0cc744dfa204c3052fa61ad",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All12 methods reviewed/executed: nine baseline failures for dwell/recovery zero/rewind/overflow, runtime timestamp ordering, reset diagnostics and copy/hydration; detached scalar/matrix snapshot check and two added recovery/movement/invalid-input checks. Exact500ms boundaries, no sleeps or worker threads, no mutation of global clock.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/Matrix3x3Test.kt": {
+      "sha256": "bc072aeead79d79dd593ca47a406d6ee72bf1738a060bd1a5fbec95da6a45c2a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method existing fixture reviewed and executed: identity, known inverse, singular fallback, transpose, multiplication associativity and in-place operations. Limited element checks are supplemented by complete independent nine-element checks in the new numerics fixture.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/KalmanFilterTest.kt": {
+      "sha256": "582e98d01971a55b79605305289b313894d69c35bb0bab4e59e38564632fe598",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method existing fixture reviewed/executed: first seeding and configured initial error, clear/reset, noise convergence and dynamic noise changes. Numerical boundaries supplemented by high-precision and extreme-value audit regressions.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/GyroSourceSeparationTest.kt": {
+      "sha256": "8609db5a305f9ac5d86e57688b04a34e49eaf3e5ffcb87093c4594d3205574bd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-method fixture reviewed/executed: upstream fused heading avoids a second bias correction and fallback heading subtracts learned bias; physical stationary dwell precedes bias learning. Zero/rewind boundaries added in timing fixture.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/EstimatorMathRegressionTest.kt": {
+      "sha256": "97af89fe9474be0e6cdd1eeb581b6b67e2cbda0e1715e06d57832b8251826bbb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-method fixture reviewed/executed: independent historical copies beyond former pool capacity, concurrent copies with owned executor teardown, robot-local heading transform, exact curved Jacobian, delayed heading correction and full process-noise replay scales. New dense tests provide a separate oracle.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/FractionalTimestampReplayTest.kt": {
+      "sha256": "742c958efa656b6228b54dc6ec7cc5ccdd4fd610a3c98ec861470cfb1962933f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-method fixture reviewed/executed: independent translation/heading Q scales, capture-time split versus explicit odometry split, and successive delayed observations preserving earlier splits. Audit fixture adds independent closed-form pose/covariance comparison for stored and reconstructed twists.",
+      "evidence": [
+        "docs/audits/estimator-numerics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
+      ]
+    },
+    "docs/audits/estimator-numerics-audit.md": {
+      "sha256": "071773b39c8bc9f7de5344f31255a76f2aa2c01b978b24226378091e27b2cde0",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Report reconciled with16 failure-before methods,84 focused tests, final candidate identity and actual library/consumer/policy evidence; open scopes and hardware limitations explicit.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass76-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass76-final-focused.log"
       ]
     }
   }

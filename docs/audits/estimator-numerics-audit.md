@@ -1,6 +1,6 @@
 # Estimator numerical stability and shared covariance calculations
 
-Pass 76, in progress, 2026-09-10. Local branch `codex/robot-loop-math-audit`.
+Pass 76, completed, 2026-09-10. Local branch `codex/robot-loop-math-audit`.
 
 ## Confirmed fixes
 
@@ -53,8 +53,21 @@ Stored-motion and reconstructed legacy history both pass; forward output/Q alias
 These extreme-value tests establish numerical behavior, not realistic sensor operating ranges.
 
 The API dump was reviewed: only snapshot/workspace timing flags and their generated
-constructor/copy/components changed. Full candidate/API/consumer validation and final
-file-ledger credit are pending. No physical hardware timing or calibration was performed.
+constructor/copy/components changed. Source commit `bc61b72f` fixes library tree
+`1ef4aacacf780625240846a18a393e5aee491f55`, validated as local candidate
+`17.0.3-rc.1ef4aacacf78`. Full library/API/Kover/local-publication validation passed
+1,780 tests in 1m 58s. Dependent validation passed FTC 111, FRC 134, FTC starter 14,
+FRC starter 34, Studio 1,790 with six skips, dashboard 56 and performance baseline one.
+Studio completed in 3m 25s; unchanged-input cache/task results were reused normally.
+Repository policy verified 237 current documents and 38 historical exclusions.
+
+Copied XML, hash manifests, core Kover and successful build logs are retained under
+`ARESLib-Kotlin/build/audit-pass76-verified-evidence/`; `summary.json` binds source tree,
+candidate POM, test totals and log hashes. All copied suites have zero failures/errors.
+Core Kover records Matrix3x3 65/65 lines, KalmanFilter 42/43, EKFStatePropagator 201/203,
+OdometryFusionController 155/160, PoseEstimatorRuntime 159/163 and snapshot 65/67.
+These are execution evidence, not a proof of every contract or branch. No physical
+hardware timing or calibration was performed.
 
 ## Remaining scope
 
