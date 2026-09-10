@@ -596,3 +596,10 @@ The [shared swerve contract audit](audits/swerve-io-contract-audit.md) rejects i
 cached snapshots and ambiguous CAN identities, preserves unrelated caller storage and validates
 finite module configuration. Regression, serialization, telemetry ownership and allocation checks
 cover the shared contracts; vendor refresh/freshness and physical output behavior remain separate.
+
+## Fiftieth pass: CTRE swerve reader
+
+The [CTRE reader audit](audits/ctre-swerve-reader-audit.md) makes refresh own signal/state acquisition,
+rejects stale or partial feedback, expires cached authority and removes repeated getter-side native
+fetches. Cached getters pass allocation tests; the required vendor state copy allocates and native
+binding/hardware validation remains open. Existing zero-GC acquisition claims were corrected.

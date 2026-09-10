@@ -2356,10 +2356,10 @@
       ]
     },
     "docs/robot-loop-audit.md": {
-      "sha256": "851d6c7e060b856a32af34a2f8d801f66c649280f90a2f81e339df58acd49206",
+      "sha256": "f43dae96f70306ccb0b886c7053671b95d66a321338041a15c85ae3d293dd99c",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence.",
       "evidence": [
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
@@ -2450,7 +2450,8 @@
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/swerve-angle-audit.md",
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
-        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
       ]
     },
     "docs/audits/alert-source-publication-audit.md": {
@@ -3112,10 +3113,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "2ef500af73c1e709eacf1785f39085ab6070061785f24880e03e40a141590013",
+      "sha256": "10ae457da3e06c5db606b7c99a0597e3501501819c0ff9ff20934f08b0984e25",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3164,14 +3165,15 @@
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/swerve-angle-audit.md",
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
-        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "2e77d466f9fdc0f53d2e0d02568f289f4b1271b5ae03ff9f0daf67cf5d787d48",
+      "sha256": "2a8ecaffe76195990115ad60f75db4312475717143dde8aa51571990af8a9059",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Exact library tree 9fb62f05bd44b1fd39beac58eae3dc233829a1fe matches source 681db64c and unique local candidate 17.0.3-rc.9fb62f05bd44.",
+      "scope": "Exact library tree b847a3d66a66eca4f72e95cd236d16135fd14153 matches source ff23e2ec and unique final local candidate17.0.3-rc.b847a3d66a66; superseded candidate0738d63fd572 not reused.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3220,7 +3222,8 @@
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/swerve-angle-audit.md",
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
-        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+        "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence",
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4532,6 +4535,69 @@
       "scope": "Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence.",
       "evidence": [
         "docs/audits/swerve-io-contract-audit.md; source 681db64c; candidate 17.0.3-rc.9fb62f05bd44; audit-pass49 focused/full XML and Kover evidence"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/drivetrain/SwerveCtreDrivetrainReader.kt": {
+      "sha256": "8f47f9b228534f39ffc25cfbe4cd3addf92a45194bddc95e895078dca0e5a6de",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full reader/cache review: transactional acquisition, status/finite/timestamp/age checks, independent signal and motion groups, local cache expiry, owned immutable snapshots, unknown fault bit, buffer contracts and cached getter allocation. 16 injected-source tests passed; 1365-method full library/API gate passed. Public native constructor and physical acquisition remain separate integration evidence, not exercised by these fixtures.",
+      "evidence": [
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreReaderAuditTest.kt": {
+      "sha256": "56c4dbc26c3b310f2056895603c0448093faadd266f10c02cfc6821e37aa0871",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test/fixture review and execution: acquisition failures, all statuses/timestamps/nonfinite channels, cache aging/rewind/overflow, late errors/recovery, immutable snapshots, module/fault ordering, buffers and zero-allocation cached getters. 16 focused methods passed; native source bindings are deliberately not executed.",
+      "evidence": [
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreReaderFreshnessTest.kt": {
+      "sha256": "ae42d2d79c61a05549d2e1d3129428de973f5c0edb1c16806463cbb8ff62d813",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test/fixture review and execution: acquisition failures, all statuses/timestamps/nonfinite channels, cache aging/rewind/overflow, late errors/recovery, immutable snapshots, module/fault ordering, buffers and zero-allocation cached getters. 16 focused methods passed; native source bindings are deliberately not executed.",
+      "evidence": [
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreReaderSnapshotTest.kt": {
+      "sha256": "d2a3b3a829a59a65f60ef27dacc5d46fa1c6686985ae2af5230d030e3dbc7bf5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test/fixture review and execution: acquisition failures, all statuses/timestamps/nonfinite channels, cache aging/rewind/overflow, late errors/recovery, immutable snapshots, module/fault ordering, buffers and zero-allocation cached getters. 16 focused methods passed; native source bindings are deliberately not executed.",
+      "evidence": [
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+      ]
+    },
+    "docs/audits/ctre-swerve-reader-audit.md": {
+      "sha256": "f53e2a8fb0551193f08b07d5331a1cac649dd584819e2b5e3391ff289d96a7c9",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence.",
+      "evidence": [
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/drivetrain/SwerveCtreReaderSource.kt": {
+      "sha256": "5139c4025af76b7c4f868876d4636c97e30a2dbd40b5f8a11b437a037719e32b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pinned Phoenix 26.1.1 source/compiled signature trace for 36 signal mappings, clone ownership, configured rates, single vendor-time capture and owning state copy. Compiles against pinned SDK, but native constructor/cloning/configuration/state-copy operations have no executed test coverage (0/34 Kover lines). Native/physical integration remains open; no full-file completion claimed.",
+      "evidence": [
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FRCSwerveHardwareIO.kt": {
+      "sha256": "4da405d3e60acaee24d4f69a642985f36eaeee62edf4a98f3caddae2d977527d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped reader integration and correction of unsupported zero-GC acquisition/250Hz read claims. Remaining output, lifecycle, estimator and vision behavior still needs complete review; full library compile/tests cover integration without physical device evidence.",
+      "evidence": [
+        "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts"
       ]
     }
   }
