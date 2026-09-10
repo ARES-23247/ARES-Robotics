@@ -1,6 +1,6 @@
 # Shoot-on-the-move math audit
 
-Pass 80 in progress. Focused math, API and FRC caller validation passed; candidate matrix pending.
+Pass 80 validated. The wider monorepo audit remains active; all changes and artifacts remain local.
 
 ## Corrections
 
@@ -46,7 +46,7 @@ was dumped and checked before freezing. Evidence is copied under
 The allocation test measured zero bytes over 10,000 samples after warmup. Its host timing diagnostic
 averaged 1,530 ns/sample; this is not a physical robot latency or worst-case deadline measurement.
 
-## Limits and remaining validation
+## Model limits and remaining coverage
 
 This is a constant chassis field-velocity/angular-rate model over the configured delay, with a
 stationary target and an empirical flight-time table. It does not independently model drag or
@@ -56,7 +56,41 @@ inside 5 cm are suppressed; zero-distance, nonrepresentable and singular/ill-con
 are invalid. Invalid shots stop flywheel/feeding and leave the existing cowl position target alone.
 IO freshness and actuator safety remain enforced by downstream hardware contracts as well.
 
-Finish frozen candidate/library/API/consumer validation and update the file ledger with exact
-source identity and coverage. No hardware operation, push, merge or release is authorized by this
+The file ledger records the verified source identity and exact review scopes. No hardware operation, push, merge or release is authorized by this
 batch. The wider file audit remains active, including the previously recorded FTC empirical
 calibration and FRC SysId boundary follow-ups.
+
+The adjacent `FeedforwardCoeffs.kt` was reviewed as three immutable coefficient DTOs and their
+mathematical documentation: equations, horizontal-zero arm convention, gain dimensions and defaults
+are consistent. It contains no custom calculation; API/compiler validation is appropriate without
+adding tests that merely reproduce declarations. A legacy rotating-shot test comment still cites
+an obsolete offset; that small correction is reserved for the next library source batch and the
+file retains partial review status. The larger FRC shooter test file also retains partial source
+review status despite passing its executable suite.
+
+## Frozen candidate evidence
+
+Source: `daa7c233`; library tree `a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe`.
+Candidate: `17.0.3-rc.a439d93d6bc4`, published only to the local validation repository.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| ARESLib | 1,875 | 0 |
+| FTC and simulator | 111 | 0 |
+| FRC | 143 | 0 |
+| FTC starter and simulator | 14 | 0 |
+| FRC starter | 34 | 0 |
+| Studio shared/gateway/app | 1,790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, robot generated-project
+verification, FTC assembly, Studio Kover gate/version/file-size checks, and monorepo policy passed.
+Gradle reused unchanged valid outputs; this does not claim every task was forced to rerun. No new
+standalone dashboard performance test or usable Studio-window validation is claimed.
+The six Studio skips are three conditional fresh-template checks, native file chooser, physical
+hardware dashboard and optional performance baseline. Source policy verified 241 current documents
+and 38 historical exemptions. The library matrix took 2m13s and Studio 3m35s on this host.
+
+Copied XML, log hashes, manifests, Kover reports and candidate identity/BOM evidence are under
+`ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json` and its sibling files. The tracked
+source tests and report preserve the validation scope; build artifacts remain local. All 42 focused
+checks passed before the candidate matrix, including the core allocation check.

@@ -3237,10 +3237,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "9e7216fabdbb612840eb9f64a52a6b83ae19a8e903714b8b6a80f4a88f2f5fe7",
+      "sha256": "d213a9c8f530a93d3ed2ee4d1136e0b0b8e69ab2a42da33fd33ce0b0c4d59ff3",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3388,7 +3388,10 @@
         "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
         "docs/audits/sysid-control-assist-audit.md",
         "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json",
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3526,10 +3529,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "958e177ce441ef42913567acfba29e0b56e7d6390f2371dfc7a9b2be3f06d75d",
-      "review": "partial",
+      "sha256": "1e16822f65f2aadafd7a3e353c498a02806980ac64d3bdb26d00d6a70b001d61",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial. Pass78: Only changed vision descriptors reviewed: appended per-axis noise flags and Kotlin default bridge. API check and rebuilt candidate consumers passed. Remaining generated API inventory retains partial scope.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial. Pass78: Only changed vision descriptors reviewed: appended per-axis noise flags and Kotlin default bridge. API check and rebuilt candidate consumers passed. Remaining generated API inventory retains partial scope. Pass80: Generated API artifact compared with compiler output. Intentional ShotResult clear/isValid/setValid additive descriptors reviewed; internal solver absent from public API. Focused and full API checks passed.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3574,7 +3577,10 @@
         "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
         "docs/audits/vision-noise-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -5384,7 +5390,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "bd663fe153b49500a3e98c85e903282bfa540bb971ab385217d6ca85f648421e",
+      "sha256": "258acdb9b400d8defa2af2622f94a2d7f1b96f6895e1c9bdc6903a042ece2dab",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5414,7 +5420,8 @@
         "docs/audits/estimator-numerics-audit.md: pass76 records and canonical self-fingerprint refreshed",
         "docs/audits/calibration-integrity-audit.md: pass77 file scopes and canonical self-fingerprint refreshed",
         "docs/audits/vision-noise-ownership-audit.md: pass78 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/sysid-control-assist-audit.md: pass79 file scopes and canonical self-fingerprint refreshed"
+        "docs/audits/sysid-control-assist-audit.md: pass79 file scopes and canonical self-fingerprint refreshed",
+        "docs/audits/shoot-on-the-move-math-audit.md: pass80 file scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -7310,6 +7317,104 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass79-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass79-final-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/assist/ShotSetup.kt": {
+      "sha256": "aa0681032b5315a86695d448e6495b16aa50259239024ebac47fa2d3858aa3b7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full ShotResult/config/calculation/interpolation file reviewed. Invalid outputs clear and carry validity; nonnegative TOF/distance, copied tables, finite geometry, residual and implicit derivative guards tested. Binary lookup and shared RPM/cowl interval avoid redundant searches. Independent bracket/central-difference and allocation checks passed. Constant chassis velocity/omega, empirical TOF, one-sided knot derivative and 5cm rate suppression are explicit model limits; no physical trajectory claim.",
+      "evidence": [
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/assist/ShotInterceptSolver.kt": {
+      "sha256": "f379a76fdfc39064213b2c18056fb5dd728a36d5815af3b932ef65963af0866c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full normalized quadratic/linear candidate solver read. Enumerates table segments and both clamped tails; stable quadratic roots, finite/interval/residual guards and earliest nonnegative flight time selection. Constant/affine/quadrant/steep/multiple-root/degenerate cases and caller invalidation passed; primitive local workspace remains allocation-free in measured core path.",
+      "evidence": [
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/assist/ShotSetupMathAuditTest.kt": {
+      "sha256": "816a0715505eddab2eaedbca1ba4aba4ea759fed6bfab63ed7213d8454d67235",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All15 independent math/input/allocation methods authored/read/executed; nine failed against prior code. Bracketed time and central-difference oracles differ from production analytic root/implicit derivative. 10000-sample allocation measurement was zero; host average1530ns is a diagnostic, not a hardware deadline guarantee.",
+      "evidence": [
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/assist/ShotSetupTest.kt": {
+      "sha256": "1c5500a1c46068a16731c08312664d1d41403a8a34c7fc711e2f9cf65f8cb19f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "All7 test methods read and executed; unconverged translating-shot numeric expectation replaced with independently bracketed actual table segment. Config/cowl/static/rotating sign assertions verified. A pre-existing rotating-shot comment still cites an obsolete (-0.25,0) offset; correct in the next library source batch without rerunning this frozen candidate solely for a comment.",
+      "evidence": [
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/tuning/FeedforwardCoeffs.kt": {
+      "sha256": "4bbdbc22485440a8eb5970f8e73b114cbdbe601d5217bd3d9d3930f122269913",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Entire file is three immutable coefficient DTO declarations plus equations/units. Simple velocity, elevator constant gravity and arm horizontal-zero cosine gravity expressions and gain dimensions reviewed; defaults are zero. No custom executable calculation or validation lives here; constraints belong to consumers. API/compilation and existing consumer construction validate declared types, without inventing DTO-only tests.",
+      "evidence": [
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinShooterSubsystem.kt": {
+      "sha256": "10e26121ea38867eaeb55e367abc82b20287106847a3b0610fb4b528b78ba5a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full facade construction/moving/static/cancel/reset and readiness flow read. Invalid model results stop flywheel/feeding before dispatch; finite/fresh observation timestamps gate motion, first/gapped observations establish acceleration baseline, duplicate observations retain derivative, static/cancel reset history. Existing0.2s acceleration projection remains a season heuristic. Focused and full consumer tests passed; downstream IO freshness/latching and physical timing are separate boundaries.",
+      "evidence": [
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinMeasuredSotmRegressionTest.kt": {
+      "sha256": "c02e480d4dd62b3f04cecb47e5679435004bc3057af3b9add71151bd0778a950",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All9 methods/fixtures/assertions read and executed: measured-vs-commanded parity, invalid results, first baseline, duplicate observation, stale/future feedback and recovery, static/cancel reset. Six new failure-before caller regressions; actual PoseUpdate fixtures provide valid observation times.",
+      "evidence": [
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinShooterSubsystemTest.kt": {
+      "sha256": "71a5d8c747e0e8afebb86e92dc4ed3b509fe3b73411a68785fa00cf2368f3892",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Inspected existing end-to-end SOTM IO test and fresh observation fixture addition; full test class ran in focused and candidate suites. Other class methods retain pending source review; no whole-file credit from test success.",
+      "evidence": [
+        "docs/audits/shoot-on-the-move-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/shoot-on-the-move-math-audit.md": {
+      "sha256": "784496488e0bb6347f38dd68ccd8a47e8f1fa232fcd35c8136ea68c421ad3d77",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled15 failure-before methods,42 focused checks, full candidate validation and explicit model/host/hardware limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
       ]
     }
   }
