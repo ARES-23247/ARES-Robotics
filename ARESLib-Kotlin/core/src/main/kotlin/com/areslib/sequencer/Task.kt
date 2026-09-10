@@ -269,6 +269,15 @@ class StateActionTask(
 
 /**
  * Task that commands the robot to follow a specific trajectory path.
+ *
+ * Path samples remain caller-owned and must stay stable during execution; initialization validates
+ * all raw sample fields before alliance transformation. Markers are independently snapshotted and
+ * sorted, preserving equal-distance order. Factories must return fresh tasks. Initialization stops
+ * and resets the follower; successful hold-velocity completion may retain output, but invalid input,
+ * timeout, clock faults, marker failure and interrupted exit stop it. Calls belong to one loop.
+ * Authored feedforward velocity is retained, including zero and reverse. Virtual progress uses its
+ * magnitude with a 0.1 m/s floor and a 0.4 m lead bound; it is not measured robot distance.
+ * Motion integration restarts at resume; child elapsed time includes active time before pausing.
  */
 class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val follower: com.areslib.pathing.HolonomicPathFollower,
@@ -287,53 +296,89 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     override val requiredResources: Long = TaskResources.DRIVE
     private var lastTimeMs = 0L
     private lateinit var activePath: com.areslib.pathing.Path
-    private var triggeredEvents = BooleanArray(0)
+    private var scheduledEvents = emptyArray<com.areslib.pathing.PathEvent>()
+    private var nextEvent = 0
     
     private val scratchMutablePoint = com.areslib.pathing.MutablePathPoint()
     private val scratchPathPoint = com.areslib.pathing.PathPoint(Pose2d(), 0.0)
     private val actionsList = mutableListOf<RobotAction>()
     
-    private var timeoutPausedAt: Long? = null
+    private var timeoutsSuspended = false
     internal fun suspendTimeouts(paused: Boolean) {
         val now = com.areslib.util.RobotClock.currentTimeMillis()
-        if (paused && timeoutPausedAt == null) timeoutPausedAt = now
-        if (!paused) {
-            timeoutPausedAt?.let { started ->
-                val duration = now - started
-                lastTimeMs += duration
-                for (task in activeEventTasks) {
-                    taskStartTimes[task]?.let { taskStartTimes[task] = it + duration }
-                }
-            }
-            timeoutPausedAt = null
+        if (!timeoutsSuspended && paused && now >= lastTimeMs) {
+            val delta = now - lastTimeMs
+            if (delta >= 0L) advanceEventTime(delta)
         }
-        for (task in activeEventTasks) task.setTimeoutSuspended(paused)
+        if (timeoutsSuspended && !paused) {
+            // Resume from the current clock: never integrate a paused interval or shift origins
+            // with potentially overflowing Long arithmetic.
+            lastTimeMs = now
+        }
+        timeoutsSuspended = paused
+        for (entry in activeEventTasks) entry.task.setTimeoutSuspended(paused)
     }
-    private val activeEventTasks = mutableListOf<Task>()
-    private val taskStartTimes = mutableMapOf<Task, Long>()
+    private class ActiveEvent(val task: Task, var elapsedMs: Long = 0L)
+    private val activeEventTasks = mutableListOf<ActiveEvent>()
 
     /** Selects alliance geometry, projects current pose onto the path, and dispatches [RobotAction.SwitchPath]. */
     override fun initialize(state: RobotState): List<RobotAction> {
+        try {
+            return initializePath(state)
+        } catch (failure: Throwable) {
+            stopAndRethrow(failure)
+        }
+    }
+
+    private fun initializePath(state: RobotState): List<RobotAction> {
+        follower.stop()
+        check(activeEventTasks.isEmpty()) { "End active marker tasks before reinitializing the path" }
         super.initialize(state)
+        validatePath()
         lastTimeMs = com.areslib.util.RobotClock.currentTimeMillis()
         val alliance = if (mirrorForAlliance) state.drive.alliance else com.areslib.state.Alliance.BLUE
         activePath = com.areslib.math.coordinate.AllianceMirroring.mirror(path, alliance, symmetry, fieldLength, fieldWidth)
-        timeoutPausedAt = null
-        triggeredEvents = BooleanArray(activePath.events.size)
+        timeoutsSuspended = false
+        scheduledEvents = activePath.events.toTypedArray()
+        scheduledEvents.sortWith { a, b ->
+            when {
+                a.triggerDistanceMeters < b.triggerDistanceMeters -> -1
+                a.triggerDistanceMeters > b.triggerDistanceMeters -> 1
+                else -> 0
+            }
+        }
+        nextEvent = 0
         activeEventTasks.clear()
-        taskStartTimes.clear()
 
         if (activePath.points.isEmpty()) {
             fail("path contains no trajectory points")
             return emptyList()
         }
 
-        val currentPose = state.drive.poseEstimator.estimatedPose
-        val startDistance = activePath.findClosestDistance(currentPose.x, currentPose.y)
+        val currentPose = state.drive.poseEstimator
+        require(currentPose.estimatedPoseX.isFinite() && currentPose.estimatedPoseY.isFinite() &&
+            currentPose.estimatedPoseHeading.isFinite()) { "Path execution requires finite estimated pose" }
+        val startDistance = activePath.findClosestDistance(currentPose.estimatedPoseX, currentPose.estimatedPoseY)
 
         return listOf(
             RobotAction.SwitchPath(activePath, isDetour = false, startDistanceMeters = startDistance, timestampMs = lastTimeMs)
         )
+    }
+
+    private fun validatePath() {
+        var priorDistance = 0.0
+        for (point in path.points) {
+            require(point.pose.x.isFinite() && point.pose.y.isFinite() &&
+                point.pose.heading.rawRadians.isFinite() && point.velocityMps.isFinite() &&
+                point.curvature.isFinite() && point.tangentRadians.isFinite() &&
+                point.distanceMeters.isFinite() && point.distanceMeters >= priorDistance) {
+                "Path points must be finite with nonnegative nondecreasing distances"
+            }
+            priorDistance = point.distanceMeters
+        }
+        for (event in path.events) require(event.triggerDistanceMeters.isFinite() && event.triggerDistanceMeters >= 0.0) {
+            "Path event distance must be finite and nonnegative"
+        }
     }
 
     /**
@@ -342,6 +387,11 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
      * silently advance after a blocked drivetrain.
      */
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return false
+        val estimate = state.drive.poseEstimator
+        if (!state.pathState.currentDistanceMeters.isFinite() || state.pathState.currentDistanceMeters < 0.0 ||
+            elapsedMs < 0L || !estimate.estimatedPoseX.isFinite() || !estimate.estimatedPoseY.isFinite() ||
+            !estimate.estimatedPoseHeading.isFinite()) return fail("invalid progress, pose or elapsed time")
         if (activePath.points.isEmpty()) {
             return fail("path contains no trajectory points")
         }
@@ -355,12 +405,14 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             return false
         }
         
-        val currentPose = state.drive.poseEstimator.estimatedPose
+        val currentPose = state.drive.poseEstimator
+        require(currentPose.estimatedPoseX.isFinite() && currentPose.estimatedPoseY.isFinite() &&
+            currentPose.estimatedPoseHeading.isFinite()) { "Path execution requires finite estimated pose" }
         val endPose = activePath.points.last().pose
-        val dx = currentPose.x - endPose.x
-        val dy = currentPose.y - endPose.y
-        val distToTarget = kotlin.math.sqrt(dx * dx + dy * dy)
-        val headingError = kotlin.math.abs(com.areslib.math.wrapAngle(currentPose.heading.radians - endPose.heading.radians))
+        val dx = currentPose.estimatedPoseX - endPose.x
+        val dy = currentPose.estimatedPoseY - endPose.y
+        val distToTarget = kotlin.math.hypot(dx, dy)
+        val headingError = kotlin.math.abs(com.areslib.math.wrapAngle(com.areslib.math.wrapAngle(currentPose.estimatedPoseHeading) - endPose.heading.radians))
         
         if (distToTarget < 0.08 && headingError < Math.toRadians(5.0)) {
             return true
@@ -372,6 +424,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     private fun fail(reason: String): Boolean {
+        follower.stop()
         if (TaskStateMachine.markFailed(this)) {
             System.err.println("FollowPathTask: $reason")
             try {
@@ -383,51 +436,79 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         return false
     }
 
-    /** Advances path progress and event tasks using `RobotClock`; non-advancing time yields no actions. */
+    /**
+     * Advances positive path distance using speed magnitude and RobotClock. Marker setup is O(N log N);
+     * each loop visits only newly crossed markers and active tasks. Sampling/projection costs are
+     * separate. Immutable progress actions and moving geometry can still allocate. The returned
+     * action buffer is reused on the next call; dispatch or copy it before another execution.
+     * Repeated timestamps neutralize without progress; clock rollback/overflow fails the task.
+     */
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
+        try {
+            return executeFrame(state, elapsedMs)
+        } catch (failure: Throwable) {
+            stopAndRethrow(failure)
+        }
+    }
+
+    private fun executeFrame(state: RobotState, elapsedMs: Long): List<RobotAction> {
+        actionsList.clear()
         super.execute(state, elapsedMs)
-        val currentTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
-        if (lastTimeMs != 0L && currentTimestamp <= lastTimeMs) {
-            actionsList.clear()
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING || timeoutsSuspended) {
+            follower.stop()
             return actionsList
         }
-        val dt = if (lastTimeMs == 0L) 0.02 else (currentTimestamp - lastTimeMs) / 1000.0
+        val currentTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
+        if (currentTimestamp == lastTimeMs) {
+            follower.stop()
+            return actionsList
+        }
+        val deltaMs = currentTimestamp - lastTimeMs
+        if (currentTimestamp < lastTimeMs || deltaMs <= 0L || elapsedMs < 0L) {
+            fail("clock moved backwards or elapsed time overflowed")
+            return actionsList
+        }
+        val dt = deltaMs / 1000.0
         lastTimeMs = currentTimestamp
+        advanceEventTime(deltaMs)
 
         val currentDistance = state.pathState.currentDistanceMeters
+        require(currentDistance.isFinite() && currentDistance >= 0.0) { "Path progress must be finite and nonnegative" }
         activePath.sampleAtDistance(currentDistance, scratchMutablePoint)
         scratchMutablePoint.copyInto(scratchPathPoint)
         
-        val distanceToEnd = activePath.points.last().distanceMeters - currentDistance
-        scratchPathPoint.velocityMps = kotlin.math.max(scratchPathPoint.velocityMps, if (distanceToEnd > 0.1) 0.3 else 0.0)
+        val progressSpeed = kotlin.math.max(kotlin.math.abs(scratchPathPoint.velocityMps), 0.1)
         
-        follower.update(scratchPathPoint, dt)
-
-        val progressSpeed = kotlin.math.max(scratchPathPoint.velocityMps, 0.1)
-        
-        val currentPose = state.drive.poseEstimator.estimatedPose
+        val currentPose = state.drive.poseEstimator
+        require(currentPose.estimatedPoseX.isFinite() && currentPose.estimatedPoseY.isFinite() &&
+            currentPose.estimatedPoseHeading.isFinite()) { "Path execution requires finite estimated pose" }
         val closestDist = activePath.findClosestDistance(
-            x = currentPose.x, 
-            y = currentPose.y, 
+            x = currentPose.estimatedPoseX,
+            y = currentPose.estimatedPoseY,
             minDistance = kotlin.math.max(0.0, currentDistance - 0.5), 
             maxDistance = currentDistance + 1.5
         )
         
         val maxLead = 0.4
-        var nextDistance = currentDistance + progressSpeed * dt
+        val endDistance = activePath.points.last().distanceMeters
+        var nextDistance = minOf(endDistance, currentDistance + progressSpeed * dt)
         if (nextDistance > closestDist + maxLead) {
             nextDistance = closestDist + maxLead
         }
         val targetPose = scratchPathPoint.pose
-        val xError = targetPose.x - currentPose.x
-        val yError = targetPose.y - currentPose.y
-        val pathTangent = scratchPathPoint.tangentRadians
-        val crossTrack = xError * kotlin.math.sin(pathTangent) - yError * kotlin.math.cos(pathTangent)
-        val alongTrack = xError * kotlin.math.cos(pathTangent) + yError * kotlin.math.sin(pathTangent)
-        var headingError = targetPose.heading.radians - currentPose.heading.radians
+        val xError = targetPose.x - currentPose.estimatedPoseX
+        val yError = targetPose.y - currentPose.estimatedPoseY
+        val pathTangent = com.areslib.math.wrapAngle(scratchPathPoint.tangentRadians)
+        val sinTangent = kotlin.math.sin(pathTangent)
+        val cosTangent = kotlin.math.cos(pathTangent)
+        val crossTrack = xError * sinTangent - yError * cosTangent
+        val alongTrack = xError * cosTangent + yError * sinTangent
+        require(crossTrack.isFinite() && alongTrack.isFinite()) { "Path tracking error is unrepresentable" }
+        var headingError = targetPose.heading.radians - com.areslib.math.wrapAngle(currentPose.estimatedPoseHeading)
         headingError = kotlin.math.atan2(kotlin.math.sin(headingError), kotlin.math.cos(headingError))
         
-        actionsList.clear()
+        follower.update(scratchPathPoint, dt)
+
         actionsList.add(RobotAction.UpdatePathProgress(
             distanceProgressMeters = nextDistance,
             crossTrackErrorMeters = crossTrack,
@@ -436,25 +517,27 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             timestampMs = currentTimestamp
         ))
 
-        for (i in 0 until activePath.events.size) {
-            val event = activePath.events[i]
-            if (!triggeredEvents[i] && event.triggerDistanceMeters <= nextDistance) {
-                triggeredEvents[i] = true
-                actionsList.add(RobotAction.PathEventTriggered(event.eventName, currentTimestamp))
-                
-                val cmdTask = com.areslib.pathing.NamedCommands.getCommand(event.eventName, currentTimestamp)
-                if (cmdTask != null) {
-                    actionsList.addAll(cmdTask.initialize(state))
-                    activeEventTasks.add(cmdTask)
-                    taskStartTimes[cmdTask] = currentTimestamp
+        while (nextEvent < scheduledEvents.size && scheduledEvents[nextEvent].triggerDistanceMeters <= nextDistance) {
+            val event = scheduledEvents[nextEvent++]
+            actionsList.add(RobotAction.PathEventTriggered(event.eventName, currentTimestamp))
+            val cmdTask = com.areslib.pathing.NamedCommands.getCommand(event.eventName, currentTimestamp)
+            if (cmdTask != null) {
+                require(activeEventTasks.none { it.task === cmdTask } &&
+                    TaskStateMachine.getStatus(cmdTask) == TaskStatus.PENDING) {
+                    "Path marker factory must return a fresh task instance"
                 }
+                // Register ownership before initialization, so executor cleanup can reach a
+                // partially initialized child when its initializer throws.
+                activeEventTasks.add(ActiveEvent(cmdTask))
+                actionsList.addAll(cmdTask.initialize(state))
+                if (consumeFailedEvent(activeEventTasks.lastIndex, cmdTask, state)) return actionsList
             }
         }
-        
+
         for (i in activeEventTasks.indices.reversed()) {
-            val cmdTask = activeEventTasks[i]
-            val startTime = taskStartTimes[cmdTask] ?: currentTimestamp
-            val cmdElapsed = currentTimestamp - startTime
+            val entry = activeEventTasks[i]
+            val cmdTask = entry.task
+            val cmdElapsed = entry.elapsedMs
             if (consumeFailedEvent(i, cmdTask, state)) break
             val completed = cmdTask.isCompleted(state, cmdElapsed)
             if (consumeFailedEvent(i, cmdTask, state)) break
@@ -464,7 +547,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
                 } finally {
                     cmdTask.releaseRuntimeState()
                     activeEventTasks.removeAt(i)
-                    taskStartTimes.remove(cmdTask)
                 }
             } else {
                 actionsList.addAll(cmdTask.execute(state, cmdElapsed))
@@ -473,6 +555,23 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         }
 
         return actionsList
+    }
+
+    private fun advanceEventTime(deltaMs: Long) {
+        var index = 0
+        while (index < activeEventTasks.size) {
+            val entry = activeEventTasks[index++]
+            entry.elapsedMs = if (entry.elapsedMs > Long.MAX_VALUE - deltaMs) Long.MAX_VALUE
+                else entry.elapsedMs + deltaMs
+        }
+    }
+
+    private fun stopAndRethrow(failure: Throwable): Nothing {
+        TaskStateMachine.markFailed(this)
+        try { follower.stop() } catch (cleanup: Throwable) {
+            if (cleanup !== failure) failure.addSuppressed(cleanup)
+        }
+        throw failure
     }
 
     /** Ends a failed/cancelled marker command exactly once and makes the path fail closed. */
@@ -496,7 +595,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         } finally {
             eventTask.releaseRuntimeState()
             activeEventTasks.removeAt(index)
-            taskStartTimes.remove(eventTask)
         }
         fail("path event '${eventTask.name}' ${status.name.lowercase()}")
         return true
@@ -519,7 +617,8 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             }
         }
         val actions = mutableListOf<RobotAction>()
-        for (cmdTask in activeEventTasks) {
+        for (entry in activeEventTasks) {
+            val cmdTask = entry.task
             try {
                 actions.addAll(cmdTask.end(state, interrupted = true))
             } catch (failure: Throwable) {
@@ -530,7 +629,6 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
             }
         }
         activeEventTasks.clear()
-        taskStartTimes.clear()
         try {
             actions.addAll(super.end(state, interrupted))
         } catch (failure: Throwable) {
