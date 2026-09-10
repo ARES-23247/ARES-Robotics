@@ -556,3 +556,12 @@ neutralizes invalid vectors and attempts every motor stop after incomplete write
 Both XRP drive implementations validate constructor arguments without invoking subclass getters
 and compute normalized power directly, avoiding subnormal speed rounding and redundant scaling.
 Numerical, failure-injection and allocation tests pass; physical behavior remains unmeasured.
+
+## Forty-fifth pass: XRP JVM lifecycle and device doubles
+
+The [JVM XRP lifecycle audit](audits/xrp-jvm-lifecycle-audit.md) neutralizes before inactive
+refresh and after failed ticks, requires neutral mode boundaries, and preserves disabled state
+until explicit recovery. Invalid pose resets preserve prior state; unmeasured voltage is unknown.
+Motor/servo commands and reflectance classification respect their domains while input fixtures
+preserve injected invalid feedback. Fixed-step fixture behavior and physical integration limits
+are explicit; the separate XRP physics engine and swerve solver remain pending.

@@ -137,6 +137,9 @@ standard-drive allocation. Full swerve steering and the remaining XRP IO/simulat
 Pass 44 covers [XRP mecanum output handling](xrp-mecanum-output-audit.md): four-motor
 saturation, complete failure cleanup, safe constructor validation and direct power normalization
 without subnormal intermediate loss. Full swerve and remaining XRP sensor/motor/robot reviews follow.
+Pass 45 covers [XRP JVM lifecycle and device doubles](xrp-jvm-lifecycle-audit.md): inactive/failure
+neutral ordering, explicit mode boundaries, unknown feedback, bounded commands and measured
+allocation. The separate physics simulator/launcher and full swerve solver remain pending.
 Next is remaining kinematics/estimation; the AresGamepad DSL and remaining controller
 connection/age ownership also need separate full reviews.
 Studio follow-ups include cross-policy consistency, remaining lifecycle and global retention,
