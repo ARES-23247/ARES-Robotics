@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode
 
+import com.areslib.state.AprilTagMapCodec
 import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldManager
 import com.google.gson.JsonParser
@@ -7,9 +8,36 @@ import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class FtcFieldAssetContractTest {
+    @Test
+    fun `interchange rejects malformed input on the FTC SDK Gson runtime`() {
+        for (json in listOf("", "{}", "{fiducials:[]}", "{\"fiducials\":[]} trailing", "{\"fiducials\":[]} {}")) {
+            assertThrows(IllegalArgumentException::class.java) { AprilTagMapCodec.decodeLimelightFmap(json) }
+        }
+        for (id in listOf("1.5", "4294967297", "\"1\"")) {
+            assertThrows(IllegalArgumentException::class.java) {
+                AprilTagMapCodec.decodeAresField("""{"schemaVersion":2,"apriltags":[{"id":$id}]}""")
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AprilTagMapCodec.decodeAresField("""{"schemaVersion":2,"apriltags":[{"id":1,"family":true}]}""")
+        }
+    }
+
+    @Test
+    fun `interchange preserves dimensions and normalized rotation on the FTC SDK Gson runtime`() {
+        val emptyMap = AprilTagMapCodec.decodeLimelightFmap("""{"fieldlength":4,"fieldwidth":2,"fiducials":[]}""")
+        assertEquals(4.0, requireNotNull(emptyMap.fieldLengthMeters), 0.0)
+        assertEquals(2.0, requireNotNull(emptyMap.fieldWidthMeters), 0.0)
+        val tag = AprilTagMapCodec.decodeWpilib("""{"field":{"length":4,"width":2},"tags":[{"ID":1,"pose":{"translation":{"x":1,"y":2,"z":0},"rotation":{"quaternion":{"W":1e300,"X":0,"Y":0,"Z":1e300}}}}]}""").tags.single()
+        assertEquals(1.0, tag.x, 0.0)
+        assertEquals(2.0, tag.y, 0.0)
+        assertEquals(90.0, tag.yaw, 1e-12)
+    }
+
     @Test
     fun `limelight map is an exact projection of canonical field AprilTags`() {
         val assets = File(findProjectRoot(), "TeamCode/src/main/assets/paths")

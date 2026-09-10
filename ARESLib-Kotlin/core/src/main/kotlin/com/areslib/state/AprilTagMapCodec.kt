@@ -4,10 +4,13 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
-import com.google.gson.Strictness
 import com.google.gson.annotations.SerializedName
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonToken
 import com.areslib.math.geometry.Quaternion
 import com.areslib.math.geometry.Rotation3d
+import java.io.IOException
+import java.io.StringReader
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -47,7 +50,8 @@ data class AprilTagMapImportResult(
  * fields are ignored. The caller owns file-size limits and must not mutate input lists mid-export.
  */
 object AprilTagMapCodec {
-    private val gson = GsonBuilder().setStrictness(Strictness.STRICT).setPrettyPrinting().create()
+    private val gson = GsonBuilder().setPrettyPrinting().create()
+    private val elementAdapter = gson.getAdapter(JsonElement::class.java)
 
     @JvmStatic
     fun decodeAresField(json: String): AprilTagMapImportResult {
@@ -348,8 +352,21 @@ object AprilTagMapCodec {
     }
 
     private fun parseRoot(json: String): JsonObject {
-        val value = try { gson.fromJson(json, JsonElement::class.java) }
-        catch (failure: JsonParseException) { throw IllegalArgumentException("Invalid AprilTag map JSON", failure) }
+        // Invoke the adapter directly: Gson.fromJson enables leniency on older FTC Gson versions.
+        // JsonReader's legacy strict mode is available on both the SDK runtime and desktop Gson.
+        val value = try {
+            JsonReader(StringReader(json)).use { reader ->
+                @Suppress("DEPRECATION")
+                reader.isLenient = false
+                elementAdapter.read(reader).also {
+                    require(reader.peek() == JsonToken.END_DOCUMENT) { "AprilTag map must contain one JSON value" }
+                }
+            }
+        } catch (failure: JsonParseException) {
+            throw IllegalArgumentException("Invalid AprilTag map JSON", failure)
+        } catch (failure: IOException) {
+            throw IllegalArgumentException("Invalid AprilTag map JSON", failure)
+        }
         return value.objectValue("map")
     }
 
