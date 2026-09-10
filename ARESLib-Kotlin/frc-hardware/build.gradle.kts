@@ -29,6 +29,7 @@ dependencies {
     }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.14.4")
+    testImplementation("org.mockito:mockito-core:5.23.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // Add WPILib native JNI dependencies for desktop test runs
