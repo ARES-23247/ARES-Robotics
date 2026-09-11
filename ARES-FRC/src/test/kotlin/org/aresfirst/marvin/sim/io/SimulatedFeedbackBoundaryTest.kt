@@ -9,6 +9,11 @@ import com.areslib.simulation.SimulationFaultTimeline
 import com.areslib.util.RobotClock
 
 class SimulatedFeedbackBoundaryTest {
+    // Test-only corruption bypasses the model's validated input boundary to exercise adapter defense.
+    private fun corruptFeedback(model: Any, fieldName: String) {
+        model.javaClass.getDeclaredField(fieldName).apply { isAccessible = true }.setDouble(model, Double.NaN)
+    }
+
     @Test fun `every direct voltage boundary clamps finite values and neutralizes nonfinite values`() {
         Dyn4jSimulation().use { sim ->
             val outputs: List<Pair<(Double) -> Unit, () -> Double>> = listOf(
@@ -70,7 +75,7 @@ class SimulatedFeedbackBoundaryTest {
 
     @Test fun `invalid pivot model feedback cannot produce an effort command`() {
         Dyn4jSimulation().use { sim ->
-            sim.intakePivotSim.update(Double.NaN, 0.02)
+            corruptFeedback(sim.intakePivotSim, "angleRad")
             assertFalse(sim.intakeIO.pivotAngleValid)
             sim.intakeIO.setPivotAngle(60.0, 1.0)
             assertEquals(0.0, sim.simIntakePivotVoltage)
@@ -79,7 +84,7 @@ class SimulatedFeedbackBoundaryTest {
 
     @Test fun `invalid flywheel model feedback cannot produce an effort command`() {
         Dyn4jSimulation().use { sim ->
-            sim.flywheelSim.update(Double.NaN, 0.02)
+            corruptFeedback(sim.flywheelSim, "angularVelocityRadPerSec")
             assertFalse(sim.flywheelIO.velocityValid)
             sim.flywheelIO.setVelocityRpm(3000.0, 1.0)
             assertEquals(0.0, sim.simFlywheelVoltage)

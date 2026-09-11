@@ -15,51 +15,75 @@ class IntakePivotSim(
 ) {
     private var angleRad = 0.0
     private var angularVelocityRadPerSec = 0.0
-    private val g = 9.80665                 // Acceleration due to gravity (m/s^2)
+    private val accelerationPerVolt: Double
+    private val gravityAcceleration: Double
+    private val dampingRate: Double
+    private val maxAngle = 120.0 * (Math.PI / 180.0)
+
+    init {
+        require(armMassKg.isFinite() && armMassKg >= 0.0)
+        require(lengthToComMeters.isFinite() && lengthToComMeters >= 0.0)
+        require(momentOfInertia.isFinite() && momentOfInertia > 0.0)
+        require(kt.isFinite() && kt > 0.0)
+        require(resistance.isFinite() && resistance > 0.0)
+        require(gearRatio.isFinite() && gearRatio > 0.0)
+        require(frictionCoeff.isFinite() && frictionCoeff >= 0.0)
+        accelerationPerVolt = kt / resistance * gearRatio / momentOfInertia
+        gravityAcceleration = armMassKg * 9.80665 * lengthToComMeters / momentOfInertia
+        dampingRate = accelerationPerVolt * (gearRatio * 0.018) + frictionCoeff / momentOfInertia
+        require(accelerationPerVolt.isFinite() && accelerationPerVolt > 0.0)
+        require(gravityAcceleration.isFinite() && dampingRate.isFinite())
+    }
 
     /**
-     * Step the physics simulation.
-     * @param motorVoltage Applied voltage (-12.0 to 12.0 V)
-     * @param dtSeconds Loop time step in seconds
+     * Exponential midpoint integration: solve stiff motor damping exactly and sample gravity at
+     * a predicted midpoint. At most 5 ms per substep (four at a normal 20 ms loop), with scalar
+     * scratch state and coefficients computed once per update. Hard stops dissipate impact velocity.
+     * Invalid inputs or unrepresentable results throw before state changes.
+     * @param motorVoltage Finite applied voltage (nominally -12.0 to 12.0 V)
+     * @param dtSeconds Finite, nonnegative time, at most 50 seconds (10,000 substeps); zero is a no-op
      */
     fun update(motorVoltage: Double, dtSeconds: Double) {
-        // Motor output torque after gear reduction
-        val backEMF = (angularVelocityRadPerSec * gearRatio) * 0.018 // Back-EMF constant approximation
-        val motorCurrent = (motorVoltage - backEMF) / resistance
-        val motorTorque = motorCurrent * kt
-        val outputTorque = motorTorque * gearRatio
-        
-        // Gravity loaded torque: T_g = M * g * d * cos(theta)
-        // theta is 0 when horizontal (max gravity torque)
-        val gravityTorque = armMassKg * g * lengthToComMeters * Math.cos(angleRad)
-        
-        // Friction torque
-        val frictionTorque = frictionCoeff * angularVelocityRadPerSec
-        
-        // Total torque: T_net = T_motor - T_gravity - T_friction
-        val netTorque = outputTorque - gravityTorque - frictionTorque
-        
-        // Angular acceleration: alpha = T_net / J
-        val angularAcceleration = netTorque / momentOfInertia
-        
-        // Integrate velocity & position
-        angularVelocityRadPerSec += angularAcceleration * dtSeconds
-        angleRad += angularVelocityRadPerSec * dtSeconds
-        
-        // Clamp to physical hard stops (0 to 120 degrees)
-        val minAngle = 0.0
-        val maxAngle = 120.0 * (Math.PI / 180.0)
-        
-        when {
-            angleRad < minAngle -> {
-                angleRad = minAngle
-                angularVelocityRadPerSec = 0.0
-            }
-            angleRad > maxAngle -> {
-                angleRad = maxAngle
-                angularVelocityRadPerSec = 0.0
-            }
+        require(motorVoltage.isFinite())
+        require(dtSeconds.isFinite() && dtSeconds >= 0.0 && dtSeconds <= 50.0)
+        if (dtSeconds == 0.0) return
+        val steps = kotlin.math.ceil(dtSeconds / 0.005).toInt().coerceAtLeast(1)
+        val h = dtSeconds / steps
+        val decay = Math.exp(-dampingRate * h)
+        val response = velocityResponse(h)
+        val positionResponse = positionResponse(h, response)
+        val halfResponse = velocityResponse(h * 0.5)
+        val halfPositionResponse = positionResponse(h * 0.5, halfResponse)
+        val drive = motorVoltage * accelerationPerVolt
+        require(drive.isFinite())
+        var angle = angleRad
+        var velocity = angularVelocityRadPerSec
+        repeat(steps) {
+            val initialAcceleration = drive - gravityAcceleration * Math.cos(angle)
+            val midpoint = angle + velocity * halfResponse + initialAcceleration * halfPositionResponse
+            require(midpoint.isFinite())
+            val midpointAcceleration = drive - gravityAcceleration * Math.cos(midpoint.coerceIn(0.0, maxAngle))
+            val nextAngle = angle + velocity * response + midpointAcceleration * positionResponse
+            val nextVelocity = velocity * decay + midpointAcceleration * response
+            require(nextAngle.isFinite() && (nextVelocity * (180.0 / Math.PI)).isFinite())
+            angle = nextAngle.coerceIn(0.0, maxAngle)
+            velocity = if (nextAngle <= 0.0 || nextAngle >= maxAngle) 0.0 else nextVelocity
         }
+        angleRad = angle
+        angularVelocityRadPerSec = velocity
+    }
+
+    private fun velocityResponse(h: Double): Double {
+        val x = dampingRate * h
+        return if (x < 1e-4) h * (1.0 - x / 2.0 + x * x / 6.0 - x * x * x / 24.0)
+        else -Math.expm1(-x) / dampingRate
+    }
+
+    private fun positionResponse(h: Double, response: Double): Double {
+        val x = dampingRate * h
+        // Series avoids cancellation in h - velocityResponse(h), including zero damping.
+        return if (x < 1e-4) h * h * (0.5 - x / 6.0 + x * x / 24.0 - x * x * x / 120.0)
+        else (h - response) / dampingRate
     }
 
     /** Current pivot angle in degrees */
@@ -70,8 +94,9 @@ class IntakePivotSim(
     val velocityDegreesPerSec: Double
         get() = angularVelocityRadPerSec * (180.0 / Math.PI)
 
-    /** Resets the pivot to 0 degrees */
+    /** Resets to a finite angle within the physical 0..120 degree range, with zero velocity. */
     fun reset(initialAngleDegrees: Double = 0.0) {
+        require(initialAngleDegrees.isFinite() && initialAngleDegrees in 0.0..120.0)
         angleRad = initialAngleDegrees * (Math.PI / 180.0)
         angularVelocityRadPerSec = 0.0
     }
