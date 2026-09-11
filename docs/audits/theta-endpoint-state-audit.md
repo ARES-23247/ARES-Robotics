@@ -1,6 +1,6 @@
 # Theta path endpoints and reusable search state
 
-Pass 182, 2026-09-11. Focused verification passed; full candidate validation is in progress.
+Pass 182, 2026-09-11. Validation completed for this pass; the repository-wide audit remains open.
 
 ## Confirmed fixes
 
@@ -30,9 +30,20 @@ Baseline and focused XML are under `ARESLib-Kotlin/build/audit-pass182-verified-
 
 Candidate `17.0.6-rc.ba468110f1bb` binds library tree
 `ba468110f1bb6aa3fe08bd98c26853a08b540745`. Full library tests, API checks and local
-publication were started. Serial consumers, uniquely versioned template bundles, final
-policy checks and coverage-ledger updates remain required. Local versions are ARES/FTC/FRC
-17.0.6, XRP/Lightbot 3.0.6 and Studio 7.0.7. Nothing was pushed, released or tested physically.
+publication passed: 2,219 library tests. Serial consumers passed: FTC 156 tests and APK
+assembly, FRC 305 tests, FTC starter 14 tests and APK assembly, FRC starter 34 tests,
+Studio shared 31 and gateway 18 tests, and Studio app 1,822 passed with six opt-in skips.
+All executed tests had zero failures/errors. Policy and documentation-link checks passed.
+
+Four uniquely versioned canonical template archives were generated, their dependency
+manifests inspected, and hashes pinned in resources and CI. Studio preflight and project
+creation accepted the new bundles. Local versions are ARES/FTC/FRC 17.0.6, XRP/Lightbot
+3.0.6 and Studio 7.0.7. Nothing was pushed, released or tested physically.
+
+The six skips cover fresh generic starter builds, official archive integration,
+representative generated starter simulation, native chooser, performance baseline and
+physical dashboard validation. Source-product builds do not substitute for those opt-in
+runs. Exact test names and hashes are preserved in the evidence summary.
 
 This establishes safety of the returned polyline relative to the inflated cell grid,
 not swept-body/follower behavior or the fidelity of physical obstacle rasterization.
