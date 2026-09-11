@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "b0c318453977da5ec1a273b6bef7daf51d6799b4ba9106f21ab38f3ad415eb8f",
+      "sha256": "7ab98b0167e5102256b465f6e8ef46310cbfc75fbfe77bddf166f3ddab653ac6",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11824,6 +11824,56 @@
       "evidence": [
         "docs/audits/studio-field-canvas-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass148-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasItemGestures.kt": {
+      "sha256": "0a8b2c27c34d43ec881b59b311bca3f1a58141a3758bcf58330f85cec74dc6e9",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; fix omitted view rotation in shared double-click/context-menu item lookup. All item kinds tested under pan/zoom/rotation; remaining pointerInput capture/update behavior, polygon interiors, invalid viewport and live interaction review open.",
+      "evidence": [
+        "docs/audits/studio-field-item-hit-audit.md",
+        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasDragTarget.kt": {
+      "sha256": "d51c6f929a430e49168cbdc7a49190f46ae024ce4712ffe6ae8b00f62a2b7549",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full selection DTO/sealed target/exhaustive resolver review: bounded waypoint precedence, field-control gating, stable IDs and heading flags. Five drag-target tests pass; complete gesture lifecycle and stale object IDs beyond resolver scope excluded.",
+      "evidence": [
+        "docs/audits/studio-field-item-hit-audit.md",
+        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/FieldItemHitTest.kt": {
+      "sha256": "5e8fcaf0136bc772588bcbd1fe7b9bbe11ce668866cfcf60a0558af3ff586967",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-test review: extracted original omission fails rotated obstacle lookup; corrected helper passes all item kinds, all leagues and three angles plus priority/no-hit behavior. No native pointer event dispatch claim.",
+      "evidence": [
+        "docs/audits/studio-field-item-hit-audit.md",
+        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasGesturesTest.kt": {
+      "sha256": "648be1748bef2685869509955368a4edf18b6fc5bcff9ad9b79578dc0a717bd0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-test review: typed target selection, stale waypoint fallback, field-mode gating, invalid boundary indices and heading/previous-heading propagation. Full app suite passes.",
+      "evidence": [
+        "docs/audits/studio-field-item-hit-audit.md",
+        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-field-item-hit-audit.md": {
+      "sha256": "c35c2cc297c0876c8d93b9b7468a8e08ff728977bae675a248858811a34e9bbd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report reviewed against production diff, before-fix failure and final XML:1766 passed/six opt-in skipped. Distinguishes pure hit lookup evidence from unverified pointer lifecycle and polygon interiors.",
+      "evidence": [
+        "docs/audits/studio-field-item-hit-audit.md",
+        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/"
       ]
     }
   }

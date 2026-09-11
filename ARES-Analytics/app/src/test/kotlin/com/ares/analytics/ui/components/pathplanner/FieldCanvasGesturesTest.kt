@@ -6,6 +6,19 @@ import kotlin.test.assertNull
 
 class FieldCanvasGesturesTest {
     @Test
+    fun `waypoint bounds and heading flags remain valid when field controls are disabled`() {
+        for ((index, count) in listOf(-1 to 3, 0 to 0, 3 to 3, Int.MAX_VALUE to 3)) {
+            assertNull(FieldCanvasGestureSelection(waypointIndex = index, obstacleId = "stale")
+                .dragTarget(waypointCount = count, obstacleControlsEnabled = false))
+        }
+        assertEquals(FieldCanvasDragTarget.Waypoint(2, heading = false, previousHeading = true),
+            FieldCanvasGestureSelection(waypointIndex = 2, isDraggingPrevHeading = true)
+                .dragTarget(waypointCount = 3, obstacleControlsEnabled = false))
+        assertEquals(FieldCanvasDragTarget.FieldWaypoint("field", heading = true, position = false),
+            FieldCanvasGestureSelection(fieldWaypointId = "field", isDraggingFieldWaypointHeading = true)
+                .dragTarget(waypointCount = 0, obstacleControlsEnabled = true))
+    }
+    @Test
     fun `newly hit waypoint remains the drag target for the current gesture`() {
         val selection = FieldCanvasGestureSelection(
             waypointIndex = 2,
