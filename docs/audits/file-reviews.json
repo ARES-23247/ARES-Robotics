@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "954f18ac5f128ada30f7a3dff7fbb2a60877374f76bf13c59e5be6d07341798e",
+      "sha256": "a34b8a9f9c5db397e43591f4754158372583276fb7bb45c10f9c2ba3fe713737",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5625,7 +5625,8 @@
         "docs/audits/frc-field-loader-boundary-audit.md: pass126 field loader records and self-fingerprint refreshed",
         "docs/audits/frc-factory-construction-cleanup-audit.md: pass127 factory cleanup records and self-fingerprint refreshed",
         "docs/audits/frc-regression-evidence-audit.md: pass128 test/fixture records and self-fingerprint refreshed",
-        "docs/audits/frc-build-selection-audit.md: pass129 dependencyselection records and self-fingerprint refreshed"
+        "docs/audits/frc-build-selection-audit.md: pass129 dependencyselection records and self-fingerprint refreshed",
+        "docs/audits/frc-native-extraction-audit.md: pass130 nativeextraction records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -10918,13 +10919,15 @@
       ]
     },
     "ARES-FRC/build.gradle": {
-      "sha256": "9c0034f894c74beb216c88a6c665d7d61d37510d1fd1449a90047daff5e4c2da",
+      "sha256": "31f4df1f1f47c94d3173d252ba7d966944a094d6bc93dc0485d13fdbd5ad5bb2",
       "review": "partial",
       "validation": "passed",
-      "scope": "Fullscript read focused candidate/BOM/source selection,generatedplumbing/sourceownership, testexecution/JNI setup, deployment/fetch safeguards. Candidateverify/testpassed with299unchangedtestresults reused. Remainingpartial:remoteSCPfailureinjection, nativeextraction/fatJARcontents, platformlaunch/deployment andcodegenoutputcacheanalysis.",
+      "scope": "Fullscript read focused candidate/BOM/source selection,generatedplumbing/sourceownership, testexecution/JNI setup, deployment/fetch safeguards. Candidateverify/testpassed with299unchangedtestresults reused. Remainingpartial:remoteSCPfailureinjection, nativeextraction/fatJARcontents, platformlaunch/deployment andcodegenoutputcacheanalysis. Pass130: Native-extraction scope: confirmed Copy retains sentinel evenrerun; changedtoSync in dedicatedbuild/jni/test-release andupdatedtestJNI/envpaths. Sentinelremoved;47realnativefiles byte-identical;299FRCtests freshlypassed. JAR inspected:no duplicateapplicationclasses, desktopnatives+duplicatemetadata retainedpendingpackagingdecision. Remoteoffset/deploy/platform/cache scopes remainpartial.",
       "evidence": [
         "docs/audits/frc-build-selection-audit.md",
-        "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json",
+        "docs/audits/frc-native-extraction-audit.md",
+        "ARESLib-Kotlin/build/audit-pass130-verified-evidence/summary.json"
       ]
     },
     "docs/audits/frc-build-selection-audit.md": {
@@ -10934,6 +10937,15 @@
       "scope": "Documents explicit-sourcefallbackdefect,fix,5isolatedsettingsconditions andreal sibling verification, reused299testresults, reviewedbuildmetadata and unresolvednative/deploy/efficiency scopes.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-native-extraction-audit.md": {
+      "sha256": "ce79b46efae5583e8080507cd1128cd48d3e4f326369fbac4797c79c86ba95c3",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents stale-native-output defect,isolatedSyncfix,47identicalbinaryhashes,299executedtests, JARmetadata/nativeinventoryandexplicitdeployment/packaginglimits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass130-verified-evidence/summary.json"
       ]
     }
   }
