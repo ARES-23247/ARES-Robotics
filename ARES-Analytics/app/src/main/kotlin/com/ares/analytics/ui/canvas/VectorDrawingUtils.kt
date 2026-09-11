@@ -29,20 +29,15 @@ internal fun DrawScope.drawVectorArrow(
     arrowHeadAngleRad: Double = Math.PI / 6.0,
     filledHead: Boolean = false
 ) {
-    val dx = end.x - start.x
-    val dy = end.y - start.y
+    if (!start.x.isFinite() || !start.y.isFinite() || !end.x.isFinite() || !end.y.isFinite() ||
+        !strokeWidth.isFinite() || strokeWidth < 0f || !arrowHeadLength.isFinite() || arrowHeadLength < 0f ||
+        !arrowHeadAngleRad.isFinite()) return
+    val dx = end.x.toDouble() - start.x
+    val dy = end.y.toDouble() - start.y
     val lengthSq = dx * dx + dy * dy
     if (lengthSq < 1e-4f) return
 
-    // Draw main arrow shaft
-    drawLine(
-        color = color,
-        start = start,
-        end = end,
-        strokeWidth = strokeWidth
-    )
-
-    val angle = atan2(dy.toDouble(), dx.toDouble())
+    val angle = atan2(dy, dx)
     val wing1Angle = angle - Math.PI + arrowHeadAngleRad
     val wing2Angle = angle - Math.PI - arrowHeadAngleRad
 
@@ -54,6 +49,9 @@ internal fun DrawScope.drawVectorArrow(
         (end.x + arrowHeadLength * cos(wing2Angle)).toFloat(),
         (end.y + arrowHeadLength * sin(wing2Angle)).toFloat()
     )
+    if (!wing1.x.isFinite() || !wing1.y.isFinite() || !wing2.x.isFinite() || !wing2.y.isFinite()) return
+
+    drawLine(color = color, start = start, end = end, strokeWidth = strokeWidth)
 
     if (filledHead) {
         val path = Path().apply {

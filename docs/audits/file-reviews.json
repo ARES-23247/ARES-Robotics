@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "df754524ec0620d932cb2ac34b4b7af45c7f6bd79547faa72398ff6010fee9d3",
+      "sha256": "fbff39e472b8f1f9ae2c3bb79cf39cd6b8b2288a06df703a1fd0ab1fc9d580bd",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12450,6 +12450,56 @@
       "evidence": [
         "docs/audits/studio-project-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass165-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/canvas/VectorDrawingUtils.kt": {
+      "sha256": "bd065000db02740aed2ccd72f9613a1d858b9d5a19fbe1203b8016574b3d5e13",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full arrow helper and current call sites: correct rear-facing wings, open/filled branch, short-vector no-op, finite/style/wing guards and widened coordinate subtraction. Actual offscreen raster tests pass. Current callers use open heads. No Studio-window, extreme renderer color-space or physical-display claim.",
+      "evidence": [
+        "docs/audits/studio-vector-formatters-audit.md",
+        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/util/AresFormatters.kt": {
+      "sha256": "ac36e382ff56ceee00ffa09f2c981db41de71856298ca4ab37f7db96ffce1639",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full immutable DateTimeFormatter utility: explicit US locale, captured system zone, three patterns and millisecond Instant conversion. Concurrent output agrees with independently prepared SimpleDateFormat expectations for representative epoch/leap/modern/post-2038 dates. OS zone changes after initialization and extreme chronology not certified.",
+      "evidence": [
+        "docs/audits/studio-vector-formatters-audit.md",
+        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/canvas/VectorDrawingUtilsTest.kt": {
+      "sha256": "c7d13db1fbb6c70f710380b1663a2ffbc1edb8090200e1f3047d6efd0541e84a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test offscreen raster review: horizontal/vertical shaft and rear wings, filled triangle vs open gap, blank zero/invalid drawing. No native Studio UI claim.",
+      "evidence": [
+        "docs/audits/studio-vector-formatters-audit.md",
+        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/util/AresFormattersTest.kt": {
+      "sha256": "3ff0eb0e0a1cf10530b32ffedbc9ab7f2420cfff29fd208bb3e6734880ee4a41",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: milliseconds and pattern shape; replaced tautological repeated-call equality with 200 four-thread operations against independent precomputed calendar expectations. No global locale/timezone mutation, own executor shutdown.",
+      "evidence": [
+        "docs/audits/studio-vector-formatters-audit.md",
+        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-vector-formatters-audit.md": {
+      "sha256": "58b71e33704fedd6947c074a103237ba66460b32f3e6b485bd783ddbe421fcc0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against source/caller inspection, six focused tests including observed offscreen raster, full app XML and policy/link results; scope limits explicit.",
+      "evidence": [
+        "docs/audits/studio-vector-formatters-audit.md",
+        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json"
       ]
     }
   }
