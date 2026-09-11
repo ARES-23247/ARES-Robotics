@@ -1,6 +1,6 @@
 # Costmap raster and pathfinding heap
 
-Pass 181, 2026-09-11. Focused verification passed; full candidate validation is in progress.
+Pass 181, 2026-09-11. Validation completed for this pass; the repository-wide audit remains open.
 
 ## Fixes and evidence
 
@@ -29,13 +29,23 @@ tests were added after removing the unbounded loops; the old implementation was 
 running on those inputs. Evidence lives in
 `ARESLib-Kotlin/build/audit-pass181-verified-evidence/`.
 
-## Remaining validation and scope
+## Validation and remaining scope
 
 Candidate `17.0.5-rc.fec5be5c4f2c` binds library tree
 `fec5be5c4f2cc0fd245f02883e131057a9dc786a`. Full library/API/local publication was
-started. Serial consumer tests, refreshed immutable Studio bundles, final policy checks
-and ledger updates remain required. Planned local versions are ARES/FTC/FRC 17.0.5,
-XRP/Lightbot 3.0.5 and Studio 7.0.6. No push, release or physical validation.
+completed: 2,211 library tests passed, as did API checks and local publication.
+Serial consumers passed: FTC 156 tests and APK assembly, FRC 305 tests, FTC starter
+14 tests and APK assembly, FRC starter 34 tests, Studio shared 31 and gateway 18 tests,
+and Studio app 1,822 passed with six opt-in skips. All executed tests had zero failures
+or errors. Policy and documentation-link checks passed.
+
+Four canonical starter archives were regenerated under new unique names, their manifest
+versions inspected, and their SHA-256 hashes pinned in both resource metadata and CI.
+Studio's preflight and real project-creation tests accepted them. Local versions are
+ARES/FTC/FRC 17.0.5, XRP/Lightbot 3.0.5 and Studio 7.0.6. No push, release or physical
+validation. The six skips cover fresh generic starter builds, official archive integration,
+representative generated starter simulation, native chooser, performance baseline and
+physical dashboard validation; source-product tests do not substitute for these runs.
 
 Costmap remains partial: world-to-cell conversion still saturates to Int at extreme
 coordinates/radii, and static element rotation/shape rasterization and invalid world

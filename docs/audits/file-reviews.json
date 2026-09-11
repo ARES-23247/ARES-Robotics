@@ -3312,10 +3312,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "ceaccc4eb26ff651234ac7de62e29be02ad04408f09583e5dca101639a550b84",
+      "sha256": "695b52237b5e757e056fa8be8af72c74db0c4cb081414de3f648a861ae9948dc",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Frozen tree 5b8edabe1731ad74332c15d408a4586050b92334 equals HEAD library tree. Candidate 17.0.4-rc.5b8edabe1731 passed library/API/publication and serial consumer validation.",
+      "scope": "Frozen library tree fec5be5c4f2cc0fd245f02883e131057a9dc786a matches HEAD. Candidate 17.0.5-rc.fec5be5c4f2c passed full library/API/local publication and serial consumers.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3530,7 +3530,9 @@
         "docs/audits/mechanism-integration-audit.md",
         "ARESLib-Kotlin/build/audit-pass109-verified-evidence/summary.json",
         "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5547,7 +5549,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "1aa30d5375c3c19475d8608ce2eab3452581dfbaaad798c4fab2a7060fb68732",
+      "sha256": "77c81d3a235d4444b7fbc77addc4c3c11aed94b0acc147a6fcaafb2d9d31cd95",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12965,33 +12967,39 @@
       ]
     },
     "release/ares-versions.properties": {
-      "sha256": "bc69452044ce3ce77fb35cc1447ada3b38c6b2102fbfa3c8f1bd6d3ae64718b4",
+      "sha256": "89ab12a889a8665d06442744c9fce956b047e88003a29f04905064ce5433db58",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "All canonical version fields and repository identity reviewed. ARES 17.0.4, Studio 7.0.5 and uniquely versioned regenerated templates pass alignment and integrity checks; no public publication claimed.",
+      "scope": "Canonical ARES 17.0.5, Studio 7.0.6 and unique template versions verified through policy, generated archive manifests and consumer preflight; no public publication claimed.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     },
     "release/starter-artifacts.properties": {
-      "sha256": "ee0ce6d93bc99d8ad38bb0508bf3dc81eb73953fc0e0cfa050f1d5657b9157fa",
+      "sha256": "a3cd4cc29301cdc5a49b4972903a579f93246c4577a67d82497072aab359bbfa",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "All four SHA-256 identities match independently reproduced canonical archives and bundled resource copies. Template creation and full Studio tests pass; source content review tracked separately.",
+      "scope": "All four hashes match newly generated canonical archives, resource copies and preflight; real template creation passes. Does not claim physical validation or fresh exported builds.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     },
     ".github/workflows/build-distributions.yml": {
-      "sha256": "4939f31b247fe8371a2eeefaf76ec327e585c1ab48350cc4fdca922a9f155d09",
+      "sha256": "144b2a42e0b505b680086805c32895dbb4e95b0bdb903d8a9882c486c16051c4",
       "review": "partial",
       "validation": "passed",
-      "scope": "Version and four template URL/hash pins aligned with canonical manifests and verified by Studio preflight. Remaining packaging workflow behavior is not fully reviewed in this pass.",
+      "scope": "Library/app and four template URL/hash pins match the canonical manifests and Studio preflight. Remaining workflow execution behavior is outside this pass.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     },
     "docs/audits/pathing-cell-traversal-audit.md": {
@@ -13004,44 +13012,102 @@
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.4.zip": {
-      "sha256": "4d3244d79fff92f0e7cf317df57a2ec1719b171f808dc9d8e105896dd148b7a2",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.5.zip": {
+      "sha256": "6ce5ad2da964c99ca55df6bd21febb596729af5de3d9c9e8d1d64494dd9681b1",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Generated artifact accounted for by canonical exporter, repeated byte-identical build, matching pinned hash and dependency manifest, and successful Studio template creation. This does not mark every embedded source file reviewed or prove fresh exported-project builds.",
+      "scope": "Generated artifact accounted for by canonical export, inspected dependency manifest, pinned hash equality and successful Studio preflight/template creation. Embedded sources retain their separate review status; no fresh exported-project build claim.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.4.zip": {
-      "sha256": "2e95793375227004296102d2cc79a32af94a7c3ed60b92fa78b5830c56683aef",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.5.zip": {
+      "sha256": "147541acd5bf4c6c78894f98d6a7eb40f1854744ac0e3c964728f18f2f38bfe6",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Generated artifact accounted for by canonical exporter, repeated byte-identical build, matching pinned hash and dependency manifest, and successful Studio template creation. This does not mark every embedded source file reviewed or prove fresh exported-project builds.",
+      "scope": "Generated artifact accounted for by canonical export, inspected dependency manifest, pinned hash equality and successful Studio preflight/template creation. Embedded sources retain their separate review status; no fresh exported-project build claim.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.4.zip": {
-      "sha256": "8271a91a0d9cc75e20217ce9bb0e5d65f0eef2aa14af375fb233a240da7d4429",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.5.zip": {
+      "sha256": "2814f034b8ef1f5a8a27f985fa3d5b9f6836732a1bfb25a71a3bc646555d8de9",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Generated artifact accounted for by canonical exporter, repeated byte-identical build, matching pinned hash and dependency manifest, and successful Studio template creation. This does not mark every embedded source file reviewed or prove fresh exported-project builds.",
+      "scope": "Generated artifact accounted for by canonical export, inspected dependency manifest, pinned hash equality and successful Studio preflight/template creation. Embedded sources retain their separate review status; no fresh exported-project build claim.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.4.zip": {
-      "sha256": "0bf3a17803077ffd83652c7b15785c0f70d5197810d2d2e364e176901ba6f340",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.5.zip": {
+      "sha256": "11ed8f5ac3a295d5df19ff9b12c2a4f0740fdbbf5384c6947685ac27d34021ea",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Generated artifact accounted for by canonical exporter, repeated byte-identical build, matching pinned hash and dependency manifest, and successful Studio template creation. This does not mark every embedded source file reviewed or prove fresh exported-project builds.",
+      "scope": "Generated artifact accounted for by canonical export, inspected dependency manifest, pinned hash equality and successful Studio preflight/template creation. Embedded sources retain their separate review status; no fresh exported-project build claim.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/Costmap.kt": {
+      "sha256": "5f2bcd2e9d7c00c9cf06bd4d229a6fbc0c33db67b07cce7828a0f49b9a1bb970",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Bounded circular rasterization, zero/invalid inflation, overflow-safe squared masks and expiry verified with seven new regressions, existing pathing suites, full library and consumer validation. World-coordinate saturation, rotated/static shape rasterization and invalid world-coordinate handling remain open.",
+      "evidence": [
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/planner/ThetaStarSearchState.kt": {
+      "sha256": "3a2ab832f1ce1e62d2014ee6a8894e4e6723d6cb0e6134487a2d150812c19270",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "LongHeap reviewed and verified for zero-capacity growth, empty extraction, signed ordering, duplicates, buffer reuse and overflow-safe index arithmetic. PlannerState generation initialization, parent sentinels and capacity boundaries remain open.",
+      "evidence": [
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/CostmapRasterBoundaryTest.kt": {
+      "sha256": "1f71713e5958db4b923dd970bdcb60e579558acd55e53ca17382b54f9d12c953",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Seven tests cover independently calculated masks, overlap accounting, invalid and zero radii, bounded huge-radius execution, exact tangent cells, time overflow and allocation. Three pre-fix failures preserved; full candidate tests pass.",
+      "evidence": [
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/LongHeapBoundaryTest.kt": {
+      "sha256": "84560ac742b1e63ef46fb23a0c1c5628b86c7b6c332231030506595997f7c2f3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Three tests compare heap behavior with a sorted reference across zero capacity, empty extraction, duplicates, extremes, growth and buffer reuse. Two pre-fix failures preserved; full candidate tests pass.",
+      "evidence": [
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/costmap-raster-heap-audit.md": {
+      "sha256": "5a075edc11bacff964877b418a81b8fb565271391bac9a1e8f2b97660a7c7a2b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evidence, complete validation counts and explicit open geometry/planner-state limitations checked against observed results.",
+      "evidence": [
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     }
   }
