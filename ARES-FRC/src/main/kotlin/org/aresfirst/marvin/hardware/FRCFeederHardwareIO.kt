@@ -26,6 +26,10 @@ class FRCFeederHardwareIO(
 
     private val feederCurrent = motor.statorCurrent
 
+    // Retain argument groups; the Phoenix list overload avoids per-refresh vararg arrays.
+    private val resetMotors = arrayOf(motor)
+    private val currentSignals = listOf<BaseStatusSignal>(feederCurrent)
+
     init {
         motor.optimizeBusUtilization()
         setUpdateFrequencies(10.0, feederCurrent)
@@ -43,8 +47,8 @@ class FRCFeederHardwareIO(
     }
 
     override fun refresh() {
-        if (anyTalonResetOccurred(motor)) resetDetected = true
-        cachedCurrentValid = BaseStatusSignal.refreshAll(feederCurrent).isOK &&
+        if (anyDeviceResetOccurred(resetMotors) { it.hasResetOccurred() }) resetDetected = true
+        cachedCurrentValid = BaseStatusSignal.refreshAll(currentSignals).isOK &&
             feederCurrent.valueAsDouble.isFinite() && feederCurrent.valueAsDouble >= 0.0
     }
 

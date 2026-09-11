@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "7f10d9d49a9da653d3d0c411f3e16b05c38e56ae42595f4c5f1344ce139a6c36",
+      "sha256": "4a497c9f66360cbc0093ba8c85f5a0de9b294c81fdd187a7d4acda7fd06c7672",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5615,7 +5615,8 @@
         "docs/audits/frc-native-drive-task-audit.md: pass116 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-redux-state-audit.md: pass117 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-sim-inventory-audit.md: pass118 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-teleop-feedback-audit.md: pass119 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-teleop-feedback-audit.md: pass119 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-hardware-refresh-audit.md: pass120 scoped records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9818,6 +9819,95 @@
       "scope": "Documents full controller/main and existing/new test coverage, seven reproduced feedback failures, bounded timing/output fixes, FRC271/coreGC5/policy evidence and explicit desktop/HID/physical timing limits. Separate hardware vararg follow-up remains open.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass119-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/hardware/FRCClimberHardwareIO.kt": {
+      "sha256": "c09eb2269f799a1027a5b462a8c4d4ac564ac283612c0adc0fc91312c23f8b01",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Partial reset/refresh review: retain motor array and exact ordered signal groups; inline non-short-circuit reset sampler and Phoenix list overload remove caller argument allocations. Configuration reset/homing invalidation, numeric validity, separate signal groups and update rates unchanged. Before/after compiled refresh verified; FRC274 and reset3/coreGC5 pass. Output, homing/configuration, tuning/close and physical-device boundaries remain outside completed scope.",
+      "evidence": [
+        "docs/audits/frc-hardware-refresh-audit.md",
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/hardware/FRCCowlHardwareIO.kt": {
+      "sha256": "99114b56c9c28935f7e8257b87ff3276a0ba81f7e02f4c3dd03e50721bb33cdc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Partial reset/refresh review: retain motor array and exact ordered signal groups; inline non-short-circuit reset sampler and Phoenix list overload remove caller argument allocations. Configuration reset/homing invalidation, numeric validity, separate signal groups and update rates unchanged. Before/after compiled refresh verified; FRC274 and reset3/coreGC5 pass. Output, homing/configuration, tuning/close and physical-device boundaries remain outside completed scope.",
+      "evidence": [
+        "docs/audits/frc-hardware-refresh-audit.md",
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/hardware/FRCFeederHardwareIO.kt": {
+      "sha256": "c5a54953943611d535d7db481b17912b494e0889a354fe6cbbdc4b6e7e740d8d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Partial reset/refresh review: retain motor array and exact ordered signal groups; inline non-short-circuit reset sampler and Phoenix list overload remove caller argument allocations. Configuration reset/homing invalidation, numeric validity, separate signal groups and update rates unchanged. Before/after compiled refresh verified; FRC274 and reset3/coreGC5 pass. Output, homing/configuration, tuning/close and physical-device boundaries remain outside completed scope.",
+      "evidence": [
+        "docs/audits/frc-hardware-refresh-audit.md",
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/hardware/FRCFloorHardwareIO.kt": {
+      "sha256": "c355a90a3e506b03d0de8fd1bfd624364b02fe637ab9acd258b9619a49d1ef2d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Partial reset/refresh review: retain motor array and exact ordered signal groups; inline non-short-circuit reset sampler and Phoenix list overload remove caller argument allocations. Configuration reset/homing invalidation, numeric validity, separate signal groups and update rates unchanged. Before/after compiled refresh verified; FRC274 and reset3/coreGC5 pass. Output, homing/configuration, tuning/close and physical-device boundaries remain outside completed scope.",
+      "evidence": [
+        "docs/audits/frc-hardware-refresh-audit.md",
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/hardware/FRCFlywheelHardwareIO.kt": {
+      "sha256": "aaa935b2bdcf12016c68533385268254e3618ce0c6be037bab9fa01fa0ba3fd7",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Partial reset/refresh review: retain motor array and exact ordered signal groups; inline non-short-circuit reset sampler and Phoenix list overload remove caller argument allocations. Configuration reset/homing invalidation, numeric validity, separate signal groups and update rates unchanged. Before/after compiled refresh verified; FRC274 and reset3/coreGC5 pass. Output, homing/configuration, tuning/close and physical-device boundaries remain outside completed scope.",
+      "evidence": [
+        "docs/audits/frc-hardware-refresh-audit.md",
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/hardware/FRCIntakeHardwareIO.kt": {
+      "sha256": "caf7287f0fc4e8f38199ccc6ab52663a32554a3f59eef52f7eeddea59f97dae3",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Partial reset/refresh review: retain motor array and exact ordered signal groups; inline non-short-circuit reset sampler and Phoenix list overload remove caller argument allocations. Configuration reset/homing invalidation, numeric validity, separate signal groups and update rates unchanged. Before/after compiled refresh verified; FRC274 and reset3/coreGC5 pass. Output, homing/configuration, tuning/close and physical-device boundaries remain outside completed scope.",
+      "evidence": [
+        "docs/audits/frc-hardware-refresh-audit.md",
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/hardware/TalonFXExtensions.kt": {
+      "sha256": "12b621ee2d517a62d639a0f878536a531b1a80a981f3e82fe7e4b9a32637c23d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Partial reset helper review: replaced per-call Talon vararg with retained generic device array and inline sampler. All1/2/4device reset-bit combinations consumed exactly once, repeat clear, empty input and read exception propagation tested. Isolated four-device100k warmed samples allocate0bytes. Interface/configuration/close helper behavior is not claimed fully validated in this scope.",
+      "evidence": [
+        "docs/audits/frc-hardware-refresh-audit.md",
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/hardware/DeviceResetAuditTest.kt": {
+      "sha256": "133caac3341eff4864c88febe2832714f2316f147a3fedf6a187e23df4d91cc3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed3methods covering complete reset bit combinations for1/2/4devices, repeated consumption, empty groups, exception identity and measured0bytes/100k retained-group samples after100k warmup. Fake devices verify sampling, not CAN/vendor allocation.",
+      "evidence": [
+        "docs/audits/frc-hardware-refresh-audit.md",
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-hardware-refresh-audit.md": {
+      "sha256": "4046bd86fb86fa5931fc9ffa99c82b4dbdbfdafd50e9a69dab6358b36ae82da3",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents six partial hardware refresh scopes and partial reset-helper scope, exact signal membership/order and bytecode18to0argument-array evidence, actual vendor-list implementation/internal JNI allocation limits, FRC274/reset3/coreGC5/policy and no hardware/deadline claim.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
       ]
     }
   }

@@ -34,6 +34,11 @@ class FRCIntakeHardwareIO(
     private val pivotCurrent = pivotMotor.statorCurrent
     private val rollerCurrent = rollerMotor.statorCurrent
 
+    // Retain argument groups; the Phoenix list overload avoids per-refresh vararg arrays.
+    private val resetMotors = arrayOf(pivotMotor, rollerMotor)
+    private val positionSignals = listOf<BaseStatusSignal>(pivotPosition)
+    private val currentSignals = listOf<BaseStatusSignal>(pivotCurrent, rollerCurrent)
+
     init {
         pivotMotor.optimizeBusUtilization()
         rollerMotor.optimizeBusUtilization()
@@ -85,14 +90,14 @@ class FRCIntakeHardwareIO(
     }
 
     override fun refresh() {
-        if (anyTalonResetOccurred(pivotMotor, rollerMotor)) {
+        if (anyDeviceResetOccurred(resetMotors) { it.hasResetOccurred() }) {
             resetDetected = true
             homed = false
         }
-        val positionRefreshOk = BaseStatusSignal.refreshAll(pivotPosition).isOK
+        val positionRefreshOk = BaseStatusSignal.refreshAll(positionSignals).isOK
         cachedPivotAngleValid = homed && positionRefreshOk &&
             pivotPosition.valueAsDouble.isFinite()
-        cachedCurrentValid = BaseStatusSignal.refreshAll(pivotCurrent, rollerCurrent).isOK &&
+        cachedCurrentValid = BaseStatusSignal.refreshAll(currentSignals).isOK &&
             pivotCurrent.valueAsDouble.isFinite() && pivotCurrent.valueAsDouble >= 0.0 &&
             rollerCurrent.valueAsDouble.isFinite() && rollerCurrent.valueAsDouble >= 0.0
     }

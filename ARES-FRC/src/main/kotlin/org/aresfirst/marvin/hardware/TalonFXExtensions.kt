@@ -61,11 +61,14 @@ internal fun closeTalons(vararg motors: TalonFX) {
     firstFailure?.let { throw it }
 }
 
-/** Samples every Phoenix reset indicator so no device reboot is hidden by short-circuiting. */
-internal fun anyTalonResetOccurred(vararg motors: TalonFX): Boolean {
+/**
+ * Samples every cached device entry so a reset cannot hide later devices through short-circuiting.
+ * The caller retains the array; the inline sampler creates no per-loop function object.
+ */
+internal inline fun <T> anyDeviceResetOccurred(devices: Array<out T>, readReset: (T) -> Boolean): Boolean {
     var resetOccurred = false
-    for (motor in motors) {
-        if (motor.hasResetOccurred()) resetOccurred = true
+    for (device in devices) {
+        if (readReset(device)) resetOccurred = true
     }
     return resetOccurred
 }
