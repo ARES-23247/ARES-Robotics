@@ -60,14 +60,12 @@ class ARESMecanumDiagnostic : LinearOpMode(), AresFtcRuntimeOptionsProvider {
     override val aresFtcRuntimeOptions: AresFtcRuntimeOptions
         get() = AresRuntimePolicy.options
 
-    private fun configureMotor(definition: MecanumDiagnosticMotorDefinition): DcMotorEx? = runCatching {
-        hardwareMap.get(DcMotorEx::class.java, definition.hardwareMapName).also { motor ->
-            motor.power = 0.0
-            motor.direction = definition.direction
-            motor.zeroPowerBehavior = GeneratedAresFtcMecanumRuntimeConfig.driveZeroPowerBehavior
-            motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
-        }
-    }.getOrNull()
+    private fun configureMotor(motor: DcMotorEx, definition: MecanumDiagnosticMotorDefinition): Boolean = runCatching {
+        motor.power = 0.0
+        motor.direction = definition.direction
+        motor.zeroPowerBehavior = GeneratedAresFtcMecanumRuntimeConfig.driveZeroPowerBehavior
+        motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
+    }.isSuccess
 
     override fun runOpMode() {
         val definitions = mecanumDiagnosticMotorDefinitions()
@@ -76,33 +74,40 @@ class ARESMecanumDiagnostic : LinearOpMode(), AresFtcRuntimeOptionsProvider {
         try {
             telemetry.addData("Status", "Initializing generated drivetrain mapping…")
             var index = 0
-            var allFound = true
+            var allConfigured = true
             while (index < definitions.size) {
                 val definition = definitions[index]
-                motors[index] = configureMotor(definition)
-                val found = motors[index] != null
-                allFound = allFound && found
+                val motor = runCatching { hardwareMap.get(DcMotorEx::class.java, definition.hardwareMapName) }.getOrNull()
+                // Retain every discovered motor before configuration can throw, so finally retries neutral.
+                motors[index] = motor
+                val configured = motor != null && configureMotor(motor, definition)
+                allConfigured = allConfigured && configured
                 telemetry.addData(
                     "${definition.label} [${definition.hardwareMapName}]",
-                    if (found) "FOUND · ${definition.direction}" else "MISSING · MOTION BLOCKED",
+                    when {
+                        motor == null -> "MISSING · MOTION BLOCKED"
+                        !configured -> "CONFIGURATION FAILED · MOTION BLOCKED"
+                        else -> "FOUND · ${definition.direction}"
+                    },
                 )
                 index++
             }
             telemetry.addData(
                 "Status",
-                if (allFound) "Ready. Put wheels safely off the floor, then press Play."
-                else "Fix Driver Station hardware names before pressing Play.",
+                if (allConfigured) "Ready. Put wheels safely off the floor, then press Play."
+                else "Fix missing hardware or motor configuration before pressing Play.",
             )
             telemetry.update()
 
             waitForStart()
-            if (!allFound || isStopRequested) {
-                telemetry.addData("Motion blocked", "All four generated motor names must be present.")
+            if (!allConfigured || isStopRequested) {
+                telemetry.addData("Motion blocked", "All four generated motors must configure successfully and Stop must be clear.")
                 telemetry.update()
                 return
             }
 
             var lastTelemetryMs = 0L
+            var hasTelemetryTime = false
             while (opModeIsActive()) {
                 powers[0] = if (gamepad1.a) TEST_POWER else 0.0
                 powers[1] = if (gamepad1.b) TEST_POWER else 0.0
@@ -116,8 +121,10 @@ class ARESMecanumDiagnostic : LinearOpMode(), AresFtcRuntimeOptionsProvider {
                 }
 
                 val nowMs = RobotClock.currentTimeMillis()
-                if (nowMs - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
+                val elapsed = nowMs - lastTelemetryMs
+                if (!hasTelemetryTime || nowMs < lastTelemetryMs || elapsed < 0L || elapsed >= TELEMETRY_PERIOD_MS) {
                     lastTelemetryMs = nowMs
+                    hasTelemetryTime = true
                     telemetry.addData("--- Hold one control; release to stop ---", "")
                     index = 0
                     while (index < definitions.size) {

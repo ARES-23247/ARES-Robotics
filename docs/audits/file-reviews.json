@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "884b007bccedbde5e2e934ab58b911472bd71969e0984c3ad089de99bccbd358",
+      "sha256": "01e8da8851ea8a82c7cc19f6795ffcb77a1bf23449c3ca6bfbf9a3093ba3248b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12728,6 +12728,36 @@
       "evidence": [
         "docs/audits/ftc-teleop-construction-audit.md",
         "ARESLib-Kotlin/build/audit-pass172-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESMecanumDiagnostic.kt": {
+      "sha256": "13bf32cb55e5d7381850fd138e881e520393d7f59fd32118e965683303d1d15f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file review: generated identity mapping, retain discovered motors before failed configuration, all-configured motion gate, cached hold inputs/indexed output loops, low-rate telemetry including first update, final neutral attempts despite failures. Mocked missing/configuration/active/cleanup failures and normal command tested. Physical directions, actual neutralization and timing excluded; rewind/overflow throttle inspected statically.",
+      "evidence": [
+        "docs/audits/ftc-diagnostic-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass173-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/MecanumDiagnosticContractTest.kt": {
+      "sha256": "db47649099c8c802c32a87088e1f30d4e6c3b1ecbb6c8111d41df891000d1c2b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-test review: generated mapping; failed neutral retry, failed direction and independent cleanup failure, missing hardware gate, active write failure cleanup, held A button and final zero/first telemetry. Clock restored. 141 full FTC tests pass.",
+      "evidence": [
+        "docs/audits/ftc-diagnostic-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass173-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-diagnostic-cleanup-audit.md": {
+      "sha256": "af2ab6176e56dda426cf3695294ef42f1f974499a753e3fa1fdf698f75dc1e45",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass173 report checked against before/focused/full XML and root verification; output attempts distinguished from physical neutralization and no timing benchmark claimed.",
+      "evidence": [
+        "docs/audits/ftc-diagnostic-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass173-verified-evidence/summary.json"
       ]
     }
   }
