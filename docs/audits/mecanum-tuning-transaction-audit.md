@@ -43,3 +43,23 @@ localization, Pinpoint configuration and typed callback transactions remain sepa
 cache invalidation alone does not prove they are atomic. Hardware dynamics, physical loop deadlines,
 calibration accuracy and usable Studio-window behavior are not established by SDK doubles or host
 tests. The whole-monorepo audit remains active.
+
+## Final validation
+
+Before freezing, all 310 FTC hardware tests and all library API checks passed. The 73 selected affected tests include 15 new methods, twelve of which failed before corresponding fixes. Public API is unchanged.
+
+Source `188f379730a20216f5428c492f44aa2d6f4fa315`; library tree `1efc651e01d5d4bb161d0fed8206ede1d1ec71c5`.
+Local candidate `17.0.3-rc.1efc651e01d5`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 1979 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs. The six conditional Studio skips remain three fresh-template checks, native file chooser, physical dashboard and optional performance baseline.
+
+Copied XML, per-file hashes, build logs and candidate BOM identity are recorded under `ARESLib-Kotlin/build/audit-pass86-verified-evidence/summary.json`. No physical timing or new standalone dashboard benchmark is claimed.
