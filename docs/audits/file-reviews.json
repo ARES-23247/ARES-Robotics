@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "abb57f822beeee9d9394acdfecafc7998219189e60bc3f8821f4a8aa8081c85c",
+      "sha256": "f6151ab692fb2122284899a2a8e73e68211190484907378b677e4903b9eef0b4",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5621,7 +5621,8 @@
         "docs/audits/frc-superstructure-boundary-audit.md: pass122 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-historical-log-audit.md: pass123 historical-data records and canonical self-fingerprint refreshed",
         "docs/audits/frc-simulator-input-config-audit.md: pass124 configuration records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-generated-controls-profile-audit.md: pass125 control/profile records and self-fingerprint refreshed"
+        "docs/audits/frc-generated-controls-profile-audit.md: pass125 control/profile records and self-fingerprint refreshed",
+        "docs/audits/frc-field-loader-boundary-audit.md: pass126 field loader records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8773,7 +8774,7 @@
       "sha256": "df1ed460fe5609c5121ab63a5d255673450e7c26e3513a633781621899433264",
       "review": "partial",
       "validation": "passed",
-      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open. Pass102: Changed internal health helpers to direct array parameters, retaining early failure semantics. Traced periodic update/health/calibration/SysId sequence, mode safety calls and cleanup ordering. Initialization, simulation and comprehensive lifecycle/exception integration remain partial. Pass104: Disable now uses tested attempt-all sequence; initialization guards/order retained. Close reuses equivalent tested error collection, preserving finally clearing and order. One extracted-original-sequence regression reproduced skipped cleanup. Same-Throwable suppression hypothesis disproven, not a new defect. Initialization, reentrancy and nested teardown integration remain partial. Pass106: Retains returned IO before mechanism casts/topology/robot construction; initialization failure immediately invokes partial teardown. Synchronized close guard prevents repeated native close attempts. Read registry and FrcSwerveRobot ownership handoff, plus installed CANBus API (no close contract). Remaining partial: full native fault injection, concurrent/repeated initialization, nested teardown and simulation integration.",
+      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open. Pass102: Changed internal health helpers to direct array parameters, retaining early failure semantics. Traced periodic update/health/calibration/SysId sequence, mode safety calls and cleanup ordering. Initialization, simulation and comprehensive lifecycle/exception integration remain partial. Pass104: Disable now uses tested attempt-all sequence; initialization guards/order retained. Close reuses equivalent tested error collection, preserving finally clearing and order. One extracted-original-sequence regression reproduced skipped cleanup. Same-Throwable suppression hypothesis disproven, not a new defect. Initialization, reentrancy and nested teardown integration remain partial. Pass106: Retains returned IO before mechanism casts/topology/robot construction; initialization failure immediately invokes partial teardown. Synchronized close guard prevents repeated native close attempts. Read registry and FrcSwerveRobot ownership handoff, plus installed CANBus API (no close contract). Remaining partial: full native fault injection, concurrent/repeated initialization, nested teardown and simulation integration. Pass126: Field-contract loader section reviewed: reset diagnostic, shared validated decode requiringFRC/tags, exception-to-null/error propagation andWPILib conversion. Sixinvalid/recovery cases andfullRPY/tagheight/dimension conversion pass; startup-only duplicate validation intentionallyretained. Remaining lifecycle/concurrency/native integration scopes staypartial.",
       "evidence": [
         "docs/audits/frc-calibration-cache-audit.md",
         "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json",
@@ -8782,7 +8783,9 @@
         "docs/audits/frc-disable-cleanup-audit.md",
         "ARESLib-Kotlin/build/audit-pass104-verified-evidence/summary.json",
         "docs/audits/frc-initialization-handoff-audit.md",
-        "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json",
+        "docs/audits/frc-field-loader-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass126-verified-evidence/summary.json"
       ]
     },
     "docs/audits/frc-calibration-cache-audit.md": {
@@ -10738,6 +10741,35 @@
       "scope": "Records full controlscheme/project/tuning/test review, meaningful generated runtime regression,289FRCtests passing, intentional repeated command emissions, no new defect and explicit physical/safety coverage limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/FrcFieldContractLoaderTest.kt": {
+      "sha256": "607b689de54fe0cf02d98c90973d98f5ac04706862afd328afa6452ddad06b1c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full9invocation review: original missingtags/wrongleague/basiclayout checks plus6invalid-doc recovery cases andfull3Dorientation/outside-playable-field conversion. Real decoder/validator/WPILib layout; allpassed; no nativecamera/HIL.",
+      "evidence": [
+        "docs/audits/frc-field-loader-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass126-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinConfigFieldGeometryTest.kt": {
+      "sha256": "c97017a01365f5c4798d235784220371ca17799788e1eea5fdc2b9645a83eed1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full2test review: canonical bumper/sourcegeometry/shot-origin identity, rearshooter signs andinch-to-meter speaker target arithmetic. Passes current generated/season configuration; physical measurements and original drawing provenance not independently re-established.",
+      "evidence": [
+        "docs/audits/frc-field-loader-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass126-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-field-loader-boundary-audit.md": {
+      "sha256": "0d77f06e6fe3d98465099447baf03aa654f56f2230c98a9f9344a01c292ce190",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents fieldtest review,7newinvocations coveringmalformeddata/recovery/fullorientation,296passingFRCtests, startupvalidation efficiency judgment and explicit physical/concurrency limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass126-verified-evidence/summary.json"
       ]
     }
   }
