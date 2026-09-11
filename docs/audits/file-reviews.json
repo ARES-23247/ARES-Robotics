@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "490f4bf1cf0a0d01b73b004c24d786e9b6c62cf42d5b10167a02a0834fb9114c",
+      "sha256": "2c4e62aad31967d0a1a6c31064a015320f2507e223fe34f56b83474274f33294",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -6545,15 +6545,17 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/AprilTagMapPresetCatalogTest.kt": {
-      "sha256": "8797bb7a263569611bd179ca26b542394fbd63445fc283668ec2f3537260a734",
+      "sha256": "0071e2b6c18fbf434e3fc7aacea9e158d0ada02c575086299cd66a952e85d6b0",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass71: Full two-method fixture review and Studio execution: all bundled maps readable, correctly typed, nonempty, canonical validation, unique catalog IDs/paths. Does not assert physical calibration or independent coordinate agreement.",
+      "scope": "Full five-test review: canonical validation/codec of every catalog preset, unique IDs/paths, stable-ID tag sets, missing-resource diagnostic and blank XRP dimensions/content. Focused tests pass without restricting additional season entries.",
       "evidence": [
         "docs/audits/xrp-coordinate-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass71-focused.log",
         "ARESLib-Kotlin/build/audit-pass71-library.log",
-        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json",
+        "docs/audits/studio-preset-resource-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
       ]
     },
     "docs/audits/xrp-coordinate-contract-audit.md": {
@@ -12104,6 +12106,56 @@
       "evidence": [
         "docs/audits/studio-field-image-loader-audit.md",
         "ARESLib-Kotlin/build/audit-pass156-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/AprilTagMapPresetCatalog.kt": {
+      "sha256": "eb2a667d9283ac6e02316cd7c4d1c609134c627cabbf98452a0a013d1ac247f7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full catalog/DTO/resource-reader review: typed league filtering, stable metadata, UTF8 reader closure and missing-resource error. All catalog resources validate and known tag identity labels agree; world-coordinate provenance excluded.",
+      "evidence": [
+        "docs/audits/studio-preset-resource-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/field-presets/xrp/xrp_blank.json": {
+      "sha256": "d84bb3e0eb631b385c016704613db66204ec15d97a1765e3fc48de7cbb57341f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full declarative review: schema/revision, XRP type, right/up frame and station/symmetry metadata, exact 100x56 inch-to-meter dimensions, empty field content and blank image path. Canonical decode/validator test passes; no competition-layout or physical calibration claim.",
+      "evidence": [
+        "docs/audits/studio-preset-resource-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/field-presets/frc/2024-crescendo.json": {
+      "sha256": "12e2f2d46741c62647db58b3cb2820bbd2a02ee8cfa64d3b50d9d255c6c562c0",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full JSON read and structural/runtime/tag-ID consistency validation (16 tags). Physical positions/orientations and independent WPILib provenance comparison remain open.",
+      "evidence": [
+        "docs/audits/studio-preset-resource-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/field-presets/ftc/2025-2026-decode-team23247.json": {
+      "sha256": "755de0d00d3f566587e3ca7f4e25949ac16bbf99a3c7af20a4d2b602fb2ac5c7",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full JSON read and structural/runtime/tag-ID consistency validation (Team23247 IDs20/24, family/size/pose metadata). Independent team-source comparison and physical mounting calibration remain open.",
+      "evidence": [
+        "docs/audits/studio-preset-resource-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-preset-resource-contract-audit.md": {
+      "sha256": "c99a0f255196968c0bbf73008f54a974f73487dd56c5e43fc127af32f8260c88",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against catalog/resource source and five passing test results. Distinguishes complete catalog/practice declarations from partial real-world season-map provenance; no production changes or full-suite rerun claimed.",
+      "evidence": [
+        "docs/audits/studio-preset-resource-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
       ]
     }
   }
