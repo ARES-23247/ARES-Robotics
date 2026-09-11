@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "4ea4ed7ad8d2aa596298be817b015a7a01960b33d5f599f6e9efa2e98c639301",
+      "sha256": "83deae778262fe5a439d5423519ac16e53327a2bfeb4351befc8b8b5eee2678e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5606,7 +5606,8 @@
         "docs/audits/frc-dashboard-input-lifecycle-audit.md: pass107 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-simulated-feedback-audit.md: pass108 scopes and canonical self-fingerprint refreshed",
         "docs/audits/mechanism-integration-audit.md: pass109 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-physics-boundary-audit.md: pass110 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-physics-boundary-audit.md: pass110 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-swerve-tracking-audit.md: pass111 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9164,6 +9165,35 @@
       "scope": "Reconciles five reproduced boundary failures, seven new tests,194passingFRC tests and scoped world/entry/field review. Explicitly retains rebuild and swerve ownership work; no physical or simulator-window claim.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/Dyn4jSwerveModuleSim.kt": {
+      "sha256": "24ad8478c42bf6ff2a29a1cffdc4c7eb3fde145bac8a5672445d7488184385b7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full tracker review: CCW field/robot velocity transforms, gains/error units, finite command/feedback/result validation, pending force ownership, bounded consumed-object caches and single-thread Dyn4j callback lifetime. Three alias scenarios and invalid input reproduced; corrected update allocation measured4MB->0bytes per100k ticks. Bursts, manual clear/reuse, actual integration and static-body semantics tested. Dyn4j iterator allocation and physical traction calibration remain outside this file guarantee.",
+      "evidence": [
+        "docs/audits/frc-swerve-tracking-audit.md",
+        "ARESLib-Kotlin/build/audit-pass111-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/SwerveTrackingAuditTest.kt": {
+      "sha256": "938904a8cb60f4dc1aba812fcb2f7392b6ff77289762b4774cbc0ee3c98a9388",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed nine methods with real Dyn4j accumulation/world integration; final original-source baseline nine tests/five failures preserved. Allocation instrumentation isolates update from third-party iterator allocations; tests cover ownership/reuse/clearing/bursts/frames/gains/input/overflow/static bodies. Full FRC203 and coreGC5 passed.",
+      "evidence": [
+        "docs/audits/frc-swerve-tracking-audit.md",
+        "ARESLib-Kotlin/build/audit-pass111-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-swerve-tracking-audit.md": {
+      "sha256": "706e02e728fbb2a4558006f671003163da908db7eb6a099a4d66fd941aa3a1d2",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles two correctness defects, allocation inefficiency, five failing regressions among nine new tests, bounded snapshot reuse, corrected before/after instrumentation and full FRC/coreGC/policy evidence with explicit third-party and physical limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass111-verified-evidence/summary.json"
       ]
     }
   }
