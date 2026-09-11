@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "ea1b59b527e22d80ab43d99c7c83f335c392e1dd94a73562d6b9adab2111203e",
+      "sha256": "fdf956782bb62bfc504f9a8d02d084757b65bbc758a1030206eb7fade10d109a",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5611,7 +5611,8 @@
         "docs/audits/frc-controller-facade-audit.md: pass112 scopes and canonical self-fingerprint refreshed",
         "docs/audits/shared-guidance-audit.md: pass113 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-simulator-telemetry-audit.md: pass114 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-autonomous-lifecycle-audit.md: pass115 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-autonomous-lifecycle-audit.md: pass115 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-native-drive-task-audit.md: pass116 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9647,13 +9648,34 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/generatedruntime/FrcGeneratedRoutineCapabilities.kt": {
-      "sha256": "7ad31ff8013060e69c91e6231a4124e21002706e79821a905d51b70aba05839c",
-      "review": "partial",
+      "sha256": "c0394be3c2020ff6c9875e3599dd07ebf1ccf3f7cb29c490970e745f7db64234",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Read full adapter for boundary tracing. Verified configured alliance transforms and normalized generated drive sink via existing numeric/runtime tests; traced footprint projection and native task construction. Remains partial: task resource-mask/locking integration, delegate exception cleanup, trajectory limit extremes and marker/group lifecycle combinations need dedicated tests/review. No confirmed defect claimed for those unresolved paths.",
+      "scope": "Read full adapter for boundary tracing. Verified configured alliance transforms and normalized generated drive sink via existing numeric/runtime tests; traced footprint projection and native task construction. Remains partial: task resource-mask/locking integration, delegate exception cleanup, trajectory limit extremes and marker/group lifecycle combinations need dedicated tests/review. No confirmed defect claimed for those unresolved paths. Pass116: Completed remaining full adapter review: configured transform and drive sink, fresh-pose trajectory generation, four preset limit mappings, engine rejection, marker/during/arrival task construction, resource declarations and delegate lifetime. Fixed zero mask, caller-list aliasing, execution after timeout, lost cancellation, end/release exception cleanup and status priority. Resource snapshots validated at init; footprint caches duplicate trig. Twelve direct tests plus full FRC237/coreGC5 passed; arbitrary concurrent registry mutation/physical HIL excluded.",
       "evidence": [
         "docs/audits/frc-autonomous-lifecycle-audit.md",
-        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json",
+        "docs/audits/frc-native-drive-task-audit.md",
+        "ARESLib-Kotlin/build/audit-pass116-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/generatedruntime/NativeDriveTaskAuditTest.kt": {
+      "sha256": "5db2e1d9d80b06a238532f544d4085c4bc94c4f81990af866a61fe64a3e49032",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed twelve native-wrapper methods. Eight original methods reproduced six defects; four supplemental methods cover terminal priority/end-time status, registry drift, preset limits/fallback, engine/overflow rejection. Tests include real native path/resource/group/corner math plus injected delegates for terminal and callback failures. Fixtures attempt cleanup and restore registry/clock; deliberate injected cleanup failures are contained.",
+      "evidence": [
+        "docs/audits/frc-native-drive-task-audit.md",
+        "ARESLib-Kotlin/build/audit-pass116-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-native-drive-task-audit.md": {
+      "sha256": "1c5f9d011a0836381612dc8c10a01a5eeb2ce2405dd626a6b738fac55afca086",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles completed partial adapter review, six reproduced defects, twelve new methods/eight-before-six-fail evidence, numeric boundary checks, FRC237/coreGC5/policy results and explicit task/hardware/concurrency limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass116-verified-evidence/summary.json"
       ]
     }
   }

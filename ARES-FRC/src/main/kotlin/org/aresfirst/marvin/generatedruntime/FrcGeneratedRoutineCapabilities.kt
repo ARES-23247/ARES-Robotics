@@ -5,6 +5,7 @@ import com.areslib.frc.FrcSwerveRobot
 import org.aresfirst.marvin.generated.GeneratedAresProjectCapabilities
 import org.aresfirst.marvin.marvin.MarvinConfig
 import org.aresfirst.marvin.robot.FrcAutoCapabilities
+import org.aresfirst.marvin.FrcCleanupFailures
 import com.areslib.math.coordinate.AllianceMirroring
 import com.areslib.math.coordinate.CoordinateTransformers
 import com.areslib.math.coordinate.FieldOrigin
@@ -33,6 +34,7 @@ import com.areslib.sequencer.SequentialTaskGroup
 import com.areslib.sequencer.Task
 import com.areslib.sequencer.TaskStateMachine
 import com.areslib.sequencer.TaskStatus
+import com.areslib.sequencer.TaskResources
 import com.areslib.state.Alliance
 import com.areslib.state.RobotState
 
@@ -102,7 +104,11 @@ class FrcGeneratedRoutineCapabilities(
     override fun createDriveTask(step: RoutineDriveStep): Task {
         val transformedTarget = transform(step.target)
         return NativeFrcDriveTask(
-            step = step,
+            step = step.copy(
+                markers = step.markers.toList(),
+                duringActionKeys = step.duringActionKeys.toList(),
+                arrivalActionKeys = step.arrivalActionKeys.toList(),
+            ),
             target = transformedTarget,
             planner = trajectoryPlanner,
             follower = follower,
@@ -168,10 +174,24 @@ private class NativeFrcDriveTask(
     private val limitsForPreset: (TrajectoryPreset) -> TrajectoryLimits
 ) : Task {
     override val name: String = "NativeFrcDrive(${target.x}, ${target.y})"
+    // Groups snapshot masks before initialize; include every action this wrapper can run.
+    private val actionResources = buildMap<String, Long> {
+        for (key in step.duringActionKeys + step.arrivalActionKeys + step.markers.map { it.actionKey }) {
+            put(key, requireNotNull(NamedCommands.registeredResources(CommandKey(key))) {
+                "Generated action '$key' is not registered"
+            })
+        }
+    }
+    override val requiredResources: Long = actionResources.values.fold(TaskResources.DRIVE) { mask, resource -> mask or resource }
     private var delegate: Task? = null
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
+        for ((key, resources) in actionResources) {
+            require(NamedCommands.registeredResources(CommandKey(key)) == resources) {
+                "Generated action '$key' resources changed after this drive task was built"
+            }
+        }
         val preset = parsePreset(step.motionPresetKey)
         val preferredEngine = step.preferredEngineKey?.let(::parseEngine)
         val generation = planner.generate(
@@ -216,26 +236,30 @@ private class NativeFrcDriveTask(
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return false
         val task = checkNotNull(delegate) { "Drive task was not initialized" }
-        if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-            return false
-        }
+        if (propagateTerminalStatus(task)) return false
         val completed = task.isCompleted(state, elapsedMs)
-        if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-        }
-        return completed
+        return !propagateTerminalStatus(task) && completed
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         super.execute(state, elapsedMs)
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return emptyList()
         val task = checkNotNull(delegate) { "Drive task was not initialized" }
+        if (propagateTerminalStatus(task)) return emptyList()
         val actions = task.execute(state, elapsedMs)
-        if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-        }
+        propagateTerminalStatus(task)
         return actions
+    }
+
+    private fun propagateTerminalStatus(task: Task): Boolean = when (TaskStateMachine.getStatus(task)) {
+        TaskStatus.FAILED -> { TaskStateMachine.markFailed(this); true }
+        TaskStatus.CANCELLED -> {
+            if (TaskStateMachine.getStatus(this) != TaskStatus.FAILED) TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+            true
+        }
+        else -> false
     }
 
     override fun pause(state: RobotState): List<RobotAction> = delegate?.pause(state).orEmpty()
@@ -244,24 +268,35 @@ private class NativeFrcDriveTask(
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         val task = delegate
-        val failed = task != null && TaskStateMachine.getStatus(task) == TaskStatus.FAILED
-        val actions = task?.end(state, interrupted || failed).orEmpty()
-        task?.releaseRuntimeState()
         delegate = null
-        super.end(state, interrupted || failed)
+        val terminal = task != null && propagateTerminalStatus(task)
+        val failures = FrcCleanupFailures()
+        var actions: List<RobotAction> = emptyList()
+        failures.attempt {
+            try { actions = task?.end(state, interrupted || terminal).orEmpty() }
+            catch (error: Throwable) { TaskStateMachine.markFailed(this); throw error }
+        }
+        if (task != null) propagateTerminalStatus(task)
+        failures.attempt {
+            try { task?.releaseRuntimeState() }
+            catch (error: Throwable) { TaskStateMachine.markFailed(this); throw error }
+        }
+        failures.attempt { super.end(state, interrupted || terminal || TaskStateMachine.getStatus(this) == TaskStatus.FAILED) }
+        failures.throwIfAny()
         return actions
     }
 
     override fun releaseRuntimeState() {
-        delegate?.releaseRuntimeState()
+        val task = delegate
         delegate = null
-        super.releaseRuntimeState()
+        try { task?.releaseRuntimeState() }
+        finally { super.releaseRuntimeState() }
     }
 
     private fun namedTask(key: String): Task {
         val command = CommandKey(key)
         require(NamedCommands.contains(command)) { "Generated action '$key' is not registered" }
-        return NamedCommands.task(command)
+        return NamedCommands.task(command, actionResources.getValue(key))
     }
 
     private fun parsePreset(key: String): TrajectoryPreset = when (key.lowercase()) {
@@ -305,10 +340,10 @@ internal fun generatedSwerveTeleopCommand(
 fun requireFrcRoutinePoseInsideField(pose: Pose2d, label: String) {
     val halfLength = MarvinConfig.ROBOT_BUMPER_LENGTH_METERS / 2.0
     val halfWidth = MarvinConfig.ROBOT_BUMPER_WIDTH_METERS / 2.0
-    val projectedX = kotlin.math.abs(kotlin.math.cos(pose.heading.radians)) * halfLength +
-        kotlin.math.abs(kotlin.math.sin(pose.heading.radians)) * halfWidth
-    val projectedY = kotlin.math.abs(kotlin.math.sin(pose.heading.radians)) * halfLength +
-        kotlin.math.abs(kotlin.math.cos(pose.heading.radians)) * halfWidth
+    val headingCos = kotlin.math.abs(kotlin.math.cos(pose.heading.radians))
+    val headingSin = kotlin.math.abs(kotlin.math.sin(pose.heading.radians))
+    val projectedX = headingCos * halfLength + headingSin * halfWidth
+    val projectedY = headingSin * halfLength + headingCos * halfWidth
     require(
         pose.x in projectedX..(CoordinateTransformers.FRC_FIELD_LENGTH - projectedX) &&
             pose.y in projectedY..(CoordinateTransformers.FRC_FIELD_WIDTH - projectedY)
