@@ -7,10 +7,24 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
 class SwerveOffsetManagerTest {
+    private var originalStorageRoot: String? = null
+
+    @BeforeEach
+    fun rememberStorageRoot() {
+        originalStorageRoot = System.getProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY)
+    }
+
+    @AfterEach
+    fun restoreStorageRoot() {
+        if (originalStorageRoot == null) System.clearProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY)
+        else System.setProperty(SwerveOffsetManager.STORAGE_ROOT_PROPERTY, originalStorageRoot!!)
+    }
 
     @TempDir
     lateinit var tempDir: Path

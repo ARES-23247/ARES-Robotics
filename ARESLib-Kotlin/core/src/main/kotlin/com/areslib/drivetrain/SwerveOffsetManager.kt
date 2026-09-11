@@ -5,6 +5,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets
 import java.nio.file.AtomicMoveNotSupportedException
@@ -65,51 +66,76 @@ object SwerveOffsetManager {
      * Reads and parses a specified offset JSON file safely without nested conditional branches.
      */
     private fun readOffsetFile(file: File, tag: String): SwerveOffsetData? {
-        val validFile = file.takeIf { it.exists() && it.length() > 0 } ?: return null
-        return runCatching {
-            val json = validFile.readText()
+        return try {
+            if (!file.isFile || file.length() == 0L) return null
+            // Bound acquisition, not merely parsing after an arbitrarily large readText().
+            val json = file.bufferedReader().use { reader ->
+                val buffer = CharArray(1024)
+                val text = StringBuilder()
+                while (true) {
+                    val count = reader.read(buffer, 0,
+                        minOf(buffer.size, SwerveOffsetData.MAX_JSON_CHARS - text.length + 1))
+                    if (count < 0) break
+                    require(text.length + count <= SwerveOffsetData.MAX_JSON_CHARS) {
+                        "Swerve offset JSON exceeds ${SwerveOffsetData.MAX_JSON_CHARS} characters"
+                    }
+                    text.append(buffer, 0, count)
+                }
+                text.toString()
+            }
             val parsed = SwerveOffsetData.fromJsonString(json)
-            println("ARES SwerveOffsetManager: Loaded $tag offsets from ${validFile.absolutePath}")
+            println("ARES SwerveOffsetManager: Loaded $tag offsets from ${file.absolutePath}")
             parsed
-        }.getOrElse { e ->
+        } catch (e: Exception) {
             System.err.println("ARES SwerveOffsetManager: $tag read failed: ${e.message}")
             null
         }
     }
 
-    /** Returns the newest valid recovery backup for an explicit repair workflow. */
+    /**
+     * Returns the newest valid recovery backup by filesystem modification time, skipping
+     * invalid files. Equal modification times use filename order as a deterministic tie-break.
+     * This is explicit recovery only and never installs the returned offsets.
+     */
     fun loadLatestBackup(): SwerveOffsetData? {
         val backupDir = backupsDir.takeIf { it.exists() } ?: return null
-        val latestFile = backupDir.listFiles { _, name -> name.startsWith("swerve_offsets_") && name.endsWith(".json") }
-            ?.filter { it.length() > 0 }
-            ?.maxByOrNull { it.lastModified() }
-            ?: return null
-
-        return readOffsetFile(latestFile, "recovery backup")
+        val candidates = backupFiles(backupDir)
+            .sortedWith(compareByDescending<Backup> { it.modifiedMs }.thenByDescending { it.file.name })
+        for (candidate in candidates) {
+            val offsets = readOffsetFile(candidate.file, "recovery backup")
+            if (offsets != null) return offsets
+        }
+        return null
     }
 
     /**
      * Saves the calibrated offsets to local runtime flash, creates a timestamped backup,
      * and streams telemetry to NetworkTables.
+     * Each save has a distinct backup name, even at a fixed replay timestamp. The storage
+     * root is captured once per call. Runtime replacement commits before backup/telemetry;
+     * a later failure propagates but does not roll back the installed runtime file.
      *
      * @param offsets The newly calibrated [SwerveOffsetData].
      * @param telemetry Telemetry interface for broadcasting NetworkTables JSON updates.
      */
     fun saveRuntimeOffsets(offsets: SwerveOffsetData, telemetry: ITelemetry? = null) {
         val json = offsets.toJsonString()
+        val storageRoot = rootDir
+        val runtime = File(storageRoot, "swerve_offsets_runtime.json")
+        val backupDirectory = File(storageRoot, "backups")
 
         // 1. Atomically replace the authoritative runtime file. Persistence failure is surfaced;
         // callers must not report a calibration as successful when it was not durably installed.
-        atomicWrite(runtimeFile, json)
-        println("ARES SwerveOffsetManager: Successfully saved runtime offsets to ${runtimeFile.absolutePath}")
+        atomicWrite(runtime, json)
+        println("ARES SwerveOffsetManager: Successfully saved runtime offsets to ${runtime.absolutePath}")
 
-        // 2. Atomically create/replace the timestamped backup.
+        // 2. Atomically publish a distinct timestamped backup; clock resolution is not identity.
         val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
             .format(Date(com.areslib.util.RobotClock.currentTimeMillis()))
-        val backupFile = File(backupsDir, "swerve_offsets_$timestamp.json")
+        val backupFile = File(backupDirectory, "swerve_offsets_${timestamp}_${UUID.randomUUID()}.json")
         atomicWrite(backupFile, json)
         println("ARES SwerveOffsetManager: Saved backup to ${backupFile.absolutePath}")
-        pruneOldBackups()
+        pruneOldBackups(backupDirectory)
 
         // 3. Broadcast to Telemetry / NetworkTables
         telemetry?.let { t ->
@@ -145,15 +171,20 @@ object SwerveOffsetManager {
     /**
      * Keeps only the 10 most recent backup files to prevent storage congestion.
      */
-    private fun pruneOldBackups() {
-        val backupFiles = backupsDir.listFiles { _, name -> name.startsWith("swerve_offsets_") && name.endsWith(".json") }
-            ?.sortedBy { it.lastModified() }
-            ?: return
+    private data class Backup(val file: File, val modifiedMs: Long)
+
+    private fun backupFiles(directory: File): List<Backup> = directory.listFiles { file ->
+        file.isFile && file.name.startsWith("swerve_offsets_") && file.name.endsWith(".json")
+    }?.map { Backup(it, it.lastModified()) }.orEmpty()
+
+    private fun pruneOldBackups(directory: File) {
+        val backupFiles = backupFiles(directory)
+            .sortedWith(compareBy<Backup> { it.modifiedMs }.thenBy { it.file.name })
 
         val excess = backupFiles.size - 10
         if (excess > 0) {
             for (i in 0 until excess) {
-                backupFiles[i].delete()
+                Files.deleteIfExists(backupFiles[i].file.toPath())
             }
         }
     }

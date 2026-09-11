@@ -68,6 +68,6 @@ data class SwerveOffsetData(
             )
         }
 
-        private const val MAX_JSON_CHARS = 16_384
+        internal const val MAX_JSON_CHARS = 16_384
     }
 }
