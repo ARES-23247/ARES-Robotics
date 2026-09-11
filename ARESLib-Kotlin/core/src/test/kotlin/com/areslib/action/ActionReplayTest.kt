@@ -6,7 +6,6 @@ import com.areslib.math.geometry.Vector3
 import com.areslib.pathing.Path
 import com.areslib.pathing.PathEvent
 import com.areslib.pathing.PathPoint
-import com.areslib.reducer.rootReducer
 import com.areslib.state.Alliance
 import com.areslib.state.DriveMode
 import com.areslib.state.SubsystemState
@@ -81,7 +80,9 @@ class ActionReplayTest {
             decoded.map { gson.toJsonTree(it, it.javaClass) }
         )
 
-        val expectedFinal = actions.fold(com.areslib.state.RobotState(), ::rootReducer)
+        val liveStore = com.areslib.Store()
+        actions.forEach(liveStore::dispatch)
+        val expectedFinal = liveStore.state
         val replayedStates = ActionReplay.replayLog(log)
         assertEquals(actions.size + 1, replayedStates.size)
         assertEquals(gson.toJsonTree(expectedFinal), gson.toJsonTree(replayedStates.last()))

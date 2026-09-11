@@ -1,9 +1,9 @@
 package com.areslib.action
 
 /**
- * Class implementation for Start Calibration Sweep.
- *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Requests a camera calibration sweep beginning at [startHeading] radians, CCW-positive.
+ * [cameraIndex] identifies the producer's camera. This event performs no hardware IO;
+ * the consuming calibration owner must validate configuration and authorize motion.
  */
 data class StartCalibrationSweep(
     val startHeading: Double,
@@ -12,9 +12,10 @@ data class StartCalibrationSweep(
 ) : RobotAction
 
 /**
- * Class implementation for Calibration Frame Logged.
- *
- * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ * Calibration observation with [gyroHeading] in CCW-positive radians and producer-defined
+ * camera-to-tag transform values. The array is caller-owned and mutable; retained/asynchronous
+ * consumers must snapshot it during dispatch. ActionLogger does so before queuing the record.
+ * Transform layout and camera/tag validity belong to the producer/consumer calibration contract.
  */
 data class CalibrationFrameLogged(
     val gyroHeading: Double,
