@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "4b1f8e90fe4229dc5f6c5f92972c4bc52074e255db7d6a444932caba72e7ec4c",
+      "sha256": "3f257b684a757b0b44f27eb550aad0cc780bcb1b5bb9455c3a47c8ce461426d3",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11734,6 +11734,56 @@
       "evidence": [
         "docs/audits/studio-session-model-validation-audit.md",
         "ARESLib-Kotlin/build/audit-pass146-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldDocumentMapper.kt": {
+      "sha256": "4492e1f06129f79fd11703f1f84a048c7879193228c8950e815b1fd19243b941",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; validated/fixed legacy name-derived catalog ID collision and preservation of authored identity/mass. Remaining duplicate-name, type/shape migration, revision boundary and persistence interoperability review open; not full validation.",
+      "evidence": [
+        "docs/audits/studio-field-migration-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass147-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/fieldeditor/FieldEditorTransforms.kt": {
+      "sha256": "f5f6e1943d6af2daf97f2647601e5d035113edcc065eba9777e146f7da6221c5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full math review: FTC centered and FRC/XRP dimension-based circle/rectangle/polygon reflections, rectangle orientation equivalence modulo 180 degrees, metadata preservation. Five tests including independent transformed-corner checks pass; UI rendering and physics polygon acceptance excluded.",
+      "evidence": [
+        "docs/audits/studio-field-migration-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass147-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldDocumentMapperAuditTest.kt": {
+      "sha256": "a1e0fca5e4c313785a14a57d5b956b7d6fe589895e4736077b370e6948182901",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-test review: two before-fix collision failures; distinct slug/non-ASCII type IDs, authored ID/mass protection and stable next-save identities pass after correction. Catalog field normalization beyond identity is not certified.",
+      "evidence": [
+        "docs/audits/studio-field-migration-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass147-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/fieldeditor/FieldEditorTransformsTest.kt": {
+      "sha256": "4b1168adbdce66bec842bf48750f4246032ead4bc5ce15c381ca542e46eae845",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-test review: existing FTC/FRC/metadata checks plus rotated rectangle occupied-corner equivalence in both axes/all leagues and XRP circle/triangle coordinates. Full app suite passes; no rendered GUI assertion.",
+      "evidence": [
+        "docs/audits/studio-field-migration-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass147-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-field-migration-geometry-audit.md": {
+      "sha256": "b221c9267cdb03e61432ba485bb5470ba3e29ba81e78028b17f926a4f03527d1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report reviewed against source diff, retained failure evidence and final app XML; 1760 pass/six skipped; mapper partial and external/UI/hardware limitations explicit.",
+      "evidence": [
+        "docs/audits/studio-field-migration-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass147-verified-evidence/"
       ]
     }
   }

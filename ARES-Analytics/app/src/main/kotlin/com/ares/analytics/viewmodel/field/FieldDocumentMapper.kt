@@ -65,7 +65,16 @@ internal object FieldDocumentMapper {
             } ?: if (priorType?.name == piece.type) {
                 priorType
             } else {
-                typesByName[piece.type.lowercase()] ?: defaultElementType(piece.type).also {
+                typesByName[piece.type.lowercase()] ?: defaultElementType(piece.type).let { generated ->
+                    // Legacy names can share a slug, including non-ASCII names. Never replace a
+                    // catalog entry already referenced by an authored or previously migrated piece.
+                    var id = generated.id
+                    var suffix = 2
+                    while (id in existingTypes) {
+                        id = "${generated.id}-${suffix++}"
+                    }
+                    generated.copy(id = id)
+                }.also {
                     existingTypes[it.id] = it
                     typesByName[it.name.lowercase()] = it
                 }
