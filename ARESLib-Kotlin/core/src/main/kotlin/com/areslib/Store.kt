@@ -21,6 +21,11 @@ import com.areslib.reducer.rootReducer
  * Each store also owns one fixed-capacity EKF runtime. Raw drive and vision actions are processed
  * there before a private derived action carries only observable estimator output through [reducer].
  * Mutable replay history is therefore neither global nor reachable from any published [state].
+ * If estimator preparation or a reducer throws, that private history may already have changed.
+ * This store then rejects further dispatches, preserving the last published snapshot and the
+ * original failure as the cause. The lifecycle owner must neutralize hardware and replace the
+ * failed store/robot before resuming; constructing a new store does not restore delayed history.
+ * Observer failures outside reduction do not invalidate estimator history.
  *
  * @param initialState State visible before the first dispatch.
  * @param reducer Pure transition function. It must not mutate [RobotState] or perform hardware IO.
@@ -30,6 +35,8 @@ class Store(
     private val reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
 ) {
     private val poseEstimatorRuntime = PoseEstimatorRuntime(initialState.drive.poseEstimator)
+    // Accessed only under the store monitor. No history copies or allocations on the healthy path.
+    private var reductionFailure: Throwable? = null
 
     @Volatile var state: RobotState = initialState
         private set
@@ -45,8 +52,9 @@ class Store(
 
     /**
      * Dispatches an action to the store, executing estimator middleware and the configured reducer
-     * synchronously on the caller's thread. All registered listeners are notified with the updated
-     * state after the public and private-derived reductions complete atomically.
+     * synchronously on the caller's thread. After the public and private-derived reductions commit,
+     * listeners are notified in registration order. A throwing listener stops notification and
+     * propagates to the caller; the state remains committed.
      *
      * Concurrent calls are serialized, although single-loop ownership is recommended for
      * deterministic ordering.
@@ -56,6 +64,7 @@ class Store(
     fun dispatch(action: RobotAction) {
         val currentState: RobotState
         synchronized(this) {
+            checkReductionHealthy()
             actionListener?.invoke(action)
             state = reduceWithRuntime(state, action)
             currentState = state
@@ -69,10 +78,14 @@ class Store(
     /**
      * Reduces [actions] atomically with respect to other dispatches, then notifies subscribers once
      * with the final state. The action observer is still invoked once per action.
+     * This serializes a batch; it is not a rollback transaction. A failure retains earlier committed
+     * actions, skips the final notification, and propagates to the caller. A reduction failure also
+     * invalidates this store. An empty successful batch still notifies with the current state.
      */
     fun dispatchAll(vararg actions: RobotAction) {
         val currentState: RobotState
         synchronized(this) {
+            checkReductionHealthy()
             val actionCount = actions.size
             for (i in 0 until actionCount) {
                 actionListener?.invoke(actions[i])
@@ -104,12 +117,24 @@ class Store(
     }
 
     private fun reduceWithRuntime(currentState: RobotState, action: RobotAction): RobotState {
-        val prepared = poseEstimatorRuntime.prepare(currentState, action)
-        var reduced = reducer(currentState, prepared.publicAction)
-        val estimatorAction = prepared.estimatorAction
-        if (estimatorAction != null) {
-            reduced = reducer(reduced, estimatorAction)
+        try {
+            val prepared = poseEstimatorRuntime.prepare(currentState, action)
+            var reduced = reducer(currentState, prepared.publicAction)
+            val estimatorAction = prepared.estimatorAction
+            if (estimatorAction != null) {
+                reduced = reducer(reduced, estimatorAction)
+            }
+            return reduced
+        } catch (failure: Throwable) {
+            reductionFailure = failure
+            throw failure
         }
-        return reduced
+    }
+
+    private fun checkReductionHealthy() {
+        val failure = reductionFailure
+        if (failure != null) throw IllegalStateException(
+            "Store reduction previously failed; replace this store before dispatching again", failure
+        )
     }
 }

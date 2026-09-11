@@ -4,7 +4,7 @@ import com.areslib.Store
 import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
 import com.areslib.state.SubsystemState
-import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import java.lang.reflect.Modifier
 import java.math.BigDecimal
@@ -35,7 +35,7 @@ object ActionReplay {
     const val SCHEMA_VERSION: Int = 1
 
     private const val SUBSYSTEM_STATE_TYPE_FIELD = "_ares_subsystem_state_type"
-    private val gson = Gson()
+    private val gson = GsonBuilder().serializeNulls().create()
 
     private val builtInByName: Map<String, Class<out RobotAction>> = linkedMapOf(
         "DriveHardwareUpdate" to RobotAction.DriveHardwareUpdate::class.java,
@@ -93,6 +93,9 @@ object ActionReplay {
      * Registers a season/application action codec under [type].
      *
      * Registration is explicit and collision-safe; core action names/classes cannot be shadowed.
+     * Custom codecs must preserve a numeric `timestampMs` payload and return that same stable
+     * epoch after decoding. The interface's live-clock getter alone is not replayable. Custom
+     * constructors, adapters, and nested domain invariants remain the application's responsibility.
      */
     fun registerAction(type: String, clazz: Class<out RobotAction>) {
         require(type.isNotBlank()) { "Action type must not be blank" }
@@ -171,6 +174,12 @@ object ActionReplay {
             throw ActionReplayException("Action ${actionClass.name} encoded as a non-object payload")
         }
         val payload = element.asJsonObject
+        if (actionClass !in builtInByClass) {
+            val recordedTimestamp = payload.requiredLong("timestampMs")
+            if (recordedTimestamp != action.timestampMs) {
+                throw ActionReplayException("Action ${actionClass.name} encoded a different timestampMs")
+            }
+        }
         when (action) {
             is RobotAction.UpdateSubsystemState -> payload.addProperty(
                 SUBSYSTEM_STATE_TYPE_FIELD,
@@ -292,12 +301,16 @@ object ActionReplay {
             // Normalize once so the generic Gson adapter need not reparse the decimal epoch.
             payload.addProperty("timestampMs", timestampMs)
             validateCorePayload(payload, actionClass)
-            when (actionClass) {
+            val decoded = when (actionClass) {
                 RobotAction.UpdateSubsystemState::class.java -> decodeSubsystemUpdate(payload, timestampMs)
                 RobotAction.UpdateNamedSubsystemState::class.java -> decodeNamedSubsystemUpdate(payload, timestampMs)
                 else -> gson.fromJson(payload, actionClass)
                     ?: throw ActionReplayException("Action '$type' decoded to null")
             }
+            if (actionClass !in builtInByClass && decoded.timestampMs != timestampMs) {
+                throw ActionReplayException("Action '$type' decoded a different timestampMs")
+            }
+            decoded
         } catch (e: ActionReplayException) {
             throw e
         } catch (e: Exception) {

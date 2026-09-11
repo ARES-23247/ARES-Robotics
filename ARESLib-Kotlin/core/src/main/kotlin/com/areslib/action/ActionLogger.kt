@@ -1,7 +1,7 @@
 package com.areslib.action
 
 import com.areslib.util.RobotClock
-import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import java.io.BufferedWriter
 import java.io.File
 import java.io.IOException
@@ -39,7 +39,8 @@ class ActionLogger(
     mode: String = "Init",
     private val logDirectory: File? = null
 ) {
-    private val gson = Gson()
+    // Preserve explicit null members in the detached tree through the final writer boundary.
+    private val gson = GsonBuilder().serializeNulls().create()
     @Volatile private var requestedMode = mode
     /** Latest producer mode; each accepted action keeps its own enqueue-time mode. */
     val mode: String get() = requestedMode
