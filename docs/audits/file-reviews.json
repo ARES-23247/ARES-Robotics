@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "7f5c31eb7c7c6f48c52f7acd1413070a55036392ce0e4b0db0cae2080a8e033a",
+      "sha256": "9c60c77b1829f80f7383cf63f8bde8c6df9e4409db75f6fa1b7dfb7caeb84a18",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11438,6 +11438,26 @@
       "scope": "Pass138 report verified against mode metadata, failing/passing root-check regression, actual120-test XML and launcher/ignore observations; platform and broader integration limits explicit.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_xrp_simulator.py": {
+      "sha256": "0d0a8ed4e6158d092c4859162855a60da67672b383f1b852a1ae7ea81282ba7c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-test class and import helper reviewed. Aligned simulated motor/control dt20ms and assert speed/displacement; prove active output before frame loss, disabled state on returning values and explicit restart; registered shutdown cleanup. Collision case now requires progress to within1mm of contact. Field reload and receipt/hash cases retained. All120 host tests pass. Mock telemetry does not prove socket lease/session timing; no physical/GUI claim.",
+      "evidence": [
+        "docs/audits/xrp-simulator-test-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass139-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/xrp-simulator-test-evidence-audit.md": {
+      "sha256": "6cf18e78d24932a5e4a958c19c83b45fb5a96e77e96502330d8a8cf86ba73022",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass139 source-review and test-evidence report verified against runtime boundaries, strengthened existing tests and actual120-test XML. No production defect claim; explicit protocol and hardware limitations.",
+      "evidence": [
+        "docs/audits/xrp-simulator-test-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass139-verified-evidence/summary.json"
       ]
     }
   }
