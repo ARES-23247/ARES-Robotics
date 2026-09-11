@@ -65,7 +65,25 @@ offset subtraction, and this persistence API. Full action authorization/replay l
 is a separate scope. No physical wheel indexing, CANcoder response, flash power-loss
 durability, or whole-loop deadline was tested. The existing atomic-move fallback remains;
 host successful replacement does not prove crash durability on controller filesystems.
+Automatic controller-root detection, the unsupported-atomic-move fallback, and failures
+of cleanup/deletion itself were reviewed but were not forced by this host test suite.
 
 ## Final validation
 
-Pending final focused results and the frozen library/consumer matrix.
+The final source passed 17 focused tests and all library API checks before freezing. Twelve new methods include three failure-before regressions. Public API signatures are unchanged.
+
+Source `e2599f98053447154717a974408705604f8ca685`; library tree `af9e9c981c88fe2a6744accdd2f924d4317a18a1`.
+Local candidate `17.0.3-rc.af9e9c981c88`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2076 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; counts do not imply every test was freshly executed. Conditional Studio skips remain recorded in copied XML.
+
+Copied XML, per-file hashes, build logs and candidate BOM identity are recorded under `ARESLib-Kotlin/build/audit-pass91-verified-evidence/summary.json`. No physical calibration, flash crash-durability, loop deadline or usable Studio-window result is claimed.
