@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3f3cbf34f061e31fbd9c66a6462f8a586dc83be986c2518294f4118c7497bc03",
+      "sha256": "dd6139d460dd6213401bdc53b7f350d2a94a1d97b031b2243dbd9afaf725d3e8",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5609,7 +5609,8 @@
         "docs/audits/frc-physics-boundary-audit.md: pass110 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-swerve-tracking-audit.md: pass111 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-controller-facade-audit.md: pass112 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/shared-guidance-audit.md: pass113 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/shared-guidance-audit.md: pass113 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-simulator-telemetry-audit.md: pass114 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9494,6 +9495,45 @@
       "scope": "Reconciles15guidance+2Python whole-file reviews, partial workspace guide, confirmed cleanup/mode documentation errors, six existing tests and official source checks with explicit runtime/UI limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/Dyn4jSimTelemetryPublisher.kt": {
+      "sha256": "b6aa8247acc37067c93b00bb12fc7be544f1298a165dc74241188a5a170e3c9b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full publisher review: yaw/pitch/offset units, Redux truth/EKF/odom separation, synchronous buffer ownership, ground/flying identity, exact typed sizing, double-exact sequence wrap. Cached heading trig and cleared only removed legacy records. Six direct tests cover transforms/frames/records/growth/shrink/wrap/steady allocation; no numerical defect or measured deadline claim.",
+      "evidence": [
+        "docs/audits/frc-simulator-telemetry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass114-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/Dyn4jSimulationTest.kt": {
+      "sha256": "c9f1c103cba2ee04ea5e44516ef76e21ce4df4e0008a0c0788e33f42a625cd0a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read all eleven existing methods and executed with full FRC suite. Covers detector handoff, launch/projectile/scoring/landing, telemetry, cowl units, field rebuild, capture geometry and field-centric drive. Corrected array-retaining mock and added attempt-all cleanup for eleven sim instances plus robust publisher cleanup. Near-capacity detector test does not independently prove reducer inventory bounds.",
+      "evidence": [
+        "docs/audits/frc-simulator-telemetry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass114-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/SimTelemetryPublisherAuditTest.kt": {
+      "sha256": "917937da4e20ba9472abef438ccb0ecb993ded58c6668f69441159c725983f98",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed six independent publisher methods: known quaternion composition and angle units, scalar/atomic pose separation and snapshot lifetime, mixed piece identity/geometry, count transitions across capacity with zero tail and exact typed frames, both sequence wrap boundaries, constant-count allocation 0bytes/100k. Transport and physical HIL excluded.",
+      "evidence": [
+        "docs/audits/frc-simulator-telemetry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass114-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-simulator-telemetry-audit.md": {
+      "sha256": "e619f5a1196bc3eac53b4ffc12d924fdfb9911b27d779b9a34219cfa6998f575",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles complete publisher/eleven-existing/six-new-test review, redundant computation removal, test ownership fixes and full FRC218/coreGC5/policy evidence; limitations explicit.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass114-verified-evidence/summary.json"
       ]
     }
   }
