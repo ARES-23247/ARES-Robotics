@@ -16,8 +16,8 @@ import kotlin.math.roundToInt
  *    $$c = \text{round}\left(\frac{x - x_{\text{origin}}}{\text{res}}\right), \quad r = \text{round}\left(\frac{y - y_{\text{origin}}}{\text{res}}\right)$$
  * 2. **Flat 1D Row-Major Indexing**:
  *    $$\text{index}(c, r) = r \cdot N_{\text{widthCells}} + c$$
- * 3. **Circular Inflation Mask Condition**:
- *    $$\Delta c^2 + \Delta r^2 \le r_{\text{cell}}^2, \quad r_{\text{cell}} = \left\lceil \frac{r_{\text{bumper}}}{\text{res}} \right\rceil$$
+ * 3. **Positive-radius Inflation Mask Condition** (distance between closed cell squares):
+ *    $$\max(|\Delta c|-1,0)^2 + \max(|\Delta r|-1,0)^2 \le (r_{\text{bumper}}/\text{res})^2$$
  *
  * ### Physical Units & Coordinate Conventions:
  * - Dimensions $(W, H)$: Field width and height in meters ($m$)
@@ -165,33 +165,57 @@ class Costmap(
 
     /**
      * Inflates the obstacle boundaries by the robot's physical bumper radius.
-     * Prevents any paths from running the chassis edges directly into structures.
+     * Every occupied cell is treated as a closed square. A target cell is blocked if any
+     * position in it is within the bumper radius of an occupied square, including tangency.
+     * This conservatively protects off-center waypoints as well as cell-center paths.
      * @param robotRadiusMeters Finite non-negative bumper radius; zero copies raw occupancy without a halo.
      */
     fun inflate(robotRadiusMeters: Double) {
         require(robotRadiusMeters.isFinite() && robotRadiusMeters >= 0.0) {
             "Inflation radius must be finite and non-negative"
         }
-        inflatedGrid.fill(false)
-        val cellRadius = kotlin.math.ceil(robotRadiusMeters / resolutionMeters).toInt()
-        val radius = cellRadius.toLong()
-        val maxDx = widthCells - 1L
-        val maxDy = heightCells - 1L
-        // Any occupied cell covers the entire grid at this radius. Avoid an O(cells^2) scan.
-        if (radius * radius >= maxDx * maxDx + maxDy * maxDy) {
-            if (grid.any { it }) inflatedGrid.fill(true)
+        if (robotRadiusMeters == 0.0) {
+            grid.copyInto(inflatedGrid)
             return
         }
+        val radius = robotRadiusMeters / resolutionMeters
+        val maxDx = maxOf(widthCells - 2, 0).toDouble()
+        val maxDy = maxOf(heightCells - 2, 0).toDouble()
+        // Any occupied cell covers the entire grid at this radius. Avoid an O(cells^2) scan.
+        if (radius >= kotlin.math.hypot(maxDx, maxDy)) {
+            inflatedGrid.fill(grid.any { it })
+            return
+        }
+        inflatedGrid.fill(false)
+        // The grid-wide shortcut bounds radius before conversion and squaring, even if
+        // finite meters divided by resolution overflowed to infinity.
+        val extent = kotlin.math.ceil(radius).toInt() + 1
+        val radiusSquared = radius * radius
         for (cy in 0 until heightCells) {
             for (cx in 0 until widthCells) {
-                if (grid[cy * widthCells + cx]) rasterizeCircle(cx, cy, cellRadius, 0)
+                if (!grid[cy * widthCells + cx]) continue
+                val minX = maxOf(0, cx - extent)
+                val maxX = minOf(widthCells - 1, cx + extent)
+                val minY = maxOf(0, cy - extent)
+                val maxY = minOf(heightCells - 1, cy + extent)
+                for (y in minY..maxY) {
+                    val dy = maxOf(kotlin.math.abs(y - cy) - 1, 0)
+                    val remainingSquared = radiusSquared - dy * dy
+                    if (remainingSquared < 0.0) continue
+                    val row = y * widthCells
+                    for (x in minX..maxX) {
+                        if (inflatedGrid[row + x]) continue
+                        val dx = maxOf(kotlin.math.abs(x - cx) - 1, 0)
+                        if (dx * dx <= remainingSquared) inflatedGrid[row + x] = true
+                    }
+                }
             }
         }
     }
 
     /**
-     * Applies a quantized circle only within grid bounds. Delta zero writes the static layer;
-     * +1/-1 update dynamic reference counts using exactly the same mask on insert and expiry.
+     * Applies a quantized circle only within grid bounds. Delta +1/-1 updates dynamic
+     * reference counts using exactly the same mask on insert and expiry.
      * Long differences and subtraction from radius squared avoid Int and squared-sum overflow.
      */
     private fun rasterizeCircle(cellX: Int, cellY: Int, cellRadius: Int, delta: Int) {
@@ -208,8 +232,7 @@ class Costmap(
                 val dx = x.toLong() - cellX
                 if (dx * dx <= remainingSquared) {
                     val index = y * widthCells + x
-                    if (delta == 0) inflatedGrid[index] = true
-                    else dynamicOccupancyCounts[index] += delta
+                    dynamicOccupancyCounts[index] += delta
                 }
             }
         }
