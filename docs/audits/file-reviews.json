@@ -5543,7 +5543,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "dc4da3a6c683c96981df0b7b21e26e7b5ff0ab54f95be13202c98670f19d834b",
+      "sha256": "5eef6c2d7d727149710e4a4c1d366438d0c261f04837769f3d1f4b0b06e9b5d2",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5601,7 +5601,8 @@
         "docs/audits/frc-disable-cleanup-audit.md: pass104 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-startup-ownership-audit.md: pass105 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-initialization-handoff-audit.md: pass106 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-dashboard-input-lifecycle-audit.md: pass107 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-dashboard-input-lifecycle-audit.md: pass107 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-simulated-feedback-audit.md: pass108 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8950,6 +8951,115 @@
       "scope": "Reviewed two reproduced lifecycle failures, polling redundancies, four new integration tests, five existing tests and scoped validation/remaining queue and constructor limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass107-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/io/SimulatedClimberIO.kt": {
+      "sha256": "e9c6bf50afbcd7097c7eebb01d815806a57c0275537307e8dd246308b9b88aae",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full adapter boundary review: geometry/units and target clamps, effort scaling, direct-voltage/current behavior, finite feedback validity and zero-effort invalid-feedback gate. Feedback sampled once per closed-loop command. New reproduced failure and cross-adapter voltage tests plus existing safe/effort cases passed. Underlying dynamics and physical calibration are separate files/scopes.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/io/SimulatedCowlIO.kt": {
+      "sha256": "4f58930db26d05d57f104b8bbdb657ba335d0faf842f4896388170b249c01e6f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full adapter boundary review: geometry/units and target clamps, effort scaling, direct-voltage/current behavior, finite feedback validity and zero-effort invalid-feedback gate. Feedback sampled once per closed-loop command. New reproduced failure and cross-adapter voltage tests plus existing safe/effort cases passed. Underlying dynamics and physical calibration are separate files/scopes.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/io/SimulatedIntakeIO.kt": {
+      "sha256": "9a00ac3295a2cbe04503350cb2693f16520d7103bf674dbb0dd4f0effe3a9f3f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full adapter boundary review: geometry/units and target clamps, effort scaling, direct-voltage/current behavior, finite feedback validity and zero-effort invalid-feedback gate. Feedback sampled once per closed-loop command. New reproduced failure and cross-adapter voltage tests plus existing safe/effort cases passed. Underlying dynamics and physical calibration are separate files/scopes.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/io/SimulatedFlywheelIO.kt": {
+      "sha256": "69ae64f218156804b1f675c167d977e974c6fcfa3a78fc1dc370fd9c766c1b03",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full adapter review: RPM/radian feedforward dimensions, target/voltage/effort caps, velocity/current observation and fault timeline behavior. Reject nonfinite/invalid/stale/frozen closed-loop velocity feedback with zero effort and rejection flag; direct voltage contract retained. Cache immutable modelKv and reuse measuredRPM. Existing readiness/brownout/disconnect/write tests and new regressions passed; dynamics integrator not certified.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/io/SimulatedFeederIO.kt": {
+      "sha256": "a88b935be12305ba4788fc3563ced881d1b691a5b5b6e098dfa6464314ec5659",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full small adapter review: finite voltage clamp, nonfinite neutralization, current approximation and explicitly configured piece detection. Existing and new tests cover configured/unconfigured detection and voltage/current values. No source change needed; physical detector calibration out of scope.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/io/SimulatedFloorIO.kt": {
+      "sha256": "c97e81279abac1c20cf583a6a7948363553beb4056d6ff0b77a0d9012a4727e6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full small adapter review: finite voltage clamp/nonfinite neutralization, signed RPS passthrough and current approximation. Existing and new tests cover boundaries and units. No source change needed; downstream physics integration separate.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/io/SimulatedSafetyContractTest.kt": {
+      "sha256": "9b2e02e8ad00c1266bc81c4473f2e5d5a523363698211b22357f9583e675d8a1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed all three existing methods; wrapped simulator instances in use scopes to close native/NT ownership deterministically, retaining assertions. Tests establish adapter safety/units/effort/readiness/fault behavior, not comprehensive physics-model accuracy.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/io/SimulatedFlywheelFaultTimelineTest.kt": {
+      "sha256": "ad58b28cc6e2cb4a91ed496f31f2bae9a5cf2e7585650e6327243296e9a3f2aa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed all three existing methods; wrapped simulator instances in use scopes to close native/NT ownership deterministically, retaining assertions. Tests establish adapter safety/units/effort/readiness/fault behavior, not comprehensive physics-model accuracy.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/io/SimulatedIOTest.kt": {
+      "sha256": "18e86dcd3bb4abcdc6e06043dfa1ed97d2b9cf71ed08133ea565d865a836cc91",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed all three existing methods; wrapped simulator instances in use scopes to close native/NT ownership deterministically, retaining assertions. Tests establish adapter safety/units/effort/readiness/fault behavior, not comprehensive physics-model accuracy.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/io/SimulatedFeedbackBoundaryTest.kt": {
+      "sha256": "636c8c5f07898e895643904fff1e34c2e367bf652e88ae2ea0c1be38c3c522e4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed seven new methods; expanded before XML has six methods/five failures. Tests inject invalid model state and timeline validity, check finite/invalid voltage across seven channels, feeder/current/floor units, and close all simulation resources. Fault clock restored. No physical result claim.",
+      "evidence": [
+        "docs/audits/frc-simulated-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-simulated-feedback-audit.md": {
+      "sha256": "2b0e84e80972143d168c132a6a1712b646c85cc7a8322c4e69a5cbe6b4dcdbfc",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reviewed six adapters, three existing tests, five reproduced failures, seven new methods, constant-work optimization and fixture lifetime fixes with scoped validation and separate dynamics limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass108-verified-evidence/summary.json"
       ]
     }
   }

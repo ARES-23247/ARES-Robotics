@@ -13,8 +13,13 @@ import org.aresfirst.marvin.marvin.MarvinConfig
  */
 class SimulatedCowlIO(private val sim: Dyn4jSimulation) : CowlIO {
     override fun setTargetAngle(rotations: Double, maxEffortScale: Double) {
+        val measuredDegrees = sim.simCowlAngle
+        if (!measuredDegrees.isFinite()) {
+            sim.simCowlVoltage = 0.0
+            return
+        }
         val targetDegrees = safeTarget(rotations) * DEGREES_PER_ROTATION
-        val error = targetDegrees - sim.simCowlAngle
+        val error = targetDegrees - measuredDegrees
         val safeScale = maxEffortScale.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.0
         val maxVolts = 12.0 * safeScale
         sim.simCowlVoltage = (error * 0.5).coerceIn(-maxVolts, maxVolts)
