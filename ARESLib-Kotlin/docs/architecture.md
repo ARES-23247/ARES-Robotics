@@ -47,6 +47,12 @@ Reducers calculate state only. Device reads, telemetry writes, file access, cloc
 
 Do not put FTC SDK, WPILib, CTRE, REV, or Android types in this module.
 
+The core current-budget model requires finite positive electrical parameters. Re-registering the
+same motor/model preserves its calibration; changing the model replaces that motor's slot and
+clears the learned correction. Missing battery voltage, invalid motor observations or failed
+cached getters produce unknown current and zero available power until valid observations recover.
+Callers must use fresh cached observations; a model estimate is not a physical fuse-trip guarantee.
+
 ### `ftc-hardware`
 
 This module adapts FTC devices to ARESLib contracts. Important boundaries include `FtcBaseRobot`, `FtcMecanumRobot`, `MecanumHardwareIO`, `PinpointIO`, FTC vision adapters, cached hardware wrappers, and bulk sensor readers. `ftc-mocks` is compile-only for production and present at test runtime; it is not shipped as robot hardware code by this module.

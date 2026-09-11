@@ -5,8 +5,9 @@ import com.areslib.hardware.actuator.MotorIO
 /**
  * System-Level Power & Current Budget Manager for FTC and FRC Drivetrains.
  *
- * Prevents main breaker/fuse trips (e.g. 20A main fuse) by estimating real-time current draw across all registered motors
- * using the electromechanical DC motor model and applying graduated power scaling when total current consumption exceeds safety thresholds.
+ * Estimates motor current using a DC motor model and applies graduated power scaling when the
+ * modeled total exceeds configured thresholds. This approximate motor-current sum is not a
+ * physical battery-current measurement or a guarantee against breaker/fuse trips.
  *
  * ### DC Motor Electromechanical Model Equations:
  * To avoid blocking I2C reads (~2-3ms per motor), current is estimated from bulk-cached velocity and commanded power:
@@ -68,9 +69,11 @@ class CurrentBudgetManager(
 
     /**
      * Registers a motor with its electromechanical characteristics for current estimation.
+     * Invalid/nonrepresentable electrical parameters throw before mutation. Re-registering the same
+     * motor/model is a no-op; changed parameters replace its slot and clear its learned correction.
      *
      * @param motor [MotorIO] actuator interface instance to monitor.
-     * @param stallCurrentAmps Motor stall current at 12V in Amps ($A$, from motor datasheet).
+     * @param stallCurrentAmps Motor stall current at the rated nominal voltage in Amps ($A$, from motor datasheet).
      * @param freeSpeedTps Motor free-speed rotational velocity in encoder ticks per second ($tps$).
      * @param nominalVoltage Rated nominal voltage in Volts ($V$, default: $12.0$ V).
      */
@@ -80,13 +83,25 @@ class CurrentBudgetManager(
         freeSpeedTps: Double = 2786.0,
         nominalVoltage: Double = 12.0
     ) {
-        val stall = if (stallCurrentAmps > 0.0 && stallCurrentAmps.isFinite()) stallCurrentAmps else 9.2
-        val speed = if (freeSpeedTps > 0.0 && freeSpeedTps.isFinite()) freeSpeedTps else 2786.0
-        val volt = if (nominalVoltage > 0.0 && nominalVoltage.isFinite()) nominalVoltage else 12.0
-
-        val resistance = volt / stall
-        val kv = volt / speed
-        slots.add(MotorSlot(motor, resistance, kv, volt))
+        require(stallCurrentAmps.isFinite() && stallCurrentAmps > 0.0 &&
+            freeSpeedTps.isFinite() && freeSpeedTps > 0.0 && nominalVoltage.isFinite() && nominalVoltage > 0.0) {
+            "Motor electrical parameters must be finite and positive"
+        }
+        val resistance = nominalVoltage / stallCurrentAmps
+        val kv = nominalVoltage / freeSpeedTps
+        require(resistance.isFinite() && resistance > 0.0 && kv.isFinite() && kv > 0.0) {
+            "Motor resistance and back-EMF coefficient must be representable and positive"
+        }
+        for (index in slots.indices) {
+            val slot = slots[index]
+            if (slot.motor === motor) {
+                if (slot.resistance != resistance || slot.kv != kv || slot.nominalVoltage != nominalVoltage) {
+                    slots[index] = MotorSlot(motor, resistance, kv, nominalVoltage)
+                }
+                return
+            }
+        }
+        slots.add(MotorSlot(motor, resistance, kv, nominalVoltage))
     }
 
     /**
@@ -94,7 +109,8 @@ class CurrentBudgetManager(
      *
      * Call once per loop iteration. Zero heap allocations.
      *
-     * @param batteryVoltage Current measured battery voltage in Volts ($V$).
+     * @param batteryVoltage Current measured battery voltage in Volts ($V$). Missing, nonfinite or
+     * <=0.1V observations invalidate the entire budget; no nominal-voltage substitution is made.
      * @param enableCalibration If `true`, consumes one cached actual motor current per cycle round-robin to calibrate the model.
      * @param additionalMeasuredCurrentAmps Non-negative measured load outside the model. Invalid
      * readings mark total current unknown and disable effort until a valid update arrives.
@@ -105,9 +121,8 @@ class CurrentBudgetManager(
         additionalMeasuredCurrentAmps: Double = 0.0
     ) {
 
-        val vBat = if (batteryVoltage.isFinite() && batteryVoltage > 0.1) batteryVoltage else 12.0
-
-        if (!additionalMeasuredCurrentAmps.isFinite() || additionalMeasuredCurrentAmps < 0.0) {
+        val vBat = batteryVoltage
+        if (!validBatteryVoltage(vBat) || !additionalMeasuredCurrentAmps.isFinite() || additionalMeasuredCurrentAmps < 0.0) {
             rejectCurrentEstimate()
             return
         }
@@ -117,7 +132,7 @@ class CurrentBudgetManager(
         var totalAmps = safeAdditionalMeasuredAmps
         for (i in slots.indices) {
             val slot = slots[i]
-            slot.appliedVoltage = effectiveAppliedVoltage(slot, vBat)
+            slot.appliedVoltage = sampledAppliedVoltage(slot, vBat)
             val rawEstimate = estimateCurrentAtVoltage(slot, slot.appliedVoltage)
             slot.rawEstimatedAmps = rawEstimate
             val estimatedCurrent = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
@@ -138,7 +153,6 @@ class CurrentBudgetManager(
                 if (actualAmps.isFinite() && actualAmps >= 0.0 && rawEstimate.isFinite() &&
                     slot.motor.isCurrentReadingValid(actualAmps) && !missingPoweredReading) {
                     val previousEstimate = slot.estimatedAmps
-                    slot.lastCalibratedAmps = actualAmps
                     val currentError = actualAmps - rawEstimate
                     slot.calibrationOffset = slot.calibrationOffset * 0.3 + currentError * 0.7
                     slot.estimatedAmps = (rawEstimate + slot.calibrationOffset).coerceAtLeast(0.0)
@@ -200,26 +214,36 @@ class CurrentBudgetManager(
         state = CurrentBudgetState.CRITICAL
         totalEstimatedAmps = Double.NaN
         powerScale = 0.0
+        for (index in slots.indices) {
+            val slot = slots[index]
+            slot.estimatedAmps = Double.NaN
+            slot.rawEstimatedAmps = Double.NaN
+            slot.appliedVoltage = Double.NaN
+        }
     }
 
+    private fun validBatteryVoltage(voltage: Double) = voltage.isFinite() && voltage > 0.1
+
+    private fun sampledAppliedVoltage(slot: MotorSlot, batteryVoltage: Double): Double = try {
+        effectiveAppliedVoltage(slot, batteryVoltage)
+    } catch (_: Exception) { Double.NaN }
+
     private fun effectiveAppliedVoltage(slot: MotorSlot, batteryVoltage: Double): Double {
+        if (!validBatteryVoltage(batteryVoltage)) return Double.NaN
         val power = slot.motor.power
         val scale = slot.motor.powerScale
-        if (!power.isFinite() || !scale.isFinite()) return Double.NaN
+        if (!power.isFinite() || !scale.isFinite() || scale !in 0.0..1.0) return Double.NaN
         return batteryVoltage * power.coerceIn(-1.0, 1.0) * scale.coerceIn(0.0, 1.0)
     }
 
     private fun estimateRawCurrent(slot: MotorSlot, batteryVoltage: Double): Double {
-        return estimateCurrentAtVoltage(slot, effectiveAppliedVoltage(slot, batteryVoltage))
+        return estimateCurrentAtVoltage(slot, sampledAppliedVoltage(slot, batteryVoltage))
     }
 
     private fun estimateCurrentAtVoltage(slot: MotorSlot, appliedVoltage: Double): Double {
-        if (!appliedVoltage.isFinite()) {
-            // Unknown commanded effort is treated conservatively as a stall condition.
-            return slot.nominalVoltage / slot.resistance
-        }
-        val sampledVelocity = slot.motor.velocity
-        val velocity = if (sampledVelocity.isFinite()) sampledVelocity else 0.0
+        if (!appliedVoltage.isFinite()) return Double.NaN
+        val velocity = try { slot.motor.velocity } catch (_: Exception) { return Double.NaN }
+        if (!velocity.isFinite()) return Double.NaN
         val backEmf = slot.kv * velocity
         return kotlin.math.abs(appliedVoltage - backEmf) / slot.resistance
     }
@@ -234,13 +258,17 @@ class CurrentBudgetManager(
         return if (index in slots.indices) slots[index].estimatedAmps else 0.0
     }
 
-    /** Estimates one registered motor for aggregate/constituent reconciliation without mutation. */
+    /**
+     * Estimates one registered motor without mutation, using the same observation rules as [update].
+     * Returns NaN for invalid observations/arithmetic and zero for an unregistered motor.
+     */
     fun estimateMotorAmps(motor: MotorIO, batteryVoltage: Double): Double {
-        val vBat = if (batteryVoltage.isFinite() && batteryVoltage > 0.1) batteryVoltage else 12.0
+        val vBat = batteryVoltage
         for (index in slots.indices) {
             val slot = slots[index]
             if (slot.motor === motor) {
-                return (estimateRawCurrent(slot, vBat) + slot.calibrationOffset).coerceAtLeast(0.0)
+                val estimate = estimateRawCurrent(slot, vBat) + slot.calibrationOffset
+                return if (estimate.isFinite()) estimate.coerceAtLeast(0.0) else Double.NaN
             }
         }
         return 0.0
@@ -261,7 +289,6 @@ class CurrentBudgetManager(
         for (i in slots.indices) {
             val slot = slots[i]
             slot.estimatedAmps = 0.0
-            slot.lastCalibratedAmps = 0.0
             slot.calibrationOffset = 0.0
         }
     }
@@ -311,7 +338,6 @@ internal class MotorSlot(
     val kv: Double,
     val nominalVoltage: Double,
     var estimatedAmps: Double = 0.0,
-    var lastCalibratedAmps: Double = 0.0,
     var calibrationOffset: Double = 0.0,
     var appliedVoltage: Double = 0.0,
     var rawEstimatedAmps: Double = 0.0

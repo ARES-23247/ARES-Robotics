@@ -83,8 +83,7 @@ class BrownoutGuard(
         }
 
         lastVoltage = voltage
-        val normVolt = if (nominalVoltage > 0.1) nominalVoltage else 13.0
-        batteryPercent = ((voltage / normVolt) * 100.0).coerceIn(0.0, 100.0)
+        batteryPercent = (voltage / nominalVoltage).coerceIn(0.0, 1.0) * 100.0
 
         val previousState = state
 
@@ -143,8 +142,8 @@ class BrownoutGuard(
     companion object {
         /**
          * Factory constructor pre-configured for the REV Control Hub's documented 8V minimum
-         * operating voltage. Critical cutoff is intentionally above that boundary so one loop of
-         * additional sag cannot reboot the controller before outputs are removed.
+         * operating voltage. Critical cutoff adds a margin above that boundary; actual protection
+         * still depends on observation cadence and the physical voltage transient.
          *
          * @return Pre-configured FTC [BrownoutGuard] instance.
          */
@@ -157,7 +156,8 @@ class BrownoutGuard(
         )
 
         /**
-         * Factory constructor pre-configured with standard FRC defaults (12V system, roboRIO brownout ~6.8V).
+         * Factory constructor for an FRC 12V system with a 6.8V protective software cutoff.
+         * This is an ARES threshold, not a claim that every roboRIO uses that hardware trigger.
          *
          * @return Pre-configured FRC [BrownoutGuard] instance.
          */

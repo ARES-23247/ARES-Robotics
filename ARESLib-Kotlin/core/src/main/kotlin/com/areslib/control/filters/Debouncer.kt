@@ -50,12 +50,17 @@ class Debouncer(
         }
         lastSampleTimeMs = currentTimeMs
 
+        // After rewind handling, ordered timestamps with a negative subtraction have exceeded
+        // Long.MAX_VALUE elapsed milliseconds. Every representable dwell has then completed.
+        val difference = currentTimeMs - lastStateChangeTimeMs
+        val elapsed = if (difference < 0L) Long.MAX_VALUE else difference
+
         if (input) {
-            if (currentTimeMs - lastStateChangeTimeMs >= risingTimeMs) {
+            if (elapsed >= risingTimeMs) {
                 outputState = true
             }
         } else {
-            if (currentTimeMs - lastStateChangeTimeMs >= fallingTimeMs) {
+            if (elapsed >= fallingTimeMs) {
                 outputState = false
             }
         }

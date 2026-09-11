@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Test
 
 class FiltersTest {
 
+    @org.junit.jupiter.api.AfterEach
+    fun restoreClock() = RobotClock.useSystemTime()
+
     @BeforeEach
     fun setUp() {
         RobotClock.useMockTime(0)
