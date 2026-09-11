@@ -38,11 +38,14 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     private var lastPosition = 0.0
     private var lastTime = 0L
     private var hasPositionSample = false
+    private var hasVelocitySample = false
+    @Volatile private var closed = false
 
     /**
      * Synchronously polls physical electrical current draw ($A$) from REV Lynx Hub hardware registers.
      */
     override fun pollSync() {
+        if (closed) return
         try {
             val amps = motor.getCurrent(CurrentUnit.AMPS)
             if (amps.isFinite() && amps >= 0.0) {
@@ -65,41 +68,56 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
      * Zero-GC compliance: zero dynamic heap allocations.
      */
     fun updateInputs() {
+        if (closed) return
         try {
             cachedPosition = motor.currentPosition.toDouble()
             val now = RobotClock.currentTimeMillis()
-            if (hasPositionSample && now >= lastTime) {
+            if (now < 0L) {
+                hasPositionSample = false
+                return
+            }
+            val elapsed = now - lastTime
+            if (hasPositionSample && now >= lastTime && elapsed in 0L..MAX_POSITION_SAMPLE_AGE_MS) {
                 val dt = (now - lastTime) / 1000.0
                 if (dt > 0.0) {
                     cachedVelocity = (cachedPosition - lastPosition) / dt
+                    hasVelocitySample = true
                 } else {
                     // Publish the latest position, but retain the finite-difference baseline
                     // until time advances. Repeated reads must not discard displacement.
                     return
                 }
             } else {
-                // Initial samples (including t=0) and replay rewinds start a new baseline.
-                cachedVelocity = 0.0
+                // First/recovered samples, gaps and replay rewinds start a new baseline.
+                hasVelocitySample = false
             }
             lastPosition = cachedPosition
             lastTime = now
             hasPositionSample = true
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            hasPositionSample = false
+        }
     }
 
-    /** Measured motor velocity in encoder ticks per second ($ticks/s$). */
+    /** Measured ticks/s; NaN when missing, failed, older than 100 ms, future-dated or closed. */
     override val velocity: Double
-        get() = cachedVelocity
+        get() = if (positionSampleFresh() && hasVelocitySample) cachedVelocity else Double.NaN
 
-    /** Measured motor position in total cumulative encoder ticks ($ticks$). */
+    /** Cumulative encoder ticks; NaN under the same validity rules as [velocity]. */
     override val position: Double
-        get() = cachedPosition
+        get() = if (positionSampleFresh()) cachedPosition else Double.NaN
+
+    private fun positionSampleFresh(): Boolean {
+        val now = RobotClock.currentTimeMillis()
+        return !closed && hasPositionSample && now >= lastTime &&
+            now - lastTime in 0L..MAX_POSITION_SAMPLE_AGE_MS
+    }
 
     /** Measured electrical current draw in Amperes ($A$). */
     override val currentAmps: Double
         get() {
             val ageMs = RobotClock.currentTimeMillis() - lastCurrentSampleMs
-            return if (hasCurrentSample && ageMs in 0..MAX_CURRENT_SAMPLE_AGE_MS) cachedAmps else Double.NaN
+            return if (!closed && hasCurrentSample && ageMs in 0..MAX_CURRENT_SAMPLE_AGE_MS) cachedAmps else Double.NaN
         }
 
     private fun invalidateCurrentSample() {
@@ -114,11 +132,14 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
 
     /** Releases hardware resources upon OpMode termination. */
     override fun close() {
+        closed = true
+        hasPositionSample = false
         invalidateCurrentSample()
     }
 
     private companion object {
         const val MAX_CURRENT_SAMPLE_AGE_MS = 1_000L
+        private const val MAX_POSITION_SAMPLE_AGE_MS = 100L
     }
 }
 

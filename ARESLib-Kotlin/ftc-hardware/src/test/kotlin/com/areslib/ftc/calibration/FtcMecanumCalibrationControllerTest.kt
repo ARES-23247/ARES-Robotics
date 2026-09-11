@@ -24,6 +24,27 @@ import kotlin.test.assertTrue
 
 class FtcMecanumCalibrationControllerTest {
     @Test
+    fun `publisher rejects an invalid encoder before the next output update`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.step(1000L)
+        fixture.motors[2].failEncoderReads = true
+        fixture.io.rlIO.updateInputs()
+        assertTrue(fixture.publish(1000L).isEmpty())
+    }
+
+    @Test
+    fun `encoder calibration stops and clears data when one encoder read fails`() {
+        val fixture = ArmedSysId("LINEAR", "START_TRACK_WIDTH_SPIN")
+        fixture.step(1000L)
+        assertTrue(fixture.publish(1000L).isNotEmpty())
+        fixture.motors[1].failEncoderReads = true
+        fixture.step(1020L)
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+        assertTrue(fixture.publish(1020L).isEmpty())
+    }
+
+    @Test
     fun `vision calibration preserves capture time and rejects stale or disconnected cached frames`() {
         val fixture = ArmedSysId("LINEAR", "START_VISION_CALIBRATION")
         fixture.step(1000L)
@@ -692,7 +713,9 @@ class FtcMecanumCalibrationControllerTest {
         @Volatile var measuredCurrent = 0.0
         private val ownerThreadId = Thread.currentThread().id
         var currentReads = 0
+        var failEncoderReads = false
         override var currentPosition: Int = 0
+            get() { check(!failEncoderReads) { "encoder unavailable" }; return field }
         override var velocity: Double = 0.0
         override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
         override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER

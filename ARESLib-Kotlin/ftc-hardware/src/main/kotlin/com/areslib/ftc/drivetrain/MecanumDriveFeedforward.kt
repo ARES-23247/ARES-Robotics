@@ -13,7 +13,7 @@ import kotlin.math.sign
  *
  * ### Mathematical Formulation:
  * Feedforward calculation:
- * $$u_{FF} = \left(\frac{v_{desired}}{v_{max}} + k_S \cdot \text{sign}(v_{desired})\right) \cdot \frac{12.0}{V_{battery}}$$
+ * $$u_{FF} = k_V v_{desired} + k_A a_{desired} + k_S \operatorname{sign}(v_{desired})$$
  * Raw requested effort with PID feedback and voltage compensation:
  * $$u_{raw} = \text{coerceIn}\left((u_{FF} + u_{PID}) \cdot \frac{12}{V_{battery}}, -1.0, 1.0\right)$$
  *
@@ -150,6 +150,21 @@ class MecanumDriveFeedforward(
         outputPowers[3] = 0.0
         if (speeds.size < 4) return
 
+        // A missing feedback observation must not become a fictitious stationary wheel.
+        // Feedforward-only operation has no encoder dependency; hub and software PID do.
+        val softwareFeedback = !useClosedLoopVelocity && flController != null
+        val needsFeedback = useClosedLoopVelocity || softwareFeedback
+        if (needsFeedback && (!flVel.isFinite() || !frVel.isFinite() ||
+                !rlVel.isFinite() || !rrVel.isFinite()) ||
+            softwareFeedback && (!ticksPerMeter.isFinite() || ticksPerMeter <= 1e-9 ||
+                !(flVel / ticksPerMeter).isFinite() || !(frVel / ticksPerMeter).isFinite() ||
+                !(rlVel / ticksPerMeter).isFinite() || !(rrVel / ticksPerMeter).isFinite())) {
+            previousSpeeds.fill(0.0)
+            flController?.reset(); frController?.reset(); rlController?.reset(); rrController?.reset()
+            flLimiter?.reset(0.0); frLimiter?.reset(0.0); rlLimiter?.reset(0.0); rrLimiter?.reset(0.0)
+            return
+        }
+
         val validMaxSpeed = maxWheelSpeedMps.takeIf { it.isFinite() && it > 0.0 } ?: return
         val actualVolts = batteryVolts.takeIf { it.isFinite() && it > 0.1 } ?: return
         val controlDt = dtSeconds.takeIf { it.isFinite() && it > 1e-4 } ?: 0.02
@@ -231,7 +246,7 @@ class MecanumDriveFeedforward(
         useClosedLoopVelocity: Boolean
     ): Double {
         if (useClosedLoopVelocity || controller == null || ticksPerMeter == null) return 0.0
-        val measuredMetersPerSecond = measuredTicksPerSecond.finiteOrZero() / ticksPerMeter
+        val measuredMetersPerSecond = measuredTicksPerSecond / ticksPerMeter
         return controller.calculate(measuredMetersPerSecond, targetMetersPerSecond, dtSeconds).finiteOrZero()
     }
 

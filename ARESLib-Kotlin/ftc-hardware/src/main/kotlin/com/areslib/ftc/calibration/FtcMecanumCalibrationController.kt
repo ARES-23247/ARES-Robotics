@@ -475,6 +475,9 @@ class FtcMecanumCalibrationController {
                                           batteryVoltage: Double, io: MecanumHardwareIO): String? {
         if (!batteryVoltage.isFinite() || batteryVoltage <= 0.0) return "CALIBRATION_INVALID_SUPPLY"
         if (!validDriveFeedback(drive, timestamp)) return "INVALID_DRIVE_MEASUREMENT"
+        if ((activeCalibration == "LINEAR_DRIVE" || activeCalibration == "TRACK_WIDTH_SPIN") &&
+            (!io.flIO.position.isFinite() || !io.frIO.position.isFinite() ||
+                !io.rlIO.position.isFinite() || !io.rrIO.position.isFinite())) return "INVALID_ENCODER_MEASUREMENT"
         if (!validPowerScale(io.flIO.powerScale) || !validPowerScale(io.frIO.powerScale) ||
             !validPowerScale(io.rlIO.powerScale) || !validPowerScale(io.rrIO.powerScale)) return "CALIBRATION_INVALID_POWER_SCALE"
         val limit = sysIdManager.maxCurrentAmps

@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class EstimateMotorTimingTest {
     private class Encoder : DcMotorEx by MockDcMotorEx() {
@@ -46,7 +47,7 @@ class EstimateMotorTimingTest {
         RobotClock.useMockTime(5L)
         encoder.ticks = 200
         io.updateInputs()
-        assertEquals(0.0, io.velocity)
+        assertTrue(io.velocity.isNaN(), "A replay rewind requires a new pair of observations")
         RobotClock.useMockTime(25L)
         encoder.ticks = 210
         io.updateInputs()
