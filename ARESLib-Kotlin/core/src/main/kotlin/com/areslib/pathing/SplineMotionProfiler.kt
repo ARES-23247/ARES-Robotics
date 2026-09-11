@@ -18,7 +18,8 @@ import kotlin.math.hypot
  * 1. **Numerical Curvature $\kappa$**:
  *    $$\kappa = \frac{d\theta}{ds} \approx \frac{\text{wrapAngle}(\theta_{k+1} - \theta_{k-1})}{s_{k+1} - s_{k-1}}$$
  * 2. **Centripetal Velocity Cap**:
- *    $$v_{\text{corner}} = \min\left(v_{\text{max}}, \sqrt{\frac{a_{\text{max}}}{|\kappa|}}\right)$$
+ *    $$v_{\text{corner}} = \min\left(v_{\text{max}}, \sqrt{\frac{a_{\text{centripetal}}}{|\kappa|}}\right)$$
+ *    The current centripetal ceiling is 2 m/s², independent of the longitudinal acceleration limit.
  * 3. **Forward Velocity Integration Pass**:
  *    $$v_k^{(f)} = \min\left(v_{\text{corner}}, \sqrt{\left(v_{k-1}^{(f)}\right)^2 + 2 a_{\text{max}} \Delta s}\right)$$
  * 4. **Backward Velocity Integration Pass**:
@@ -189,18 +190,18 @@ object SplineMotionProfiler {
         // Heading cosine interpolation from startHeading to endHeading
         val startAngle = startHeading.radians
         val endAngle = endHeading.radians
+        val delta = wrapAngle(endAngle - startAngle)
         val totalDist = pathPoints.last().distanceMeters
         for (idx in pathPoints.indices) {
             val dCurr = pathPoints[idx].distanceMeters
             val t = if (totalDist < 1e-6) 0.0 else dCurr / totalDist
             val t2 = (1.0 - Math.cos(t * Math.PI)) / 2.0
-            val delta = wrapAngle(endAngle - startAngle)
             val interpAngle = startAngle + delta * t2
             val p = pathPoints[idx]
             pathPoints[idx] = p.copy(pose = Pose2d(p.pose.x, p.pose.y, Rotation2d(interpAngle)))
         }
 
-        applyMotionProfile(pathPoints, List(pathPoints.size) { 0.0 }, 0.0, 0.0, maxVelocityMps, maxAccelerationMps2, emptyList())
+        applyMotionProfile(pathPoints, emptyList(), 0.0, 0.0, maxVelocityMps, maxAccelerationMps2, emptyList())
 
         return Path(pathPoints, emptyList())
     }
