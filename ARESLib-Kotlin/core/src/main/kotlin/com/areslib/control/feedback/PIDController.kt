@@ -33,8 +33,8 @@ class PIDController(
     var i: Double,
     var d: Double
 ) {
-    /** Internal composition status: neutral output alone does not imply a valid calculation. */
-    internal var lastCalculationValid: Boolean = false
+    /** Composition status for the last calculation; neutral output alone does not imply validity. */
+    var lastCalculationValid: Boolean = false
         private set
 
     private var prevMeasurement: Double = 0.0

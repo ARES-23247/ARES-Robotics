@@ -737,6 +737,7 @@ public final class com/areslib/control/feedback/PIDController {
 	public final fun getD ()D
 	public final fun getDeadzone ()D
 	public final fun getI ()D
+	public final fun getLastCalculationValid ()Z
 	public final fun getP ()D
 	public final fun reset ()V
 	public final fun setD (D)V

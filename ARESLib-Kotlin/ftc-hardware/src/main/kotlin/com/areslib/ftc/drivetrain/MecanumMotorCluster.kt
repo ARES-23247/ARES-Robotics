@@ -137,7 +137,12 @@ class MecanumMotorCluster(
      * @param rr Rear-right motor power.
      */
     fun setMotorPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
-        if (closed || outputFaultLatched || !fl.isFinite() || !fr.isFinite() || !rl.isFinite() || !rr.isFinite()) {
+        val flScale = flIO.powerScale
+        val frScale = frIO.powerScale
+        val rlScale = rlIO.powerScale
+        val rrScale = rrIO.powerScale
+        if (closed || outputFaultLatched || !fl.isFinite() || !fr.isFinite() || !rl.isFinite() || !rr.isFinite() ||
+            !validScale(flScale) || !validScale(frScale) || !validScale(rlScale) || !validScale(rrScale)) {
             outputFaultLatched = true
             setCachedPowers(0.0, 0.0, 0.0, 0.0)
             applyNeutral()
@@ -151,10 +156,10 @@ class MecanumMotorCluster(
         setCachedPowers(safeFl, safeFr, safeRl, safeRr)
 
         var succeeded = true
-        if (!safeSetPower(frontLeft, safeFl * flIO.powerScale, "frontLeft")) succeeded = false
-        if (!safeSetPower(frontRight, safeFr * frIO.powerScale, "frontRight")) succeeded = false
-        if (!safeSetPower(rearLeft, safeRl * rlIO.powerScale, "rearLeft")) succeeded = false
-        if (!safeSetPower(rearRight, safeRr * rrIO.powerScale, "rearRight")) succeeded = false
+        if (!safeSetPower(frontLeft, safeFl * flScale, "frontLeft")) succeeded = false
+        if (!safeSetPower(frontRight, safeFr * frScale, "frontRight")) succeeded = false
+        if (!safeSetPower(rearLeft, safeRl * rlScale, "rearLeft")) succeeded = false
+        if (!safeSetPower(rearRight, safeRr * rrScale, "rearRight")) succeeded = false
         if (!succeeded) {
             outputFaultLatched = true
             setCachedPowers(0.0, 0.0, 0.0, 0.0)
@@ -168,12 +173,16 @@ class MecanumMotorCluster(
      * @param scale Master power scale factor.
      */
     fun applyPowerScale(scale: Double) {
-        val s = if (!closed && scale.isFinite()) scale.coerceIn(0.0, 1.0) else 0.0
+        val valid = validScale(scale)
+        val s = if (!closed && valid) scale else 0.0
         flIO.powerScale = s
         frIO.powerScale = s
         rlIO.powerScale = s
         rrIO.powerScale = s
+        if (!valid) latchOutputFault()
     }
+
+    private fun validScale(scale: Double): Boolean = scale.isFinite() && scale in 0.0..1.0
 
     /**
      * Updates encoder position and velocity caches for all 4 motors from bulk-read registers.
