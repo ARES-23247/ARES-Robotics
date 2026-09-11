@@ -91,14 +91,30 @@ internal class GamePieceFrameAccumulator {
         return decoded
     }
 
-    private companion object {
-        const val PREFIX = "ARES/GamePiecesFrame/"
-        const val VERSION = 2.0
-        const val HEADER_WIDTH = 2
-        const val RECORD_WIDTH = 9
-        const val SEQUENCE_WIDTH = 1
-        const val SHAPE_BOX = 1
-        const val MAX_PIECES = 10_000
+    companion object {
+        /** Decode a complete replay snapshot through the same record mapping as live telemetry. */
+        fun decodeSnapshot(frame: Map<String, Double>): Map<Int, GamePiece>? {
+            if (frame["${PREFIX}0"] != VERSION) return null
+            val countValue = frame["${PREFIX}1"] ?: return null
+            if (!countValue.isFinite() || countValue < 0.0 || countValue > MAX_PIECES ||
+                countValue != countValue.toInt().toDouble()) return null
+            val size = HEADER_WIDTH + countValue.toInt() * RECORD_WIDTH + SEQUENCE_WIDTH
+            if ((0 until size).any { frame["$PREFIX$it"]?.isFinite() != true }) return null
+            val accumulator = GamePieceFrameAccumulator()
+            var result: Map<Int, GamePiece>? = null
+            for (index in 0 until size) {
+                result = accumulator.accept("$PREFIX$index", frame.getValue("$PREFIX$index"))
+            }
+            return result
+        }
+
+        private const val PREFIX = "ARES/GamePiecesFrame/"
+        private const val VERSION = 2.0
+        private const val HEADER_WIDTH = 2
+        private const val RECORD_WIDTH = 9
+        private const val SEQUENCE_WIDTH = 1
+        private const val SHAPE_BOX = 1
+        private const val MAX_PIECES = 10_000
     }
 }
 

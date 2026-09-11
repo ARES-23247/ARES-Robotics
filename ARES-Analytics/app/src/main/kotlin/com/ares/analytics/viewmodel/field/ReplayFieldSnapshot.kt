@@ -22,20 +22,7 @@ internal fun ReplayFrame.toReplayPoseState(): LivePoseState {
         }
     }.toMap()
     val lighting = robotLightingTelemetry(frameValues)
-    val pieceIndices = values.keys.asSequence()
-        .filter { it.startsWith("ARES/GamePieces/") }
-        .mapNotNull { it.substringAfterLast('/').toIntOrNull()?.div(7) }
-        .distinct()
-        .toList()
-    val gamePieces = pieceIndices.associateWith { index ->
-        GamePiece(
-            id = index.toString(),
-            name = "Piece $index",
-            x = values["ARES/GamePieces/${index * 7}"] ?: 0.0,
-            y = values["ARES/GamePieces/${index * 7 + 1}"] ?: 0.0,
-            type = "Game piece",
-        )
-    }
+    val gamePieces = replayGamePieces(values)
 
     return LivePoseState(
         trueX = when {
@@ -72,6 +59,28 @@ internal fun ReplayFrame.toReplayPoseState(): LivePoseState {
         indicatorLights = lighting.indicatorOutputs,
         prismLights = lighting.prismOutputs,
     )
+}
+
+private fun replayGamePieces(values: Map<String, Double>): Map<Int, GamePiece> {
+    // A typed frame owns this layer even when empty or incomplete; stale legacy arrays must not win.
+    if (values.keys.any { it.startsWith("ARES/GamePiecesFrame/") }) {
+        return GamePieceFrameAccumulator.decodeSnapshot(values).orEmpty()
+    }
+    val count = values["ARES/GamePieces/Count"]?.let {
+        if (!it.isFinite() || it < 0.0 || it > Int.MAX_VALUE || it != it.toInt().toDouble()) return emptyMap()
+        it.toInt()
+    }
+    return values.keys.asSequence()
+        .filter { it.startsWith("ARES/GamePieces/") }
+        .mapNotNull { it.removePrefix("ARES/GamePieces/").toIntOrNull()?.takeIf { index -> index >= 0 } }
+        .map { it / 7 }
+        .filter { count == null || it < count }
+        .distinct()
+        .mapNotNull { index ->
+            val x = values["ARES/GamePieces/${index * 7}"]?.takeIf(Double::isFinite) ?: return@mapNotNull null
+            val y = values["ARES/GamePieces/${index * 7 + 1}"]?.takeIf(Double::isFinite) ?: return@mapNotNull null
+            index to GamePiece(id = index.toString(), name = "Piece $index", x = x, y = y, type = "Game piece")
+        }.toMap()
 }
 
 /** Loads a bounded, source-consistent field trace ending at the replay playhead. */

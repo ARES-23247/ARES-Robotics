@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "9de762d51b27c52f1473b50fd66e9e91aff61543a1632f5bad9c6a5d768ad4b1",
+      "sha256": "8f2a501df120a81035271a741e046c9759ba086d2018524c910edcff0af71391",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11904,6 +11904,46 @@
       "evidence": [
         "docs/audits/studio-field-receipt-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass150-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/ReplayFieldSnapshot.kt": {
+      "sha256": "bf2221b4c521daa1012e6a3f4cbfd1de676052504bc18de299497e6251d398f1",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; fix typed game-piece replay omission, stale legacy count and invented missing coordinates. Validated typed visual/identity reconstruction, empty/incomplete authority, legacy count/coordinate rules. Remaining pose finiteness, vision cases, mixed sample timing and trace join/downsampling review open.",
+      "evidence": [
+        "docs/audits/studio-replay-game-piece-audit.md",
+        "ARESLib-Kotlin/build/audit-pass151-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldTopicSubscriber.kt": {
+      "sha256": "aec1465d03ee9b22275d743d36f29a6a184cc2a768cd8d0be25fb8e8092d20b9",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed typed GamePieceFrameAccumulator record mapping and added complete-snapshot entry point using shared constants with bounded count/presence/finiteness checks. Full app including live subscriber tests passes. Remaining live staging/reconnect/completeness, pose accumulation and broader subscriber behavior open.",
+      "evidence": [
+        "docs/audits/studio-replay-game-piece-audit.md",
+        "ARESLib-Kotlin/build/audit-pass151-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/ReplayFieldSnapshotTest.kt": {
+      "sha256": "d71f261cc437ced6d61f3200cce8a24db0153b579192a9d088d62de2c3898818",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-test review: source-separated poses/no-target vision, database trace timestamp join and two before-fix game-piece replay regressions now passing. Owned database fixture awaits close before directory cleanup. No whole replay/physical equivalence claim.",
+      "evidence": [
+        "docs/audits/studio-replay-game-piece-audit.md",
+        "ARESLib-Kotlin/build/audit-pass151-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-replay-game-piece-audit.md": {
+      "sha256": "637b2005d175542fde0ffac690ece24ccd0fd1c0e5f36e8bf953e43fcfdbae41",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report verified against source diff, two before failures and full app XML:1771 passed/six skipped. Both production files remain partial with live/pose/trace limitations explicit.",
+      "evidence": [
+        "docs/audits/studio-replay-game-piece-audit.md",
+        "ARESLib-Kotlin/build/audit-pass151-verified-evidence/"
       ]
     }
   }

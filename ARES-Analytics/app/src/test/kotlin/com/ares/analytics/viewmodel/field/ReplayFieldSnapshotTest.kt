@@ -13,6 +13,38 @@ import kotlin.test.assertTrue
 
 class ReplayFieldSnapshotTest {
     @Test
+    fun `typed game piece replay preserves visuals and empty frame suppresses legacy remnants`() {
+        val frame = listOf(2.0, 1.0, 101.0, 202.0, 1.25, 2.5, 0.4, 0.30, 0.10, 1.0, 65280.0, 7.0)
+            .mapIndexed { index, value -> "ARES/GamePiecesFrame/$index" to value }.toMap()
+        val piece = ReplayFrame(1000L, frame).toReplayPoseState().liveGamePieces.values.single()
+        assertEquals("sim-101", piece.id)
+        assertEquals("sim-type-202", piece.typeId)
+        assertEquals(1.25, piece.x)
+        assertEquals(2.5, piece.y)
+        assertEquals(0.4, piece.rotationRadians)
+        assertEquals(0.30, piece.widthMeters)
+        assertEquals(0.10, piece.heightMeters)
+        assertEquals("box", piece.simulationShape)
+        assertEquals(0x00FF00, piece.colorRgb)
+        val legacy = mapOf("ARES/GamePieces/0" to 9.0, "ARES/GamePieces/1" to 8.0)
+        val empty = mapOf("ARES/GamePiecesFrame/0" to 2.0, "ARES/GamePiecesFrame/1" to 0.0,
+            "ARES/GamePiecesFrame/2" to 8.0)
+        assertTrue(ReplayFrame(1000L, empty + legacy).toReplayPoseState().liveGamePieces.isEmpty())
+        assertTrue(ReplayFrame(1000L, (frame - "ARES/GamePiecesFrame/5") + legacy).toReplayPoseState().liveGamePieces.isEmpty())
+    }
+
+    @Test
+    fun `legacy replay honors count and never invents missing coordinates`() {
+        val legacy = mapOf("ARES/GamePieces/0" to 1.0, "ARES/GamePieces/1" to 2.0,
+            "ARES/GamePieces/7" to 3.0, "ARES/GamePieces/8" to 4.0)
+        assertEquals(2, ReplayFrame(1000L, legacy).toReplayPoseState().liveGamePieces.size)
+        assertEquals(setOf(0), ReplayFrame(1000L, legacy + ("ARES/GamePieces/Count" to 1.0))
+            .toReplayPoseState().liveGamePieces.keys)
+        assertTrue(ReplayFrame(1000L, legacy + ("ARES/GamePieces/Count" to 0.0)).toReplayPoseState().liveGamePieces.isEmpty())
+        assertTrue(ReplayFrame(1000L, mapOf("ARES/GamePieces/0" to 1.0, "ARES/GamePieces/-1" to 2.0))
+            .toReplayPoseState().liveGamePieces.isEmpty())
+    }
+    @Test
     fun `packed simulator pose preserves truth ekf and odometry as distinct sources`() {
         val values = (0..9).associate { index -> "ARES/SimulatorPoseFrame/$index" to (index + 0.25) }
         val state = ReplayFrame(1_000, values).toReplayPoseState()
@@ -85,7 +117,7 @@ class ReplayFieldSnapshotTest {
             assertEquals(0.25, trace.first().headingRad)
             assertEquals(2.0, trace.last().x)
         } finally {
-            database.close()
+            database.closeAndJoin()
             directory.deleteRecursively()
         }
     }
