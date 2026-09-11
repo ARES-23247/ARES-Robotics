@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "377aa62a4e55c91ae13f44ce6b0f1a0c49443ec274fd807ef0ed181fa693dc74",
+      "sha256": "e8f6870d40dbf466d8c532a9fb1bc981118299758ec526285858b6d376b621cb",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5619,7 +5619,8 @@
         "docs/audits/frc-hardware-refresh-audit.md: pass120 scoped records and canonical self-fingerprint refreshed",
         "docs/audits/frc-deployment-data-audit.md: pass121 file scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-superstructure-boundary-audit.md: pass122 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-historical-log-audit.md: pass123 historical-data records and canonical self-fingerprint refreshed"
+        "docs/audits/frc-historical-log-audit.md: pass123 historical-data records and canonical self-fingerprint refreshed",
+        "docs/audits/frc-simulator-input-config-audit.md: pass124 configuration records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -10608,6 +10609,75 @@
       "scope": "Accounts for all58historical captures, independent43424record validation and28JSON parses,4empty/46identical-value CSV snapshots, fullignore/attribute review, obsolete-rule removal and explicit nonfunctional/historical scope.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.ares/controllers/frc-driver.arescontroller": {
+      "sha256": "c4fc0674c988c79953973d627018e3e781b271a712004492cb70a46dc6e72d06",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full descriptor review: unique controls and mappings, valid anchors and button/axis bounds. Fixed minimumAxisCount4 to6 to cover mapped axis5; focused mapping regression and generated-project verification passed.",
+      "evidence": [
+        "docs/audits/frc-simulator-input-config-audit.md",
+        "ARESLib-Kotlin/build/audit-pass124-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/simgui-ds.json": {
+      "sha256": "4c1db4968e6b1220f384d0aa52502e70ca1a9703e7c96f13846d9b5f295f9ea6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full keyboard/robot joystick settings review against pinned WPILib2026.2.1 source. Fixed missing Xbox axis4 rotation by exposing6axes and independent Q/F positive-decay binding. All array counts checked; other bindings retained. No native keyboard/UI run; keyboard does not identify as Xbox.",
+      "evidence": [
+        "docs/audits/frc-simulator-input-config-audit.md",
+        "ARESLib-Kotlin/build/audit-pass124-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/simgui.json": {
+      "sha256": "4439c0a80064aaf77b4ac3aed93ff95dc04a2e9d0fc82635dbb0066977be808d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full saved NT display metadata review: FMSInfo type and visibility flag only; valid JSON, no actuator settings. Structural test passed; no GUI visibility claim.",
+      "evidence": [
+        "docs/audits/frc-simulator-input-config-audit.md",
+        "ARESLib-Kotlin/build/audit-pass124-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/simgui-window.json": {
+      "sha256": "1dfb5b57da1c2dcc6e3457af9ecc7eaa9686a6664ce8f06a11340d162aae6d60",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full saved window/docking/table preferences review; valid JSON, positive dimensions/scale/fps, coherent saved geometry. Structural tests passed; multi-display visibility and native rendering not exercised.",
+      "evidence": [
+        "docs/audits/frc-simulator-input-config-audit.md",
+        "ARESLib-Kotlin/build/audit-pass124-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/networktables.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full empty persistence array reviewed and asserted; contains no stale persisted settings. No NetworkTables native server run required for empty-data check.",
+      "evidence": [
+        "docs/audits/frc-simulator-input-config-audit.md",
+        "ARESLib-Kotlin/build/audit-pass124-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/config/SimulatorInputConfigAuditTest.kt": {
+      "sha256": "3758d9000927a9f206190f71872c028801cd99310cd8bf529a3dbc95c226de91",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: descriptor axis bounds, default independent self-centering rotation configuration, all joystick arrays and saved NT/window structure. Before2failures of3, after3passed; configuration checks do not simulate GUI key events.",
+      "evidence": [
+        "docs/audits/frc-simulator-input-config-audit.md",
+        "ARESLib-Kotlin/build/audit-pass124-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-simulator-input-config-audit.md": {
+      "sha256": "8fd0f3f1d2e39b129eb2435af8e85e5971ad084879f232f270b5e79be64d2c02",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents five complete configuration reviews, two confirmed axis-count fixes, pinned upstream format verification, 288 passing FRC tests, no GUI/hardware claim, legacy viewer preset remains unresolved.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass124-verified-evidence/summary.json"
       ]
     }
   }

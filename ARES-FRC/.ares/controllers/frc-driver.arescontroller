@@ -6,7 +6,7 @@
   "deviceMatchers": [
     {
       "nameContains": "Xbox",
-      "minimumAxisCount": 4,
+      "minimumAxisCount": 6,
       "minimumButtonCount": 8
     }
   ],
