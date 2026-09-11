@@ -122,5 +122,6 @@ private fun Obstacle.contains(point: Waypoint): Boolean = when (this) {
         kotlin.math.abs(dx * cos(radians) - dy * sin(radians)) <= width / 2.0 &&
             kotlin.math.abs(dx * sin(radians) + dy * cos(radians)) <= height / 2.0
     }
-    is Obstacle.Polygon -> vertices.any { point.distanceTo(it.x, it.y) < 0.3 }
+    is Obstacle.Polygon -> pointInPolygon(point.x, point.y, vertices) ||
+        vertices.any { point.distanceTo(it.x, it.y) < 0.3 }
 }

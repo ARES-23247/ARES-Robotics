@@ -6,12 +6,36 @@ import com.ares.analytics.shared.AprilTagPlacement
 import com.ares.analytics.shared.FieldWaypoint
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.shared.Obstacle
+import com.ares.analytics.shared.PathPoint
 import com.ares.analytics.shared.models.League
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class FieldItemHitTest {
+    @Test
+    fun `polygon interiors are selectable while concave notches remain empty`() {
+        val vertices = listOf(PathPoint(0.0, 0.0), PathPoint(3.0, 0.0), PathPoint(3.0, 1.0),
+            PathPoint(1.0, 1.0), PathPoint(1.0, 3.0), PathPoint(0.0, 3.0))
+        for (winding in listOf(vertices, vertices.reversed())) {
+            val polygon = Obstacle.Polygon("polygon", "Polygon", winding)
+            for (league in League.entries) for (angle in listOf(0f, 90f, -37f)) {
+                val pan = Offset(23f, -19f)
+                fun hit(x: Double, y: Double): Pair<String, String>? {
+                    val screen = getTransformedCanvasOffset(Waypoint(x, y), 800f, 800f, 8.0, 8.0,
+                        league, 1.5f, pan, angle)
+                    return findFieldItemAtScreen(screen, 800f, 800f, 8.0, 8.0, league,
+                        1.5f, pan, angle, listOf(polygon), emptyList())
+                }
+                assertEquals("Obstacle" to "polygon", hit(2.0, 0.5))
+                assertEquals("Obstacle" to "polygon", hit(0.5, 2.0))
+                assertNull(hit(2.0, 2.0))
+                // Preserve the existing vertex grab tolerance outside the filled polygon.
+                assertEquals("Obstacle" to "polygon", hit(-0.1, -0.1))
+            }
+        }
+    }
+
     @Test
     fun `rotated item lookup hits each rendered item kind with zoom and pan`() {
         for (league in League.entries) for (angle in listOf(0f, 90f, -37f)) {

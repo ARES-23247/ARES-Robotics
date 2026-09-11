@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "2c4e62aad31967d0a1a6c31064a015320f2507e223fe34f56b83474274f33294",
+      "sha256": "234a574506907e67036012131f4c7f7a49704f24483e6e4ab1f2860ceb02a958",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11829,13 +11829,15 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasItemGestures.kt": {
-      "sha256": "0a8b2c27c34d43ec881b59b311bca3f1a58141a3758bcf58330f85cec74dc6e9",
+      "sha256": "28534e6b270aa5d82e729960ff43d9104204c99b64564c21ed167a5ee0cff897",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full source read; fix omitted view rotation in shared double-click/context-menu item lookup. All item kinds tested under pan/zoom/rotation; remaining pointerInput capture/update behavior, polygon interiors, invalid viewport and live interaction review open.",
+      "scope": "Pass158: polygon interior lookup now shares even-odd containment with the field editor, preserving vertex proximity. Concave interior/notch and transformed lookup tested. Pointer capture/update lifecycle, cancellation, invalid viewport and live interaction remain open.",
       "evidence": [
         "docs/audits/studio-field-item-hit-audit.md",
-        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/"
+        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/",
+        "docs/audits/studio-polygon-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasDragTarget.kt": {
@@ -11849,13 +11851,15 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/FieldItemHitTest.kt": {
-      "sha256": "5e8fcaf0136bc772588bcbd1fe7b9bbe11ce668866cfcf60a0558af3ff586967",
+      "sha256": "0a10dac45b3fd87e1685b31fb33c1c88dda1acd6e3d1fb5ff1db1567fadb0710",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full two-test review: extracted original omission fails rotated obstacle lookup; corrected helper passes all item kinds, all leagues and three angles plus priority/no-hit behavior. No native pointer event dispatch claim.",
+      "scope": "Full three-test source review: all item kinds, priority/miss, concave polygon arms/notch, both windings, vertex tolerance and every league under pan/zoom/rotation. Headless lookup tests do not exercise native input lifecycle.",
       "evidence": [
         "docs/audits/studio-field-item-hit-audit.md",
-        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/"
+        "ARESLib-Kotlin/build/audit-pass149-verified-evidence/",
+        "docs/audits/studio-polygon-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasGesturesTest.kt": {
@@ -12156,6 +12160,46 @@
       "evidence": [
         "docs/audits/studio-preset-resource-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/PolygonHitTest.kt": {
+      "sha256": "209e0fa6152118a23dfb6f30d6e417669a310e0698ea62966b8a312504c8aa98",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full helper: finite field-scale even-odd containment, both windings, inclusive edges, degenerate closing edge and incomplete/nonfinite input. No exact-predicate or extreme finite magnitude guarantee; O(N) work, no timing benchmark.",
+      "evidence": [
+        "docs/audits/studio-polygon-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/fieldeditor/FieldLayoutCanvas.kt": {
+      "sha256": "0475a2232a9282dc213c390bae97987ecc7845b66566e573e1f7551b1cf16c2e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass158: containment call site and extraction of private polygon routine to shared helper reviewed and tested, including edge inclusion. Rest of canvas rendering, manipulation and native pointer lifecycle remains open.",
+      "evidence": [
+        "docs/audits/studio-polygon-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/PolygonHitTestTest.kt": {
+      "sha256": "7d85ad8659e636dc7abfafa7da305c00cc49d1c8d7088c71706b886f8c2e8bcd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-test source review: all square edges/vertices, reversed and repeated closure, diagonal triangle edge, exterior and incomplete/nonfinite input.",
+      "evidence": [
+        "docs/audits/studio-polygon-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-polygon-selection-audit.md": {
+      "sha256": "05ff0ab0528314b5e948f9d501f3ffefb54626951a15f3e5a4a9abac826c8eda",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass158 report checked against before-fix failure, five focused tests, full app XML and policy/link checks; remaining gesture and numeric limitations explicit.",
+      "evidence": [
+        "docs/audits/studio-polygon-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
       ]
     }
   }
