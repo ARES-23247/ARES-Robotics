@@ -1,4 +1,4 @@
-# Calibration executor and logging audit — pass 81
+# Calibration executor and logging audit â€” pass 81
 
 This pass continues the previously partial FTC empirical calibration and FRC SysId executor
 boundaries. It reviews moving-routine safety, sample validity, timestamps and repeated work.
@@ -57,5 +57,27 @@ camera calibration accuracy or usable Studio window is established by this batch
 ## Candidate validation
 
 Focused evidence is preserved under `ARESLib-Kotlin/build/audit-pass81-focused-evidence/`.
-The dependency-ordered candidate matrix and final ledger reconciliation are pending. The overall
-monorepo audit remains active; passing these suites does not grant review credit to unread files.
+Source commit: `831dc36a1b095762325b66f22f566175b90dd28b`.
+Library tree: `d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca`.
+Candidate: `17.0.3-rc.d469573e5f60`, published only to the isolated local repository.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 1892 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/publication, generated-project checks,
+FTC assembly, Studio Kover/version/file-size checks and monorepo policy passed. Gradle reused
+valid unchanged outputs; this is not a forced rerun claim. The six Studio skips remain the
+three conditional fresh-template checks, native file chooser, physical dashboard and optional
+performance baseline. No additional standalone dashboard benchmark was run.
+
+Copied XML, manifests, log hashes and candidate BOM identity are retained under
+`ARESLib-Kotlin/build/audit-pass81-verified-evidence/summary.json`. The library matrix took
+1m15s on this host. The wider audit remains active; suite success does not grant review credit
+to unread files. The next hardware-input pass starts with encoder failure/freshness/recovery
+and traces its effect into drive control and calibration logging.
