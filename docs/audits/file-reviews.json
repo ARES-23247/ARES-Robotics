@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "4a497c9f66360cbc0093ba8c85f5a0de9b294c81fdd187a7d4acda7fd06c7672",
+      "sha256": "a77ee67bc814211ab05e603e972a26af42742c0f57dc64259f7645f70252494f",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5616,7 +5616,8 @@
         "docs/audits/frc-redux-state-audit.md: pass117 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-sim-inventory-audit.md: pass118 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-teleop-feedback-audit.md: pass119 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-hardware-refresh-audit.md: pass120 scoped records and canonical self-fingerprint refreshed"
+        "docs/audits/frc-hardware-refresh-audit.md: pass120 scoped records and canonical self-fingerprint refreshed",
+        "docs/audits/frc-deployment-data-audit.md: pass121 file scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9908,6 +9909,65 @@
       "scope": "Documents six partial hardware refresh scopes and partial reset-helper scope, exact signal membership/order and bytecode18to0argument-array evidence, actual vendor-list implementation/internal JNI allocation limits, FRC274/reset3/coreGC5/policy and no hardware/deadline claim.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/deploy/README.md": {
+      "sha256": "4bef5826c81e65d0af6f2080f41292d3225ac1bf93c8baa6ea97912260a5489c",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Full deploy guide review against actual compiled-auto selection, blue/red frame contract, rotated footprint validator, offset-fetch task and homing policy. Clarified0.40m axis-aligned vs0.566m45degree center clearance; runtime already checks full footprint. Links/policy passed; no fetch/deploy/hardware action.",
+      "evidence": [
+        "docs/audits/frc-deployment-data-audit.md",
+        "ARESLib-Kotlin/build/audit-pass121-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/deploy/paths/field.json": {
+      "sha256": "12531664630adb23d24c6e6f40d5f474d71bf464b1e080d23f690d6ad4eb3731",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full declarative field review:16tag positions and wrapped rotations match bundled WPILib Crescendo layout, dimensionswithin1mm rounding;11pieces unique/resolved and full footprint inside bounds;6obstacles unique/bounded with valid physics metadata. Negative/outside speaker-tag coordinates intentionally retained. New desktop tests passed; simplified obstacles and physical field survey remain explicit limits.",
+      "evidence": [
+        "docs/audits/frc-deployment-data-audit.md",
+        "ARESLib-Kotlin/build/audit-pass121-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/deploy/swerve_offsets.json": {
+      "sha256": "41cdc4a9509ec6456227eb5d7ca8533cbbfe44cb950e94bccfae0f9aa32e42cf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-offset review: strict JSON exact fourkeys, finite values within[-1,1]rotations, exact profile/deploy agreement through existingtests, vendor default agreementwithin1e-7rotations via newtest. Allfour factoryoverrides preserve moduleidentities/geometry. Values not remeasured on hardware.",
+      "evidence": [
+        "docs/audits/frc-deployment-data-audit.md",
+        "ARESLib-Kotlin/build/audit-pass121-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/java/frc/robot/generated/TunerConstants.java": {
+      "sha256": "be0da772cb17877eda193bf27a63662561e5ddffdffb859f0f7cebf31a369616",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full pinned generated-vendor source review: configuration/gain units, deviceidentity/inversion/bus, gear/coupling/wheel units, modulegeometry/defaultoffsets and calibrationfactories; all three drivetrainconstructors forwardvendorparameters and compile. Actual configobjects match generated ARES profile and angularspeed geometry; sourcehashpin existingtest passes. Unchangedread-onlyvendorfile; no physical devices instantiated or vendor scheduler/plant certification.",
+      "evidence": [
+        "docs/audits/frc-deployment-data-audit.md",
+        "ARESLib-Kotlin/build/audit-pass121-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/config/DeploymentDataAuditTest.kt": {
+      "sha256": "b152d05ad06b7cddc6953307bbdb0da8bd256281e7cb1112f3e9dabd2071e90c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed4methods: bundledWPILib16tagsanddimensions with wrappedangles;11piece/6obstacle model integrity; actualCTRE module/profile IDs/inversions/gears/wheel/geometry/speedcrosschecks; all4calibrationfactoryidentity/geometry/offsetoverrides/defaultbaseline agreement. DesktopHAL/Phoenix configurationobjects only; no drivetrainconstruction.",
+      "evidence": [
+        "docs/audits/frc-deployment-data-audit.md",
+        "ARESLib-Kotlin/build/audit-pass121-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-deployment-data-audit.md": {
+      "sha256": "1d089d3da65d6854c8c4ea75c28df750a474b5ccd298ba0a74a5b0bb45655a4c",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Records four newly reviewed deploy/vendor files, new4tests and existing4canonical tests, no runtime numerical error found, corrected clearance documentation, FRC278/policy evidence and vendor/hardware/layout limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass121-verified-evidence/summary.json"
       ]
     }
   }
