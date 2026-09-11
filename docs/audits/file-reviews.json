@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "a1d2b36c1931fae52e2a896e3625230651abb4b30226c5fc2ba14e8e847a3e78",
+      "sha256": "c75983344b2fbda5f892d94fd9d727905cb3129c2345bb7f5f675340018544fb",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11974,6 +11974,36 @@
       "evidence": [
         "docs/audits/studio-pose-buffer-audit.md",
         "ARESLib-Kotlin/build/audit-pass152-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorTransactions.kt": {
+      "sha256": "144c9bce09d354cf82386529a77f73bdf9cfbc141e3240c0ca1455ba5049d068",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; validated bounded/coalesced history and redo invalidation, clipboard geometry/identity fields, lowest-unused tag allocation and snapshot application. Removed repeated tag-ID searches. Remaining nonfinite offsets, identity assumptions, mutable ownership and caller serialization/persistence boundaries open.",
+      "evidence": [
+        "docs/audits/studio-field-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass153-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldEditorTransactionsTest.kt": {
+      "sha256": "6e95ea22309d3a0bfab773494fa4d6468d315766d878b572687030dc868afb61",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-test review: bounded history/coalescing/redo/reset/invalid capacity, tag gaps and clipboard ownership, shape/piece/waypoint clone fields, unlocking/selections, append and snapshot restoration preserving grid settings. Full app suite passes.",
+      "evidence": [
+        "docs/audits/studio-field-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass153-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-field-transactions-audit.md": {
+      "sha256": "35f5fe4ca1e9f5b11741d05edb54f58013ee0b45c384e4b2c9430ed445e71fc7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report verified against source optimization and full app XML:1777 passed/six skips. No before-fix failure or broad concurrency/invalid-input certification claimed; production review remains partial.",
+      "evidence": [
+        "docs/audits/studio-field-transactions-audit.md",
+        "ARESLib-Kotlin/build/audit-pass153-verified-evidence/"
       ]
     }
   }
