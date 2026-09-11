@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "aa865df2ee41bf1eff58f0c79e9cbde035b4f7916e24509b89826c91d9694162",
+      "sha256": "1ec323d18e4399062272d661ae18ee82b0790a62a9d4a86c11288f81ae09045c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5628,7 +5628,8 @@
         "docs/audits/frc-build-selection-audit.md: pass129 dependencyselection records and self-fingerprint refreshed",
         "docs/audits/frc-native-extraction-audit.md: pass130 nativeextraction records and self-fingerprint refreshed",
         "docs/audits/frc-documentation-consistency-audit.md: pass131 documentation records and self-fingerprint refreshed",
-        "docs/audits/frc-vendor-wrapper-artifact-audit.md: pass132 vendor/wrapper records and self-fingerprint refreshed"
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md: pass132 vendor/wrapper records and self-fingerprint refreshed",
+        "docs/audits/frc-world-replacement-audit.md: pass133 worldreplacement records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9150,13 +9151,15 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/Dyn4jPhysicsWorld.kt": {
-      "sha256": "a43456cd2814ee8d19176eecb82b407b26b5c004df786a807e7018ceddd2cdb8",
+      "sha256": "fe1d04d97aaef178424cb3a0022f07fda6f76df854c424092bb630f27d090745",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read setup/rebuild/reset/step; tested finite atomic pose/time rejection, current+queued effort reset, zero-time no-op and retained queued effort, actual Dyn4j next-step behavior. Three original regressions fixed. Still partial: transactional loader failure/rebuild, field document fallback, extreme geometry and full lifetime.",
+      "scope": "Read setup/rebuild/reset/step; tested finite atomic pose/time rejection, current+queued effort reset, zero-time no-op and retained queued effort, actual Dyn4j next-step behavior. Three original regressions fixed. Still partial: transactional loader failure/rebuild, field document fallback, extreme geometry and full lifetime. Pass133: Worldreplacement scope: reproduceddestructivefailurebefore/afterpartialreplacementcreation. StageallgeometryinseparateWorld,detachownershipthencommit;keeporiginalworld/bodies/pieces/robotstateonbuilderexception.3regressionspass;302FRCtests. Completevalidationpolicy/customlistener/OOM/otherworldscopesremainpartial.",
       "evidence": [
         "docs/audits/frc-physics-boundary-audit.md",
-        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
+        "docs/audits/frc-world-replacement-audit.md",
+        "ARESLib-Kotlin/build/audit-pass133-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/field/FrcFieldBuilder.kt": {
@@ -11146,6 +11149,35 @@
       "scope": "Accounts8vendor/wrapper/policyartifacts, exactreferencegeneration/hashes,POSIXWindowslaunch,descriptorcoordinate/platformchecksandexplicitupstream/foreignOS/legallimits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/WorldReplacementAuditTest.kt": {
+      "sha256": "c8f59f5a32cdfc5e659f407deba829ca282ef69fb20e0ef025cebc88a97838bb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full3invocation review: failuresinwallcreationandlateobstaclecreation preservebodyidentity/order,groundedpieces,projectiles,robotpose/velocity;repeatedsuccesskeepsrobot/5bodies/clearedpieceindices. Before2failures,afterallpass. SPDXcommentaddedaftertests;noexecutablechangeaftervalidation.",
+      "evidence": [
+        "docs/audits/frc-world-replacement-audit.md",
+        "ARESLib-Kotlin/build/audit-pass133-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/marvin19_layout.json": {
+      "sha256": "1a1947adf90f395b6da41a78abdf18e0172927167c3fac5135f4ae0bd8961dfe",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "FullJSONread andtopicreferencecheck: severaldiagnosticnamesandRobot/Pose3d lackcurrentpublisher;swerve/simcomponent/gamepieceoutputsremain. No currentrepo consumer. Externalviewerschema/importcompatibilityunverified;unchangedpartial,notworkingdashboardcertification.",
+      "evidence": [
+        "docs/audits/frc-world-replacement-audit.md",
+        "ARESLib-Kotlin/build/audit-pass133-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-world-replacement-audit.md": {
+      "sha256": "c5339f9f047730b6b2825cbb80bc56ac556124a168c3cbc7c0051712faa02000",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documentsworldreplacementtransactiondefect/fix,3regressions/302passingFRCtests,fieldchangeallocationboundaryandlegacyviewerpartialstatus; noGUI/HILclaims.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass133-verified-evidence/summary.json"
       ]
     }
   }

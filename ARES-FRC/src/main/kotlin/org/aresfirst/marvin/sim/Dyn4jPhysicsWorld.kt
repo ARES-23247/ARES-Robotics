@@ -82,8 +82,20 @@ class Dyn4jPhysicsWorld(
         world.step(1, dt)
     }
 
-    /** Rebuilds static bodies and game elements from [config], retaining [robotBody]. */
+    /** Builds a replacement first; a construction failure leaves the active world untouched. */
     fun buildWorld(config: com.areslib.state.RobotFieldConfig) {
+        val replacement = World<Body>()
+        org.aresfirst.marvin.sim.field.FrcFieldBuilder.buildWorldWalls(
+            replacement, config.resolvedWidthMeters, config.resolvedHeightMeters
+        )
+        com.areslib.sim.field.FieldObstacleLoader.loadObstacles(replacement, config.obstacles)
+        val loadedElements = com.areslib.sim.field.FieldElementLoader.loadElements(
+            replacement, config.elementTypes, config.elements
+        )
+        val replacementBodies = replacement.bodies.toList()
+        // Detach ownership before moving the successfully constructed bodies to the live world.
+        replacement.removeAllBodies()
+
         val bodies = world.bodies.toList()
         for (body in bodies) {
             if (body != robotBody) {
@@ -92,14 +104,7 @@ class Dyn4jPhysicsWorld(
         }
         balls.clear()
         flyingBalls.clear()
-
-        val width = config.resolvedWidthMeters
-        val height = config.resolvedHeightMeters
-
-        org.aresfirst.marvin.sim.field.FrcFieldBuilder.buildWorldWalls(world, width, height)
-        com.areslib.sim.field.FieldObstacleLoader.loadObstacles(world, config.obstacles)
-        
-        val loadedElements = com.areslib.sim.field.FieldElementLoader.loadElements(world, config.elementTypes, config.elements)
+        for (body in replacementBodies) world.addBody(body)
         balls.addAll(loadedElements)
         if (debug) println("[FRC Sim] Successfully built world with ${config.obstacles.size} obstacles and ${config.elements.size} elements.")
     }
