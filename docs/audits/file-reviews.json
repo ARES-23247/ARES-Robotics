@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8a279f411c7ff17bf1a313d8b9e3ffbbc53c72fd066b67892df35c3ab4cec7d2",
+      "sha256": "490f4bf1cf0a0d01b73b004c24d786e9b6c62cf42d5b10167a02a0834fb9114c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12074,6 +12074,36 @@
       "evidence": [
         "docs/audits/studio-field-project-league-audit.md",
         "ARESLib-Kotlin/build/audit-pass155-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldImageLoader.kt": {
+      "sha256": "7c6e16db32c3f83d2c98929eb3e323951fa43a93db0d9a0b1dec41a1f709da73",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full wrapper functional review: blank-to-null, trimmed configured path, canonical assets containment via ProjectLayout, file requirement, encoded bytes/native decode and Result failures. Three all-league tests and existing document tests pass. Skia internals, large-image/native-memory stress, filesystem races and rendered window excluded.",
+      "evidence": [
+        "docs/audits/studio-field-image-loader-audit.md",
+        "ARESLib-Kotlin/build/audit-pass156-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldImageLoaderTest.kt": {
+      "sha256": "f186073fca1f172c71ced4f5edacf1b1e69565d1bd8270fbff08d8d2241d2dcd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: all leagues, null/blank no-write success, missing/corrupt/traversal/absolute failures, native one-pixel PNG decode with trimmed relative subdirectory path, unchanged bytes and owned finally cleanup. Focused suite passes.",
+      "evidence": [
+        "docs/audits/studio-field-image-loader-audit.md",
+        "ARESLib-Kotlin/build/audit-pass156-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-field-image-loader-audit.md": {
+      "sha256": "f7a6c2c720b65fae15bb981dd8687e7438f18e5643976a3baf6e812d387e29bd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against wrapper/path resolver and focused XML; actual native decode distinguished from rendered UI/stress results. No production change, no full-suite rerun claimed.",
+      "evidence": [
+        "docs/audits/studio-field-image-loader-audit.md",
+        "ARESLib-Kotlin/build/audit-pass156-verified-evidence/"
       ]
     }
   }
