@@ -10,13 +10,15 @@ import kotlin.math.hypot
 /**
  * Spline Trajectory Motion Profiling and Kinematic Velocity Sweep Engine.
  *
- * Evaluates Cubic Bezier and Hermite splines, numerical path curvature $\kappa$,
+ * Evaluates Cubic Bezier and Hermite splines, analytical curvature at sampled parameters,
  * decoupled heading orientation profiles (including Point-Towards target zones),
  * and forward/backward velocity sweeps to enforce acceleration ($a_{\text{max}}$) and centripetal cornering limits.
  *
  * ### Mathematical Formulations:
- * 1. **Numerical Curvature $\kappa$**:
- *    $$\kappa = \frac{d\theta}{ds} \approx \frac{\text{wrapAngle}(\theta_{k+1} - \theta_{k-1})}{s_{k+1} - s_{k-1}}$$
+ * 1. **Analytical Curvature**:
+ *    `k = (x' y'' - y' x'') / (x'^2 + y'^2)^(3/2)` at regular cubic samples.
+ *    Singular samples use a zero-curvature placeholder and a forced zero speed; constant
+ *    geometry also stops. Collinear endpoint limits and regular cubic stalls retain their tangent.
  * 2. **Centripetal Velocity Cap**:
  *    $$v_{\text{corner}} = \min\left(v_{\text{max}}, \sqrt{\frac{a_{\text{centripetal}}}{|\kappa|}}\right)$$
  *    The current centripetal ceiling is 2 m/s², independent of the longitudinal acceleration limit.
@@ -45,6 +47,7 @@ object SplineMotionProfiler {
      * 100,000-sample budget before allocating path samples. Do not mutate input lists during construction.
      * Constraint boundaries supplement the regular grid, including zero-width zones. Edge speed
      * caps apply to both endpoints; acceleration bounds cover endpoints and the edge interior.
+     * Geometry between samples remains an approximation; this does not certify unsampled extrema.
      *
      * @param data Parsed trajectory structure [PathPlannerJsonParser.ParsedPathData].
      * @return Fully parameterized and velocity-profiled [Path].
@@ -58,14 +61,19 @@ object SplineMotionProfiler {
         val relativePositions = splineRelativePositions(data, sampling)
 
         val pathPoints = ArrayList<PathPoint>(relativePositions.size)
+        val forcedStops = BooleanArray(relativePositions.size)
         var accumulatedDistance = 0.0
 
         var initialTangent = Rotation2d(0.0)
+        var firstDifferential: SplineDifferential? = null
         if (parsedWaypoints.size > 1) {
             val wp1 = parsedWaypoints[0]
             val wp2 = parsedWaypoints[1]
-            initialTangent = BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, 0.0)
+            firstDifferential = SplineDifferential(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor)
+            firstDifferential.evaluate(0.0)
+            initialTangent = Rotation2d(firstDifferential.headingRadians)
         }
+        forcedStops[0] = firstDifferential?.requiresStop ?: true
 
         var finalTangent = Rotation2d(0.0)
         if (parsedWaypoints.size > 1) {
@@ -82,6 +90,7 @@ object SplineMotionProfiler {
                 pose = Pose2d(parsedWaypoints[0].anchor.x, parsedWaypoints[0].anchor.y, initialTangent),
                 velocityMps = data.defaultMaxVel,
                 distanceMeters = 0.0,
+                curvature = firstDifferential?.curvature ?: 0.0,
                 tangentRadians = initialTangent.radians
             )
         )
@@ -90,11 +99,19 @@ object SplineMotionProfiler {
         for (i in 0 until parsedWaypoints.size - 1) {
             val wp1 = parsedWaypoints[i]
             val wp2 = parsedWaypoints[i + 1]
+            val differential = if (i == 0) firstDifferential!! else
+                SplineDifferential(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor)
+            if (i > 0) {
+                differential.evaluate(0.0)
+                constrainJunction(pathPoints.last(), forcedStops, pathPoints.lastIndex, differential)
+            }
 
             while (sampleIndex < relativePositions.size && relativePositions[sampleIndex] <= i + 1.0) {
                 val t = relativePositions[sampleIndex++] - i
                 val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
-                val heading = BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
+                differential.evaluate(t)
+                val heading = Rotation2d(differential.headingRadians)
+                forcedStops[pathPoints.size] = differential.requiresStop
 
                 val prevPathPoint = pathPoints.last()
                 val dx = point.x - prevPathPoint.pose.x
@@ -106,20 +123,18 @@ object SplineMotionProfiler {
                         pose = Pose2d(point.x, point.y, heading),
                         velocityMps = data.defaultMaxVel,
                         distanceMeters = accumulatedDistance,
+                        curvature = differential.curvature,
                         tangentRadians = heading.radians
                     )
                 )
             }
         }
 
-        // Calculate numerical curvature for each path point
-        computeCurvatures(pathPoints)
-
         // Decoupled Rotation & Point-Towards Zone heading interpolation
         applyRotations(pathPoints, relativePositions, data, startRotDeg, endRotDeg)
 
         // Forward and backward motion profiling sweeps
-        applyMotionProfile(pathPoints, relativePositions, data.startVel, data.endVel, data.defaultMaxVel, data.defaultMaxAccel, data.constraintZones)
+        applyMotionProfile(pathPoints, relativePositions, data.startVel, data.endVel, data.defaultMaxVel, data.defaultMaxAccel, data.constraintZones, forcedStops)
 
         // Parse path events
         val pathEvents = mutableListOf<PathEvent>()
@@ -154,17 +169,22 @@ object SplineMotionProfiler {
         val parsedWaypoints = naturalCubicWaypointControls(points)
 
         val pathPoints = ArrayList<PathPoint>(sampling.totalSamples)
+        val forcedStops = BooleanArray(sampling.totalSamples)
         var accumulatedDistance = 0.0
 
-        val initialTangent = BezierSpline.evaluateHeading(
+        val firstDifferential = SplineDifferential(
             parsedWaypoints[0].anchor, parsedWaypoints[0].nextControl,
-            parsedWaypoints[1].prevControl, parsedWaypoints[1].anchor, 0.0)
+            parsedWaypoints[1].prevControl, parsedWaypoints[1].anchor)
+        firstDifferential.evaluate(0.0)
+        val initialTangent = Rotation2d(firstDifferential.headingRadians)
+        forcedStops[0] = firstDifferential.requiresStop
 
         pathPoints.add(
             PathPoint(
                 pose = Pose2d(parsedWaypoints[0].anchor.x, parsedWaypoints[0].anchor.y, initialTangent),
                 velocityMps = maxVelocityMps,
                 distanceMeters = 0.0,
+                curvature = firstDifferential.curvature,
                 tangentRadians = initialTangent.radians
             )
         )
@@ -173,10 +193,18 @@ object SplineMotionProfiler {
             val wp1 = parsedWaypoints[i]
             val wp2 = parsedWaypoints[i + 1]
             val numSamples = sampling.steps[i]
+            val differential = if (i == 0) firstDifferential else
+                SplineDifferential(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor)
+            if (i > 0) {
+                differential.evaluate(0.0)
+                constrainJunction(pathPoints.last(), forcedStops, pathPoints.lastIndex, differential)
+            }
             for (step in 1..numSamples) {
                 val t = step.toDouble() / numSamples
                 val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
-                val heading = BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
+                differential.evaluate(t)
+                val heading = Rotation2d(differential.headingRadians)
+                forcedStops[pathPoints.size] = differential.requiresStop
                 val prevPathPoint = pathPoints.last()
                 val dx = point.x - prevPathPoint.pose.x
                 val dy = point.y - prevPathPoint.pose.y
@@ -186,13 +214,12 @@ object SplineMotionProfiler {
                         pose = Pose2d(point.x, point.y, heading),
                         velocityMps = maxVelocityMps,
                         distanceMeters = accumulatedDistance,
+                        curvature = differential.curvature,
                         tangentRadians = heading.radians
                     )
                 )
             }
         }
-
-        computeCurvatures(pathPoints)
 
         // Heading cosine interpolation from startHeading to endHeading
         val startAngle = startHeading.radians
@@ -208,26 +235,17 @@ object SplineMotionProfiler {
             pathPoints[idx] = p.copy(pose = Pose2d(p.pose.x, p.pose.y, Rotation2d(interpAngle)))
         }
 
-        applyMotionProfile(pathPoints, emptyList(), 0.0, 0.0, maxVelocityMps, maxAccelerationMps2, emptyList())
+        applyMotionProfile(pathPoints, emptyList(), 0.0, 0.0, maxVelocityMps, maxAccelerationMps2, emptyList(), forcedStops)
 
         return Path(pathPoints, emptyList())
     }
 
-    private fun computeCurvatures(pathPoints: MutableList<PathPoint>) {
-        for (idx in 0 until pathPoints.size) {
-            val nextIdx = if (idx < pathPoints.size - 1) idx + 1 else idx
-            val prevIdx = if (idx > 0) idx - 1 else idx
-
-            val pPrev = pathPoints[prevIdx]
-            val pNext = pathPoints[nextIdx]
-
-            val ds = pNext.distanceMeters - pPrev.distanceMeters
-            val dTheta = pNext.pose.heading.radians - pPrev.pose.heading.radians
-            val normDTheta = wrapAngle(dTheta)
-
-            // Understating tight curvature would increase the centripetal speed ceiling.
-            pathPoints[idx].curvature = if (ds > 0.0) normDTheta / ds else 0.0
-        }
+    private fun constrainJunction(point: PathPoint, forcedStops: BooleanArray, index: Int, outgoing: SplineDifferential) {
+        // Allow only angular floating-point roundoff, not a physical corner at nonzero speed.
+        val tangentRoundoff = 32.0 * Math.ulp(Math.PI)
+        forcedStops[index] = forcedStops[index] || outgoing.requiresStop ||
+            Math.abs(wrapAngle(outgoing.headingRadians - point.tangentRadians)) > tangentRoundoff
+        if (Math.abs(outgoing.curvature) > Math.abs(point.curvature)) point.curvature = outgoing.curvature
     }
 
     private fun applyRotations(
@@ -303,6 +321,7 @@ object SplineMotionProfiler {
         defaultMaxVel: Double,
         defaultMaxAccel: Double,
         constraintZones: List<PathPlannerJsonParser.ParsedConstraintsZone>,
+        forcedStops: BooleanArray,
         maxCentripetalAccel: Double = 2.0
     ) {
         // Resolve each point's limits once. These points are private to construction,
@@ -316,7 +335,7 @@ object SplineMotionProfiler {
                 zoneCursor.at(relativePositions[i - 1], after = true)
             } else null
             val zone = zoneCursor?.at(relativePositions[i])
-            val maxVel = zone?.maxVelocity ?: defaultMaxVel
+            val maxVel = if (forcedStops[i]) 0.0 else zone?.maxVelocity ?: defaultMaxVel
             val maxAccel = zone?.maxAcceleration ?: defaultMaxAccel
             accelerations[i] = if (i == 0) maxAccel else
                 minOf(previousMaxAccel, maxAccel, edgeZone?.maxAcceleration ?: defaultMaxAccel)

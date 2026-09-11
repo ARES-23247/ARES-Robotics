@@ -47,14 +47,13 @@ class SplineProfileAuditTest {
     }
 
     @Test
-    fun `tight curves retain measured curvature instead of understating it`() {
+    fun `tight curves retain analytical curvature instead of understating it`() {
         val data = straight(0.01)
         val first = data.waypoints.first().copy(nextControl = Translation2d(0.0, 0.01))
         val last = data.waypoints.last().copy(prevControl = Translation2d(0.01, 0.01))
         val points = SplineMotionProfiler.buildProfiledPath(data.copy(waypoints = listOf(first, last))).points
-        val before = points[4]
-        val after = points[6]
-        val expected = wrapAngle(after.tangentRadians - before.tangentRadians) / (after.distanceMeters - before.distanceMeters)
+        // Symmetric cubic at t=1/2: x'=1.5L, y'=0, y''=-6L, k=-8/(3L).
+        val expected = -8.0 / (3.0 * 0.01)
         assertTrue(abs(expected) > 100.0)
         assertEquals(expected, points[5].curvature, 1e-9)
     }
