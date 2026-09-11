@@ -56,7 +56,14 @@ class Dyn4jSimulation(
         seed: Long = 42L,
         feederPieceDetectorConfigured: Boolean = false
     ) : this(seed, feederPieceDetectorConfigured) {
-        buildWorld(config)
+        try {
+            buildWorld(config)
+        } catch (failure: Throwable) {
+            // The primary constructor already acquired the field subscription. A failed
+            // secondary constructor never returns an owner to the factory's rollback scope.
+            try { close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+            throw failure
+        }
     }
 
     private val physicsWorld = Dyn4jPhysicsWorld(

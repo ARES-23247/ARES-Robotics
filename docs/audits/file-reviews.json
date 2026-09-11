@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f6151ab692fb2122284899a2a8e73e68211190484907378b677e4903b9eef0b4",
+      "sha256": "8bc0e82a354bb735d1ec3ce9bb2a144053c0b126bc99faad331ea73bf57676df",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5622,7 +5622,8 @@
         "docs/audits/frc-historical-log-audit.md: pass123 historical-data records and canonical self-fingerprint refreshed",
         "docs/audits/frc-simulator-input-config-audit.md: pass124 configuration records and canonical self-fingerprint refreshed",
         "docs/audits/frc-generated-controls-profile-audit.md: pass125 control/profile records and self-fingerprint refreshed",
-        "docs/audits/frc-field-loader-boundary-audit.md: pass126 field loader records and self-fingerprint refreshed"
+        "docs/audits/frc-field-loader-boundary-audit.md: pass126 field loader records and self-fingerprint refreshed",
+        "docs/audits/frc-factory-construction-cleanup-audit.md: pass127 factory cleanup records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8882,10 +8883,12 @@
       "sha256": "de06e7f54f9366ac64daf05eff040b1b4865b3532c9f622ae83a02f9ae36cf0e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read whole factory, traced allocation before caller handoff and adapter close ownership. Track completed PDH/motors/drivetrain/cameras and simulation/dashboard objects; replace native ownership only after adapter construction succeeds. Separate cameras until commit. Remaining partial: native constructor integration, inaccessible partial constructor resources and composition-root post-return handoff.",
+      "scope": "Read whole factory, traced allocation before caller handoff and adapter close ownership. Track completed PDH/motors/drivetrain/cameras and simulation/dashboard objects; replace native ownership only after adapter construction succeeds. Separate cameras until commit. Remaining partial: native constructor integration, inaccessible partial constructor resources and composition-root post-return handoff. Pass127: Wholefactory re-read focused ownership graph: default/configured simulation tested; failed secondary constructor cannot enter startup.own, so constructor cleanup fixed at source. Existing6rollback tests pass. Native constructor internals and composition post-return handoff remainpartial.",
       "evidence": [
         "docs/audits/frc-startup-ownership-audit.md",
-        "ARESLib-Kotlin/build/audit-pass105-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass105-verified-evidence/summary.json",
+        "docs/audits/frc-factory-construction-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass127-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/FrcStartupResourcesTest.kt": {
@@ -9126,17 +9129,19 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/Dyn4jSimulation.kt": {
-      "sha256": "5402f1ddc88c62602dd22adb0cbd383e6cdc0635a3cbdb8be783031b66fab045",
+      "sha256": "dd73c69aa80eef41532415e39cb7163f751f9bafa6451a787a3b83d7e1d90dfb",
       "review": "partial",
       "validation": "passed",
-      "scope": "Early finite0..50s timestep gate before scratch/live configuration/effort/model mutations. New real-simulation invalid-time/recovery test reproduced inconsistent acceptance and now passes. Remaining simulation logic outside entry boundary remains partial. Pass117: Inventory-storage delta review: metadata reconciliation clamps direct counts0..40 before deque loops; intake gate shares same existing40 limit. Direct reflection regression handlesIntMAX/IntMIN and repeatedgrow/shrink without unbounded allocation. Other simulator paths remain partial, including simultaneous event accounting and world lifecycle. Pass118: Inventory-event delta: bounded local count accumulates capture and shot, one atomic count/virtual-detector action prevents lost captures and sensor double credit. Preserves initial-empty no-shot and full-hopper collection ordering. Actual Store/sensor tests prove conservation, retained captured metadata, extreme counts and detector configurations. Other simulator scopes remain partial.",
+      "scope": "Early finite0..50s timestep gate before scratch/live configuration/effort/model mutations. New real-simulation invalid-time/recovery test reproduced inconsistent acceptance and now passes. Remaining simulation logic outside entry boundary remains partial. Pass117: Inventory-storage delta review: metadata reconciliation clamps direct counts0..40 before deque loops; intake gate shares same existing40 limit. Direct reflection regression handlesIntMAX/IntMIN and repeatedgrow/shrink without unbounded allocation. Other simulator paths remain partial, including simultaneous event accounting and world lifecycle. Pass118: Inventory-event delta: bounded local count accumulates capture and shot, one atomic count/virtual-detector action prevents lost captures and sensor double credit. Preserves initial-empty no-shot and full-hopper collection ordering. Actual Store/sensor tests prove conservation, retained captured metadata, extreme counts and detector configurations. Other simulator scopes remain partial. Pass127: Secondary constructor now closes subscription acquired by primary constructor if buildWorld throws, preserves original failure and suppresses cleanup failures. Failure propagation test passes; actual close invocation established by source review, not handle-count measurement. Other world/loop scopes remainpartial.",
       "evidence": [
         "docs/audits/frc-physics-boundary-audit.md",
         "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
         "docs/audits/frc-redux-state-audit.md",
         "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json",
         "docs/audits/frc-sim-inventory-audit.md",
-        "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json",
+        "docs/audits/frc-factory-construction-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass127-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/Dyn4jPhysicsWorld.kt": {
@@ -10770,6 +10775,25 @@
       "scope": "Documents fieldtest review,7newinvocations coveringmalformeddata/recovery/fullorientation,296passingFRCtests, startupvalidation efficiency judgment and explicit physical/concurrency limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass126-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/FrcSeasonHardwareFactoryTest.kt": {
+      "sha256": "3e71c8de56e6b1fb301fc67a386f9ab3f9465ec2c0420b0f9785799fe895db69",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full3invocation review: coherent sixIOaliases/default/configured world, malformed configured-world original exception propagation. Fixed leaked test dashboard/simulation owners via finally cleanup. No measured native subscription count or native constructor fault injection.",
+      "evidence": [
+        "docs/audits/frc-factory-construction-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass127-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-factory-construction-cleanup-audit.md": {
+      "sha256": "003290fc43367c275f55fbc6656e3d69f053bd5eb68bf1dd6193f71e4381649b",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents confirmed constructor/test cleanup defects, fixes, corrected failure fixture,298passingFRCtests and explicit native cleanup measurement/fault injection gaps.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass127-verified-evidence/summary.json"
       ]
     }
   }
