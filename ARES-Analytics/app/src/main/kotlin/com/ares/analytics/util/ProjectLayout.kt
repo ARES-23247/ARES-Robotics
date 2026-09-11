@@ -72,7 +72,10 @@ internal object ProjectLayout {
         }
         return sourceRoots.any { sourceRoot ->
             sourceRoot.isDirectory && sourceRoot.walkTopDown().any { file ->
-                file.isFile && (file.extension == "kt" || file.extension == "java" || file.extension == "py")
+                file.isFile && when (league) {
+                    League.XRP -> file.extension == "py"
+                    League.FTC, League.FRC -> file.extension == "kt" || file.extension == "java"
+                }
             }
         }
     }

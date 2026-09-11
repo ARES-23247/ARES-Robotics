@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e694cd1375ac9582122336ce3df63efca8021571333d33b5752cde0f905bc994",
+      "sha256": "8ab866b1e74faf52d346769b3fe56523e38ccfc48e416b7dda5ca9b923d743f1",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12386,6 +12386,56 @@
       "evidence": [
         "docs/audits/studio-lighting-color-audit.md",
         "ARESLib-Kotlin/build/audit-pass163-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/util/Sha256.kt": {
+      "sha256": "9cbe711ec357e48e24f42d71f57d7ab046f00891e3a0ca245b28e0ebb4233e52",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full utility: lowercase nibble encoding removes per-byte formatter; prefix encoding removes temporary list/array while preserving oversize truncation. UTF8/raw/canonical text, per-call digest ownership, streaming file closure and composite/reset contract verified with independent vectors. Provider internals and hardware IO failures excluded.",
+      "evidence": [
+        "docs/audits/studio-path-hash-utilities-audit.md",
+        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/util/ProjectLayout.kt": {
+      "sha256": "7311b8d00d2d6b75bedf5c416bb25d51e3ca6ed1b0e4909eee4d3212a29229a2",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; corrected cross-league source language acceptance. Tested asset roots, field paths, normalized image containment, source roots and blank/missing folders. Recursive scans, symlink cycles, repeated XRP scans and filesystem races remain open; source presence is not a buildability check.",
+      "evidence": [
+        "docs/audits/studio-path-hash-utilities-audit.md",
+        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/util/Sha256Test.kt": {
+      "sha256": "6e158fecec5a203a92be3711b91299968e284fcb6ff00fec3fa6983ca788de20",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-test review: pinned byte/text/file vectors, explicit CRLF normalization/lone CR, positive and invalid prefix lengths, UTF8, 65553-byte streamed/composite vector, reset/empty hash and immediate fixture cleanup.",
+      "evidence": [
+        "docs/audits/studio-path-hash-utilities-audit.md",
+        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/util/ProjectLayoutTest.kt": {
+      "sha256": "eae4bf82b0bafc17ae0ea442a6f78acc4d99cdd5bd1b45faaa0a735880450026",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: mismatched/valid league source languages and FTC Java root, blank/missing folder, Android/module/FRC/XRP assets and field path, canonical relative image and escape/absolute rejection. JUnit4 fixture corrected before test execution; symlink behavior not tested.",
+      "evidence": [
+        "docs/audits/studio-path-hash-utilities-audit.md",
+        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-path-hash-utilities-audit.md": {
+      "sha256": "eed77255fc65385e3e865ac268a171ee4058c5fa1587db7e826afa2ce15af13c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against source review, eight focused tests, full app XML/policy/links and independent Python hash vectors; fixture compile correction and traversal limitations explicit.",
+      "evidence": [
+        "docs/audits/studio-path-hash-utilities-audit.md",
+        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json"
       ]
     }
   }
