@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "fbff39e472b8f1f9ae2c3bb79cf39cd6b8b2288a06df703a1fd0ab1fc9d580bd",
+      "sha256": "1a7c9ec7a5ca21c0052d70b9b13543d6c94bb066b4f1954a0282713c8e57cb78",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12500,6 +12500,56 @@
       "evidence": [
         "docs/audits/studio-vector-formatters-audit.md",
         "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresDriveController.kt": {
+      "sha256": "a8b23dc2e58b9abad532a28874b4bc00050fbfd7e3714bd87fa20a9467c9906c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source and caller/delegation boundary: bounded deadband/curve/fixed EMA, nonfinite frame clears smoothing, finite fallback exponent, one Redux snapshot, gamepad signs/frame/alliance/heading option and pose/alignment delegation. Single-robot/loop ownership. Downstream heading/leases/IO slew/physical stop timing excluded; no profiler measurement.",
+      "evidence": [
+        "docs/audits/ftc-driver-controller-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass167-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresSuperstructureController.kt": {
+      "sha256": "d372eadbc1ec99f14ddbb7a5309efec34d42d39a61a007c40237450ae12e0cde",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full alliance debounce/Redux dispatch: first intent at zero/negative time, exact 200ms threshold, duplicate suppression, rewound timeline reset and large forward interval overflow handling. Tests use real reducer and restore RobotClock. Single-loop ownership; no physical state claim.",
+      "evidence": [
+        "docs/audits/ftc-driver-controller-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass167-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresDriveControllerTest.kt": {
+      "sha256": "96fbaf5ea1b3eb00813e109f4dc01142ade5e6e7122362c62e270ca3d17b0eef",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full 15-test review: input bounds/deadband/EMA/alliance/rotation delegation, nonfinite input after motion, immutable state snapshot, invalid exponent fallback, both gamepad frames/heading flag and pose/alignment forwarding. Pose fixture API compile errors corrected; old PID name corrected to actual assertion scope.",
+      "evidence": [
+        "docs/audits/ftc-driver-controller-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass167-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresSuperstructureControllerTest.kt": {
+      "sha256": "3ca5fb90d6ea97b810dc9055f539ecca1de304f2897a205f3941063ce29aa2e3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-test review: root reducer intent, duplicate/elapsed debounce and zero/exact boundary/rewind/extreme-forward timestamps. Every test restores process clock.",
+      "evidence": [
+        "docs/audits/ftc-driver-controller-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass167-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-driver-controller-state-audit.md": {
+      "sha256": "db3f55a88603cf01c6da3280cde110367c13b21734b156ff348dd52a85086525",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against six before failures, 21 focused tests, full FTC/simulator XML and assembly/policy/link logs. Test fixture API corrections and physical/downstream limitations explicit.",
+      "evidence": [
+        "docs/audits/ftc-driver-controller-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass167-verified-evidence/summary.json"
       ]
     }
   }

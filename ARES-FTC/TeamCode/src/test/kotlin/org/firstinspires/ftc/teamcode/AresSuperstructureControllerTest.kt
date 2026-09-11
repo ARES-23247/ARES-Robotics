@@ -16,6 +16,44 @@ import org.mockito.Mockito
 
 /** Platform-owned alliance input behavior; mechanism behavior is generated from Builder documents. */
 class AresSuperstructureControllerTest {
+    @Test
+    fun `first intent at zero is accepted and exact debounce boundary is inclusive`() {
+        RobotClock.useMockTime(0L)
+        val (base, controller) = controller(Alliance.RED)
+        controller.toggleAlliance()
+        assertEquals(Alliance.BLUE, base.store.state.drive.alliance)
+        RobotClock.useMockTime(199L)
+        controller.toggleAlliance()
+        assertEquals(Alliance.BLUE, base.store.state.drive.alliance)
+        RobotClock.useMockTime(200L)
+        controller.toggleAlliance()
+        assertEquals(Alliance.RED, base.store.state.drive.alliance)
+    }
+
+    @Test
+    fun `rewound clock starts a fresh debounce window`() {
+        val (base, controller) = controller(Alliance.RED)
+        controller.toggleAlliance()
+        RobotClock.useMockTime(100L)
+        controller.toggleAlliance()
+        assertEquals(Alliance.RED, base.store.state.drive.alliance)
+        controller.toggleAlliance()
+        assertEquals(Alliance.RED, base.store.state.drive.alliance)
+        RobotClock.useMockTime(300L)
+        controller.toggleAlliance()
+        assertEquals(Alliance.BLUE, base.store.state.drive.alliance)
+    }
+
+    @Test
+    fun `large forward elapsed interval does not wrap into debounce suppression`() {
+        RobotClock.useMockTime(Long.MIN_VALUE)
+        val (base, controller) = controller(Alliance.RED)
+        controller.toggleAlliance()
+        assertEquals(Alliance.BLUE, base.store.state.drive.alliance)
+        RobotClock.useMockTime(Long.MAX_VALUE)
+        controller.toggleAlliance()
+        assertEquals(Alliance.RED, base.store.state.drive.alliance)
+    }
     @Before
     fun useDeterministicClock() {
         RobotClock.useMockTime(1_000L)
