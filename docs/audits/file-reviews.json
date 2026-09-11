@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8f2a501df120a81035271a741e046c9759ba086d2018524c910edcff0af71391",
+      "sha256": "a1d2b36c1931fae52e2a896e3625230651abb4b30226c5fc2ba14e8e847a3e78",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11944,6 +11944,36 @@
       "evidence": [
         "docs/audits/studio-replay-game-piece-audit.md",
         "ARESLib-Kotlin/build/audit-pass151-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldPoseBufferManager.kt": {
+      "sha256": "714fa01809bb26f70bab27a2b943b6b8c492591e7c37a35bc9ea4a8ec214a4ee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file review: scoped dispatcher-backed 50ms sampling, complete finite connected source selection, Euclidean 1cm filter, heading replacement, 150-sample deque, atomic sampling/clear/publication and state preservation. Three virtual-clock tests/full app pass. Upstream sample freshness and real scheduler latency excluded.",
+      "evidence": [
+        "docs/audits/studio-pose-buffer-audit.md",
+        "ARESLib-Kotlin/build/audit-pass152-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldPoseBufferManagerTest.kt": {
+      "sha256": "d67eca0c9aafc73a1e1cfb8d8fec5ea0bf46a447c095d1102030089660515400",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review with scheduler/background-scope ownership: rejects unavailable/disconnected/incomplete/nonfinite source, accepts complete estimate, diagonal/heading/duplicate behavior, 155-to-150 eviction and clear/resample with other viewer state retained. Full app passes.",
+      "evidence": [
+        "docs/audits/studio-pose-buffer-audit.md",
+        "ARESLib-Kotlin/build/audit-pass152-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-pose-buffer-audit.md": {
+      "sha256": "8f7a312e6c2ceff1ab15558c8c85b6af4dd784735660dd4c0020024dc8127031",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report verified against old/new admission/filter/synchronization code and final XML:1774 passed/six skips. No before-test execution or exhaustive concurrent schedule/latency/hardware validation claimed.",
+      "evidence": [
+        "docs/audits/studio-pose-buffer-audit.md",
+        "ARESLib-Kotlin/build/audit-pass152-verified-evidence/"
       ]
     }
   }
