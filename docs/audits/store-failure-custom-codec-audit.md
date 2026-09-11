@@ -66,6 +66,20 @@ guidance. Recursive dispatch from reducers/action observers is outside that cont
 
 ## Final validation
 
-Pending frozen-source candidate validation. Focused tests: 52 passed; separate replay
-compatibility run with cached Gson 2.8.5: 29 passed. All API checks passed. Eighteen new
-test methods include eight failure-before regressions.
+The final source passed 52 focused tests and all API checks before freezing. Eighteen new methods include eight failure-before regressions. A separate replay run passed 29 tests with cached Gson 2.8.5 substituted for the normal runtime. Public signatures are unchanged.
+
+Source `e179d16b500ae60b236e6a9e2c905e5b934f5f49`; library tree `b83ebb7aea38d94993d54add1415b638e239867e`.
+Local candidate `17.0.3-rc.b83ebb7aea38`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2114 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; counts do not imply every test was freshly executed. Conditional Studio skips remain recorded in XML.
+
+Copied XML, hashes, logs and candidate BOM identity are under `ARESLib-Kotlin/build/audit-pass93-verified-evidence/summary.json`. Focused and older-Gson XML are under `ARESLib-Kotlin/build/audit-pass93-focused-evidence/`. No physical robot timing, hardware fault recovery or usable Studio-window result is claimed. ActionLogger remains partial for disk failure/finalization behavior beyond this codec boundary.
