@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "ef6c6c21fe7cb8d6d5006d6d1a902848f80a84715626ba57c8af377003fb5602",
+      "sha256": "b400984a52f6e734222d4c3a032829257299983dedcd535e0d8dfd663d7bac20",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12580,6 +12580,66 @@
       "evidence": [
         "docs/audits/ftc-telemetry-helper-audit.md",
         "ARESLib-Kotlin/build/audit-pass168-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/AutoCapabilities.kt": {
+      "sha256": "3bec5509e3bd2ce5448edfb73700a501f6050c7b68357dea8320886a057c5a32",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full file: lazy fresh factories, DRIVE resource metadata, one-shot neutral callback, failed/successful/thrown recovery, completion and runtime cleanup. Physical motor neutralization and owner exception handling remain external.",
+      "evidence": [
+        "docs/audits/ftc-capability-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/config/AresRuntimePolicy.kt": {
+      "sha256": "a6914fa275ed971762377bc2e0e3e14f568222ce30634df3de540270d6dbedeb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full immutable generated-options bridge; cached identity and enum/proxy agreement verified. Hardware transport activation excluded.",
+      "evidence": [
+        "docs/audits/ftc-capability-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcAutoCapabilitiesTest.kt": {
+      "sha256": "784b88b27fc6c26666b53ed1f7bd9da9d4ff0f563e3e93e9178b5f62db12a4b4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full eight-test review: recovery metadata cleanup repaired, lifecycle/factory/error/policy checks added, existing preflight assertions reviewed. All eight focused and 126 full FTC tests pass.",
+      "evidence": [
+        "docs/audits/ftc-capability-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/AresAutoDSL.kt": {
+      "sha256": "de36d8fa12ed8530aa8ccd40ff89142d049c7a6611da48632ee65d8d478647a2",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full static read of season lifecycle delegation and generated project metadata. Hardware construction failures and generated-runtime initialization require dedicated integration/fault-injection tests.",
+      "evidence": [
+        "docs/audits/ftc-capability-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/AresTeleOpDSL.kt": {
+      "sha256": "ceab7cf8e571367f1f8761223be4fe37e60d7747f5b5cdf7a111dccf4f0a080f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full static read: reusable frames/adapters refer to persistent base GamepadStates; one timestamp, explicit drive opt-in, stop cleanup. Construction failure, repeated SDK lifecycle and generated runtime failure integration remain unverified.",
+      "evidence": [
+        "docs/audits/ftc-capability-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-capability-policy-audit.md": {
+      "sha256": "622002045cd88eef352efdbcd98a446ef6dc23bd60df403a0dbc358bf6fd70ea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass169 report checked against source, focused/full XML and policy/link evidence; no production change or hardware test claimed.",
+      "evidence": [
+        "docs/audits/ftc-capability-policy-audit.md",
+        "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
       ]
     }
   }
