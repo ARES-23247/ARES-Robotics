@@ -1,4 +1,4 @@
-# Mechanism integration audit — pass 109
+# Mechanism integration audit â€” pass 109
 
 ## Scope and reproduced findings
 
@@ -56,3 +56,22 @@ work than the unstable single Euler step. Physical HIL is not performed.
 
 Shared-library changes require a frozen source identity and a new isolated candidate,
 then full library/API checks and dependency-ordered FTC, FRC, starter and Studio validation.
+
+## Final validation
+
+Source `22d3875347296e5d3ef53bedbfdeb91bcfd4b52b`; library tree `100852e472fbeeba64fdf799665f51b4687f7f1b`. Local candidate `17.0.3-rc.100852e472fb`.
+
+Twelve new model tests and five core zero-GC regressions passed. Five failure-before cases are preserved. API checks passed. Final full-library allocation diagnostic: Mechanism pair: 272 bytes / 100000 updates, 306.063 ns/update on this host.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2198 | 0 |
+| ftc | 111 | 0 |
+| frc | 187 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; counts do not imply every test was freshly executed. Conditional Studio skips remain recorded in XML.
+
+Copied XML, verified hashes, logs and candidate BOM identity are recorded in `ARESLib-Kotlin/build/audit-pass109-verified-evidence/summary.json`. No physical loop-time or simulator-window result is claimed.
