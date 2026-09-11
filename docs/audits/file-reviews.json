@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "a77ee67bc814211ab05e603e972a26af42742c0f57dc64259f7645f70252494f",
+      "sha256": "f42f8fe263b9956251b5e29d0273ed79fbf9e8a61a7c77d72141fbfc3e6843b4",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5617,7 +5617,8 @@
         "docs/audits/frc-sim-inventory-audit.md: pass118 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-teleop-feedback-audit.md: pass119 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-hardware-refresh-audit.md: pass120 scoped records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-deployment-data-audit.md: pass121 file scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-deployment-data-audit.md: pass121 file scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-superstructure-boundary-audit.md: pass122 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9968,6 +9969,35 @@
       "scope": "Records four newly reviewed deploy/vendor files, new4tests and existing4canonical tests, no runtime numerical error found, corrected clearance documentation, FRC278/policy evidence and vendor/hardware/layout limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass121-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinSuperstructure.kt": {
+      "sha256": "1841a1ad8a590e7138fd326544c4e169d7a3bd9ff96982e3253e5d84f20bdce1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full review of coherent cached sensor observations/readiness, timer progression, safety-inhibited stops, effort scaling and units, collision interlocks and finite setpoints. Fixed failed stop skipping other channels with inline aggregate failures, clock rewind/overflow/missed finish deadline, inactive climber position target blocking intake, and nonfinite positions becoming active minimum endpoints. Reused cached flywheelRPM across readiness/snapshot. Five of six initial regressions failed; final seven and full FRC285/coreGC5 passed. Compiled output has only exception-branch construction; no hardware/whole-loop guarantee.",
+      "evidence": [
+        "docs/audits/frc-superstructure-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass122-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/SuperstructureBoundaryAuditTest.kt": {
+      "sha256": "47cb40e9d155dc9cbbd008c914fc6ac26dd0c15c11e3f21b6589adea5cae6b01",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed7methods: each of7stop channels throwing and multiple suppressed failures; timer rewind, elapsed overflow and delayed finish; exact500/1500ms phases; unknown phase cancellation; inactive position target vs voltage-mode intake arbitration; NaN/+Inf/-Inf position targets neutral across cowl/intake/climber. Actual subsystem and Store/reducer with controlled IO boundaries. Six-before-five-fail, seven-final-pass.",
+      "evidence": [
+        "docs/audits/frc-superstructure-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass122-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-superstructure-boundary-audit.md": {
+      "sha256": "943406151c6ce49e61e7b31ef2b9d8506576aa7ca6a261ecb1fbb6b6f0f5c728",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents complete superstructure scope, five reproduced failures, best-effort zeroing/timer/interlock/finite-target fixes and cached-read reuse, FRC285/coreGC5/policy/bytecode evidence and physical stop/clearance/vendor IO limitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass122-verified-evidence/summary.json"
       ]
     }
   }

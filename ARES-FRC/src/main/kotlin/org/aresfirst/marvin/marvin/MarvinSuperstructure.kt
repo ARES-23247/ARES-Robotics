@@ -36,15 +36,16 @@ class MarvinSuperstructure(
         val pieceDetectionValid = feederIO.pieceDetectionValid
         val pieceDetected = pieceDetectionValid && feederIO.isBeamBroken
         val flywheelVelocityValid = flywheelIO.velocityValid
+        val flywheelRpm = flywheelIO.velocityRpm
         val targetFlywheelRpm = store.state.superstructure.marvin.flywheel.targetVelocityRpm
         val allFlywheelMotorsAtTarget = flywheelVelocityValid && when (flywheelIO) {
             is org.aresfirst.marvin.hardware.FrcFlywheelPerMotorReadiness ->
                 flywheelIO.allMotorsAtTarget(targetFlywheelRpm, FLYWHEEL_READY_TOLERANCE_RPM)
-            else -> kotlin.math.abs(flywheelIO.velocityRpm - targetFlywheelRpm) <
+            else -> kotlin.math.abs(flywheelRpm - targetFlywheelRpm) <
                 FLYWHEEL_READY_TOLERANCE_RPM
         }
         store.dispatch(SuperstructureSensorUpdate(
-            flywheelRpm = flywheelIO.velocityRpm,
+            flywheelRpm = flywheelRpm,
             flywheelVelocityValid = flywheelVelocityValid,
             flywheelAllMotorsAtTarget = allFlywheelMotorsAtTarget,
             cowlAngleRotations = cowlIO.angleRotations,
@@ -63,14 +64,17 @@ class MarvinSuperstructure(
         val marvin = store.state.superstructure.marvin
         if (!marvin.slamtakeActive || (pieceDetectionValid && pieceDetected)) return
 
-        val elapsed = (timestampMs - marvin.slamtakeStartTimeMs) / 1000.0
-        when (marvin.slamtakePhase) {
-            DEPLOYED_PHASE -> if (elapsed >= RETRACT_AT_SECONDS) {
-                store.dispatch(SlamtakeTimerExpired(1, timestampMs))
-            }
-            RETRACTED_PHASE -> if (elapsed >= FINISH_AT_SECONDS) {
-                store.dispatch(SlamtakeTimerExpired(2, timestampMs))
-            }
+        val start = marvin.slamtakeStartTimeMs
+        if (timestampMs < start || marvin.slamtakePhase !in DEPLOYED_PHASE..RETRACTED_PHASE) {
+            store.dispatch(StopSlamtake(timestampMs))
+            return
+        }
+        val elapsedMs = timestampMs - start
+        // Signed subtraction overflow represents a very long forward interval, not negative time.
+        if (elapsedMs < 0L || elapsedMs >= FINISH_AT_MS) {
+            store.dispatch(SlamtakeTimerExpired(2, timestampMs))
+        } else if (marvin.slamtakePhase == DEPLOYED_PHASE && elapsedMs >= RETRACT_AT_MS) {
+            store.dispatch(SlamtakeTimerExpired(1, timestampMs))
         }
     }
 
@@ -78,13 +82,15 @@ class MarvinSuperstructure(
     override fun writeOutputs(state: RobotState, scale: Double) {
         val marvin = state.superstructure.marvin
         if (marvin.mechanismSafetyInhibited || marvin.mechanismSafetyFaultLatched) {
-            flywheelIO.setAppliedVoltage(0.0)
-            cowlIO.setAppliedVoltage(0.0)
-            intakeIO.setPivotVoltage(0.0)
-            intakeIO.setRollerVoltage(0.0)
-            feederIO.setAppliedVoltage(0.0)
-            floorIO.setAppliedVoltage(0.0)
-            climberIO.setAppliedVoltage(0.0)
+            var failure: Throwable? = null
+            failure = attemptStop(failure) { flywheelIO.setAppliedVoltage(0.0) }
+            failure = attemptStop(failure) { cowlIO.setAppliedVoltage(0.0) }
+            failure = attemptStop(failure) { intakeIO.setPivotVoltage(0.0) }
+            failure = attemptStop(failure) { intakeIO.setRollerVoltage(0.0) }
+            failure = attemptStop(failure) { feederIO.setAppliedVoltage(0.0) }
+            failure = attemptStop(failure) { floorIO.setAppliedVoltage(0.0) }
+            failure = attemptStop(failure) { climberIO.setAppliedVoltage(0.0) }
+            failure?.let { throw it }
             return
         }
         val effortScale = scale.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.0
@@ -96,7 +102,8 @@ class MarvinSuperstructure(
         flywheelIO.setVelocityRpm(flywheelTargetRpm, effortScale)
         // Position targets describe mechanism geometry and must not move when
         // brownout scaling changes. Velocity and voltage commands are scaled below.
-        if (marvin.cowl.angleValid && marvin.cowl.angleRotations.isFinite()) {
+        if (marvin.cowl.angleValid && marvin.cowl.angleRotations.isFinite() &&
+            marvin.cowl.targetAngleRotations.isFinite()) {
             cowlIO.setTargetAngle(
                 finiteOrZero(marvin.cowl.targetAngleRotations).coerceIn(0.0, MarvinConfig.cowlMaxRotations),
                 effortScale
@@ -105,6 +112,8 @@ class MarvinSuperstructure(
             cowlIO.setAppliedVoltage(0.0)
         }
 
+        val climberTargetValid = marvin.climber.targetPositionRotations.isFinite()
+        val climberPositionMode = marvin.climber.controlMode == ClimberControlMode.POSITION_ROTATIONS
         val climberTarget = finiteOrZero(marvin.climber.targetPositionRotations).coerceIn(
             MarvinConfig.MechanismLimits.climberMinRotations,
             MarvinConfig.MechanismLimits.climberMaxRotations
@@ -115,18 +124,20 @@ class MarvinSuperstructure(
         val climberMotionRequested = when (marvin.climber.controlMode) {
             ClimberControlMode.VOLTAGE -> kotlin.math.abs(climberVoltage) > OUTPUT_EPSILON
             ClimberControlMode.POSITION_ROTATIONS ->
-                !climberPositionValid ||
+                !climberPositionValid || !climberTargetValid ||
                     kotlin.math.abs(climberTarget - marvin.climber.positionRotations) > POSITION_EPSILON_ROTATIONS
         }
         val climberBlocksIntake = !climberPositionValid ||
             marvin.climber.positionRotations > MarvinConfig.MechanismLimits.climberClearanceRotations ||
-            climberTarget > MarvinConfig.MechanismLimits.climberClearanceRotations || climberMotionRequested
+            (climberPositionMode && (!climberTargetValid ||
+                climberTarget > MarvinConfig.MechanismLimits.climberClearanceRotations)) || climberMotionRequested
         val requestedPivot = finiteOrZero(marvin.intake.targetAngleDegrees).coerceIn(
             MarvinConfig.MechanismLimits.intakeStowedDegrees,
             MarvinConfig.MechanismLimits.intakeDeployedDegrees
         )
         val safePivot = if (climberBlocksIntake) MarvinConfig.MechanismLimits.intakeStowedDegrees else requestedPivot
-        if (marvin.intake.pivotAngleValid && marvin.intake.pivotAngleDegrees.isFinite()) {
+        if (marvin.intake.pivotAngleValid && marvin.intake.pivotAngleDegrees.isFinite() &&
+            marvin.intake.targetAngleDegrees.isFinite()) {
             intakeIO.setPivotAngle(safePivot, effortScale)
         } else {
             intakeIO.setPivotVoltage(0.0)
@@ -151,7 +162,7 @@ class MarvinSuperstructure(
             when (marvin.climber.controlMode) {
                 ClimberControlMode.VOLTAGE -> climberIO.setAppliedVoltage(climberVoltage * effortScale)
                 ClimberControlMode.POSITION_ROTATIONS -> {
-                    if (climberPositionValid) {
+                    if (climberPositionValid && climberTargetValid) {
                         climberIO.setTargetPositionRotations(climberTarget, effortScale)
                     } else {
                         climberIO.setAppliedVoltage(0.0)
@@ -161,13 +172,24 @@ class MarvinSuperstructure(
         }
     }
 
+    // Inline accumulation avoids allocating a lifecycle collector on every inhibited robot loop.
+    private inline fun attemptStop(previous: Throwable?, action: () -> Unit): Throwable? = try {
+        action()
+        previous
+    } catch (failure: Throwable) {
+        if (previous == null) failure else {
+            previous.addSuppressed(failure)
+            previous
+        }
+    }
+
     private fun finiteOrZero(value: Double): Double = if (value.isFinite()) value else 0.0
 
     companion object {
         private const val DEPLOYED_PHASE = 1
         private const val RETRACTED_PHASE = 2
-        private const val RETRACT_AT_SECONDS = 0.5
-        private const val FINISH_AT_SECONDS = 1.5
+        private const val RETRACT_AT_MS = 500L
+        private const val FINISH_AT_MS = 1500L
 
         /** Feeder feed-forward gain: applied volts per commanded output-shaft RPS. */
         const val FEEDER_KV_VOLTS_PER_RPS = 0.12
