@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8ab866b1e74faf52d346769b3fe56523e38ccfc48e416b7dda5ca9b923d743f1",
+      "sha256": "df754524ec0620d932cb2ac34b4b7af45c7f6bd79547faa72398ff6010fee9d3",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12399,13 +12399,15 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/util/ProjectLayout.kt": {
-      "sha256": "7311b8d00d2d6b75bedf5c416bb25d51e3ca6ed1b0e4909eee4d3212a29229a2",
-      "review": "partial",
+      "sha256": "55c09df724f8207e95072e7895231d2b35156b2b3526dfd0c6c04c204cd56428",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source read; corrected cross-league source language acceptance. Tested asset roots, field paths, normalized image containment, source roots and blank/missing folders. Recursive scans, symlink cycles, repeated XRP scans and filesystem races remain open; source presence is not a buildability check.",
+      "scope": "Full stable-filesystem source/path contract: league-specific source roots/extensions, real-path visited traversal avoids ancestor cycles and overlapping scans; image existing ancestors resolve real links before containment, including missing suffixes/normalized parents and linked asset root. Real Windows junction tests pass. No atomic protection against concurrent link replacement, ACL fault injection, POSIX-host execution or repository buildability guarantee.",
       "evidence": [
         "docs/audits/studio-path-hash-utilities-audit.md",
-        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json",
+        "docs/audits/studio-project-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass165-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/util/Sha256Test.kt": {
@@ -12419,13 +12421,15 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/util/ProjectLayoutTest.kt": {
-      "sha256": "eae4bf82b0bafc17ae0ea442a6f78acc4d99cdd5bd1b45faaa0a735880450026",
+      "sha256": "d52244a52de86d59fbb40c8aa09196cdf501e3157b30f877a73c698577dfcf9a",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full three-test review: mismatched/valid league source languages and FTC Java root, blank/missing folder, Android/module/FRC/XRP assets and field path, canonical relative image and escape/absolute rejection. JUnit4 fixture corrected before test execution; symlink behavior not tested.",
+      "scope": "Full seven-test review: source languages/roots, asset layout/image normalization, actual linked FRC source/cycle, overlapping XRP roots, junction image escape including missing-prefix/suffix paths, linked asset-root boundary. Temporary links deleted before JUnit4 folder cleanup; all ran on Windows without skips.",
       "evidence": [
         "docs/audits/studio-path-hash-utilities-audit.md",
-        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json",
+        "docs/audits/studio-project-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass165-verified-evidence/summary.json"
       ]
     },
     "docs/audits/studio-path-hash-utilities-audit.md": {
@@ -12436,6 +12440,16 @@
       "evidence": [
         "docs/audits/studio-path-hash-utilities-audit.md",
         "ARESLib-Kotlin/build/audit-pass164-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-project-traversal-audit.md": {
+      "sha256": "020c95b5e8524594064b5cc85b98a2a7294f4a04fd4d933cbc52a94bec3c5bc0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against source review, real Windows junction tests, before-image-fix failure, ten focused tests and full app XML/policy/link results. Concurrency/ACL/POSIX limitations explicit.",
+      "evidence": [
+        "docs/audits/studio-project-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass165-verified-evidence/summary.json"
       ]
     }
   }
