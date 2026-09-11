@@ -1,7 +1,7 @@
 # Stationary parameters in spline sampling
 
 Pass 99 checks reversals and regular stalls between the previous sample parameters.
-The cubic with scalar controls [0,1,1,-2] has derivative 3-6t-6t² and a reversal at
+The cubic with scalar controls [0,1,1,-2] has derivative 3-6t-6tÂ² and a reversal at
 (sqrt(3)-1)/2. Its 40-step grid missed that root and never imposed a stop. One preserved
 failure-before regression demonstrates the missing extremal position.
 
@@ -47,4 +47,22 @@ No physical hardware timing or usable Studio-window result is claimed.
 
 ## Final validation
 
-Pending frozen-candidate validation.
+The frozen source passed 219 pathing tests and API checks. Thirteen new methods include one preserved failure-before case. Public API signatures are unchanged.
+
+Kover `SplineStationarySampling.kt`: 59/62 lines and 85/96 branches executed. Kover `SplineMotionProfiler.kt`: 220/220 lines and 111/116 branches executed. Execution coverage does not certify the unsampled geometry; the profiler remains partial.
+
+Source `a162fc17846c67cede63c0af9689a6ec3ed63278`; library tree `af2714ebd99afc5dea56ceec8fca1acf8b3f7aa3`.
+Local candidate `17.0.3-rc.af2714ebd99a`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2177 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; counts do not imply every test was freshly executed. Conditional Studio skips remain recorded in XML.
+
+Copied XML, hashes, logs and candidate BOM identity are under `ARESLib-Kotlin/build/audit-pass99-verified-evidence/summary.json`; focused XML is under `ARESLib-Kotlin/build/audit-pass99-focused-evidence/`. No physical timing, measured JIT allocation rate or usable Studio-window result is claimed.
