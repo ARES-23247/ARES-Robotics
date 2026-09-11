@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e8f6870d40dbf466d8c532a9fb1bc981118299758ec526285858b6d376b621cb",
+      "sha256": "abb57f822beeee9d9394acdfecafc7998219189e60bc3f8821f4a8aa8081c85c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5620,7 +5620,8 @@
         "docs/audits/frc-deployment-data-audit.md: pass121 file scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-superstructure-boundary-audit.md: pass122 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-historical-log-audit.md: pass123 historical-data records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-simulator-input-config-audit.md: pass124 configuration records and canonical self-fingerprint refreshed"
+        "docs/audits/frc-simulator-input-config-audit.md: pass124 configuration records and canonical self-fingerprint refreshed",
+        "docs/audits/frc-generated-controls-profile-audit.md: pass125 control/profile records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -10678,6 +10679,65 @@
       "scope": "Documents five complete configuration reviews, two confirmed axis-count fixes, pinned upstream format verification, 288 passing FRC tests, no GUI/hardware claim, legacy viewer preset remains unresolved.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass124-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.ares/controls/driver.arescontrols": {
+      "sha256": "bbdc7476cf1172d5cd015a5e00ad65d42725dcc2129aadd8f9cf84c0dbab4542",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-binding scheme review: port/profile references, inverted axes1/0/4, rescaled0.1deadband, continuous VALUE emission, enabled drive targets and zero timing delays. Actual generated runtime regression covers combined axes, repeated frames, exact deadband and disconnect neutralization. Continuous emission is required, not redundant.",
+      "evidence": [
+        "docs/audits/frc-generated-controls-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.ares/project.json": {
+      "sha256": "22d60a8f9a9b774f1d119da045d45d2581fa4f6fba0460cf10e882804e5a6b86",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full manifest review: identity/2024field/FRC/blue-originCCW/hybrid authoring, dimensions matching shared field constants and0.8mseason/sim bumpers, empty runtimeoptions; generated verification passes. No physical dimension measurement.",
+      "evidence": [
+        "docs/audits/frc-generated-controls-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.ares/tuning/marvin-competition.arestuning": {
+      "sha256": "439f7fcf9cbc998064da5a0c1f0ec285739e20838e2c7c36f0945ee9fd8c7dfe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full23value profile review: unique known IDs, correct scalar types/ranges, project/drivebase/profile refs match, readonlyvalues agree with descriptor/vendor, calibrated offsets retain deploy overlay, simulation dimensions agree. Only2pathparameters map to live Redux updates; no physical gain or calibration certification.",
+      "evidence": [
+        "docs/audits/frc-generated-controls-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/generatedruntime/FrcGeneratedControlsRuntimeTest.kt": {
+      "sha256": "d0364de6d3c43247e716c1a08f295ad7e9e84eeeecfc69311cfc707e6090dad4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full2test review. Added real generated binding execution using reusable sampled frames: neutral arming, signs/rescaleddeadband, combined controls, repeated commands and disconnect. Existing preparation/source/dispatch/cancel test retained. Both pass; no nativeHIDcoverage.",
+      "evidence": [
+        "docs/audits/frc-generated-controls-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.ares/drivetrains/marvin-ctre-swerve.aresdrivetrain": {
+      "sha256": "becf5449b6dbfa838313319f2e844150cbb379db41e325e7520e852e58657a2e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass125 read descriptor to check profile references,23parameter types/bounds/ownership, vendor values and geometry. Parameter/configuration consistency checked; end-to-end enforcement of every declared hardware safety/current/zero-allocation policy remains open. Not a complete hardware-contract review.",
+      "evidence": [
+        "docs/audits/frc-generated-controls-profile-audit.md",
+        "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-generated-controls-profile-audit.md": {
+      "sha256": "19bc814560ec93ca5708bf9ec522f07f9b2ca9b30641aeaa6ca5a0417b915363",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Records full controlscheme/project/tuning/test review, meaningful generated runtime regression,289FRCtests passing, intentional repeated command emissions, no new defect and explicit physical/safety coverage limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
       ]
     }
   }
