@@ -58,10 +58,14 @@ inhibits output until valid configuration is reapplied and explicit neutral reco
 Unchanged accepted settings perform no coefficient reads or writes. Software velocity mode keeps
 PID feedback separate from chassis feedforward. Motor and servo command caches force a retry
 after uncertain writes, including requests to return to the previously accepted command.
+The tuning controller validates its complete consumed proposal before changing hardware, reuses
+unchanged geometry, and restores construction gains when `motorGains` becomes null. Disabling
+kV-derived speed limits restores the construction speed limit. A rejected proposal requires valid
+tuning followed by explicit neutral recovery; clearing a fault alone cannot accept invalid settings.
 
 ### `frc-hardware`
 
-This module adapts WPILib and vendor hardware to the same core contracts. It owns `FrcBaseRobot`, `FrcSwerveRobot`, swerve hardware IO, the FRC Limelight adapter, telemetry, and power management. Season classes intentionally live in ARES-FRC, even when they share the `com.areslib.frc` package.
+This module adapts WPILib and vendor hardware to the same core contracts. It owns `FrcBaseRobot`, `FrcSwerveRobot`, swerve hardware IO, the FRC Limelight adapter, telemetry, and power management under `com.areslib.frc`. Season classes live in ARES-FRC under `org.aresfirst.marvin`.
 
 ### `ftc-mocks`
 
@@ -103,6 +107,9 @@ Before merging an ARESLib contract change:
 
 - Search ARES-FTC, ARES-FRC, and ARES-Analytics for consumers.
 - Keep telemetry topic spelling, units, and types compatible or provide an explicit migration.
-- Test ARESLib, publish it to Maven Local, and then test all affected consumers.
+- Test ARESLib and its API contracts, publish a unique prerelease to the isolated validation
+  repository, and test consumers in dependency order using that same version and absolute repository
+  URI. Explicit sibling substitution is available for focused iteration; Maven Local is not
+  candidate validation evidence. See the [build guide](../../.agents/skills/ares-build-release/SKILL.md).
 - Verify both physical adapters and simulator mocks implement changed IO contracts.
 - Update the relevant document in this directory in the same change.

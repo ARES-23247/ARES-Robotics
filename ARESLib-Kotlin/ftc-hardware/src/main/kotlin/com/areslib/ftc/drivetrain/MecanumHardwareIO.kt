@@ -145,6 +145,26 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
 
     private val speedBuffer = DoubleArray(4)
     private val powerBuffer = DoubleArray(4)
+    private var tuningConfigurationValid = true
+
+    internal fun requireOpenForTuning() = motorCluster.requireOpen()
+
+    internal fun acceptTuningConfiguration() { tuningConfigurationValid = true }
+
+    internal fun rejectTuningConfiguration() {
+        tuningConfigurationValid = false
+        feedforward.reset()
+        motorCluster.latchOutputFault()
+    }
+
+    internal fun restoreInitialMotorGains() {
+        requireOpenForTuning()
+        require(MecanumNativeConfiguration.valid(motorKp ?: 0.0, motorKi ?: 0.0, motorKd ?: 0.0, motorKf)) {
+            "Construction motor gains must be finite"
+        }
+        if (useClosedLoopVelocity) configureNativeGains(0.0, 0.0, 0.0, restore = true)
+        else feedforward.restoreMotorGains(motorKp, motorKi, motorKd)
+    }
 
     init {
         hardwareRegistry.registerDevice("Drivetrain/Mecanum", this)
@@ -169,9 +189,9 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         else feedforward.updateMotorGains(kp, ki, kd)
     }
 
-    private fun configureNativeGains(kp: Double, ki: Double, kd: Double, kf: Double? = null) {
+    private fun configureNativeGains(kp: Double, ki: Double, kd: Double, kf: Double? = null, restore: Boolean = false) {
         try {
-            if (motorCluster.updateNativeGains(kp, ki, kd, kf)) feedforward.reset()
+            if (motorCluster.updateNativeGains(kp, ki, kd, kf, restore)) feedforward.reset()
         } catch (failure: Exception) {
             feedforward.reset()
             throw failure
@@ -204,6 +224,10 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     /** Attempts neutral on every drive motor and clears the output fault only after full success. */
     fun recoverWithNeutral(): Boolean {
         feedforward.reset()
+        if (!tuningConfigurationValid) {
+            motorCluster.safe()
+            return false
+        }
         return motorCluster.recoverWithNeutral()
     }
 

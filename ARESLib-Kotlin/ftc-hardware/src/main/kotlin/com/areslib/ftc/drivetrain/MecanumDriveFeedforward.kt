@@ -106,6 +106,11 @@ class MecanumDriveFeedforward(
 
     /** Updates all gains together; unchanged configuration preserves controller history. */
     fun updateMotorGains(kp: Double, ki: Double, kd: Double) {
+        restoreMotorGains(kp, ki, kd)
+    }
+
+    /** Restores optional construction settings; three nulls restore feedback-free operation. */
+    internal fun restoreMotorGains(kp: Double?, ki: Double?, kd: Double?) {
         if (motorKp == kp && motorKi == ki && motorKd == kd) return
         batchingGains = true
         motorKp = kp; motorKi = ki; motorKd = kd

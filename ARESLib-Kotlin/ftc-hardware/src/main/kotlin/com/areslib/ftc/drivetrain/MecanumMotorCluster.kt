@@ -114,6 +114,7 @@ class MecanumMotorCluster(
             }
             // Mode/direction changes invalidate the power cache. Confirm neutral in the final mode.
             check(applyNeutral()) { "Failed to neutralize configured drivetrain" }
+            nativeConfiguration?.captureDefaults()
         } catch (failure: Exception) {
             if (!applyNeutral()) failure.addSuppressed(IllegalStateException("Drivetrain cleanup could not confirm neutral"))
             flIO.close()
@@ -134,16 +135,18 @@ class MecanumMotorCluster(
     }
 
     /** Applies native gains while neutral; null F preserves each channel's last accepted F. */
-    internal fun updateNativeGains(kp: Double, ki: Double, kd: Double, kf: Double? = null): Boolean {
-        check(!closed) { "Cannot configure a closed drivetrain" }
+    internal fun requireOpen() { check(!closed) { "Cannot configure a closed drivetrain" } }
+
+    internal fun updateNativeGains(kp: Double, ki: Double, kd: Double, kf: Double? = null, restore: Boolean = false): Boolean {
+        requireOpen()
         val configuration = checkNotNull(nativeConfiguration) { "Native velocity mode is disabled" }
         try {
             require(MecanumNativeConfiguration.valid(kp, ki, kd, kf)) { "Motor gains must be finite" }
-            if (configuration.matches(kp, ki, kd, kf)) return false
+            if (if (restore) configuration.matchesDefaults() else configuration.matches(kp, ki, kd, kf)) return false
             configuration.valid = false
             setCachedPowers(0.0, 0.0, 0.0, 0.0)
             check(applyNeutral()) { "Cannot configure motors before neutral succeeds" }
-            configuration.apply(kp, ki, kd, kf)
+            if (restore) configuration.restoreDefaults() else configuration.apply(kp, ki, kd, kf)
             return true
         } catch (failure: Exception) {
             configuration.valid = false

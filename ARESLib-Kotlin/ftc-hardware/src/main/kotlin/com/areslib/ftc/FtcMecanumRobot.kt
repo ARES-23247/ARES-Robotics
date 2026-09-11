@@ -318,6 +318,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
         val currentTuning = store.state.tuning
         if (currentTuning !== lastTuning) {
+            // A rejected attempt must allow reapplying the exact prior snapshot on rollback.
+            lastTuning = null
             kinematicsController.updateTuning(currentTuning)
             trajectoryFollower.updateTuning(currentTuning)
 

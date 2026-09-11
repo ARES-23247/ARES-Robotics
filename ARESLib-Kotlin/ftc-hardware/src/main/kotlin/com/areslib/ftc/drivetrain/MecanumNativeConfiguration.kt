@@ -13,6 +13,39 @@ internal class MecanumNativeConfiguration(private val motors: Array<DcMotorEx>) 
         PIDFCoefficients(value.p, value.i, value.d, value.f)
     }
     var valid = true
+    private lateinit var defaults: Array<PIDFCoefficients>
+
+    /** Capture once, after explicit constructor overrides have been applied. */
+    fun captureDefaults() {
+        check(!::defaults.isInitialized) { "Native defaults have already been captured" }
+        defaults = Array(coefficients.size) { index ->
+            val value = coefficients[index]
+            PIDFCoefficients(value.p, value.i, value.d, value.f)
+        }
+    }
+
+    fun matchesDefaults(): Boolean = valid && coefficients.indices.all { index ->
+        val current = coefficients[index]
+        val initial = defaults[index]
+        current.p == initial.p && current.i == initial.i && current.d == initial.d && current.f == initial.f
+    }
+
+    fun restoreDefaults() {
+        valid = false
+        for (index in motors.indices) {
+            val value = defaults[index]
+            motors[index].setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER,
+                PIDFCoefficients(value.p, value.i, value.d, value.f))
+        }
+        for (index in coefficients.indices) {
+            val value = defaults[index]
+            coefficients[index].p = value.p
+            coefficients[index].i = value.i
+            coefficients[index].d = value.d
+            coefficients[index].f = value.f
+        }
+        valid = true
+    }
 
     fun matches(kp: Double, ki: Double, kd: Double, kf: Double?): Boolean =
         valid && coefficients.all { it.p == kp && it.i == ki && it.d == kd && (kf == null || it.f == kf) }
