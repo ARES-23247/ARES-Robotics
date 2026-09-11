@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "7ab98b0167e5102256b465f6e8ef46310cbfc75fbfe77bddf166f3ddab653ac6",
+      "sha256": "9de762d51b27c52f1473b50fd66e9e91aff61543a1632f5bad9c6a5d768ad4b1",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11874,6 +11874,36 @@
       "evidence": [
         "docs/audits/studio-field-item-hit-audit.md",
         "ARESLib-Kotlin/build/audit-pass149-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/SimulatorFieldApplyReceipt.kt": {
+      "sha256": "e75ba02d3cac5f2b3c4856bcdaf6dae0b3e90cfb94dfa70a6272e21e7026ca66",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full DTO/helper review: structural nullable JSON parsing, exact ID/revision and case-insensitive hash content matching, separate session/sequence event identity and raw UTF8 SHA256 delegation. New helper and existing injected editor confirmation tests pass. Not semantic receipt-domain validation, authentication, live NT4 timing or physical application proof.",
+      "evidence": [
+        "docs/audits/studio-field-receipt-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass150-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/SimulatorFieldApplyReceiptTest.kt": {
+      "sha256": "0b5ae02072c41f35b03d6f22a0256774d75fd181382f7453cdaa3cae5ef56b35",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: malformed/incomplete/unknown-field JSON, independent content-vs-event identity boundaries and pinned Python UTF8 SHA256 with LF/CRLF/whitespace distinction. Focused helper/editor suite passes.",
+      "evidence": [
+        "docs/audits/studio-field-receipt-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass150-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-field-receipt-contract-audit.md": {
+      "sha256": "b705af5cfac63542c0230683cf533d7ecb9dc62a06a4f2ebeced454b1036f9ad",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against helper and editor call sites, pinned hash and focused test XML. No production change; clearly limits structure checks and injected confirmation evidence versus live timing.",
+      "evidence": [
+        "docs/audits/studio-field-receipt-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass150-verified-evidence/"
       ]
     }
   }
