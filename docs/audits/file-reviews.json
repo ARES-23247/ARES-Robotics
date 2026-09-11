@@ -5543,7 +5543,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "efe84983be6a7aba434f915f27c8424256e740cc1347894b5b358c31861b86d6",
+      "sha256": "85a804981edb11ba778616dcd63dbe7c57ddec87fc26e2cbd35197f5c29c1531",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5596,7 +5596,8 @@
         "docs/audits/spline-stationary-grid-audit.md: pass99 scopes and canonical self-fingerprint refreshed",
         "docs/audits/spline-regular-interval-bounds-audit.md: pass100 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-calibration-cache-audit.md: pass101 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-commissioning-loop-audit.md: pass102 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-commissioning-loop-audit.md: pass102 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-homing-failure-audit.md: pass103 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8766,23 +8767,27 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningController.kt": {
-      "sha256": "70a4fbef63cd1075cbac612eb721d6b951c1f83060e547d6bcfbdfe4769cee7c",
+      "sha256": "3dd201ba1af01343afa34550f96524f645d569570e5c56ca07f24f0e7fcc0207",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read whole controller and traced periodic/mode/recovery callsites. Removed five compiler-proven array-copy sites, including one in periodic health. Three real controller/reducer HAL tests cover healthy read counts, lost homing, configuration/tuning failures, persistent latch, disable and edge-gated Disabled recovery. Remaining partial: injected getter/home exceptions, failed individual homing and cleanup-failure integration.",
+      "scope": "Read whole controller and traced periodic/mode/recovery callsites. Removed five compiler-proven array-copy sites, including one in periodic health. Three real controller/reducer HAL tests cover healthy read counts, lost homing, configuration/tuning failures, persistent latch, disable and edge-gated Disabled recovery. Remaining partial: injected getter/home exceptions, failed individual homing and cleanup-failure integration. Pass103: Failure-path review: consume recovery edge before writes, inhibit and revoke cached homing permission before work, latch false home/failed validation and exceptions, and only clear on fully successful recovery. Five new host regressions include three reproduced failures. Remaining partial: safety dispatch/neutralization failures, periodic getter failure integration and lifecycle cleanup.",
       "evidence": [
         "docs/audits/frc-commissioning-loop-audit.md",
-        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json",
+        "docs/audits/frc-homing-failure-audit.md",
+        "ARESLib-Kotlin/build/audit-pass103-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningControllerTest.kt": {
-      "sha256": "243631ac82246d1dc3e0acc8317dc9255bc79cb3aa1caa4c861246b2e6b6d7db",
+      "sha256": "716b83941187cd79cee01fc761db8f41037c168a2a8259f07c0ec8f6d5aab908",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Read and executed all three new real controller/reducer host-HAL tests. Each closes its robot; tests check periodic cached-read counts, reference/configuration/tuning invalidation, latch persistence and fresh-edge Disabled recovery. Physical motor outputs and failure injection gaps remain outside these assertions.",
+      "scope": "Read and executed all three new real controller/reducer host-HAL tests. Each closes its robot; tests check periodic cached-read counts, reference/configuration/tuning invalidation, latch persistence and fresh-edge Disabled recovery. Physical motor outputs and failure injection gaps remain outside these assertions. Pass103: Read and executed all eight real controller/reducer host-HAL methods, including five new methods and three preserved failure-before cases. Covers throw/false homing, held-edge retry, mixed success, getter exceptions, pre-write inhibition observed outside catch, and deliberate recovery after release. Fixtures close robots; hardware neutralization and cleanup infrastructure failures remain unproven.",
       "evidence": [
         "docs/audits/frc-commissioning-loop-audit.md",
-        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json",
+        "docs/audits/frc-homing-failure-audit.md",
+        "ARESLib-Kotlin/build/audit-pass103-verified-evidence/summary.json"
       ]
     },
     "docs/audits/frc-commissioning-loop-audit.md": {
@@ -8792,6 +8797,15 @@
       "scope": "Reviewed compiler copy evidence, controller-level coverage, product-local validation and explicit partial scopes.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-homing-failure-audit.md": {
+      "sha256": "5115f90f5e3daa1db02c6a6c91522a831e03a9a0832788ef896eea1e5e24e4e6",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reviewed three reproduced recovery failures, fixes, five new methods, exact local dependency reuse, full FRC validation and remaining infrastructure/physical limitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass103-verified-evidence/summary.json"
       ]
     }
   }

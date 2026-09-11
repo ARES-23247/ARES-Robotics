@@ -20,10 +20,29 @@ class FrcMechanismCommissioningControllerTest {
         var configurationReads = 0
         var homingReads = 0
         var homes = 0
-        override val configurationValid: Boolean get() { configurationReads++; return configured }
-        override val homed: Boolean get() { homingReads++; return referenced }
+        var homeThrows = false
+        var homeSucceeds = true
+        var configurationThrows = false
+        var homingThrows = false
+        var onHome: () -> Unit = {}
+        override val configurationValid: Boolean get() {
+            configurationReads++
+            check(!configurationThrows) { "Synthetic configuration read failure" }
+            return configured
+        }
+        override val homed: Boolean get() {
+            homingReads++
+            check(!homingThrows) { "Synthetic homing read failure" }
+            return referenced
+        }
         override var lastTuningApplySuccessful = true
-        override fun homeAtKnownZero(): Boolean { homes++; referenced = true; return true }
+        override fun homeAtKnownZero(): Boolean {
+            homes++
+            onHome()
+            check(!homeThrows) { "Synthetic home failure" }
+            if (homeSucceeds) referenced = true
+            return homeSucceeds
+        }
     }
 
     private fun exercise(block: (FrcSwerveRobot, Device, FrcMechanismCommissioningController) -> Unit) {
@@ -78,5 +97,63 @@ class FrcMechanismCommissioningControllerTest {
         device.lastTuningApplySuccessful = false
         assertThrows(IllegalStateException::class.java) { controller.requirePeriodicHealth() }
         assertFalse(controller.isHardwarePermitted())
+    }
+
+    @Test fun `throwing home revokes prior healthy permission and latches a fault`() = exercise { robot, device, controller ->
+        device.homeThrows = true
+        runCatching { controller.handleHomingRequest(true, true, false) }
+        assertFalse(controller.isHardwarePermitted())
+        assertTrue(robot.store.state.superstructure.marvin.mechanismSafetyFaultLatched)
+    }
+
+    @Test fun `throwing home consumes the button edge before any retry`() = exercise { _, device, controller ->
+        device.homeThrows = true
+        runCatching { controller.handleHomingRequest(true, true, false) }
+        device.homeThrows = false
+        controller.handleHomingRequest(true, true, false)
+        assertEquals(1, device.homes)
+        controller.handleHomingRequest(false, true, false)
+        controller.handleHomingRequest(true, true, false)
+        assertEquals(2, device.homes)
+        assertTrue(controller.isHardwarePermitted())
+    }
+
+    @Test fun `unsuccessful home cannot be overridden by an old homed flag`() = exercise { robot, device, controller ->
+        device.homeSucceeds = false
+        controller.handleHomingRequest(true, true, false)
+        assertFalse(controller.isHardwarePermitted())
+        assertTrue(robot.store.state.superstructure.marvin.mechanismSafetyFaultLatched)
+        controller.applySafetyPolicy("later mode transition")
+        assertFalse(controller.isHardwarePermitted())
+    }
+
+    @Test fun `recovery inhibits before writes and catches health getter failures`() = exercise { robot, device, controller ->
+        var inhibitedAtWrite = false
+        device.onHome = { inhibitedAtWrite = robot.store.state.superstructure.marvin.mechanismSafetyInhibited }
+        device.configurationThrows = true
+        assertDoesNotThrow { controller.handleHomingRequest(true, true, false) }
+        assertTrue(inhibitedAtWrite)
+        assertFalse(controller.isHardwarePermitted())
+        assertTrue(robot.store.state.superstructure.marvin.mechanismSafetyFaultLatched)
+        device.configurationThrows = false
+        controller.handleHomingRequest(false, true, false)
+        device.homingThrows = true
+        assertDoesNotThrow { controller.handleHomingRequest(true, true, false) }
+        assertFalse(controller.isHardwarePermitted())
+        device.homingThrows = false
+        controller.handleHomingRequest(false, true, false)
+        controller.handleHomingRequest(true, true, false)
+        assertTrue(controller.isHardwarePermitted())
+    }
+
+    @Test fun `one failed home cannot clear the fault when other devices succeed`() = exercise { robot, device, _ ->
+        val second = Device()
+        val controller = FrcMechanismCommissioningController(robot, arrayOf(device, second), true, arrayOf(device, second), device)
+        device.homeSucceeds = false
+        controller.handleHomingRequest(true, true, false)
+        assertEquals(1, device.homes)
+        assertEquals(1, second.homes)
+        assertFalse(controller.isHardwarePermitted())
+        assertTrue(robot.store.state.superstructure.marvin.mechanismSafetyFaultLatched)
     }
 }

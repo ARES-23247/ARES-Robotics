@@ -102,30 +102,43 @@ internal class FrcMechanismCommissioningController(
         isDisabled: Boolean,
         isTestEnabled: Boolean,
     ): Boolean {
-        if (comboPressed && !homingComboWasPressed) {
+        val newPress = comboPressed && !homingComboWasPressed
+        // Consume the edge before hardware work: a failure must not retry while held.
+        homingComboWasPressed = comboPressed
+        if (newPress) {
             if (mechanismHomingRequestAllowed(isDisabled, isTestEnabled)) {
-                robot.safeHardware()
-                var allSucceeded = true
-                for (device in homingDevices) {
-                    if (!device.homeAtKnownZero()) allSucceeded = false
-                }
-                homingValid = allSucceeded && mechanismsHomed(homingDevices)
-                configurationValid = configurationContractComplete && mechanismsConfigured(configurationDevices)
-                if (mechanismSafetyHealthy(configurationHealthy(), homingValid, robot.fatalUpdateFailure)) {
+                homingValid = false
+                try {
+                    robot.store.dispatch(SetMechanismSafetyInhibit(true))
+                    robot.safeHardware()
+                    var allSucceeded = true
+                    for (device in homingDevices) {
+                        if (!device.homeAtKnownZero()) allSucceeded = false
+                    }
+                    homingValid = allSucceeded && mechanismsHomed(homingDevices)
+                    configurationValid = configurationContractComplete && mechanismsConfigured(configurationDevices)
+                    if (!mechanismSafetyHealthy(configurationHealthy(), homingValid, robot.fatalUpdateFailure)) {
+                        latchFault("Operator-confirmed safe-zero recovery failed validation")
+                        return comboPressed
+                    }
                     robot.store.dispatch(ClearMechanismSafetyFault("Dual-operator Disabled safe-zero recovery"))
-                }
-                applySafetyPolicy("operator-confirmed safe-zero homing")
-                if (homingValid) {
-                    DriverStation.reportWarning(
-                        "ARES: cowl, intake pivot, and climber safe zeros accepted",
-                        false,
-                    )
+                    applySafetyPolicy("operator-confirmed safe-zero homing")
+                    if (isHardwarePermitted()) {
+                        DriverStation.reportWarning(
+                            "ARES: cowl, intake pivot, and climber safe zeros accepted",
+                            false,
+                        )
+                    }
+                } catch (failure: Throwable) {
+                    homingValid = false
+                    val reason = "Safe-zero recovery exception: ${failure.message ?: failure::class.java.simpleName}"
+                    latchFault(reason)
+                    DriverStation.reportError(reason, false)
                 }
             } else {
                 DriverStation.reportError("ARES: mechanism recovery rejected outside Disabled", false)
             }
         }
-        homingComboWasPressed = comboPressed
         return comboPressed
     }
 
