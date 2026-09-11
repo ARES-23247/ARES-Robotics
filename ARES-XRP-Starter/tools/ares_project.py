@@ -564,30 +564,41 @@ class RecordingTestResult(unittest.TextTestResult):
         super().addSuccess(test)
 
 
+def _xml_text(value: str) -> str:
+    # XML 1.0 cannot represent control characters or lone surrogate code points.
+    return "".join(char if (char in "\t\n\r" or 0x20 <= ord(char) <= 0xD7FF or
+                           0xE000 <= ord(char) <= 0xFFFD or 0x10000 <= ord(char) <= 0x10FFFF)
+                   else "\uFFFD" for char in value)
+
+
 def write_junit_report(result) -> None:
-    failures = {test.id(): detail for test, detail in result.failures}
-    errors = {test.id(): detail for test, detail in result.errors}
-    skipped = {test.id(): reason for test, reason in result.skipped}
-    tests = list(result.successes) + [test for test, _ in result.failures + result.errors + result.skipped]
+    # Keep each outcome: repeated subtest IDs must not collapse in a dictionary.
+    outcomes = [(test, None, "", "") for test in result.successes]
+    outcomes += [(test, "failure", "assertion failed", detail) for test, detail in result.failures]
+    outcomes += [(test, "error", "test error", detail) for test, detail in result.errors]
+    outcomes += [(test, "skipped", reason, "") for test, reason in result.skipped]
+    outcomes += [(test, "skipped", "expected failure", detail) for test, detail in result.expectedFailures]
+    outcomes += [(test, "failure", "unexpected success", "Test marked expectedFailure passed unexpectedly")
+                 for test in result.unexpectedSuccesses]
     suite = ET.Element("testsuite", {
         "name": "ares-xrp",
-        "tests": str(len(tests)),
-        "failures": str(len(failures)),
-        "errors": str(len(errors)),
-        "skipped": str(len(skipped)),
+        "tests": str(len(outcomes)),
+        "failures": str(sum(kind == "failure" for _, kind, _, _ in outcomes)),
+        "errors": str(sum(kind == "error" for _, kind, _, _ in outcomes)),
+        "skipped": str(sum(kind == "skipped" for _, kind, _, _ in outcomes)),
     })
-    for test_case in sorted(tests, key=lambda item: item.id()):
+    for test_case, kind, message, detail in sorted(outcomes, key=lambda item: item[0].id()):
         identity = test_case.id()
+        # Subtest IDs include parameters, which can themselves contain dots.
+        parent = getattr(test_case, "test_case", test_case)
+        classname = parent.id().rsplit(".", 1)[0]
+        name = identity[len(classname) + 1:] if identity.startswith(classname + ".") else identity
         case = ET.SubElement(suite, "testcase", {
-            "classname": identity.rsplit(".", 1)[0],
-            "name": getattr(test_case, "_testMethodName", identity),
+            "classname": _xml_text(classname),
+            "name": _xml_text(name),
         })
-        if identity in failures:
-            ET.SubElement(case, "failure", {"message": "assertion failed"}).text = failures[identity]
-        elif identity in errors:
-            ET.SubElement(case, "error", {"message": "test error"}).text = errors[identity]
-        elif identity in skipped:
-            ET.SubElement(case, "skipped", {"message": skipped[identity]})
+        if kind is not None:
+            ET.SubElement(case, kind, {"message": _xml_text(message)}).text = _xml_text(detail)
     TEST_RESULTS.mkdir(parents=True, exist_ok=True)
     ET.ElementTree(suite).write(TEST_RESULTS / "TEST-ares-xrp.xml", encoding="utf-8", xml_declaration=True)
 

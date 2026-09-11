@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3390d9111cff6d5950fe53fd5ee896cb2586041fd9bccafd3667ad40bb77620c",
+      "sha256": "ce3928e11cbc4f30ed4b28d87d697f061021f93953eca9bbdfebfd882742399b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11215,15 +11215,17 @@
       ]
     },
     "ARES-XRP-Starter/tools/ares_project.py": {
-      "sha256": "f8713e6d009ef1b33381f58ded64cd215c4d5622d8ec3e77017346c18d83f7f1",
+      "sha256": "2c1a16454492b6e10dde0e49abed1f701a881b661ae601daf3966d6428f69afd",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read host generator source. Fixed JSON token substitution corrupting string contents; Python literal serialization passes two before-failing string cases. Full host suite 108 pass. Remaining scopes: comprehensive invalid-input/schema policy, routine feature preservation, generated test non-vacuity, JUnit reporting edge cases and CLI/process boundaries. Pass136: JSON nonfinite/overflow parsing, wait and starting/target finite-number validation and duplicate enabled catalog ID rejection fixed; seven regression methods and115 full host tests pass. Full routine feature/schema policy and other recorded scopes remain open.",
+      "scope": "Full source read; passes135-137 fix Python literal string preservation, nonfinite JSON/routine inputs, duplicate enabled entries and JUnit outcome/XML fidelity. Four reporting regressions and119 full host tests pass. Remaining scopes: full schema/type policy, autonomous feature preservation, generated safety-test non-vacuity and remaining CLI/process edge cases. No periodic/hardware performance claim.",
       "evidence": [
         "docs/audits/xrp-project-serialization-audit.md",
         "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json",
         "docs/audits/xrp-autonomous-input-audit.md",
-        "ARESLib-Kotlin/build/audit-pass136-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass136-verified-evidence/summary.json",
+        "docs/audits/xrp-junit-reporting-audit.md",
+        "ARESLib-Kotlin/build/audit-pass137-verified-evidence/summary.json"
       ]
     },
     "ARES-XRP-Starter/.ares/project.json": {
@@ -11353,6 +11355,26 @@
       "evidence": [
         "docs/audits/xrp-autonomous-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass136-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_junit_reporting_audit.py": {
+      "sha256": "a19f50591d6edb22c66b95dbb9b9e5b5d5d3345479ae159456c011b90d131479",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-method test class reviewed. Actual unittest results written to isolated temporary XML and parsed: expected/unexpected outcomes, repeated subtest identities, XML-invalid failure text and all ordinary statuses. Before two failures/one error; after all four and119 full host tests pass.",
+      "evidence": [
+        "docs/audits/xrp-junit-reporting-audit.md",
+        "ARESLib-Kotlin/build/audit-pass137-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/xrp-junit-reporting-audit.md": {
+      "sha256": "0feb64b427cb8c067fe455a42ec5a049adf1be8da9ca8d572d30dae915eda102",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass137 evidence report checked against reporter implementation, intentional before failures, passing focused suite and parsed real119-case XML. Explicit counting and remaining generator scope limits.",
+      "evidence": [
+        "docs/audits/xrp-junit-reporting-audit.md",
+        "ARESLib-Kotlin/build/audit-pass137-verified-evidence/summary.json"
       ]
     }
   }
