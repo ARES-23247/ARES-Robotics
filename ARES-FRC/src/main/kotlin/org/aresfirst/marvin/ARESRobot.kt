@@ -526,12 +526,14 @@ class ARESRobot : TimedRobot() {
     }
 
     override fun disabledInit() {
-        cancelGeneratedControls("FRC disabled")
-        if (::autoOrchestrator.isInitialized) autoOrchestrator.stop()
-        if (::sysIdController.isInitialized) sysIdController.stop()
-        if (::mechanismCommissioning.isInitialized) mechanismCommissioning.stopForDisable()
-        controller.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0)
-        coPilotController.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0)
+        runFrcDisableCleanup(
+            cancelControls = { cancelGeneratedControls("FRC disabled") },
+            stopAuto = { if (::autoOrchestrator.isInitialized) autoOrchestrator.stop() },
+            stopSysId = { if (::sysIdController.isInitialized) sysIdController.stop() },
+            inhibitMechanisms = { if (::mechanismCommissioning.isInitialized) mechanismCommissioning.stopForDisable() },
+            stopDriverRumble = { controller.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0) },
+            stopOperatorRumble = { coPilotController.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0) },
+        )
     }
 
     override fun disabledPeriodic() {
@@ -661,30 +663,27 @@ class ARESRobot : TimedRobot() {
     }
 
     override fun close() {
-        var failure: Throwable? = null
-        fun capture(error: Throwable) {
-            failure?.addSuppressed(error) ?: run { failure = error }
-        }
+        val failures = FrcCleanupFailures()
         try {
             cancelGeneratedControls("FRC robot closing")
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
         try {
             if (::autoOrchestrator.isInitialized) autoOrchestrator.stop()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
         try {
             if (::sysIdController.isInitialized) sysIdController.stop()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
         try {
             localizationVisionTracker?.fusionEnabled = true
             localizationCalibration?.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         } finally {
             localizationVisionTracker = null
             localizationCalibration = null
@@ -696,35 +695,35 @@ class ARESRobot : TimedRobot() {
                 hardwareRegistry.closeAll()
             }
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
         try {
             dashboardDriveInput?.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         } finally {
             dashboardDriveInput = null
         }
         try {
             sim?.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         } finally {
             sim = null
         }
         try {
             powerDistribution?.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         } finally {
             powerDistribution = null
         }
         try {
             super.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
-        failure?.let { throw it }
+        failures.throwIfAny()
     }
 
     // ── Simulation ──

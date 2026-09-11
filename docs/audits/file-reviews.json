@@ -5543,7 +5543,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "85a804981edb11ba778616dcd63dbe7c57ddec87fc26e2cbd35197f5c29c1531",
+      "sha256": "177970c8b20747cc7da614b5578b8d923ae9751799e8908100badc52c93db5c9",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5597,7 +5597,8 @@
         "docs/audits/spline-regular-interval-bounds-audit.md: pass100 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-calibration-cache-audit.md: pass101 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-commissioning-loop-audit.md: pass102 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-homing-failure-audit.md: pass103 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-homing-failure-audit.md: pass103 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-disable-cleanup-audit.md: pass104 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8746,15 +8747,17 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt": {
-      "sha256": "a22c0d8a1a5a883374e678897fdf918932d21859e1eb7acf6648949e2e522ebc",
+      "sha256": "c5a4b3e8b768f1b179ef8213b16d5099a6602e99abff2b5cef85dab3f3f4a506",
       "review": "partial",
       "validation": "passed",
-      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open. Pass102: Changed internal health helpers to direct array parameters, retaining early failure semantics. Traced periodic update/health/calibration/SysId sequence, mode safety calls and cleanup ordering. Initialization, simulation and comprehensive lifecycle/exception integration remain partial.",
+      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open. Pass102: Changed internal health helpers to direct array parameters, retaining early failure semantics. Traced periodic update/health/calibration/SysId sequence, mode safety calls and cleanup ordering. Initialization, simulation and comprehensive lifecycle/exception integration remain partial. Pass104: Disable now uses tested attempt-all sequence; initialization guards/order retained. Close reuses equivalent tested error collection, preserving finally clearing and order. One extracted-original-sequence regression reproduced skipped cleanup. Same-Throwable suppression hypothesis disproven, not a new defect. Initialization, reentrancy and nested teardown integration remain partial.",
       "evidence": [
         "docs/audits/frc-calibration-cache-audit.md",
         "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json",
         "docs/audits/frc-commissioning-loop-audit.md",
-        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json",
+        "docs/audits/frc-disable-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass104-verified-evidence/summary.json"
       ]
     },
     "docs/audits/frc-calibration-cache-audit.md": {
@@ -8806,6 +8809,35 @@
       "scope": "Reviewed three reproduced recovery failures, fixes, five new methods, exact local dependency reuse, full FRC validation and remaining infrastructure/physical limitations.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass103-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcCleanupFailures.kt": {
+      "sha256": "e7253d87cd7c17a12a145ea11867fe47ef05365d9adb509aebc0374d694dde99",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full helper review: inline attempt catches each Throwable, preserves first error and secondary suppression, shared-instance behavior verified, and disable attempts all six ordered operations before rethrowing. Four host tests cover every failure position, success, secondary errors and finally execution. Lifecycle-only; no physical neutralization or JIT rate claim.",
+      "evidence": [
+        "docs/audits/frc-disable-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass104-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/FrcCleanupFailuresTest.kt": {
+      "sha256": "4b1be92c01a56c2b5b8cbc2aef28dc7d09b0c61f3ced3a11430fdb82917555b5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed all four new methods: one failure-before disable regression, then all six injected failure positions; same error identity, secondary Error, finally clearing and successful order. Tests run the function used by disabledInit with injected operations, not physical robot hardware.",
+      "evidence": [
+        "docs/audits/frc-disable-cleanup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass104-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-disable-cleanup-audit.md": {
+      "sha256": "072da3787fa9383da0aed459a9d80697eabc85e6b710ae702a528b32694619c8",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reviewed extracted-original failure evidence, shared collector behavior, four tests, product-local validation and partial lifecycle/hardware limitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass104-verified-evidence/summary.json"
       ]
     }
   }
