@@ -65,3 +65,23 @@ is an estimate. Thermal calibration is a configurable surrogate, not a measured 
 
 Host tests do not prove physical current accuracy, fuse protection, electrical suitability of the
 retained FRC thresholds, or robot loop deadlines. No upstream WPILib defect is claimed.
+
+## Final validation
+
+The final source passed 52 selected FTC/FRC tests and all library API checks before freezing. Twenty-one new methods include nine distinct failure-before regressions. Public API is unchanged. The Floodgate sensor and mixed PDH/fallback FRC loops each observed zero bytes in two consecutive 10,000-update windows.
+
+Source `b62820c65b42e745078e369fc50523e545f54df3`; library tree `f8c626ef1c4b8dcd35e7f373dfad1308397da2e8`.
+Local candidate `17.0.3-rc.f8c626ef1c4b`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2043 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; passing counts do not imply every test was freshly executed. Conditional Studio skips are recorded in the copied XML.
+
+Copied XML, per-file hashes, build logs and candidate BOM identity are recorded under `ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json`. Validation is on the host and consumers; no physical timing, current accuracy, fuse protection or usable Studio-window result is claimed.

@@ -3288,10 +3288,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "fdd2acdc711ad34377fc2748a8c764f9cb8ec8fea36aa333fd605a455f367245",
+      "sha256": "3cb4a2448383a7ce88b7b713529aaafdccf39249c1cf5b57689c6c468a29add2",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3466,7 +3466,10 @@
         "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json",
         "docs/audits/ftc-current-reconciliation-audit.md",
         "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json",
+        "docs/audits/floodgate-frc-power-audit.md",
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5483,7 +5486,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "d062a7ac9839e282c630aae780b88e28f15cae80d3e802157f4f65cb8860789b",
+      "sha256": "9b5d2c343658625c8f2ec25ee92b8ed7195bc34ac43dd7076fa108a9b047f89e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5522,7 +5525,8 @@
         "docs/audits/native-mecanum-tuning-audit.md: pass85 scopes and canonical self-fingerprint refreshed",
         "docs/audits/mecanum-tuning-transaction-audit.md: pass86 scopes and canonical self-fingerprint refreshed",
         "docs/audits/core-safety-filter-audit.md: pass87 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/ftc-current-reconciliation-audit.md: pass88 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/ftc-current-reconciliation-audit.md: pass88 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/floodgate-frc-power-audit.md: pass89 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -7940,24 +7944,30 @@
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/power/FrcPowerManager.kt": {
       "sha256": "72ba0647c4f758f813e8aa5907b8f5a4be3d8d47891b60765e88e163c4ea121d",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Read coordinator and traced shared sampler fallback: complete coverage plus finite nonnegative total selects current observation; unknown data takes existing conservative FRC current scale. Six existing focused FRC tests and full candidate pass after shared sampler changes. Broader current-state thresholds, supplier defaults and hardware/lifecycle behavior require a dedicated audit; no complete FRC power claim.",
+      "scope": "Read coordinator and traced shared sampler fallback: complete coverage plus finite nonnegative total selects current observation; unknown data takes existing conservative FRC current scale. Six existing focused FRC tests and full candidate pass after shared sampler changes. Broader current-state thresholds, supplier defaults and hardware/lifecycle behavior require a dedicated audit; no complete FRC power claim. Pass89: Closed prior partial scope with full logical review and seven new exact-boundary/ownership tests. Checked every supplier path, cached properties, PDH priority, complete aggregate fallback, invalid observations, current state thresholds/hysteresis, brownout failure, minimum composition and current registry distribution. Runtime unchanged. Retained unknown-current policy reports NaN/invalid and current-only0.4 scale; voltage/brownout can force zero. Production ARES-FRC supplier wiring traced; standalone/generated host configuration and physical threshold suitability are not implied by this file review.",
       "evidence": [
         "docs/audits/ftc-current-reconciliation-audit.md",
         "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json",
+        "docs/audits/floodgate-frc-power-audit.md",
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcFloodgateCurrentSensor.kt": {
-      "sha256": "0be872167aa5ed4cf7137769231f0ed5b81481a17d66156c6057ecea7051ffb7",
-      "review": "partial",
+      "sha256": "cb100c9acddcdca6e2b1e2830131ff0189b09211e15bbe529704d991034ceb9c",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Read sensor to trace FTC coordinator plausibility, instantaneous/filtered current and overload/thermal selection. No change here. Its parameter fallback, signed-time integration, thermal arithmetic and physical calibration remain a separate audit scope; current library tests pass without claiming hardware current accuracy.",
+      "scope": "Read sensor to trace FTC coordinator plausibility, instantaneous/filtered current and overload/thermal selection. No change here. Its parameter fallback, signed-time integration, thermal arithmetic and physical calibration remain a separate audit scope; current library tests pass without claiming hardware current accuracy. Pass89: Closed prior partial scope through full-file review of construction, conversion, filter, integration, warning, getters and reset. Invalid/nonrepresentable configuration and warning thresholds now reject. First valid observation seeds filter; invalid gaps preserve filter/thermal history and omit unobserved charge/cooling. Cooling uses exact exponential time-constant decay, ordered signed elapsed overflow remains measurable, rewind reanchors, and finite accumulators avoid infinity-minus-infinity NaN. Cached conversion and precomputed rating square remove repeated work. Fourteen new tests include nine failure-before regressions and zero-allocation observations. Manufacturer range checked; thermal surrogate, missing intervals and nominal-voltage Wh remain explicit physical-accuracy limits.",
       "evidence": [
         "docs/audits/ftc-current-reconciliation-audit.md",
         "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json",
+        "docs/audits/floodgate-frc-power-audit.md",
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
       ]
     },
     "docs/audits/ftc-current-reconciliation-audit.md": {
@@ -7968,6 +7978,71 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/FloodgateIntegrationAuditTest.kt": {
+      "sha256": "be6589b2d6888dcd1e14e54d216134490c46f2ad57d67d3bd398311029e36d54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed fourteen methods and ADC/allocation fixtures. Nine distinct methods failed before fixes. Independent references include first20A sample,100/e thermal remainder, exact integer/decimal signed-epoch duration,1Ah/12Wh conversion, filter endpoint/recurrence and charge across rewind/reset. Corrected hand-written long-epoch expectation via exact Decimal calculation; old zero-duration failure remains valid. Tests preserve mock-clock ownership with teardown, verify cached getters/read counts and invalid ADC/exception recovery, and observe two consecutive zero-byte10000-update windows with live clock outside mode mutation.",
+      "evidence": [
+        "docs/audits/floodgate-frc-power-audit.md",
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/power/FrcPowerBoundaryAuditTest.kt": {
+      "sha256": "6ca4e9a14a5a81fbf94b1f0a389dd99b88261b4a7a7ade49a04f8e5072af1d16",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed seven methods and registry/supplier fixtures. Tests cover180/210/240A ramp, strict220/160A hysteresis edges, one supplier read, no branch reads with valid PDH, invalid/failed PDH aggregate fallback, conservative unknown-current recovery, failed hardware brownout, voltage/current minimum and replacement motor identity. Uses existing JUnit dependency after correcting initial new-test import; registry closes in finally. No runtime defect claimed for passing existing FRC behavior.",
+      "evidence": [
+        "docs/audits/floodgate-frc-power-audit.md",
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/power/FrcPowerManagerTest.kt": {
+      "sha256": "4ca9bc77485dece3d9b44f0ead39b43fd037068287bb73b19a03ebd01c7e83ee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed full five-method class: voltage/filter scaling, invalid/exception voltage recovery, PDH warning behavior, hardware brownout zero effort and complete-source coverage rejection. New exact-boundary tests supplement loose original range assertions. Host supplier doubles do not establish hardware thresholds or physical current accuracy.",
+      "evidence": [
+        "docs/audits/floodgate-frc-power-audit.md",
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/power/FrcPowerManagerZeroGcTest.kt": {
+      "sha256": "0307c1041bec5ac0321bd939ce0c16763f197e978acaa84009d7ceeed6ba1074",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full fixture reviewed and executed; unsupported allocation instrumentation now explicitly skips. Four motors/two aggregate branches alternate valid PDH and fallback sampling. After50000 warmup updates, require two consecutive zero-byte10000-update windows and bounded one-time overhead; observed two windows and0bytes overhead. Registry cleanup added. This is host allocation evidence, not a physical loop deadline.",
+      "evidence": [
+        "docs/audits/floodgate-frc-power-audit.md",
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/e2e/tier2/hardware/HardwareBoundsTier2Test.kt": {
+      "sha256": "5e1eb5ccc6fbcac48b30ee96c936445562895573675081119aa8fb90d6223a5c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed all three methods plus MockAnalogInput fixture. Covers software brownout boundaries, unchanged rated20A no-heating behavior,40A/2s thermal calibration and invalid ADC recovery. Thermal test restores mock clock in finally. Despite tier2 naming these are host/model tests, not physical hardware validation.",
+      "evidence": [
+        "docs/audits/floodgate-frc-power-audit.md",
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/floodgate-frc-power-audit.md": {
+      "sha256": "c00189e1854c9202f9820ee0320ee9e0a5d09fe154107492171037fbca7e91e0",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled nine failure-before regressions,21 new methods,52 focused cases, unchanged API, two allocation observations, exact corrected duration reference, full candidate evidence and explicit physical/host-wiring limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
       ]
     }
   }
