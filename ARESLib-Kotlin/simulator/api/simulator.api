@@ -355,6 +355,7 @@ public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/h
 	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
 	public fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
 	public fun getMotorType ()Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;
+	public fun getPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;
 	public fun getPower ()D
 	public fun getVelocity ()D
 	public fun getVersion ()I
