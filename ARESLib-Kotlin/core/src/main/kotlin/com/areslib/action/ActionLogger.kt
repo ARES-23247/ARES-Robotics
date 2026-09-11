@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicLong
  * [stop] exposes the completed file. Names contain both the run id and mode. Creation uses `CREATE_NEW` plus a numeric suffix
  * so equal clock values and repeated run ids never truncate an earlier run; finalization never
  * deletes or replaces an existing completed log.
+ * A write, flush, close, or finalization failure stops this recorder and leaves the affected
+ * file active. Create a new recorder to resume logging; incomplete files are never promoted.
  */
 class ActionLogger(
     val runId: String = "",
@@ -51,6 +53,7 @@ class ActionLogger(
     private var writer: BufferedWriter? = null
     private var activeLogFile: File? = null
     private var completedLogFile: File? = null
+    private var fileActionCount = 0L
     @Volatile private var isRunning = false
     private val queueStateLock = Any()
     private val workerDone = CountDownLatch(1)
@@ -60,7 +63,10 @@ class ActionLogger(
     @Volatile
     internal var beforeWriteForTest: (() -> Unit)? = null
 
-    /** Number of actions rejected during shutdown/queue saturation or lost to encoding/write failure. */
+    /**
+     * Actions rejected or not committed to a completed file. On a file failure, this conservatively
+     * includes all its records, even if some bytes remain recoverable in the active file.
+     */
     val droppedActionCount: Long
         get() = droppedActions.get()
 
@@ -81,6 +87,7 @@ class ActionLogger(
         } catch (e: Exception) {
             System.err.println("ActionLogger: Failed to initialize! ${e.message}")
             isRunning = false
+            closeWriter()
             workerDone.countDown()
             executor.shutdown()
         }
@@ -139,31 +146,53 @@ class ActionLogger(
     private fun startLoggingLoop() {
         executor.submit {
             var wasInterrupted = false
+            var fileFailed = false
             try {
                 while (isRunning || queue.isNotEmpty()) {
-                    try {
-                        val pending = queue.poll(100, TimeUnit.MILLISECONDS) ?: continue
-                        try {
-                            beforeWriteForTest?.invoke()
-                            if (writerMode != pending.mode || writer == null) {
-                                closeWriter()
-                                finalizeLogFile()
-                                openWriter(pending.mode)
-                            }
-                            writeAction(checkNotNull(pending.action),pending.mode)
-                        } finally { recyclePending(pending) }
+                    val pending = try {
+                        queue.poll(100, TimeUnit.MILLISECONDS) ?: continue
                     } catch (_: InterruptedException) {
                         wasInterrupted = true
-                    } catch (e: Exception) {
-                        droppedActions.incrementAndGet()
-                        System.err.println("ActionLogger: Error logging action: ${e.message}")
+                        continue
+                    }
+                    var written = false
+                    try {
+                        beforeWriteForTest?.invoke()
+                        if (writerMode != pending.mode || writer == null) {
+                            if (!finishFile()) throw IOException("Previous action log could not be finalized")
+                            openWriter(pending.mode)
+                        }
+                        writeAction(checkNotNull(pending.action),pending.mode)
+                        fileActionCount++
+                        written = true
+                    } catch (failure: Throwable) {
+                        fileFailed = true
+                        if (failure is InterruptedException) wasInterrupted = true
+                        synchronized(queueStateLock) { isRunning = false }
+                        System.err.println("ActionLogger: Recording stopped: ${failure.message}")
+                        break
+                    } finally {
+                        if (!written) droppedActions.incrementAndGet()
+                        recyclePending(pending)
                     }
                 }
             } finally {
-                closeWriter()
-                finalizeLogFile()
-                workerDone.countDown()
-                if (wasInterrupted) Thread.currentThread().interrupt()
+                synchronized(queueStateLock) { isRunning = false }
+                try {
+                    finishFile(fileFailed)
+                } finally {
+                    try {
+                        while (true) {
+                            val pending = queue.poll() ?: break
+                            droppedActions.incrementAndGet()
+                            recyclePending(pending)
+                        }
+                    } finally {
+                        executor.shutdown()
+                        workerDone.countDown()
+                        if (wasInterrupted) Thread.currentThread().interrupt()
+                    }
+                }
             }
         }
     }
@@ -196,35 +225,53 @@ class ActionLogger(
         output.newLine()
     }
 
-    private fun closeWriter() {
+    private fun closeWriter(): Boolean {
+        val output = writer ?: return true
+        writer = null
+        var success = true
         try {
-            writer?.flush()
-            writer?.close()
-        } catch (e: IOException) {
-            System.err.println("ActionLogger: Failed to close: ${e.message}")
+            output.flush()
+        } catch (failure: Throwable) {
+            success = false
+            System.err.println("ActionLogger: Failed to flush: ${failure.message}")
         } finally {
-            writer = null
+            try {
+                output.close()
+            } catch (failure: Throwable) {
+                success = false
+                System.err.println("ActionLogger: Failed to close: ${failure.message}")
+            }
         }
+        return success
     }
 
-    private fun finalizeLogFile() {
-        val active = activeLogFile ?: return
-        val completed = completedLogFile ?: return
-        if (!active.exists()) return
+    private fun finishFile(writeFailed: Boolean = false): Boolean {
+        val closed = closeWriter()
+        val complete = !writeFailed && closed && finalizeLogFile()
+        if (!complete) droppedActions.addAndGet(fileActionCount)
+        fileActionCount = 0L
+        return complete
+    }
+
+    private fun finalizeLogFile(): Boolean {
+        val active = activeLogFile ?: return true
+        val completed = completedLogFile ?: return false
         try {
             // No REPLACE_EXISTING: an unexpected collision remains visible as an active file and
             // can never destroy the completed run already present at this name.
             Files.move(active.toPath(), completed.toPath())
             activeLogFile = null
+            return true
         } catch (e: Exception) {
             System.err.println(
                 "ActionLogger: Could not finalize ${active.absolutePath} without replacing " +
                     "${completed.absolutePath}: ${e.message}"
             )
+            return false
         }
     }
 
-    /** Drains accepted actions, closes the file, and makes the completed `.jsonl` visible. */
+    /** Drains accepted actions; only a successfully written and closed file becomes completed. */
     fun stop() {
         synchronized(queueStateLock) {
             isRunning = false
