@@ -102,7 +102,8 @@ object FieldEditorValidator {
         val issues = mutableListOf<FieldValidationIssue>()
         val bounds = FieldBounds.forLeague(league, widthMeters, heightMeters)
 
-        obstacles.forEach { obstacle ->
+        val obstacleBounds = obstacles.map { it.axisAlignedBounds() }
+        obstacles.forEachIndexed { index, obstacle ->
             when (obstacle) {
                 is Obstacle.Circle -> {
                     if (!obstacle.radius.isFinite() || obstacle.radius <= 0.0) {
@@ -114,7 +115,7 @@ object FieldEditorValidator {
                 is Obstacle.Rectangle -> {
                     if (!obstacle.width.isFinite() || !obstacle.height.isFinite() || obstacle.width <= 0.0 || obstacle.height <= 0.0) {
                         issues += error("${obstacle.name} must have positive width and height", obstacle.id)
-                    } else if (obstacle.axisAlignedBounds()?.let(bounds::contains) != true) {
+                    } else if (obstacleBounds[index]?.let(bounds::contains) != true) {
                         issues += warning("${obstacle.name} extends outside the field", obstacle.id)
                     }
                 }
@@ -151,10 +152,10 @@ object FieldEditorValidator {
 
         for (leftIndex in obstacles.indices) {
             val left = obstacles[leftIndex]
-            val leftBounds = left.axisAlignedBounds() ?: continue
+            val leftBounds = obstacleBounds[leftIndex] ?: continue
             for (rightIndex in leftIndex + 1 until obstacles.size) {
                 val right = obstacles[rightIndex]
-                val rightBounds = right.axisAlignedBounds() ?: continue
+                val rightBounds = obstacleBounds[rightIndex] ?: continue
                 if (leftBounds.overlaps(rightBounds)) {
                     issues += FieldValidationIssue(
                         severity = FieldValidationSeverity.WARNING,
@@ -213,14 +214,23 @@ private fun Obstacle.axisAlignedBounds(): AxisAlignedBounds? = when (this) {
     is Obstacle.Circle -> AxisAlignedBounds(centerX - radius, centerX + radius, centerY - radius, centerY + radius)
     is Obstacle.Rectangle -> {
         val radians = Math.toRadians(rotation)
-        val halfWidth = abs(width * kotlin.math.cos(radians)) / 2.0 + abs(height * kotlin.math.sin(radians)) / 2.0
-        val halfHeight = abs(width * kotlin.math.sin(radians)) / 2.0 + abs(height * kotlin.math.cos(radians)) / 2.0
+        val cosine = kotlin.math.cos(radians)
+        val sine = kotlin.math.sin(radians)
+        val halfWidth = abs(width * cosine) / 2.0 + abs(height * sine) / 2.0
+        val halfHeight = abs(width * sine) / 2.0 + abs(height * cosine) / 2.0
         AxisAlignedBounds(centerX - halfWidth, centerX + halfWidth, centerY - halfHeight, centerY + halfHeight)
     }
-    is Obstacle.Polygon -> if (vertices.isEmpty()) null else AxisAlignedBounds(
-        vertices.minOf(PathPoint::x),
-        vertices.maxOf(PathPoint::x),
-        vertices.minOf(PathPoint::y),
-        vertices.maxOf(PathPoint::y)
-    )
+    is Obstacle.Polygon -> if (vertices.isEmpty()) null else {
+        var minX = Double.POSITIVE_INFINITY
+        var maxX = Double.NEGATIVE_INFINITY
+        var minY = Double.POSITIVE_INFINITY
+        var maxY = Double.NEGATIVE_INFINITY
+        for (vertex in vertices) {
+            minX = min(minX, vertex.x)
+            maxX = max(maxX, vertex.x)
+            minY = min(minY, vertex.y)
+            maxY = max(maxY, vertex.y)
+        }
+        AxisAlignedBounds(minX, maxX, minY, maxY)
+    }
 }

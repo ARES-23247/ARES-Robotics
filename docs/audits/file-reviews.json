@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "c75983344b2fbda5f892d94fd9d727905cb3129c2345bb7f5f675340018544fb",
+      "sha256": "38ebe9d41a31c21b76f91fc16f9134e61452318ad0cbaae749af7ed5780c0321",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12004,6 +12004,36 @@
       "evidence": [
         "docs/audits/studio-field-transactions-audit.md",
         "ARESLib-Kotlin/build/audit-pass153-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorInteraction.kt": {
+      "sha256": "b8ac6bbd47712528019a2d3eb776e0deec957a7c9b18a6346fcac918b7aa2e12",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; validated/reduced obstacle bounding work with per-call caching, single polygon scan and reused trig values. All-league rotated bounds/tag margins/severity tested. Remaining invalid dimensions/nonfinite geometry, polygon topology, unit inputs, prefab provenance/lookup ownership and full caller validation open.",
+      "evidence": [
+        "docs/audits/studio-field-validation-work-audit.md",
+        "ARESLib-Kotlin/build/audit-pass154-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldValidationAuditTest.kt": {
+      "sha256": "cab524ceddf37e57cf30fce1875e9a298e7ae410b0dfe036c7e866f069d74b47",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-test review: counted polygon accesses fail before at9960 and pass <=800 after while preserving780 pair warnings; all-league error/warning sets for invalid radius, rotated extents, game-piece bounds, tag margin and duplicates. Full app passes.",
+      "evidence": [
+        "docs/audits/studio-field-validation-work-audit.md",
+        "ARESLib-Kotlin/build/audit-pass154-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-field-validation-work-audit.md": {
+      "sha256": "5b45e95937a16b5fbc4ae17b681398dd0e9c1dea5ff8ea84a2da972fec7e44b1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report verified against measured before failure, production caching/math diff and full app XML:1779 passed/six skips. No wall-clock benchmark, exact collision proof or complete production-file certification claimed.",
+      "evidence": [
+        "docs/audits/studio-field-validation-work-audit.md",
+        "ARESLib-Kotlin/build/audit-pass154-verified-evidence/"
       ]
     }
   }
