@@ -1,4 +1,4 @@
-# Encoder feedback audit — pass 82
+# Encoder feedback audit â€” pass 82
 
 This pass traces FTC encoder observations through cached IO, software/hub velocity control and
 empirical calibration. It continues the input-validity gap recorded in pass 81. All work is local;
@@ -42,4 +42,31 @@ feedforward class also retains pending review of other configuration/invalid-com
 this pass does not claim that feedback validation completes its whole-file audit. FTC flywheel
 cached reads and diagnostic clearing from pass 81 remain pending.
 
-Full module and candidate validation, source identity and coverage reconciliation are pending.
+## Validation
+
+Before freezing, all 239 FTC hardware tests and the API check passed. The selected four affected
+classes account for 64 passing methods: 40 calibration, 14 encoder feedback, two encoder timing
+and eight drive-facade tests. This selected evidence comes from the full module run after the
+final test edits, and is copied under `ARESLib-Kotlin/build/audit-pass82-focused-evidence/`.
+
+Source `7ad591fa3f291140c8aef93b0045c66f164da116`; library tree `6d4b98d3da30ff859c53eda736dd3b0faecab47a`.
+Candidate `17.0.3-rc.6d4b98d3da30` was published only to the local validation repository.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 1908 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project
+verification, FTC assembly, Studio Kover/version/file-size checks and monorepo policy passed.
+Gradle reused unchanged valid outputs. The six Studio skips are the three conditional fresh-template
+checks, native file chooser, physical dashboard and optional performance baseline. No additional
+standalone dashboard benchmark or usable-window check is claimed.
+
+Copied XML, manifests, log hashes and candidate BOM identity are under
+`ARESLib-Kotlin/build/audit-pass82-verified-evidence/summary.json`. The whole-monorepo goal remains
+active; passing a suite does not account for unread source files.
