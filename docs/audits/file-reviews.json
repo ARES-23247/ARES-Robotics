@@ -107,12 +107,15 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/SplineMotionProfiler.kt": {
-      "sha256": "4023ab5d34eadd9fcdd4bf75ca9f150a96ee85a95325284e8d7953210887d55d",
+      "sha256": "f9cb413342a77256860aa4465ee15ed9ebc9be99923678b1f17658e3d256d56c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass95: Full source/caller trace and169pathing tests reused; new parsed no-handle northbound path proves corrected initial/final tangent/default heading. Hoisted constant Hermite heading delta and removed all-zero relativePosition list for unconstrained sweep. Corrected documented centripetal ceiling to independent2m/s2, runtime unchanged. Remaining scope: sampling-budget policy, direct DTO/Hermite input boundary and approximation behavior need dedicated tests; do not infer fullvalidation from wrapper or helper tests.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/spline-polynomial-efficiency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass95-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/ThetaStarPlanner.kt": {
@@ -3288,10 +3291,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "4ce097f7892d1911c7f0d85b7f97c89b45c6e279bff4d7ff7872480f93e6a412",
+      "sha256": "9f6f96f3c637f17e46679aa801cf2b839c9919cbcd9f5dfaece11a8be6023a43",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order. Pass91: Frozen tree af9e9c981c88fe2a6744accdd2f924d4317a18a1 and local candidate 17.0.3-rc.af9e9c981c88 validated in dependency order. Pass92: Frozen tree b66f1cd6fcf7872a98fe7044384c385da8122ecf and local candidate 17.0.3-rc.b66f1cd6fcf7 validated in dependency order. Pass93: Frozen tree b83ebb7aea38d94993d54add1415b638e239867e and local candidate 17.0.3-rc.b83ebb7aea38 validated in dependency order. Pass94: Frozen tree 2f08206d2a9398fedf6fd91dde5800a586938381 and local candidate 17.0.3-rc.2f08206d2a93 validated in dependency order.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order. Pass91: Frozen tree af9e9c981c88fe2a6744accdd2f924d4317a18a1 and local candidate 17.0.3-rc.af9e9c981c88 validated in dependency order. Pass92: Frozen tree b66f1cd6fcf7872a98fe7044384c385da8122ecf and local candidate 17.0.3-rc.b66f1cd6fcf7 validated in dependency order. Pass93: Frozen tree b83ebb7aea38d94993d54add1415b638e239867e and local candidate 17.0.3-rc.b83ebb7aea38 validated in dependency order. Pass94: Frozen tree 2f08206d2a9398fedf6fd91dde5800a586938381 and local candidate 17.0.3-rc.2f08206d2a93 validated in dependency order. Pass95: Frozen tree 6a51bbf4cada81927b045df7b82f4a2ebdbd0a64 and local candidate 17.0.3-rc.6a51bbf4cada validated in dependency order.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3484,7 +3487,10 @@
         "ARESLib-Kotlin/build/audit-pass93-focused-evidence/summary.json",
         "docs/audits/action-logger-disk-failure-audit.md",
         "ARESLib-Kotlin/build/audit-pass94-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass94-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass94-focused-evidence/summary.json",
+        "docs/audits/spline-polynomial-efficiency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass95-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5501,7 +5507,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "c91a8b339e2d4ece50f3e4e9a1e2a83f03046c6038f827037d9a58a10a7f3a9a",
+      "sha256": "940f49afcb577cce6856397606e6cb328e2b4677273cc36f40ee8a23e054b90e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5546,7 +5552,8 @@
         "docs/audits/swerve-offset-persistence-audit.md: pass91 scopes and canonical self-fingerprint refreshed",
         "docs/audits/replay-flow-delivery-audit.md: pass92 scopes and canonical self-fingerprint refreshed",
         "docs/audits/store-failure-custom-codec-audit.md: pass93 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/action-logger-disk-failure-audit.md: pass94 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/action-logger-disk-failure-audit.md: pass94 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/spline-polynomial-efficiency-audit.md: pass95 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8392,6 +8399,71 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass94-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass94-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/BezierSpline.kt": {
+      "sha256": "9d8c93d29e8c3a9b298d251f4104a0e9f682067ebc2f356cd8eda216295524d3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source/formula review; independent central differences, endpoint derivatives, reversal and collapsed-handle tests. Endpoint heading now uses one-sided limiting control-polygon direction rather than zero; interior stationary/constant curves retain atan2 convention. Inline scalar derivative helper removes temporary vector and shares weights; javap confirms primitive heading return without new/boxing/Function2 invocation. Returned position/derivative vectors still allocate; Rotation2d can box in generic callers. No physical timing claim.",
+      "evidence": [
+        "docs/audits/spline-polynomial-efficiency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass95-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/NaturalCubicSplineControls.kt": {
+      "sha256": "d3c54bb8215c0ed4e8e8c76654b946403f5a06362dcd0f10eb7cd55dc6bf1463",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full uniform-knot natural cubic solver review and independent dense piecewise-polynomial oracle for2-7anchors plus short/coincident cases and existingC1/C2/endpoint tests. Shared tridiagonal factorization solves x/y in place:3primitive workingarrays instead of10 for>=3anchors; removesboxedcoordinate lists and temporary derivative vectors. Two-anchorlinearcase preserved. Planning results allocate; coordinate validation remains caller policy.",
+      "evidence": [
+        "docs/audits/spline-polynomial-efficiency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass95-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/SplinePolynomialAuditTest.kt": {
+      "sha256": "aa2e1a434d06ae963dabc6d178090f44140033ae139ffcd5251bf51bdb83382f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed6methods including2failure-before heading regressions. Seeded40Bezier curves central differences and heading, exact endpoint derivatives/reversal, collapsed endpoint higher-order directions and actual parsed path defaultheading. Independentdense4coefficients-per-segment solve imposes interpolation/C1/C2/naturalconditions and compares2-7anchor controls. Short/coincident inputs validated. Bytecode separately checked; no flaky walltime assertion.",
+      "evidence": [
+        "docs/audits/spline-polynomial-efficiency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass95-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/BezierSplineTest.kt": {
+      "sha256": "88c27328a0b24bfa5095d52ec6cec30100a403f6700e5749238d88777475984d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed full3method class: symmetric endpoints/midpoint, local derivative continuity and straight diagonal heading. Newindependent polynomial audit strengthens its formerlyweak continuity-only derivative evidence. Existingfixtures unchanged.",
+      "evidence": [
+        "docs/audits/spline-polynomial-efficiency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass95-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/NaturalCubicSplineControlsTest.kt": {
+      "sha256": "2c7eea9845c95c153926e612586f78e4127195ac1efd4a402bdc5ff724e69db2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed full2method class: analytical adjacent C1/C2 controls, naturalendpoint secondderivatives and robotheading independent from geometriccurve throughHermiteprofiler. Newdenseoracle supplies independentnumeric controlvalidation. Existingfixtures unchanged.",
+      "evidence": [
+        "docs/audits/spline-polynomial-efficiency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass95-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/spline-polynomial-efficiency-audit.md": {
+      "sha256": "0a43c5f7ffa1e6e7cc7132386994a4807231b6a771104805a2dba2ff78e40a36",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled2failure-before methods,6newmethods,169focused cases, independentdenseoracle, bytecodeinspection, unchangedAPI andexactcandidate. Explicitplanning allocation/numericalscope and remainingpartial profiler policy.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass95-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json"
       ]
     }
   }
