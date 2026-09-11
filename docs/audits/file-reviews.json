@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "b0d57689568b581b1ad40fd37938ce041dce4f0884c03c703d325697f420f01c",
+      "sha256": "712f3c228297cf3171e6915eea0ecbe09f776eef14a173a1af23090f4bc9ce81",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12205,13 +12205,15 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasGestures.kt": {
-      "sha256": "e19c93f60c70cbc83552e182c86c5f00d7fae424c36ee753219ed28ce31e0d87",
+      "sha256": "b2bbb62fa6e91445797a400bce38eba6ec14de966b13efdbcbc7afa2db463b04",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full source read. Pass159 fixes omitted rotation in press/placement/erase and absolute/delta dragging, nearer-miss masking and empty-polygon exception; polygon erasing includes interior; duplicate waypoint conversions removed. Pointer lifecycle/slop/cancellation, field-waypoint heading conventions, invalid viewport, ID uniqueness and eraser locks/proximity remain open. Call-site wiring source-reviewed; no native input simulation.",
+      "scope": "Full source read in159; rotation and selection fixes validated. Pass160 eraser resolves typed unlocked targets with actual shape distance. Pointer capture/update, slop/cancellation/release, field-waypoint headings, invalid viewport, ID uniqueness and tool/control-mode policy remain open. No native input simulation.",
       "evidence": [
         "docs/audits/studio-main-gesture-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json",
+        "docs/audits/studio-field-eraser-audit.md",
+        "ARESLib-Kotlin/build/audit-pass160-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldObstacleSelection.kt": {
@@ -12242,6 +12244,36 @@
       "evidence": [
         "docs/audits/studio-main-gesture-geometry-audit.md",
         "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldEraseTarget.kt": {
+      "sha256": "a0a9e8c36d3493cf3fcdf1ae3cb0a4bb97c21e1fe029ef4b1c17f7824e72eb90",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full typed resolver and distance helper for field-scale geometry: locked exclusion, category/list priority, strict radii, inverse-rotated rectangle distance, polygon segment/interior distance, repeated edges and nonfinite/incomplete geometry guards. No extreme finite or self-intersection/zero-area validator guarantee; native pointer and caller mode policy excluded.",
+      "evidence": [
+        "docs/audits/studio-field-eraser-audit.md",
+        "ARESLib-Kotlin/build/audit-pass160-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/FieldEraseTargetTest.kt": {
+      "sha256": "47b366a360093d30d5a52f037b752b9a2e05533b7ea5f0004764a34db31c394a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-test review: locked categories/fallback/priority, rectangle radius counterexamples and rotation/corners, polygon edges/notches/winding/closure, strict thresholds and invalid geometry.",
+      "evidence": [
+        "docs/audits/studio-field-eraser-audit.md",
+        "ARESLib-Kotlin/build/audit-pass160-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-field-eraser-audit.md": {
+      "sha256": "92ad7da7d4433684bc0bb24d7a38913175e75b165ca7fd3624ba45e82de35aec",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against source counterexamples, four focused tests, full app XML and policy/link checks; no before execution or native UI claim.",
+      "evidence": [
+        "docs/audits/studio-field-eraser-audit.md",
+        "ARESLib-Kotlin/build/audit-pass160-verified-evidence/summary.json"
       ]
     }
   }

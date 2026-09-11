@@ -418,30 +418,13 @@ internal fun Modifier.fieldCanvasGestures(
                         if (hitIdx != -1) {
                             onWaypointsChanged(currentWaypoints.toMutableList().apply { removeAt(hitIdx) })
                         } else {
-                            val robotWp = pressCoord
-                            val hitGp = currentActiveGamePieces.find { sqrt((robotWp.x - it.x).pow(2) + (robotWp.y - it.y).pow(2)) < 0.3 }
-                            if (hitGp != null) {
-                                updateGamePieces(currentActiveGamePieces - hitGp)
-                            } else {
-                                val hitObs = currentActiveObstacles.find { obs ->
-                                    when (obs) {
-                                        is Obstacle.Circle -> sqrt((robotWp.x - obs.centerX).pow(2) + (robotWp.y - obs.centerY).pow(2)) - obs.radius < 0.5
-                                        is Obstacle.Rectangle -> sqrt((robotWp.x - obs.centerX).pow(2) + (robotWp.y - obs.centerY).pow(2)) - maxOf(obs.width, obs.height) / 2.0 < 0.5
-                                        is Obstacle.Polygon -> pointInPolygon(robotWp.x, robotWp.y, obs.vertices) ||
-                                            obs.vertices.any { robotWp.distanceTo(it.x, it.y) < 0.5 }
-                                    }
-                                }
-                                if (hitObs != null) {
-                                    updateObstacles(currentActiveObstacles - hitObs)
-                                } else {
-                                    val hitAt = currentActiveAprilTags.find { sqrt((robotWp.x - it.x).pow(2) + (robotWp.y - it.y).pow(2)) < 0.3 }
-                                    if (hitAt != null) {
-                                        updateAprilTags(currentActiveAprilTags - hitAt)
-                                    } else {
-                                        val hitFwp = currentActiveFieldWaypoints.find { sqrt((robotWp.x - it.x).pow(2) + (robotWp.y - it.y).pow(2)) < 0.3 }
-                                        if (hitFwp != null) updateFieldWaypoints(currentActiveFieldWaypoints - hitFwp)
-                                    }
-                                }
+                            when (val target = findFieldEraseTarget(pressCoord, currentActiveObstacles,
+                                currentActiveGamePieces, currentActiveAprilTags, currentActiveFieldWaypoints)) {
+                                is FieldEraseTarget.Piece -> updateGamePieces(currentActiveGamePieces - target.item)
+                                is FieldEraseTarget.Shape -> updateObstacles(currentActiveObstacles - target.item)
+                                is FieldEraseTarget.Tag -> updateAprilTags(currentActiveAprilTags - target.item)
+                                is FieldEraseTarget.NamedWaypoint -> updateFieldWaypoints(currentActiveFieldWaypoints - target.item)
+                                null -> Unit
                             }
                         }
                     }
