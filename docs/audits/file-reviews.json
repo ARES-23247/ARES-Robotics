@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "016cb972d1abc8de48abe95f1a4adb1bf42464df7386537aae3d56665e453b93",
+      "sha256": "10ef60f40f7e51873bc634e12398a278f389b4e0bff8c3f202a6490e2a21c352",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11662,6 +11662,36 @@
       "scope": "Pass144 model-contract report verified against full declarations, reviewed consumer sections,27 shared/18 gateway results and explicit external-policy limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass144-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/IntegrationModels.kt": {
+      "sha256": "66594164b5e45dfd6d4ecf7a368d42f9ecf50d7e889fe2f13207860690374d65",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full shared DTO, enum, event routing and notebook hash-material review; remove per-byte formatter work without changing SHA-256 or serialization. All eight payload routes and Unicode digest rendering covered; pinned notebook compatibility fixture passes. Consumer validation, transactions and live publication excluded.",
+      "evidence": [
+        "docs/audits/studio-integration-hash-audit.md",
+        "ARESLib-Kotlin/build/audit-pass145-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/IntegrationModelsTest.kt": {
+      "sha256": "e464e7684633ab8f32eda7dab458c461ee4d8c534265c8f0d3aaece1549531c9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full test file review: all eight payload round trips and aggregate routes, independent digest rendering, notebook metadata exclusion/content sensitivity and pinned compatibility hash. Four methods pass in full shared and dependent Studio suites.",
+      "evidence": [
+        "docs/audits/studio-integration-hash-audit.md",
+        "ARESLib-Kotlin/build/audit-pass145-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-integration-hash-audit.md": {
+      "sha256": "e5b2e1e1454a0b0051e853cb93ee145a30c28a06147742862655289107bbe424",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed pass145 report against source diff and retained test XML: 1802 passed, six opt-in skips; local efficiency change, no external or hardware validation.",
+      "evidence": [
+        "docs/audits/studio-integration-hash-audit.md",
+        "ARESLib-Kotlin/build/audit-pass145-verified-evidence/"
       ]
     }
   }

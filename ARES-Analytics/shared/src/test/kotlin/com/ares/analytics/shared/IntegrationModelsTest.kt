@@ -14,6 +14,16 @@ import com.ares.analytics.shared.models.NotebookVisibility
 import com.ares.analytics.shared.models.RobotIssueOpened
 import com.ares.analytics.shared.models.IntegrationIssueSeverity
 import com.ares.analytics.shared.models.eventType
+import com.ares.analytics.shared.models.aggregateId
+import com.ares.analytics.shared.models.AnalysisReady
+import com.ares.analytics.shared.models.CloudUploadCommitted
+import com.ares.analytics.shared.models.IntegrationTestRequested
+import com.ares.analytics.shared.models.NotebookDraftReady
+import com.ares.analytics.shared.models.RobotIssueResolved
+import com.ares.analytics.shared.models.SessionImported
+import com.ares.analytics.shared.models.SoftwareDigestReady
+import java.math.BigInteger
+import java.security.MessageDigest
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
@@ -22,6 +32,32 @@ import kotlin.test.assertNotEquals
 
 class IntegrationModelsTest {
     private val workspace = IntegrationWorkspaceIdentity("23247", "2026", "marvin")
+
+    @Test
+    fun `every event retains its wire discriminator and aggregate routing`() {
+        val cases = listOf(
+            Triple(SessionImported(workspace, "session", listOf("日志"), listOf("hash")), IntegrationEventType.SESSION_IMPORTED, "session"),
+            Triple(AnalysisReady(workspace, "session", "v1"), IntegrationEventType.ANALYSIS_READY, "session"),
+            Triple(RobotIssueOpened(workspace, "issue", "session", "rule", IntegrationIssueSeverity.ERROR, "温度"), IntegrationEventType.ROBOT_ISSUE_OPENED, "issue"),
+            Triple(RobotIssueResolved(workspace, "issue", "session"), IntegrationEventType.ROBOT_ISSUE_RESOLVED, "issue"),
+            Triple(CloudUploadCommitted(workspace, "session", "remote", "revision"), IntegrationEventType.CLOUD_UPLOAD_COMMITTED, "session"),
+            Triple(NotebookDraftReady(workspace, "entry", 1, "hash"), IntegrationEventType.NOTEBOOK_DRAFT_READY, "entry"),
+            Triple(SoftwareDigestReady(workspace, "entry", 1, "hash", "a..b"), IntegrationEventType.SOFTWARE_DIGEST_READY, "entry"),
+            Triple(IntegrationTestRequested(workspace, "test", "provider"), IntegrationEventType.INTEGRATION_TEST_REQUESTED, "test"),
+        )
+        assertEquals(IntegrationEventType.entries.toSet(), cases.map { it.second }.toSet())
+        for ((payload, type, aggregate) in cases) {
+            val event = IntegrationEvent("event", 1000L, payload)
+            val encoded = AppJson.encodeToString(event)
+            val decoded = AppJson.decodeFromString<IntegrationEvent>(encoded)
+            assertEquals(event, decoded)
+            assertEquals(type, decoded.payload.eventType())
+            assertEquals(aggregate, decoded.payload.aggregateId())
+            val expectedHash = BigInteger(1, MessageDigest.getInstance("SHA-256")
+                .digest(encoded.toByteArray(Charsets.UTF_8))).toString(16).padStart(64, '0')
+            assertEquals(expectedHash, IntegrationEventHasher.sha256(event))
+        }
+    }
 
     @Test
     fun `typed event payload round trips with its schema and type`() {

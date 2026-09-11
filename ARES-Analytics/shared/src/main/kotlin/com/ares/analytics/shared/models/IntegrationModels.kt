@@ -280,6 +280,15 @@ data class PublicationReceipt(
     val metadata: Map<String, String> = emptyMap(),
 )
 
-private fun sha256Hex(value: String): String = MessageDigest.getInstance("SHA-256")
-    .digest(value.toByteArray(Charsets.UTF_8))
-    .joinToString(separator = "") { byte -> "%02x".format(byte) }
+private const val HEX_DIGITS = "0123456789abcdef"
+
+private fun sha256Hex(value: String): String {
+    val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
+    val hex = CharArray(digest.size * 2)
+    for (index in digest.indices) {
+        val byte = digest[index].toInt() and 0xff
+        hex[index * 2] = HEX_DIGITS[byte ushr 4]
+        hex[index * 2 + 1] = HEX_DIGITS[byte and 0x0f]
+    }
+    return hex.concatToString()
+}
