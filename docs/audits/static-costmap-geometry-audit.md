@@ -1,6 +1,6 @@
 # Static field geometry in the costmap
 
-Pass 183, 2026-09-11. Focused verification passed; full candidate validation is in progress.
+Pass 183, 2026-09-11. Validation completed for this pass; the repository-wide audit remains open.
 
 ## Confirmed fixes
 
@@ -36,9 +36,21 @@ refinement and focused XML are in `ARESLib-Kotlin/build/audit-pass183-verified-e
 
 Candidate `17.0.7-rc.ab5d50599303` binds tree
 `ab5d505993031912ace7569ae1b28d4351fbe372`. Full library/API/local publication was
-started. Serial consumers, immutable bundle refresh, final policy checks and ledger
-updates remain required. Local versions are ARES/FTC/FRC 17.0.7, XRP/Lightbot 3.0.7 and
+completed: 2,230 library tests passed, as did API checks and local publication.
+Serial consumers passed: FTC 156 tests and APK assembly, FRC 305 tests, FTC starter
+14 tests and APK assembly, FRC starter 34 tests, Studio shared 31 and gateway 18 tests,
+and Studio app 1,822 passed with six opt-in skips. All executed tests had zero failures
+or errors. Repository policy and documentation-link checks passed.
+
+Four uniquely versioned canonical archives were generated, their dependency manifests
+inspected, and their hashes pinned in both resources and CI. Studio preflight and project
+creation accepted them. Local versions are ARES/FTC/FRC 17.0.7, XRP/Lightbot 3.0.7 and
 Studio 7.0.8. No push, release or physical validation.
+
+The six Studio skips cover fresh generic starter builds, official archive integration,
+representative generated starter simulation, native chooser, performance baseline and
+physical dashboard validation. Source-product tests do not substitute for those opt-in
+runs. Exact skipped names and artifact hashes are preserved in the evidence summary.
 
 Open adjacent areas include continuous robot-footprint inflation, extreme world-to-cell
 conversion, field-dimension selection, and simulator obstacle fidelity (minimum-size clamps

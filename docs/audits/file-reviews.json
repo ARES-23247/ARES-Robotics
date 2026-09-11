@@ -3314,10 +3314,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "be9dcf3005551781b69fc0284ad72e44c336532ff0506805b85a5a546439db1b",
+      "sha256": "17adef40088600c0c26223a38a7d295c59c49b07a83768085974bf053b7baaae",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Frozen library tree ba468110f1bb6aa3fe08bd98c26853a08b540745 equals HEAD. Candidate 17.0.6-rc.ba468110f1bb passed full library/API/local publication and serial consumers.",
+      "scope": "Frozen library tree ab5d505993031912ace7569ae1b28d4351fbe372 equals HEAD. Candidate 17.0.7-rc.ab5d50599303 passed full library/API/local publication and serial consumers.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3536,7 +3536,9 @@
         "docs/audits/costmap-raster-heap-audit.md",
         "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
         "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5553,7 +5555,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "093714c7107904a8d3be5460772dacfd129a0c7e75808c547e4f04fc0c9044b8",
+      "sha256": "d2ada6dcbdef2da5700159abc582b6d5182a89d7742c75ff89e253dc743f8704",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12971,45 +12973,51 @@
       ]
     },
     "release/ares-versions.properties": {
-      "sha256": "2e50a7bbdcdd80cadb8d1efdaea081953836f720f18a93ea059b9227691266ac",
+      "sha256": "41d39551b90a3cf2760fc53ebc542b7c862dab0507f3bd03ea7eee0ca6f7a7f4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Canonical ARES 17.0.6, Studio 7.0.7 and unique template versions verified by policy, archive manifests and consumer preflight. No public publication claim.",
+      "scope": "Canonical ARES 17.0.7, Studio 7.0.8 and unique template versions verified by policy, generated archive manifests and consumer preflight; no public publication claim.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
         "docs/audits/costmap-raster-heap-audit.md",
         "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
         "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
       ]
     },
     "release/starter-artifacts.properties": {
-      "sha256": "8871a08528331810c9da1417e5f7d3d8254a83c09c37b3e9a667d5ff3840aa77",
+      "sha256": "4cf75747f0365313dbc0c0fff2f4fc47262181c1f9423e56b33a86ed155973ad",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "All four hashes match canonical generated archives and bundled copies accepted by Studio preflight and template creation. Fresh exported build and physical validation remain separate.",
+      "scope": "All four hashes match new canonical archives and bundled copies accepted by Studio preflight/template creation. Fresh exported builds and physical validation remain separate.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
         "docs/audits/costmap-raster-heap-audit.md",
         "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
         "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
       ]
     },
     ".github/workflows/build-distributions.yml": {
-      "sha256": "5b1e6afc2629ea8f5b8dd61ce027dec9e0b388f45fdfd93a031a782dbcb9c2f3",
+      "sha256": "90f19dc84e165a785f00e05712131c4151398da6b1c1d8f09edbef1a4d53b0fa",
       "review": "partial",
       "validation": "passed",
-      "scope": "Library/app and four template URL/hash pins match canonical manifests and preflight. Remaining workflow behavior is outside this pass.",
+      "scope": "Library/app and four template URL/hash pins match canonical manifests and Studio preflight. Remaining workflow behavior is outside this pass.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
         "docs/audits/costmap-raster-heap-audit.md",
         "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
         "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
       ]
     },
     "docs/audits/pathing-cell-traversal-audit.md": {
@@ -13023,13 +13031,15 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/Costmap.kt": {
-      "sha256": "5f2bcd2e9d7c00c9cf06bd4d229a6fbc0c33db67b07cce7828a0f49b9a1bb970",
+      "sha256": "321b5d15208edefda647dbd7c0ec8dfcc7f716c0a9cd8ebd1a4dc96e88efb7d0",
       "review": "partial",
       "validation": "passed",
-      "scope": "Bounded circular rasterization, zero/invalid inflation, overflow-safe squared masks and expiry verified with seven new regressions, existing pathing suites, full library and consumer validation. World-coordinate saturation, rotated/static shape rasterization and invalid world-coordinate handling remain open.",
+      "scope": "Static geometry delegates to shape-specific clipped rasterization, honoring rotation, absolute polygon vertices, obstacle radius and round-element diameter/width semantics. Full candidate and consumers pass. Continuous footprint inflation, extreme world conversion and field-size selection remain open.",
       "evidence": [
         "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/planner/ThetaStarSearchState.kt": {
@@ -13074,62 +13084,6 @@
         "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.6.zip": {
-      "sha256": "fc022ba2537796d5248ab96402b3f3552b05107894a21cccccbeb891ac17e3c9",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Generated artifact accounted for through canonical export, dependency manifest, pinned SHA-256 equality and successful Studio preflight/template creation. Embedded sources retain separate review status; no fresh exported-project build claim.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.6.zip": {
-      "sha256": "26c3386b79014acdb3a04caa607625f34c984b4ed1ae9daa628b5ab740c68b0b",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Generated artifact accounted for through canonical export, dependency manifest, pinned SHA-256 equality and successful Studio preflight/template creation. Embedded sources retain separate review status; no fresh exported-project build claim.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.6.zip": {
-      "sha256": "b9645051f8b3adda92370f4815604af325f84c92b19e6f88f9635a1559c7f2a2",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Generated artifact accounted for through canonical export, dependency manifest, pinned SHA-256 equality and successful Studio preflight/template creation. Embedded sources retain separate review status; no fresh exported-project build claim.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.6.zip": {
-      "sha256": "52597b66546865cb11e778c2d7ee832e098198d8a6609b74f8fc6a3fff9710ce",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Generated artifact accounted for through canonical export, dependency manifest, pinned SHA-256 equality and successful Studio preflight/template creation. Embedded sources retain separate review status; no fresh exported-project build claim.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
-      ]
-    },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/ThetaStarEndpointGeometryTest.kt": {
       "sha256": "1637fde11c3c7a8c22a90c00bafe3a49e43bcf496971940e0ada00e98bea0486",
       "review": "reviewed",
@@ -13158,6 +13112,100 @@
       "evidence": [
         "docs/audits/theta-endpoint-state-audit.md",
         "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.7.zip": {
+      "sha256": "ebdbcc0de130539d8a3a585cf5cf7b3a2ce51ec988ca2779b58f764f8e7cd6ee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Generated artifact accounted for through canonical export, inspected dependency manifest, pinned hash equality and Studio preflight/project creation. Embedded source files retain separate coverage status; no fresh exported-project build claim.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.7.zip": {
+      "sha256": "ae60594a0ce56504ddf44421ca6167c832ff0ced60ed9ae636c72afc9633d10d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Generated artifact accounted for through canonical export, inspected dependency manifest, pinned hash equality and Studio preflight/project creation. Embedded source files retain separate coverage status; no fresh exported-project build claim.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.7.zip": {
+      "sha256": "53a8ffd6425553a02a6f6ff4f129ff749d90acd7bc62938c15102c4667e614f9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Generated artifact accounted for through canonical export, inspected dependency manifest, pinned hash equality and Studio preflight/project creation. Embedded source files retain separate coverage status; no fresh exported-project build claim.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.7.zip": {
+      "sha256": "c83e481a1b1aa7c441410a19d451f859d4f6659e79fac76ccab9440dcdaca996",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Generated artifact accounted for through canonical export, inspected dependency manifest, pinned hash equality and Studio preflight/project creation. Embedded source files retain separate coverage status; no fresh exported-project build claim.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/StaticCostmapRasterizer.kt": {
+      "sha256": "356d92a348efb4fa384c09f716e116c2c781250a1972f7864dda80ae9d4e8a11",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full internal helper read; scaled four-axis rectangle intersection, nearest-point circle intersection and even-odd/edge polygon cells verified by 18,000 independent area comparisons plus contacts, quarter turns, invalid primitives, clipped bounds and allocation checks. Verifies canonical planar occupancy, not physical follower or simulator fidelity.",
+      "evidence": [
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/StaticCostmapGeometryTest.kt": {
+      "sha256": "02aea37849e14ed468fcbaa1009a2c9294111c96098ad1c6162a41e8199fff0e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Eleven geometry tests reviewed, including independent Java2D oracles used only on JVM, concavity/thin edges, all round aliases, validation, huge/off-grid shapes and allocation. Five original failures and one quarter-turn refinement failure preserved; full candidate tests pass.",
+      "evidence": [
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/static-costmap-geometry-audit.md": {
+      "sha256": "7ce34d1addf6a0261c05965e95346f4de269ec4b4d84ef21ce1c1a2d3cd2bff1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against baseline/refinement/final tests, independent geometry evidence, full candidate matrix, artifact identities and explicit open physical-model areas.",
+      "evidence": [
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json"
       ]
     }
   }
