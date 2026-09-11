@@ -6,14 +6,20 @@ import kotlin.math.roundToInt
 /** Merge constraint boundaries into the regular grid before allocating geometry. */
 internal fun splineRelativePositions(
     data: PathPlannerJsonParser.ParsedPathData,
-    plan: SplineSamplePlan
+    plan: SplineSamplePlan,
+    stationary: List<SplineStationarySample> = emptyList()
 ): List<Double> {
-    val last = data.waypoints.lastIndex.toDouble()
-    val boundaries = DoubleArray(data.constraintZones.size * 2)
+    val boundaries = DoubleArray(data.constraintZones.size * 2 + stationary.size)
     data.constraintZones.forEachIndexed { index, zone ->
         boundaries[index * 2] = zone.minWaypointRelativePos
         boundaries[index * 2 + 1] = zone.maxWaypointRelativePos
     }
+    stationary.forEachIndexed { index, sample -> boundaries[data.constraintZones.size * 2 + index] = sample.relativePosition }
+    return splineRelativePositions(data.waypoints.size, plan, boundaries)
+}
+
+internal fun splineRelativePositions(waypointCount: Int, plan: SplineSamplePlan, boundaries: DoubleArray): List<Double> {
+    val last = waypointCount - 1.0
     boundaries.sort()
     var extraCount = 0
     for (position in boundaries) {
@@ -26,7 +32,7 @@ internal fun splineRelativePositions(
         boundaries[extraCount++] = position
     }
     val total = plan.totalSamples.toLong() + extraCount
-    require(total <= MAX_TRAJECTORY_SAMPLES) { "Spline constraint boundaries exceed the $MAX_TRAJECTORY_SAMPLES-sample budget" }
+    require(total <= MAX_TRAJECTORY_SAMPLES) { "Spline boundaries and critical points exceed the $MAX_TRAJECTORY_SAMPLES-sample budget" }
     val positions = ArrayList<Double>(total.toInt())
     positions.add(0.0)
     var nextBoundary = 0

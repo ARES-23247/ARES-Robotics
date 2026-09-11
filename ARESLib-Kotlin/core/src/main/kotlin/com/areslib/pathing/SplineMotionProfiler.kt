@@ -48,6 +48,8 @@ object SplineMotionProfiler {
      * Constraint boundaries supplement the regular grid, including zero-width zones. Edge speed
      * caps apply to both endpoints; acceleration bounds cover endpoints and the edge interior.
      * Geometry between samples remains an approximation; this does not certify unsampled extrema.
+     * Interior stationary roots supplement the grid and retain their exact root classification
+     * after conversion to floating-point parameters. Unrepresentable interior parameters reject.
      *
      * @param data Parsed trajectory structure [PathPlannerJsonParser.ParsedPathData].
      * @return Fully parameterized and velocity-profiled [Path].
@@ -58,7 +60,9 @@ object SplineMotionProfiler {
         if (parsedWaypoints.isEmpty()) return Path(emptyList())
         SplineProfileValidation.parsed(data)
         val sampling = splineSamplePlan(parsedWaypoints.size) { parsedWaypoints[it].anchor }
-        val relativePositions = splineRelativePositions(data, sampling)
+        val stationary = splineStationarySamples(parsedWaypoints)
+        val stationaryCursor = SplineStationaryCursor(stationary)
+        val relativePositions = splineRelativePositions(data, sampling, stationary)
 
         val pathPoints = ArrayList<PathPoint>(relativePositions.size)
         val forcedStops = BooleanArray(relativePositions.size)
@@ -107,9 +111,10 @@ object SplineMotionProfiler {
             }
 
             while (sampleIndex < relativePositions.size && relativePositions[sampleIndex] <= i + 1.0) {
-                val t = relativePositions[sampleIndex++] - i
+                val position = relativePositions[sampleIndex++]
+                val t = position - i
                 val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
-                differential.evaluate(t)
+                differential.evaluate(t, stationaryCursor.at(position))
                 val heading = Rotation2d(differential.headingRadians)
                 forcedStops[pathPoints.size] = differential.requiresStop
 
@@ -167,9 +172,13 @@ object SplineMotionProfiler {
         val sampling = splineSamplePlan(points.size) { points[it] }
 
         val parsedWaypoints = naturalCubicWaypointControls(points)
+        val stationary = splineStationarySamples(parsedWaypoints)
+        val stationaryCursor = SplineStationaryCursor(stationary)
+        val relativePositions = splineRelativePositions(parsedWaypoints.size, sampling,
+            DoubleArray(stationary.size) { stationary[it].relativePosition })
 
-        val pathPoints = ArrayList<PathPoint>(sampling.totalSamples)
-        val forcedStops = BooleanArray(sampling.totalSamples)
+        val pathPoints = ArrayList<PathPoint>(relativePositions.size)
+        val forcedStops = BooleanArray(relativePositions.size)
         var accumulatedDistance = 0.0
 
         val firstDifferential = SplineDifferential(
@@ -189,20 +198,21 @@ object SplineMotionProfiler {
             )
         )
 
+        var sampleIndex = 1
         for (i in 0 until parsedWaypoints.size - 1) {
             val wp1 = parsedWaypoints[i]
             val wp2 = parsedWaypoints[i + 1]
-            val numSamples = sampling.steps[i]
             val differential = if (i == 0) firstDifferential else
                 SplineDifferential(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor)
             if (i > 0) {
                 differential.evaluate(0.0)
                 constrainJunction(pathPoints.last(), forcedStops, pathPoints.lastIndex, differential)
             }
-            for (step in 1..numSamples) {
-                val t = step.toDouble() / numSamples
+            while (sampleIndex < relativePositions.size && relativePositions[sampleIndex] <= i + 1.0) {
+                val position = relativePositions[sampleIndex++]
+                val t = position - i
                 val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
-                differential.evaluate(t)
+                differential.evaluate(t, stationaryCursor.at(position))
                 val heading = Rotation2d(differential.headingRadians)
                 forcedStops[pathPoints.size] = differential.requiresStop
                 val prevPathPoint = pathPoints.last()

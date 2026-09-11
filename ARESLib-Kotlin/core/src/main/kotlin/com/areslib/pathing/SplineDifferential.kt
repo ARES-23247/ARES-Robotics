@@ -22,7 +22,13 @@ internal class SplineDifferential(p0: Translation2d, p1: Translation2d, p2: Tran
     var requiresStop = false
         private set
 
-    fun evaluate(t: Double) {
+    fun evaluate(t: Double, stationary: SplineStationarySample? = null) {
+        if (stationary != null) {
+            headingRadians = stationary.headingRadians
+            curvature = 0.0
+            requiresStop = stationary.requiresStop
+            return
+        }
         val u = 1.0 - t
         val dx = 3.0 * u * u * ax + 6.0 * u * t * bx + 3.0 * t * t * cx
         val dy = 3.0 * u * u * ay + 6.0 * u * t * by + 3.0 * t * t * cy
