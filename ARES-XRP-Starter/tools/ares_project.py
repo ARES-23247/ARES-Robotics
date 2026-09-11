@@ -41,10 +41,22 @@ def canonical_content_sha256() -> str:
     return digest.hexdigest()
 
 
+def _reject_json_constant(value: str):
+    raise ValueError(f"Non-finite JSON number: {value}")
+
+
+def _finite_json_float(value: str) -> float:
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"JSON number exceeds finite range: {value}")
+    return result
+
+
 def load_json(path: pathlib.Path) -> dict:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+        return json.loads(path.read_text(encoding="utf-8"),
+                          parse_constant=_reject_json_constant, parse_float=_finite_json_float)
+    except (OSError, ValueError) as error:
         raise ValueError(f"{path.relative_to(ROOT)} is not valid JSON: {error}") from error
 
 
@@ -66,6 +78,22 @@ def validate_controller_port(kind: str, channel: int | None, controller_model: s
         )
 
 
+def _require_finite_number(value, label: str) -> None:
+    try:
+        valid = type(value) in (int, float) and math.isfinite(value)
+    except OverflowError:
+        valid = False
+    if not valid:
+        raise ValueError(f"{label} must be a finite number")
+
+
+def _validate_routine_pose(pose, label: str) -> None:
+    if not isinstance(pose, dict):
+        raise ValueError(f"{label} must be a pose object")
+    for component in ("xMeters", "yMeters", "headingRadians"):
+        _require_finite_number(pose.get(component), f"{label}.{component}")
+
+
 def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict]]:
     catalog = load_json(ARES / "autonomous-catalog.json")
     default_id = catalog.get("defaultEntryId")
@@ -77,6 +105,8 @@ def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict
         routine_id = entry.get("routineId")
         if not entry_id or not routine_id:
             raise ValueError("Every enabled autonomous entry requires entryId and routineId")
+        if entry_id in routines:
+            raise ValueError(f"Duplicate enabled autonomous entry: {entry_id}")
         path = ARES / "routines" / f"{routine_id}.aresroutine"
         routine = load_json(path)
         if routine.get("schemaVersion") != 2 or routine.get("documentId") != routine_id:
@@ -85,11 +115,21 @@ def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict
             kind = step.get("kind")
             if kind not in ("DRIVE_TO", "WAIT", "ACTION"):
                 raise ValueError(f"XRP routine {entry_id} contains unsupported step {kind}")
-            if kind == "WAIT" and float(step.get("durationSeconds", -1.0)) < 0.0:
-                raise ValueError(f"XRP routine {entry_id} has a negative wait")
+            if kind == "WAIT":
+                duration = step.get("durationSeconds")
+                _require_finite_number(duration, f"XRP routine {entry_id} wait duration")
+                if duration < 0.0:
+                    raise ValueError(f"XRP routine {entry_id} has a negative wait")
+            if kind == "DRIVE_TO":
+                drive = step.get("drive")
+                if not isinstance(drive, dict):
+                    raise ValueError(f"XRP routine {entry_id} requires a drive target")
+                _validate_routine_pose(drive.get("target"), f"XRP routine {entry_id} drive target")
             if kind == "ACTION" and step.get("actionKey") not in action_keys:
                 raise ValueError(f"XRP routine action {step.get('actionKey')} is not declared")
-        routine["_startingPose"] = entry.get("startingPose", {"xMeters": 0.0, "yMeters": 0.0, "headingRadians": 0.0})
+        starting_pose = entry.get("startingPose", {"xMeters": 0.0, "yMeters": 0.0, "headingRadians": 0.0})
+        _validate_routine_pose(starting_pose, f"XRP routine {entry_id} starting pose")
+        routine["_startingPose"] = starting_pose
         routines[entry_id] = routine
     if default_id is not None and default_id not in routines:
         raise ValueError("The default autonomous entry is missing or disabled")

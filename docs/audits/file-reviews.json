@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "52a01f029edc39b0c6977240cec45b5700cb3b5bc1e4c06b08f1a29e0dd05836",
+      "sha256": "3390d9111cff6d5950fe53fd5ee896cb2586041fd9bccafd3667ad40bb77620c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11215,13 +11215,15 @@
       ]
     },
     "ARES-XRP-Starter/tools/ares_project.py": {
-      "sha256": "89580f0dc2f117c549c7fab5acc4ea7dd1a311f6c977beaf7ca0f621957d98d2",
+      "sha256": "f8713e6d009ef1b33381f58ded64cd215c4d5622d8ec3e77017346c18d83f7f1",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read host generator source. Fixed JSON token substitution corrupting string contents; Python literal serialization passes two before-failing string cases. Full host suite 108 pass. Remaining scopes: comprehensive invalid-input/schema policy, routine feature preservation, generated test non-vacuity, JUnit reporting edge cases and CLI/process boundaries.",
+      "scope": "Read host generator source. Fixed JSON token substitution corrupting string contents; Python literal serialization passes two before-failing string cases. Full host suite 108 pass. Remaining scopes: comprehensive invalid-input/schema policy, routine feature preservation, generated test non-vacuity, JUnit reporting edge cases and CLI/process boundaries. Pass136: JSON nonfinite/overflow parsing, wait and starting/target finite-number validation and duplicate enabled catalog ID rejection fixed; seven regression methods and115 full host tests pass. Full routine feature/schema policy and other recorded scopes remain open.",
       "evidence": [
         "docs/audits/xrp-project-serialization-audit.md",
-        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json",
+        "docs/audits/xrp-autonomous-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass136-verified-evidence/summary.json"
       ]
     },
     "ARES-XRP-Starter/.ares/project.json": {
@@ -11331,6 +11333,26 @@
       "scope": "Pass135 report reviewed against failing string subcases, final108-test XML, source review and declarative geometry/reference checks. Explicit limits and remaining generator/control scopes.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_routine_validation_audit.py": {
+      "sha256": "e308ca5ac237902dc62ebc112c15296c33e7e998778e30a8fed2b47c34670112",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full seven-method regression file reviewed: mocked catalog reads, invalid wait types/ranges, all pose components, origin default, duplicate IDs, supported numeric/action preservation and real JSON decoder behavior. Before40 case failures/two errors, after seven methods pass; full115-test suite passes. No hardware claim.",
+      "evidence": [
+        "docs/audits/xrp-autonomous-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass136-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/xrp-autonomous-input-audit.md": {
+      "sha256": "b591956b753d02079c58644cab088644f5cbbbe78643edfe2ad31afef8439009",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass136 report checked against actual before/final evidence, finite-input implementation and explicitly retained generator gaps.",
+      "evidence": [
+        "docs/audits/xrp-autonomous-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass136-verified-evidence/summary.json"
       ]
     }
   }
