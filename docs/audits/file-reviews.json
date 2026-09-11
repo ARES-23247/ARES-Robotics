@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "1650acc0c1a2a99047bd9a2b239c57d58bc0f11d265002a4f3189ec99d9403d1",
+      "sha256": "016cb972d1abc8de48abe95f1a4adb1bf42464df7386537aae3d56665e453b93",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11565,13 +11565,15 @@
       ]
     },
     "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/ModelsTest.kt": {
-      "sha256": "9292a09b26d7eec28b3fa55a12ece641489b185b00c9c81aa51feaeb02347c5c",
+      "sha256": "35f78209e00eacceabdb5b00d1c2fafab8001724a454f39a0aadef01ccc19ac7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full7-method model test class read: diagnostic credential redaction with synthetic secrets, workspace roundtrip/legacy defaults/list identity, all3 obstacle variants, field-image and game-piece serialization samples. Shared suite passes. Sample assertions do not establish every producer/consumer or optional-field migration.",
+      "scope": "Full7-method model test class read: diagnostic credential redaction with synthetic secrets, workspace roundtrip/legacy defaults/list identity, all3 obstacle variants, field-image and game-piece serialization samples. Shared suite passes. Sample assertions do not establish every producer/consumer or optional-field migration. Pass144: full9-method file now includes publisher approval defaults/empty settings and all4 Drive collaboration defaults through actualJSON decoding/roundtrip;27 shared tests pass.",
       "evidence": [
         "docs/audits/studio-unit-conversion-audit.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
+        "docs/audits/studio-integration-model-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass144-verified-evidence/summary.json"
       ]
     },
     "docs/audits/studio-unit-conversion-audit.md": {
@@ -11621,6 +11623,45 @@
       "evidence": [
         "docs/audits/studio-telemetry-timestamp-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass143-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/IntegrationSettingsModels.kt": {
+      "sha256": "5fd125d1c03d4c307a08172edade97e52768f65eb1595015b59956fd3a108f5d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full61-line declaration review: enum kinds, absent destinations, required event routing, nullable target shape, severity and dependent CMS approval defaults. Consumer validates schema/IDs/URLs/target-kind and requires CMS approval. Added serializer defaults for all publisher kinds. No real notification/publication run.",
+      "evidence": [
+        "docs/audits/studio-integration-model-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass144-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/GoogleOAuthBrokerModels.kt": {
+      "sha256": "ce980a44ebdeef37815c2fb3c16dfc3079830335364469e7c13dd5ad90560357",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full45-line OAuth message review: required code/verifier/redirect and refresh token, token lifetime Long, nullable refreshed/identity tokens, default Bearer and safe-error shape. Traced desktop encoding/decoding and gateway snake-case mapping/validation; existing mocked gateway tests pass. Live Google behavior and consumer lifetime arithmetic are separate scopes.",
+      "evidence": [
+        "docs/audits/studio-integration-model-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass144-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/WorkspaceModels.kt": {
+      "sha256": "a76288ca6f8fca3cdaf716a2a06be0961ebd893ca07c5f0b7a0c964cc64f5ecc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full140-line DTO/default/toString review: league/destination kinds, stable root/account IDs, dependent personal/team defaults, absent cloud target and custom-OAuth opt-in, metadata flags and redacted diagnostic rendering. Existing model serialization/redaction tests and all4 destination default/roundtrip cases pass. Cloud permissions, provider availability and downstream range enforcement not certified.",
+      "evidence": [
+        "docs/audits/studio-integration-model-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass144-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-integration-model-contract-audit.md": {
+      "sha256": "25dd6e3f6126fe0676f3ed2aa1a7b0004dbfe409f4777debb49b5feafd1067c9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass144 model-contract report verified against full declarations, reviewed consumer sections,27 shared/18 gateway results and explicit external-policy limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass144-verified-evidence/summary.json"
       ]
     }
   }
