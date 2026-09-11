@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f42f8fe263b9956251b5e29d0273ed79fbf9e8a61a7c77d72141fbfc3e6843b4",
+      "sha256": "377aa62a4e55c91ae13f44ce6b0f1a0c49443ec274fd807ef0ed181fa693dc74",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5618,7 +5618,8 @@
         "docs/audits/frc-teleop-feedback-audit.md: pass119 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-hardware-refresh-audit.md: pass120 scoped records and canonical self-fingerprint refreshed",
         "docs/audits/frc-deployment-data-audit.md: pass121 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-superstructure-boundary-audit.md: pass122 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-superstructure-boundary-audit.md: pass122 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-historical-log-audit.md: pass123 historical-data records and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9998,6 +9999,615 @@
       "scope": "Documents complete superstructure scope, five reproduced failures, best-effort zeroing/timer/interlock/finite-target fixes and cached-read reuse, FRC285/coreGC5/policy/bytecode evidence and physical stop/clearance/vendor IO limitations.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass122-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/FRC_20260517_230312.wpilog": {
+      "sha256": "894ae1bfc7fbcd79adcfd518b23d2a022d15faf7a87580aeab54596e2ac81acb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical WPILOG1.0: 3531bytes/89records fully parsed to exactEOF; control/string lengths, entrydefinitions/types, payloadsizes, finite numeric values, bool values and per-entrytimestamps checked. WPILib2026.2.1reader independently matched all records; 7JSON payloads parsed. Recorded values/provenance not physically certified. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/FRC_20260517_230600.wpilog": {
+      "sha256": "aec5290d15f03b11e195697b2425d3cf11e9c31fd51b1db1366cdf9317c9fcc5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical WPILOG1.0: 19471bytes/820records fully parsed to exactEOF; control/string lengths, entrydefinitions/types, payloadsizes, finite numeric values, bool values and per-entrytimestamps checked. WPILib2026.2.1reader independently matched all records; 1JSON payloads parsed. Recorded values/provenance not physically certified. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/FRC_20260517_230831.wpilog": {
+      "sha256": "5d8cfb5bbe6978722a94d4a95e2873b0fb3db67a0fb58cafbb289a5a37546e29",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical WPILOG1.0: 139935bytes/6724records fully parsed to exactEOF; control/string lengths, entrydefinitions/types, payloadsizes, finite numeric values, bool values and per-entrytimestamps checked. WPILib2026.2.1reader independently matched all records; 1JSON payloads parsed. Recorded values/provenance not physically certified. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/FRC_20260517_235626.wpilog": {
+      "sha256": "54e211cb43172a2b0f871b5d9e4a8b082977a582316c2d3902c56ccb964b05f9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical WPILOG1.0: 142677bytes/91records fully parsed to exactEOF; control/string lengths, entrydefinitions/types, payloadsizes, finite numeric values, bool values and per-entrytimestamps checked. WPILib2026.2.1reader independently matched all records; 0JSON payloads parsed. Recorded values/provenance not physically certified. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/FRC_20260518_000001.wpilog": {
+      "sha256": "0d344d868d77e0f3dc40225cbffd9c83d84673ebbd6bd8ab7c43817712c132f5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical WPILOG1.0: 620735bytes/771records fully parsed to exactEOF; control/string lengths, entrydefinitions/types, payloadsizes, finite numeric values, bool values and per-entrytimestamps checked. WPILib2026.2.1reader independently matched all records; 3JSON payloads parsed. Recorded values/provenance not physically certified. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/FRC_20260518_000020.wpilog": {
+      "sha256": "48fc9f80b82c8ac712dd95f1a891df4edb77981bbe19b5a3b96d8e4bce58ad03",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical WPILOG1.0: 2561293bytes/2331records fully parsed to exactEOF; control/string lengths, entrydefinitions/types, payloadsizes, finite numeric values, bool values and per-entrytimestamps checked. WPILib2026.2.1reader independently matched all records; 0JSON payloads parsed. Recorded values/provenance not physically certified. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/FRC_20260518_000217.wpilog": {
+      "sha256": "6786249466730823159609eb1636d9a364389d3c4b63b2d3163ee7312e913c83",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical WPILOG1.0: 20789125bytes/20848records fully parsed to exactEOF; control/string lengths, entrydefinitions/types, payloadsizes, finite numeric values, bool values and per-entrytimestamps checked. WPILib2026.2.1reader independently matched all records; 9JSON payloads parsed. Recorded values/provenance not physically certified. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/FRC_20260518_111618.wpilog": {
+      "sha256": "404185c34863c29d727deb1cddaeedbf85be59dbbef610203e288d7b43b3094c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical WPILOG1.0: 9439215bytes/11750records fully parsed to exactEOF; control/string lengths, entrydefinitions/types, payloadsizes, finite numeric values, bool values and per-entrytimestamps checked. WPILib2026.2.1reader independently matched all records; 7JSON payloads parsed. Recorded values/provenance not physically certified. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260613_190544.csv": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Empty historical CSV: zero bytes and no measurement evidence; accounted as a data artifact, not a runtime test. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260613_190611.csv": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Empty historical CSV: zero bytes and no measurement evidence; accounted as a data artifact, not a runtime test. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260613_190910.csv": {
+      "sha256": "857acf1a2ef81c0935d70d286adb1673986f7130078abcf5693833a31c86f5f2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260613_191924.csv": {
+      "sha256": "05df377ad0d37a024605d6f61d9dde6cb80a1ccb01659c5b13258ae092f87289",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260613_191959.csv": {
+      "sha256": "4f5ad4bcda5736b17c50b0f615f6896729ae19a1dd4a2f3ef868bdc2b5e18102",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260613_201517.csv": {
+      "sha256": "1cfea43b0653d3e08ada1fbaa11ff3c461d3ae6656e66a452026fc50229c30d3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260613_202424.csv": {
+      "sha256": "4af6bd494ecc987eff7df8faa29deb12334530a57856992bb262586fe250c9cc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260613_203240.csv": {
+      "sha256": "2db9bff30dbf9216d24889c1ed5138a54fb8fad342db5598cb17edb5fcd85b93",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260614_211449.csv": {
+      "sha256": "9d5aa9799952a20860dfc5447f96c844d04e464ae6d629ec145e5366b9d35c1b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260614_230645.csv": {
+      "sha256": "bcd64547cc1460b62883e7d80e2d1f810eb6a9e3c1b3ebb70fa940192d5b8bec",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260614_231850.csv": {
+      "sha256": "535bd3ff72fae41e0cf75b8b3e9b2256b0be90adc48db65e79574e32c0e27503",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260614_233756.csv": {
+      "sha256": "07a354acebfec879d0f528b43e80ca0a1342b2eea8982974f9ce8c5d89002b56",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260614_233930.csv": {
+      "sha256": "728d9a1a295e3dcdc0b612455ddd758c6a1d506cceed8298341b1951dce2b859",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260614_234355.csv": {
+      "sha256": "07bdcd04fccc3faa8453000ea719e043f8bc7d42ec3c5f551f8dd5752a850850",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260614_234518.csv": {
+      "sha256": "25b066089c3f82bbcba56ebc784f7e0c234a94f2509a432bad5b72b09d86a811",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260614_234553.csv": {
+      "sha256": "471fc85cdfc452355f42d3411b6e1948947f87e9e8f0275903a4b9131bfd8629",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_000653.csv": {
+      "sha256": "a98f4effea48b0cb5d9a86e1d61e8e2dbb3fcddad3b28883c3aa40d289c4ff27",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_003340.csv": {
+      "sha256": "13aecd875b0942fe3d9f4f6764b1bfc9f3c991c7a011a999d6a97ee96af4d7a7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_003514.csv": {
+      "sha256": "48852d96b9a8b0af1f8b1a4e6a13b1cfd1e1ef1a5355d672a912f0938792590e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_005123.csv": {
+      "sha256": "4aa0dcbf04f6f19e4daf1c67dd153199062a41c2ea7a19ca1274115b6c204394",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_005951.csv": {
+      "sha256": "68a806c8629f2b4e011b63cc7f7e70e2c7404a3efa2074a7705e5b3f0e3e731e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_010144.csv": {
+      "sha256": "15c09744e643fc8666b6e51a10df4cde844efd96b94c2f00e0357b1f527748dd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_011454.csv": {
+      "sha256": "cdb35dfbfc8889f4e2c9be1384a5cb0b39012aba339beabbc5e040fd9b9454c7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_012508.csv": {
+      "sha256": "d36f227d82c4ae05a080b30ec0308ef7e8d6d44d9a32cabe160740640e876083",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_083531.csv": {
+      "sha256": "ec90502554e7915d4a09e8a378f292c75dcb08c2c79389c7ddf9ca1d07ddf77a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_104704.csv": {
+      "sha256": "04ce81c5a583c2e39971ac4cfde9dab53b84095b69baf2131d18c04b14b72d27",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_115351.csv": {
+      "sha256": "32c70809de5551ddc9a86dbf7771dd1aa1c895845519645bc77491b57dda67d8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_124539.csv": {
+      "sha256": "486b8f4cdaa720ee03edff5f61120ff4e9675ec7b9e2b4b4163117b958211006",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_164531.csv": {
+      "sha256": "768cbaca9e0cb1b8378c72e50cbc17fe280a2298fadb82e4addcba9274ac99ab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260615_170049.csv": {
+      "sha256": "52345dc3242c87c86000762f3a29b856f71b9d82ce3602e839ffcfc513854e0c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260619_195535.csv": {
+      "sha256": "5eb5882c5dbb810883400dc3292365da3eb548916f58e6c42e11cd5220bdde8d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260621_181116.csv": {
+      "sha256": "3bb98c502f43a324f596282a53b7ea0d224a57495d41f4e52b6b139420785cd4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260621_181402.csv": {
+      "sha256": "68ae51c1a1cb3e060d6e73b513775625dcb48e5b184dde44c03b3342283497ca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260621_183536.csv": {
+      "sha256": "b11769d6b6fab9023b619b7114697bb233a0ab04b96f69ded71e2ba4df5dd4a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260621_184330.csv": {
+      "sha256": "2b147c4863ad23cad32b50faee2ab01f69624fd74c8f27bfaecc843c00b2e484",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260622_160127.csv": {
+      "sha256": "37090ad7d634fb7a49a7318114f6f97a311ae6c8dcb2c3d4aa393dd52d0dbe80",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260622_175133.csv": {
+      "sha256": "f337a5deb870bcdf5facc89f92741864471f216db0a19854ab9bc86411f4b640",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260622_175225.csv": {
+      "sha256": "4ecd46152e1e74f9a22ca990c9248864ace35ce886c1bb05175705994ec1cc64",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260625_193522.csv": {
+      "sha256": "554e3d2fd1d1bff1b9229c3403b62e7f3f906c2ebfbe1507b329efc8d89b534c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260625_214559.csv": {
+      "sha256": "71758836037f372194823ccce908f75f697e75348530f5ee67e286090dd51cf2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260626_080431.csv": {
+      "sha256": "cc53c561ca51af5693c3c036269fcac8072dc267772d68adf7bdfea4df7bb223",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260626_080755.csv": {
+      "sha256": "285e7efb53a7fa092899196aa91dfcb1ce87be1a37138c5735b5a459930386d6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260627_185240.csv": {
+      "sha256": "9bf6329ba08e0d765387bea90400ecf6d38034cc4b5ac697371bc4231247f839",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260627_191406.csv": {
+      "sha256": "41b507b105a871786b75a344763c1239f5c09b809909b5fbb058a2515597d60f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260627_193737.csv": {
+      "sha256": "200e593a6937249d57df29ac7d380e786ebaf64818f79f6b38b2e48c8a39317d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260627_205006.csv": {
+      "sha256": "c3c670c2b21360eb04667959e6c5428c36e724371b821fb1382e9dcd21875ee8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260629_000734.csv": {
+      "sha256": "0ba07bf17dd2cfd3030eaafda215532cc02056ddb6f4c1269dbe3bb1c78efe04",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260701_170833.csv": {
+      "sha256": "521b8de6e742fce0ce9b8a4f9052c997b2808fd79bc3bc5bb2aa855cf103abda",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical one-row CSV: full UTF-8/CSV parse,25unique columns, row width/timestamp/numeric/pipe-array checks passed. Telemetry values match45other captures excluding timestamp. No time-series or current robot correctness evidence. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260706_232104.csv": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Empty historical CSV: zero bytes and no measurement evidence; accounted as a data artifact, not a runtime test. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/logs/ares_log_20260710_083416.csv": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Empty historical CSV: zero bytes and no measurement evidence; accounted as a data artifact, not a runtime test. Raw capture retained unchanged; pass123 evidence includes content hash.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.gitignore": {
+      "sha256": "3f83a40e92dd81443a8b02f588bf6ea6c57b6a08267bff3d1b945dd992c10a46",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-rule ignore review: Gradle/build/bin outputs, logs and .ares/local excluded. git check-ignore verifies new log/build/local probes; historical tracked logs remain tracked. No ignore changes or data deletion.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.gitattributes": {
+      "sha256": "1ef861384a16f5b136a1378820080842e4cc9d24a52b7f5e452bfb8394ef684c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full attribute review: retained Unix wrapper LF and Windows batch CRLF, verified git check-attr. Removed obsolete LF override for absent source-tree generated project file; generated plumbing now lives under ignored build outputs. Policy passed.",
+      "evidence": [
+        "docs/audits/frc-historical-log-audit.md",
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-historical-log-audit.md": {
+      "sha256": "33fe7ccd9170a4bb40509beb61855096174867163300622b5336345edffe0656",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Accounts for all58historical captures, independent43424record validation and28JSON parses,4empty/46identical-value CSV snapshots, fullignore/attribute review, obsolete-rule removal and explicit nonfunctional/historical scope.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass123-verified-evidence/summary.json"
       ]
     }
   }

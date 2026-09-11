@@ -1,3 +1,2 @@
 gradlew text eol=lf
 *.bat text eol=crlf
-src/main/kotlin/com/areslib/frc/generated/GeneratedAresProject.kt text eol=lf
