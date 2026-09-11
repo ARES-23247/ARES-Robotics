@@ -3288,10 +3288,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "b38be844ca6e43231f6cfd27e48775b9f9360ea350db8d380e8e9a83a4cee1f6",
+      "sha256": "60dadddd619a69d194ee85ede43bd3db3a84b2e7a89968bf104c40543082428b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order. Pass91: Frozen tree af9e9c981c88fe2a6744accdd2f924d4317a18a1 and local candidate 17.0.3-rc.af9e9c981c88 validated in dependency order.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order. Pass91: Frozen tree af9e9c981c88fe2a6744accdd2f924d4317a18a1 and local candidate 17.0.3-rc.af9e9c981c88 validated in dependency order. Pass92: Frozen tree b66f1cd6fcf7872a98fe7044384c385da8122ecf and local candidate 17.0.3-rc.b66f1cd6fcf7 validated in dependency order.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3475,7 +3475,10 @@
         "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json",
         "docs/audits/swerve-offset-persistence-audit.md",
         "ARESLib-Kotlin/build/audit-pass91-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass91-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass91-focused-evidence/summary.json",
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5492,7 +5495,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "ef1e33ce35f3d97acc60a03ca05acf5588408064c234e93549293c6fde9686d1",
+      "sha256": "cf76e235a80dd48cd997baace440afc1c074a2fbad69c54bfed4dbd098f068d8",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5534,7 +5537,8 @@
         "docs/audits/ftc-current-reconciliation-audit.md: pass88 scopes and canonical self-fingerprint refreshed",
         "docs/audits/floodgate-frc-power-audit.md: pass89 scopes and canonical self-fingerprint refreshed",
         "docs/audits/vision-alignment-boundary-audit.md: pass90 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/swerve-offset-persistence-audit.md: pass91 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/swerve-offset-persistence-audit.md: pass91 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/replay-flow-delivery-audit.md: pass92 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8181,6 +8185,126 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass91-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass91-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/CoroutineExtensions.kt": {
+      "sha256": "c1897f6db23754ba03689171be27baea9dc608de6a0edc74ee9f51e9ae533b91",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full-file review and six tests of subscription/initial-snapshot ordering, bounded-buffer overflow, ordinary delivery, cancellation cleanup, finite-flow exhaustion, timeout and exception/cancellation propagation. Atomic setup uses Store and observation monitors; register precedes initial delivery for reentrant collectors. Overflow closes the flow explicitly rather than dropping transitions silently; waitUntil uses firstOrNull. Dedicated producer monitor-owner handshake verifies the subscription race boundary. Retains Store callback ordering for concurrent producers and caller-chosen dropping policies; buffer-space nonblocking does not promise zero allocations, no inline callbacks, or hardware deadlines. Official Kotlin contracts checked.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/ActionReplay.kt": {
+      "sha256": "23597c45045d1ce0199f1e2e2829067616eb356fe023b173d70ddf733feb813a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed source and validated replay runtime, built-in payload decoding, timestamp exactness, malformed-record fail-before-reducer behavior, nullable targets, primitive/enum/array types and mutable-log ownership. Replay now dispatches an isolated Store including delayed estimator history; custom reducer follows live Store contract. Cached core field metadata and one normalized timestamp reduce repeated work. Ten failure-before methods span this file and flows. Remaining validation scope: custom action registration/collision overloads and registered custom codec domain/schema boundaries need dedicated tests; do not treat generic Gson construction as validation of arbitrary custom invariants.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/ActionReplayJson.kt": {
+      "sha256": "ae2a8612958afb98f178113e7b42e9b5dcf0f469d69eb24987faa3d5ab937fe0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/tested FTC-compatible token-to-tree helper: explicit container stack, nested duplicate detection before overwrite, scalar kinds, lexical-number preservation including negative zero, exact integral conversions and finite float/double decoding. New codec tests pass on Gson2.14 and2.8.5. Uses legacy-compatible JsonReader mode, not universalRFC8259strictness. No arbitrary wholelog cap; reader/dependency nesting and memory constraints remain explicit.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/VisionExtrinsicCalibrationAction.kt": {
+      "sha256": "7a064854486fe7e70b81029ee5923caef6eb05786d4adcc27b1873808425b1bd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-event container review, all-core-action roundtrips and explicit frame-array log-snapshot test. Corrected misleading hardwareIO KDoc to event roles, CCW-radian headings, producer-defined transform layout and caller-owned mutable-array retention. No producer/consumer exists beyond codec/test references in tracked Kotlin; physical camera shape, validity and actuator authorization remain consuming integration contracts.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/Store.kt": {
+      "sha256": "67bf9ae66f55204fb9577970327c2a9d46a6c857e39f566ff4aede6da4af2162",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read complete file as replay/flow boundary; verified isolated estimator dispatch matches live odometry/delayedvision, registration monitor behavior, copied subscriber snapshots and cancellation cleanup. No source changes. Retains synchronous actionListener under reduction lock and callbacks outside it; concurrent callbacks can arrive out of reduction order. Broader observer failures, batch partial-commit semantics and direct/custom reducer lifecycle still require a dedicated Store scope.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/CoroutineExtensionsAuditTest.kt": {
+      "sha256": "073cc2b1bf54345b17a907909d3fa022a3c8813f084ffaedca1a93c38cbd443f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed six deterministic coroutine tests. Includes bounded-buffer overflow error, empty/nonmatching finite flow, ordered initial/ordinary states, Store-monitor registration race with ThreadMXBeanowner handshake, reflection-only listener count cleanup, timeout/predicate/upstream/cancellation behavior. One expression-body non-Unit test was initially undiscovered; corrected and all six confirmed in XML. Executor/flow lifecycle cleaned; no physical timing benchmark.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/action/ReplayEstimatorAuditTest.kt": {
+      "sha256": "475fbe4b2848fd4e005c9dba83eccf4150f882c4ed171187c65b45b78fd45bf2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed three methods: independently nonzero live odometry reproduced by offline Store replay, delayed vision accepted and full retained state sequence equals live snapshots without RobotClock mutation, malformed late record invokes no reducer and reports line2. Odometry parity failed before runtime fix.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/action/ReplayCodecBoundaryAuditTest.kt": {
+      "sha256": "b1c370cb60f562ead249cdd581125d0702a60a9d2bc25b1b5ad933b3ee95926a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed eleven methods; seven failed before codec changes. Covers missing/fractional/overflow/string timestamps, missingdrive fields, invalidenum, duplicate/singlequotedJSON, nullabletargets, negativezero, nested duplicates/numeric rejection, calibration-array detached logging and integral scientific notation. Runs under normal Gson and cached2.8.5. Custom registration collision/overload tests are a separate remaining scope.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/action/ActionReplayTest.kt": {
+      "sha256": "3f29d38908ff55d772ff37c91e0749074da72d9d00195b1e65ae7226c3a5617d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed all three methods and season fixtures on both Gson runtimes. Exhaustive built-in action roundtrip surface, timestamps, logged state payloads, unsupported schema/action failure and unregistered state codec verified. Replaced rootReducer-fold oracle with live Store to include runtime estimator behavior; independent new odometry and delayed-vision regressions prevent an implementation-only oracle.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/StoreSubscriberLifecycleTest.kt": {
+      "sha256": "08e199324a6ce715d724fdff45cc34b94aa44977ea06577a11b5b3e2a8576cc5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed complete three-method class: stable notification snapshot across self/other removal on dispatch and dispatchAll, concurrent removal during notification, and duplicate callback registration with independent idempotent removal. Thread/latch completion checked. These tests support the flow boundary but do not close all Store lifecycle semantics.",
+      "evidence": [
+        "docs/audits/replay-flow-delivery-audit.md",
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/replay-flow-delivery-audit.md": {
+      "sha256": "2b07a918b529dad4c5d10f965ccddc22a860e73a89a4b303b60db4b7a294c33f",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled10 failure-before methods,20 new methods,26focused tests,17older-Gson cases, unchanged API, JUnit discovery correction, explicit buffer/codec/replay ownership limits and partial remaining Store/custom registration scopes.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json"
       ]
     }
   }

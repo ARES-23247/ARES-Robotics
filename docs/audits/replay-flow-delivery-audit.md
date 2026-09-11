@@ -67,6 +67,30 @@ contracts. Exact integer conversion follows
 The [Gson JsonReader API](https://www.javadoc.io/static/com.google.code.gson/gson/2.8.5/com/google/gson/stream/JsonReader.html)
 provides the older token-reader surface used here.
 
+## Remaining file scopes
+
+ActionReplay remains partial in the ledger until custom-action registration/collision
+overloads and registered custom-codec boundaries receive dedicated tests. Store likewise
+remains partial: this pass validates estimator replay and subscriptions, not its broader
+observer-failure and batch partial-commit behavior. These are explicit follow-up scopes,
+not hardware limitations or completed review claims.
+
 ## Final validation
 
-Pending final focused/older-Gson evidence and the frozen library/consumer matrix.
+The final source passed 26 focused tests and all library API checks before freezing. Twenty new methods include ten failure-before regressions. Seventeen replay tests also passed with cached Gson 2.8.5 substituted for the normal Gson runtime. Public signatures are unchanged. One new coroutine test initially returned an exception object from its expression body and was not discovered by JUnit; its Unit return type was corrected and all six flow tests are included in the final XML.
+
+Source `e6f41839b6f5614ff0926f4480a0bbfcccf128ad`; library tree `b66f1cd6fcf7872a98fe7044384c385da8122ecf`.
+Local candidate `17.0.3-rc.b66f1cd6fcf7`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2096 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; counts do not imply every test was freshly executed. Conditional Studio skips remain recorded in copied XML.
+
+Copied XML, hashes, build logs and candidate BOM identity are recorded under `ARESLib-Kotlin/build/audit-pass92-verified-evidence/summary.json`; focused and older-Gson XML are under `ARESLib-Kotlin/build/audit-pass92-focused-evidence/`. No physical robot timing, hardware replay or usable Studio-window result is claimed.
