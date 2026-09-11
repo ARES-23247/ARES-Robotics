@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "234a574506907e67036012131f4c7f7a49704f24483e6e4ab1f2860ceb02a958",
+      "sha256": "b0d57689568b581b1ad40fd37938ce041dce4f0884c03c703d325697f420f01c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11829,15 +11829,17 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasItemGestures.kt": {
-      "sha256": "28534e6b270aa5d82e729960ff43d9104204c99b64564c21ed167a5ee0cff897",
+      "sha256": "7391c1546eae1e9136ab920aedb49bdf9955fd2a47fd32a4f06970588c18da1a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass158: polygon interior lookup now shares even-odd containment with the field editor, preserving vertex proximity. Concave interior/notch and transformed lookup tested. Pointer capture/update lifecycle, cancellation, invalid viewport and live interaction remain open.",
+      "scope": "Full source read in pass149; rotation/polygon selection tested in149/158. Pass159 shared containment moved into FieldObstacleSelection and distance uses hypot. Pointer capture/update lifecycle, cancellation, invalid viewport and live interaction remain open.",
       "evidence": [
         "docs/audits/studio-field-item-hit-audit.md",
         "ARESLib-Kotlin/build/audit-pass149-verified-evidence/",
         "docs/audits/studio-polygon-selection-audit.md",
-        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json",
+        "docs/audits/studio-main-gesture-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasDragTarget.kt": {
@@ -12200,6 +12202,46 @@
       "evidence": [
         "docs/audits/studio-polygon-selection-audit.md",
         "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasGestures.kt": {
+      "sha256": "e19c93f60c70cbc83552e182c86c5f00d7fae424c36ee753219ed28ce31e0d87",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read. Pass159 fixes omitted rotation in press/placement/erase and absolute/delta dragging, nearer-miss masking and empty-polygon exception; polygon erasing includes interior; duplicate waypoint conversions removed. Pointer lifecycle/slop/cancellation, field-waypoint heading conventions, invalid viewport, ID uniqueness and eraser locks/proximity remain open. Call-site wiring source-reviewed; no native input simulation.",
+      "evidence": [
+        "docs/audits/studio-main-gesture-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldObstacleSelection.kt": {
+      "sha256": "a1a16a530608a6a0cdcc766fb6e5ad1de1e975be09367ef40d1319bf6d782e29",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full helper source: rank contained finite field-scale geometry with existing shape-distance priority/stable ties; empty polygon handling; shared circle/rotated rectangle/polygon containment and hypot distance. Upstream invalid dimensions/extreme geometry and native input lifecycle excluded.",
+      "evidence": [
+        "docs/audits/studio-main-gesture-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/FieldObstacleSelectionTest.kt": {
+      "sha256": "cc88e198338782d36dc461d5235bfd497e90879cdc44a74c44562996dc498489",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: nearer missed rectangle cannot mask containing rectangle in either order, empty polygon safe/interior hit/exterior miss, overlapping priority/stable ties and empty list.",
+      "evidence": [
+        "docs/audits/studio-main-gesture-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-main-gesture-geometry-audit.md": {
+      "sha256": "39524414f51691124c18a7bb08524250ce8a018aaee406184ee6af0a78735688",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against two before-fix failures, 11 focused tests, full app XML, direct call-site review and policy/link checks; limitations explicit.",
+      "evidence": [
+        "docs/audits/studio-main-gesture-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json"
       ]
     }
   }

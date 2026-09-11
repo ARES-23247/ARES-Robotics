@@ -12,9 +12,7 @@ import com.ares.analytics.shared.FieldWaypoint
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.shared.models.League
-import kotlin.math.cos
 import kotlin.math.pow
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** Secondary field-item gestures kept separate from drag and placement state. */
@@ -104,24 +102,8 @@ internal fun findFieldItemAtScreen(
 ): Pair<String, String>? {
     val point = getRobotCoordFromScreen(offset, width, height, fieldWidthM, fieldHeightM,
         league, zoomScale, panOffset, viewRotation)
-    return obstacles.find { it.contains(point) }?.let { "Obstacle" to it.id }
+    return obstacles.find { it.containsFieldPoint(point) }?.let { "Obstacle" to it.id }
         ?: aprilTags.find { point.distanceTo(it.x, it.y) < 0.3 }?.let { "AprilTag" to it.id }
         ?: gamePieces.find { point.distanceTo(it.x, it.y) < 0.2 }?.let { "GamePiece" to it.id }
         ?: fieldWaypoints.find { point.distanceTo(it.x, it.y) < 0.3 }?.let { "FieldWaypoint" to it.id }
-}
-
-private fun Waypoint.distanceTo(x: Double, y: Double): Double =
-    sqrt((this.x - x).pow(2) + (this.y - y).pow(2))
-
-private fun Obstacle.contains(point: Waypoint): Boolean = when (this) {
-    is Obstacle.Circle -> point.distanceTo(centerX, centerY) <= radius
-    is Obstacle.Rectangle -> {
-        val dx = point.x - centerX
-        val dy = point.y - centerY
-        val radians = Math.toRadians(-rotation)
-        kotlin.math.abs(dx * cos(radians) - dy * sin(radians)) <= width / 2.0 &&
-            kotlin.math.abs(dx * sin(radians) + dy * cos(radians)) <= height / 2.0
-    }
-    is Obstacle.Polygon -> pointInPolygon(point.x, point.y, vertices) ||
-        vertices.any { point.distanceTo(it.x, it.y) < 0.3 }
 }
