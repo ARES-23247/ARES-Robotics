@@ -68,6 +68,22 @@ separate scope; file review here does not claim complete caller lifecycle covera
 
 ## Final validation
 
-Pending the frozen candidate matrix. Focused tests: 52 passed, including 21 new methods;
-API checks passed with no public signature changes. Full evidence will replace this
-section after library and consumer validation completes.
+The final source passed 52 focused tests and all library API checks before freezing. Twenty-one new methods include ten failure-before regressions. Public API signatures are unchanged.
+
+Core Kover reports 158/158 lines and 109/142 branches for VisionAlignController, 5/5 lines and 10/10 branches for FlywheelSysIdAdapter, and 4/4 instrumented lines for PIDFCoefficients. This is line coverage, not exhaustive branch coverage or a proof over every possible input.
+
+Source `ab0aca78ce4aa39230fbd283e9f96a8bda3517ef`; library tree `1987bb14f0884f6e041f66edbe25bff4367870ba`.
+Local candidate `17.0.3-rc.1987bb14f088`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2064 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; passing counts do not imply every test was freshly executed. Conditional Studio skips are recorded in the copied XML.
+
+Copied XML, per-file hashes, build logs and candidate BOM identity are recorded under `ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json`. No physical alignment, characterization, loop deadline or usable Studio-window result is claimed.

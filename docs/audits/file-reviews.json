@@ -3288,10 +3288,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "3cb4a2448383a7ce88b7b713529aaafdccf39249c1cf5b57689c6c468a29add2",
+      "sha256": "2d74a1e549939c491a05091963bf52fb6276b46a4b9fdbb9f8462c98c626c7c0",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3469,7 +3469,10 @@
         "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json",
         "docs/audits/floodgate-frc-power-audit.md",
         "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json",
+        "docs/audits/vision-alignment-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5486,7 +5489,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "9b5d2c343658625c8f2ec25ee92b8ed7195bc34ac43dd7076fa108a9b047f89e",
+      "sha256": "c1a43a77224ce3c72543034bb8dcf9ed5193c1641e098c73dc022b28fb4553d9",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5526,7 +5529,8 @@
         "docs/audits/mecanum-tuning-transaction-audit.md: pass86 scopes and canonical self-fingerprint refreshed",
         "docs/audits/core-safety-filter-audit.md: pass87 scopes and canonical self-fingerprint refreshed",
         "docs/audits/ftc-current-reconciliation-audit.md: pass88 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/floodgate-frc-power-audit.md: pass89 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/floodgate-frc-power-audit.md: pass89 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/vision-alignment-boundary-audit.md: pass90 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8043,6 +8047,82 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/drivetrain/VisionAlignController.kt": {
+      "sha256": "e0e78b1c4bf1e1e9ccf6e59a0bc71e57a66424e3bc47e8e71a36b85c085006df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full-file review of measurement selection/validity, target-space rotation, yaw rejection, EMA, PID/deadbands, vector limits, search and lifecycle. Ten failure-before regressions corrected target-change/loss history, zero/rewind/overflow time, timestamp ordering, repeated-time PID, ignored lateral cap and nonfinite arithmetic. Single clock read and cached trig remove repeated work. First-fresh source priority and physical-range rejection retained. Returned actions deliberately retain independent ownership/allocation; physical control tuning/deadlines and caller lifecycle are separate limitations. Eighteen new boundary tests plus four existing tests passed.",
+      "evidence": [
+        "docs/audits/vision-alignment-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/assist/SysIdMechanismIO.kt": {
+      "sha256": "a8656d6c4c8a97de90d6218be4914ba7578e18a20440d2eb0440bad35a71e9c9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed full interface and flywheel adapter with both FTC/FRC executor boundaries. Cached RPM conversion, validity, existing forward-only0..12V safety bounds and stop verified by three new tests. Validity no longer repeats unit conversion; finiteRPM times factor<1 remains finite. Owner refresh/authorization stays explicit; no reverse routine or hardware validation claimed.",
+      "evidence": [
+        "docs/audits/vision-alignment-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/tuning/PIDFCoefficients.kt": {
+      "sha256": "c2799cc21b6aafacb64b48e287992d4da408d84e35a2748fc6ab6a13e46bb7a2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed all fields, defaults, generated data-class semantics and documented formula/units; inspected PID-only and velocity configuration consumers. Corrected static-friction wording to setpoint-proportional kF. No executable controller arithmetic here, so no implementation-mirroring getter tests added. Validation remains at consuming boundaries; public API and candidate compile/tests passed.",
+      "evidence": [
+        "docs/audits/vision-alignment-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/drivetrain/VisionAlignBoundaryAuditTest.kt": {
+      "sha256": "b1a0462d5bd8611ec8661131bf5057defb52f4571a499c34086b6832a05258b1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed eighteen methods and deterministic fixtures, with ten original-source failures preserved. Includes target/loss history reset, zero/rewind/overflow epochs, finite arithmetic recovery, lateral vector limits, freshness edges, release, coordinate quarter-turn, EMA recurrence, shortest-arc derivative, search duration saturation and action retention. Initial invalid Euler-pitch wrap fixture corrected to valid bearing-plus-pitch geometry. RobotClock restored after each test; no hardware/deadline claim.",
+      "evidence": [
+        "docs/audits/vision-alignment-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/drivetrain/VisionAlignControllerTest.kt": {
+      "sha256": "008ba678100c586708baf2ad7016f187eaafab65c3cbd0f5f37633ed091d5b77",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed all four preexisting tests: first-sample derivative behavior, future sample rejection, nonfinite pose rejection and pitch-independent solved target depth. Corrected Y-up fixture comment; existing tolerances/behavior remain supplemented by new exact boundary tests.",
+      "evidence": [
+        "docs/audits/vision-alignment-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/assist/FlywheelSysIdAdapterTest.kt": {
+      "sha256": "2a05630789a7f04f89dec9b3392c123e5bd2d738aa8b8ca1ed9111e23fd71dc1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed three methods and cached IO fixture:60/-120RPM to2pi/-4pi rad/s, validity flags/nonfinite/MAX values,0..12V forward bounds, nonfinite neutralization and stop, exact write counts and no hardware refresh side effects. Tests do not assert unsupported full hardware safety or physical response.",
+      "evidence": [
+        "docs/audits/vision-alignment-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/vision-alignment-boundary-audit.md": {
+      "sha256": "43a6150088f2ba0706c8f57d96ef789f57d2b431e000b36acdcccf25cafc52c1",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled ten failure-before regressions,21 new methods,52 focused tests, unchanged public signatures, explicit action allocation, retained camera/forward-routine policy, corrected Euler test fixture, complete candidate evidence and physical limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass90-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass90-focused-evidence/summary.json"
       ]
     }
   }
