@@ -65,7 +65,7 @@ class LongHeap(capacity: Int) {
 }
 
 /**
- * Thread-Local Epoch-Resetting Theta* Search State Scratchpad.
+ * Exclusively owned, pooled Theta* search scratchpad with epoch resets.
  *
  * Maintains pre-allocated arrays (`gCosts`, `parents`, `generations`) and an epoch generation counter (`generation`).
  * Calling [ensureCapacity] increments the epoch counter, invalidating stale array entries in $O(1)$ constant time
@@ -74,32 +74,33 @@ class LongHeap(capacity: Int) {
  * @param capacity Maximum grid node count ($N_{\text{rows}} \times N_{\text{cols}}$).
  */
 class PlannerState(capacity: Int) {
+    init { require(capacity in 0..Int.MAX_VALUE / 8) { "Planner capacity is out of range" } }
 
     var gCosts = DoubleArray(capacity)
     var parents = IntArray(capacity)
     var generations = IntArray(capacity)
-    var generation = 0
+    var generation = 1
     var openQueue = LongHeap(capacity * 8)
     var pathPool = DoubleArray(capacity * 2)
 
     fun ensureCapacity(capacity: Int) {
+        require(capacity in 0..Int.MAX_VALUE / 8) { "Planner capacity is out of range" }
         if (gCosts.size < capacity) {
             gCosts = DoubleArray(capacity)
             parents = IntArray(capacity)
             generations = IntArray(capacity)
         }
         // Advance epoch — all nodes with stale generation are implicitly reset
-        generation++
         if (generation == Int.MAX_VALUE) {
             // Overflow guard: reset epoch and zero out generations array
             generation = 1
             generations.fill(0, 0, generations.size)
-        }
+        } else generation++
         openQueue.clear()
+        if (openQueue.data.size < capacity * 8) openQueue.data = LongArray(capacity * 8)
         if (pathPool.size < capacity * 2) {
-            val newPool = DoubleArray(capacity * 2)
-            System.arraycopy(pathPool, 0, newPool, 0, pathPool.size)
-            pathPool = newPool
+            // The previous search's reconstructed path is stale; no copy is needed.
+            pathPool = DoubleArray(capacity * 2)
         }
     }
 
@@ -110,6 +111,7 @@ class PlannerState(capacity: Int) {
 
     /** Write gCost for a node, marking it as active in the current epoch. */
     fun setGCost(key: Int, value: Double) {
+        if (generations[key] != generation) parents[key] = -1
         gCosts[key] = value
         generations[key] = generation
     }
@@ -119,21 +121,27 @@ class PlannerState(capacity: Int) {
         return generations[key] == generation && parents[key] < -1
     }
 
-    /** Mark a node as closed by encoding it into the parent value (negate and subtract 2). */
+    /** Marks an initialized node closed; repeated calls preserve its parent and closed flag. */
     fun setClosed(key: Int) {
-        // Encode: closedParent = -(realParent) - 2, so realParent >= -1 maps to closedParent <= -2
-        parents[key] = -(parents[key]) - 2
+        check(generations[key] == generation) { "Cannot close an unseen node" }
+        // Include the missing-parent sentinel: -1 -> -2, 0 -> -3, etc.
+        if (parents[key] >= -1) parents[key] = -parents[key] - 3
     }
 
     /** Get the real parent key, whether the node is closed or open. */
     fun getParent(key: Int): Int {
         if (generations[key] != generation) return -1
         val p = parents[key]
-        return if (p < -1) -(p + 2) else p
+        return if (p < -1) -(p + 3) else p
     }
 
     /** Set the parent for a node (open state). */
     fun setParent(key: Int, parentKey: Int) {
+        require(parentKey >= -1 && parentKey < parents.size) { "Parent key is out of range" }
+        if (generations[key] != generation) {
+            gCosts[key] = Double.POSITIVE_INFINITY
+            generations[key] = generation
+        }
         parents[key] = parentKey
     }
 }
