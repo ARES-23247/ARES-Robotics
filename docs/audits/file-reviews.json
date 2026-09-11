@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "01e8da8851ea8a82c7cc19f6795ffcb77a1bf23449c3ca6bfbf9a3093ba3248b",
+      "sha256": "e3de1fb26dbc7b2adebee44d302090ffb84971b14a45f99791cae51d715d35d0",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12758,6 +12758,46 @@
       "evidence": [
         "docs/audits/ftc-diagnostic-cleanup-audit.md",
         "ARESLib-Kotlin/build/audit-pass173-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESRemoteDriveOpMode.kt": {
+      "sha256": "ddf82814ea2dedf5dec89b7ab61aeaabb73c99169cc68413bbcff09efa00f6e7",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full static read plus real loop in-memory NT4 tests: fault invalidates handshake before zero, retained motion/neutral/exact lease expiry, oversized frame count rejection, action reuse and initial status at zero. Failure of zero-dispatch/error-report fallback and shared SDK shutdown remain open; physical output and network exception paths not certified.",
+      "evidence": [
+        "docs/audits/ftc-remote-drive-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/ARESRemoteDriveLoopTest.kt": {
+      "sha256": "caa1ec9e26e429ac1a43feae4cc6efd890916361f818d7afa28db48173f20fe5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full four-test fixture review: actual loop/gate, unstarted registry-only NT4 instance guarded/cleared, mocked hardware/runtime, snapshots of mutable action at dispatch, retained/error recovery/oversized/first status cases. Globals restored. 145 full FTC tests pass.",
+      "evidence": [
+        "docs/audits/ftc-remote-drive-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/ARESRemoteDriveSafetyTest.kt": {
+      "sha256": "f117699d8a76d993a9230d82e14a48070875260584a00ea247df53439752da45",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full nine-test protocol gate review: startup retained rejection, neutral sequencing, exact lease expiry, missing frame invalidation, rollback/mutation/metadata/flags/nonfinite/axis limits and exact zero handshake. These test the shared gate, not the physical OpMode; all nine rerun pass.",
+      "evidence": [
+        "docs/audits/ftc-remote-drive-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-remote-drive-loop-audit.md": {
+      "sha256": "0c4052fed7a100f1e3e2a8c5204a4c00feda328e68728361197f6da2caf9a26b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass174 report checked against source and before/focused/full XML; gate and actual loop coverage distinguished from hardware/socket execution.",
+      "evidence": [
+        "docs/audits/ftc-remote-drive-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json"
       ]
     }
   }
