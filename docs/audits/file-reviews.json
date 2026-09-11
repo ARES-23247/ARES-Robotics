@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3f257b684a757b0b44f27eb550aad0cc780bcb1b5bb9455c3a47c8ce461426d3",
+      "sha256": "b0c318453977da5ec1a273b6bef7daf51d6799b4ba9106f21ab38f3ad415eb8f",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11784,6 +11784,46 @@
       "evidence": [
         "docs/audits/studio-field-migration-geometry-audit.md",
         "ARESLib-Kotlin/build/audit-pass147-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasUtils.kt": {
+      "sha256": "29f7e38e16af544249552b001f1192cde6f24ab945fb1eb07fe9acbcd851039b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; validated finite positive-domain base/forward/inverse/drag coordinate arithmetic and Hermite interpolation. Consolidated duplicated inverse helper and reused measured axis text layouts. Remaining degenerate input, cache ownership, draw concurrency and rendered interaction review open.",
+      "evidence": [
+        "docs/audits/studio-field-canvas-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass148-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasMathAuditTest.kt": {
+      "sha256": "4c7f06c3afcb5eadbffb635ae0616c406eac384f5a9a1fbfd7560ec3f0803c8c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: explicit league origin/scale results on nonsquare canvas, quarter-turn pan/zoom result, inverse and drag consistency across leagues/angles, Hermite endpoints/linear/quadratic cases. Full app suite passes.",
+      "evidence": [
+        "docs/audits/studio-field-canvas-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass148-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/XrpFieldCanvasCoordinatesTest.kt": {
+      "sha256": "93e263e2604cb4e0fd903f127eec6804b4bdb240d54e070bf8b2e38300d357ae",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-test review: pinned numeric XRP positions/inverse, center-origin mapping and unrotated drag scaling. Passing in full app suite; wider transformed-domain coverage in pass148 math tests.",
+      "evidence": [
+        "docs/audits/studio-field-canvas-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass148-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-field-canvas-math-audit.md": {
+      "sha256": "8bf3d897ec5cd789d54579211d71c785e6313af7389a3060a3a925f036a07d68",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report reviewed against production diff and final app XML:1763 passed/six opt-in skipped, no correctness defect claimed, duplicate work removed, untested rendering/input/cache scope explicit.",
+      "evidence": [
+        "docs/audits/studio-field-canvas-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass148-verified-evidence/"
       ]
     }
   }
