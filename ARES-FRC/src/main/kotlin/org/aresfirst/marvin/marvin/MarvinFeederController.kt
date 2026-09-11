@@ -43,7 +43,7 @@ class MarvinFeederController(store: Store) : MarvinControllerBase(store) {
         val transferState = store.state.superstructure.marvin
         if (transferState.transferActive) {
             val elapsedMs = nowMs - transferState.transferStartedAtMs
-            if (elapsedMs < 0L || elapsedMs >= TRANSFER_DURATION_MS) {
+            if (nowMs < transferState.transferStartedAtMs || elapsedMs < 0L || elapsedMs >= TRANSFER_DURATION_MS) {
                 store.dispatch(CompleteTransfer(timestampMs = nowMs))
                 stopOutputTargets()
                 return

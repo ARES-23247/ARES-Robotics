@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "83deae778262fe5a439d5423519ac16e53327a2bfeb4351befc8b8b5eee2678e",
+      "sha256": "e45ceb036398a8d32024ceb250045da00abc398482f784dbe585dc7083b2061b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5607,7 +5607,8 @@
         "docs/audits/frc-simulated-feedback-audit.md: pass108 scopes and canonical self-fingerprint refreshed",
         "docs/audits/mechanism-integration-audit.md: pass109 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-physics-boundary-audit.md: pass110 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-swerve-tracking-audit.md: pass111 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-swerve-tracking-audit.md: pass111 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-controller-facade-audit.md: pass112 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9194,6 +9195,115 @@
       "scope": "Reconciles two correctness defects, allocation inefficiency, five failing regressions among nine new tests, bounded snapshot reuse, corrected before/after instrumentation and full FRC/coreGC/policy evidence with explicit third-party and physical limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass111-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinControllerBase.kt": {
+      "sha256": "a2cff7161aa7997ba66f7872fcd4350f9601faecb5ac45f4802576dc5bdcc943",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full small facade base review: existing Redux base delegation plus primitive double dispatch-on-change specialization. All three subclasses/callsites traced. Javap14->0 Double.valueOf sites; unchanged-loop100k0bytes/no notifications; finite actual-change semantics tested, Boolean path retained.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinCowlController.kt": {
+      "sha256": "018c65a518f7be3533fed82c29460a68818264cb283b564fc7d8987ea4dfcf45",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full cowl facade: finite command rejection before state mutation, finite travel clamp0..1.8 mechanism rotations, target/sample validity and tolerance, deduplication. Invalid-value regression reproduced; readiness/clamp/inhibit/idle tests passed. Physical actuator behavior belongs to separate IO.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinFlywheelController.kt": {
+      "sha256": "353ec707e8a89828aa1e931a6d09fc4b3257cf7f6b54ae98130974636d3223cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full flywheel facade: reject invalid/negativeRPM before dispatch/arm, target+active spin-up and stop, velocity validity/all-motor readiness/tolerance, primitive dedup. Reproduced invalid command; stop/inhibit/readiness/idle tests passed. Outer controller handles exceptions and physical neutralization.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinFeederController.kt": {
+      "sha256": "c7cc18fad989bb71b5a2cbfb0c62fb4954ba47d087519fddefa0674cb9829ccb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full feeder facade: Redux-authoritative active/consumed latch, cancellation/idle dedup, all three starting interlocks, continued authorized transfer, optional floor assist,450ms boundary and overflow-safe rollback. RollbackMAX->MIN regression reproduced; reconstruction/held-trigger recovery and new table tests passed.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinConfig.kt": {
+      "sha256": "aad2bce9d2c4c79f4970aec59c052ba1f43a4e284150b99a091a77979c68b79f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full structural configuration review: units and finite/ordered/matching shot tables, cowl limits, mechanism geometry/limits/presets, shooter offset/rearward direction, field target coupling. Constructed validated ShotConfig and sampled public outputs0..10m for monotone finite safe values. Checked-in calibration/survey and official-coordinate comments are not independently physically certified.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/config/CanonicalDrivebaseConfig.kt": {
+      "sha256": "103037fe4ae4cd44889d1259346b7f194c117c77de44967df80c52661f53d368",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full canonical adapter: two allowlisted Redux runtime parameters, generated geometry retained, immutable copy mapping/canonical defaults, four reviewed offsets and simulator values. Existing vendor-hash/overlay/dimension tests plus new actual runtime apply/mapping test passed. Vendor tuning and physical calibration remain outside adapter guarantee.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinFacadeAuditTest.kt": {
+      "sha256": "72476ada4dcc0c5785a6dc15b2b40d4d92eba18c6c9fe0b5dd2c7fd4594a255c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed nine methods, four failure-before cases. Covers invalid command atomicity, overflow rollback, idle allocation/dispatch, readiness/interlocks/lifetime/floor, clamp/stop/inhibit, typed tuning mapping and public shot interpolation. Uses restored mockclock/unsubscribed listener. FRC212/coreGC5 passed.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinControllerReduxConsistencyTest.kt": {
+      "sha256": "45e5895ed408969505306a945fbc7fa31318a9e287da9bf1ca210cc5fc6689ad",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed the existing transfer reconstruction/450ms timeout/held-trigger/cancel/rearm/clock rollback method; state-authoritative transfer contract covered alongside new overflow test.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinControlAndFreshnessRegressionTest.kt": {
+      "sha256": "e0db0122900a3369e0a3602c0a47dd16da09e4ec9edb44a72a3eb479026b5848",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed all five existing methods for climber mode semantics, freshness/firing interlocks, latched all-stop, explicit fault recovery and position freshness; new facade boundary tests supplement this coverage.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/config/CanonicalDrivebaseConfigTest.kt": {
+      "sha256": "b2998afe23961dfeb0e77cfe9113792c087fb92cb3f658273ad4a4b94268b988",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed all four existing canonical configuration methods: runtime allowlist, vendor source hash and gears, profiled deploy offsets, simulation dimensions/gains. Actual typed runtime mapping supplemented by new facade audit test.",
+      "evidence": [
+        "docs/audits/frc-controller-facade-audit.md",
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-controller-facade-audit.md": {
+      "sha256": "e73ecf73af4a0c062efa049b4713ad0b0720c26811947fef9714be637412c65e",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles grouped six-source/three-existing-test review, nine new methods/four before failures, primitive boxing and runtime evidence with declared physical/configuration limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
       ]
     }
   }

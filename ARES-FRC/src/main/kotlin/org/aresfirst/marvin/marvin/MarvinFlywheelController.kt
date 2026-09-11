@@ -7,6 +7,7 @@ class MarvinFlywheelController(store: Store) : MarvinControllerBase(store) {
 
     /** Enables flywheel output and records [targetRpm] in RPM. */
     fun spinUp(targetRpm: Double) {
+        require(targetRpm.isFinite() && targetRpm >= 0.0) { "Flywheel target RPM must be finite and nonnegative" }
         dispatchOnChange(store.state.superstructure.marvin.flywheel.targetVelocityRpm, targetRpm, ::SetFlywheelSpeed) {}
         dispatchOnChange(store.state.superstructure.marvin.flywheelActive, true, ::SetFlywheelActive) {}
     }

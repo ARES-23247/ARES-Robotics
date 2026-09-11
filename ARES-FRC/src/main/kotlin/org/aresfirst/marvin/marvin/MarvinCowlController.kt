@@ -7,6 +7,7 @@ class MarvinCowlController(store: Store) : MarvinControllerBase(store) {
 
     /** Commands mechanism rotations, clamped to the same limit configured in TalonFX IO. */
     fun setCowlAngleRotations(rotations: Double) {
+        require(rotations.isFinite()) { "Cowl target rotations must be finite" }
         val clampedRotations = rotations.coerceIn(0.0, MarvinConfig.cowlMaxRotations)
         dispatchOnChange(store.state.superstructure.marvin.cowl.targetAngleRotations, clampedRotations, ::SetCowlAngle) {}
     }
