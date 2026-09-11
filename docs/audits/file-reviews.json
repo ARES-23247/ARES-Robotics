@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "38ebe9d41a31c21b76f91fc16f9134e61452318ad0cbaae749af7ed5780c0321",
+      "sha256": "8a279f411c7ff17bf1a313d8b9e3ffbbc53c72fd066b67892df35c3ab4cec7d2",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12034,6 +12034,46 @@
       "evidence": [
         "docs/audits/studio-field-validation-work-audit.md",
         "ARESLib-Kotlin/build/audit-pass154-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/FieldDocumentStore.kt": {
+      "sha256": "853e750851fc9de44daabec61d1756f45eede348154b2d199067b566c3e4fef3",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; fix missing project-league validation at load, incoming save and existing-document save boundaries before checkpoints/replacement. Six cross-league combinations/defaults/file-history preservation tested. Remaining mapper behavior and checkpoint failure/concurrency semantics open.",
+      "evidence": [
+        "docs/audits/studio-field-project-league-audit.md",
+        "ARESLib-Kotlin/build/audit-pass155-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/InitialFieldPresetInstaller.kt": {
+      "sha256": "85c776b949eb8c6141ccf171fcf47e01c7e5d36179bed876a76df45847ed3539",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read; fix acceptance when starter/preset agree on wrong project league. Rejection preserves bytes; existing successful template installation tests pass. Remaining revision/resource/atomic-write failure review open.",
+      "evidence": [
+        "docs/audits/studio-field-project-league-audit.md",
+        "ARESLib-Kotlin/build/audit-pass155-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldDocumentLeagueTest.kt": {
+      "sha256": "bb877cd3333d880e5929c48030690406353c486a83bd7402dffb31c99ada64ed",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: two before-fix failures; all cross-league load/save combinations, existing-invalid save guard, unchanged history/file bytes, no-write defaults and wrong starter/preset pair now pass. Owned temp directories cleaned in finally.",
+      "evidence": [
+        "docs/audits/studio-field-project-league-audit.md",
+        "ARESLib-Kotlin/build/audit-pass155-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-field-project-league-audit.md": {
+      "sha256": "7ab66b6ad7af1374d891ce811c6714f53633c83038d20d918e5d368a89f2ff47",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against guards, retained failures and full app XML:1782 passed/six skips; production files remain partial and no image/UI/live/physical validation claimed.",
+      "evidence": [
+        "docs/audits/studio-field-project-league-audit.md",
+        "ARESLib-Kotlin/build/audit-pass155-verified-evidence/"
       ]
     }
   }

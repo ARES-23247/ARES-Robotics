@@ -24,6 +24,7 @@ internal object InitialFieldPresetInstaller {
             "The reviewed initial field preset '$resourcePath' is missing from this installation."
         }.bufferedReader().use { it.readText() }
         val current = RobotFieldDocument.decode(fieldFile.readText())
+        check(current.fieldType.name == league.name) { "The starter field document has the wrong project league." }
         val preset = RobotFieldDocument.decode(presetJson)
         check(preset.fieldType == current.fieldType) { "The reviewed initial field preset has the wrong league." }
         check(preset.apriltags.isNotEmpty()) {
