@@ -60,15 +60,18 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/CurrentBudgetManager.kt": {
-      "sha256": "af09c5da60c9e920942ce4ac49868fd24e9aad37945e65329dad622a61225e8e",
+      "sha256": "60403500ff970dee193387dbb9cfd8ccb3709098d7f533e7bb3e63e0044d579c",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass87: Closed prior partial scopes through full-file review of electrical model, registration, calibration, observation validity, hysteresis, queries and reset. Invalid voltage/effort/scale/velocity/getter failures now publish unknown current and zero available effort, invalid electrical models reject before mutation, duplicate registration preserves calibration and changed models replace it. Removed an unread calibration field. New regression, recovery, independent numeric, operation-count and zero-allocation tests pass. Model is approximate motor-current sum; physical current accuracy and FTC aggregate reconciliation remain explicit external/integration limits.",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass87: Closed prior partial scopes through full-file review of electrical model, registration, calibration, observation validity, hysteresis, queries and reset. Invalid voltage/effort/scale/velocity/getter failures now publish unknown current and zero available effort, invalid electrical models reject before mutation, duplicate registration preserves calibration and changed models replace it. Removed an unread calibration field. New regression, recovery, independent numeric, operation-count and zero-allocation tests pass. Model is approximate motor-current sum; physical current accuracy and FTC aggregate reconciliation remain explicit external/integration limits. Pass88: Preserved prior full review; reviewed new coherent sample/reconcile/evaluate split and identity unregister. Existing update JVM signature retained. New source mode reconciles post-calibration per-branch floors, subtracts shared motor samples once, rejects unknown/unregistered inputs and advances hysteresis once. Unregister preserves remaining models, calibration cursor and trip history. Seven direct new tests plus twelve FTC integration tests pass; no physical current/fuse guarantee.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/core-safety-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass87-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json",
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/MotorIO.kt": {
@@ -3285,10 +3288,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "5d03fb1000df0da7f217e44acff22d59da3fbd6aa672f839590e019348363655",
+      "sha256": "fdd2acdc711ad34377fc2748a8c764f9cb8ec8fea36aa333fd605a455f367245",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3460,7 +3463,10 @@
         "ARESLib-Kotlin/build/audit-pass86-focused-evidence/summary.json",
         "docs/audits/core-safety-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass87-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json",
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3598,10 +3604,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "8b48f190733d348adfb1c7f219eff7d20a18c8bf2b4d680b271d9c9d88c011a3",
+      "sha256": "a71bd7d4ba95c5bd5ec23d6b7d9bffb38a28355c1c19d16783834f579441833f",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial. Pass78: Only changed vision descriptors reviewed: appended per-axis noise flags and Kotlin default bridge. API check and rebuilt candidate consumers passed. Remaining generated API inventory retains partial scope. Pass80: Generated API artifact compared with compiler output. Intentional ShotResult clear/isValid/setValid additive descriptors reviewed; internal solver absent from public API. Focused and full API checks passed. Pass84: Reviewed compiler-generated additive PIDController getLastCalculationValid()Z descriptor. No public setter added. Core and FTC API checks passed before freeze and in candidate validation.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial. Pass78: Only changed vision descriptors reviewed: appended per-axis noise flags and Kotlin default bridge. API check and rebuilt candidate consumers passed. Remaining generated API inventory retains partial scope. Pass80: Generated API artifact compared with compiler output. Intentional ShotResult clear/isValid/setValid additive descriptors reviewed; internal solver absent from public API. Focused and full API checks passed. Pass84: Reviewed compiler-generated additive PIDController getLastCalculationValid()Z descriptor. No public setter added. Core and FTC API checks passed before freeze and in candidate validation. Pass88: Compiler-generated API artifact matched by full apiCheck; diff contains only unregister(MotorIO) and updateFromCurrentSources(Double,List,Boolean), plus its Kotlin default bridge. Existing update descriptors retained. Artifact validation is distinct from unrelated runtime semantics, which remain tracked by their source-file records.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3652,7 +3658,10 @@
         "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json",
         "docs/audits/drive-configuration-history-audit.md",
         "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json",
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -5474,7 +5483,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "5c2b33ab7716650eb46bf78ff39ef9779dcab5b40f058470794b0e2650e44e1e",
+      "sha256": "d062a7ac9839e282c630aae780b88e28f15cae80d3e802157f4f65cb8860789b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5512,7 +5521,8 @@
         "docs/audits/drive-configuration-history-audit.md: pass84 scopes and canonical self-fingerprint refreshed",
         "docs/audits/native-mecanum-tuning-audit.md: pass85 scopes and canonical self-fingerprint refreshed",
         "docs/audits/mecanum-tuning-transaction-audit.md: pass86 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/core-safety-filter-audit.md: pass87 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/core-safety-filter-audit.md: pass87 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/ftc-current-reconciliation-audit.md: pass88 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -7711,10 +7721,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/architecture.md": {
-      "sha256": "a0a63b65329be4c07829d3ffb2dd99e4339198585be542baa0f3aa71e3f58a02",
+      "sha256": "72f81f4544f3f4cbdbf03e9957343099abe35c9b6757573d0bdebf5a6c744fc8",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Read complete document and validated added native configuration/cache retry section against runtime/tests. Existing Maven Local validation advice and FRC namespace wording conflict with canonical guide; queued correction in next source batch. Other module/loop claims require reconciliation before full documentation credit. Pass86: Read complete architecture document and reconciled module/Redux/loop guidance with canonical workspace guide, settings, FTC compile-only mock dependency and audited runtime boundaries. Corrected stale Maven Local validation and FRC namespace advice. Native tuning/default/recovery documentation is backed by focused tests and candidate consumers; local links verified. This is documentation consistency review, not proof every runtime file is audited. Pass87: Preserved previous complete documentation review; current-budget documentation now describes unknown observation behavior, model limitations and idempotent registration consistently with tested implementation. Local Markdown links checked.",
+      "scope": "Read complete document and validated added native configuration/cache retry section against runtime/tests. Existing Maven Local validation advice and FRC namespace wording conflict with canonical guide; queued correction in next source batch. Other module/loop claims require reconciliation before full documentation credit. Pass86: Read complete architecture document and reconciled module/Redux/loop guidance with canonical workspace guide, settings, FTC compile-only mock dependency and audited runtime boundaries. Corrected stale Maven Local validation and FRC namespace advice. Native tuning/default/recovery documentation is backed by focused tests and candidate consumers; local links verified. This is documentation consistency review, not proof every runtime file is audited. Pass87: Preserved previous complete documentation review; current-budget documentation now describes unknown observation behavior, model limitations and idempotent registration consistently with tested implementation. Local Markdown links checked. Pass88: Preserved prior complete documentation review and updated current-budget section for same-frame branch reconciliation, unknown leaves, conservative overlap and registry/external model ownership. Statement matches new tests; local links verified.",
       "evidence": [
         "docs/audits/native-mecanum-tuning-audit.md",
         "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
@@ -7724,7 +7734,10 @@
         "ARESLib-Kotlin/build/audit-pass86-focused-evidence/summary.json",
         "docs/audits/core-safety-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass87-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json",
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
       ]
     },
     "docs/audits/native-mecanum-tuning-audit.md": {
@@ -7825,14 +7838,17 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/power/FtcPowerManager.kt": {
-      "sha256": "e504cbdde694abbefa0744866a270204087618c40df5b2b39d7651dd9cee8248",
-      "review": "partial",
+      "sha256": "7ec4246a04c665f21c6ed9aeeb35170f62b1c61f171851278ccbbe151dd53582",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Traced automatic registration and additional-current reconciliation caller. Existing per-motor estimation before aggregate update repeats model reads and may use different calibration state. This integration/efficiency path needs dedicated review/tests; no full-file completion claim. Existing FTC module and consumer tests pass.",
+      "scope": "Traced automatic registration and additional-current reconciliation caller. Existing per-motor estimation before aggregate update repeats model reads and may use different calibration state. This integration/efficiency path needs dedicated review/tests; no full-file completion claim. Existing FTC module and consumer tests pass. Pass88: Closed prior reconciliation scope through full coordinator review: voltage sampling/filter timing and missing-data behavior, raw brownout path, Floodgate selection/overload fallback, automatic model registration, scale distribution and ownership. Fixed zero epoch/rewind/elapsed overflow, stale registry slots, aggregate calibration mismatch, independent branch undercount and repeated model reads. Twelve new tests plus nine existing and aggregate-inclusive allocation test pass. Traced setter exception propagation into FtcBaseRobot fatal-update neutralization. Standalone callers own neutralization on exceptions; broader Floodgate model and FRC coordinator audit remain separate.",
       "evidence": [
         "docs/audits/core-safety-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass87-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json",
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
       ]
     },
     "docs/audits/core-safety-filter-audit.md": {
@@ -7843,6 +7859,115 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass87-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/CurrentSourceSampler.kt": {
+      "sha256": "e7485b03626acaf1ec263cf61f29ec831e206b927ab2c9f3dd621465135ebfed",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full-file review of growth, cached sampling, validity, coverage, selection, queries and exception isolation. Duplicate identities read once; finite/nonnegative checks cannot be overridden; cycles/incomplete ownership retain otherwise unrepresented readings conservatively. Excluded motors delegate validity to the modeling caller. Six new tests include four failure-before cases, growth/shrink/empty state and validator/ownership failures. Existing registry sampler test and FTC/FRC integration pass. Overlapping/cyclic declarations may overestimate current; no claim of exact electrical topology inference.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/CurrentSourceIO.kt": {
+      "sha256": "19cf47df2c63b75ad57a087b9b97702b27b938e9d863e8e92f29646d007e41fe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read complete small interface and documented cached-read/refresh ownership contract. Default finite/nonnegative validity, single-local-sample currentReadingValid getter and identity coverage are consistent with sampler and reconciliation tests. Custom overrides cannot bypass sampler numeric validity. Structural interface review and downstream tests, not hardware freshness measurement.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/power/FtcPowerReconciliationAuditTest.kt": {
+      "sha256": "889af5843158d99b4da28820e94570f891dcbb8896e3bfd888167844f7cc2c9c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed all twelve methods and fixtures; initial nine failed before fixes. Exact independent current expectations include 12A instead of6.4,20A instead of25.6,25A instead of20,4.4->2.72 learned calibration,1.84A replacement and30A custom replacement-manager model. Read counters, unknown recovery, external ownership and signed/zero/rewind timing verified. Registry closed in finally.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/safety/CurrentBudgetReconciliationTest.kt": {
+      "sha256": "377737e8d0d4dea3ad186848b08ca17f87aa05cef9a3f9777a53390527300b55",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed seven new direct API tests: unregister/calibration/cursor/trips, optional aggregate fallback, conservative overlapping aggregates, unregistered/unknown motor rejection, one-transition hysteresis and invalid-battery provider read avoidance. Numeric expectations are independent of implementation calculations.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/CurrentSourceOwnershipAuditTest.kt": {
+      "sha256": "ae17b1a82b7e355904373c929290e65981c95995d70092d72309fa50df80d9d8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed six new methods and source fixtures. Four failed before fixes: duplicate identity, mutual coverage, three-source cycle beside independent source and permissive custom validity. Further cases verify growth/shrink/empty selection and exception isolation. Getter counters confirm duplicate sampling once.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/power/FtcPowerManagerTest.kt": {
+      "sha256": "6cacc658533c6781ee563dded511e55b9a0d1f7005f87bd1da3c125e9ecccf11",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full nine-method class and voltage/motor fixtures read and executed. Covers cached getter/read ownership, sag/filter math, brownout/model fallback, invalid voltage recovery, Floodgate invalid/zero/overload paths, mechanism current and aggregate replacement. Weak aggregate upper-bound assertion is supplemented by exact regression tests in the new class.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/power/FtcPowerManagerZeroGcTest.kt": {
+      "sha256": "e1e9b932f59e94be21abddb67bd178f912c2c221ef6411918f7588f89c71d7e8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full fixture reviewed and executed. Four motors/two aggregate branches exercise topology comparisons, calibrated model and branch sampler. Unsupported instrumentation now produces explicit skip. Warmup increased from2000 to50000 and requires two consecutive zero-byte10000-update windows with bounded one-time overhead; observed two windows and0bytes after warmup on final focused run. Registry cleanup added. Early old-short-warmup704byte observation is retained in report, not represented as zero.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/power/FrcPowerManager.kt": {
+      "sha256": "72ba0647c4f758f813e8aa5907b8f5a4be3d8d47891b60765e88e163c4ea121d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read coordinator and traced shared sampler fallback: complete coverage plus finite nonnegative total selects current observation; unknown data takes existing conservative FRC current scale. Six existing focused FRC tests and full candidate pass after shared sampler changes. Broader current-state thresholds, supplier defaults and hardware/lifecycle behavior require a dedicated audit; no complete FRC power claim.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcFloodgateCurrentSensor.kt": {
+      "sha256": "0be872167aa5ed4cf7137769231f0ed5b81481a17d66156c6057ecea7051ffb7",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read sensor to trace FTC coordinator plausibility, instantaneous/filtered current and overload/thermal selection. No change here. Its parameter fallback, signed-time integration, thermal arithmetic and physical calibration remain a separate audit scope; current library tests pass without claiming hardware current accuracy.",
+      "evidence": [
+        "docs/audits/ftc-current-reconciliation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-current-reconciliation-audit.md": {
+      "sha256": "babb70255ec96f679af78dd75cc1ec652b1f17e618d90c340930e714d56f798d",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled thirteen failure-before methods,25 new tests,89 focused cases, additive API, observed zero-allocation windows, full candidate evidence and external/FRC/Floodgate limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json"
       ]
     }
   }

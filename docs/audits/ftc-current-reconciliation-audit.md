@@ -61,3 +61,23 @@ power behavior and Floodgate calibration/integration remain separate audit scope
 These host tests do not establish physical loop deadlines, electrical-current accuracy or fuse
 protection. Cyclic/overlapping ownership is handled conservatively and may reduce available power
 until the hardware's coverage declarations are corrected. No upstream library defect is claimed.
+
+## Final validation
+
+The final source passed 89 selected core/FTC/FRC tests and all library API checks before freezing. Twenty-five new methods include thirteen distinct failure-before regressions. The core API adds unregister and updateFromCurrentSources while retaining the existing update signature. The allocation test observed zero bytes in each of two consecutive 10,000-update windows.
+
+Source `bf67f70ad93ffc675deedc1ff86cd970a0d048cb`; library tree `fad5f84844de787b5a969a1bb6cd32a392daa60b`.
+Local candidate `17.0.3-rc.fad5f84844de`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2022 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; passing counts do not imply every test was freshly executed. Conditional Studio skips are recorded in the copied XML.
+
+Copied XML, per-file hashes, build logs and candidate BOM identity are recorded under `ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json`. Validation is on the host and consumers; no physical timing, current accuracy, fuse protection or usable Studio-window result is claimed.
