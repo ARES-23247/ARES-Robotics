@@ -171,8 +171,8 @@ class ShotSetupTest {
         val result = ShotResult()
         shotSetup.calculate(robotPose, speeds, target, result)
         
-        // Shooter is at (-0.25, 0). Under 1.0 rad/s counter-clockwise rotation,
-        // it acquires a tangential velocity of omega * r = 1.0 * (-0.25) = -0.25 m/s along Y.
+        // The configured rearward shooter has negative rotated X at the compensated heading.
+        // Under 1.0 rad/s counter-clockwise rotation, its tangential Y velocity is negative.
         // During the TOF, the projectile gets carried along -Y.
         // Therefore, we must aim in the +Y direction (aimAngleRad > 0) to compensate.
         assertTrue(result.virtualTargetY > 0.0, "Virtual target Y should be positive for negative shooter velocity")

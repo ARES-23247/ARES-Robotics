@@ -24,6 +24,167 @@ import kotlin.test.assertTrue
 
 class FtcMecanumCalibrationControllerTest {
     @Test
+    fun `vision calibration preserves capture time and rejects stale or disconnected cached frames`() {
+        val fixture = ArmedSysId("LINEAR", "START_VISION_CALIBRATION")
+        fixture.step(1000L)
+        val measurement = com.areslib.state.VisionMeasurement(tagId = 2,
+            targetPose = com.areslib.math.geometry.Pose3d(
+                com.areslib.math.geometry.Translation3d(0.75, -0.25, 0.0),
+                com.areslib.math.geometry.Rotation3d(0.0, 0.0, 0.3)),
+            ambiguity = 0.01, timestampMs = 1000L)
+        val tracker = com.areslib.ftc.vision.FtcVisionTracker(fixture.store,
+            com.areslib.ftc.vision.MockVisionIO(listOf(measurement)), null)
+        tracker.update(1000L)
+        val sample = fixture.publish(1050L, tracker = tracker)
+        assertEquals(1000.0, sample[0])
+        assertEquals(0.75, sample[1], 1e-12)
+        assertEquals(-0.25, sample[2], 1e-12)
+        assertEquals(0.3, sample[3], 1e-12)
+        assertEquals(0, fixture.publish(1501L, tracker = tracker).size)
+        assertEquals(0, fixture.publish(999L, tracker = tracker).size)
+        tracker.visionInputs.isConnected = false
+        assertEquals(0, fixture.publish(1050L, tracker = tracker).size)
+    }
+
+    @Test
+    fun `linear calibration logs signed encoder distance using one shared conversion`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.motors.forEachIndexed { index, motor -> motor.currentPosition = -1000 * (index + 1) }
+        fixture.step(1000L)
+        assertEquals(-1.25, fixture.publish(1000L)[1], 1e-12)
+    }
+
+    @Test
+    fun `encoder conversion uses a valid default when both overrides are invalid`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE", Double.NaN)
+        fixture.step(1000L)
+        assertEquals(4000.0, fixture.publish(1000L, Double.NaN, 4000.0)[2])
+    }
+
+    @Test
+    fun `empirical calibration preserves valid power derating`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.io.flIO.powerScale = 0.5
+        fixture.step(1000L)
+        assertEquals("LINEAR_DRIVE", fixture.controller.activeCalibration)
+    }
+
+    @Test
+    fun `empirical calibration rejects invalid current limits`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.controller.sysIdManager.maxCurrentAmps = Double.NaN
+        fixture.step(1000L)
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+    }
+
+    @Test
+    fun `empirical calibration trips a zero duration stall immediately`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.controller.sysIdManager.stallTimeoutMs = 0L
+        fixture.motors[0].measuredCurrent = 50.0
+        fixture.step(1000L)
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+    }
+
+    @Test
+    fun `empirical log uses a finite encoder scale fallback`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE", Double.POSITIVE_INFINITY)
+        fixture.step(1000L)
+        assertEquals(2000.0, fixture.publish(1000L)[2])
+    }
+
+    @Test
+    fun `empirical log rejects an unavailable encoder conversion`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE", Double.NaN)
+        fixture.step(1000L)
+        assertEquals(0, fixture.publish(1000L, Double.NaN, 0.0).size)
+    }
+
+    @Test
+    fun `empirical log cannot relabel stale drive feedback as a fresh sample`() {
+        val fixture = ArmedSysId("LINEAR", "START_TRACK_WIDTH_SPIN")
+        fixture.step(1000L)
+        assertEquals(0, fixture.publish(1101L).size)
+    }
+
+    @Test
+    fun `vision calibration cannot log a missing target as a valid field origin`() {
+        val fixture = ArmedSysId("LINEAR", "START_VISION_CALIBRATION")
+        fixture.step(1000L)
+        assertEquals(0, fixture.publish(1000L).size)
+    }
+
+    @Test
+    fun `disabling calibration immediately clears published status and sample`() {
+        val fixture = ArmedSysId("LINEAR")
+        fixture.step(1000L)
+        fixture.publish(1000L)
+        fixture.controller.disableMode(fixture.telemetry, fixture.io)
+        assertEquals("NONE", fixture.telemetry.nt4.getString("SysId/Status", ""))
+        assertEquals(0, NT4Server.getDoubleArray("SysId/Data", doubleArrayOf()).size)
+    }
+
+    @Test
+    fun `empirical drive calibration rejects a backward clock`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.step(1000L)
+        assertEquals("LINEAR_DRIVE", fixture.controller.activeCalibration)
+        RobotClock.useMockTime(999L)
+        fixture.controller.updateSubsystems(fixture.store, 12.0, fixture.io, fixture.telemetry) {}
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+    }
+
+    @Test
+    fun `empirical drive calibration rejects invalid supply`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.batteryVoltage = Double.NaN
+        fixture.step(1000L)
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+    }
+
+    @Test
+    fun `empirical drive calibration rejects unavailable current`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.motors[1].measuredCurrent = Double.NaN
+        fixture.step(1000L)
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+    }
+
+    @Test
+    fun `empirical drive calibration stops sustained overcurrent`() {
+        val fixture = ArmedSysId("LINEAR", "START_LINEAR_DRIVE")
+        fixture.motors[1].measuredCurrent = 50.0
+        fixture.step(1000L)
+        fixture.step(1200L)
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+    }
+
+    @Test
+    fun `empirical drive calibration cannot continue with stale motion feedback`() {
+        val fixture = ArmedSysId("LINEAR", "START_TRACK_WIDTH_SPIN")
+        fixture.step(1000L)
+        fixture.refreshMotion = false
+        fixture.step(1101L)
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+    }
+
+    @Test
+    fun `empirical drive calibration rejects invalid motor power limits`() {
+        val fixture = ArmedSysId("LINEAR", "START_TRACK_WIDTH_SPIN")
+        fixture.io.flIO.powerScale = Double.NaN
+        fixture.step(1000L)
+        assertEquals("NONE", fixture.controller.activeCalibration)
+        assertMotorPowers(fixture.io, 0.0, 0.0, 0.0, 0.0)
+    }
+
+    @Test
     fun `switching from drive to flywheel characterization neutralizes the drivetrain`() {
         val fixture = ArmedSysId("LINEAR")
         fixture.step(1000L)
@@ -224,11 +385,13 @@ class FtcMecanumCalibrationControllerTest {
         assertEquals(2, fixture.flywheel.currentReads)
     }
 
-    private inner class ArmedSysId(mechanism: String) {
+    private inner class ArmedSysId(mechanism: String, command: String = "START_${mechanism}_DYNAMIC", ticks: Double = 2000.0) {
         val motors = Array(4) { CalibrationMotor() }
         val flywheel = CurrentFlywheel()
         val store = Store(com.areslib.state.RobotState(drive = com.areslib.state.DriveState(
-            xVelocityMetersPerSecond = 99.0, angularVelocityRadiansPerSecond = 99.0)))
+            xVelocityMetersPerSecond = 99.0, angularVelocityRadiansPerSecond = 99.0),
+            tuning = com.areslib.state.TuningState(drive = com.areslib.state.DriveTuningState(
+                ftc = com.areslib.state.FtcDriveTuningState(ticksPerMeter = ticks)))))
         val telemetry = FtcTelemetryManager(store, hardwareRegistry)
         val io = MecanumHardwareIO(motorHardwareMap(motors), hardwareRegistry)
         val controller = FtcMecanumCalibrationController().apply { flywheelIO = flywheel }
@@ -259,7 +422,7 @@ class FtcMecanumCalibrationControllerTest {
             controller.updateHardwareInputs(store, telemetry, io, null) {}
             controller.updateSubsystems(store, 12.0, io, telemetry) {}
             assertTrue(controller.networkArmed)
-            clientWrite(server, client, COMMAND_PUBLISHER, "START_${mechanism}_DYNAMIC")
+            clientWrite(server, client, COMMAND_PUBLISHER, command)
         }
 
         fun step(timestamp: Long) {
@@ -270,6 +433,7 @@ class FtcMecanumCalibrationControllerTest {
                 angularVelocityRadiansPerSecond = measuredAngular, motionMeasurementsValid = motionValid,
                 isExternalEstimate = true))
             io.flIO.pollSync(); io.frIO.pollSync(); io.rlIO.pollSync(); io.rrIO.pollSync()
+            io.flIO.updateInputs(); io.frIO.updateInputs(); io.rlIO.updateInputs(); io.rrIO.updateInputs()
             val reads = motors.sumOf { it.currentReads }
             clientWriteDouble(server, client, LEASE_PUBLISHER, sequence++)
             controller.updateHardwareInputs(store, telemetry, io, null) {}
@@ -277,9 +441,10 @@ class FtcMecanumCalibrationControllerTest {
             assertEquals(reads, motors.sumOf { it.currentReads }, "Output path must only consume cached current")
         }
 
-        fun publish(timestamp: Long): DoubleArray {
+        fun publish(timestamp: Long, configuredTicks: Double = 2000.0, defaultTicks: Double = 2000.0,
+                    tracker: com.areslib.ftc.vision.FtcVisionTracker = com.areslib.ftc.vision.FtcVisionTracker(store, null, null)): DoubleArray {
             controller.publishRobotTelemetry(timestamp, store, telemetry, io,
-                com.areslib.ftc.vision.FtcVisionTracker(store, null, null), 2000.0, 2000.0)
+                tracker, configuredTicks, defaultTicks)
             return NT4Server.getDoubleArray("SysId/Data", doubleArrayOf())
         }
     }
@@ -527,7 +692,7 @@ class FtcMecanumCalibrationControllerTest {
         @Volatile var measuredCurrent = 0.0
         private val ownerThreadId = Thread.currentThread().id
         var currentReads = 0
-        override val currentPosition: Int = 0
+        override var currentPosition: Int = 0
         override var velocity: Double = 0.0
         override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
         override var mode: DcMotor.RunMode = DcMotor.RunMode.RUN_WITHOUT_ENCODER

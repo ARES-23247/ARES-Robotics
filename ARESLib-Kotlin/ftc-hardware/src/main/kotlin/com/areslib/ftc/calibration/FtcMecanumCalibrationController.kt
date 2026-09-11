@@ -7,7 +7,6 @@ import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.ftc.telemetry.FtcTelemetryManager
 import com.areslib.ftc.vision.FtcVisionTracker
-import com.areslib.hardware.sensor.ImuInputs
 import com.areslib.Store
 import com.areslib.util.RobotClock
 import com.areslib.hardware.actuator.FlywheelIO
@@ -84,6 +83,9 @@ class FtcMecanumCalibrationController {
     var activeCalibration = "NONE"
         private set
     private var calibrationStartTimeMs = 0L
+    private var lastCalibrationTimeMs = 0L
+    private var calibrationStallActive = false
+    private var calibrationStallStartMs = 0L
     private val EMPTY_SYSID_DATA = DoubleArray(0)
     private val sysIdData = DoubleArray(5)
     private var sysIdSampleValid = false
@@ -134,6 +136,11 @@ class FtcMecanumCalibrationController {
         try {
             telemetryManager.nt4.putBoolean("SysId/ModeEnabled", false)
             telemetryManager.nt4.putBoolean("SysId/Armed", false)
+            telemetryManager.dataLoggingTelemetry.putString("SysId/Status", "NONE")
+            telemetryManager.dataLoggingTelemetry.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
+            telemetryManager.nt4.putString("SysId/Status", "NONE")
+            telemetryManager.nt4.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
+            telemetryManager.nt4.update()
         } catch (failure: Throwable) {
             if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
         }
@@ -214,6 +221,7 @@ class FtcMecanumCalibrationController {
             }
             // A new mechanism must never inherit the previous mechanism's energized outputs.
             stopAndNeutral(mecanumIO)
+            lastCalibrationTimeMs = nowMs
 
             when {
                 command == STOP_COMMAND -> {
@@ -258,14 +266,14 @@ class FtcMecanumCalibrationController {
                                 if (mechanism != null && routine != null && !supported) "UNSUPPORTED_SYSID_MECHANISM"
                                 else "INVALID_COMMAND")
                         } else {
-                            val pose = store.state.drive.poseEstimator.estimatedPose
+                            val pose = store.state.drive.poseEstimator
                             sysIdManager.start(
                                 mechanism = mechanism,
                                 routine = routine,
                                 timestampMs = RobotClock.currentTimeMillis(),
-                                x = pose.x,
-                                y = pose.y,
-                                heading = pose.heading.radians
+                                x = pose.estimatedPoseX,
+                                y = pose.estimatedPoseY,
+                                heading = pose.estimatedPoseHeading
                             )
                         }
                     } else {
@@ -340,13 +348,7 @@ class FtcMecanumCalibrationController {
                 val currentAmps = maxOf(
                     maxOf(sysIdCurrent(mecanumIO.flIO), sysIdCurrent(mecanumIO.frIO)),
                     maxOf(sysIdCurrent(mecanumIO.rlIO), sysIdCurrent(mecanumIO.rrIO)))
-                val observationTime = pose.lastObservationTimestampMs
-                val ageMs = timestamp - observationTime
-                val validMotion = drive.measuredMotionValid && observationTime >= 0L && timestamp >= observationTime &&
-                    ageMs >= 0L && ageMs <= MAX_SYSID_MOTION_AGE_MS && drive.odometryHeading.isFinite() &&
-                    drive.measuredFieldXVelocityMetersPerSecond.isFinite() &&
-                    drive.measuredFieldYVelocityMetersPerSecond.isFinite() &&
-                    drive.measuredAngularVelocityRadiansPerSecond.isFinite()
+                val validMotion = validDriveFeedback(drive, timestamp)
                 if (!validMotion || !sysIdManager.checkSafety(pose.estimatedPoseX, pose.estimatedPoseY,
                         pose.estimatedPoseHeading, timestamp, currentAmps)) {
                     sysIdManager.stop()
@@ -405,16 +407,30 @@ class FtcMecanumCalibrationController {
             }
             return true
         } else if (activeCalibration != "NONE") {
-            val elapsedSec = (timestamp - calibrationStartTimeMs) / 1000.0
-            val timeoutSec = if (activeCalibration == "LINEAR_DRIVE") 3.0 else 5.0
+            val elapsedMs = timestamp - calibrationStartTimeMs
+            val timeoutMs = if (activeCalibration == "LINEAR_DRIVE") 3000L else 5000L
+            if (timestamp < calibrationStartTimeMs || timestamp < lastCalibrationTimeMs || elapsedMs < 0L) {
+                stopAndNeutral(mecanumIO)
+                telemetryManager.nt4.putString("SysId/Error", "CALIBRATION_CLOCK_INVALID")
+                return true
+            }
+            lastCalibrationTimeMs = timestamp
 
-            if (elapsedSec > timeoutSec) {
+            if (elapsedMs > timeoutMs) {
                 stopAndNeutral(mecanumIO)
                 // SysId/Command is dashboard-owned input. Publishing a local STOP here would
                 // claim the topic on the custom NT4 server and reject every later client command.
                 telemetryManager.nt4.putString(STATUS_TOPIC, "NONE")
                 onResetTuning()
             } else {
+                // Vision collection is stationary; moving routines also require trustworthy drive feedback.
+                val safetyError = if (activeCalibration == "VISION_CALIBRATION") null else
+                    empiricalDriveSafetyError(drive, timestamp, batteryVoltage, mecanumIO)
+                if (safetyError != null) {
+                    stopAndNeutral(mecanumIO)
+                    telemetryManager.nt4.putString("SysId/Error", safetyError)
+                    return true
+                }
                 when (activeCalibration) {
                     "PINPOINT_SPIN", "TRACK_WIDTH_SPIN" -> {
                         mecanumIO.setMotorPowers(-0.25, 0.25, -0.25, 0.25)
@@ -442,6 +458,44 @@ class FtcMecanumCalibrationController {
     }
 
     private fun fullSysIdPower(scale: Double): Boolean = scale.isFinite() && scale in 0.999..1.0
+
+    private fun validDriveFeedback(drive: com.areslib.state.DriveState, timestamp: Long): Boolean {
+        val pose = drive.poseEstimator
+        val observedAt = pose.lastObservationTimestampMs
+        val ageMs = timestamp - observedAt
+        return drive.measuredMotionValid && observedAt >= 0L && timestamp >= observedAt &&
+            ageMs >= 0L && ageMs <= MAX_SYSID_MOTION_AGE_MS && drive.odometryHeading.isFinite() &&
+            drive.measuredFieldXVelocityMetersPerSecond.isFinite() &&
+            drive.measuredFieldYVelocityMetersPerSecond.isFinite() &&
+            drive.measuredAngularVelocityRadiansPerSecond.isFinite() &&
+            pose.estimatedPoseX.isFinite() && pose.estimatedPoseY.isFinite() && pose.estimatedPoseHeading.isFinite()
+    }
+
+    private fun empiricalDriveSafetyError(drive: com.areslib.state.DriveState, timestamp: Long,
+                                          batteryVoltage: Double, io: MecanumHardwareIO): String? {
+        if (!batteryVoltage.isFinite() || batteryVoltage <= 0.0) return "CALIBRATION_INVALID_SUPPLY"
+        if (!validDriveFeedback(drive, timestamp)) return "INVALID_DRIVE_MEASUREMENT"
+        if (!validPowerScale(io.flIO.powerScale) || !validPowerScale(io.frIO.powerScale) ||
+            !validPowerScale(io.rlIO.powerScale) || !validPowerScale(io.rrIO.powerScale)) return "CALIBRATION_INVALID_POWER_SCALE"
+        val limit = sysIdManager.maxCurrentAmps
+        val timeout = sysIdManager.stallTimeoutMs
+        if (!limit.isFinite() || limit <= 0.0 || timeout < 0L) return "CALIBRATION_INVALID_CURRENT_LIMIT"
+        val current = maxOf(maxOf(sysIdCurrent(io.flIO), sysIdCurrent(io.frIO)),
+            maxOf(sysIdCurrent(io.rlIO), sysIdCurrent(io.rrIO)))
+        if (!current.isFinite()) return "CALIBRATION_INVALID_CURRENT"
+        if (current >= limit) {
+            if (!calibrationStallActive) {
+                calibrationStallActive = true
+                calibrationStallStartMs = timestamp
+            }
+            if (timestamp - calibrationStallStartMs >= timeout) return "CALIBRATION_OVERCURRENT"
+        } else {
+            calibrationStallActive = false
+        }
+        return null
+    }
+
+    private fun validPowerScale(scale: Double): Boolean = scale.isFinite() && scale in 0.0..1.0
 
     /** One coherent signed sample; telemetry must not re-read providers or stamp it with a later time. */
     private fun captureSysIdSample(timestamp: Long, velocity: Double) {
@@ -482,94 +536,106 @@ class FtcMecanumCalibrationController {
         telemetryManager.nt4.putBoolean("SysId/ModeEnabled", modeEnabled)
         telemetryManager.nt4.putBoolean("SysId/Armed", networkArmed)
         telemetryManager.nt4.putString("SysId/SupportedMechanisms", supportedMechanismsTelemetry)
-        val dataLogging = telemetryManager.dataLoggingTelemetry
+        var status = "NONE"
+        var data = EMPTY_SYSID_DATA
         if (sysIdManager.isActive() && sysIdSampleValid) {
-            dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
-            telemetryManager.nt4.putString("SysId/Status", sysIdManager.activeRoutine.name)
-            dataLogging.putDoubleArray("SysId/Data", sysIdData)
-            telemetryManager.nt4.putDoubleArray("SysId/Data", sysIdData)
+            status = sysIdManager.activeRoutine.name
+            data = sysIdData
         } else if (activeCalibration != "NONE") {
-            dataLogging.putString("SysId/Status", activeCalibration)
-            telemetryManager.nt4.putString("SysId/Status", activeCalibration)
-            val pose = store.state.drive.poseEstimator.estimatedPose
-            when (activeCalibration) {
+            status = activeCalibration
+            val drive = store.state.drive
+            val pose = drive.poseEstimator
+            if (activeCalibration != "VISION_CALIBRATION" && !validDriveFeedback(drive, timestamp)) {
+                telemetryManager.nt4.putString("SysId/Error", "INVALID_DRIVE_MEASUREMENT")
+            } else when (activeCalibration) {
                 "PINPOINT_SPIN" -> {
                     pinpointData[0] = timestamp.toDouble()
-                    pinpointData[1] = pose.x
-                    pinpointData[2] = pose.y
-                    pinpointData[3] = pose.heading.radians
+                    pinpointData[1] = pose.estimatedPoseX
+                    pinpointData[2] = pose.estimatedPoseY
+                    pinpointData[3] = pose.estimatedPoseHeading
                     pinpointData[4] = 0.0
-                    dataLogging.putDoubleArray("SysId/Data", pinpointData)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", pinpointData)
+                    data = pinpointData
                 }
-                "TRACK_WIDTH_SPIN" -> {
-                    val currentTicks = store.state.tuning.drive.ftc.ticksPerMeter
-                    val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeterSetting.takeIf { it > 0.0 } ?: defaultTicksPerMeter
-
-                    val flPosMeters = mecanumIO.flIO.position / ticks
-                    val frPosMeters = mecanumIO.frIO.position / ticks
-                    val rlPosMeters = mecanumIO.rlIO.position / ticks
-                    val rrPosMeters = mecanumIO.rrIO.position / ticks
-                    // The robot loop already cached this heading; never trigger a second IMU hardware read here.
-                    val imuHeading = store.state.drive.odometryHeading
-                    trackWidthData[0] = timestamp.toDouble()
-                    trackWidthData[1] = flPosMeters
-                    trackWidthData[2] = frPosMeters
-                    trackWidthData[3] = rlPosMeters
-                    trackWidthData[4] = rrPosMeters
-                    trackWidthData[5] = imuHeading
-                    trackWidthData[6] = store.state.tuning.drive.wheelBaseMeters
-                    dataLogging.putDoubleArray("SysId/Data", trackWidthData)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", trackWidthData)
+                "TRACK_WIDTH_SPIN", "LINEAR_DRIVE" -> {
+                    val ticks = calibrationTicks(driveTuningTicks = store.state.tuning.drive.ftc.ticksPerMeter,
+                        configuredTicks = ticksPerMeterSetting, defaultTicks = defaultTicksPerMeter)
+                    if (!ticks.isFinite()) {
+                        telemetryManager.nt4.putString("SysId/Error", "INVALID_ENCODER_SCALE")
+                    } else {
+                        val fl = mecanumIO.flIO.position / ticks
+                        val fr = mecanumIO.frIO.position / ticks
+                        val rl = mecanumIO.rlIO.position / ticks
+                        val rr = mecanumIO.rrIO.position / ticks
+                        if (activeCalibration == "TRACK_WIDTH_SPIN") {
+                            val wheelBase = store.state.tuning.drive.wheelBaseMeters
+                            if (!positiveFinite(wheelBase)) {
+                                telemetryManager.nt4.putString("SysId/Error", "INVALID_DRIVE_GEOMETRY")
+                            } else {
+                                trackWidthData[0] = timestamp.toDouble()
+                                trackWidthData[1] = fl
+                                trackWidthData[2] = fr
+                                trackWidthData[3] = rl
+                                trackWidthData[4] = rr
+                                trackWidthData[5] = drive.odometryHeading
+                                trackWidthData[6] = wheelBase
+                                data = trackWidthData
+                            }
+                        } else {
+                            linearData[0] = timestamp.toDouble()
+                            linearData[1] = fl * 0.25 + fr * 0.25 + rl * 0.25 + rr * 0.25
+                            linearData[2] = ticks
+                            linearData[3] = 0.0
+                            linearData[4] = 0.0
+                            data = linearData
+                        }
+                    }
                 }
                 "VISION_CALIBRATION" -> {
-                    val lastLL = visionTracker.lastLimelightPose
-                    val tagX = lastLL?.x ?: 0.0
-                    val tagY = lastLL?.y ?: 0.0
-                    val tagHeading = lastLL?.heading?.radians ?: 0.0
-                    visionData[0] = timestamp.toDouble()
-                    visionData[1] = tagX
-                    visionData[2] = tagY
-                    visionData[3] = tagHeading
-                    visionData[4] = 0.0
-                    dataLogging.putDoubleArray("SysId/Data", visionData)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", visionData)
-                }
-                "LINEAR_DRIVE" -> {
-                    val currentTicks = store.state.tuning.drive.ftc.ticksPerMeter
-                    val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeterSetting.takeIf { it > 0.0 } ?: defaultTicksPerMeter
-
-                    val flPosMeters = mecanumIO.flIO.position / ticks
-                    val frPosMeters = mecanumIO.frIO.position / ticks
-                    val rlPosMeters = mecanumIO.rlIO.position / ticks
-                    val rrPosMeters = mecanumIO.rrIO.position / ticks
-                    val avgDisplacement = (flPosMeters + frPosMeters + rlPosMeters + rrPosMeters) / 4.0
-
-                    linearData[0] = timestamp.toDouble()
-                    linearData[1] = avgDisplacement
-                    linearData[2] = ticks
-                    linearData[3] = 0.0
-                    linearData[4] = 0.0
-                    dataLogging.putDoubleArray("SysId/Data", linearData)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", linearData)
-                }
-                else -> {
-                    dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
+                    val measurement = visionTracker.lastLimelightPose
+                    val capturedAt = visionTracker.lastLimelightTimeMs
+                    val age = timestamp - capturedAt
+                    if (measurement != null && visionTracker.isConnected && capturedAt >= 0L &&
+                        timestamp >= capturedAt && age >= 0L && age <= 500L) {
+                        visionData[0] = capturedAt.toDouble()
+                        visionData[1] = measurement.x
+                        visionData[2] = measurement.y
+                        visionData[3] = measurement.heading.radians
+                        visionData[4] = 0.0
+                        data = visionData
+                    } else {
+                        telemetryManager.nt4.putString("SysId/Error", "INVALID_VISION_MEASUREMENT")
+                    }
                 }
             }
-        } else {
-            dataLogging.putString("SysId/Status", "NONE")
-            dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
-            telemetryManager.nt4.putString("SysId/Status", "NONE")
-            telemetryManager.nt4.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
         }
-        // Calibration streams are safety/control feedback and must not wait for telemetry throttling.
+        for (value in data) {
+            if (!value.isFinite()) {
+                data = EMPTY_SYSID_DATA
+                telemetryManager.nt4.putString("SysId/Error", "INVALID_CALIBRATION_SAMPLE")
+                break
+            }
+        }
+        val dataLogging = telemetryManager.dataLoggingTelemetry
+        dataLogging.putString("SysId/Status", status)
+        dataLogging.putDoubleArray("SysId/Data", data)
+        telemetryManager.nt4.putString("SysId/Status", status)
+        telemetryManager.nt4.putDoubleArray("SysId/Data", data)
+        // Calibration feedback must not wait for ordinary telemetry throttling.
         telemetryManager.nt4.update()
     }
 
+    private fun calibrationTicks(driveTuningTicks: Double, configuredTicks: Double, defaultTicks: Double): Double = when {
+        positiveFinite(driveTuningTicks) -> driveTuningTicks
+        positiveFinite(configuredTicks) -> configuredTicks
+        positiveFinite(defaultTicks) -> defaultTicks
+        else -> Double.NaN
+    }
+
+    private fun positiveFinite(value: Double): Boolean = value.isFinite() && value > 0.0
+
     private fun stopAndNeutral(mecanumIO: MecanumHardwareIO) {
         activeCalibration = "NONE"
+        calibrationStallActive = false
         sysIdSampleValid = false
         var firstFailure: Throwable? = null
         try {

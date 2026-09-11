@@ -15,6 +15,62 @@ import org.junit.jupiter.api.Test
 
 class FrcSysIdControllerTest {
     @Test
+    fun `invalid power scales cannot authorize characterization`() {
+        for (scale in listOf(1.01, Double.POSITIVE_INFINITY, Double.NaN, -1.0)) {
+            val telemetry = FakeTelemetry().apply { strings["SysId/Command"] = "START_FLYWHEEL_DYNAMIC" }
+            val flywheel = FakeFlywheel(1200.0)
+            FrcSysIdController(telemetry, flywheel).update(1000L, RobotState(), true, true, scale)
+            assertEquals(0.0, flywheel.lastAppliedVoltage)
+            assertEquals(0, telemetry.arrays["SysId/Data"]!!.size)
+        }
+    }
+
+    @Test
+    fun `rejected numerical update cannot publish a characterization sample`() {
+        val telemetry = FakeTelemetry().apply { strings["SysId/Command"] = "START_FLYWHEEL_DYNAMIC" }
+        val flywheel = FakeFlywheel(0.0)
+        val controller = FrcSysIdController(telemetry, flywheel)
+        controller.update(1000L, RobotState(), true, true)
+        flywheel.setVelocityRpm(Double.MAX_VALUE, 1.0)
+        controller.update(1001L, RobotState(), true, true)
+        assertEquals(0.0, flywheel.lastAppliedVoltage)
+        assertEquals("NONE", telemetry.strings["SysId/Status"])
+        assertEquals(0, telemetry.arrays["SysId/Data"]!!.size)
+    }
+
+    @Test
+    fun `active update consumes one coherent cached velocity sample`() {
+        val telemetry = FakeTelemetry().apply { strings["SysId/Command"] = "START_FLYWHEEL_DYNAMIC" }
+        val flywheel = FakeFlywheel(1200.0)
+        FrcSysIdController(telemetry, flywheel).update(1000L, RobotState(), true, true)
+        assertEquals(1, flywheel.velocityReads)
+    }
+
+    @Test
+    fun `duplicate timestamps cannot replace the logged numerical sample`() {
+        val telemetry = FakeTelemetry().apply { strings["SysId/Command"] = "START_FLYWHEEL_DYNAMIC" }
+        val flywheel = FakeFlywheel(1200.0)
+        val controller = FrcSysIdController(telemetry, flywheel)
+        controller.update(1000L, RobotState(), true, true)
+        val first = telemetry.arrays["SysId/Data"]!!.copyOf()
+        flywheel.setVelocityRpm(6000.0, 1.0)
+        controller.update(1000L, RobotState(), true, true)
+        assertArrayEquals(first, telemetry.arrays["SysId/Data"], 0.0)
+    }
+
+    @Test
+    fun `explicit stop clears characterization status and sample immediately`() {
+        val telemetry = FakeTelemetry().apply { strings["SysId/Command"] = "START_FLYWHEEL_DYNAMIC" }
+        val flywheel = FakeFlywheel(1200.0)
+        val controller = FrcSysIdController(telemetry, flywheel)
+        controller.update(1000L, RobotState(), true, true)
+        controller.stop()
+        assertEquals(0.0, flywheel.lastAppliedVoltage)
+        assertEquals("NONE", telemetry.strings["SysId/Status"])
+        assertEquals(0, telemetry.arrays["SysId/Data"]!!.size)
+    }
+
+    @Test
     fun `cached overcurrent stops characterization after the stall interval`() {
         val telemetry = FakeTelemetry().apply { strings["SysId/Command"] = "START_FLYWHEEL_DYNAMIC" }
         val flywheel = FakeFlywheel(1000.0).apply { measuredCurrent = 50.0 }
@@ -252,13 +308,14 @@ class FrcSysIdControllerTest {
         var measuredCurrent = 5.0
         var currentFresh = true
         var currentReads = 0
+        var velocityReads = 0
         override var lastTuningApplySuccessful = true
 
         override val currentAmps: Double get() { currentReads++; return measuredCurrent }
         override fun isCurrentReadingValid(readingAmps: Double) =
             currentFresh && readingAmps.isFinite() && readingAmps >= 0.0
 
-        override val velocityRpm: Double get() = measuredRpm
+        override val velocityRpm: Double get() { velocityReads++; return measuredRpm }
         override val velocityValid: Boolean = true
         override fun setVelocityRpm(rpm: Double, maxEffortScale: Double) { measuredRpm = rpm }
         override fun setAppliedVoltage(volts: Double) { lastAppliedVoltage = volts }
