@@ -259,12 +259,15 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/CachedHardware.kt": {
-      "sha256": "8a296985534ee6a76eddf2827f938d73c966ba42ea2835566c96525cd6b741f6",
-      "review": "partial",
+      "sha256": "f3bea3f9e4cee9f723fad1eb15f9d5dc976eec1519eafd5602df0a1d8f30bb5c",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass85: Full file reviewed, closing older partial scope: finite/clipped commands, first writes, last-accepted getters, epsilon and unchanged-command suppression, configuration cache invalidation, delegation and failure paths. Lost acknowledgements now force the next motor/servo write while cached getters avoid extra reads. All10 contract methods and prior failed-neutral recovery pass; added primitive flags preserve allocation-free setters.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcLoopTimingTest.kt": {
@@ -298,12 +301,15 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/CachedHardwareContractTest.kt": {
-      "sha256": "c97a932ec89d8bb4a38edc914a275aadb13066cf5302f45f9463f0431835f347",
-      "review": "partial",
+      "sha256": "b795ea220dd4d339841d26759fd78ddfcd4ae978a8643aa972b04331fe09318f",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass85: Entire10-test class and counting fixtures reviewed and executed. Two new independently failing lost-acknowledgement cases verify corrective hardware writes and no getter reads. Existing clipping, invalid values, thresholds, repeated commands and reset cases retained.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARES-XRP-Starter/simulator/field_collision.py": {
@@ -3258,10 +3264,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "a6e3aac847824369e7f89318559d2574bb34d7c1fd042ece2e74b139f08d7276",
+      "sha256": "bf7226522a26a74da53249da3a518d587d66462ddc0828f85e75ddc0f0674031",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3424,7 +3430,10 @@
         "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json",
         "docs/audits/drive-configuration-history-audit.md",
         "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4420,13 +4429,16 @@
       ]
     },
     "ARESLib-Kotlin/simulator/api/simulator.api": {
-      "sha256": "c425488848340b9e0bc415a02f62c059c374646e36ff1c4f7371fb8c2732f46a",
+      "sha256": "733045e91d4b7ac89bc1a88fd172d97c53a0941fd1464ce2000d6f9e3e1f5a5a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass 48: Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass 48: Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed. Pass85: Reviewed additive generated descriptors: inherited SimDcMotorEx getter. Whole-library apiDump/apiCheck and candidate consumers pass. Unrelated API inventory remains partial.",
       "evidence": [
         "docs/audits/xrp-simulation-control-audit.md",
-        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/physics/SimPhysicsWorld.kt": {
@@ -4616,15 +4628,18 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/api/ftc-hardware.api": {
-      "sha256": "b0e4b9e5ca371409f6c2861afaf8cec421d79a5d370f5faea3d69216db069339",
+      "sha256": "e3e4b5da9d39da9a370ac3ac6f7af5a8b3ad79e12b89e657d8bf4f71d2834583",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed. Pass74: Additive AutoCloseable/close for FtcCRServo and RevCRServoController verified; no other public API diff. Whole unrelated inventory remains partial.",
+      "scope": "Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed. Pass74: Additive AutoCloseable/close for FtcCRServo and RevCRServoController verified; no other public API diff. Whole unrelated inventory remains partial. Pass85: Reviewed additive generated descriptors: MecanumHardwareIO updateMotorGains(DDDD)V plus delegated CachedDcMotorEx getter. Whole-library apiDump/apiCheck and candidate consumers pass. Unrelated API inventory remains partial.",
       "evidence": [
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/ftc-motor-polling-shutdown-audit.md",
         "ARESLib-Kotlin/build/audit-pass74-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass74-focused.log"
+        "ARESLib-Kotlin/build/audit-pass74-focused.log",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/SwerveModuleIOFtc.kt": {
@@ -4682,21 +4697,27 @@
       ]
     },
     "ARESLib-Kotlin/ftc-mocks/api/ftc-mocks.api": {
-      "sha256": "09b2b7cfc5061171a3eefc028c138f8ff2cc2dafb551112059b0cec6920aa50b",
+      "sha256": "97c14def2b60cf0ee2669ba72a62acbd772a4926e87a46cdb90c6ddb79b74eaa",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed.",
+      "scope": "Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed. Pass85: Reviewed additive generated descriptors: DcMotorEx getter plus DefaultImpls bridge. Whole-library apiDump/apiCheck and candidate consumers pass. Unrelated API inventory remains partial.",
       "evidence": [
-        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/MotorMocks.kt": {
-      "sha256": "520ece60c7a60ecab20e085c2229c4d6051258c8f57a83097c12a4d17780a9b5",
+      "sha256": "21287099c592b86590b5fc96a050df0f8b8b19ae7396644699aba5518a634c72",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scoped SDK metadata additions only: motor configuration getter and analog maximum-voltage getter; cached SDK signatures and adapter tests verified. Remaining shared mock behavior still requires review.",
+      "scope": "Scoped SDK metadata additions only: motor configuration getter and analog maximum-voltage getter; cached SDK signatures and adapter tests verified. Remaining shared mock behavior still requires review. Pass85: Added existing FTC SDK PIDF getter boundary with stateless default fixture values. Native tests override getter/setter with owned state. Remaining mock types and behavior are not fully reviewed.",
       "evidence": [
-        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs"
+        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/SensorMocks.kt": {
@@ -5426,7 +5447,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "c6d4b0c3ecb83ef29d3e5cdf2fb844a0c248eff508bfac4defcfb23f1ca84400",
+      "sha256": "179b5f0075bdf9f6b8fdad25c2407d1086f102b3c56612d5aa7b62bdecc0e780",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5461,7 +5482,8 @@
         "docs/audits/calibration-executor-audit.md: pass81 scopes and canonical self-fingerprint refreshed",
         "docs/audits/encoder-feedback-audit.md: pass82 scopes and canonical self-fingerprint refreshed",
         "docs/audits/mecanum-shutdown-rollover-audit.md: pass83 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/drive-configuration-history-audit.md: pass84 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/drive-configuration-history-audit.md: pass84 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/native-mecanum-tuning-audit.md: pass85 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6641,14 +6663,17 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/HardwareRegistry.kt": {
-      "sha256": "efffdf4dce90c67dc1231fb4f96b2dce8e4051249ce7c68d53d90402f634d654",
+      "sha256": "a78ff20b0ad3206220f6b8158caa2192c16ee4d724a0c685f3274ff13c4cc8ce",
       "review": "partial",
       "validation": "passed",
-      "scope": "Shutdown ordering reviewed and independently tested: registered devices close before auxiliary drains; shared identities close once; repeated close and best-effort teardown retain existing behavior. Generic registry mutation, worker concurrency and broader resource contracts remain open.",
+      "scope": "Shutdown ordering reviewed and independently tested: registered devices close before auxiliary drains; shared identities close once; repeated close and best-effort teardown retain existing behavior. Generic registry mutation, worker concurrency and broader resource contracts remain open. Pass85: Read registration/replacement and polling entry points to verify deferred Mecanum registration. Corrected two comments: logical-name replacement updates ordered lifecycle entries and cached lookups. Runtime unchanged; generic registry mutation/worker concurrency/resource scope remains open.",
       "evidence": [
         "docs/audits/telemetry-mode-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/FtcTelemetryManager.kt": {
@@ -7503,10 +7528,10 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumMotorCluster.kt": {
-      "sha256": "49ecac0fced6ff207b76ebdda3c6343bcb57fa9280a6b3b97d07d88763c0dc28",
-      "review": "partial",
+      "sha256": "b3c68338c4d01418aacca3a6ad7cbba26e2d18315dd2b9f34991a6a8d108e3b9",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Whole class read to trace cached encoder creation/input refresh and four-wheel output. Constructor wraps devices, registers current polling, configures direction/modes/gains; output faults attempt neutral. Close currently closes cached IO without independently proving physical neutral or terminal write inhibition. Next pass must reproduce direct facade/cluster close behavior, failure recovery and input safety dependencies. No full-file validation credit from the existing facade suite. Pass83: Closed direct/registry shutdown defect: terminal flag and fault latch precede all4neutral attempts, cached request/scale clears, cache closure despite failed neutral, directfailure reporting/retry, idempotent confirmed close. Closed recovery and raw/feedforward commands cannot reenergize. Six shutdown tests pass; five failed beforefix. Entireclass read, but construction/configuration and independently mutated motor-scale boundaries remain explicit followups. Registry exception suppression remains its existing best-effort policy; rejected physicalneutral cannot be guaranteed by software. Pass84: Validated each cached wheel scale once before coupled output and reused that coherent snapshot for exactly one multiplication. Invalid individual/master scales neutralize and latch the whole cluster; valid unequal derating preserved. Previous terminal lifecycle tests still pass. Native hub PID application/retry and constructor initialization rollback remain pending.",
+      "scope": "Whole class read to trace cached encoder creation/input refresh and four-wheel output. Constructor wraps devices, registers current polling, configures direction/modes/gains; output faults attempt neutral. Close currently closes cached IO without independently proving physical neutral or terminal write inhibition. Next pass must reproduce direct facade/cluster close behavior, failure recovery and input safety dependencies. No full-file validation credit from the existing facade suite. Pass83: Closed direct/registry shutdown defect: terminal flag and fault latch precede all4neutral attempts, cached request/scale clears, cache closure despite failed neutral, directfailure reporting/retry, idempotent confirmed close. Closed recovery and raw/feedforward commands cannot reenergize. Six shutdown tests pass; five failed beforefix. Entireclass read, but construction/configuration and independently mutated motor-scale boundaries remain explicit followups. Registry exception suppression remains its existing best-effort policy; rejected physicalneutral cannot be guaranteed by software. Pass84: Validated each cached wheel scale once before coupled output and reused that coherent snapshot for exactly one multiplication. Invalid individual/master scales neutralize and latch the whole cluster; valid unequal derating preserved. Previous terminal lifecycle tests still pass. Native hub PID application/retry and constructor initialization rollback remain pending. Pass85: Completed the remaining native configuration and constructor rollback scopes after whole-file review across passes82-85. Resolution attempts all channels, neutral precedes configuration, and registration/polling follows successful initialization. Finite native PIDF changes neutralize, cache only fully accepted settings, latch failed configuration, and require repair plus explicit recovery. Prior output scale, failed-write, shutdown and cached-input tests remain passing in the295-test module. Physical SDK timing and failed physical neutral cannot be established by host doubles.",
       "evidence": [
         "docs/audits/encoder-feedback-audit.md",
         "ARESLib-Kotlin/build/audit-pass82-verified-evidence/summary.json",
@@ -7516,14 +7541,17 @@
         "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json",
         "docs/audits/drive-configuration-history-audit.md",
         "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumHardwareIO.kt": {
-      "sha256": "257e49f0b9fed1d97ae6ca89bc195074b7e30580da62bb3b0485045670140f88",
-      "review": "partial",
+      "sha256": "8d7f7c314704cd3200c674c65f7be72459a54c7d5723ee2e754d158ad060a8fa",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Whole facade read across81/82: construction/configuration delegates, cached scalar/array buffers, input refresh, kinematic drive normalization, voltage/feedforward/PID apply and output safe/recovery. New real-facade test proves encoder failure neutralization without hardware output reads; eight existing facade methods pass. Direct close delegates to cluster without an explicit neutral here; terminal lifecycle and configuration boundaries remain follow-up scope. Pass83: Verified delegated directclose and registryclose now neutralize through cluster, raw/feedforward commands remainterminal afterclose and recovery refusesreopen. Eight priorfacade tests retained plus newshutdownintegration. Other configuration boundaries remain partial; no new facade runtime changes thispass. Pass84: Reviewed all new reset/validation integration: safe/close/raw transition/recovery/zero scale clear history; nonfinite chassis, finite wheel-conversion overflow and invalid master scale latch before normalization. Invalid calculated feedback/configuration neutralizes while allowing fresh startup observations to recover and preserving existing hardware faults. Remaining native hub PID gain routing/retry and construction rollback require dedicated validation; no full-file completion credit.",
+      "scope": "Whole facade read across81/82: construction/configuration delegates, cached scalar/array buffers, input refresh, kinematic drive normalization, voltage/feedforward/PID apply and output safe/recovery. New real-facade test proves encoder failure neutralization without hardware output reads; eight existing facade methods pass. Direct close delegates to cluster without an explicit neutral here; terminal lifecycle and configuration boundaries remain follow-up scope. Pass83: Verified delegated directclose and registryclose now neutralize through cluster, raw/feedforward commands remainterminal afterclose and recovery refusesreopen. Eight priorfacade tests retained plus newshutdownintegration. Other configuration boundaries remain partial; no new facade runtime changes thispass. Pass84: Reviewed all new reset/validation integration: safe/close/raw transition/recovery/zero scale clear history; nonfinite chassis, finite wheel-conversion overflow and invalid master scale latch before normalization. Invalid calculated feedback/configuration neutralizes while allowing fresh startup observations to recover and preserving existing hardware faults. Remaining native hub PID gain routing/retry and construction rollback require dedicated validation; no full-file completion credit. Pass85: Closed the previously remaining native PID configuration/construction scopes: native mode routes to hub configuration, three-argument PID preserves F, explicit F overload is additive, and changed/failed native updates reset feedforward history. Software mode performs no hub gain reads/writes. Existing whole-facade lifecycle, scaling, cached feedback, drive normalization and calculation checks retained;295 module tests and candidate consumers pass. Higher-level geometry and optional gain removal remain in the separate partial tuning controller.",
       "evidence": [
         "docs/audits/encoder-feedback-audit.md",
         "ARESLib-Kotlin/build/audit-pass82-verified-evidence/summary.json",
@@ -7533,7 +7561,10 @@
         "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json",
         "docs/audits/drive-configuration-history-audit.md",
         "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/EncoderFeedbackAuditTest.kt": {
@@ -7579,14 +7610,17 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumKinematicsController.kt": {
-      "sha256": "67e3ac77518d3f1aef028ae1bdbfe1db13cb949f8dae0d5748ec387f7fd1b06e",
+      "sha256": "92c29249b9285d215db43098225c76e13324dcbb5595f8e1f99ea12014f1db59",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read entire tuning/update controller while tracing native gain ownership. updateTuning rebuilds geometry, assigns feedforward/slew/ticks, derives max speed from reciprocal kV, forwards P/I/D but not F, and updates drive limits. updateSubsystems delegates calibration before ordinary drive. Geometry validity, repeated rebuilds, gain removal/F routing, partial update and caller retry/neutral behavior still require dedicated regression evidence. No whole-file completion credit from consumer suite success.",
+      "scope": "Read entire tuning/update controller while tracing native gain ownership. updateTuning rebuilds geometry, assigns feedforward/slew/ticks, derives max speed from reciprocal kV, forwards P/I/D but not F, and updates drive limits. updateSubsystems delegates calibration before ordinary drive. Geometry validity, repeated rebuilds, gain removal/F routing, partial update and caller retry/neutral behavior still require dedicated regression evidence. No whole-file completion credit from consumer suite success. Pass85: Fixed F forwarding and applied native gains before publishing other software settings. Redux tuning integration independently verifies rejected native updates preserve previous geometry/feedforward and successful retry still requires explicit fault recovery. Remaining scopes: geometry validation, redundant solver reconstruction, optional gain removal/reset, and validation/atomicity of the complete tuning transaction.",
       "evidence": [
         "docs/audits/drive-configuration-history-audit.md",
         "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json",
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/DriveConfigurationAuditTest.kt": {
@@ -7608,6 +7642,49 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumNativeConfiguration.kt": {
+      "sha256": "053886f657c7a8b3e4c1dfa3f7bb08c917ba2879c8a461fc5dfb4644df36d9bf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Whole helper reviewed: cold SDK reads copied into owned channel snapshots, finite coefficient validation, accepted-value comparison, partial-write retry without snapshot corruption, all-channel resolution, identity/name rejection and best-effort neutral cleanup. Native18-test suite covers initialization failure, per-channel F, explicit F, unchanged writes, neutral-before-configuration, invalid inputs and repair. No native control dynamics simulation claimed.",
+      "evidence": [
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/NativeMecanumTuningAuditTest.kt": {
+      "sha256": "31dd1949ffd7e5dd8b3f9bdaa0fd63cf01f716015446cd125e6d9287e0b89fd6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored, reviewed and ran18 SDK-double tests with registry cleanup. Eight methods failed before their corresponding native/caller fixes. Tests assert channel-specific coefficients, exact SDK counts, software-mode isolation, initialization failures, closed rejection, neutral ordering, fault repair and Redux caller retry. Stateful fixtures are not physical hub emulation.",
+      "evidence": [
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/docs/architecture.md": {
+      "sha256": "62a3d5f1c982cf2917f3b15b3f0576ff7ca43a6a5677e7993bc9b1af6fb83cec",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Read complete document and validated added native configuration/cache retry section against runtime/tests. Existing Maven Local validation advice and FRC namespace wording conflict with canonical guide; queued correction in next source batch. Other module/loop claims require reconciliation before full documentation credit.",
+      "evidence": [
+        "docs/audits/native-mecanum-tuning-audit.md",
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/native-mecanum-tuning-audit.md": {
+      "sha256": "d63854ddd43c64e2ca782e50ce0ae88313284830e4c3bb275cda8c6f36f7eea7",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled initial failures,20 new methods,295 module tests, all candidate groups, additive APIs and explicit remaining scopes.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
       ]
     }
   }

@@ -41,10 +41,32 @@ validation. Preserved failure XML is under `ARESLib-Kotlin/build/audit-pass85-be
 The expanded native suite has 18 tests, including channel-specific F, explicit F, unchanged gains,
 failed configuration and recovery, neutral ordering, failed reads, invalid constructor values,
 software-mode isolation, initialization cleanup, and Redux caller retry. The cache suite adds
-two lost-acknowledgement cases. Final module and candidate results will be recorded after validation.
+two lost-acknowledgement cases. Final module and candidate results are recorded below.
 
 Geometry validation, avoiding repeated kinematics reconstruction, removal of optional tuning gains,
 and whole-tuning transaction validation remain open in MecanumKinematicsController. These are not
 covered by successful PIDF routing tests. Previously open FTC flywheel scopes also remain pending.
 No physical timing, native SDK control dynamics, calibration accuracy, or usable Studio window is
 claimed by this pass. The whole-monorepo goal remains active.
+
+## Final validation
+
+All 295 FTC hardware tests passed before freezing, including 68 selected affected tests. This batch adds 20 methods: 18 native configuration tests and two uncertain-write cases. Ten new methods failed before their corresponding fixes.
+
+All library API checks passed after recording the inherited simulator getter. The API additions are the four-argument MecanumHardwareIO overload and the SDK getter in the mock, cached motor, and simulator signatures. Core API is unchanged. The initial candidate stopped at the missing simulator API baseline; the corrected tree uses a fresh candidate identity.
+
+Source commits: `02688ee7ae557572efbdbf03c25837906c20cab8`, `58d3409f42fb6aef29a25db13267441a2638e25a`.
+Library tree `6cc7c88450c7e04992b7e87a84423181484a4809`; local candidate `17.0.3-rc.6cc7c88450c7`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 1964 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover and local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs. The six conditional Studio skips remain three fresh-template checks, native file chooser, physical dashboard, and optional performance baseline.
+
+Copied XML, per-file hashes, build logs and BOM identity are recorded under `ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json`. The architecture document's new hardware section is validated, but a full read also found older Maven Local and FRC namespace guidance that conflicts with the canonical workspace guide. Those documentation corrections remain queued for the next source batch alongside the open tuning scopes.
