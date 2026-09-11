@@ -43,6 +43,8 @@ object SplineMotionProfiler {
      * limits may reduce them. This spatial profile does not promise jerk bounds.
      * Nonempty requests validate finite bounded geometry and metadata and preflight the shared
      * 100,000-sample budget before allocating path samples. Do not mutate input lists during construction.
+     * Constraint boundaries supplement the regular grid, including zero-width zones. Edge speed
+     * caps apply to both endpoints; acceleration bounds cover endpoints and the edge interior.
      *
      * @param data Parsed trajectory structure [PathPlannerJsonParser.ParsedPathData].
      * @return Fully parameterized and velocity-profiled [Path].
@@ -53,8 +55,9 @@ object SplineMotionProfiler {
         if (parsedWaypoints.isEmpty()) return Path(emptyList())
         SplineProfileValidation.parsed(data)
         val sampling = splineSamplePlan(parsedWaypoints.size) { parsedWaypoints[it].anchor }
+        val relativePositions = splineRelativePositions(data, sampling)
 
-        val pathPoints = ArrayList<PathPoint>(sampling.totalSamples)
+        val pathPoints = ArrayList<PathPoint>(relativePositions.size)
         var accumulatedDistance = 0.0
 
         var initialTangent = Rotation2d(0.0)
@@ -74,9 +77,6 @@ object SplineMotionProfiler {
         val startRotDeg = data.startRotDeg ?: Math.toDegrees(initialTangent.radians)
         val endRotDeg = data.endRotDeg ?: Math.toDegrees(finalTangent.radians)
 
-        val relativePositions = ArrayList<Double>(sampling.totalSamples)
-        relativePositions.add(0.0)
-
         pathPoints.add(
             PathPoint(
                 pose = Pose2d(parsedWaypoints[0].anchor.x, parsedWaypoints[0].anchor.y, initialTangent),
@@ -86,13 +86,13 @@ object SplineMotionProfiler {
             )
         )
 
+        var sampleIndex = 1
         for (i in 0 until parsedWaypoints.size - 1) {
             val wp1 = parsedWaypoints[i]
             val wp2 = parsedWaypoints[i + 1]
-            val numSamples = sampling.steps[i]
 
-            for (step in 1..numSamples) {
-                val t = step.toDouble() / numSamples
+            while (sampleIndex < relativePositions.size && relativePositions[sampleIndex] <= i + 1.0) {
+                val t = relativePositions[sampleIndex++] - i
                 val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
                 val heading = BezierSpline.evaluateHeading(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)
 
@@ -109,7 +109,6 @@ object SplineMotionProfiler {
                         tangentRadians = heading.radians
                     )
                 )
-                relativePositions.add(i.toDouble() + t)
             }
         }
 
@@ -308,23 +307,31 @@ object SplineMotionProfiler {
     ) {
         // Resolve each point's limits once. These points are private to construction,
         // so changing their velocity fields avoids allocating copies during both sweeps.
+        // Entry i stores the bound on edge i-1 -> i, including its interior zone.
         val accelerations = DoubleArray(pathPoints.size)
+        val zoneCursor = if (constraintZones.isEmpty()) null else SplineConstraintCursor(constraintZones)
+        var previousMaxAccel = defaultMaxAccel
         for (i in pathPoints.indices) {
-            val pos = relativePositions.getOrElse(i) { 0.0 }
-            var maxVel = defaultMaxVel
-            var maxAccel = defaultMaxAccel
-            for (zone in constraintZones) {
-                if (pos >= zone.minWaypointRelativePos && pos <= zone.maxWaypointRelativePos) {
-                    maxVel = zone.maxVelocity
-                    maxAccel = zone.maxAcceleration
-                    break
-                }
-            }
-            accelerations[i] = maxAccel
+            val edgeZone = if (zoneCursor != null && i > 0) {
+                zoneCursor.at(relativePositions[i - 1], after = true)
+            } else null
+            val zone = zoneCursor?.at(relativePositions[i])
+            val maxVel = zone?.maxVelocity ?: defaultMaxVel
+            val maxAccel = zone?.maxAcceleration ?: defaultMaxAccel
+            accelerations[i] = if (i == 0) maxAccel else
+                minOf(previousMaxAccel, maxAccel, edgeZone?.maxAcceleration ?: defaultMaxAccel)
+            previousMaxAccel = maxAccel
             val curvature = Math.abs(pathPoints[i].curvature)
             pathPoints[i].velocityMps = if (curvature > 0.0) {
                 minOf(maxVel, Math.sqrt(maxCentripetalAccel / curvature))
             } else maxVel
+            if (i > 0 && zoneCursor != null) {
+                // Every zone boundary is sampled, so the edge interior has one priority winner.
+                // Both ends must respect that cap for interpolated speeds to remain valid.
+                val edgeMaxVel = edgeZone?.maxVelocity ?: defaultMaxVel
+                pathPoints[i - 1].velocityMps = minOf(pathPoints[i - 1].velocityMps, edgeMaxVel)
+                pathPoints[i].velocityMps = minOf(pathPoints[i].velocityMps, edgeMaxVel)
+            }
         }
 
         pathPoints[0].velocityMps = minOf(pathPoints[0].velocityMps, startVel)
@@ -332,8 +339,8 @@ object SplineMotionProfiler {
             val prev = pathPoints[i - 1]
             val curr = pathPoints[i]
             val distance = curr.distanceMeters - prev.distanceMeters
-            // An edge crossing a constraint boundary must satisfy its stricter endpoint.
-            val maxAccel = minOf(accelerations[i - 1], accelerations[i])
+            // The edge bound includes both endpoints and its constant-priority interior.
+            val maxAccel = accelerations[i]
             curr.velocityMps = minOf(curr.velocityMps,
                 KinematicsMath.finalVelocity(prev.velocityMps, maxAccel, distance))
         }
@@ -345,7 +352,7 @@ object SplineMotionProfiler {
             val next = pathPoints[i + 1]
             val curr = pathPoints[i]
             val distance = next.distanceMeters - curr.distanceMeters
-            val maxAccel = minOf(accelerations[i], accelerations[i + 1])
+            val maxAccel = accelerations[i + 1]
             curr.velocityMps = minOf(curr.velocityMps,
                 KinematicsMath.finalVelocity(next.velocityMps, maxAccel, distance))
         }
