@@ -62,6 +62,26 @@ curvature approximation, stationary/cusp behavior and point-towards zone refinem
 The complete constraint helper and new test class are reviewed; broader PathPlanner
 schema compatibility and hardware validation are not implied.
 
+The complete existing seven-method SplineProfileAuditTest was also reviewed and executed. Its endpoint/edge limits and rotation cases remain valid. Its curvature check asserts the finite-difference contract rather than analytical curve accuracy; its printed desktop timing has no threshold and is not a robot latency guarantee.
+
 ## Final validation
 
-Pending frozen-candidate validation.
+The frozen source passed 193 pathing tests and API checks. Twelve new methods include six distinct preserved failure-before cases. Public API signatures are unchanged.
+
+Kover `SplineConstraintSampling.kt`: 45/45 lines and 46/48 branches executed. Kover `SplineMotionProfiler.kt`: 192/192 lines and 94/100 branches executed. Line execution is not proof of numerical correctness; the profiler remains partial for the scopes above.
+
+Source `58ba65dd72cbbd7f141cbf9e0786275ff5346d92`; library tree `821a789fb038223c89751ff66b59bb49f9bdbf49`.
+Local candidate `17.0.3-rc.821a789fb038`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2151 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; counts do not imply every test was freshly executed. Conditional Studio skips remain recorded in XML.
+
+Copied XML, hashes, logs and candidate BOM identity are under `ARESLib-Kotlin/build/audit-pass97-verified-evidence/summary.json`; focused XML is under `ARESLib-Kotlin/build/audit-pass97-focused-evidence/`. No physical timing, measured JIT allocation rate or usable Studio-window result is claimed.

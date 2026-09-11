@@ -107,10 +107,10 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/SplineMotionProfiler.kt": {
-      "sha256": "1a2965eff434e8ffbad7933d41bf426610aba42a041186e083966bd861d1e3e0",
+      "sha256": "d67636c46debbb190a12c66c08bab4058bb96c31a19a4637b330771bcc7c5d3d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass95: Full source/caller trace and169pathing tests reused; new parsed no-handle northbound path proves corrected initial/final tangent/default heading. Hoisted constant Hermite heading delta and removed all-zero relativePosition list for unconstrained sweep. Corrected documented centripetal ceiling to independent2m/s2, runtime unchanged. Remaining scope: sampling-budget policy, direct DTO/Hermite input boundary and approximation behavior need dedicated tests; do not infer fullvalidation from wrapper or helper tests. Pass96: Closes prior direct DTO/Hermite input and sample-budget gaps with finite validation and cumulative100000 preflight before controls/samples. Pre-sized result lists and cached segment counts preserve existing chord layout. Endpoint speed ceilings, empty/short and degenerate conventions verified. Remaining approximation scope: long handles, curvature discretization and stationary/cusp behavior.",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass95: Full source/caller trace and169pathing tests reused; new parsed no-handle northbound path proves corrected initial/final tangent/default heading. Hoisted constant Hermite heading delta and removed all-zero relativePosition list for unconstrained sweep. Corrected documented centripetal ceiling to independent2m/s2, runtime unchanged. Remaining scope: sampling-budget policy, direct DTO/Hermite input boundary and approximation behavior need dedicated tests; do not infer fullvalidation from wrapper or helper tests. Pass96: Closes prior direct DTO/Hermite input and sample-budget gaps with finite validation and cumulative100000 preflight before controls/samples. Pre-sized result lists and cached segment counts preserve existing chord layout. Endpoint speed ceilings, empty/short and degenerate conventions verified. Remaining approximation scope: long handles, curvature discretization and stationary/cusp behavior. Pass97: Closes narrow constraint interval and edge-transition gaps: adds zone boundary samples, applies each interior speed cap to both endpoints and stores a shared endpoint/interior acceleration bound per edge for forward/backward sweeps. Replaces repeated full constraint scans with ordered cursor; no cursor for unconstrained Hermite paths. Twelve new methods include six failure-before cases and dense public-speed oracle. Remaining partial scope: geometric approximation, long handles, curvature, stationary/cusp behavior and point-towards refinement; no continuous-time acceleration/jerk guarantee.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/spline-polynomial-efficiency-audit.md",
@@ -118,7 +118,10 @@
         "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json",
         "docs/audits/spline-input-budget-audit.md",
         "ARESLib-Kotlin/build/audit-pass96-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass96-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass96-focused-evidence/summary.json",
+        "docs/audits/spline-constraint-interval-audit.md",
+        "ARESLib-Kotlin/build/audit-pass97-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass97-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/ThetaStarPlanner.kt": {
@@ -203,11 +206,14 @@
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/SplineProfileAuditTest.kt": {
       "sha256": "530bb6ad6951029e5b9c12f367762eb81b8140595d1f5a84df701c6f31fd61bc",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass97: Completed full seven-method review and execution: reachable endpoint speed, local cap, boundary edge energy, finite-difference curvature contract, shortest-arc rotation, nearest-target/point-towards priority and8001-sample construction. Curvature test is not an independent analytical accuracy oracle. Timing is printed desktop construction only with no pass/fail threshold; sample count and heading/endpoints are asserted. Existing fixtures unchanged, reused rather than counted as new regression methods.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/spline-constraint-interval-audit.md",
+        "ARESLib-Kotlin/build/audit-pass97-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass97-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/ThetaStarPlannerTest.kt": {
@@ -3294,10 +3300,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "546f273c0698242a6f3bfb21ce67fbb09cea60a339072b90fe01a051ea8514ce",
+      "sha256": "9f3840ed93651c283409e8f1e780188b70b31bd0d11331c4bab1edb0feea0d46",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order. Pass91: Frozen tree af9e9c981c88fe2a6744accdd2f924d4317a18a1 and local candidate 17.0.3-rc.af9e9c981c88 validated in dependency order. Pass92: Frozen tree b66f1cd6fcf7872a98fe7044384c385da8122ecf and local candidate 17.0.3-rc.b66f1cd6fcf7 validated in dependency order. Pass93: Frozen tree b83ebb7aea38d94993d54add1415b638e239867e and local candidate 17.0.3-rc.b83ebb7aea38 validated in dependency order. Pass94: Frozen tree 2f08206d2a9398fedf6fd91dde5800a586938381 and local candidate 17.0.3-rc.2f08206d2a93 validated in dependency order. Pass95: Frozen tree 6a51bbf4cada81927b045df7b82f4a2ebdbd0a64 and local candidate 17.0.3-rc.6a51bbf4cada validated in dependency order. Pass96: Frozen tree 957f68febbfe04d22f68e358cda603069d9b0835 and local candidate 17.0.3-rc.957f68febbfe validated in dependency order.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order. Pass91: Frozen tree af9e9c981c88fe2a6744accdd2f924d4317a18a1 and local candidate 17.0.3-rc.af9e9c981c88 validated in dependency order. Pass92: Frozen tree b66f1cd6fcf7872a98fe7044384c385da8122ecf and local candidate 17.0.3-rc.b66f1cd6fcf7 validated in dependency order. Pass93: Frozen tree b83ebb7aea38d94993d54add1415b638e239867e and local candidate 17.0.3-rc.b83ebb7aea38 validated in dependency order. Pass94: Frozen tree 2f08206d2a9398fedf6fd91dde5800a586938381 and local candidate 17.0.3-rc.2f08206d2a93 validated in dependency order. Pass95: Frozen tree 6a51bbf4cada81927b045df7b82f4a2ebdbd0a64 and local candidate 17.0.3-rc.6a51bbf4cada validated in dependency order. Pass96: Frozen tree 957f68febbfe04d22f68e358cda603069d9b0835 and local candidate 17.0.3-rc.957f68febbfe validated in dependency order. Pass97: Frozen tree 821a789fb038223c89751ff66b59bb49f9bdbf49 and local candidate 17.0.3-rc.821a789fb038 validated in dependency order.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3496,7 +3502,10 @@
         "ARESLib-Kotlin/build/audit-pass95-focused-evidence/summary.json",
         "docs/audits/spline-input-budget-audit.md",
         "ARESLib-Kotlin/build/audit-pass96-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass96-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass96-focused-evidence/summary.json",
+        "docs/audits/spline-constraint-interval-audit.md",
+        "ARESLib-Kotlin/build/audit-pass97-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass97-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5513,7 +5522,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "fcde61daa27276d634eb523cfb0289b46c718c9fb1d153bcc0ec9d44bab35dd5",
+      "sha256": "aa3a5a737d8be88ee11126c1db7181b1c113b9559e3859b721ac8b502ac572a3",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5560,7 +5569,8 @@
         "docs/audits/store-failure-custom-codec-audit.md: pass93 scopes and canonical self-fingerprint refreshed",
         "docs/audits/action-logger-disk-failure-audit.md: pass94 scopes and canonical self-fingerprint refreshed",
         "docs/audits/spline-polynomial-efficiency-audit.md: pass95 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-input-budget-audit.md: pass96 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/spline-input-budget-audit.md: pass96 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/spline-constraint-interval-audit.md: pass97 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8547,6 +8557,38 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass96-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass96-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/SplineConstraintSampling.kt": {
+      "sha256": "f57a0bf9e528972334d379b8e87b09a0b1628b66f84634b5b5bb33d9db12c310",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full helper review and tests: sorted unique constraint boundaries merge with the existing grid, exact additions count against total100000 before geometry allocation. Monotone first-input-priority cursor supports inclusive points and immediately-following open intervals without rounded midpoints. Owned random-access zone snapshot supports linked lists; heap activation/expiration O(N+ZlogZ), no wall-time claim. Seeded independent first-match oracle covers unsorted overlaps, zero-width and closed/open endpoints; exact budget and multisegment checks cover the sample merge.",
+      "evidence": [
+        "docs/audits/spline-constraint-interval-audit.md",
+        "ARESLib-Kotlin/build/audit-pass97-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass97-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/SplineConstraintAuditTest.kt": {
+      "sha256": "35a3771f7b1a5b7e03c726623e8e231b7dbb0a00e64614ffaffe88775e1b05bf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed12methods, six preserved failure-before cases: narrow speed/acceleration/point zones, overlap transition, global cap restoration and adjacent-double midpoint ambiguity. Checks aligned/duplicate/multisegment samples, exact shared budget, hidden interval expiry and monotone cursor ordering. Twenty-five seeded40-zone sets compare inclusive/open priority with brute-force first-match oracle;20paths check public sampled speed ceilings at more than20000positions. No flaky wall-time or implementation-only snapshot assertion.",
+      "evidence": [
+        "docs/audits/spline-constraint-interval-audit.md",
+        "ARESLib-Kotlin/build/audit-pass97-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass97-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/spline-constraint-interval-audit.md": {
+      "sha256": "fc8e136636916011160c1735d20903c7f1c82c1239a62fd0a02e33085f9bf017",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles12new methods,6failure-before cases,193focused tests, preserved priority/edge semantics, complexity improvement and exact candidate matrix. Explicit remaining geometric and point-towards scope; no physical or continuous-time guarantee.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass97-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass97-focused-evidence/summary.json"
       ]
     }
   }
