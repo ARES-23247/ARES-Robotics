@@ -130,33 +130,15 @@ class Costmap(
      * Rasterizes and registers a list of static obstacles from a field layout.
      */
     fun setStaticObstacles(obstacles: List<com.areslib.state.RobotFieldObstacle>) {
-        for (obs in obstacles) {
-            if (!obs.isBlocking) continue // Skip non-blocking elements like ramps
-
-            // Obstacle boundaries in meters (from centering)
-            val minX = obs.x - obs.width / 2.0
-            val maxX = obs.x + obs.width / 2.0
-            val minY = obs.y - obs.height / 2.0
-            val maxY = obs.y + obs.height / 2.0
-
-            // Map boundaries to grid cell ranges
-            val rawStartX = ((minX - origin.x) / resolutionMeters).roundToInt()
-            val rawEndX = ((maxX - origin.x) / resolutionMeters).roundToInt()
-            val rawStartY = ((minY - origin.y) / resolutionMeters).roundToInt()
-            val rawEndY = ((maxY - origin.y) / resolutionMeters).roundToInt()
-
-            if (rawStartX >= widthCells || rawEndX < 0 || rawStartY >= heightCells || rawEndY < 0) continue
-
-            val startCellX = rawStartX.coerceIn(0, widthCells - 1)
-            val endCellX = rawEndX.coerceIn(0, widthCells - 1)
-            val startCellY = rawStartY.coerceIn(0, heightCells - 1)
-            val endCellY = rawEndY.coerceIn(0, heightCells - 1)
-
-            // Mark cells as occupied
-            for (cx in startCellX..endCellX) {
-                for (cy in startCellY..endCellY) {
-                    setObstacle(cx, cy, true)
-                }
+        for (obstacle in obstacles) {
+            if (!obstacle.isBlocking) continue
+            when {
+                obstacle.shape.equals("rectangle", ignoreCase = true) -> StaticCostmapRasterizer.rectangle(
+                    this, obstacle.x, obstacle.y, obstacle.width, obstacle.height, obstacle.rotation)
+                obstacle.shape.equals("circle", ignoreCase = true) -> StaticCostmapRasterizer.circle(
+                    this, obstacle.x, obstacle.y, obstacle.width) // Canonical circle width stores radius.
+                obstacle.shape.equals("polygon", ignoreCase = true) -> StaticCostmapRasterizer.polygon(this, obstacle.points)
+                else -> throw IllegalArgumentException("Unsupported static obstacle shape: ${obstacle.shape}")
             }
         }
     }
@@ -283,34 +265,17 @@ class Costmap(
         elements: List<com.areslib.state.RobotFieldElementInstance>
     ) {
         val typesMap = elementTypes.associateBy { it.id }
-        for (el in elements) {
-            val type = typesMap[el.elementTypeId] ?: continue
-            if (type.movable) continue // Only static elements go into the costmap
-
-            val halfW = if (type.shape.lowercase() == "box") type.width / 2.0 else (type.diameter ?: 0.15) / 2.0
-            val halfH = if (type.shape.lowercase() == "box") type.height / 2.0 else (type.diameter ?: 0.15) / 2.0
-
-            val minX = el.x - halfW
-            val maxX = el.x + halfW
-            val minY = el.y - halfH
-            val maxY = el.y + halfH
-
-            val rawStartX = ((minX - origin.x) / resolutionMeters).roundToInt()
-            val rawEndX = ((maxX - origin.x) / resolutionMeters).roundToInt()
-            val rawStartY = ((minY - origin.y) / resolutionMeters).roundToInt()
-            val rawEndY = ((maxY - origin.y) / resolutionMeters).roundToInt()
-
-            if (rawStartX >= widthCells || rawEndX < 0 || rawStartY >= heightCells || rawEndY < 0) continue
-
-            val startCellX = rawStartX.coerceIn(0, widthCells - 1)
-            val endCellX = rawEndX.coerceIn(0, widthCells - 1)
-            val startCellY = rawStartY.coerceIn(0, heightCells - 1)
-            val endCellY = rawEndY.coerceIn(0, heightCells - 1)
-
-            for (cx in startCellX..endCellX) {
-                for (cy in startCellY..endCellY) {
-                    setObstacle(cx, cy, true)
-                }
+        require(typesMap.size == elementTypes.size) { "Duplicate field element type IDs" }
+        for (element in elements) {
+            val type = requireNotNull(typesMap[element.elementTypeId]) { "Unknown field element type: ${element.elementTypeId}" }
+            if (type.movable) continue
+            when {
+                type.shape.equals("box", ignoreCase = true) -> StaticCostmapRasterizer.rectangle(
+                    this, element.x, element.y, type.width, type.height, element.rotation)
+                type.shape.equals("circle", ignoreCase = true) || type.shape.equals("cylinder", ignoreCase = true) ||
+                    type.shape.equals("sphere", ignoreCase = true) ->
+                    StaticCostmapRasterizer.circle(this, element.x, element.y, (type.diameter ?: type.width) / 2.0)
+                else -> throw IllegalArgumentException("Unsupported static element shape: ${type.shape}")
             }
         }
     }
