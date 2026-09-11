@@ -48,5 +48,20 @@ is replayable or that an error counter alone supplies missing records.
 
 ## Final validation
 
-Pending frozen-source validation. Forty focused logger/replay tests and all API checks
-passed. Seven new test methods include three preserved failure-before regressions.
+The final source passed 40 focused logger/replay tests and all API checks before freezing. Seven new methods include three preserved failure-before regressions. Public signatures are unchanged.
+
+Source `d61881c32184d976f052f06748455e7a47d0bab8`; library tree `2f08206d2a9398fedf6fd91dde5800a586938381`.
+Local candidate `17.0.3-rc.2f08206d2a93`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2121 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; counts do not imply every test was freshly executed. Conditional Studio skips remain recorded in XML.
+
+Copied XML, hashes, logs and candidate BOM identity are under `ARESLib-Kotlin/build/audit-pass94-verified-evidence/summary.json`; focused XML is under `ARESLib-Kotlin/build/audit-pass94-focused-evidence/`. No physical disk durability, hardware timing or usable Studio-window result is claimed.

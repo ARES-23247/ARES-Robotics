@@ -3288,10 +3288,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "19b0526a333742f2bb77353400305a2acc498a94c59c1c9e018a7fee814746db",
+      "sha256": "4ce097f7892d1911c7f0d85b7f97c89b45c6e279bff4d7ff7872480f93e6a412",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order. Pass91: Frozen tree af9e9c981c88fe2a6744accdd2f924d4317a18a1 and local candidate 17.0.3-rc.af9e9c981c88 validated in dependency order. Pass92: Frozen tree b66f1cd6fcf7872a98fe7044384c385da8122ecf and local candidate 17.0.3-rc.b66f1cd6fcf7 validated in dependency order. Pass93: Frozen tree b83ebb7aea38d94993d54add1415b638e239867e and local candidate 17.0.3-rc.b83ebb7aea38 validated in dependency order.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation. Pass85: Bound final tree 6cc7c88450c7e04992b7e87a84423181484a4809 to locally validated candidate 17.0.3-rc.6cc7c88450c7. Pass86: Frozen tree 1efc651e01d5d4bb161d0fed8206ede1d1ec71c5 and local candidate 17.0.3-rc.1efc651e01d5 validated in dependency order. Pass87: Frozen tree 25bcdd2a73bf8eb095d5322c656230770884efd2 and local candidate 17.0.3-rc.25bcdd2a73bf validated in dependency order. Pass88: Frozen tree fad5f84844de787b5a969a1bb6cd32a392daa60b and local candidate 17.0.3-rc.fad5f84844de validated in dependency order. Pass89: Frozen tree f8c626ef1c4b8dcd35e7f373dfad1308397da2e8 and local candidate 17.0.3-rc.f8c626ef1c4b validated in dependency order. Pass90: Frozen tree 1987bb14f0884f6e041f66edbe25bff4367870ba and local candidate 17.0.3-rc.1987bb14f088 validated in dependency order. Pass91: Frozen tree af9e9c981c88fe2a6744accdd2f924d4317a18a1 and local candidate 17.0.3-rc.af9e9c981c88 validated in dependency order. Pass92: Frozen tree b66f1cd6fcf7872a98fe7044384c385da8122ecf and local candidate 17.0.3-rc.b66f1cd6fcf7 validated in dependency order. Pass93: Frozen tree b83ebb7aea38d94993d54add1415b638e239867e and local candidate 17.0.3-rc.b83ebb7aea38 validated in dependency order. Pass94: Frozen tree 2f08206d2a9398fedf6fd91dde5800a586938381 and local candidate 17.0.3-rc.2f08206d2a93 validated in dependency order.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3481,7 +3481,10 @@
         "ARESLib-Kotlin/build/audit-pass92-focused-evidence/summary.json",
         "docs/audits/store-failure-custom-codec-audit.md",
         "ARESLib-Kotlin/build/audit-pass93-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass93-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass93-focused-evidence/summary.json",
+        "docs/audits/action-logger-disk-failure-audit.md",
+        "ARESLib-Kotlin/build/audit-pass94-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass94-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5498,7 +5501,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8611b927214b8a285dad3a390af8b9ad087448f1fd9be24421474f77106e9201",
+      "sha256": "c91a8b339e2d4ece50f3e4e9a1e2a83f03046c6038f827037d9a58a10a7f3a9a",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5542,7 +5545,8 @@
         "docs/audits/vision-alignment-boundary-audit.md: pass90 scopes and canonical self-fingerprint refreshed",
         "docs/audits/swerve-offset-persistence-audit.md: pass91 scopes and canonical self-fingerprint refreshed",
         "docs/audits/replay-flow-delivery-audit.md: pass92 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/store-failure-custom-codec-audit.md: pass93 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/store-failure-custom-codec-audit.md: pass93 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/action-logger-disk-failure-audit.md: pass94 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6711,17 +6715,20 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/ActionLogger.kt": {
-      "sha256": "e1f8433f068969ada036fae4cbfac3c891f9826c5d321fcbb2ae12472f967442",
-      "review": "partial",
+      "sha256": "dcbc04b2ba05650e65580500479555163ce8666eea6edda2fe42cdce93105b96",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full declaration read; pooled detached-action/mode envelopes, beginMode and explicit-mode enqueue, single-worker ordered file rotation, existing mutable action snapshots and final accepted-record drain reviewed/tested. Broader encoding, disk failure, retention and finalization cases remain open. Initial file creation and final stop may block on disk. Pass93: Read full file again; tested final JSON writer null preservation and prequeue rejection/drop accounting for custom action without a stored timestamp. Existing logger regression tests passed; replay tests exercise actual drained logger output under both Gson versions. Explicit null members now survive both snapshot and write stages. Prior disk failure/retention/finalization scope remains open.",
+      "scope": "Full declaration read; pooled detached-action/mode envelopes, beginMode and explicit-mode enqueue, single-worker ordered file rotation, existing mutable action snapshots and final accepted-record drain reviewed/tested. Broader encoding, disk failure, retention and finalization cases remain open. Initial file creation and final stop may block on disk. Pass93: Read full file again; tested final JSON writer null preservation and prequeue rejection/drop accounting for custom action without a stored timestamp. Existing logger regression tests passed; replay tests exercise actual drained logger output under both Gson versions. Explicit null members now survive both snapshot and write stages. Prior disk failure/retention/finalization scope remains open. Pass94: Closed prior disk/finalization scope with full-source review and seven deterministic failure/lifecycle tests. Flush failure always attempts close; unexpected cleanup failures cannot strand workerDone. Writer/rotation/file failure stops acceptance, counts current/queued/unfinalized records conservatively and preserves active files. Only successful write/flush/close/move finalizes; existing targets never replaced. Initialization and stop idempotence, queue saturation and exact accepted timestamp drain tested. Primitive per-file count replaces no hot-path copies; no extra per-record flush or unbounded retry. Disk creation/stop may block; host injection is not physical durability, Android permission or latency proof. Retention/download policies are separately owned.",
       "evidence": [
         "docs/audits/telemetry-mode-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
         "docs/audits/store-failure-custom-codec-audit.md",
         "ARESLib-Kotlin/build/audit-pass93-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass93-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass93-focused-evidence/summary.json",
+        "docs/audits/action-logger-disk-failure-audit.md",
+        "ARESLib-Kotlin/build/audit-pass94-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass94-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/HardwareRegistry.kt": {
@@ -6772,14 +6779,17 @@
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/action/ActionLoggerTest.kt": {
-      "sha256": "bb6e132aec52b61e770998e41b1cbe9f38edb853df005eb81c8aef8d055f5267",
+      "sha256": "eb7a47efcd1cf81dd21fb05de2c83df7d2a2b499a41ec9418f5109d8342810d8",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full four-method fixture reviewed/executed. Existing detached mutable actions and same-epoch path collision checks retained; new blocked writer verifies producer return and exact queued action timestamp-to-mode association with no dropped records.",
+      "scope": "Full four-method fixture reviewed/executed. Existing detached mutable actions and same-epoch path collision checks retained; new blocked writer verifies producer return and exact queued action timestamp-to-mode association with no dropped records. Pass94: Full four-method read/execution: stalled-writer mode ownership, pooled action snapshot, nested vision/path snapshot, fixed-epoch filename collision and drain. Added finally cleanup for logger ownership/latches and restoration of prior clock mode/time. Existing scheduling and data assertions retained.",
       "evidence": [
         "docs/audits/telemetry-mode-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
+        "docs/audits/action-logger-disk-failure-audit.md",
+        "ARESLib-Kotlin/build/audit-pass94-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass94-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcTelemetryLifecycleAuditTest.kt": {
@@ -8361,6 +8371,27 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass93-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass93-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/action/ActionLoggerFailureAuditTest.kt": {
+      "sha256": "e49d53cdb1dead968364139d89fefaf939c318d54f90c5bce61c32403c585712",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed all seven methods. Three failed before fixes. Test-owned BufferedWriter injection forces write/flush/unchecked-close failures; bounded stopper and executor termination prevent stranded test processes. Rotation failure, existing-destination collision, bad initialization path, repeated stop and exact queue capacity/drop/drain accounting covered. Before-fix cleanup releases only its own stranded latch then awaits executor termination. No hardware/filesystem-wide interference.",
+      "evidence": [
+        "docs/audits/action-logger-disk-failure-audit.md",
+        "ARESLib-Kotlin/build/audit-pass94-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass94-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/action-logger-disk-failure-audit.md": {
+      "sha256": "e57665a743bda9dce9a21e965ee82e05946665490fe7ad1e23dbac26022e6791",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled3 failure-before methods,7 new methods,40focused cases, unchanged API and exact candidate; documented incomplete-file accounting, bounded host fault tests, separate retention/ingestion ownership and physical disk limitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass94-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass94-focused-evidence/summary.json"
       ]
     }
   }
