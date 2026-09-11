@@ -36,6 +36,7 @@ object IndicatorLightColorMapper {
      * @return The interpolated [Color] for display
      */
     fun positionToColor(position: Double): Color {
+        if (!position.isFinite()) return Color(0xFF202020)
         if (position < 0.0) return Color(0xFF202020)
         val pos = position.coerceIn(0.0, 1.0)
         if (pos in 0.240..0.265) return Color(0xFFFF007F)
@@ -58,6 +59,7 @@ object IndicatorLightColorMapper {
      * @return Human-readable color name
      */
     fun positionToName(position: Double): String {
+        if (!position.isFinite()) return "Unknown"
         if (position < 0.0) return "Off"
         val pos = position.coerceIn(0.0, 1.0)
         return when {

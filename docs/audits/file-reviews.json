@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "6e24eefc57621b91b156ca1e618b6b9c0ed7c70d76c0c22b62fae337f05ee649",
+      "sha256": "e694cd1375ac9582122336ce3df63efca8021571333d33b5752cde0f905bc994",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12346,6 +12346,46 @@
       "evidence": [
         "docs/audits/studio-routine-tree-edit-audit.md",
         "ARESLib-Kotlin/build/audit-pass162-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/util/IndicatorLightColorMapper.kt": {
+      "sha256": "edfce9e71bfe103a724280e1be27236de7ac6ecf62b5ee08964ba12ca5ce1ffe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full approximate display mapper: local solid preset positions/names, interpolation/rainbow region, finite clamping and nonfinite neutral/Unknown fix. Physical colors/chart provenance/hardware thresholds excluded; live parser already filters nonfinite values.",
+      "evidence": [
+        "docs/audits/studio-lighting-color-audit.md",
+        "ARESLib-Kotlin/build/audit-pass163-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/util/PrismColorMapper.kt": {
+      "sha256": "111136dd99a4a3c4597d92e561b2e465a829263cc2f5af809645196aa6c8c4f7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full approximate display mapper: local solid/sine/pulse representatives, all active preset opacity, retained invalid/off regions, nonfinite transparent fix. External hardware range provenance and animation/physical calibration excluded.",
+      "evidence": [
+        "docs/audits/studio-lighting-color-audit.md",
+        "ARESLib-Kotlin/build/audit-pass163-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/util/LightingColorMapperTest.kt": {
+      "sha256": "77ef2adee945df55145b383ce3e38075cd4b20bb9b1a33ad57cdb1923bf9c62b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test source: all indicator solid presets/names/ARGB, finite rainbow/endpoints and 1001 interpolation values, all nonfinite inputs, Prism representative presets/all active opacity and existing off/invalid boundaries.",
+      "evidence": [
+        "docs/audits/studio-lighting-color-audit.md",
+        "ARESLib-Kotlin/build/audit-pass163-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-lighting-color-audit.md": {
+      "sha256": "1161e4e60f4d38fabe4a69a08b780338504e2bb22f319c4bf051e57695faa386",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report verified against source/caller/parser inspection, three focused tests and full app XML/policy/links; no before execution or physical fidelity claim.",
+      "evidence": [
+        "docs/audits/studio-lighting-color-audit.md",
+        "ARESLib-Kotlin/build/audit-pass163-verified-evidence/summary.json"
       ]
     }
   }

@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 /** Representative, non-animated colors for goBILDA Prism PWM programs in field and replay views. */
 object PrismColorMapper {
     fun pulseWidthToColor(pulseWidthUs: Double): Color = when {
-        pulseWidthUs < 500.0 || pulseWidthUs > 2500.0 -> Color.Transparent
+        !pulseWidthUs.isFinite() || pulseWidthUs < 500.0 || pulseWidthUs > 2500.0 -> Color.Transparent
         pulseWidthUs in 1049.0..1090.0 -> Color.Transparent // SOLID_OFF region
         pulseWidthUs < 700.0 -> Color(0xFFFF3B7A) // artboards, timer, emergency and sparkle
         pulseWidthUs < 750.0 -> Color.Red
