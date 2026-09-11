@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "12ea612837b57fbcbb4a0e98f489696f4d1048d4f58eb9b1696b220af5b4b5b0",
+      "sha256": "858dd56cb39ab48d5d0e70b3ce178152cd239cac2c5eac0fa139bc168baab57b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12626,10 +12626,12 @@
       "sha256": "ceab7cf8e571367f1f8761223be4fe37e60d7747f5b5cdf7a111dccf4f0a080f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full static read: reusable frames/adapters refer to persistent base GamepadStates; one timestamp, explicit drive opt-in, stop cleanup. Construction failure, repeated SDK lifecycle and generated runtime failure integration remain unverified.",
+      "scope": "Full static read plus real normal input-adapter/frame reuse, timestamp, drive opt-in and output-order tests. Direct cancellation/close hooks and failed-close reference clearing verified. Robot/generated-runtime construction rollback and shared SDK failure/repeated lifecycle integration still open.",
       "evidence": [
         "docs/audits/ftc-capability-policy-audit.md",
-        "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json",
+        "docs/audits/ftc-teleop-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass171-verified-evidence/summary.json"
       ]
     },
     "docs/audits/ftc-capability-policy-audit.md": {
@@ -12654,22 +12656,26 @@
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESMecanumTeleOp.kt": {
       "sha256": "7b8998e77830ef64c14c4e3f108bd9afd6e57d55015383572646bd52ae8fbbfd",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Complete static read and real init/init_loop/start exercised with mocked robot construction. Startup slew and absence of calibration enable verified. Active loop drive arbitration, heading toggle, reset/alliance buttons and stop/fault integration remain open.",
+      "scope": "Full callback/delegation contract: pass170 real startup/slew/no calibration; pass171 real loop manual versus generated gate, heading-lock edges/forwarding, alliance-before-reset and pose button. Shared SDK faults, generated arithmetic and hardware output/timing are external.",
       "evidence": [
         "docs/audits/ftc-opmode-startup-audit.md",
-        "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json",
+        "docs/audits/ftc-teleop-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass171-verified-evidence/summary.json"
       ]
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESTuningTeleOp.kt": {
       "sha256": "ea9aa55039c81a0696b91f912e9380e0aed74a58d1e80131e6e6b1116caa7afc",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Complete static read and real init/init_loop/start exercised with mocked robot construction. Calibration starts only after Start; slew configured. Armed calibration versus manual drive active-loop arbitration, buttons, freshness/stop/fault integration remain open.",
+      "scope": "Full callback/delegation contract: pass170 calibration enabled only after Start/slew/setup; pass171 real loop armed manual suppression/resumption, generated drive opt-out, alliance and pose button edges. Downstream calibration lease and actual hardware authority/timing remain external.",
       "evidence": [
         "docs/audits/ftc-opmode-startup-audit.md",
-        "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json",
+        "docs/audits/ftc-teleop-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass171-verified-evidence/summary.json"
       ]
     },
     "docs/audits/ftc-opmode-startup-audit.md": {
@@ -12680,6 +12686,26 @@
       "evidence": [
         "docs/audits/ftc-opmode-startup-audit.md",
         "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresTeleOpLoopTest.kt": {
+      "sha256": "3615280ea05a3d5b7c415ce4f6e3bc67923f1d1e29132a0b4cd09d3092e98f7d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-test review: actual season loop/generated gate/calibration/manual authority, frame reuse and update order, button edges, cancellation and failed-close reference cleanup. Mocked runtime/hardware boundary; globals restored. 133 full FTC tests pass.",
+      "evidence": [
+        "docs/audits/ftc-teleop-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass171-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-teleop-loop-audit.md": {
+      "sha256": "c3a794b6a390f3c93aac45278c4037de30f49cf085bef9c00530c6955b136bcb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass171 report checked against real loop fixture, focused/full XML and root checks. No production defect or hardware performance claim.",
+      "evidence": [
+        "docs/audits/ftc-teleop-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass171-verified-evidence/summary.json"
       ]
     }
   }
