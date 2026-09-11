@@ -4,7 +4,9 @@ package com.areslib.pathing.planner
  * Primitive Long-Packed Binary Min-Heap Priority Queue for Zero-GC Pathfinding.
  *
  * Packs 32-bit floating point $f$-cost bits and 32-bit integer grid node indices into primitive 64-bit `Long` elements
- * to achieve $O(\log N)$ priority queue insertion and extraction with zero heap allocations.
+ * to achieve $O(\log N)$ insertion and extraction without allocations while capacity is sufficient.
+ * Growth allocates a replacement primitive array. Keys use signed Long ordering, which preserves
+ * packed non-negative finite float costs and their node-index tie breaks.
  *
  * ### Bit-Packing Layout:
  * `element = (fCostBits.toLong() shl 32) or (nodeIndex.toLong() and 0xFFFFFFFFL)`
@@ -12,13 +14,15 @@ package com.areslib.pathing.planner
  * @param capacity Initial primitive array capacity.
  */
 class LongHeap(capacity: Int) {
+    init { require(capacity >= 0) { "Heap capacity must be non-negative" } }
     var data = LongArray(capacity)
     var size = 0
 
     /** Pushes a packed 64-bit `(fCost, nodeIndex)` key into the min-heap. */
     fun add(value: Long) {
         if (size == data.size) {
-            data = data.copyOf(data.size * 2)
+            check(data.size < Int.MAX_VALUE) { "Heap capacity exhausted" }
+            data = data.copyOf((data.size.toLong() * 2L).coerceIn(1L, Int.MAX_VALUE.toLong()).toInt())
         }
         var i = size
         size++
@@ -33,12 +37,13 @@ class LongHeap(capacity: Int) {
 
     /** Extracts and returns the minimum `(fCost, nodeIndex)` key from the min-heap root. */
     fun poll(): Long {
+        if (size == 0) throw NoSuchElementException("Heap is empty")
         val result = data[0]
         size--
         if (size > 0) {
             val value = data[size]
             var i = 0
-            while ((i shl 1) + 1 < size) {
+            while (i < size / 2) {
                 var child = (i shl 1) + 1
                 if (child + 1 < size && data[child + 1] < data[child]) {
                     child++

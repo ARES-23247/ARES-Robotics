@@ -184,28 +184,50 @@ class Costmap(
     /**
      * Inflates the obstacle boundaries by the robot's physical bumper radius.
      * Prevents any paths from running the chassis edges directly into structures.
-     * @param robotRadiusMeters Radius of the robot bumper boundary.
+     * @param robotRadiusMeters Finite non-negative bumper radius; zero copies raw occupancy without a halo.
      */
     fun inflate(robotRadiusMeters: Double) {
+        require(robotRadiusMeters.isFinite() && robotRadiusMeters >= 0.0) {
+            "Inflation radius must be finite and non-negative"
+        }
         inflatedGrid.fill(false)
-        val cellRadius = kotlin.math.ceil(robotRadiusMeters / resolutionMeters).toInt().coerceAtLeast(1)
-        val r2 = cellRadius.toDouble() * cellRadius.toDouble()
-
+        val cellRadius = kotlin.math.ceil(robotRadiusMeters / resolutionMeters).toInt()
+        val radius = cellRadius.toLong()
+        val maxDx = widthCells - 1L
+        val maxDy = heightCells - 1L
+        // Any occupied cell covers the entire grid at this radius. Avoid an O(cells^2) scan.
+        if (radius * radius >= maxDx * maxDx + maxDy * maxDy) {
+            if (grid.any { it }) inflatedGrid.fill(true)
+            return
+        }
         for (cy in 0 until heightCells) {
             for (cx in 0 until widthCells) {
-                if (grid[cy * widthCells + cx]) {
-                    // Inflate outward in a circular radius
-                    for (dy in -cellRadius..cellRadius) {
-                        for (dx in -cellRadius..cellRadius) {
-                            if (dx.toDouble() * dx.toDouble() + dy.toDouble() * dy.toDouble() <= r2) {
-                                val nx = cx + dx
-                                val ny = cy + dy
-                                if (nx in 0 until widthCells && ny in 0 until heightCells) {
-                                    inflatedGrid[ny * widthCells + nx] = true
-                                }
-                            }
-                        }
-                    }
+                if (grid[cy * widthCells + cx]) rasterizeCircle(cx, cy, cellRadius, 0)
+            }
+        }
+    }
+
+    /**
+     * Applies a quantized circle only within grid bounds. Delta zero writes the static layer;
+     * +1/-1 update dynamic reference counts using exactly the same mask on insert and expiry.
+     * Long differences and subtraction from radius squared avoid Int and squared-sum overflow.
+     */
+    private fun rasterizeCircle(cellX: Int, cellY: Int, cellRadius: Int, delta: Int) {
+        val radius = cellRadius.toLong()
+        val radiusSquared = radius * radius
+        val minX = maxOf(0L, cellX.toLong() - radius).toInt()
+        val maxX = minOf(widthCells - 1L, cellX.toLong() + radius).toInt()
+        val minY = maxOf(0L, cellY.toLong() - radius).toInt()
+        val maxY = minOf(heightCells - 1L, cellY.toLong() + radius).toInt()
+        for (y in minY..maxY) {
+            val dy = y.toLong() - cellY
+            val remainingSquared = radiusSquared - dy * dy
+            for (x in minX..maxX) {
+                val dx = x.toLong() - cellX
+                if (dx * dx <= remainingSquared) {
+                    val index = y * widthCells + x
+                    if (delta == 0) inflatedGrid[index] = true
+                    else dynamicOccupancyCounts[index] += delta
                 }
             }
         }
@@ -228,43 +250,18 @@ class Costmap(
         dynObsTimeMs[dynObsCount] = timestampMs
         dynObsCount++
 
-        for (dy in -cellRadius..cellRadius) {
-            for (dx in -cellRadius..cellRadius) {
-                if (dx * dx + dy * dy <= cellRadius * cellRadius) {
-                    val nx = cellX + dx
-                    val ny = cellY + dy
-                    if (nx in 0 until widthCells && ny in 0 until heightCells) {
-                        dynamicOccupancyCounts[ny * widthCells + nx]++
-                    }
-                }
-            }
-        }
+        rasterizeCircle(cellX, cellY, cellRadius, 1)
     }
 
     fun expireDynamicObstacles(currentTimeMs: Long, maxAgeMs: Long) {
         require(maxAgeMs >= 0L) { "maxAgeMs must be non-negative" }
         var i = 0
         while (i < dynObsCount) {
-            if (currentTimeMs - dynObsTimeMs[i] > maxAgeMs) {
-                val cellX = dynObsX[i]
-                val cellY = dynObsY[i]
-                val cellRadius = dynObsRadius[i]
-                
-                for (dy in -cellRadius..cellRadius) {
-                    for (dx in -cellRadius..cellRadius) {
-                        if (dx * dx + dy * dy <= cellRadius * cellRadius) {
-                            val nx = cellX + dx
-                            val ny = cellY + dy
-                            if (nx in 0 until widthCells && ny in 0 until heightCells) {
-                                val index = ny * widthCells + nx
-                                if (dynamicOccupancyCounts[index] > 0) {
-                                    dynamicOccupancyCounts[index]--
-                                }
-                            }
-                        }
-                    }
-                }
-                
+            val observedAt = dynObsTimeMs[i]
+            val age = currentTimeMs - observedAt
+            if (currentTimeMs >= observedAt && (age < 0L || age > maxAgeMs)) {
+                rasterizeCircle(dynObsX[i], dynObsY[i], dynObsRadius[i], -1)
+
                 dynObsCount--
                 if (i < dynObsCount) {
                     dynObsX[i] = dynObsX[dynObsCount]
