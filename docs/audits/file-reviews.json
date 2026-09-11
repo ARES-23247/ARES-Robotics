@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "1a7c9ec7a5ca21c0052d70b9b13543d6c94bb066b4f1954a0282713c8e57cb78",
+      "sha256": "ef6c6c21fe7cb8d6d5006d6d1a902848f80a84715626ba57c8af377003fb5602",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12550,6 +12550,36 @@
       "evidence": [
         "docs/audits/ftc-driver-controller-state-audit.md",
         "ARESLib-Kotlin/build/audit-pass167-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/robot/AresTelemetryHelper.kt": {
+      "sha256": "9b29ccafb6ee2d5aec93cc1ff12eb42fda15e1b014fd556c1b9d9dda3be5f3dc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full season telemetry helper/test/report review: initial/rewound/overflow clock throttle, one Redux snapshot, direct estimator scalars, cached power display, invalid voltage, rounding and capped custom text. Five focused and 123 full FTC tests pass, APK assembles. Single-loop helper; asynchronous map publication, physical timing and Driver Station rendering not certified.",
+      "evidence": [
+        "docs/audits/ftc-telemetry-helper-audit.md",
+        "ARESLib-Kotlin/build/audit-pass168-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/robot/AresTelemetryHelperTest.kt": {
+      "sha256": "fbce9efe9cf7508f84f62802a49ae44453c54fa385c62ba51348523ce11a3f48",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full season telemetry helper/test/report review: initial/rewound/overflow clock throttle, one Redux snapshot, direct estimator scalars, cached power display, invalid voltage, rounding and capped custom text. Five focused and 123 full FTC tests pass, APK assembles. Single-loop helper; asynchronous map publication, physical timing and Driver Station rendering not certified.",
+      "evidence": [
+        "docs/audits/ftc-telemetry-helper-audit.md",
+        "ARESLib-Kotlin/build/audit-pass168-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-telemetry-helper-audit.md": {
+      "sha256": "25820cd9d0a4deaaad89a5bc84684b910aac883920b96433e197163159c45f47",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full season telemetry helper/test/report review: initial/rewound/overflow clock throttle, one Redux snapshot, direct estimator scalars, cached power display, invalid voltage, rounding and capped custom text. Five focused and 123 full FTC tests pass, APK assembles. Single-loop helper; asynchronous map publication, physical timing and Driver Station rendering not certified.",
+      "evidence": [
+        "docs/audits/ftc-telemetry-helper-audit.md",
+        "ARESLib-Kotlin/build/audit-pass168-verified-evidence/summary.json"
       ]
     }
   }

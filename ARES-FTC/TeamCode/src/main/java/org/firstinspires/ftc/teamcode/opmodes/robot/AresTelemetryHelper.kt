@@ -15,6 +15,7 @@ internal fun formatLowBatteryVoltage(voltage: Double): String {
  */
 class AresTelemetryHelper(private val base: FtcMecanumRobot) {
     private var lastTelemetryUpdateMs: Long = 0L
+    private var hasTelemetryUpdate = false
 
     /** Stores one custom Driver Station value, truncated to 150 display characters. */
     fun addTelemetry(key: String, value: Any) {
@@ -25,15 +26,17 @@ class AresTelemetryHelper(private val base: FtcMecanumRobot) {
     /** Publishes the low-rate pose, battery, and power-budget summary. */
     fun updateTelemetry() {
         val now = com.areslib.util.RobotClock.currentTimeMillis()
-        if (now - lastTelemetryUpdateMs < TELEMETRY_PERIOD_MS) return
+        val elapsed = now - lastTelemetryUpdateMs
+        if (hasTelemetryUpdate && now >= lastTelemetryUpdateMs && elapsed >= 0L && elapsed < TELEMETRY_PERIOD_MS) return
         lastTelemetryUpdateMs = now
+        hasTelemetryUpdate = true
 
-        val alliance = base.store.state.drive.alliance.name
-        val estPose = base.store.state.drive.poseEstimator.estimatedPose
-        addTelemetry("Alliance", alliance)
-        addTelemetry("EKF Pose X", estPose.x)
-        addTelemetry("EKF Pose Y", estPose.y)
-        addTelemetry("EKF Pose Deg", Math.toDegrees(estPose.heading.radians))
+        val drive = base.store.state.drive
+        val estimate = drive.poseEstimator
+        addTelemetry("Alliance", drive.alliance.name)
+        addTelemetry("EKF Pose X", estimate.estimatedPoseX)
+        addTelemetry("EKF Pose Y", estimate.estimatedPoseY)
+        addTelemetry("EKF Pose Deg", Math.toDegrees(estimate.estimatedPoseHeading))
 
         val voltage = base.powerManager.batteryVoltage
         val batteryText = when {
