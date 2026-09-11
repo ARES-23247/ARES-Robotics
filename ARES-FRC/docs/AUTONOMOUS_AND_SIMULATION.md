@@ -38,8 +38,8 @@ After editing the project, regenerate and verify the Kotlin compiled onto the Ro
 
 `build/generated/ares/main/kotlin/com/areslib/frc/generated/GeneratedAresProject.kt` is disposable
 mechanical plumbing and must not be edited or committed. `compileKotlin` regenerates and validates
-it from the canonical documents using the pinned ARES code generator. Generation requires neither
-the RoboRIO nor a network connection.
+it from the canonical documents using the pinned ARES code generator. Generation requires no RoboRIO; offline generation also requires the pinned dependencies
+to be available in the local cache or validation repository.
 
 ## Coordinate and preflight contract
 
@@ -69,11 +69,16 @@ Only the checked-in `.ares/` project and its verified generated Kotlin are suppo
 
 ## Controller ownership
 
-This project declares no generated controller scheme. Codegen v4 therefore emits no controller
-runtime API, and `ARESRobot` installs only the explicit Marvin season controller. There is no
-compatibility fallback or dormant binding host. If a controller scheme is added later, its FRC
-adapter, validation, and single-owner lifecycle must be introduced deliberately and verified on the
-Driver Station; desktop GLFW raw indexes are not interchangeable with FRC HID indexes.
+The checked-in `.ares/controls/driver.arescontrols` scheme binds driver port 0 to
+field-centric translation and rotation through `.ares/controllers/frc-driver.arescontroller`.
+`ARESRobot` hosts `FrcGeneratedProjectControlsRuntime` alongside the hand-authored Marvin
+controller. The hand controller runs first; its drivetrain-assist gate suppresses generated
+stick commands while X-lock or aiming owns the frame. Mode transitions cancel generated work.
+
+Axes 1, 0 and 4 supply forward, strafe and rotation with inversion and a rescaled 0.1 deadband.
+The sink applies 4.5 m/s and pi rad/s limits and mirrors translation for Red. Keep per-frame
+VALUE emissions: the controller requires a current command even when the stick has not changed.
+Desktop GLFW key codes and FRC HID axis indexes are different input layers.
 
 ## Available Marvin actions
 
@@ -99,6 +104,10 @@ Start WPILib desktop simulation with:
 .\gradlew.bat simulateJava
 ```
 
+The low-level HAL window is disabled by default. Add `-ParesFrcHalGui=true` to
+`simulateJava` when debugging native IO. Its saved Keyboard0 layout uses WASD for
+translation and Q/F for the self-centering rotation axis; it is assigned to port 0.
+
 When the project is opened in ARES Robotics Studio, **Local Sim → Start driving** can enable the
 simulation-only Driver Station directly. The dashboard publishes a leased, neutral-first control
 frame and the robot publishes an atomic acknowledgement. If the frame becomes stale or invalid,
@@ -120,7 +129,7 @@ Before deployment:
 - Move a pose to a field edge and confirm preflight blocks a footprint that crosses the wall.
 - Select a missing entry and confirm the safe fallback is reported and outputs remain safe.
 - Run `verifyAresProject` and inspect the generated Kotlin diff.
-- Run `..\verify-autos.ps1` from the workspace root.
+- Run `.\verify-autos.ps1` from the workspace root (or `..\verify-autos.ps1` from ARES-FRC).
 
 The default simulator has no trusted feeder beam-break sensor, matching the current physical robot.
 Do not force detector validity merely to make inventory bookkeeping advance.

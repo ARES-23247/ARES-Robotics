@@ -4,11 +4,12 @@
 
 - Windows PowerShell for the documented wrapper commands.
 - WPILib 2026.2.1, including its Java 17 runtime and desktop native libraries.
-- The sibling `../ARESLib-Kotlin` checkout. `settings.gradle` includes it as a composite build.
+- The source monorepo and its build policy. Sibling source substitution is optional and explicit:
+  `-ParesUseSiblingLib=true` requires a valid `../ARESLib-Kotlin` build; missing source fails configuration.
 - Vendor dependencies installed/resolvable for CTRE Phoenix 6 and WPILib.
 - An `scp` client and RoboRIO network access when running `fetchOffsets`.
 
-The project uses Kotlin 1.9.23 and targets Java 17. Do not run robot builds with an arbitrary newer JVM when diagnosing native test or simulation issues; prefer the WPILib-provided Java runtime.
+The project uses Kotlin 2.4.10 and targets Java 17. Do not run robot builds with an arbitrary newer JVM when diagnosing native test or simulation issues; prefer the WPILib-provided Java runtime.
 
 ## Common commands
 
@@ -21,7 +22,7 @@ Run from the ARES-FRC repository root:
 # Build robot artifacts
 .\gradlew.bat build
 
-# Launch WPILib desktop simulation
+# Launch the desktop simulation backend; add -ParesFrcHalGui=true for the HAL window
 .\gradlew.bat simulateJava
 
 # Deploy code and src/main/deploy contents to team 23247
@@ -33,12 +34,13 @@ Run from the ARES-FRC repository root:
 
 The Gradle deployment default is team `23247`; `-PteamNumber` is available only for an intentional alternate target.
 
-Tests use JUnit 5 and configure WPILib desktop JNI extraction. On Windows the build prefers `C:/Users/Public/wpilib/2026/jdk/bin/java.exe` when it exists.
+Tests use JUnit 5 and synchronize WPILib desktop JNI into the owned `build/jni/test-release` directory. On Windows the build prefers `C:/Users/Public/wpilib/2026/jdk/bin/java.exe` when it exists.
 
-Normal operations use the pinned ARESLib release from Maven Central. To test an unpublished shared change through its exact binary bundle:
+Normal operations use the pinned ARESLib release from the configured Maven Central/ARES repositories. To test an unpublished shared change through its exact binary bundle:
 
 ```powershell
-$candidate = "8.0.0-rc.<areslib-commit>"
+$versions = ConvertFrom-StringData (Get-Content -Raw ..\release\ares-versions.properties)
+$candidate = "$($versions.aresVersion)-rc.<unique-source-id>" # Replace the placeholder with the reviewed source identity.
 cd ..\ARESLib-Kotlin
 .\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=$candidate"
 cd ..\ARES-FRC
@@ -53,11 +55,12 @@ $repository = ([Uri](Resolve-Path ..\ARESLib-Kotlin\build\release-repository)).A
 3. Run `generateAresProject` and `verifyAresProject`; confirm every action appears in
    `.ares/action-catalog.json` with correct resource ownership.
 4. Verify `src/main/deploy/swerve_offsets.json` matches the robot.
-5. Physically place cowl, intake pivot, and climber at their safe zero stops. While Disabled or
-   Test-enabled, have both operators hold Back+Start together once and verify
-   `Safety/MechanismsHomed=true` before using any mechanism.
-6. Confirm both Limelights are reachable as `limelight-shooter` and `limelight-back`.
-7. Confirm the GradleRIO target is team 23247, then deploy.
+5. Confirm both Limelights are reachable as `limelight-shooter` and `limelight-back`.
+6. Confirm the GradleRIO target is team 23247, then deploy.
+7. After the deployed process starts, physically place cowl, intake pivot and climber at their
+   safe zero stops. While Disabled or Test-enabled, have both operators hold Back+Start together
+   once and verify `Safety/MechanismsHomed=true`. Every process restart invalidates the relative
+   zero, so homing before deployment cannot authorize the newly started process.
 8. While disabled, confirm alliance, pose, mechanism validity telemetry, zero/safe outputs, and a
    populated `Topology/HardwareMap` containing the expected CAN2 IDs.
 9. Enable mechanisms individually before running a full autonomous routine.
@@ -89,7 +92,9 @@ Treat `fetchOffsets` as a calibration update:
 2. Generate/verify runtime offsets on the correct RoboRIO.
 3. Run `fetchOffsets`.
 4. Review the JSON diff for all four modules.
-5. Rebuild and re-test steering orientation before deployment.
+5. Update the canonical tuning profile and descriptor calibration evidence/hash to match the
+   reviewed overlay; run `verifyAresProject` and the offset consistency tests.
+6. Rebuild and re-test steering orientation before deployment.
 
 Do not fetch offsets from an unknown robot or network target and immediately deploy them.
 
@@ -149,4 +154,4 @@ Verify the WPILib 2026 installation and its Java 17 runtime at `C:/Users/Public/
 
 ### Changes in ARESLib are not visible elsewhere
 
-Confirm the consumer's `aresVersion` is the intended Maven Central release. For an unpublished library change, publish a unique prerelease coordinate such as `8.0.0-rc.<areslib-commit>` and pass both that exact `-ParesVersion` and the isolated `build/release-repository` URI. Never republish a released coordinate with different bytes. Do not copy shared classes into the season repository.
+Confirm the consumer's `aresVersion` is the intended Maven Central release. For an unpublished library change, publish a unique prerelease coordinate based on `aresVersion` in `../release/ares-versions.properties` plus a unique source suffix and pass both that exact `-ParesVersion` and the isolated `build/release-repository` URI. Never republish a released coordinate with different bytes. Do not copy shared classes into the season repository.

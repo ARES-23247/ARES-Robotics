@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "a34b8a9f9c5db397e43591f4754158372583276fb7bb45c10f9c2ba3fe713737",
+      "sha256": "5361a0a67e2e20e31cda508b04bc9be1651daa9277c072e5789f256c3d18feab",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5626,7 +5626,8 @@
         "docs/audits/frc-factory-construction-cleanup-audit.md: pass127 factory cleanup records and self-fingerprint refreshed",
         "docs/audits/frc-regression-evidence-audit.md: pass128 test/fixture records and self-fingerprint refreshed",
         "docs/audits/frc-build-selection-audit.md: pass129 dependencyselection records and self-fingerprint refreshed",
-        "docs/audits/frc-native-extraction-audit.md: pass130 nativeextraction records and self-fingerprint refreshed"
+        "docs/audits/frc-native-extraction-audit.md: pass130 nativeextraction records and self-fingerprint refreshed",
+        "docs/audits/frc-documentation-consistency-audit.md: pass131 documentation records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -10946,6 +10947,115 @@
       "scope": "Documents stale-native-output defect,isolatedSyncfix,47identicalbinaryhashes,299executedtests, JARmetadata/nativeinventoryandexplicitdeployment/packaginglimits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass130-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/README.md": {
+      "sha256": "612e2e34f8473a6d399a654014cd03fa3a0d0955d560f60b5410806a00a00332",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fulloverview/command/convention/path review. Fixedobsoletecom.areslibsourcepaths,checked-ingenerationclaim,oldcandidatebase andHALGUIdefault. Sourcepathsverified; currentgeneratedbindings/runtimeconsistent. Commands documented, notdeployexecuted.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/docs/ARCHITECTURE.md": {
+      "sha256": "8bb01168ea11ec7b79cf34af829be62ed3de50a5a6c71a3fcc24e0320ddc02ff",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fulllifecycle/state/units/coordinates/safety/hardwaremapguide review against currentsources. FixedflywheelRPMvs-effort scaling,intakeReduxunits,missingcowlreadiness andautomaticvsmanualfeeding scope. Normativesafetyrequirements are notproofallhardwarebehaviorsvalidated.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/docs/AUTONOMOUS_AND_SIMULATION.md": {
+      "sha256": "19db6220b3609e7bc4945e64dafeb25ef230b8bcc8d9e2b65ef6d4b412593a71",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullroutine/preflight/actions/sim/controllerguide review. Replacedfalsezero-schemeclaimwithactualgeneratedbindings/assistgate,addedHALoptin/keyboardlayout,qualifiedofflinecache andfixedrootcommandpath. Existingauto/controller tests providebehavioralevidence; noGUI/HILthispass.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/docs/OPERATIONS.md": {
+      "sha256": "0400c2722db8fa5954c78ac169e03edfeb6f557fb0b04e3b0f2a5bd2b0397e80",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullprerequisites/commands/deploy/offset/troubleshootingreview. CorrectedKotlinversion,optionalsiblingmode,candidatebase,testJNIpath,HALoptin. Movedhomingafterdeploymentrestartandaddedprofile/evidencecalibrationpromotion. No actualdeploy/SCP/candidatepublication.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/docs/DRIVEBASE_CONFIGURATION.md": {
+      "sha256": "eef6bb43f0633ca012a5feec856586d58bdeec74df2062b4f1457cfc8f87c6ff",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullvendor/profile/offset/tuning/simulationguide review. VerifiedunarmedtypedTuningcontext and2allowedReduxparameters; canonical/readonlyownershipconsistent. Physicalcalibrationchecklist is acceptancecriteria, notobservedhardwarevalidation.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/docs/SUBSYSTEM_AUTHORING.md": {
+      "sha256": "ef3eb9e80581230eaf063bf3590ff56f9062822eaa82f99d07f2cdef48ac9849",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fulltemplates/ownership/generation/manualworksheet/safety/testguide review. Clarifiedhistoricalstarterdirectory vs team-ownedpackage; tasks/destinationsagreebuild. Normativefailedwrite/close/GC/parityrequirements remainfutureverificationrequirements,notblanketcertificationofexistingadapters.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/CONTRIBUTING.md": {
+      "sha256": "bb2eeda900c7bd2cefe3a95ebfb5ffb1783f5a9ae76381399014cc033618bdd9",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Fullshortcontributionpolicy review as policyartifact: Apache/DCOsignoff/provenance/SPDXinstructions retained. No contribution submission performed or independentlegalrights certification.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/TRADEMARKS.md": {
+      "sha256": "86a904dfd9cdc919418af6cdd8ae496a863742b2c33604ade5704311c2b5d5e7",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Fullshortbrandingpolicy review as policyartifact; retainedunmodified. No brandingusegrantedbythisaudit or independentlegalcompliancecertification.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/THIRD_PARTY_NOTICES.md": {
+      "sha256": "2de40abad269e73a9ca7f43fc2fab7be5ee8ce6b401c61fc9ace8413f69647a6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullnoticeartifact review; byte-identical to packagedresourcecopy, attribution/publisherterms retainedunmodified. Not anindependentdependencylicense/legalcomplianceaudit.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/resources/META-INF/THIRD_PARTY_NOTICES.md": {
+      "sha256": "2de40abad269e73a9ca7f43fc2fab7be5ee8ce6b401c61fc9ace8413f69647a6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullpackagednotice review; byte-identical to rootnotice and retainedunmodified. No licensemetadataremoval; redistributioncompliance notindependentlycertified.",
+      "evidence": [
+        "docs/audits/frc-documentation-consistency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-documentation-consistency-audit.md": {
+      "sha256": "37bbd835cc643df5995cb60a091f28bb39495f6bbbf23919f6aca897417c99ef",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents10completedMarkdownreviews,correctedcontroller/toolchain/path/safety/operationsinstructions,unchangedpolicy/notices,validationandexplicitnonruntime/nonhardware/nonlegalcertificationlimits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
       ]
     }
   }

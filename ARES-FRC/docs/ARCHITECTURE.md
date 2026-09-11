@@ -66,7 +66,8 @@ complete rather than from the periodic loop.
 
 Brownout/current scaling affects effort, not geometry:
 
-- Voltage, velocity, and swerve requests are scaled.
+- Open-loop voltage, roller-speed and swerve requests are scaled.
+- The flywheel RPM target is retained while its allowed effort is scaled.
 - Cowl, intake pivot, and climber position targets remain physical targets; their allowed effort is scaled.
 - Hardware soft limits remain the final motion boundary.
 
@@ -84,7 +85,7 @@ Never “fix” a brownout by scaling a position target toward zero; that change
 |---|---|---|
 | Flywheel target and observation | RPM | Four TalonFX motors (CAN 9–12); converted to rotations/second at the hardware boundary. Reverse voltage is blocked. |
 | Cowl target and shot lookup | Mechanism rotations | TalonFX 13. Software and hardware clamp to `0.0..1.80` rotations. Values such as `0.50` and `1.10` are rotations, not degrees. |
-| Intake pivot | Degrees in the IO contract; deployed boolean in Redux | TalonFX 14. Physical IO converts degrees to rotations; controller uses 0 degrees stowed and 90 degrees deployed. Hardware soft limits are `0.0..0.30` rotations. |
+| Intake pivot | Degrees in IO and Redux target/feedback fields; a separate deployed boolean records intent | TalonFX 14. Physical IO converts degrees to rotations; controller uses 0 degrees stowed and 90 degrees deployed. Hardware soft limits are `0.0..0.30` rotations. |
 | Intake roller speed | RPS | TalonFX 15. |
 | Floor speed | RPS command | TalonFX 16; implemented as open-loop voltage proportional to the requested RPS. |
 | Climber manual command | Volts | TalonFX 19; driver/copilot D-pad commands +6 V or -6 V. |
@@ -103,7 +104,9 @@ feedback ratios. Do not pass motor rotations where mechanism rotations are expec
 
 The shooter is rearward-facing. Static and shoot-on-the-move aiming therefore add `pi` to the target bearing and wrap the result to the standard angle range.
 
-Feeding is authorized only when heading error is below 0.05 rad and the flywheel observation is fresh/aligned, unless a transfer was already active. The flywheel alignment gate requires:
+Automatic shot feeding requires heading error below 0.05 rad, fresh/aligned flywheel observations,
+and fresh cowl feedback within 0.05 rotations of its target to begin a transfer. Manual intake/feed
+commands are separate operator paths; they are not claims of automatic shot readiness. The flywheel alignment gate requires:
 
 - `velocityValid == true`
 - target speed greater than 100 RPM
