@@ -195,7 +195,7 @@ class MarvinMeasuredSotmRegressionTest {
         val target = Translation2d(0.0, 5.547868)
         val actual = ShotResult()
 
-        // Prime the acceleration lookahead twice with a stationary measured chassis.
+        // Reuse one stationary observation across two control calls.
         observe(store, 1000L)
         shooter.updateShootOnTheMove(pose, target, actual)
         RobotClock.useMockTime(1_020L)
@@ -273,6 +273,7 @@ class MarvinMeasuredSotmRegressionTest {
         shooter.updateShootOnTheMove(pose, target, result)
         assertTrue(store.state.superstructure.marvin.flywheelActive)
 
+        RobotClock.useMockTime(1_020L)
         store.dispatch(
             RobotAction.PoseUpdate(
                 xMeters = pose.x,
@@ -284,6 +285,8 @@ class MarvinMeasuredSotmRegressionTest {
                 isExternalEstimate = true
             )
         )
+        assertEquals(RobotClock.currentTimeMillis(), store.state.drive.poseEstimator.lastObservationTimestampMs)
+        assertEquals(false, store.state.drive.measuredMotionValid)
         val rotation = shooter.updateShootOnTheMove(pose, target, result)
 
         assertEquals(0.0, rotation)
@@ -295,6 +298,8 @@ class MarvinMeasuredSotmRegressionTest {
     }
 
     private fun assertShotEquals(expected: ShotResult, actual: ShotResult) {
+        assertTrue(expected.isValid, "Reference shot must be valid")
+        assertTrue(actual.isValid, "Actual shot must be valid")
         assertEquals(expected.virtualTargetX, actual.virtualTargetX, 1e-9)
         assertEquals(expected.virtualTargetY, actual.virtualTargetY, 1e-9)
         assertEquals(expected.robotTargetHeadingRad, actual.robotTargetHeadingRad, 1e-9)

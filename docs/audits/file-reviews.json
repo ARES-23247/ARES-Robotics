@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "1ec323d18e4399062272d661ae18ee82b0790a62a9d4a86c11288f81ae09045c",
+      "sha256": "0539486cd7741e0fc010ac6e93121a9dbb1e30df23ba2d3508bafe57a320f333",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -7627,25 +7627,29 @@
       ]
     },
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinMeasuredSotmRegressionTest.kt": {
-      "sha256": "c02e480d4dd62b3f04cecb47e5679435004bc3057af3b9add71151bd0778a950",
+      "sha256": "5a8fd730e5554ada36a75ed384391f01f34b0afdcbaeaa43d1a5d4ea4afda0d7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "All9 methods/fixtures/assertions read and executed: measured-vs-commanded parity, invalid results, first baseline, duplicate observation, stale/future feedback and recovery, static/cancel reset. Six new failure-before caller regressions; actual PoseUpdate fixtures provide valid observation times.",
+      "scope": "Full nine-test class reviewed again; invalid-motion case now isolates validity from future timestamp rejection, shot equivalence requires valid reference and actual results. Existing acceleration, freshness, recovery and measured-versus-commanded cases retained without duplication. 13 focused and 302 full FRC tests pass.",
       "evidence": [
         "docs/audits/shoot-on-the-move-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json",
+        "docs/audits/frc-shooter-test-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass134-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinShooterSubsystemTest.kt": {
-      "sha256": "71a5d8c747e0e8afebb86e92dc4ed3b509fe3b73411a68785fa00cf2368f3892",
-      "review": "partial",
+      "sha256": "2b879bd483296c41a284d5e726b30acf49484d32103dbe47c0a60415e1887abe",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Inspected existing end-to-end SOTM IO test and fresh observation fixture addition; full test class ran in focused and candidate suites. Other class methods retain pending source review; no whole-file credit from test success.",
+      "scope": "Full four-test class and six recording IO fixtures reviewed: RPM/effort delivery, strict readiness boundary, invalid sensor normalization, nonzero measured-motion lead and invalid-motion IO shutdown, transfer cancellation. Mock time follows sensor timestamps. 13 focused and 302 full FRC tests pass; no physical readiness/timing claim.",
       "evidence": [
         "docs/audits/shoot-on-the-move-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json",
+        "docs/audits/frc-shooter-test-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass134-verified-evidence/summary.json"
       ]
     },
     "docs/audits/shoot-on-the-move-math-audit.md": {
@@ -11178,6 +11182,16 @@
       "scope": "Documentsworldreplacementtransactiondefect/fix,3regressions/302passingFRCtests,fieldchangeallocationboundaryandlegacyviewerpartialstatus; noGUI/HILclaims.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass133-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-shooter-test-isolation-audit.md": {
+      "sha256": "30adcdf4319731ed86b6013280b8f079634699d5a9b0bf54ec6cdd3ba1bc7b16",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass134 report: test-isolation defects, corrected fixtures, full source review scopes and limits. Documentation-link and policy validation.",
+      "evidence": [
+        "docs/audits/frc-shooter-test-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass134-verified-evidence/summary.json"
       ]
     }
   }

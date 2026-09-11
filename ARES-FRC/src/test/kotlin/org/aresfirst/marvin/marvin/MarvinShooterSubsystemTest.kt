@@ -182,6 +182,7 @@ class MarvinShooterSubsystemTest {
 
         // 3. Flywheel within tolerance (error < 150 RPM) -> feeding is authorized
         flywheelIO.measuredVelocityRpm = targetRpm - 50.0
+        RobotClock.useMockTime(1_020L)
         superstructure.readSensors(store, 1_020L)
         assertTrue(store.state.superstructure.marvin.flywheel.allMotorsAtTarget, "Flywheel at target when delta is 50 RPM")
         assertTrue(store.state.superstructure.marvin.isFlywheelAtSpeed, "isFlywheelAtSpeed must be true within tolerance")
@@ -231,6 +232,7 @@ class MarvinShooterSubsystemTest {
         // Just inside boundary: 149.9 RPM error is within tolerance
         flywheelIO.measuredVelocityRpm = targetRpm - 149.9
         flywheelIO.measuredVelocityValid = true
+        RobotClock.useMockTime(1_020L)
         superstructure.readSensors(store, 1_020L)
         assertTrue(store.state.superstructure.marvin.flywheel.allMotorsAtTarget, "149.9 RPM error is within 150 RPM tolerance")
         assertTrue(store.state.superstructure.marvin.isFlywheelAtSpeed)
@@ -238,6 +240,7 @@ class MarvinShooterSubsystemTest {
         // Invalid sensor reading fails closed even if numeric RPM matches target perfectly
         flywheelIO.measuredVelocityRpm = targetRpm
         flywheelIO.measuredVelocityValid = false
+        RobotClock.useMockTime(1_040L)
         superstructure.readSensors(store, 1_040L)
         assertFalse(store.state.superstructure.marvin.flywheel.velocityValid)
         assertEquals(0.0, store.state.superstructure.marvin.flywheel.velocityRpm, "Invalid velocity is zeroed by reducer")
@@ -275,8 +278,11 @@ class MarvinShooterSubsystemTest {
         val pose = Pose2d(0.0, 0.0, Rotation2d(-Math.PI / 2.0))
 
         store.dispatch(com.areslib.action.RobotAction.PoseUpdate(pose.x, pose.y, pose.heading.radians,
-            com.areslib.util.RobotClock.currentTimeMillis(), isExternalEstimate = true))
+            RobotClock.currentTimeMillis(), xVelocityMetersPerSecond = 1.0,
+            isExternalEstimate = true))
         shooter.updateShootOnTheMove(pose, target, shotResult)
+        assertTrue(shotResult.isValid)
+        assertTrue(shotResult.virtualTargetX < target.x, "Positive field X motion requires opposite lead")
         val targetRpm = shotResult.targetFlywheelRpm
         assertTrue(targetRpm > 100.0)
         assertEquals(targetRpm, store.state.superstructure.marvin.flywheel.targetVelocityRpm)
@@ -285,6 +291,7 @@ class MarvinShooterSubsystemTest {
         assertEquals(targetRpm, flywheelIO.velocityRpmCommand, 1e-4)
 
         // When measured motion becomes invalid, SOTM stops flywheel and cancels transfer
+        RobotClock.useMockTime(1_020L)
         store.dispatch(
             com.areslib.action.RobotAction.PoseUpdate(
                 xMeters = 0.0,
@@ -297,7 +304,10 @@ class MarvinShooterSubsystemTest {
             )
         )
 
+        assertEquals(RobotClock.currentTimeMillis(), store.state.drive.poseEstimator.lastObservationTimestampMs)
+        assertFalse(store.state.drive.measuredMotionValid)
         shooter.updateShootOnTheMove(pose, target, shotResult)
+        assertFalse(shotResult.isValid)
         assertFalse(store.state.superstructure.marvin.flywheelActive)
         assertEquals(0.0, store.state.superstructure.marvin.flywheel.targetVelocityRpm)
 
