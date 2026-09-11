@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "10ef60f40f7e51873bc634e12398a278f389b4e0bff8c3f202a6490e2a21c352",
+      "sha256": "4b1f8e90fe4229dc5f6c5f92972c4bc52074e255db7d6a444932caba72e7ec4c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11596,13 +11596,15 @@
       ]
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/SessionTelemetryModels.kt": {
-      "sha256": "4440b05155673cde38832d887a4e0938d50e99905f44fc6a09dd8a917e6671e5",
-      "review": "partial",
+      "sha256": "ed555b34c056f360cc6c202a883d850e1a4a13a340b59dc1f374fe573314d3ab",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "All206 lines read. Timestamp conversion and TelemetryFrame invariants reviewed: bounded exactms-to-us, nonnegative same-millisecond explicitus and sampleOrder. Legacy/default and precise/text JSON roundtrip plus invalid decoding verified;25 shared tests pass. Remaining: simulation external-update gating, diagnostic key validation, alert/threshold ranges and summary/trajectory consumer compatibility.",
+      "scope": "Full declarations and executable contracts reviewed: pass143 timestamp arithmetic/JSON invariants; pass146 canonical diagnostic key guard, finite value/session guards and session/summary simulation predicates. DTO units/defaults read; consumer physical validation and existing malformed database repair excluded.",
       "evidence": [
         "docs/audits/studio-telemetry-timestamp-contract-audit.md",
-        "ARESLib-Kotlin/build/audit-pass143-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass143-verified-evidence/summary.json",
+        "docs/audits/studio-session-model-validation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass146-verified-evidence/"
       ]
     },
     "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/TelemetryFrameTimestampTest.kt": {
@@ -11692,6 +11694,46 @@
       "evidence": [
         "docs/audits/studio-integration-hash-audit.md",
         "ARESLib-Kotlin/build/audit-pass145-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/SessionModelContractTest.kt": {
+      "sha256": "d54584658443ee3dcc9383cbdce3fe6e4220a15bf01d86eeb78967fd80c088e5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: constructor and JSON normalized-empty-key rejection, finite diagnostic/text/Unicode contracts and both serialized simulation predicates. Before-fix regression failed on double slash; full Studio suites pass after correction.",
+      "evidence": [
+        "docs/audits/studio-session-model-validation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass146-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/shared/build.gradle.kts": {
+      "sha256": "c5446e75e1b001a869925ec0e3b3b6bce7b922878f49d6b4e7b1c54d2091fcb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full 14-line shared build review: inherited plugins, release-selected BOM and exported core/schema APIs, internal serializer and test-only Kotlin test. Full shared/gateway/app compile/test passes against unchanged isolated candidate; broader root launch/release mechanics excluded.",
+      "evidence": [
+        "docs/audits/studio-session-model-validation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass146-verified-evidence/"
+      ]
+    },
+    "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/ModelPackageBoundaryTest.kt": {
+      "sha256": "74f371bea01dfae12dd8d626c0abf16f347f2c0de7cd9468c47aa80f3e4c4261",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source-policy test review and passing execution: root/module path fallback, missing-source failure, unqualified typealias-line guard in Models.kt. Narrow textual check, not exhaustive Kotlin alias analysis.",
+      "evidence": [
+        "docs/audits/studio-session-model-validation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass146-verified-evidence/"
+      ]
+    },
+    "docs/audits/studio-session-model-validation-audit.md": {
+      "sha256": "06d6bc7100fc0e02b739742d4d98ea6c8be4da0cb93f7e613034859a6d45c93e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed report against source, before-fix regression and full test XML; limitations include existing malformed database rows, consumer physical validation and no live external actions.",
+      "evidence": [
+        "docs/audits/studio-session-model-validation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass146-verified-evidence/"
       ]
     }
   }

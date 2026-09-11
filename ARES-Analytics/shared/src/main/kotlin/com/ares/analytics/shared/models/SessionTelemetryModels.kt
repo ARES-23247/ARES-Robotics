@@ -1,5 +1,6 @@
 package com.ares.analytics.shared.models
 
+import com.ares.analytics.shared.TelemetryMetricCatalog
 import kotlinx.serialization.Serializable
 
 /** Latest supported instant (2100-01-01 UTC), also suitable for monotonic robot timelines. */
@@ -135,7 +136,7 @@ data class AnalysisDiagnostic(
 ) {
     init {
         require(sessionId.isNotBlank()) { "Analysis diagnostic sessionId must not be blank" }
-        require(key.removePrefix("/").isNotBlank()) { "Analysis diagnostic key must not be blank" }
+        require(TelemetryMetricCatalog.normalizeTopic(key).isNotBlank()) { "Analysis diagnostic key must not be blank" }
         require(value.isFinite()) { "Analysis diagnostic value must be finite" }
     }
 }
