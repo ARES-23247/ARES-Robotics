@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "b400984a52f6e734222d4c3a032829257299983dedcd535e0d8dfd663d7bac20",
+      "sha256": "12ea612837b57fbcbb4a0e98f489696f4d1048d4f58eb9b1696b220af5b4b5b0",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12640,6 +12640,46 @@
       "evidence": [
         "docs/audits/ftc-capability-policy-audit.md",
         "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/java/org/firstinspires/ftc/teamcode/AutoToTeleOpTransitionTest.kt": {
+      "sha256": "28f6036f3aeb2cc2ea7a9bea4a58b6fc6fa8b0c8202c6b6831351775cf411131",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full rewritten test review: real shared init/start restoration, invalid stale storage, latest storage, real season calibration startup and slew setup. Mock robot construction and SDK inputs; global state restored. Five focused and 128 full FTC tests pass.",
+      "evidence": [
+        "docs/audits/ftc-opmode-startup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESMecanumTeleOp.kt": {
+      "sha256": "7b8998e77830ef64c14c4e3f108bd9afd6e57d55015383572646bd52ae8fbbfd",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Complete static read and real init/init_loop/start exercised with mocked robot construction. Startup slew and absence of calibration enable verified. Active loop drive arbitration, heading toggle, reset/alliance buttons and stop/fault integration remain open.",
+      "evidence": [
+        "docs/audits/ftc-opmode-startup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESTuningTeleOp.kt": {
+      "sha256": "ea9aa55039c81a0696b91f912e9380e0aed74a58d1e80131e6e6b1116caa7afc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Complete static read and real init/init_loop/start exercised with mocked robot construction. Calibration starts only after Start; slew configured. Armed calibration versus manual drive active-loop arbitration, buttons, freshness/stop/fault integration remain open.",
+      "evidence": [
+        "docs/audits/ftc-opmode-startup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-opmode-startup-audit.md": {
+      "sha256": "4870e60b2da264523952c0b6b1074868cc3c5445348d66ee636eb139671dd02e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against source and focused/full test evidence; fixture failures distinguished from production findings, physical and active-loop limits explicit.",
+      "evidence": [
+        "docs/audits/ftc-opmode-startup-audit.md",
+        "ARESLib-Kotlin/build/audit-pass170-verified-evidence/summary.json"
       ]
     }
   }
