@@ -70,7 +70,7 @@ fun validateGuidedFirstRoutinePlan(
             add("$label must use finite X, Y, and heading values.")
             return
         }
-        if (pose != clampRoutinePose(pose, league, dimensions)) {
+        if (!routinePoseFitsField(pose, league, dimensions)) {
             add("$label would place part of the robot outside the field boundary.")
         }
     }
@@ -136,6 +136,12 @@ fun defaultRoutineStep(
         conditionKey ?: "select.condition",
         whenTrue = listOf(RoutineStep.wait(0.25))
     )
+}
+
+private fun routinePoseFitsField(pose: RoutinePose, league: League, dimensions: RobotDimensions): Boolean {
+    if (!pose.xMeters.isFinite() || !pose.yMeters.isFinite() || !pose.headingRadians.isFinite()) return false
+    val bounds = legalCenterBounds(league, dimensions, pose.headingRadians)
+    return bounds.canFit && pose.xMeters in bounds.minX..bounds.maxX && pose.yMeters in bounds.minY..bounds.maxY
 }
 
 fun clampRoutinePose(pose: RoutinePose, league: League, dimensions: RobotDimensions): RoutinePose {
@@ -276,7 +282,7 @@ fun routineEditorValidation(
             if (entry.routineId != routine.documentId) {
                 add(routineIssue(routine, "autonomousEntry.routineId", "wrong_routine", "Autonomous choice points to another routine"))
             }
-            if (entry.startingPose != clampRoutinePose(entry.startingPose, league, dimensions)) {
+            if (!routinePoseFitsField(entry.startingPose, league, dimensions)) {
                 add(routineIssue(routine, "autonomousEntry.startingPose", "robot_outside_field", "Starting robot footprint crosses the field boundary"))
             }
         }
@@ -297,7 +303,7 @@ private fun validateStepFields(
     steps.forEach { step ->
         val stepPath = "$path/${step.stepId}"
         step.drive?.let { drive ->
-            if (drive.target != clampRoutinePose(drive.target, league, dimensions)) {
+            if (!routinePoseFitsField(drive.target, league, dimensions)) {
                 issues += routineIssue(routine, "$stepPath.drive.target", "robot_outside_field", "Drive goal robot footprint crosses the field boundary")
             }
             drive.markers.forEachIndexed { index, marker ->

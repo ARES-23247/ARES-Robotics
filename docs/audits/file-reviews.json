@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "712f3c228297cf3171e6915eea0ecbe09f776eef14a173a1af23090f4bc9ce81",
+      "sha256": "1b1daccae7d233e4d4b0e33172d541b5ffbe7791d74760355f41bdf21bbe5c8a",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12274,6 +12274,56 @@
       "evidence": [
         "docs/audits/studio-field-eraser-audit.md",
         "ARESLib-Kotlin/build/audit-pass160-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/pathing/AutoFieldBounds.kt": {
+      "sha256": "d90c860b248bf051ec013a44cae82f3fa5f15f6ee834c28f55caab60cbaffa5e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source: dimension normalization/defaults, rotated rectangular projection, league coordinate extents, feasibility flag and finite editor fallback. Independent four-corner tests all leagues/headings, impossible and exact-fit cases pass. Fixed league dimensions/normalized editor footprint only, not physical hardware or custom-field validation.",
+      "evidence": [
+        "docs/audits/studio-routine-footprint-feasibility-audit.md",
+        "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutineEditorModel.kt": {
+      "sha256": "8a98d59b5bf469f714287ad1943dba901a7e82fbe18b1df90f24be1d6b1e853a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass161 traced guided default/clamp callers and guided/routine pose validation; fix impossible-footprint acceptance and nonfinite autonomous starts by explicit finite/feasibility/range checks. Broader tree mutation, execution ordering, argument/catalog validation remain open.",
+      "evidence": [
+        "docs/audits/studio-routine-footprint-feasibility-audit.md",
+        "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/pathing/AutoFieldBoundsTest.kt": {
+      "sha256": "a753371d9a47f64dab7dbba6dbd2259521c76d3ee6867c2cea1b00cc9f9e8702",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test source: independent rotated-corner extremes for all leagues, orientation feasibility/exact fit/fallback, normalized dimensions/defaults/nonfinite heading handling.",
+      "evidence": [
+        "docs/audits/studio-routine-footprint-feasibility-audit.md",
+        "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/routine/RoutineFootprintAuditTest.kt": {
+      "sha256": "1551b8d6542e9471e21cc89c69a2dc28b2f259247d3a276ffe8e0932c2d36561",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test source: oversized guided starts/goals, routine start/drive footprint errors and each nonfinite autonomous starting-pose component. All three failed before fix.",
+      "evidence": [
+        "docs/audits/studio-routine-footprint-feasibility-audit.md",
+        "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-routine-footprint-feasibility-audit.md": {
+      "sha256": "7d7b2cdb9a33cdd7feee851c30db52e34abfe47e895f22095e3a8c82295e2191",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against three before failures, 14 focused tests, full app XML, source call sites and policy/link results; fixed-field/editor and unreviewed routine scope explicit.",
+      "evidence": [
+        "docs/audits/studio-routine-footprint-feasibility-audit.md",
+        "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json"
       ]
     }
   }

@@ -40,10 +40,12 @@ data class AutoCenterBounds(
     val minX: Double,
     val maxX: Double,
     val minY: Double,
-    val maxY: Double
+    val maxY: Double,
+    /** False when no center can keep this footprint inside the field. */
+    val canFit: Boolean = true
 )
 
-/** Exact legal center bounds for a rectangular robot at [headingRadians]. */
+/** Center bounds for a normalized robot; impossible axes use a centered editor fallback and [AutoCenterBounds.canFit] is false. */
 fun legalCenterBounds(
     league: League,
     dimensions: RobotDimensions,
@@ -53,36 +55,34 @@ fun legalCenterBounds(
     val heading = headingRadians.takeIf(Double::isFinite) ?: 0.0
     val halfLength = robot.lengthMeters / 2.0
     val halfWidth = robot.widthMeters / 2.0
-    val projectedX = abs(cos(heading)) * halfLength + abs(sin(heading)) * halfWidth
-    val projectedY = abs(sin(heading)) * halfLength + abs(cos(heading)) * halfWidth
-
-    val (xBounds, yBounds) = when (league) {
+    val c = abs(cos(heading))
+    val s = abs(sin(heading))
+    val projectedX = c * halfLength + s * halfWidth
+    val projectedY = s * halfLength + c * halfWidth
+    val field = when (league) {
         League.FTC -> {
             val halfField = CoordinateTransformers.FTC_FIELD_SIZE / 2.0
-            boundedOrCentered(-halfField + projectedX, halfField - projectedX, 0.0) to
-                boundedOrCentered(-halfField + projectedY, halfField - projectedY, 0.0)
+            AutoCenterBounds(-halfField, halfField, -halfField, halfField)
         }
-        League.FRC -> boundedOrCentered(
-            projectedX,
-            CoordinateTransformers.FRC_FIELD_LENGTH - projectedX,
-            CoordinateTransformers.FRC_FIELD_LENGTH / 2.0,
-        ) to boundedOrCentered(
-            projectedY,
-            CoordinateTransformers.FRC_FIELD_WIDTH - projectedY,
-            CoordinateTransformers.FRC_FIELD_WIDTH / 2.0,
-        )
-        League.XRP -> {
-            val halfLength = XRP_FIELD_LENGTH_METERS / 2.0
-            val halfWidth = XRP_FIELD_WIDTH_METERS / 2.0
-            boundedOrCentered(-halfLength + projectedX, halfLength - projectedX, 0.0) to
-                boundedOrCentered(-halfWidth + projectedY, halfWidth - projectedY, 0.0)
-        }
+        League.FRC -> AutoCenterBounds(0.0, CoordinateTransformers.FRC_FIELD_LENGTH,
+            0.0, CoordinateTransformers.FRC_FIELD_WIDTH)
+        League.XRP -> AutoCenterBounds(-XRP_FIELD_LENGTH_METERS / 2.0, XRP_FIELD_LENGTH_METERS / 2.0,
+            -XRP_FIELD_WIDTH_METERS / 2.0, XRP_FIELD_WIDTH_METERS / 2.0)
     }
-    return AutoCenterBounds(xBounds.first, xBounds.second, yBounds.first, yBounds.second)
+    val minX = field.minX + projectedX
+    val maxX = field.maxX - projectedX
+    val minY = field.minY + projectedY
+    val maxY = field.maxY - projectedY
+    val centerX = (field.minX + field.maxX) / 2.0
+    val centerY = (field.minY + field.maxY) / 2.0
+    return AutoCenterBounds(
+        if (minX <= maxX) minX else centerX,
+        if (minX <= maxX) maxX else centerX,
+        if (minY <= maxY) minY else centerY,
+        if (minY <= maxY) maxY else centerY,
+        canFit = minX <= maxX && minY <= maxY,
+    )
 }
-
-private fun boundedOrCentered(min: Double, max: Double, center: Double): Pair<Double, Double> =
-    if (min <= max) min to max else center to center
 
 private const val XRP_FIELD_LENGTH_METERS = 2.54
 private const val XRP_FIELD_WIDTH_METERS = 1.4224
