@@ -1,4 +1,4 @@
-# Mecanum shutdown and encoder rollover audit — pass 83
+# Mecanum shutdown and encoder rollover audit â€” pass 83
 
 This pass continues the lifecycle and counter boundaries identified in pass 82. It traces direct
 drive-facade close, registry close, subsequent output/recovery calls, neutral-write failure and
@@ -43,5 +43,29 @@ physical actuator stop guarantee or complete monorepo review is claimed by these
 
 Eight regression methods failed before the corresponding fixes: five shutdown methods and three
 rollover methods. Preserved logs/XML are under `ARESLib-Kotlin/build/audit-pass83-*-before.*`.
-Initial focused tests and API verification passed; full module and frozen-candidate validation,
-source identity and ledger reconciliation are pending.
+All 249 FTC hardware tests and API verification passed before freezing. The five affected classes
+account for 74 methods: 40 calibration, 14 encoder feedback, six encoder timing, six shutdown and
+eight drive facade tests. Selected evidence comes from the full module run after the final test
+edits and is copied under `ARESLib-Kotlin/build/audit-pass83-focused-evidence/`.
+
+Source `5fbd1b3ba7c1cd2044e9ba60ebd7f3377456384f`; library tree `cbfd656216bae2194369e088140c565c3214314a`.
+Candidate `17.0.3-rc.cbfd656216ba` was published only to the local validation repository.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 1918 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project
+verification, FTC assembly, Studio Kover/version/file-size checks and monorepo policy passed.
+Gradle reused unchanged valid outputs. The six Studio skips remain the three conditional fresh-template
+checks, native file chooser, physical dashboard and optional performance baseline. No new standalone
+dashboard benchmark or usable-window check was performed.
+
+Copied XML, manifests, log hashes and candidate BOM identity are under
+`ARESLib-Kotlin/build/audit-pass83-verified-evidence/summary.json`. Whole-monorepo review remains active;
+passing these suites does not account for unread files.
