@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "454f53c11b800b6cd0934993e61f9c9bc24e1dd8a7715f2687909ab866d3b043",
+      "sha256": "ce49e6de34b0ed0312783f5ae0c32b9273cd266e6e2cbd8de7b11cd9eeb00ff3",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -7248,14 +7248,16 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/robot/FrcLocalizationCalibrationControls.kt": {
-      "sha256": "3c9df351ddf9b342b314c7116601ae380712bcd8de5920b7f8db49dd09f6ac1d",
+      "sha256": "6cb05881ec858138fdd1d741793a641160e8aec6fc343a663e4f7d8cf589c2bc",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full edge-map and telemetry wrapper read; production caller test lifecycle traced. Explicit neutral axes now feed session gate, readiness/pending state published; full FRC candidate compilation/tests pass. Direct controller edge integration, simultaneous edit/checkpoint requests and mode transition behavior are not directly exercised by these session fixtures.",
+      "scope": "Physical Back/Start edges remain tracked while homing suppresses actions; HAL input and real session regressions cover held-button homing release, re-press, A/POV edge behavior and truth-edit checkpoint cancellation. Full wrapper and Test-mode caller read. Other mappings, fusion switching and mode transitions are not exhaustively exercised.",
       "evidence": [
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
+        "docs/audits/frc-calibration-button-edges-audit.md",
+        "ARESLib-Kotlin/build/audit-pass179-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/docs/localization-calibration.md": {
@@ -12918,6 +12920,26 @@
       "evidence": [
         "docs/audits/ftc-calibration-supervisor-audit.md",
         "ARESLib-Kotlin/build/audit-pass178-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/robot/FrcLocalizationCalibrationControlsTest.kt": {
+      "sha256": "205d0fcc40d5beaa4758e7021ec7bc2af69f89de5777bc3e575098568ea7f630",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Three HAL controller and real-session tests with owned temporary recorder and DriverStation reset; two observed pre-fix failures and all focused cases passed.",
+      "evidence": [
+        "docs/audits/frc-calibration-button-edges-audit.md",
+        "ARESLib-Kotlin/build/audit-pass179-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-calibration-button-edges-audit.md": {
+      "sha256": "8646305eb18574d2f367547890052673288a2da881674b5d1e160c77093e9006",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audit evidence and limitations checked against observed regression results and affected source.",
+      "evidence": [
+        "docs/audits/frc-calibration-button-edges-audit.md",
+        "ARESLib-Kotlin/build/audit-pass179-verified-evidence/summary.json"
       ]
     }
   }

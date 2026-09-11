@@ -38,8 +38,10 @@ class FrcLocalizationCalibrationControls(
         }
         if (rising(2, controller.xButton)) session.markStart(timestampMs())
         if (rising(3, controller.yButton)) session.markEnd(timestampMs())
-        if (rising(4, controller.backButton && !homingComboPressed)) session.zeroTruth()
-        if (rising(5, controller.startButton && !homingComboPressed)) session.seedPoseToTruth(timestampMs())
+        // Track physical edges even while homing suppresses their calibration actions.
+        // Releasing the combo must not turn a still-held button into a new command.
+        if (rising(4, controller.backButton) && !homingComboPressed) session.zeroTruth()
+        if (rising(5, controller.startButton) && !homingComboPressed) session.seedPoseToTruth(timestampMs())
         if (rising(6, controller.leftBumperButton)) session.adjustTruth(deltaHeading = -Math.toRadians(5.0))
         if (rising(7, controller.rightBumperButton)) session.adjustTruth(deltaHeading = Math.toRadians(5.0))
         if (rising(8, pov == 0)) session.adjustTruth(deltaY = 0.05)
