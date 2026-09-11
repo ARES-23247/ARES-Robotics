@@ -134,9 +134,40 @@ class CachedHardwareContractTest {
         assertEquals(0.62, delegate.rawPosition)
     }
 
+    @Test
+    fun `failed motor write forces retry even when returning to the cached command`() {
+        val delegate = CountingMotor(0.0)
+        val cached = CachedDcMotorEx(delegate)
+        cached.power = 0.0
+        delegate.failAfterWrite = true
+        assertFailsWith<IllegalStateException> { cached.power = 0.6 }
+        assertEquals(0.0, cached.power)
+        assertEquals(0, delegate.readCount)
+        delegate.failAfterWrite = false
+        cached.power = 0.0
+        assertEquals(0.0, delegate.rawPower)
+        assertEquals(3, delegate.writeCount)
+    }
+
+    @Test
+    fun `failed servo write forces retry even when returning to the cached command`() {
+        val delegate = CountingServo(0.2)
+        val cached = CachedServo(delegate)
+        cached.position = 0.2
+        delegate.failAfterWrite = true
+        assertFailsWith<IllegalStateException> { cached.position = 0.6 }
+        assertEquals(0.2, cached.position)
+        assertEquals(0, delegate.readCount)
+        delegate.failAfterWrite = false
+        cached.position = 0.2
+        assertEquals(0.2, delegate.rawPosition)
+        assertEquals(3, delegate.writeCount)
+    }
+
     private class CountingMotor(initialPower: Double) : DcMotorEx {
         var readCount = 0
         var writeCount = 0
+        var failAfterWrite = false
         var rawPower = initialPower
 
         override var power: Double
@@ -147,6 +178,7 @@ class CachedHardwareContractTest {
             set(value) {
                 writeCount++
                 rawPower = value
+                check(!failAfterWrite) { "write acknowledgement lost" }
             }
 
         override var direction: DcMotorSimple.Direction = DcMotorSimple.Direction.FORWARD
@@ -165,6 +197,7 @@ class CachedHardwareContractTest {
     private class CountingServo(initialPosition: Double) : Servo {
         var readCount = 0
         var writeCount = 0
+        var failAfterWrite = false
         var rawPosition = initialPosition
 
         override var position: Double
@@ -175,6 +208,7 @@ class CachedHardwareContractTest {
             set(value) {
                 writeCount++
                 rawPosition = value
+                check(!failAfterWrite) { "write acknowledgement lost" }
             }
     }
 }

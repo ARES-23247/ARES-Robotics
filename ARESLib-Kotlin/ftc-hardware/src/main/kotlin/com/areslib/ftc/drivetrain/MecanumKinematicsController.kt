@@ -50,6 +50,11 @@ class MecanumKinematicsController(
      */
     fun updateTuning(currentTuning: TuningState) {
         val driveTuning = currentTuning.drive
+        // A rejected hardware transaction must not publish the remaining software settings.
+        val gains = driveTuning.ftc.motorGains
+        if (gains != null) {
+            mecanumIO.updateMotorGains(gains.kP, gains.kI, gains.kD, gains.kF)
+        }
         kinematics = MecanumKinematics(driveTuning.trackWidthMeters, driveTuning.wheelBaseMeters)
         mecanumIO.kS = driveTuning.driveFeedforward.kS
         mecanumIO.kV = driveTuning.driveFeedforward.kV
@@ -58,10 +63,6 @@ class MecanumKinematicsController(
         mecanumIO.ticksPerMeter = driveTuning.ftc.ticksPerMeter
         if (driveTuning.driveFeedforward.kV > 1e-4) {
             mecanumIO.maxWheelSpeedMetersPerSecond = 1.0 / driveTuning.driveFeedforward.kV
-        }
-        val gains = driveTuning.ftc.motorGains
-        if (gains != null) {
-            mecanumIO.updateMotorGains(gains.kP, gains.kI, gains.kD)
         }
 
         val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond

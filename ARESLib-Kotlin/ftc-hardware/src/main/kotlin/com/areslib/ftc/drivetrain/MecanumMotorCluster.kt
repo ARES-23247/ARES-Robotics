@@ -4,7 +4,6 @@ import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
-import com.qualcomm.robotcore.hardware.PIDFCoefficients
 import com.areslib.ftc.hardware.CachedDcMotorEx
 import com.areslib.hardware.HardwareRegistry
 import com.areslib.util.RobotClock
@@ -61,14 +60,18 @@ class MecanumMotorCluster(
 ) : AutoCloseable {
 
 
+    private val motors = resolveMecanumMotors(hardwareMap, arrayOf(flName, frName, rlName, rrName))
+        .map<DcMotorEx, DcMotorEx> { CachedDcMotorEx(it) }.toTypedArray()
+    private val nativeConfiguration: MecanumNativeConfiguration?
+
     /** Front-left `DcMotorEx` hardware wrapper. */
-    val frontLeft: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, flName))
+    val frontLeft: DcMotorEx = motors[0]
     /** Front-right `DcMotorEx` hardware wrapper. */
-    val frontRight: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, frName))
+    val frontRight: DcMotorEx = motors[1]
     /** Rear-left `DcMotorEx` hardware wrapper. */
-    val rearLeft: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, rlName))
+    val rearLeft: DcMotorEx = motors[2]
     /** Rear-right `DcMotorEx` hardware wrapper. */
-    val rearRight: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, rrName))
+    val rearRight: DcMotorEx = motors[3]
 
     /** Front-left motor IO hardware cache. */
     val flIO = EstimateMotorIO(frontLeft)
@@ -88,42 +91,64 @@ class MecanumMotorCluster(
         private set
 
     init {
-        frontLeft.direction = flDirection
-        frontRight.direction = frDirection
-        rearLeft.direction = rlDirection
-        rearRight.direction = rrDirection
-
-        frontLeft.zeroPowerBehavior = zeroPowerBehavior
-        frontRight.zeroPowerBehavior = zeroPowerBehavior
-        rearLeft.zeroPowerBehavior = zeroPowerBehavior
-        rearRight.zeroPowerBehavior = zeroPowerBehavior
-
+        try {
+            check(applyNeutral()) { "Failed to neutralize drivetrain before configuration" }
+            frontLeft.direction = flDirection
+            frontRight.direction = frDirection
+            rearLeft.direction = rlDirection
+            rearRight.direction = rrDirection
+            for (motor in motors) {
+                motor.zeroPowerBehavior = zeroPowerBehavior
+                motor.mode = if (useClosedLoopVelocity) DcMotor.RunMode.RUN_USING_ENCODER
+                    else DcMotor.RunMode.RUN_WITHOUT_ENCODER
+            }
+            nativeConfiguration = if (useClosedLoopVelocity) MecanumNativeConfiguration(motors) else null
+            if (nativeConfiguration != null &&
+                (motorKp != null || motorKi != null || motorKd != null || motorKf != null)) {
+                val kp = motorKp ?: 0.0
+                val ki = motorKi ?: 0.0
+                val kd = motorKd ?: 0.0
+                val kf = motorKf ?: 0.0
+                require(MecanumNativeConfiguration.valid(kp, ki, kd, kf)) { "Motor gains must be finite" }
+                nativeConfiguration.apply(kp, ki, kd, kf)
+            }
+            // Mode/direction changes invalidate the power cache. Confirm neutral in the final mode.
+            check(applyNeutral()) { "Failed to neutralize configured drivetrain" }
+        } catch (failure: Exception) {
+            if (!applyNeutral()) failure.addSuppressed(IllegalStateException("Drivetrain cleanup could not confirm neutral"))
+            flIO.close()
+            frIO.close()
+            rlIO.close()
+            rrIO.close()
+            throw failure
+        }
+        // Do not expose or start polling a partially configured drivetrain.
         hardwareRegistry.registerMotor(flName, flIO)
         hardwareRegistry.registerMotor(frName, frIO)
         hardwareRegistry.registerMotor(rlName, rlIO)
         hardwareRegistry.registerMotor(rrName, rrIO)
-
         hardwareRegistry.registerSyncPolledDevice(flIO)
         hardwareRegistry.registerSyncPolledDevice(frIO)
         hardwareRegistry.registerSyncPolledDevice(rlIO)
         hardwareRegistry.registerSyncPolledDevice(rrIO)
+    }
 
-        if (useClosedLoopVelocity) {
-            listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
-                motor.mode = DcMotor.RunMode.RUN_USING_ENCODER
-            }
-            if (motorKp != null || motorKi != null || motorKd != null || motorKf != null) {
-                val coefficients = PIDFCoefficients(
-                    motorKp ?: 0.0, motorKi ?: 0.0, motorKd ?: 0.0, motorKf ?: 0.0
-                )
-                listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
-                    motor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients)
-                }
-            }
-        } else {
-            listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
-                motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
-            }
+    /** Applies native gains while neutral; null F preserves each channel's last accepted F. */
+    internal fun updateNativeGains(kp: Double, ki: Double, kd: Double, kf: Double? = null): Boolean {
+        check(!closed) { "Cannot configure a closed drivetrain" }
+        val configuration = checkNotNull(nativeConfiguration) { "Native velocity mode is disabled" }
+        try {
+            require(MecanumNativeConfiguration.valid(kp, ki, kd, kf)) { "Motor gains must be finite" }
+            if (configuration.matches(kp, ki, kd, kf)) return false
+            configuration.valid = false
+            setCachedPowers(0.0, 0.0, 0.0, 0.0)
+            check(applyNeutral()) { "Cannot configure motors before neutral succeeds" }
+            configuration.apply(kp, ki, kd, kf)
+            return true
+        } catch (failure: Exception) {
+            configuration.valid = false
+            latchOutputFault()
+            throw failure
         }
     }
 
@@ -211,7 +236,7 @@ class MecanumMotorCluster(
 
     /** Clears the latch only after all four motors accept an explicit neutral command. */
     fun recoverWithNeutral(): Boolean {
-        if (closed) {
+        if (closed || nativeConfiguration?.valid == false) {
             safe()
             return false
         }

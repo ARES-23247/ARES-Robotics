@@ -151,14 +151,31 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Dynamically updates motor PID gains across velocity controllers.
+     * Updates the active velocity controller. Native mode preserves each channel's accepted F.
+     * Changed native gains require neutral first; failed updates latch output until repaired and recovered.
      * 
      * @param kp Proportional gain $K_p$.
      * @param ki Integral gain $K_i$.
      * @param kd Derivative gain $K_d$.
      */
     fun updateMotorGains(kp: Double, ki: Double, kd: Double) {
-        feedforward.updateMotorGains(kp, ki, kd)
+        if (useClosedLoopVelocity) configureNativeGains(kp, ki, kd)
+        else feedforward.updateMotorGains(kp, ki, kd)
+    }
+
+    /** Updates native PIDF; software velocity feedback uses PID and the separate chassis feedforward. */
+    fun updateMotorGains(kp: Double, ki: Double, kd: Double, kf: Double) {
+        if (useClosedLoopVelocity) configureNativeGains(kp, ki, kd, kf)
+        else feedforward.updateMotorGains(kp, ki, kd)
+    }
+
+    private fun configureNativeGains(kp: Double, ki: Double, kd: Double, kf: Double? = null) {
+        try {
+            if (motorCluster.updateNativeGains(kp, ki, kd, kf)) feedforward.reset()
+        } catch (failure: Exception) {
+            feedforward.reset()
+            throw failure
+        }
     }
 
     /**

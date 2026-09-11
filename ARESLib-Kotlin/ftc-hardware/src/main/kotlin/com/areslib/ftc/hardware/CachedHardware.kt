@@ -18,7 +18,8 @@ import kotlin.math.abs
  * command, the getter delegates to hardware; after the first command it returns only the cached
  * value and never performs a hardware read until configuration invalidates the cache.
  * Power is clamped to [-1, 1]; non-finite commands neutralize. Configuration changes
- * invalidate the cache so the next explicit command reaches the device.
+ * invalidate the cache so the next explicit command reaches the device. A failed write forces
+ * the next command to reach hardware, even when returning to the last accepted value.
  *
  * @param delegate Underlying FTC SDK [DcMotorEx] hardware instance.
  * @param epsilon Power change threshold tolerance $[0.0, 1.0]$ (default 0.02).
@@ -33,15 +34,18 @@ class CachedDcMotorEx(
     init { require(epsilon in 0.0..1.0) { "Power cache epsilon must be within [0, 1]" } }
 
     private var hasPowerCommand = false
+    private var powerWriteUncertain = false
     private var lastPower = 0.0
 
     override var power: Double
         get() = if (hasPowerCommand) lastPower else delegate.power
         set(value) {
             val command = if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
-            if (!hasPowerCommand || (command != lastPower &&
+            if (!hasPowerCommand || powerWriteUncertain || (command != lastPower &&
                 (command == 0.0 || abs(command - lastPower) >= epsilon))) {
+                powerWriteUncertain = true
                 delegate.power = command
+                powerWriteUncertain = false
                 lastPower = command
                 hasPowerCommand = true
             }
@@ -77,7 +81,8 @@ class CachedDcMotorEx(
  * Prevents redundant servo PWM updates and allocates no objects in the setter. Before the first
  * command, the getter delegates to hardware; afterward it returns only the cached command. The
  * position is clamped to [0, 1]. Non-finite positions are rejected because a servo has
- * no universal neutral position. Device resets invalidate the command cache.
+ * no universal neutral position. Device resets invalidate the command cache; failed writes force
+ * the next command through while getters retain the last accepted value without polling hardware.
  *
  * @param delegate Underlying FTC SDK [Servo] hardware instance.
  * @param epsilon Servo position threshold tolerance $[0.0, 1.0]$ (default 0.005).
@@ -92,6 +97,7 @@ class CachedServo(
     init { require(epsilon in 0.0..1.0) { "Position cache epsilon must be within [0, 1]" } }
 
     private var hasPositionCommand = false
+    private var positionWriteUncertain = false
     private var lastPosition = 0.0
 
     override var position: Double
@@ -99,8 +105,11 @@ class CachedServo(
         set(value) {
             require(value.isFinite()) { "Servo position must be finite" }
             val command = value.coerceIn(0.0, 1.0)
-            if (!hasPositionCommand || (command != lastPosition && abs(command - lastPosition) >= epsilon)) {
+            if (!hasPositionCommand || positionWriteUncertain ||
+                (command != lastPosition && abs(command - lastPosition) >= epsilon)) {
+                positionWriteUncertain = true
                 delegate.position = command
+                positionWriteUncertain = false
                 lastPosition = command
                 hasPositionCommand = true
             }

@@ -17,7 +17,7 @@ import com.areslib.hardware.actuator.*
  *
  * Registration is normally performed once during robot construction. Device collections are
  * copy-on-write/concurrent so telemetry and background polling can inspect them safely, but repeated
- * registration of the same logical name still appends lifecycle entries and should be avoided.
+ * registration of the same logical name replaces its ordered lifecycle entry and cached lookups.
  * Hardware exceptions are isolated during best-effort safety, telemetry, and close passes.
  *
  * The polling daemon services at most one regular and one round-robin device per interval. Polled
@@ -142,8 +142,8 @@ class HardwareRegistry {
 
     /**
      * Registers [device] under [name] for telemetry and lifecycle operations.
-     * Names should be unique; reusing a name replaces map lookup data but does not remove the prior
-     * device from ordered refresh/publish lists.
+     * Names should be unique; reusing a name replaces both map lookup data and the ordered
+     * refresh/publish entry. Separately registered polling and closeable resources retain their ownership.
      */
     @Synchronized
     fun registerDevice(name: String, device: LoggableDevice) {

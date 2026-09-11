@@ -554,6 +554,7 @@ public final class com/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior : j
 public abstract interface class com/qualcomm/robotcore/hardware/DcMotorEx : com/qualcomm/robotcore/hardware/DcMotor {
 	public abstract fun getCurrent (Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;)D
 	public abstract fun getCurrentPosition ()I
+	public fun getPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;
 	public abstract fun getVelocity ()D
 	public fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
 	public abstract fun setVelocity (D)V
@@ -565,6 +566,7 @@ public final class com/qualcomm/robotcore/hardware/DcMotorEx$DefaultImpls {
 	public static fun getDeviceName (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Ljava/lang/String;
 	public static fun getManufacturer (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
 	public static fun getMotorType (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;
+	public static fun getPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;
 	public static fun getVersion (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)I
 	public static fun resetDeviceConfigurationForOpMode (Lcom/qualcomm/robotcore/hardware/DcMotorEx;)V
 	public static fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V

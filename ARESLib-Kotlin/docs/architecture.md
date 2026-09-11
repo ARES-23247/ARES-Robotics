@@ -51,6 +51,14 @@ Do not put FTC SDK, WPILib, CTRE, REV, or Android types in this module.
 
 This module adapts FTC devices to ARESLib contracts. Important boundaries include `FtcBaseRobot`, `FtcMecanumRobot`, `MecanumHardwareIO`, `PinpointIO`, FTC vision adapters, cached hardware wrappers, and bulk sensor readers. `ftc-mocks` is compile-only for production and present at test runtime; it is not shipped as robot hardware code by this module.
 
+In native Mecanum velocity mode, live PID updates configure all four hub channels. The
+three-argument `updateMotorGains` preserves each channel's accepted F coefficient; its four-argument
+overload supplies F explicitly. Changed native settings require neutral first. A failed update
+inhibits output until valid configuration is reapplied and explicit neutral recovery succeeds.
+Unchanged accepted settings perform no coefficient reads or writes. Software velocity mode keeps
+PID feedback separate from chassis feedforward. Motor and servo command caches force a retry
+after uncertain writes, including requests to return to the previously accepted command.
+
 ### `frc-hardware`
 
 This module adapts WPILib and vendor hardware to the same core contracts. It owns `FrcBaseRobot`, `FrcSwerveRobot`, swerve hardware IO, the FRC Limelight adapter, telemetry, and power management. Season classes intentionally live in ARES-FRC, even when they share the `com.areslib.frc` package.
