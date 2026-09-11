@@ -849,10 +849,10 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt": {
-      "sha256": "355796a1505873550df7b8bda972f8e5ecff24a8b2c1faeb15baf919bbee29d2",
+      "sha256": "1d09c12f5eabfab44cadff18f02436510a20330704676bc83cd0aa14ab5f7ed1",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Prior full PID review preserved; full source reread and internal success/failure status paths audited. Valid deadzone zero differs from rejected neutral; reset clears status. Pass58 library/API/consumers passed;95/95 lines,133/140 branches. No public API change.",
+      "scope": "Prior full PID review preserved; full source reread and internal success/failure status paths audited. Valid deadzone zero differs from rejected neutral; reset clears status. Pass58 library/API/consumers passed;95/95 lines,133/140 branches. No public API change. Pass84: Prior full arithmetic review preserved. Reviewed existing status declaration, reset and complete calculate/rejection paths; made existing lastCalculationValid publicly readable with private setter for cross-module composition. Arithmetic unchanged. Four core composition-status methods and full candidate suite passed; FTC finite-PID-overflow regression now neutralizes combined feedforward.",
       "evidence": [
         "docs/audits/pid-controller-audit.md",
         "ARESLib-Kotlin/build/audit-pass12-library.log",
@@ -861,7 +861,10 @@
         "docs/audits/holonomic-control-composition-audit.md",
         "ARESLib-Kotlin/build/audit-pass58-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass58-library.log",
-        "ARESLib-Kotlin/build/audit-pass58-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass58-verified-evidence",
+        "docs/audits/drive-configuration-history-audit.md",
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/feedback/PIDControllerBoundaryTest.kt": {
@@ -3255,10 +3258,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "5cf8c426468b5b13b899df0e3c7aec6deed4dd94da94e98c619b89ac094d9f83",
+      "sha256": "a6e3aac847824369e7f89318559d2574bb34d7c1fd042ece2e74b139f08d7276",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation.",
+      "scope": "Library tree f433673160a3bf61ec21057d90b5a5de41b5c268, source0e101c66, candidate 17.0.3-rc.f433673160a3; full library/API/local publication and serial consumer validation passed. Pass75: Library tree 309e4e975b3b54b36e3fcdf1d4897eab7b30a29d, source dc648502, candidate 17.0.3-rc.309e4e975b3b; full library/API/local publication and serial dependent validation passed. Pass76: Library tree 1ef4aacacf780625240846a18a393e5aee491f55, source bc61b72f, candidate 17.0.3-rc.1ef4aacacf78; full library/API/local publication and serial dependent validation passed. Pass77: Library tree 069e87218ebf7d7abe1cc735bd039f42b4e3856b, source98a46921, candidate 17.0.3-rc.069e87218ebf; full library/API/local candidate publication and serial dependent validation passed. Pass78: Frozen library tree 3324d86a8226cad3a1aff3481f30867759f80224, source f31729ac, candidate 17.0.3-rc.3324d86a8226; library/API/local publication and dependent consumer validation passed. Pass79: Frozen library tree 64ab06568983512c8249f6a849b79a9f27f05d04; candidate 17.0.3-rc.64ab06568983 passed full library/API/local publication and serial consumers. Pass80: Frozen library tree a439d93d6bc4d6704bcb331b8f3d30a54f1d5dfe, candidate 17.0.3-rc.a439d93d6bc4; local publication, API and serial consumers verified. Pass81: Frozen library tree d469573e5f602b12ce9b0d7aee2e7337d6e9a2ca and unique candidate 17.0.3-rc.d469573e5f60 validated by library API/tests/local publication and serial consumers. Pass82: Frozen library tree 6d4b98d3da30ff859c53eda736dd3b0faecab47a and local candidate 17.0.3-rc.6d4b98d3da30 passed dependency-ordered validation. Pass83: Frozen tree cbfd656216bae2194369e088140c565c3214314a and localcandidate 17.0.3-rc.cbfd656216ba passed dependency-ordered validation. Pass84: Frozen tree 4f31ca679d8897fab234951756efbaae70662337 and local candidate 17.0.3-rc.4f31ca679d88 passed dependency-ordered validation.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3418,7 +3421,10 @@
         "ARESLib-Kotlin/build/audit-pass82-focused-evidence/summary.json",
         "docs/audits/mecanum-shutdown-rollover-audit.md",
         "ARESLib-Kotlin/build/audit-pass83-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json",
+        "docs/audits/drive-configuration-history-audit.md",
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -3556,10 +3562,10 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "1e16822f65f2aadafd7a3e353c498a02806980ac64d3bdb26d00d6a70b001d61",
+      "sha256": "8b48f190733d348adfb1c7f219eff7d20a18c8bf2b4d680b271d9c9d88c011a3",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial. Pass78: Only changed vision descriptors reviewed: appended per-axis noise flags and Kotlin default bridge. API check and rebuilt candidate consumers passed. Remaining generated API inventory retains partial scope. Pass80: Generated API artifact compared with compiler output. Intentional ShotResult clear/isValid/setValid additive descriptors reviewed; internal solver absent from public API. Focused and full API checks passed.",
+      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass72: Changed API section checked: only decodeForField and encodeWpilibForField added; existing raw signatures preserved. API check passed. Entire unrelated API inventory remains partial. Pass75: Diff contains only additive ActionLogger.beginMode(String) and logAction(RobotAction,String). Full apiCheck passed. Unrelated API inventory remains partial. Pass76: Diff reviewed: two explicit timing flags in PoseEstimatorState and PoseEstimatorSnapshot, with generated constructor/copy/component/accessor changes only. This changes JVM descriptors, requiring rebuilt consumers; candidate-dependent matrix passed. Unrelated API inventory remains partial. Pass77: Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial. Pass78: Only changed vision descriptors reviewed: appended per-axis noise flags and Kotlin default bridge. API check and rebuilt candidate consumers passed. Remaining generated API inventory retains partial scope. Pass80: Generated API artifact compared with compiler output. Intentional ShotResult clear/isValid/setValid additive descriptors reviewed; internal solver absent from public API. Focused and full API checks passed. Pass84: Reviewed compiler-generated additive PIDController getLastCalculationValid()Z descriptor. No public setter added. Core and FTC API checks passed before freeze and in candidate validation.",
       "evidence": [
         "docs/audits/joystick-conditioning-audit.md",
         "ARESLib-Kotlin/build/audit-pass40-before.log",
@@ -3607,7 +3613,10 @@
         "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
         "docs/audits/shoot-on-the-move-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass80-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass80-focused-evidence/summary.json",
+        "docs/audits/drive-configuration-history-audit.md",
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
       ]
     },
     "docs/audits/joystick-conditioning-audit.md": {
@@ -5417,7 +5426,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "dbbcff0984af2501e471572bd8120b6182d7868bd5e3422886618193c82436cd",
+      "sha256": "c6d4b0c3ecb83ef29d3e5cdf2fb844a0c248eff508bfac4defcfb23f1ca84400",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5451,7 +5460,8 @@
         "docs/audits/shoot-on-the-move-math-audit.md: pass80 file scopes and canonical self-fingerprint refreshed",
         "docs/audits/calibration-executor-audit.md: pass81 scopes and canonical self-fingerprint refreshed",
         "docs/audits/encoder-feedback-audit.md: pass82 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/mecanum-shutdown-rollover-audit.md: pass83 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/mecanum-shutdown-rollover-audit.md: pass83 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/drive-configuration-history-audit.md: pass84 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -7479,42 +7489,51 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumDriveFeedforward.kt": {
-      "sha256": "6211586c615a1e2e96f26462027d3cf5ec8f0fed8cb17da86fff1455c0495483",
-      "review": "partial",
+      "sha256": "3b66f85cf4b930770fef40290e404717b317e0f38c7a591a5b2f1620916cdb87",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Whole class read. Fixed invalid encoder software feedback substitution and invalid conversion acceptance; hub/software feedback require finite observations, missing required feedback yields all-wheel neutral and resets controller/slew/acceleration history. Feedforward-only mode preserves no encoder dependency. Positive conversion oracle and facade integration pass. Corrected documented kV/kA/kS formula and single voltage factor. Remaining configuration, invalid-command/history, mutable constructor-property and gain/update boundaries require focused review; finite conversion division redundancy may be simplified with that batch.",
+      "scope": "Whole class read. Fixed invalid encoder software feedback substitution and invalid conversion acceptance; hub/software feedback require finite observations, missing required feedback yields all-wheel neutral and resets controller/slew/acceleration history. Feedforward-only mode preserves no encoder dependency. Positive conversion oracle and facade integration pass. Corrected documented kV/kA/kS formula and single voltage factor. Remaining configuration, invalid-command/history, mutable constructor-property and gain/update boundaries require focused review; finite conversion division redundancy may be simplified with that batch. Pass84: Completed previously partial configuration/history/property scopes with whole-file review. Required configuration and all coupled inputs validate before calculation; rejected paths reset PID, slew and acceleration history. Gain properties/bulk updates agree, integral-only configuration works, legacy setters forward, unchanged settings preserve history and valid slew changes reuse objects. One SI conversion per wheel, aliased/short buffers, finite voltage saturation and PID validity propagation tested. Twenty-six new regression/boundary/allocation methods and existing suites pass; measured zero bytes over 10000 warmed calculation cycles. Native hub configuration belongs to the still-partial facade/cluster, not this software calculator.",
       "evidence": [
         "docs/audits/encoder-feedback-audit.md",
         "ARESLib-Kotlin/build/audit-pass82-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass82-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass82-focused-evidence/summary.json",
+        "docs/audits/drive-configuration-history-audit.md",
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumMotorCluster.kt": {
-      "sha256": "681bd5b763d78734d229193e9930a3261b92efbca6b47d7032636f0c3aa19488",
+      "sha256": "49ecac0fced6ff207b76ebdda3c6343bcb57fa9280a6b3b97d07d88763c0dc28",
       "review": "partial",
       "validation": "passed",
-      "scope": "Whole class read to trace cached encoder creation/input refresh and four-wheel output. Constructor wraps devices, registers current polling, configures direction/modes/gains; output faults attempt neutral. Close currently closes cached IO without independently proving physical neutral or terminal write inhibition. Next pass must reproduce direct facade/cluster close behavior, failure recovery and input safety dependencies. No full-file validation credit from the existing facade suite. Pass83: Closed direct/registry shutdown defect: terminal flag and fault latch precede all4neutral attempts, cached request/scale clears, cache closure despite failed neutral, directfailure reporting/retry, idempotent confirmed close. Closed recovery and raw/feedforward commands cannot reenergize. Six shutdown tests pass; five failed beforefix. Entireclass read, but construction/configuration and independently mutated motor-scale boundaries remain explicit followups. Registry exception suppression remains its existing best-effort policy; rejected physicalneutral cannot be guaranteed by software.",
+      "scope": "Whole class read to trace cached encoder creation/input refresh and four-wheel output. Constructor wraps devices, registers current polling, configures direction/modes/gains; output faults attempt neutral. Close currently closes cached IO without independently proving physical neutral or terminal write inhibition. Next pass must reproduce direct facade/cluster close behavior, failure recovery and input safety dependencies. No full-file validation credit from the existing facade suite. Pass83: Closed direct/registry shutdown defect: terminal flag and fault latch precede all4neutral attempts, cached request/scale clears, cache closure despite failed neutral, directfailure reporting/retry, idempotent confirmed close. Closed recovery and raw/feedforward commands cannot reenergize. Six shutdown tests pass; five failed beforefix. Entireclass read, but construction/configuration and independently mutated motor-scale boundaries remain explicit followups. Registry exception suppression remains its existing best-effort policy; rejected physicalneutral cannot be guaranteed by software. Pass84: Validated each cached wheel scale once before coupled output and reused that coherent snapshot for exactly one multiplication. Invalid individual/master scales neutralize and latch the whole cluster; valid unequal derating preserved. Previous terminal lifecycle tests still pass. Native hub PID application/retry and constructor initialization rollback remain pending.",
       "evidence": [
         "docs/audits/encoder-feedback-audit.md",
         "ARESLib-Kotlin/build/audit-pass82-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass82-focused-evidence/summary.json",
         "docs/audits/mecanum-shutdown-rollover-audit.md",
         "ARESLib-Kotlin/build/audit-pass83-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json",
+        "docs/audits/drive-configuration-history-audit.md",
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumHardwareIO.kt": {
-      "sha256": "5b9214d7b2ffa9728654099064b7c6cd11ab58e069fa567f7b7b1c53f8ac124f",
+      "sha256": "257e49f0b9fed1d97ae6ca89bc195074b7e30580da62bb3b0485045670140f88",
       "review": "partial",
       "validation": "passed",
-      "scope": "Whole facade read across81/82: construction/configuration delegates, cached scalar/array buffers, input refresh, kinematic drive normalization, voltage/feedforward/PID apply and output safe/recovery. New real-facade test proves encoder failure neutralization without hardware output reads; eight existing facade methods pass. Direct close delegates to cluster without an explicit neutral here; terminal lifecycle and configuration boundaries remain follow-up scope. Pass83: Verified delegated directclose and registryclose now neutralize through cluster, raw/feedforward commands remainterminal afterclose and recovery refusesreopen. Eight priorfacade tests retained plus newshutdownintegration. Other configuration boundaries remain partial; no new facade runtime changes thispass.",
+      "scope": "Whole facade read across81/82: construction/configuration delegates, cached scalar/array buffers, input refresh, kinematic drive normalization, voltage/feedforward/PID apply and output safe/recovery. New real-facade test proves encoder failure neutralization without hardware output reads; eight existing facade methods pass. Direct close delegates to cluster without an explicit neutral here; terminal lifecycle and configuration boundaries remain follow-up scope. Pass83: Verified delegated directclose and registryclose now neutralize through cluster, raw/feedforward commands remainterminal afterclose and recovery refusesreopen. Eight priorfacade tests retained plus newshutdownintegration. Other configuration boundaries remain partial; no new facade runtime changes thispass. Pass84: Reviewed all new reset/validation integration: safe/close/raw transition/recovery/zero scale clear history; nonfinite chassis, finite wheel-conversion overflow and invalid master scale latch before normalization. Invalid calculated feedback/configuration neutralizes while allowing fresh startup observations to recover and preserving existing hardware faults. Remaining native hub PID gain routing/retry and construction rollback require dedicated validation; no full-file completion credit.",
       "evidence": [
         "docs/audits/encoder-feedback-audit.md",
         "ARESLib-Kotlin/build/audit-pass82-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass82-focused-evidence/summary.json",
         "docs/audits/mecanum-shutdown-rollover-audit.md",
         "ARESLib-Kotlin/build/audit-pass83-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json",
+        "docs/audits/drive-configuration-history-audit.md",
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/EncoderFeedbackAuditTest.kt": {
@@ -7557,6 +7576,38 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass83-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass83-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumKinematicsController.kt": {
+      "sha256": "67e3ac77518d3f1aef028ae1bdbfe1db13cb949f8dae0d5748ec387f7fd1b06e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read entire tuning/update controller while tracing native gain ownership. updateTuning rebuilds geometry, assigns feedforward/slew/ticks, derives max speed from reciprocal kV, forwards P/I/D but not F, and updates drive limits. updateSubsystems delegates calibration before ordinary drive. Geometry validity, repeated rebuilds, gain removal/F routing, partial update and caller retry/neutral behavior still require dedicated regression evidence. No whole-file completion credit from consumer suite success.",
+      "evidence": [
+        "docs/audits/drive-configuration-history-audit.md",
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/DriveConfigurationAuditTest.kt": {
+      "sha256": "bb62fe7cdb48b5d8c2da28eaca640807c279d5a7929cd68f030b3fb1610431f5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "All26 methods and SDK-double/registry/allocation helpers authored, read and executed.19 distinct methods failed before fixes; the chassis method also reproduced finite kinematic overflow. Independent numeric expectations cover PID units, slew steps, valid derating, aliasing and saturation; startup feedback recovery and unchanged-setting continuity retained. Allocation diagnostic measured zero bytes over10000 warmed feedback+slew cycles; no physical timing claim.",
+      "evidence": [
+        "docs/audits/drive-configuration-history-audit.md",
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
+      ]
+    },
+    "docs/audits/drive-configuration-history-audit.md": {
+      "sha256": "6c354a187a590e0e184996955ceb2ee7adc0a47a87c5a38da21c37d0bd715054",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciled19 distinct failure-before methods,275 FTC module tests,104 selected checks, allocation evidence, API change and remaining hardware configuration scopes.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass84-focused-evidence/summary.json"
       ]
     }
   }

@@ -1,6 +1,6 @@
-# Drive configuration and control-history audit — pass 84
+# Drive configuration and control-history audit â€” pass 84
 
-This pass continues the partial Mecanum feedforward/configuration scopes from passes 82–83.
+This pass continues the partial Mecanum feedforward/configuration scopes from passes 82â€“83.
 It reviews coupled wheel-output validation, configuration ownership, derivative/PID/slew history,
 voltage compensation, array reuse and the facade's stop/recovery boundaries. Work remains local.
 
@@ -56,5 +56,33 @@ The earlier FTC flywheel cached-read and diagnostic-clearing scopes remain pendi
 
 ## Validation
 
-The one-method core API addition was dumped and reviewed before source freeze. Final module and
-candidate results, source identity and coverage reconciliation are pending.
+Before freezing, all 275 FTC hardware tests, four core composition-status tests and both affected
+API checks passed. The selected affected classes account for 104 methods (100 FTC plus four core).
+The new drive-configuration class has 26 methods. Selected XML and full module logs are copied under
+`ARESLib-Kotlin/build/audit-pass84-focused-evidence/`.
+
+The final allocation run measured zero bytes over 10,000 cycles after warmup, exercising software
+feedback and slew. The public PID getter `getLastCalculationValid()Z` is the only core API addition;
+FTC public API remains unchanged. The generated API diff was reviewed before source freeze.
+
+Source `a01209fbf849a78c4c48c5e43e7ca162ffce1b21`; library tree `4f31ca679d8897fab234951756efbaae70662337`.
+Candidate `17.0.3-rc.4f31ca679d88` was published only to the isolated local repository.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 1944 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project checks,
+FTC assembly, Studio Kover/version/file-size checks and monorepo policy passed. Gradle reused valid
+unchanged outputs. The six Studio skips remain the three conditional fresh-template checks, native
+file chooser, physical dashboard and optional performance baseline. No new standalone dashboard
+benchmark or usable-window check is claimed.
+
+Copied XML, manifests, log hashes and candidate BOM identity are under
+`ARESLib-Kotlin/build/audit-pass84-verified-evidence/summary.json`. The whole-monorepo goal remains
+active; these suite results do not account for unread source files.
