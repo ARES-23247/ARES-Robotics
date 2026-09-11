@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3872cd28f870b9f534feffb1925a1d89f89acd6f4b030d13b576ca45f43b9828",
+      "sha256": "954f18ac5f128ada30f7a3dff7fbb2a60877374f76bf13c59e5be6d07341798e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5624,7 +5624,8 @@
         "docs/audits/frc-generated-controls-profile-audit.md: pass125 control/profile records and self-fingerprint refreshed",
         "docs/audits/frc-field-loader-boundary-audit.md: pass126 field loader records and self-fingerprint refreshed",
         "docs/audits/frc-factory-construction-cleanup-audit.md: pass127 factory cleanup records and self-fingerprint refreshed",
-        "docs/audits/frc-regression-evidence-audit.md: pass128 test/fixture records and self-fingerprint refreshed"
+        "docs/audits/frc-regression-evidence-audit.md: pass128 test/fixture records and self-fingerprint refreshed",
+        "docs/audits/frc-build-selection-audit.md: pass129 dependencyselection records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -10884,6 +10885,55 @@
       "scope": "Records8completependingtest/fixture reviews, staleinput/cleanup/inhibitcoverage fixes, newflywheelinvalidvaluecase,299passingFRCtestsandstructuralvsbehavioral/HILlimitations.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/settings.gradle": {
+      "sha256": "8c3f96d79f8d8f937152b74a0e8501a0eb7186c61250a3721c08ec1968e4790f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullsettings review: pluginrepo/WPILibhome/defaultbinary/source optin. Fixed silentfallbackwhenexplicit siblingmissing; require directoryandsettingsfile. Isolatedbefore0/after1, default/false/present/malformed matrix andrealKotlin siblingprojects passed. Windows executed; otherOSpathsstaticonly.",
+      "evidence": [
+        "docs/audits/frc-build-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/gradle.properties": {
+      "sha256": "1ccffa5db3fa848f661bf05631a27dd49d4049b5cef78fd5ce089c1df0e0c16f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full2property review: daemon4GiBheap/1GiBmetaspace/G1 andnonincrementalKotlin. Buildprocessnotrobotloop. Existingconservativecompilereuse retained; no claimincrementalenabling safe. CurrentGradlebuild succeeds.",
+      "evidence": [
+        "docs/audits/frc-build-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/gradle/wrapper/gradle-wrapper.properties": {
+      "sha256": "121de7c6b1ac7a858a270db34d183b7cb67f4e5ec32afaf7f4eb16adba92f35a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullwrappermetadata review: Gradle8.14.5HTTPS,matchingpermwrappercachepaths,10snetworktimeout,URLvalidation. Installedwrapper executionspass. FreshdownloadandwrapperJAR/launchers notvalidatedbythisfile review.",
+      "evidence": [
+        "docs/audits/frc-build-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/build.gradle": {
+      "sha256": "9c0034f894c74beb216c88a6c665d7d61d37510d1fd1449a90047daff5e4c2da",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Fullscript read focused candidate/BOM/source selection,generatedplumbing/sourceownership, testexecution/JNI setup, deployment/fetch safeguards. Candidateverify/testpassed with299unchangedtestresults reused. Remainingpartial:remoteSCPfailureinjection, nativeextraction/fatJARcontents, platformlaunch/deployment andcodegenoutputcacheanalysis.",
+      "evidence": [
+        "docs/audits/frc-build-selection-audit.md",
+        "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-build-selection-audit.md": {
+      "sha256": "c62f5f215d72c1820a2d235e755d286e08014e4d8038b1b94a50e2c150acdb1a",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents explicit-sourcefallbackdefect,fix,5isolatedsettingsconditions andreal sibling verification, reused299testresults, reviewedbuildmetadata and unresolvednative/deploy/efficiency scopes.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json"
       ]
     }
   }

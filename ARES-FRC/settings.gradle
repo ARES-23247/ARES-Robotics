@@ -33,7 +33,16 @@ props.setProperty("org.gradle.internal.native.headers.unresolved.dependencies.ig
 def useSiblingAresLib = providers.gradleProperty("aresUseSiblingLib")
     .map { it.toBoolean() }
     .getOrElse(false)
-if (useSiblingAresLib && file("../ARESLib-Kotlin").exists()) {
-    includeBuild("../ARESLib-Kotlin")
+if (useSiblingAresLib) {
+    def siblingAresLib = file("../ARESLib-Kotlin")
+    if (!siblingAresLib.isDirectory() ||
+        !(new File(siblingAresLib, "settings.gradle.kts").isFile() ||
+          new File(siblingAresLib, "settings.gradle").isFile())) {
+        throw new GradleException(
+            "aresUseSiblingLib=true requires an ARESLib-Kotlin Gradle build at ${siblingAresLib}. " +
+            "Restore the sibling source or omit this property to use versioned binaries."
+        )
+    }
+    includeBuild(siblingAresLib)
 }
 rootProject.name = 'ARES-FRC'
