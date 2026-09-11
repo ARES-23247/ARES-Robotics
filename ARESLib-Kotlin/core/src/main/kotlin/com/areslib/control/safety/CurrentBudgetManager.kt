@@ -1,6 +1,8 @@
 package com.areslib.control.safety
 
 import com.areslib.hardware.actuator.MotorIO
+import com.areslib.hardware.CurrentSourceIO
+import com.areslib.hardware.CurrentSourceSampler
 
 /**
  * System-Level Power & Current Budget Manager for FTC and FRC Drivetrains.
@@ -50,6 +52,8 @@ class CurrentBudgetManager(
     /** Registered motor slots tracking electrical parameters and estimated current draw. */
     private val slots = ArrayList<MotorSlot>(8)
     private var calibrationIndex = 0
+    private val currentSourceSampler = CurrentSourceSampler()
+    private var coveredMotorSlots = BooleanArray(8)
 
     /** Current computed system-wide power scale factor ($0.0 \dots 1.0$). */
     var powerScale: Double = 1.0
@@ -121,15 +125,65 @@ class CurrentBudgetManager(
         additionalMeasuredCurrentAmps: Double = 0.0
     ) {
 
-        val vBat = batteryVoltage
-        if (!validBatteryVoltage(vBat) || !additionalMeasuredCurrentAmps.isFinite() || additionalMeasuredCurrentAmps < 0.0) {
+        if (!validBatteryVoltage(batteryVoltage) || !additionalMeasuredCurrentAmps.isFinite() || additionalMeasuredCurrentAmps < 0.0) {
             rejectCurrentEstimate()
             return
         }
-        val safeAdditionalMeasuredAmps = additionalMeasuredCurrentAmps
+        evaluateBudget(sampleMotorEstimates(batteryVoltage, enableCalibration) + additionalMeasuredCurrentAmps)
+    }
+
+    /**
+     * Samples/calibrates motors once and reconciles cached branch measurements with those same samples.
+     * Each selected branch contributes the larger of its measured current and its covered motor models.
+     * Uncovered motors remain modeled; unknown non-motor leaves invalidate the budget. Invalid optional
+     * aggregates may fall back to their registered constituents. Overlapping aggregates subtract each
+     * modeled motor only once, retaining a conservative total rather than undercounting shared load.
+     * Zero allocations after source/slot capacity growth. Call once per loop instead of [update].
+     */
+    fun updateFromCurrentSources(
+        batteryVoltage: Double,
+        currentSources: List<CurrentSourceIO>,
+        enableCalibration: Boolean = false
+    ) {
+        if (!validBatteryVoltage(batteryVoltage)) {
+            rejectCurrentEstimate()
+            return
+        }
+        for (index in currentSources.indices) {
+            val source = currentSources[index]
+            if (source is MotorIO && !isRegistered(source)) {
+                rejectCurrentEstimate()
+                return
+            }
+        }
+        val motorAmps = sampleMotorEstimates(batteryVoltage, enableCalibration)
+        currentSourceSampler.sample(currentSources, includeMotorSources = false)
+        if (!motorAmps.isFinite() || (currentSources.isNotEmpty() && !currentSourceSampler.hasCompleteCoverage)) {
+            rejectCurrentEstimate()
+            return
+        }
+        if (coveredMotorSlots.size < slots.size) coveredMotorSlots = BooleanArray(slots.size)
+        coveredMotorSlots.fill(false, 0, slots.size)
+        var total = motorAmps
+        for (sourceIndex in 0 until currentSourceSampler.size) {
+            if (!currentSourceSampler.isSelected(sourceIndex)) continue
+            val source = currentSourceSampler.sourceAt(sourceIndex)
+            var coveredAmps = 0.0
+            for (slotIndex in slots.indices) {
+                if (!coveredMotorSlots[slotIndex] && currentSourceSampler.includes(source, slots[slotIndex].motor)) {
+                    coveredMotorSlots[slotIndex] = true
+                    coveredAmps += slots[slotIndex].estimatedAmps
+                }
+            }
+            total += (currentSourceSampler.readingAt(sourceIndex) - coveredAmps).coerceAtLeast(0.0)
+        }
+        evaluateBudget(total)
+    }
+
+    private fun sampleMotorEstimates(vBat: Double, enableCalibration: Boolean): Double {
 
         // 1. Estimate current for each motor from the DC motor model + learned calibrationOffset
-        var totalAmps = safeAdditionalMeasuredAmps
+        var totalAmps = 0.0
         for (i in slots.indices) {
             val slot = slots[i]
             slot.appliedVoltage = sampledAppliedVoltage(slot, vBat)
@@ -164,6 +218,10 @@ class CurrentBudgetManager(
             calibrationIndex = if (calibrationIndex + 1 >= slots.size) 0 else calibrationIndex + 1
         }
 
+        return totalAmps
+    }
+
+    private fun evaluateBudget(totalAmps: Double) {
         if (!totalAmps.isFinite() || totalAmps < 0.0) {
             rejectCurrentEstimate()
             return
@@ -307,6 +365,22 @@ class CurrentBudgetManager(
     }
 
     /**
+     * Removes a motor by identity while preserving other electrical models, calibration and trip history.
+     * Returns whether a slot was removed. Call [update] or [updateFromCurrentSources] to refresh totals.
+     */
+    fun unregister(motor: MotorIO): Boolean {
+        for (index in slots.indices) {
+            if (slots[index].motor === motor) {
+                slots.removeAt(index)
+                if (index < calibrationIndex) calibrationIndex--
+                if (calibrationIndex >= slots.size) calibrationIndex = 0
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
      * Clears all registered motor slots and resets internal state.
      */
     fun clear() {
@@ -316,9 +390,9 @@ class CurrentBudgetManager(
 
     companion object {
         /**
-         * Factory constructor pre-configured for the FTC 20A ATM main-battery fuse. The warning
-         * band leaves transient headroom while preventing sustained load from reaching the fuse's
-         * continuous rating.
+     * Factory constructor pre-configured for the FTC 20A ATM main-battery fuse. The warning
+     * band reduces requested effort as modeled current approaches the rating; it does not
+     * guarantee a physical current ceiling or replace the fuse's hardware protection.
          *
          * @return Pre-configured FTC [CurrentBudgetManager] instance.
          */

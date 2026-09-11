@@ -6,6 +6,7 @@ package com.areslib.hardware
  * Every provider is read at most once per [sample] call and provider failures are isolated. A
  * valid aggregate suppresses valid constituents identified by [CurrentSourceIO.includesCurrentFrom]
  * so total-current fallbacks cannot double-count the same electrical branch.
+ * Ambiguous/cyclic declarations conservatively retain observations that no selected source covers.
  */
 class CurrentSourceSampler(initialCapacity: Int = 16) {
     private var readings = DoubleArray(initialCapacity.coerceAtLeast(1))
@@ -17,7 +18,10 @@ class CurrentSourceSampler(initialCapacity: Int = 16) {
     var validSelectedSourceCount: Int = 0
         private set
     val hasValidReading: Boolean get() = validSelectedSourceCount > 0
-    /** True when every registered leaf source is valid or represented by a valid aggregate. */
+    /**
+     * True when every registered leaf source is valid or represented by a valid aggregate.
+     * When motor sampling is disabled, the caller owns motor validity through its external model.
+     */
     var hasCompleteCoverage: Boolean = false
         private set
 
@@ -32,10 +36,18 @@ class CurrentSourceSampler(initialCapacity: Int = 16) {
                 selected[index] = false
                 continue
             }
+            var previousIndex = 0
+            while (previousIndex < index && currentSources[previousIndex] !== source) previousIndex++
+            if (previousIndex < index) {
+                readings[index] = readings[previousIndex]
+                valid[index] = valid[previousIndex]
+                selected[index] = false
+                continue
+            }
             try {
                 val reading = source.currentAmps
                 readings[index] = reading
-                valid[index] = source.isCurrentReadingValid(reading)
+                valid[index] = reading.isFinite() && reading >= 0.0 && source.isCurrentReadingValid(reading)
             } catch (_: Exception) {
                 readings[index] = 0.0
                 valid[index] = false
@@ -46,6 +58,7 @@ class CurrentSourceSampler(initialCapacity: Int = 16) {
         hasCompleteCoverage = currentSources.isNotEmpty()
         if (hasCompleteCoverage) {
             for (index in currentSources.indices) {
+                if (!includeMotorSources && currentSources[index] is com.areslib.hardware.actuator.MotorIO) continue
                 if (!valid[index] && !isCoveredByAnotherValidSource(index) && !isAggregateSource(index)) {
                     hasCompleteCoverage = false
                     break
@@ -60,6 +73,24 @@ class CurrentSourceSampler(initialCapacity: Int = 16) {
             selected[index] = true
             validSelectedSourceCount++
             total += readings[index]
+        }
+        // A valid provider must not disappear merely because its supposed owner was itself
+        // suppressed (cycles or incomplete transitive declarations). Retain an uncovered reading.
+        // For mutually covering providers, do not hide a larger observation behind a smaller one.
+        for (index in currentSources.indices) {
+            if (!valid[index] || selected[index]) continue
+            var represented = false
+            for (candidateIndex in currentSources.indices) {
+                if (!selected[candidateIndex] || !includes(sources[candidateIndex], sources[index])) continue
+                if (readings[index] > readings[candidateIndex] && includes(sources[index], sources[candidateIndex])) continue
+                represented = true
+                break
+            }
+            if (!represented) {
+                selected[index] = true
+                validSelectedSourceCount++
+                total += readings[index]
+            }
         }
         return if (hasValidReading) total else Double.NaN
     }

@@ -52,6 +52,11 @@ same motor/model preserves its calibration; changing the model replaces that mot
 clears the learned correction. Missing battery voltage, invalid motor observations or failed
 cached getters produce unknown current and zero available power until valid observations recover.
 Callers must use fresh cached observations; a model estimate is not a physical fuse-trip guarantee.
+For registered branch observations, `updateFromCurrentSources` reconciles each measured branch
+against the calibrated motor samples from that same update. Unknown non-motor leaves invalidate
+the budget; ambiguous overlapping coverage retains a conservative total. The FTC coordinator
+removes obsolete registry-owned model slots while preserving surviving calibration and explicitly
+external models. Ordinary `update` remains available for a known independent additional load.
 
 ### `ftc-hardware`
 

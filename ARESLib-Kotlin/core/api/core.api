@@ -879,8 +879,11 @@ public final class com/areslib/control/safety/CurrentBudgetManager {
 	public final fun register (Lcom/areslib/hardware/actuator/MotorIO;DDD)V
 	public static synthetic fun register$default (Lcom/areslib/control/safety/CurrentBudgetManager;Lcom/areslib/hardware/actuator/MotorIO;DDDILjava/lang/Object;)V
 	public final fun reset ()V
+	public final fun unregister (Lcom/areslib/hardware/actuator/MotorIO;)Z
 	public final fun update (DZD)V
 	public static synthetic fun update$default (Lcom/areslib/control/safety/CurrentBudgetManager;DZDILjava/lang/Object;)V
+	public final fun updateFromCurrentSources (DLjava/util/List;Z)V
+	public static synthetic fun updateFromCurrentSources$default (Lcom/areslib/control/safety/CurrentBudgetManager;DLjava/util/List;ZILjava/lang/Object;)V
 }
 
 public final class com/areslib/control/safety/CurrentBudgetManager$Companion {

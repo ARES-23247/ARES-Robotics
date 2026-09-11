@@ -25,8 +25,10 @@ class FtcPowerManager(
     private val hardwareMap: HardwareMap,
     private val hardwareRegistry: com.areslib.hardware.HardwareRegistry,
 ) : PowerManager {
-    private val currentSourceSampler = com.areslib.hardware.CurrentSourceSampler()
     private var lastVoltageReadTime = 0L
+    private var hasVoltageReadTime = false
+    private var trackedBudgetManager: CurrentBudgetManager? = null
+    private val trackedMotors = ArrayList<MotorIO>(8)
     private var cachedBatteryVoltage = 12.0
     private var rawBatteryVoltage = 12.0
     private var hasValidVoltageSample = false
@@ -56,8 +58,8 @@ class FtcPowerManager(
 
     /**
      * Total current draw of the robot in amperes.
-     * Returns the Floodgate's cached reading when installed, otherwise the sum of registered motors'
-     * cached current estimates.
+     * Returns a plausible Floodgate reading when available, otherwise the motor model reconciled
+     * with cached branch measurements. Unknown uncovered loads remain NaN rather than zero.
      */
     override val currentAmps: Double
         get() = cachedCurrentAmps
@@ -73,10 +75,13 @@ class FtcPowerManager(
         // Brownout prevention needs a fresh sag observation. Sample at up to 50 Hz and feed the
         // raw value to the guard; retain a correctly-timed low-pass value for voltage compensation
         // and telemetry so command normalization does not amplify rapid sag/recovery oscillations.
-        val elapsedMs = if (lastVoltageReadTime == 0L) VOLTAGE_SAMPLE_PERIOD_MS
-            else (timestampMs - lastVoltageReadTime).coerceAtLeast(0L)
-        if (lastVoltageReadTime == 0L || elapsedMs >= VOLTAGE_SAMPLE_PERIOD_MS) {
+        val clockRewound = hasVoltageReadTime && timestampMs < lastVoltageReadTime
+        val elapsedMs = if (!hasVoltageReadTime || clockRewound) VOLTAGE_SAMPLE_PERIOD_MS
+            else (timestampMs - lastVoltageReadTime).let { if (it < 0L) Long.MAX_VALUE else it }
+        if (!hasVoltageReadTime || clockRewound || elapsedMs >= VOLTAGE_SAMPLE_PERIOD_MS) {
             lastVoltageReadTime = timestampMs
+            hasVoltageReadTime = true
+            if (clockRewound) hasValidVoltageSample = false
             val newVoltage = try {
                 voltageSensor?.voltage ?: Double.NaN
             } catch (_: Exception) {
@@ -156,35 +161,45 @@ class FtcPowerManager(
         val manager = currentBudgetManager ?: CurrentBudgetManager.ftcDefaults().also {
             currentBudgetManager = it
         }
+        val managerChanged = trackedBudgetManager !== manager
+        if (managerChanged) {
+            trackedMotors.clear()
+            trackedBudgetManager = manager
+        }
+        // Only remove slots previously owned by this registry. Explicit models for other motors
+        // and learned calibration on surviving slots belong to the caller and must be preserved.
+        var registryChanged = managerChanged || trackedMotors.size != motors.size
+        if (!registryChanged) {
+            var index = 0
+            while (index < motors.size) {
+                if (motors[index] !== trackedMotors[index]) { registryChanged = true; break }
+                index++
+            }
+        }
+        if (registryChanged) {
+            for (trackedIndex in trackedMotors.indices) {
+                val previous = trackedMotors[trackedIndex]
+                var present = false
+                var index = 0
+                while (index < motors.size) {
+                    if (motors[index] === previous) { present = true; break }
+                    index++
+                }
+                if (!present) manager.unregister(previous)
+            }
+            trackedMotors.clear()
+            for (index in motors.indices) trackedMotors.add(motors[index])
+        }
         var motorIndex = 0
         while (motorIndex < motors.size) {
             val motor = motors[motorIndex]
             if (!manager.isRegistered(motor)) manager.register(motor)
             motorIndex++
         }
-        val currentSources = hardwareRegistry.getRegisteredCurrentSources()
-        currentSourceSampler.sample(currentSources, includeMotorSources = false)
-        var nonMotorMeasuredAmps = 0.0
-        var coveredModeledMotorAmps = 0.0
-        for (index in 0 until currentSourceSampler.size) {
-            if (!currentSourceSampler.isSelected(index)) continue
-            val source = currentSourceSampler.sourceAt(index)
-            if (source is MotorIO) continue
-            nonMotorMeasuredAmps += currentSourceSampler.readingAt(index)
-            motorIndex = 0
-            while (motorIndex < motors.size) {
-                val motor = motors[motorIndex]
-                if (currentSourceSampler.includes(source, motor)) {
-                    coveredModeledMotorAmps += manager.estimateMotorAmps(motor, batteryVoltage)
-                }
-                motorIndex++
-            }
-        }
-        val additionalMeasuredAmps = (nonMotorMeasuredAmps - coveredModeledMotorAmps).coerceAtLeast(0.0)
-        manager.update(
+        manager.updateFromCurrentSources(
             batteryVoltage,
-            enableCalibration = true,
-            additionalMeasuredCurrentAmps = additionalMeasuredAmps
+            hardwareRegistry.getRegisteredCurrentSources(),
+            enableCalibration = true
         )
         return manager.powerScale
     }
