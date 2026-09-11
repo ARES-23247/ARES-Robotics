@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.hal.HAL
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 
@@ -28,7 +29,7 @@ class FRCTeleOpDriveControllerTest {
 
     @BeforeEach
     fun setUp() {
-        assert(HAL.initialize(500, 0))
+        assertTrue(HAL.initialize(500, 0))
         robot = FrcSwerveRobot(
             isSimulation = true,
             initialState = RobotState(
@@ -50,6 +51,11 @@ class FRCTeleOpDriveControllerTest {
             controller, coPilotController, controllerState, coPilotControllerState
         )
         teleOpController.teleopInit()
+    }
+
+    @AfterEach
+    fun closeRobot() {
+        if (::robot.isInitialized) robot.close()
     }
 
     @Test
@@ -98,8 +104,8 @@ class FRCTeleOpDriveControllerTest {
         val vx2 = robot.store.state.drive.xVelocityMetersPerSecond
         val vy2 = robot.store.state.drive.yVelocityMetersPerSecond
         
-        // Same input should produce non-zero drive commands
-        assertTrue(vx2 != 0.0 || vy2 != 0.0)
+        assertEquals(vx1, vx2, 1e-9)
+        assertEquals(vy1, vy2, 1e-9)
     }
 
     @Test
@@ -342,5 +348,55 @@ class FRCTeleOpDriveControllerTest {
         val releasedState = robot.store.state
         assertFalse(releasedState.superstructure.marvin.flywheelActive)
         assertEquals(0.0, releasedState.superstructure.marvin.flywheel.targetVelocityRpm, 1e-4)
+    }
+
+    @Test fun unjamCancelsSlamtakeAndOverridesBothManualIntakeRequests() {
+        robot.store.dispatch(StartSlamtake())
+        controllerState.leftBumper = true
+        controllerState.leftTrigger = 1.0f
+        coPilotControllerState.leftTrigger = 1.0f
+        teleOpController.teleopPeriodic()
+        val result = robot.store.state.superstructure.marvin
+        assertFalse(result.slamtakeActive)
+        assertTrue(result.intake.isDeployed)
+        assertEquals(-5.0, result.intake.targetRollerVelocityRps)
+        assertEquals(-5.0, result.floor.targetVelocityRps)
+        assertEquals(-5.0, result.feeder.targetVelocityRps)
+    }
+
+    @Test fun manualFeedReleaseStopsRollersAndRetainsExplicitPivotSelection() {
+        controllerState.dpadRight = true
+        coPilotControllerState.leftTrigger = 1.0f
+        teleOpController.teleopPeriodic()
+        assertEquals(10.0, robot.store.state.superstructure.marvin.feeder.targetVelocityRps)
+        controllerState.dpadRight = false
+        coPilotControllerState.leftTrigger = 0.0f
+        teleOpController.teleopPeriodic()
+        val stopped = robot.store.state.superstructure.marvin
+        assertTrue(stopped.intake.isDeployed)
+        assertEquals(0.0, stopped.intake.targetRollerVelocityRps)
+        assertEquals(0.0, stopped.floor.targetVelocityRps)
+        assertEquals(0.0, stopped.feeder.targetVelocityRps)
+        controllerState.dpadLeft = true
+        teleOpController.teleopPeriodic()
+        assertFalse(robot.store.state.superstructure.marvin.intake.isDeployed)
+    }
+
+    @Test fun climberDirectionPriorityReleaseAndRotationAreIndependentOfAlliance() {
+        controllerState.rightStickX = -1.0f
+        controllerState.dpadUp = true
+        coPilotControllerState.dpadDown = true
+        teleOpController.teleopPeriodic()
+        val blueRotation = robot.store.state.drive.angularVelocityRadiansPerSecond
+        assertEquals(Math.PI, blueRotation, 1e-9)
+        assertEquals(6.0, robot.store.state.superstructure.marvin.climber.targetVoltage)
+        controllerState.dpadUp = false
+        teleOpController.cachedAlliance = DriverStation.Alliance.Red
+        teleOpController.teleopPeriodic()
+        assertEquals(-6.0, robot.store.state.superstructure.marvin.climber.targetVoltage)
+        assertEquals(blueRotation, robot.store.state.drive.angularVelocityRadiansPerSecond, 1e-9)
+        coPilotControllerState.dpadDown = false
+        teleOpController.teleopPeriodic()
+        assertEquals(0.0, robot.store.state.superstructure.marvin.climber.targetVoltage)
     }
 }

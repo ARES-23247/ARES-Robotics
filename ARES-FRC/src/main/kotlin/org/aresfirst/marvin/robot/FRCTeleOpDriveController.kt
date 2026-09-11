@@ -49,6 +49,8 @@ class FRCTeleOpDriveController(
     private var lastBeached = false
     private var rumbleStartTimestampMs: Long = 0
     private var lastRumbleDeactivationMs: Long = 0
+    private var rumbleActive = false
+    private var rumbleCoolingDown = false
     private var controllerFaultLatched = false
     private var aButtonWasPressed = false
     private val shotResult = ShotResult()
@@ -83,6 +85,13 @@ class FRCTeleOpDriveController(
 
     /** Clears the local controller-fault guard; the robot shell separately validates hardware health. */
     fun teleopInit() {
+        if (rumbleActive) {
+            rumbleActive = false
+            setBothRumble(0.0)
+        }
+        rumbleCoolingDown = false
+        lastBeached = false
+        drivetrainAssistActive = false
         controllerFaultLatched = false
         aButtonWasPressed = false
         marvinShooter.cancelTransfer()
@@ -339,38 +348,56 @@ class FRCTeleOpDriveController(
             }
 
             // ── Beach / Traction Loss detection ──
-            val beached = robot.isBeached
-            val nowMs = com.areslib.util.RobotClock.currentTimeMillis()
-            when {
-                beached != lastBeached -> {
-                    robot.telemetry.putBoolean("Diagnostics/Beached", beached)
-                    lastBeached = beached
-                    when {
-                        beached && (nowMs - lastRumbleDeactivationMs > 2000L) -> {
-                            controller.setRumble(GenericHID.RumbleType.kBothRumble, 1.0)
-                            coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, 1.0)
-                            rumbleStartTimestampMs = nowMs
-                        }
-                        !beached -> {
-                            controller.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
-                            coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
-                            lastRumbleDeactivationMs = nowMs
-                        }
-                    }
-                }
-                beached && (nowMs - rumbleStartTimestampMs > 1000L) -> {
-                    controller.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
-                    coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, 0.0)
-                    lastRumbleDeactivationMs = nowMs
-                }
-            }
+            updateTractionFeedback(robot.isBeached, com.areslib.util.RobotClock.currentTimeMillis())
         } catch (e: Throwable) {
             latchControllerAllStop("teleopPeriodic", e)
         }
     }
 
+    /** Updates edge-triggered traction feedback without repeated HID writes on held input. */
+    internal fun updateTractionFeedback(beached: Boolean, nowMs: Long) {
+        val rising = beached && !lastBeached
+        if (beached != lastBeached) {
+            lastBeached = beached
+            robot.telemetry.putBoolean("Diagnostics/Beached", beached)
+        }
+        if (rumbleCoolingDown && nowMs < lastRumbleDeactivationMs) {
+            // Rebase after a clock rewind instead of suppressing notifications indefinitely.
+            lastRumbleDeactivationMs = nowMs
+        }
+        if (rumbleActive && (!beached || nowMs < rumbleStartTimestampMs ||
+            elapsedAtLeast(nowMs, rumbleStartTimestampMs, 1000L))) {
+            rumbleActive = false
+            rumbleCoolingDown = true
+            lastRumbleDeactivationMs = nowMs
+            setBothRumble(0.0)
+        }
+        if (rising && !rumbleActive && (!rumbleCoolingDown ||
+            elapsedAtLeast(nowMs, lastRumbleDeactivationMs, 2000L))) {
+            rumbleActive = true
+            rumbleStartTimestampMs = nowMs
+            setBothRumble(1.0)
+        }
+    }
+
+    private fun setBothRumble(value: Double) {
+        val failures = org.aresfirst.marvin.FrcCleanupFailures()
+        failures.attempt { controller.setRumble(GenericHID.RumbleType.kBothRumble, value) }
+        failures.attempt { coPilotController.setRumble(GenericHID.RumbleType.kBothRumble, value) }
+        failures.throwIfAny()
+    }
+
+    private fun elapsedAtLeast(now: Long, start: Long, duration: Long): Boolean {
+        if (now < start) return false
+        val elapsed = now - start
+        return elapsed < 0L || elapsed >= duration // A signed overflow is a very long forward interval.
+    }
+
     internal fun latchControllerAllStop(source: String, error: Throwable) {
         controllerFaultLatched = true
+        drivetrainAssistActive = false
+        rumbleActive = false
+        runCatching { setBothRumble(0.0) }
         runCatching {
             robot.store.dispatch(
                 LatchMechanismSafetyFault(
@@ -378,10 +405,12 @@ class FRCTeleOpDriveController(
                 )
             )
         }
-        DriverStation.reportError(
-            "Exception in $source: ${error.message ?: error::class.java.simpleName}",
-            false
-        )
+        runCatching {
+            DriverStation.reportError(
+                "Exception in $source: ${error.message ?: error::class.java.simpleName}",
+                false
+            )
+        }
         robot.safeHardware()
     }
 

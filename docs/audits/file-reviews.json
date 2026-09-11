@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "318ef3d28c4c8a42057b56fac70d555eef60dc5501571b9929fdde44257ff073",
+      "sha256": "7f10d9d49a9da653d3d0c411f3e16b05c38e56ae42595f4c5f1344ce139a6c36",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5614,7 +5614,8 @@
         "docs/audits/frc-autonomous-lifecycle-audit.md: pass115 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-native-drive-task-audit.md: pass116 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-redux-state-audit.md: pass117 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-sim-inventory-audit.md: pass118 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-sim-inventory-audit.md: pass118 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-teleop-feedback-audit.md: pass119 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9768,6 +9769,55 @@
       "scope": "Documents reproduced simultaneous-event and virtual-detector accounting failures, atomic fix and duplicate-action removal, FRC259/coreGC5/policy evidence, source compatibility and explicit desktop/hardware/performance limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/robot/FRCTeleOpDriveController.kt": {
+      "sha256": "53d815785822ccaa86e2fbca0804ece6dd6c3531242da78ceb5c79d9d5789606",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full review of cached inputs/deadbands, alliance translation and assist arbitration, driver/copilot shot priority, change-only setpoints, slamtake/unjam/manual feeds, climber direction/release, traction feedback and persistent fault handling. Fixed repeated HID-off writes/sliding cooldown, first-event suppression, pulse/clock bounds, stale init feedback/assist state and independent HID cleanup. Seven unchanged-extracted-body failures reproduced; nine feedback and sixteen controller methods pass. No physical detector or whole-loop deadline claim.",
+      "evidence": [
+        "docs/audits/frc-teleop-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass119-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/Main.kt": {
+      "sha256": "e63eec432129d895e41e67bffd44b303008b71f599cf334e87ed5e613dfb205c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full static entry-point review: @JvmStatic main delegates robot construction/scheduling to WPILib RobotBase.startRobot, with no eager mechanism/service initialization. Verified build main-class references and full FRC compilation. Indefinite WPILib runtime not launched; platform lifecycle remains externally owned.",
+      "evidence": [
+        "docs/audits/frc-teleop-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass119-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/robot/FRCTeleOpDriveControllerTest.kt": {
+      "sha256": "d08d4cbf1355530d2816a7d1b504201b0b06a6d40584f1172da0b54c27f84fe1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read all thirteen existing controller tests and added three: unjam over slamtake/manual feeds, feed release with pivot persistence, climber priority/release and red/blue rotation invariance. Existing coverage includes deadband, field commands, leases/five-minute simulated soak, X-lock release, persistent fault, slamtake edge and presets. Repeated-command assertion now compares values; fixture closes robot after every method and uses JUnit HAL check. All sixteen passed.",
+      "evidence": [
+        "docs/audits/frc-teleop-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass119-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/robot/TeleopFeedbackAuditTest.kt": {
+      "sha256": "74f6a9d428993152674ef91fafd6d50b65267511b1af1b8f1a68b756afd35629",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed nine feedback methods using actual controller notification path and recording Xbox outputs: clock-origin first pulse, exact stop boundary/no repeated writes, fixed cooldown, recovery and cooldown boundaries, rewind/overflow, init reset with actual prior assist, fault stop despite failed first HID, idle/no writes and cooldown rebase, both start outputs attempted despite one failure. Seven initial regressions failed unchanged extracted logic; final nine pass. Robot fixtures close after each method.",
+      "evidence": [
+        "docs/audits/frc-teleop-feedback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass119-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-teleop-feedback-audit.md": {
+      "sha256": "ce5ff2b591ddfe8815f4bbd130d676be83ad47b1fe0425e056bf4b894e3023be",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents full controller/main and existing/new test coverage, seven reproduced feedback failures, bounded timing/output fixes, FRC271/coreGC5/policy evidence and explicit desktop/HID/physical timing limits. Separate hardware vararg follow-up remains open.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass119-verified-evidence/summary.json"
       ]
     }
   }
