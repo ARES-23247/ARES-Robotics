@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "dd6139d460dd6213401bdc53b7f350d2a94a1d97b031b2243dbd9afaf725d3e8",
+      "sha256": "ea1b59b527e22d80ab43d99c7c83f335c392e1dd94a73562d6b9adab2111203e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5610,7 +5610,8 @@
         "docs/audits/frc-swerve-tracking-audit.md: pass111 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-controller-facade-audit.md: pass112 scopes and canonical self-fingerprint refreshed",
         "docs/audits/shared-guidance-audit.md: pass113 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-simulator-telemetry-audit.md: pass114 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-simulator-telemetry-audit.md: pass114 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-autonomous-lifecycle-audit.md: pass115 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9534,6 +9535,125 @@
       "scope": "Reconciles complete publisher/eleven-existing/six-new-test review, redundant computation removal, test ownership fixes and full FRC218/coreGC5/policy evidence; limitations explicit.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass114-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/robot/FRCAutoOrchestrator.kt": {
+      "sha256": "fa95d9f9612ba3858a4d09d7364e5bcddbf6ad494fe2ebd54ad5441051711517",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full orchestration review: selection lock/fallback, configure/preflight/seed, manager lifecycle, safety gates, completion/stop/abort and telemetry. Fixed cancellation/initial-stop/terminal short-circuit failures using existing failure collector; references clear in finally. Five failing regressions before, all seven new plus full FRC225 passed. Fatal reducer leaves Store invalidated; direct registry safety still reached.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/robot/FrcAutoCapabilities.kt": {
+      "sha256": "c0ae10e072c4f5fbc6c85f63e628ff1f796c72e491327c068b5190b36a26ef01",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full six-action descriptor/factory review, registry/generated agreement, empty argument contract, fresh task lifecycle/resource masks, two-second readiness gate and single450ms transfer, timeout/rewind/end/rearm/stop semantics, finite measured RPM/cowl tolerance condition. New factory/transfer tests plus existing native-auto coverage passed. Readiness is not enable authorization; outer orchestrator enforces safety.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/robot/FrcAutoFailureAuditTest.kt": {
+      "sha256": "186d2d635e72e42fb5ef0a3563e002112d66b4699fab56ea64d31763defbd8f7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed seven methods with five authoritative failure-before cases. Real observer/fatal-reducer faults, cancellation and stop-stage failures, independent diagnostics, registered hardware safety probe, fresh factory tasks and readiness timeout/late450ms transfer. Restores robot fixtures/clock. No physical HIL claim.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/robot/FrcNativeAutoContractTest.kt": {
+      "sha256": "3c6b2a003972e0a91ef2e4a2ffd933b0d2d1a46b776c1833b308bc4fab2ba2eb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read all nine methods and executed: generated/source catalog agreement, production-only safe selection, both-alliance preflight, reflected seed, locked choice, fallback preserving pose, stop/cancel, inhibit/error and measured readiness/transfer lifecycle. Added attempt-all robot fixture cleanup with unconditional clock/registry restoration.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/robot/FRCAutoAllianceMirroringContractTest.kt": {
+      "sha256": "fbb421be65816f395706efe01b315beb2162384d7518bdaf1adbaaf98c3720b0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed one numeric reflection test: fieldX, preservedY, heading/tangent pi-angle, curvature sign reversal and preserved marker events. Tests shared helper contract, not physical field survey.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/generatedruntime/FrcGeneratedRoutineRuntimeTest.kt": {
+      "sha256": "10894956114005d23e246cba991f464b0135cfe2d97441365bdf390bba88d16e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed two tests: enabled/sorted resolver choices and deterministic fallback, opposite/same-alliance pose transforms. Shared helper and adapter output match numeric expected coordinates.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/generatedruntime/GeneratedDriveSinkTest.kt": {
+      "sha256": "14b4c7fdd7717b893c39a87310f4a071d015acbf9b2d35999c6c1ba527d02868",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed four tests: normalized blue scaling, red translation-only sign, invalid/out-of-range axis bounding, actual generated runtime emission gating and resumption. No physical drivetrain or complete controls-runtime coverage claim.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.ares/action-catalog.json": {
+      "sha256": "ab1b266b9fdc5f7183623fd6e13dda69ff566f670cce0a3750387b5923b3782b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full declarative six-action/one-condition catalog review: keys, names, no parameters, exclusive output/read readiness resources, autonomous/teleop/test contexts. Matched source descriptors/factories and generated key test plus verifyAresProject. Does not certify all generic compiler resource-lock implementations.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.ares/autonomous-catalog.json": {
+      "sha256": "017f502f40036e1d0d15c9add5714e4ec231d70f73404078c244061d115e2718",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full single-entry production catalog review: enabled defaultdo-nothing, validstart0.5/0.5/0, BLUE-authored opposite-alliance mirror, routine reference and project identity. Generated production chooser/both-alliance preflight/fallback tests passed; no new match routine enabled.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/.ares/routines/do-nothing.aresroutine": {
+      "sha256": "07eb551e8ce7c5d1f4a8b952dda09b6e098f907112f06ddbac183ce21e961a29",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full v2 zero-duration WAIT routine review: complete required collections, no drive/actions, stable document reference. Actual generated fallback runs to safe completion without pose reset; generation/policy/native-auto tests passed.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-autonomous-lifecycle-audit.md": {
+      "sha256": "57ebb80f6748673501c11d320d2811b4e85370f5caeeacd1b5b42f09dfc43c21",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles two complete runtime files, four existing test files, seven new methods/five before failures, three declarative inputs and partial generated adapter with FRC225/policy evidence and explicit Store/physical limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/generatedruntime/FrcGeneratedRoutineCapabilities.kt": {
+      "sha256": "7ad31ff8013060e69c91e6231a4124e21002706e79821a905d51b70aba05839c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read full adapter for boundary tracing. Verified configured alliance transforms and normalized generated drive sink via existing numeric/runtime tests; traced footprint projection and native task construction. Remains partial: task resource-mask/locking integration, delegate exception cleanup, trajectory limit extremes and marker/group lifecycle combinations need dedicated tests/review. No confirmed defect claimed for those unresolved paths.",
+      "evidence": [
+        "docs/audits/frc-autonomous-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass115-verified-evidence/summary.json"
       ]
     }
   }

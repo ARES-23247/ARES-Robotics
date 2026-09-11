@@ -2,6 +2,7 @@ package org.aresfirst.marvin.robot
 
 import com.areslib.action.RobotAction
 import org.aresfirst.marvin.Dyn4jSimulation
+import org.aresfirst.marvin.FrcCleanupFailures
 import com.areslib.frc.FrcSwerveRobot
 import org.aresfirst.marvin.generated.GeneratedAresProject
 import org.aresfirst.marvin.generatedruntime.FrcGeneratedRoutineCapabilities
@@ -70,19 +71,18 @@ class FRCAutoOrchestrator @JvmOverloads constructor(
 
     /** Locks, validates, alliance-transforms, seeds, and requests the selected generated routine. */
     fun autonomousInit() {
-        cancelActive("Autonomous reinitialized")
-        stopAndXLockDrive()
         autoFaulted = false
         finished = false
 
-        if (robot.store.state.superstructure.marvin.let {
-                it.mechanismSafetyInhibited || it.mechanismSafetyFaultLatched
-            }) {
-            abort(MECHANISM_SAFETY_BLOCK_REASON)
-            return
-        }
-
         try {
+            cancelActive("Autonomous reinitialized")
+            stopAndXLockDrive()
+            if (robot.store.state.superstructure.marvin.let {
+                    it.mechanismSafetyInhibited || it.mechanismSafetyFaultLatched
+                }) {
+                abort(MECHANISM_SAFETY_BLOCK_REASON)
+                return
+            }
             val selection = selector.resolve(selectionProvider())
             val entry = selection.entry
             selectedAutoId = entry.entryId
@@ -156,10 +156,12 @@ class FRCAutoOrchestrator @JvmOverloads constructor(
 
     /** Cancels every active/queued routine and drives all outputs to their fail-safe state. */
     fun stop() {
-        cancelActive("Robot disabled or autonomous exited")
         finished = true
-        failSafeStop()
-        setStatus("Stopped")
+        val failures = FrcCleanupFailures()
+        failures.attempt { cancelActive("Robot disabled or autonomous exited") }
+        failures.attempt { failSafeStop() }
+        failures.attempt { setStatus("Stopped") }
+        failures.throwIfAny()
     }
 
     private fun complete() {
@@ -173,17 +175,22 @@ class FRCAutoOrchestrator @JvmOverloads constructor(
     private fun abort(message: String) {
         autoFaulted = true
         finished = true
-        cancelActive(message)
-        failSafeStop(message)
-        setStatus("Blocked")
-        robot.telemetry.putString("ARES/Auto/Error", message)
+        val failures = FrcCleanupFailures()
+        failures.attempt { cancelActive(message) }
+        failures.attempt { failSafeStop(message) }
+        failures.attempt { setStatus("Blocked") }
+        failures.attempt { robot.telemetry.putString("ARES/Auto/Error", message) }
         runCatching { edu.wpi.first.wpilibj.DriverStation.reportError("ARES auto: $message", false) }
+        failures.throwIfAny()
     }
 
     private fun cancelActive(reason: String) {
-        routineManager.cancelAll(reason)
-        activeExecutionId = null
-        capabilities.clearConfiguration()
+        try {
+            routineManager.cancelAll(reason)
+        } finally {
+            activeExecutionId = null
+            capabilities.clearConfiguration()
+        }
     }
 
     private fun seedPose(pose: Pose2d) {
@@ -228,26 +235,34 @@ class FRCAutoOrchestrator @JvmOverloads constructor(
     }
 
     private fun failSafeStop(faultReason: String? = null) {
-        stopAndXLockDrive()
-        robot.store.dispatch(
-            if (faultReason == null) {
-                SetMechanismSafetyInhibit(true)
-            } else {
-                LatchMechanismSafetyFault("Autonomous fault: $faultReason")
-            }
-        )
-        robot.safeHardware()
+        val failures = FrcCleanupFailures()
+        failures.attempt { stopAndXLockDrive() }
+        failures.attempt {
+            robot.store.dispatch(
+                if (faultReason == null) {
+                    SetMechanismSafetyInhibit(true)
+                } else {
+                    LatchMechanismSafetyFault("Autonomous fault: $faultReason")
+                }
+            )
+        }
+        failures.attempt { robot.safeHardware() }
+        failures.throwIfAny()
     }
 
     private fun stopAndXLockDrive() {
-        robot.drive.joystickDrive(0.0, 0.0, 0.0, isFieldCentric = false)
-        robot.swerveDrive.brake()
+        val failures = FrcCleanupFailures()
+        failures.attempt { robot.drive.joystickDrive(0.0, 0.0, 0.0, isFieldCentric = false) }
+        failures.attempt { robot.swerveDrive.brake() }
+        failures.throwIfAny()
     }
 
     private fun setStatus(value: String) {
         status = value
-        robot.telemetry.putString("ARES/Auto/Selected", selectedAutoId)
-        robot.telemetry.putString("ARES/Auto/Status", value)
+        val failures = FrcCleanupFailures()
+        failures.attempt { robot.telemetry.putString("ARES/Auto/Selected", selectedAutoId) }
+        failures.attempt { robot.telemetry.putString("ARES/Auto/Status", value) }
+        failures.throwIfAny()
     }
 
     internal val isFaultedForTest: Boolean

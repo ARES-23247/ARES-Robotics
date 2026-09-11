@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test
 
 /** End-to-end contract for generated assets, capability factories, and FRC native execution. */
 class FrcNativeAutoContractTest {
+    private val robots = mutableListOf<FrcSwerveRobot>()
     @BeforeEach
     fun setUp() {
         RobotClock.useMockTime(1_000L)
@@ -40,8 +41,14 @@ class FrcNativeAutoContractTest {
 
     @AfterEach
     fun tearDown() {
-        NamedCommands.clear()
-        RobotClock.useSystemTime()
+        try {
+            org.junit.jupiter.api.Assertions.assertAll(robots.map { robot ->
+                org.junit.jupiter.api.function.Executable { robot.close() }
+            })
+        } finally {
+            NamedCommands.clear()
+            RobotClock.useSystemTime()
+        }
     }
 
     @Test
@@ -245,7 +252,10 @@ class FrcNativeAutoContractTest {
             superstructure = SuperstructureState(custom = MarvinState())
         ),
         reducer = MarvinReducer::reduce
-    ).also { robot -> robot.store.dispatch(RobotAction.SetAlliance(alliance)) }
+    ).also { robot ->
+        robots.add(robot)
+        robot.store.dispatch(RobotAction.SetAlliance(alliance))
+    }
 
     private fun runner(robot: FrcSwerveRobot, selection: () -> String) =
         FRCAutoOrchestrator(robot = robot, selectionProvider = selection)
