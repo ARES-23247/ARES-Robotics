@@ -5543,7 +5543,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "177970c8b20747cc7da614b5578b8d923ae9751799e8908100badc52c93db5c9",
+      "sha256": "0fc9978355ca6db0d38781c74f4f97890f0951927210ed5089bdf3a58d5196f9",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5598,7 +5598,8 @@
         "docs/audits/frc-calibration-cache-audit.md: pass101 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-commissioning-loop-audit.md: pass102 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-homing-failure-audit.md: pass103 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-disable-cleanup-audit.md: pass104 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-disable-cleanup-audit.md: pass104 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-startup-ownership-audit.md: pass105 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8838,6 +8839,45 @@
       "scope": "Reviewed extracted-original failure evidence, shared collector behavior, four tests, product-local validation and partial lifecycle/hardware limitations.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass104-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcStartupResources.kt": {
+      "sha256": "08d3fe28843e7cc69ad77c711d9129ba5f7bd6775780205ded5508ec31b1ec10",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full ownership-scope review: identity registration, native-to-adapter replacement after successful construction, reverse rollback, original failure preservation, idempotent emptied rollback and successful commit. Six host tests cover failure/transfer/aliasing cases. Internal single-thread startup scope, no periodic work.",
+      "evidence": [
+        "docs/audits/frc-startup-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass105-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcSeasonHardwareFactory.kt": {
+      "sha256": "de06e7f54f9366ac64daf05eff040b1b4865b3532c9f622ae83a02f9ae36cf0e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read whole factory, traced allocation before caller handoff and adapter close ownership. Track completed PDH/motors/drivetrain/cameras and simulation/dashboard objects; replace native ownership only after adapter construction succeeds. Separate cameras until commit. Remaining partial: native constructor integration, inaccessible partial constructor resources and composition-root post-return handoff.",
+      "evidence": [
+        "docs/audits/frc-startup-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass105-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/FrcStartupResourcesTest.kt": {
+      "sha256": "decdd8e08ece55b4514d3bc8efb952ee29498cb49ee84c650a3f46e179292628",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed six new ownership tests: reverse rollback, replacement/successful commit, failed adapter construction, suppressed close failures, reference identity and repeated rollback. No original native-failure execution or actual leak measurement claimed.",
+      "evidence": [
+        "docs/audits/frc-startup-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass105-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-startup-ownership-audit.md": {
+      "sha256": "21ac8c911cf2b2f60fb933193b27155a2387878319f93a21b45910cbfebb02a3",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reviewed source-level missing rollback finding, ownership graph, six tests, scoped FRC validation and native/post-return limitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass105-verified-evidence/summary.json"
       ]
     }
   }
