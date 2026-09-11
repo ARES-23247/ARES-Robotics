@@ -7,6 +7,24 @@ import kotlin.test.assertFailsWith
 class UnitConversionTest {
 
     @Test
+    fun `amp substring does not turn timestamps and sample counts into current`() {
+        assertEquals(RobotUnit.MILLISECOND, UnitConversion.detectUnitFromKey("Vision/TimestampMs"))
+        for (key in listOf("Filter/SampleCount", "Drive/RampRate", "Signal/Amplitude")) {
+            assertEquals(null, UnitConversion.detectUnitFromKey(key), key)
+        }
+        for (key in listOf("MotorAmps", "Motor/amps", "Motor_AMPERES", "Motor/CurrentDraw")) {
+            assertEquals(RobotUnit.AMPERE, UnitConversion.detectUnitFromKey(key), key)
+        }
+    }
+
+    @Test
+    fun `explicit electrical and temperature units take precedence over quantities`() {
+        assertEquals(RobotUnit.MILLIVOLT, UnitConversion.detectUnitFromKey("Battery/VoltageMillivolts"))
+        assertEquals(RobotUnit.MILLIAMPERE, UnitConversion.detectUnitFromKey("Motor/CurrentMilliamps"))
+        assertEquals(RobotUnit.KELVIN, UnitConversion.detectUnitFromKey("Motor/TemperatureKelvin"))
+    }
+
+    @Test
     fun `identity conversion preserves extreme values and signed zero`() {
         for (unit in RobotUnit.entries) {
             for (value in listOf(Double.MAX_VALUE, -Double.MAX_VALUE, Double.MIN_VALUE, -0.0)) {

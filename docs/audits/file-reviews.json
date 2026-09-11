@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "6b775bcd789fcfe3a26eceaab0444bf0ebd2d54d6df893944214538168ed5899",
+      "sha256": "d28cd5102afe736de20998a99af8e203fa6cf7f39a906111170bdcd91cd9f2b3",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11511,23 +11511,27 @@
       ]
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/UnitConversion.kt": {
-      "sha256": "9ab8275e070e70fd2331df8650717d9b4a376814cbc21f7444f0780016c9db52",
+      "sha256": "8a48fbaf51c8fe527160ce1ae6d5d05f3ec9013d98ab019d867bc8ae8968ecc7",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full source read. Conversion arithmetic fixed: identity preserves bits, affine scale ratios avoid intermediate overflow, direct unit ratio avoids subnormal intermediate underflow. All5 converter tests and fullStudio suites pass. Remaining inference scope: substring collisions (Timestamp contains amp), explicit unit precedence, ambiguity and per-key work. No universal inference correctness claim.",
+      "scope": "Full source read; pass141 conversion arithmetic fixed identity/affine/subnormal cases. Pass142 fixes amp-word false positives and full-word milli/Kelvin precedence; Cartesian lookup set and regexes initialized once. Seven focused tests and Studio1796passes/6skips. Remaining inference: other substring collisions, angular rate unit precedence, abbreviations and ambiguous custom names. No universal inference or whole-loop allocation claim.",
       "evidence": [
         "docs/audits/studio-unit-conversion-audit.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
+        "docs/audits/studio-electrical-unit-inference-audit.md",
+        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/UnitConversionTest.kt": {
-      "sha256": "dccb1de9bc4add86ebb8378559c30cc3bd0e6110b59244708e45f7684332b5b1",
+      "sha256": "8d8c9d152d017e7f10f9e889a27c1e9940b0beb72d4c90991ed35732a6aaa30d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full5-method class: dimensional separation, canonical key examples, all-unit identity extremes/signed zero, affine overflow/ordinary reference points and subnormal inch/cm conversion. Three new methods failed before and pass after. Full20-test shared suite passes.",
+      "scope": "Full seven-method class reviewed: dimensional separation, canonical examples, all-unit identity extremes, affine overflow/reference points, subnormal scale, amp-word false positives/genuine current and explicit milli/Kelvin units. Two new inference tests failed before and pass after; shared22-test suite passes.",
       "evidence": [
         "docs/audits/studio-unit-conversion-audit.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
+        "docs/audits/studio-electrical-unit-inference-audit.md",
+        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/AppJson.kt": {
@@ -11578,6 +11582,15 @@
       "evidence": [
         "docs/audits/studio-unit-conversion-audit.md",
         "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-electrical-unit-inference-audit.md": {
+      "sha256": "d4fd00035b1e86357e8fe0930c949130364dfae6dc36c4fe7d47763fa57e3a46",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass142 report verified against two failing inference regressions, corrected implementation, finalStudio counts/skip identities and retained inference limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json"
       ]
     }
   }
