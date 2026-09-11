@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8bc0e82a354bb735d1ec3ce9bb2a144053c0b126bc99faad331ea73bf57676df",
+      "sha256": "3872cd28f870b9f534feffb1925a1d89f89acd6f4b030d13b576ca45f43b9828",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5623,7 +5623,8 @@
         "docs/audits/frc-simulator-input-config-audit.md: pass124 configuration records and canonical self-fingerprint refreshed",
         "docs/audits/frc-generated-controls-profile-audit.md: pass125 control/profile records and self-fingerprint refreshed",
         "docs/audits/frc-field-loader-boundary-audit.md: pass126 field loader records and self-fingerprint refreshed",
-        "docs/audits/frc-factory-construction-cleanup-audit.md: pass127 factory cleanup records and self-fingerprint refreshed"
+        "docs/audits/frc-factory-construction-cleanup-audit.md: pass127 factory cleanup records and self-fingerprint refreshed",
+        "docs/audits/frc-regression-evidence-audit.md: pass128 test/fixture records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -10794,6 +10795,95 @@
       "scope": "Documents confirmed constructor/test cleanup defects, fixes, corrected failure fixture,298passingFRCtests and explicit native cleanup measurement/fault injection gaps.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass127-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/ARESRobotTest.kt": {
+      "sha256": "28a2de352881bbb289c1aff7cb5a79e64ca2a46ca92bb2e975cf28508de2b01c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full lifecycle smoke review. Fixed stale snapshots with DSnotification/robotPeriodic perframe, explicitHALassertion, attached/resetDSfixture, and finallycleanup. Checks no swallowed mechanismfault. Button effects remain dedicatedcontroller tests; not allbranch proof.",
+      "evidence": [
+        "docs/audits/frc-regression-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/ARESRobotTimedBehaviorRegressionTest.kt": {
+      "sha256": "38548e665fff0bf726de3653f8f84c31f9b1bd73b1e18234ce7b23e285ff7c1a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full5test review: alliance/lateassignment/topology,simulationpose,disabledtargets,faultrecovery,fieldunitmath. Fixed finallyprotected shared DS/clock cleanup evenwhenclose throws. Reflection fixture appropriate to composition integration; not noisyestimator/HILevidence.",
+      "evidence": [
+        "docs/audits/frc-regression-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/AresFrcRemediationTest.kt": {
+      "sha256": "56940c5a72bc2c4e7f19988374ab1df057b76bdf813ce368b114db239e541db0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full2test review: independentrearwardbearingfromoffsetorigin and realreducer cowlrotationclamp. Numerical assertions pass; no ballistic calibration claim.",
+      "evidence": [
+        "docs/audits/frc-regression-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/RepositorySafetyContractTest.kt": {
+      "sha256": "56f0f5017b72c19e26d7be77a3b3fe8ec1688a8bc9fa2656da11f30ca3d7df02",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full5structuraltest review: closeabletypes, productionfixtureexclusion,atomicdownloadsourcepresence,generatedlifecyclehooks,noFTCimports. Renamed inaccuratezero-schemeclaim. String checks are architectureguards, not behavioralproof or actualSCPtest.",
+      "evidence": [
+        "docs/audits/frc-regression-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/hardware/FRCFlywheelSafetyMathTest.kt": {
+      "sha256": "50ae028c6fc01b1a97b83a2d7d79c983ca242e371030454fc7b728b68946d514",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full3test review including new16per-motor invalid observations, target/tolerance rejection, inclusive250RPMspread, stricttargetreadinessandaveragepitfall. Purehelpertests pass; vendorhardware remainsseparate.",
+      "evidence": [
+        "docs/audits/frc-regression-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/marvin/MarvinSuperstructureSafetyTest.kt": {
+      "sha256": "f0c4291f1d5f0fc9db7a15acbce4b3b7bb5a67a4d31ba0d690150f31cbc99292",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full12fakeIOtest review: targets/effort/clearance/staleposition/inhibit/units/math. Fixedrecordingandassertionsforflywheel+intakerollervoltage so inhibitchecksall7channelsandnoalternateposition/velocitywrites. DoesnotvalidatevendorIO.",
+      "evidence": [
+        "docs/audits/frc-regression-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/resources/ares/autonomous-catalog.json": {
+      "sha256": "7e71ab7248ad5e575dc43d56b8da60a12b83458732b2f4170b85d61ee3e321f4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullsingleentrytestcatalog review: IDs/default/routine reference,finitebluepose(2,2,0),mirroring/enabled/sort coherent. Actualnativeauto testsdecodeclasspathfixtureandcheckmirroring/selection; excludedfromproduction.",
+      "evidence": [
+        "docs/audits/frc-regression-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/resources/ares/routines/sim-drive-and-shoot.aresroutine": {
+      "sha256": "ec8f1aab2281a47b459ca0dc4a4623ee2a18fef2f3120617f8dc7a8ac7fb4940",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fulltest-onlyroutine review: finiteDRIVE_TO target(3.6,2.65,0),ordered0.1/0.45markers,knownprepare/collect/feed/stop/stowactions,0.5secondwait. Existingnativeauto testsdecode/preflight fixture; notphysicalroutineexecutionclaim.",
+      "evidence": [
+        "docs/audits/frc-regression-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-regression-evidence-audit.md": {
+      "sha256": "51c9e6f639fe37b4612b07385e8a484d9ab8c0c06dc30d611909c15cdac9fc56",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Records8completependingtest/fixture reviews, staleinput/cleanup/inhibitcoverage fixes, newflywheelinvalidvaluecase,299passingFRCtestsandstructuralvsbehavioral/HILlimitations.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass128-verified-evidence/summary.json"
       ]
     }
   }
