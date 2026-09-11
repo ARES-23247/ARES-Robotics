@@ -41,6 +41,8 @@ object SplineMotionProfiler {
      * Constructs a fully profiled [Path] from parsed PathPlanner JSON trajectory data.
      * Requested endpoint speeds are ceilings: local speed and reachable acceleration
      * limits may reduce them. This spatial profile does not promise jerk bounds.
+     * Nonempty requests validate finite bounded geometry and metadata and preflight the shared
+     * 100,000-sample budget before allocating path samples. Do not mutate input lists during construction.
      *
      * @param data Parsed trajectory structure [PathPlannerJsonParser.ParsedPathData].
      * @return Fully parameterized and velocity-profiled [Path].
@@ -49,8 +51,10 @@ object SplineMotionProfiler {
 
         val parsedWaypoints = data.waypoints
         if (parsedWaypoints.isEmpty()) return Path(emptyList())
+        SplineProfileValidation.parsed(data)
+        val sampling = splineSamplePlan(parsedWaypoints.size) { parsedWaypoints[it].anchor }
 
-        val pathPoints = mutableListOf<PathPoint>()
+        val pathPoints = ArrayList<PathPoint>(sampling.totalSamples)
         var accumulatedDistance = 0.0
 
         var initialTangent = Rotation2d(0.0)
@@ -70,7 +74,7 @@ object SplineMotionProfiler {
         val startRotDeg = data.startRotDeg ?: Math.toDegrees(initialTangent.radians)
         val endRotDeg = data.endRotDeg ?: Math.toDegrees(finalTangent.radians)
 
-        val relativePositions = mutableListOf<Double>()
+        val relativePositions = ArrayList<Double>(sampling.totalSamples)
         relativePositions.add(0.0)
 
         pathPoints.add(
@@ -85,8 +89,7 @@ object SplineMotionProfiler {
         for (i in 0 until parsedWaypoints.size - 1) {
             val wp1 = parsedWaypoints[i]
             val wp2 = parsedWaypoints[i + 1]
-            val dist = hypot(wp2.anchor.x - wp1.anchor.x, wp2.anchor.y - wp1.anchor.y)
-            val numSamples = maxOf(10, (dist / 0.05).toInt())
+            val numSamples = sampling.steps[i]
 
             for (step in 1..numSamples) {
                 val t = step.toDouble() / numSamples
@@ -133,7 +136,11 @@ object SplineMotionProfiler {
         return Path(pathPoints, pathEvents)
     }
 
-    /** Generates a natural cubic path with C2-continuous geometry and interpolated robot heading. */
+    /**
+     * Generates a natural cubic path with C2-continuous geometry and interpolated robot heading.
+     * Fewer than two points retain the empty-path result. Other requests share the facade's
+     * finite geometry/positive-limit policy and the 100,000-sample trajectory budget.
+     */
     fun generateHermitePath(
         points: List<Translation2d>,
         startHeading: Rotation2d,
@@ -142,10 +149,12 @@ object SplineMotionProfiler {
         maxAccelerationMps2: Double
     ): Path {
         if (points.size < 2) return Path(emptyList())
+        SplineProfileValidation.generated(points, startHeading, endHeading, maxVelocityMps, maxAccelerationMps2)
+        val sampling = splineSamplePlan(points.size) { points[it] }
 
         val parsedWaypoints = naturalCubicWaypointControls(points)
 
-        val pathPoints = mutableListOf<PathPoint>()
+        val pathPoints = ArrayList<PathPoint>(sampling.totalSamples)
         var accumulatedDistance = 0.0
 
         val initialTangent = BezierSpline.evaluateHeading(
@@ -164,8 +173,7 @@ object SplineMotionProfiler {
         for (i in 0 until parsedWaypoints.size - 1) {
             val wp1 = parsedWaypoints[i]
             val wp2 = parsedWaypoints[i + 1]
-            val dist = hypot(wp2.anchor.x - wp1.anchor.x, wp2.anchor.y - wp1.anchor.y)
-            val numSamples = maxOf(10, (dist / 0.05).toInt())
+            val numSamples = sampling.steps[i]
             for (step in 1..numSamples) {
                 val t = step.toDouble() / numSamples
                 val point = BezierSpline.evaluate(wp1.anchor, wp1.nextControl, wp2.prevControl, wp2.anchor, t)

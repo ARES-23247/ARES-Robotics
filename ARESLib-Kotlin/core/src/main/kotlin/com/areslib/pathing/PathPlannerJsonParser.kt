@@ -22,9 +22,9 @@ import com.areslib.math.geometry.Translation2d
  */
 object PathPlannerJsonParser {
     private val gson = Gson()
-    private const val MAX_WAYPOINTS = 512
-    private const val MAX_METADATA_ENTRIES = 2_048
-    private const val MAX_ABS_COORDINATE_METERS = 1_000.0
+    private const val MAX_WAYPOINTS = SplineProfileValidation.MAX_WAYPOINTS
+    private const val MAX_METADATA_ENTRIES = SplineProfileValidation.MAX_METADATA_ENTRIES
+    private const val MAX_ABS_COORDINATE_METERS = SplineProfileValidation.MAX_ABS_COORDINATE_METERS
     private const val MAX_JSON_CHARACTERS = 4_194_304
 
     data class ParsedPathData(
@@ -324,12 +324,23 @@ object PathPlannerJsonParser {
                     require(typeNode.isJsonPrimitive && typeNode.asJsonPrimitive.isString && typeNode.asString == "named") {
                         "event marker $i supports only a named command"
                     }
-                    if (cmd.has("name") && !cmd.get("name").isJsonNull) {
-                        val nameNode = cmd.get("name")
+                    val commandData = if (cmd.has("data")) {
+                        val node = cmd.get("data")
+                        require(node.isJsonObject) { "event marker $i command data must be an object" }
+                        node.asJsonObject
+                    } else cmd // Legacy ARES fixtures stored the name directly on the command.
+                    if (commandData.has("name") && !commandData.get("name").isJsonNull) {
+                        val nameNode = commandData.get("name")
                         require(nameNode.isJsonPrimitive && nameNode.asJsonPrimitive.isString) {
                             "event marker $i command name must be a string"
                         }
                         commandName = nameNode.asString
+                    }
+                    if (cmd.has("data") && cmd.has("name")) {
+                        val legacy = cmd.get("name")
+                        require(legacy.isJsonPrimitive && legacy.asJsonPrimitive.isString && legacy.asString == commandName) {
+                            "event marker $i has conflicting command names"
+                        }
                     }
                 }
                 val validatedCommandName = requireNotNull(commandName) { "event marker $i is missing a command name" }

@@ -1,12 +1,9 @@
 package com.areslib.pathing
 
-import com.areslib.math.geometry.Pose2d
-import com.areslib.math.geometry.Rotation2d
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.math.abs
 
 class PathPlannerParserParityTest {
 
