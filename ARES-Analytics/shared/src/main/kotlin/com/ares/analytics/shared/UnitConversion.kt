@@ -59,23 +59,23 @@ object UnitConversion {
     /** Converts [value] between units of the same [UnitCategory]. */
     fun convert(value: Double, from: RobotUnit, to: RobotUnit): Double {
         if (from.category != to.category) throw IllegalArgumentException("Cannot convert from ${from.category} to ${to.category}")
+        if (from == to) return value
 
         if (from.category == UnitCategory.TEMPERATURE) {
             val celsius = when (from) {
                 RobotUnit.CELSIUS -> value
-                RobotUnit.FAHRENHEIT -> (value - 32.0) * 5.0 / 9.0
+                RobotUnit.FAHRENHEIT -> (value - 32.0) * (5.0 / 9.0)
                 RobotUnit.KELVIN -> value - 273.15
                 else -> value
             }
             return when (to) {
                 RobotUnit.CELSIUS -> celsius
-                RobotUnit.FAHRENHEIT -> celsius * 9.0 / 5.0 + 32.0
+                RobotUnit.FAHRENHEIT -> celsius * (9.0 / 5.0) + 32.0
                 RobotUnit.KELVIN -> celsius + 273.15
                 else -> celsius
             }
         }
-        val baseValue = value * from.factorToBase
-        return baseValue / to.factorToBase
+        return value * (from.factorToBase / to.factorToBase)
     }
 
     /** Infers a display unit from a telemetry key, or returns `null` when the key is ambiguous. */

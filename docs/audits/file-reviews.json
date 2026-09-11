@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "97000fb6c494a7d4f379be8634fdcddad673c84f1920f95acf8b6c86d7d700b0",
+      "sha256": "6b775bcd789fcfe3a26eceaab0444bf0ebd2d54d6df893944214538168ed5899",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11508,6 +11508,76 @@
       "evidence": [
         "docs/audits/studio-driver-jitter-sampling-audit.md",
         "ARESLib-Kotlin/build/audit-pass140-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/UnitConversion.kt": {
+      "sha256": "9ab8275e070e70fd2331df8650717d9b4a376814cbc21f7444f0780016c9db52",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full source read. Conversion arithmetic fixed: identity preserves bits, affine scale ratios avoid intermediate overflow, direct unit ratio avoids subnormal intermediate underflow. All5 converter tests and fullStudio suites pass. Remaining inference scope: substring collisions (Timestamp contains amp), explicit unit precedence, ambiguity and per-key work. No universal inference correctness claim.",
+      "evidence": [
+        "docs/audits/studio-unit-conversion-audit.md",
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/UnitConversionTest.kt": {
+      "sha256": "dccb1de9bc4add86ebb8378559c30cc3bd0e6110b59244708e45f7684332b5b1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full5-method class: dimensional separation, canonical key examples, all-unit identity extremes/signed zero, affine overflow/ordinary reference points and subnormal inch/cm conversion. Three new methods failed before and pass after. Full20-test shared suite passes.",
+      "evidence": [
+        "docs/audits/studio-unit-conversion-audit.md",
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/AppJson.kt": {
+      "sha256": "cc87e7283443c0930903f4038ebf27be337388adf0b478f0e41b11471e0fc967",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full13-line JSON policy declaration: unknown keys ignored, input coercion enabled, explicit null emission disabled, pretty copy inherits policy. Existing typed integration-event roundtrip and fullStudio consumer suites pass. No independent exhaustive serializer/library validation claimed.",
+      "evidence": [
+        "docs/audits/studio-unit-conversion-audit.md",
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/Models.kt": {
+      "sha256": "2d41fdd1b75e49e3e372248f3d1807b0ca60c001453033b6a6e4cea2b54394a3",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "All137 lines read: geometry and game-piece/AprilTag/waypoint DTO fields, documented meters versus degrees/radians, defaults and sealed obstacle types. Existing model tests exercise serialization. Remaining full producer/consumer contract tracing, validation ownership, compatibility of newly optional fields and provider default model identity.",
+      "evidence": [
+        "docs/audits/studio-unit-conversion-audit.md",
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/TopologyAndCloudModels.kt": {
+      "sha256": "dbcdf54db9f86665308053127208fd8649504cefbb57cca0b20b324d66c070f6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full56-line DTO file read: forensics request/response, normalized confidence documentation, SysId summary/classification and driver profile defaults. No arithmetic performed by these records. Driver profile consumers/tests inspected; cloud response range enforcement and full wire compatibility remain unverified.",
+      "evidence": [
+        "docs/audits/studio-unit-conversion-audit.md",
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/ModelsTest.kt": {
+      "sha256": "9292a09b26d7eec28b3fa55a12ece641489b185b00c9c81aa51feaeb02347c5c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full7-method model test class read: diagnostic credential redaction with synthetic secrets, workspace roundtrip/legacy defaults/list identity, all3 obstacle variants, field-image and game-piece serialization samples. Shared suite passes. Sample assertions do not establish every producer/consumer or optional-field migration.",
+      "evidence": [
+        "docs/audits/studio-unit-conversion-audit.md",
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-unit-conversion-audit.md": {
+      "sha256": "0973cdfb6032b9fd597a1674d4fc9317b0599ec3d4cf353d186bff6450aa6ca8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass141 report checked against three before failures, five focused tests, stable arithmetic operations and finalStudio XML totals/skip limitations.",
+      "evidence": [
+        "docs/audits/studio-unit-conversion-audit.md",
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
       ]
     }
   }
