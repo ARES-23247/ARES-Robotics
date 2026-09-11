@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "639e7266e85750ef79ef371ba301e5651f96a10d6c9a611d0791775f2c348da7",
+      "sha256": "454f53c11b800b6cd0934993e61f9c9bc24e1dd8a7715f2687909ab866d3b043",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12845,33 +12845,39 @@
       ]
     },
     "ARES-FTC/simulator/src/main/kotlin/org/firstinspires/ftc/teamcode/CalibrationTestOpMode.kt": {
-      "sha256": "375c3d2f1ba8c7ddbe17744f3bfc6e97a90fae06953f860f7ed417481e1f5d16",
+      "sha256": "7e62742ee29bd73259acba8078a7f8bb63c3727dc94575f80c035c3d2991e610",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full static read and deterministic plant tests. Invalid voltage/RPM/effort neutralize; finite effort caps applied voltage. Setup/wait/enable moved under cleanup, stop/interruption guard added. Actual lifecycle interruption/enablement cleanup not yet fault-injected; fixed-step smoke plant not physical calibration.",
+      "scope": "Pass177 plant finite/effort guards and expanded cleanup boundary; pass178 missing simulated Limelight binding and explicit cached winding-current model added. All ten headless routines now pass. Normal startup/stop observed, but interruption/enablement failure cleanup still lacks dedicated fault injection. Synthetic model is not measured motor physics.",
       "evidence": [
         "docs/audits/ftc-calibration-plant-audit.md",
-        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json",
+        "docs/audits/ftc-calibration-supervisor-audit.md",
+        "ARESLib-Kotlin/build/audit-pass178-verified-evidence/summary.json"
       ]
     },
     "ARES-FTC/simulator/src/main/kotlin/org/firstinspires/ftc/teamcode/CalibrationVerificationApp.kt": {
-      "sha256": "fd36de1ea688464bd8e901ad0d1ac90f73d618f6527c556cd4bf5536a0983858",
-      "review": "partial",
+      "sha256": "cb9139662143459ef309fd433a76a372f73be0f12e608f207277a38344f21971",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full static read of headless NT4 supervisor; startup/resource cleanup before inner try and wall-clock deadline behavior require further correction/validation. No headless runner or socket startup executed in this pass.",
+      "scope": "Full single-run headless supervisor review: immediate resource ownership through startup/arming/run, monotonic deadlines/lease refresh, STOP/flush before robust reverse cleanup, failure exit. Vision precedes motion to preserve initial view. All ten real local NT4 routine status/fresh sample/completion checks pass; physical calibration constants and timing not certified.",
       "evidence": [
         "docs/audits/ftc-calibration-plant-audit.md",
-        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json",
+        "docs/audits/ftc-calibration-supervisor-audit.md",
+        "ARESLib-Kotlin/build/audit-pass178-verified-evidence/summary.json"
       ]
     },
     "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/CalibrationPlantTest.kt": {
-      "sha256": "04738af858256f3ddb7f5bb7e4a0944d25efac9dcd93657e0162106e8b2bc94b",
+      "sha256": "dfa14cec97c1fae3e58dfc2bae2921ed16f4fc804b74151c0a4a7e3fcf27a2c4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full three-test private-plant fixture review: +/-12V saturation/safe coasting, NaN/infinity voltage neutral recovery, finite quarter/zero/negative/nonfinite effort and invalid RPM. Two tests failed before fixes; full simulator suite passes.",
+      "scope": "Full four-test review: existing saturation/coasting/nonfinite/effort guards plus signed electrical current, cached getter, transient/steady-state decay and zero-voltage braking. Full 13 simulator tests pass; no physical model calibration claimed.",
       "evidence": [
         "docs/audits/ftc-calibration-plant-audit.md",
-        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json",
+        "docs/audits/ftc-calibration-supervisor-audit.md",
+        "ARESLib-Kotlin/build/audit-pass178-verified-evidence/summary.json"
       ]
     },
     "docs/audits/ftc-calibration-plant-audit.md": {
@@ -12882,6 +12888,36 @@
       "evidence": [
         "docs/audits/ftc-calibration-plant-audit.md",
         "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/simulator/src/main/kotlin/org/firstinspires/ftc/teamcode/CalibrationVerificationResources.kt": {
+      "sha256": "2cead3d5baab6662b977195267a8167b668a020341cac1945945a70995ce2cbf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full single-owner cleanup scope: register acquired resources, pre-close STOP/flush actions, reverse handle close, all-step attempts, distinct suppressed errors, idempotence/reference clearing. Three focused fake-resource tests and real headless success/failure exits verify integration; no physical hardware.",
+      "evidence": [
+        "docs/audits/ftc-calibration-supervisor-audit.md",
+        "ARESLib-Kotlin/build/audit-pass178-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/CalibrationVerificationResourcesTest.kt": {
+      "sha256": "9c3d0cf303a2bc2e6431333c0853111c045b80925a86ec0890c03167ea266778",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test review: partial startup failure, cleanup ordering and failure continuation, idempotent repeated close, primary body error retained with cleanup suppressed. Full simulator suite passes.",
+      "evidence": [
+        "docs/audits/ftc-calibration-supervisor-audit.md",
+        "ARESLib-Kotlin/build/audit-pass178-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-calibration-supervisor-audit.md": {
+      "sha256": "11dda12764f30494a456145401416810fcf79fb5ad96f73507154315c380732f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass178 report verified against unit XML, three failed headless logs and final ten-routine success/port release. Synthetic physics, stale fallback and physical timing limits stated.",
+      "evidence": [
+        "docs/audits/ftc-calibration-supervisor-audit.md",
+        "ARESLib-Kotlin/build/audit-pass178-verified-evidence/summary.json"
       ]
     }
   }

@@ -5,6 +5,24 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CalibrationPlantTest {
+    @Test fun `current is a cached electrical model and decays toward steady state`() {
+        for (voltage in listOf(-12.0, 12.0)) {
+            val io = plant()
+            io.setAppliedVoltage(voltage)
+            assertEquals(0.0, io.currentAmps, 0.0)
+            io.refresh()
+            assertEquals(22.08, io.currentAmps, 1e-9)
+            assertTrue(io.currentReadingValid)
+            val reading = io.currentAmps
+            assertEquals(reading, io.currentAmps, 0.0)
+            repeat(300) { io.refresh() }
+            assertEquals(0.0, io.currentAmps, 1e-8)
+            io.safe()
+            io.refresh()
+            assertTrue(io.currentReadingValid)
+            assertTrue(io.currentAmps > 0.0)
+        }
+    }
     private fun plant(): FlywheelIO = Class.forName("org.firstinspires.ftc.teamcode.CalibrationTestOpMode\$SimulatedFlywheelIO")
         .getDeclaredConstructor().apply { isAccessible = true }.newInstance() as FlywheelIO
 

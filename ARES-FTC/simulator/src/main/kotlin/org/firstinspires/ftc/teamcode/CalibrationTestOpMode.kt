@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp
 class CalibrationTestOpMode : LinearOpMode() {
     override fun runOpMode() {
         val flywheel = SimulatedFlywheelIO()
-        val robot = FtcMecanumRobot(hardwareMap, pinpointName = "pinpoint")
+        val robot = FtcMecanumRobot(hardwareMap, pinpointName = "pinpoint", limelightName = "limelight")
         try {
             robot.sysIdFlywheelIO = flywheel
             robot.isLiveTuningEnabled = true
@@ -37,10 +37,13 @@ class CalibrationTestOpMode : LinearOpMode() {
     private class SimulatedFlywheelIO : FlywheelIO {
         private var appliedVoltage = 0.0
         private var cachedVelocityRpm = 0.0
+        private var cachedCurrentAmps = 0.0
 
         override fun refresh() {
             val targetRpm = appliedVoltage * RPM_PER_VOLT
             cachedVelocityRpm += (targetRpm - cachedVelocityRpm) * RESPONSE_PER_LOOP
+            // Synthetic winding-current magnitude from voltage minus back EMF; no hardware reading.
+            cachedCurrentAmps = kotlin.math.abs(appliedVoltage - cachedVelocityRpm / RPM_PER_VOLT) / WINDING_RESISTANCE_OHMS
         }
 
         override fun setVelocityRpm(rpm: Double, maxEffortScale: Double) {
@@ -58,9 +61,13 @@ class CalibrationTestOpMode : LinearOpMode() {
         override val velocityValid: Boolean
             get() = cachedVelocityRpm.isFinite()
 
+        override val currentAmps: Double
+            get() = cachedCurrentAmps
+
         companion object {
             private const val RPM_PER_VOLT = 420.0
             private const val RESPONSE_PER_LOOP = 0.08
+            private const val WINDING_RESISTANCE_OHMS = 0.5
         }
     }
 }
