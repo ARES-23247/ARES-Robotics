@@ -5543,7 +5543,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "39eda8b4a2e607d072a665b66a67dac5d3f0d137fea2cff29ca825bfb0ed7da5",
+      "sha256": "d0e9cab4b9af2256a9897efcc1af2588b6ad302d3a70246f3a0e7b2845b3e34e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5594,7 +5594,8 @@
         "docs/audits/spline-constraint-interval-audit.md: pass97 scopes and canonical self-fingerprint refreshed",
         "docs/audits/spline-analytical-curvature-audit.md: pass98 scopes and canonical self-fingerprint refreshed",
         "docs/audits/spline-stationary-grid-audit.md: pass99 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-regular-interval-bounds-audit.md: pass100 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/spline-regular-interval-bounds-audit.md: pass100 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-calibration-cache-audit.md: pass101 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8718,6 +8719,45 @@
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass100-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass100-focused-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/SwerveOffsetCalibrationSampleCache.kt": {
+      "sha256": "1331788182642bbd61b084279aff81599520683e2047b093ca81be4725c610fb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full cache review: combined latency/residence age, explicit rewind and overflow rejection, private validated snapshot ownership, bounded cached copies, invalid acquisition revocation and no hardware refresh. Removed redundant copied-value plausibility scan. Single owning loop and no measured physical timing claim.",
+      "evidence": [
+        "docs/audits/frc-calibration-cache-audit.md",
+        "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/ARESRobotSafetyBoundaryTest.kt": {
+      "sha256": "d287f8126cc141ea35399c2ebf72079831b9ebc928b8f8835c5a904a4dc6f8e5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read full test file and executed all13methods. Five new methods include two reproduced failures; cover combined age, fractional/exact boundaries, replacement, timestamp range, snapshot aliasing, invalid latency, exceptions/incomplete reads, output boundaries and IO call counts. Existing safety/PDH/topology assertions retained; test execution does not certify every called implementation.",
+      "evidence": [
+        "docs/audits/frc-calibration-cache-audit.md",
+        "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt": {
+      "sha256": "d387345e2b9fc28ba970580aa4674bcec730a8f992766f90d62c65542445f8a1",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open.",
+      "evidence": [
+        "docs/audits/frc-calibration-cache-audit.md",
+        "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-calibration-cache-audit.md": {
+      "sha256": "665aa7586660b24e128a2d966ce709b6991baa8b49243e125809b4ba073cd9a4",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reviewed findings, five new regressions, product-local dependency scope and copied validation evidence. Physical timing/calibration excluded.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json"
       ]
     }
   }
