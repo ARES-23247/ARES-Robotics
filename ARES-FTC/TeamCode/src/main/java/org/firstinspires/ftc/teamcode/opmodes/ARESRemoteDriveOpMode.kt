@@ -24,6 +24,7 @@ class ARESRemoteDriveOpMode : AresTeleOpBase() {
     private val driveIntent = RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0)
     private var lastStatusTelemetryMs = 0L
     private var hasStatusTelemetryTime = false
+    private var terminalDriveFailure: Exception? = null
 
     override fun define() = teleOp {
 
@@ -34,6 +35,7 @@ class ARESRemoteDriveOpMode : AresTeleOpBase() {
         }
 
         everyLoop {
+            terminalDriveFailure?.let { throw it }
             try {
                 val now = RobotClock.currentTimeMillis()
                 val valueCount = try {
@@ -80,8 +82,23 @@ class ARESRemoteDriveOpMode : AresTeleOpBase() {
             } catch (e: Exception) {
                 // A loop fault invalidates the handshake, not only this frame's velocity.
                 driveFrameGate.observe(null, RobotClock.currentTimeMillis())
-                dispatchDriveIntent(robot, 0.0, 0.0, 0.0, isFieldCentric = true)
-                robot.addTelemetry("Status", "WATCHDOG ERROR: ${e.message}")
+                try {
+                    dispatchDriveIntent(robot, 0.0, 0.0, 0.0, isFieldCentric = true)
+                } catch (neutralFailure: Throwable) {
+                    terminalDriveFailure = e
+                    if (neutralFailure !== e) e.addSuppressed(neutralFailure)
+                    try {
+                        robot.close()
+                    } catch (closeFailure: Throwable) {
+                        if (closeFailure !== e && closeFailure !== neutralFailure) e.addSuppressed(closeFailure)
+                    }
+                    throw e
+                }
+                try {
+                    robot.addTelemetry("Status", "WATCHDOG ERROR: ${e.message}")
+                } catch (_: Exception) {
+                    // Reporting must not prevent the following robot update from applying zero.
+                }
             }
         }
     }

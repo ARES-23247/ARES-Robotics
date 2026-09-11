@@ -25,6 +25,7 @@ class ARESRemoteDriveLoopTest {
     private lateinit var robot: AresRobot
     private val snapshots = mutableListOf<RobotAction.JoystickDriveIntent>()
     private val originals = mutableListOf<RobotAction.JoystickDriveIntent>()
+    private var driveDispatchFailure: Exception? = null
 
     @Before fun setup() {
         check(NT4Server.getInstance() == null) { "Test requires no running NT4 server" }
@@ -39,6 +40,7 @@ class ARESRemoteDriveLoopTest {
                 if (action is RobotAction.JoystickDriveIntent) {
                     originals.add(action)
                     snapshots.add(action.copy())
+                    driveDispatchFailure?.let { throw it }
                 }
             }
             RETURNS_DEFAULTS.answer(invocation)
@@ -124,5 +126,37 @@ class ARESRemoteDriveLoopTest {
         assertEquals(0.0, tick(1020L).targetXVelocity, 0.0)
         publish(4, 1.0)
         assertEquals(0.0, tick(1030L).targetXVelocity, 0.0)
+    }
+
+    @Test fun `failed error telemetry cannot prevent neutral robot update`() {
+        publish(1)
+        tick(1000L)
+        publish(2, 1.0)
+        tick(1010L)
+        doThrow(IllegalStateException("display failed")).`when`(robot).addTelemetry("Status", "DRIVING")
+        doThrow(IllegalStateException("error display failed")).`when`(robot).addTelemetry("Status", "WATCHDOG ERROR: display failed")
+        assertEquals(0.0, tick(1100L).targetXVelocity, 0.0)
+        assertEquals(3, mockingDetails(robot).invocations.count { it.method.name == "update" })
+    }
+
+    @Test fun `failed neutral dispatch closes robot and preserves primary failure`() {
+        publish(1)
+        tick(1000L)
+        publish(2, 1.0)
+        tick(1010L)
+        val failure = IllegalStateException("dispatch failed")
+        val cleanupFailure = IllegalStateException("close failed")
+        driveDispatchFailure = failure
+        doThrow(cleanupFailure).`when`(robot).close()
+        assertSame(failure, runCatching { tick(1020L) }.exceptionOrNull())
+        verify(robot).close()
+        assertEquals(listOf(cleanupFailure), failure.suppressed.toList())
+        assertEquals(0.0, snapshots.last().targetXVelocity, 0.0)
+        assertEquals(2, mockingDetails(robot).invocations.count { it.method.name == "update" })
+        val attempts = snapshots.size
+        driveDispatchFailure = null
+        assertSame(failure, runCatching { tick(1030L) }.exceptionOrNull())
+        assertEquals(attempts, snapshots.size)
+        verify(robot, times(1)).close()
     }
 }

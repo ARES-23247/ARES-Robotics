@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e3de1fb26dbc7b2adebee44d302090ffb84971b14a45f99791cae51d715d35d0",
+      "sha256": "8331e0b16f6d8b51989aa87d55001c7546108886f24345935d853294fe5fc99a",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12761,23 +12761,27 @@
       ]
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESRemoteDriveOpMode.kt": {
-      "sha256": "ddf82814ea2dedf5dec89b7ab61aeaabb73c99169cc68413bbcff09efa00f6e7",
-      "review": "partial",
+      "sha256": "edf97b696c6be8c2b56fb6d7a4385ff1c97cc695c11e8f9a160196e9788163a7",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full static read plus real loop in-memory NT4 tests: fault invalidates handshake before zero, retained motion/neutral/exact lease expiry, oversized frame count rejection, action reuse and initial status at zero. Failure of zero-dispatch/error-report fallback and shared SDK shutdown remain open; physical output and network exception paths not certified.",
+      "scope": "Full single-OpMode loop/delegation review: pass174 real gate/copy/retained/lease/oversized/action reuse/status/fault disarm; pass175 failed error telemetry no longer blocks neutral update, failed neutral dispatch closes and terminally latches with diagnostic suppression. Shared SDK scheduling, transport faults and actual hardware neutralization/timing remain external.",
       "evidence": [
         "docs/audits/ftc-remote-drive-loop-audit.md",
-        "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json",
+        "docs/audits/ftc-remote-drive-fallback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass175-verified-evidence/summary.json"
       ]
     },
     "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/ARESRemoteDriveLoopTest.kt": {
-      "sha256": "caa1ec9e26e429ac1a43feae4cc6efd890916361f818d7afa28db48173f20fe5",
+      "sha256": "1309443f532ac48c52a9c5fff41d928257eca92541dc54274c8b2de90b8eea76",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full four-test fixture review: actual loop/gate, unstarted registry-only NT4 instance guarded/cleared, mocked hardware/runtime, snapshots of mutable action at dispatch, retained/error recovery/oversized/first status cases. Globals restored. 145 full FTC tests pass.",
+      "scope": "Full six-test in-memory unstarted NT4 fixture review; snapshots are dispatch attempts before injected failures. Added error-report failure with continuing update, failed neutral dispatch with close/error retention, and blocked subsequent loops. Existing handshake/lease/oversized/status tests retained; 147 full FTC tests pass.",
       "evidence": [
         "docs/audits/ftc-remote-drive-loop-audit.md",
-        "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json",
+        "docs/audits/ftc-remote-drive-fallback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass175-verified-evidence/summary.json"
       ]
     },
     "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/ARESRemoteDriveSafetyTest.kt": {
@@ -12798,6 +12802,16 @@
       "evidence": [
         "docs/audits/ftc-remote-drive-loop-audit.md",
         "ARESLib-Kotlin/build/audit-pass174-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-remote-drive-fallback-audit.md": {
+      "sha256": "bcabe5fed6ac311b74fe0a91f4c54a4a1c2f3afbb777103453600aa06c47ecea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass175 report verified against before/after and full XML, source cleanup trace, policy and links; attempts/mock boundaries distinguished from physical effects.",
+      "evidence": [
+        "docs/audits/ftc-remote-drive-fallback-audit.md",
+        "ARESLib-Kotlin/build/audit-pass175-verified-evidence/summary.json"
       ]
     }
   }
