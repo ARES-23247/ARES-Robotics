@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "5d6ba0e2ce637cb7067773a1558be7a75af615c5ed990d318bb7e35bdf7712b9",
+      "sha256": "4ea4ed7ad8d2aa596298be817b015a7a01960b33d5f599f6e9efa2e98c639301",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5605,7 +5605,8 @@
         "docs/audits/frc-initialization-handoff-audit.md: pass106 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-dashboard-input-lifecycle-audit.md: pass107 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-simulated-feedback-audit.md: pass108 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/mechanism-integration-audit.md: pass109 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/mechanism-integration-audit.md: pass109 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-physics-boundary-audit.md: pass110 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9104,6 +9105,65 @@
       "scope": "Reconciles five reproduced failures, twelve new model tests, mathematical integration changes, bounded work/allocation evidence, stricter input behavior and full frozen-candidate validation with physical/numerical limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass109-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/Dyn4jSimulation.kt": {
+      "sha256": "cce14800f509638cc4903fbb3ae3a03ad0276c0a58a9f84337a213aa41ed69a6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Early finite0..50s timestep gate before scratch/live configuration/effort/model mutations. New real-simulation invalid-time/recovery test reproduced inconsistent acceptance and now passes. Remaining simulation logic outside entry boundary remains partial.",
+      "evidence": [
+        "docs/audits/frc-physics-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/Dyn4jPhysicsWorld.kt": {
+      "sha256": "a43456cd2814ee8d19176eecb82b407b26b5c004df786a807e7018ceddd2cdb8",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read setup/rebuild/reset/step; tested finite atomic pose/time rejection, current+queued effort reset, zero-time no-op and retained queued effort, actual Dyn4j next-step behavior. Three original regressions fixed. Still partial: transactional loader failure/rebuild, field document fallback, extreme geometry and full lifetime.",
+      "evidence": [
+        "docs/audits/frc-physics-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/field/FrcFieldBuilder.kt": {
+      "sha256": "fd1007e61a5f846068e060a2ff9e9611267fb039efb2c82fcf2966ced7fae4c3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Complete small wall-builder review: center coordinates, dimensions, infinite mass, existing-body retention; finite positive width/height validated before adding any wall. Partial construction reproduced with invalid height. Existing official geometry and new invalid/dimension/mass tests passed.",
+      "evidence": [
+        "docs/audits/frc-physics-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/PhysicsWorldBoundaryAuditTest.kt": {
+      "sha256": "57ffe7597295dcb0a0af2d24b7fbb379bb31a278974ef10b29af0d781a4bfdb8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed seven methods using real Dyn4j worlds and closed top-level simulation fixtures. Initial four failure-before methods and later one entry-boundary failure preserved. Reset effort, atomic input, zero time/queued effort, field geometry and simulation recovery covered.",
+      "evidence": [
+        "docs/audits/frc-physics-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/field/FrcFieldGeometryContractTest.kt": {
+      "sha256": "75856e4cd7166665a59e32871a02fbbf7da5f616c89ddb66d2b78fa0308bb3f7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed both existing tests for canonical bumper fixture dimensions and all four official boundary placements. Supplemented by new static mass/rectangle/invalid-boundary tests.",
+      "evidence": [
+        "docs/audits/frc-physics-boundary-audit.md",
+        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-physics-boundary-audit.md": {
+      "sha256": "31d2fc91b372077ec1ef581a552dfd1bcb19a7cc2e79090a6885189e38a146fe",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles five reproduced boundary failures, seven new tests,194passingFRC tests and scoped world/entry/field review. Explicitly retains rebuild and swerve ownership work; no physical or simulator-window claim.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
       ]
     }
   }

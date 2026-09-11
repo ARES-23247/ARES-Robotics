@@ -75,8 +75,10 @@ class Dyn4jPhysicsWorld(
         }
     }
 
-    /** Advances the physics world by [dt] seconds. */
+    /** Advances by finite, nonnegative [dt] seconds; zero leaves queued effort and state untouched. */
     fun step(dt: Double) {
+        require(dt.isFinite() && dt >= 0.0) { "Physics timestep must be finite and nonnegative" }
+        if (dt == 0.0) return
         world.step(1, dt)
     }
 
@@ -102,10 +104,15 @@ class Dyn4jPhysicsWorld(
         if (debug) println("[FRC Sim] Successfully built world with ${config.obstacles.size} obstacles and ${config.elements.size} elements.")
     }
 
-    /** Teleports the robot using field meters and a CCW-positive heading in radians. */
+    /** Teleports using finite field meters and CCW radians, discarding velocity and old effort. */
     fun resetPose(x: Double, y: Double, heading: Double) {
+        require(x.isFinite() && y.isFinite() && heading.isFinite()) { "Reset pose must be finite" }
         robotBody.transform.setTranslation(x, y)
         robotBody.transform.setRotation(heading)
+        robotBody.clearForce()
+        robotBody.clearTorque()
+        robotBody.clearAccumulatedForce()
+        robotBody.clearAccumulatedTorque()
         robotBody.linearVelocity.set(0.0, 0.0)
         robotBody.angularVelocity = 0.0
         robotBody.isAtRest = false

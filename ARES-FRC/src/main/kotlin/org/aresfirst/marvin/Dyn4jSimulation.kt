@@ -113,8 +113,10 @@ class Dyn4jSimulation(
     private val random = java.util.Random(seed)
     private val debug = java.lang.Boolean.getBoolean("ares.debug")
 
-    /** Advances all models by [dt] seconds and returns reusable Redux actions for this step. */
+    /** Advances all models by finite 0..50 second [dt]; returns reusable actions for this step. */
     fun step(state: RobotState, dt: Double): List<RobotAction> {
+        // Match the bounded mechanism integrator before queuing effort or changing any model.
+        require(dt.isFinite() && dt >= 0.0 && dt <= 50.0) { "Simulation timestep must be finite and in 0..50 seconds" }
         scratchActions.clear()
         val actions = scratchActions
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
