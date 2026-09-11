@@ -53,4 +53,20 @@ hardware result is claimed.
 
 ## Final validation
 
-Pending frozen-candidate validation.
+The frozen source passed 181 pathing tests and API checks. Twelve new methods include seven distinct preserved failure-before regressions; the corrected exact-zero fixture is excluded from that count. Public API signatures are unchanged.
+
+Source `e617bc0031c680f12320c91290c5b981ab62977b`; library tree `957f68febbfe04d22f68e358cda603069d9b0835`.
+Local candidate `17.0.3-rc.957f68febbfe`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 2139 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; counts do not imply every test was freshly executed. Conditional Studio skips remain recorded in XML.
+
+Copied XML, hashes, logs and candidate BOM identity are under `ARESLib-Kotlin/build/audit-pass96-verified-evidence/summary.json`; focused XML is under `ARESLib-Kotlin/build/audit-pass96-focused-evidence/`. No physical timing, measured JIT allocation rate or usable Studio-window result is claimed.
