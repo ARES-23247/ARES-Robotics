@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import pathlib
+import pprint
 import subprocess
 import sys
 import unittest
@@ -283,12 +284,12 @@ def generated_source(project: dict, drivebase: dict, default_routine_id: str | N
             separators=(",", ":"),
         ).encode("utf-8")
     ).hexdigest()
-    encoded = json.dumps(values, sort_keys=True, indent=4)
+    encoded = pprint.pformat(values, sort_dicts=True, width=100)
     return (
         '"""Generated from .ares documents. Do not edit by hand."""\n\n'
         "from ares_micro import AutonomousRoutine, GeneratedXrpSubsystem, Waypoint\n\n"
         f"CONTENT_SHA256 = {content_hash!r}\n"
-        f"PROJECT = {encoded.replace('true', 'True').replace('false', 'False').replace('null', 'None')}\n"
+        f"PROJECT = {encoded}\n"
         f"DEFAULT_AUTONOMOUS_ID = {repr(default_routine_id)}\n"
         f"AUTONOMOUS_ROUTINES = {repr(generated_routines)}\n"
         f"SUBSYSTEMS = {repr(subsystems)}\n\n"

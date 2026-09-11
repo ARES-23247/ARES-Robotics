@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "0539486cd7741e0fc010ac6e93121a9dbb1e30df23ba2d3508bafe57a320f333",
+      "sha256": "52a01f029edc39b0c6977240cec45b5700cb3b5bc1e4c06b08f1a29e0dd05836",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11192,6 +11192,145 @@
       "evidence": [
         "docs/audits/frc-shooter-test-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass134-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_generated_project.py": {
+      "sha256": "553b581300d1d302c3f24b91ecf7dd71b743b867f21406c477dd442a76c1f751",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full source: fingerprint fixture, sampled IO math, regeneration/discovery, board ports, mecanum generation, runtime config and routine creation. Added exact literal-string round trips and discovery membership/uniqueness checks. 108 host tests pass; shared-reference checks do not establish Studio execution or physical hardware.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/tests/test_hardware.py": {
+      "sha256": "e9df9222174d6f47c34ec7208549b9514c2f6ef6d58e8b365f4a6a101775a9fb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-test file and fake Pin/I2C fixtures: expected constructor arguments for both board identities and rejection of generic identity. Executed in 108-test suite. Tests verify adapter routing, not physical bus transactions or every possible board-name ambiguity.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/tools/ares_project.py": {
+      "sha256": "89580f0dc2f117c549c7fab5acc4ea7dd1a311f6c977beaf7ca0f621957d98d2",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read host generator source. Fixed JSON token substitution corrupting string contents; Python literal serialization passes two before-failing string cases. Full host suite 108 pass. Remaining scopes: comprehensive invalid-input/schema policy, routine feature preservation, generated test non-vacuity, JUnit reporting edge cases and CLI/process boundaries.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/project.json": {
+      "sha256": "f705993698f872932075d3ae2f2171d39744891724d6f8a6d6dbf40ddf2a5986",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full declarative project: XRP schema/controller, CCW center origin, 0.155m footprint, 2.54x1.4224m field, AP network, port5811, 200ms deadman and4.3V brownout. Canonical generation/validation pass. Values are authored settings, not physical calibration.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/drivetrains/xrp-differential.aresdrivetrain": {
+      "sha256": "f7df701360963230f41d101f294d73b983a42c71547945bcef1106e01a12d704",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full declarative differential profile: left/right identity, 0.155m track from +/-0.0775 wheel locations, 0.06m wheels, 0.85m/s and5rad/s limits, encoder/IMU localization, neutral/recovery policy and simulator/tuning references. Host validation and generation pass. Physical polarity/dimensions and runtime enforcement of every descriptive flag require separate evidence.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/tuning/simulation.arestuning": {
+      "sha256": "5f202d87c9fc6b6dbd68d57f28fc1156bb589dd153398d115e0af6ab98d07eba",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full empty simulation baseline: schema, identity, canonical authority and project/drivebase/profile references coherent. No numeric overrides or executable tuning behavior.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/deploy/paths/field.json": {
+      "sha256": "d84bb3e0eb631b385c016704613db66204ec15d97a1765e3fc48de7cbb57341f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full empty tabletop field: 100in=2.54m and56in=1.4224m, center-frame authored route fits footprint bounds, no obstacles/elements/tags, image disabled with full crop. JSON and source-consumer review; no rendered field image claim.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/autonomous-catalog.json": {
+      "sha256": "999659278c184264d4bbb2bed487106022b206d314bb59af3af4718b39a98894",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full one-entry catalog: project/default/routine IDs resolve, enabled entry and initial pose fit center-origin field, mirroring disabled. Generation and routine construction tested; no physical route claim.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/routines/orbit-preview.aresroutine": {
+      "sha256": "87e0599b45a466cc27e37fe79beef5db2d53d7a1cac61b2943560d96ffb06d85",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two DRIVE_TO steps: unique step IDs, finite in-field target poses and no actions/markers/children. Safe preset compiles to capped0.5m/s speed. Construction tested; physical tracking and general preset semantics outside scope.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/subsystems/rangefinder.aressubsystem": {
+      "sha256": "4fd4323455ed0b35308824b7f88cdb87a0940e09d1f8e06f8056f6c4cee62b58",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full input-only descriptor: required built-in distance sensor, meter state/measurement scale1,0..4m bounds,250ms age/safety limit, no output/control/homing, generated mock/test ownership. Host generated tests exercise NaN and failed feedback. Actuator-only generated tests are vacuous for this descriptor; physical range calibration not verified.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/controllers/xrp-driver.arescontroller": {
+      "sha256": "b4a6e15b20bb3e9282a4d1af73442acc7151f6ac8f47e3b479b92d35e9ffe522",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "All profile fields read: matcher minimum axes4/buttons8 covers mapped axes1/2 and buttons6/7; IDs resolve from controls. Actual Studio gamepad platform mapping/selection not exercised.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/controls/driver.arescontrols": {
+      "sha256": "fe2afb1274e773a39dc9e44c0acaf8abca4c9680834e4a0efdd6ff831eaffd83",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "All three bindings read: inverted axes with0.05 deadband, repeated values, vx/omega only, Back+Start recovery chord timing and action reference. Host selected-target validation passes; Studio chord/suppression/arming semantics need direct integration evidence.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.ares/action-catalog.json": {
+      "sha256": "b80c45bb4c39a718860c8a5d45882c158a1247420f55adad73d2279fb5b888da",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full single recovery action declaration read: exclusive drive resource, TeleOp/Test contexts and matching control key. Runtime recovery dispatch/context enforcement not traced in this pass.",
+      "evidence": [
+        "docs/audits/xrp-project-serialization-audit.md",
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/xrp-project-serialization-audit.md": {
+      "sha256": "93643adbe78b9b51ed990ced5db8f85e263aeb4a3624ba48e550c7c0c28d3633",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass135 report reviewed against failing string subcases, final108-test XML, source review and declarative geometry/reference checks. Explicit limits and remaining generator/control scopes.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
       ]
     }
   }

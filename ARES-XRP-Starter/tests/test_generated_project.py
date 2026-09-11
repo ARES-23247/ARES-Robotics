@@ -128,7 +128,34 @@ class GeneratedProjectTest(unittest.TestCase):
         tool = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(tool)
 
-        self.assertGreaterEqual(tool.discover_test_suites().countTestCases(), 8)
+        def test_ids(suite):
+            for item in suite:
+                if isinstance(item, unittest.TestSuite):
+                    yield from test_ids(item)
+                else:
+                    yield item.id()
+
+        identities = list(test_ids(tool.discover_test_suites()))
+        self.assertIn(
+            "test_generated_project.GeneratedProjectTest.test_source_and_generated_suites_use_independent_discovery_roots",
+            identities,
+        )
+        self.assertTrue(any(identity.startswith("test_generated_safety.GeneratedSafetyTest.")
+                            for identity in identities), identities)
+        self.assertEqual(len(identities), len(set(identities)))
+
+    def test_generation_preserves_strings_containing_json_literal_names(self):
+        spec = importlib.util.spec_from_file_location("ares_project_literal_tool", ROOT / "tools/ares_project.py")
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        project, drivebase, default_id, routines, subsystems = tool.validate()
+        for ssid in ("true-false-null", 'true"\\caf\u00e9'):
+            with self.subTest(ssid=ssid):
+                project["runtimeOptions"]["xrp"]["ssid"] = ssid
+                namespace = {}
+                exec(tool.generated_source(project, drivebase, default_id, routines, subsystems), namespace)
+                self.assertEqual(namespace["PROJECT"]["wifi_ssid"], ssid)
+                self.assertIs(namespace["PROJECT"]["use_otos"], False)
 
     def test_mecanum_requires_all_four_xrp_motor_ports(self):
         tool_path = ROOT / "tools" / "ares_project.py"
