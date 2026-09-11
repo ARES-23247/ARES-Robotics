@@ -49,3 +49,23 @@ software cutoff rather than a universal roboRIO hardware trigger. See
 [REV Control Hub specifications](https://docs.revrobotics.com/duo-control/control-system-overview/control-hub-basics)
 and [WPILib's staged brownout documentation](https://docs.wpilib.org/en/latest/docs/software/roborio-info/roborio-brownouts.html).
 No upstream WPILib defect is claimed.
+
+## Final validation
+
+The final source passed 68 selected core tests and all library API checks before freezing. Eighteen new methods include ten distinct failure-before regressions. Public API is unchanged. The allocation test observed zero bytes in each of two consecutive 10,000-update windows.
+
+Source `a03f0598eacf10d4b9d716df722684f0f33ba08e`; library tree `25bcdd2a73bf8eb095d5322c656230770884efd2`.
+Local candidate `17.0.3-rc.25bcdd2a73bf`.
+
+| Scope | Passed | Skipped |
+| --- | ---: | ---: |
+| library | 1997 | 0 |
+| ftc | 111 | 0 |
+| frc | 148 | 0 |
+| ftc-starter | 14 | 0 |
+| frc-starter | 34 | 0 |
+| studio | 1790 | 6 |
+
+All groups have zero failures/errors. Library API/Kover/local publication, generated-project verification, FTC assembly, Studio Kover/version/file-size gates and monorepo policy passed. Gradle reused valid unchanged outputs; passing counts do not imply every test was freshly executed. Conditional Studio skips are recorded in the copied XML.
+
+Copied XML, per-file hashes, build logs and candidate BOM identity are recorded under `ARESLib-Kotlin/build/audit-pass87-verified-evidence/summary.json`. Validation is on the host and consumers; no physical timing, current accuracy, fuse protection or usable Studio-window result is claimed.
