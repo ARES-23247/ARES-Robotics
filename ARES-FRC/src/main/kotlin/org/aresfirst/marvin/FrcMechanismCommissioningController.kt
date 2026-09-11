@@ -40,7 +40,7 @@ internal class FrcMechanismCommissioningController(
         if (flywheelTuningStatus?.lastTuningApplySuccessful == false) {
             throw IllegalStateException("Flywheel live tuning did not reach every motor")
         }
-        configurationValid = configurationContractComplete && mechanismsConfigured(*configurationDevices)
+        configurationValid = configurationContractComplete && mechanismsConfigured(configurationDevices)
         if (!configurationValid) {
             throw IllegalStateException(
                 "A mechanism Talon reset or lost its verified configuration; restart and re-home"
@@ -109,8 +109,8 @@ internal class FrcMechanismCommissioningController(
                 for (device in homingDevices) {
                     if (!device.homeAtKnownZero()) allSucceeded = false
                 }
-                homingValid = allSucceeded && mechanismsHomed(*homingDevices)
-                configurationValid = configurationContractComplete && mechanismsConfigured(*configurationDevices)
+                homingValid = allSucceeded && mechanismsHomed(homingDevices)
+                configurationValid = configurationContractComplete && mechanismsConfigured(configurationDevices)
                 if (mechanismSafetyHealthy(configurationHealthy(), homingValid, robot.fatalUpdateFailure)) {
                     robot.store.dispatch(ClearMechanismSafetyFault("Dual-operator Disabled safe-zero recovery"))
                 }
@@ -140,8 +140,8 @@ internal class FrcMechanismCommissioningController(
     }
 
     private fun refreshConfigurationAndHoming() {
-        configurationValid = configurationContractComplete && mechanismsConfigured(*configurationDevices)
-        homingValid = mechanismsHomed(*homingDevices)
+        configurationValid = configurationContractComplete && mechanismsConfigured(configurationDevices)
+        homingValid = mechanismsHomed(homingDevices)
     }
 
     private fun configurationHealthy(): Boolean =

@@ -5543,7 +5543,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "d0e9cab4b9af2256a9897efcc1af2588b6ad302d3a70246f3a0e7b2845b3e34e",
+      "sha256": "efe84983be6a7aba434f915f27c8424256e740cc1347894b5b358c31861b86d6",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5595,7 +5595,8 @@
         "docs/audits/spline-analytical-curvature-audit.md: pass98 scopes and canonical self-fingerprint refreshed",
         "docs/audits/spline-stationary-grid-audit.md: pass99 scopes and canonical self-fingerprint refreshed",
         "docs/audits/spline-regular-interval-bounds-audit.md: pass100 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-calibration-cache-audit.md: pass101 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-calibration-cache-audit.md: pass101 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-commissioning-loop-audit.md: pass102 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8732,23 +8733,27 @@
       ]
     },
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/ARESRobotSafetyBoundaryTest.kt": {
-      "sha256": "d287f8126cc141ea35399c2ebf72079831b9ebc928b8f8835c5a904a4dc6f8e5",
+      "sha256": "a33257cb7550956e5777feaadf1354005f72f6cc50570226caa0bbe6c3665aeb",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Read full test file and executed all13methods. Five new methods include two reproduced failures; cover combined age, fractional/exact boundaries, replacement, timestamp range, snapshot aliasing, invalid latency, exceptions/incomplete reads, output boundaries and IO call counts. Existing safety/PDH/topology assertions retained; test execution does not certify every called implementation.",
+      "scope": "Read full test file and executed all13methods. Five new methods include two reproduced failures; cover combined age, fractional/exact boundaries, replacement, timestamp range, snapshot aliasing, invalid latency, exceptions/incomplete reads, output boundaries and IO call counts. Existing safety/PDH/topology assertions retained; test execution does not certify every called implementation. Pass102: Adapted existing health-helper calls to direct arrays; all13methods and assertions retained and passed. No new behavior claim for these signature-only edits.",
       "evidence": [
         "docs/audits/frc-calibration-cache-audit.md",
-        "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json",
+        "docs/audits/frc-commissioning-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt": {
-      "sha256": "d387345e2b9fc28ba970580aa4674bcec730a8f992766f90d62c65542445f8a1",
+      "sha256": "a22c0d8a1a5a883374e678897fdf918932d21859e1eb7acf6648949e2e522ebc",
       "review": "partial",
       "validation": "passed",
-      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open.",
+      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open. Pass102: Changed internal health helpers to direct array parameters, retaining early failure semantics. Traced periodic update/health/calibration/SysId sequence, mode safety calls and cleanup ordering. Initialization, simulation and comprehensive lifecycle/exception integration remain partial.",
       "evidence": [
         "docs/audits/frc-calibration-cache-audit.md",
-        "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json",
+        "docs/audits/frc-commissioning-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
       ]
     },
     "docs/audits/frc-calibration-cache-audit.md": {
@@ -8758,6 +8763,35 @@
       "scope": "Reviewed findings, five new regressions, product-local dependency scope and copied validation evidence. Physical timing/calibration excluded.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningController.kt": {
+      "sha256": "70a4fbef63cd1075cbac612eb721d6b951c1f83060e547d6bcfbdfe4769cee7c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read whole controller and traced periodic/mode/recovery callsites. Removed five compiler-proven array-copy sites, including one in periodic health. Three real controller/reducer HAL tests cover healthy read counts, lost homing, configuration/tuning failures, persistent latch, disable and edge-gated Disabled recovery. Remaining partial: injected getter/home exceptions, failed individual homing and cleanup-failure integration.",
+      "evidence": [
+        "docs/audits/frc-commissioning-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningControllerTest.kt": {
+      "sha256": "243631ac82246d1dc3e0acc8317dc9255bc79cb3aa1caa4c861246b2e6b6d7db",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed all three new real controller/reducer host-HAL tests. Each closes its robot; tests check periodic cached-read counts, reference/configuration/tuning invalidation, latch persistence and fresh-edge Disabled recovery. Physical motor outputs and failure injection gaps remain outside these assertions.",
+      "evidence": [
+        "docs/audits/frc-commissioning-loop-audit.md",
+        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-commissioning-loop-audit.md": {
+      "sha256": "fd02c4041999c01490195dacade81eb8c5e8ec238254e745940364312d3d3fb1",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reviewed compiler copy evidence, controller-level coverage, product-local validation and explicit partial scopes.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json"
       ]
     }
   }

@@ -173,18 +173,18 @@ class ARESRobotSafetyBoundaryTest {
 
     @Test
     fun `mechanism configuration health fails closed on any reporting adapter`() {
-        assertTrue(mechanismsConfigured(ConfigurationStatus(true)))
-        assertFalse(mechanismsConfigured(ConfigurationStatus(true), ConfigurationStatus(false)))
+        assertTrue(mechanismsConfigured(arrayOf(ConfigurationStatus(true))))
+        assertFalse(mechanismsConfigured(arrayOf(ConfigurationStatus(true), ConfigurationStatus(false))))
         val resettable = ConfigurationStatus(true)
-        assertTrue(mechanismsConfigured(resettable))
+        assertTrue(mechanismsConfigured(arrayOf(resettable)))
         resettable.valid = false
-        assertFalse(mechanismsConfigured(resettable), "a post-startup reset must invalidate live health")
+        assertFalse(mechanismsConfigured(arrayOf(resettable)), "a post-startup reset must invalidate live health")
     }
 
     @Test
     fun `relative position mechanism health fails closed until every device is homed`() {
-        assertTrue(mechanismsHomed(HomingStatus(true)))
-        assertFalse(mechanismsHomed(HomingStatus(true), HomingStatus(false)))
+        assertTrue(mechanismsHomed(arrayOf(HomingStatus(true))))
+        assertFalse(mechanismsHomed(arrayOf(HomingStatus(true), HomingStatus(false))))
         assertFalse(mechanismSafetyHealthy(true, false, null))
         assertFalse(mechanismSafetyHealthy(false, true, null))
         assertFalse(mechanismSafetyHealthy(true, true, IllegalStateException("update failed")))

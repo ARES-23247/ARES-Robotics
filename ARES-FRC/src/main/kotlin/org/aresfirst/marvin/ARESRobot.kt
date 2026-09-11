@@ -33,7 +33,7 @@ import org.aresfirst.marvin.sim.applyTo
 
 /** Returns false when any real mechanism adapter reports failed or reset configuration. */
 internal fun mechanismsConfigured(
-    vararg devices: org.aresfirst.marvin.hardware.FrcMechanismConfigurationStatus
+    devices: Array<out org.aresfirst.marvin.hardware.FrcMechanismConfigurationStatus>
 ): Boolean {
     for (device in devices) {
         if (!device.configurationValid) return false
@@ -43,7 +43,7 @@ internal fun mechanismsConfigured(
 
 /** Returns false until every relative-only position mechanism has a deliberate safe zero. */
 internal fun mechanismsHomed(
-    vararg devices: org.aresfirst.marvin.hardware.FrcMechanismHomingStatus
+    devices: Array<out org.aresfirst.marvin.hardware.FrcMechanismHomingStatus>
 ): Boolean {
     for (device in devices) {
         if (!device.homed) return false
