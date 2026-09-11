@@ -122,6 +122,7 @@ internal fun loadFrcFieldContract(bytes: ByteArray): FrcFieldContract? = FrcFiel
 class ARESRobot : TimedRobot() {
 
     private val hardwareRegistry = HardwareRegistry()
+    private var closeStarted = false
     private lateinit var robot: FrcSwerveRobot
     private var sim: Dyn4jSimulation? = null
     private var dashboardDriveInput: FrcDashboardDriveInput? = null
@@ -159,6 +160,10 @@ class ARESRobot : TimedRobot() {
 
     /** Constructs IO, the composed reducer/store, subsystem lifecycle, and mode controllers. */
     override fun robotInit() {
+        initializeFrcRobot(initialize = { initializeRobot() }, cleanup = { close() })
+    }
+
+    private fun initializeRobot() {
         edu.wpi.first.wpilibj.Threads.setCurrentThreadPriority(true, 10)
 
         val isReal = RobotBase.isReal()
@@ -196,6 +201,12 @@ class ARESRobot : TimedRobot() {
         val feederIO = hardware.feederIO
         val floorIO = hardware.floorIO
         val climberIO = hardware.climberIO
+
+        // Preserve teardown ownership before casts, topology registration or robot construction.
+        // Devices registered below close once by identity, even when retained here as closeables.
+        hardwareRegistry.retainFrcHardware(
+            swerveIO, visionIO, flywheelIO, cowlIO, intakeIO, feederIO, floorIO, climberIO,
+        )
 
         val mechanismConfigurationDevices = listOf(
             flywheelIO, cowlIO, intakeIO, feederIO, floorIO, climberIO
@@ -662,7 +673,10 @@ class ARESRobot : TimedRobot() {
         }
     }
 
+    @Synchronized
     override fun close() {
+        if (closeStarted) return
+        closeStarted = true
         val failures = FrcCleanupFailures()
         try {
             cancelGeneratedControls("FRC robot closing")

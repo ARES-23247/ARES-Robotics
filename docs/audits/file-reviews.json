@@ -5543,7 +5543,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "0fc9978355ca6db0d38781c74f4f97890f0951927210ed5089bdf3a58d5196f9",
+      "sha256": "bd71cd2eed2ee299cf7e1542bf921a491022c8f7f0ea7115d8abb96b97579c35",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5599,7 +5599,8 @@
         "docs/audits/frc-commissioning-loop-audit.md: pass102 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-homing-failure-audit.md: pass103 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-disable-cleanup-audit.md: pass104 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-startup-ownership-audit.md: pass105 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-startup-ownership-audit.md: pass105 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-initialization-handoff-audit.md: pass106 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8748,17 +8749,19 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt": {
-      "sha256": "c5a4b3e8b768f1b179ef8213b16d5099a6602e99abff2b5cef85dab3f3f4a506",
+      "sha256": "df1ed460fe5609c5121ab63a5d255673450e7c26e3513a633781621899433264",
       "review": "partial",
       "validation": "passed",
-      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open. Pass102: Changed internal health helpers to direct array parameters, retaining early failure semantics. Traced periodic update/health/calibration/SysId sequence, mode safety calls and cleanup ordering. Initialization, simulation and comprehensive lifecycle/exception integration remain partial. Pass104: Disable now uses tested attempt-all sequence; initialization guards/order retained. Close reuses equivalent tested error collection, preserving finally clearing and order. One extracted-original-sequence regression reproduced skipped cleanup. Same-Throwable suppression hypothesis disproven, not a new defect. Initialization, reentrancy and nested teardown integration remain partial.",
+      "scope": "Traced calibration actionListener consumption/persistence and addPeriodic cache.record after robot.update. Only these call sites reviewed this pass; remaining lifecycle, concurrency and loop-efficiency scope remains open. Pass102: Changed internal health helpers to direct array parameters, retaining early failure semantics. Traced periodic update/health/calibration/SysId sequence, mode safety calls and cleanup ordering. Initialization, simulation and comprehensive lifecycle/exception integration remain partial. Pass104: Disable now uses tested attempt-all sequence; initialization guards/order retained. Close reuses equivalent tested error collection, preserving finally clearing and order. One extracted-original-sequence regression reproduced skipped cleanup. Same-Throwable suppression hypothesis disproven, not a new defect. Initialization, reentrancy and nested teardown integration remain partial. Pass106: Retains returned IO before mechanism casts/topology/robot construction; initialization failure immediately invokes partial teardown. Synchronized close guard prevents repeated native close attempts. Read registry and FrcSwerveRobot ownership handoff, plus installed CANBus API (no close contract). Remaining partial: full native fault injection, concurrent/repeated initialization, nested teardown and simulation integration.",
       "evidence": [
         "docs/audits/frc-calibration-cache-audit.md",
         "ARESLib-Kotlin/build/audit-pass101-verified-evidence/summary.json",
         "docs/audits/frc-commissioning-loop-audit.md",
         "ARESLib-Kotlin/build/audit-pass102-verified-evidence/summary.json",
         "docs/audits/frc-disable-cleanup-audit.md",
-        "ARESLib-Kotlin/build/audit-pass104-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass104-verified-evidence/summary.json",
+        "docs/audits/frc-initialization-handoff-audit.md",
+        "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json"
       ]
     },
     "docs/audits/frc-calibration-cache-audit.md": {
@@ -8878,6 +8881,35 @@
       "scope": "Reviewed source-level missing rollback finding, ownership graph, six tests, scoped FRC validation and native/post-return limitations.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass105-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcHardwareHandoff.kt": {
+      "sha256": "7b4f7c37e965c3362319e16388f43503300d03f120ec047975dfc262fa21cd88",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full helper review: retain closeable completed IO through existing registry before composition, ignore absent/non-closeable values, and attempt initialization-failure cleanup while preserving original/secondary exceptions. Five real registry/host-HAL tests cover handoff and lifecycle outcomes. Startup-only, no polling.",
+      "evidence": [
+        "docs/audits/frc-initialization-handoff-audit.md",
+        "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/FrcHardwareHandoffTest.kt": {
+      "sha256": "69c80d7f75e90faea810c646c892e7202c39d5bf8e5b7be36498ebaa7e4d3c5e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed all five new tests: real registry incomplete/successful registration, duplicate/repeated close, missing/non-closeable inputs, initialization cleanup and error identity, success without cleanup, actual partially initialized ARESRobot double-close under HAL. No robotInit execution or physical hardware claim.",
+      "evidence": [
+        "docs/audits/frc-initialization-handoff-audit.md",
+        "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-initialization-handoff-audit.md": {
+      "sha256": "ec18892bef408611f8a07dc97542bff2efda335cbb70139657b8866fc9a5ff9b",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reviewed composition ownership gap, lifecycle guards, five host tests, unchanged dependency scope and explicit remaining native/concurrency limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json"
       ]
     }
   }
