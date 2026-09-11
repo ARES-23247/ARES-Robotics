@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8331e0b16f6d8b51989aa87d55001c7546108886f24345935d853294fe5fc99a",
+      "sha256": "efd9a97cba981b273db163f9bf561eca6049c7b4299ee2dd016b29df0222b4b6",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12812,6 +12812,36 @@
       "evidence": [
         "docs/audits/ftc-remote-drive-fallback-audit.md",
         "ARESLib-Kotlin/build/audit-pass175-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/NullOpMode.kt": {
+      "sha256": "76b250eeb289a0a30a532df08d4da1bf744e65119451cd64c8887794c971eed7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full hardware-free diagnostic review: corrected unjustified I2C/Pinpoint cause assertion, first/250ms/rewind/repeated/overflow telemetry behavior, idle on every active iteration and no hardware accesses. Mocked SDK lifecycle tests; actual display/scheduling and hardware diagnosis excluded.",
+      "evidence": [
+        "docs/audits/ftc-null-diagnostic-audit.md",
+        "ARESLib-Kotlin/build/audit-pass176-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/NullOpModeTest.kt": {
+      "sha256": "81bb7aaec3e00fe86b6cf826a07ad2a4b5f97a3a8861e41d21afe9b7e3ce9504",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-test review: actual runOpMode with mocked SDK timing/active boundary, eight timestamp cases, idle and update counts, inactive initialization and no hardware access; clock restored. Two before failures fixed; 149 full FTC tests pass.",
+      "evidence": [
+        "docs/audits/ftc-null-diagnostic-audit.md",
+        "ARESLib-Kotlin/build/audit-pass176-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-null-diagnostic-audit.md": {
+      "sha256": "f20cb23a37a96fa4fda2741ed4fbadfb847f6d34a5481a3ba078078029f96acc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass176 report checked against source, focused/full XML and root checks; no unobserved device diagnosis or physical execution claimed.",
+      "evidence": [
+        "docs/audits/ftc-null-diagnostic-audit.md",
+        "ARESLib-Kotlin/build/audit-pass176-verified-evidence/summary.json"
       ]
     }
   }
