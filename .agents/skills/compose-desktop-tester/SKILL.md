@@ -22,19 +22,23 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
 
 ## Core workflow
 
-1. Preserve the current worktree and compile before launching:
+1. Inspect the current worktree before launching:
 
    ```powershell
    Set-Location <monorepo-root>\ARES-Analytics
    git status --short --branch
-   .\gradlew.bat :app:compileKotlin
    ```
 
-2. Choose one dependency mode deliberately. Use ordinary `:app:run` for released dependencies. Add `"-ParesUseSiblingLib=true"` only while intentionally validating sibling ARESLib source.
+2. Choose one dependency mode before compiling. Pass the same dependency properties to compile and run, including any candidate version/repository overrides. For released dependencies:
+
+   A normal `:app:run` invokes `killExisting`, which matches every ARES Analytics JVM visible to JPS, regardless of checkout, isolated home, or window health. Inspect all matching processes first and use it only when they belong to this task. If another task owns an ARES instance, preserve it; use `-PskipKill` with a dedicated `-ParesIsolatedDesktopHome=...` for a separate test instance, or wait for its owner. `-PskipKill` does not bypass the application instance lock.
 
    ```powershell
+   .\gradlew.bat :app:compileKotlin
    .\gradlew.bat :app:run
    ```
+
+   For intentional sibling-source validation, add `"-ParesUseSiblingLib=true"` to both commands. Apply the ownership check above to every launch example below.
 
 3. Wait for `Desktop window presented`, then require an exact visible-window capture. The script exits nonzero when no matching ARES HWND exists; it no longer substitutes a full-desktop image.
 
@@ -57,9 +61,9 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
    Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE
    ```
 
-   This path waits until Compose has actually released startup topmost state, captures the 1440×900 window from its own AWT desktop, and posts `WM_CLOSE` to the exact Compose HWND. It is inactive unless the variables are explicitly set. Inspect the PNG and still confirm no `MainKt` remains.
+   This path waits until Compose has actually released startup topmost state, captures the 1440Ã—900 window from its own AWT desktop, and posts `WM_CLOSE` to the exact Compose HWND. It is inactive unless the variables are explicitly set. Inspect the PNG and confirm that this task's owned app PID exited.
 
-5. Interact only through a verified ARES window. Coordinates are relative to that window; the script fails instead of clicking the desktop when no window is found.
+5. Interact only through a verified ARES window owned by this task. The title-based capture/interaction helpers do not accept a PID filter; when multiple matching windows exist, use this instance's dedicated loopback test-control port or same-process capture instead of choosing a window by title. Coordinates are relative to that window; the script fails instead of clicking the desktop when no window is found.
 
    ```powershell
    & "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Robotics Studio" -ClickX 350 -ClickY 60
@@ -106,7 +110,7 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
    & "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" -WindowTitle "ARES Robotics Studio" -CloseWindow
    ```
 
-   If graceful close fails, report it and then run `.\gradlew.bat killExisting` as cleanup. Confirm `jps -lv` no longer lists `com.ares.analytics.MainKt`.
+   If graceful close fails, report it and clean up only the verified process owned by this task. Use `killExisting` only after confirming every matching ARES JVM is owned by this task; otherwise terminate only the verified owned PID. Confirm that PID exited, preserving other tasks' instances.
 
 ## Evidence standard
 
@@ -116,4 +120,4 @@ The guide distinguishes orphaned lock owners, a missing Swing Main dispatcher, n
 - A full-screen screenshot is not launch evidence.
 - An `AWT-EventQueue-0` crash can leave service threads and the single-instance lock alive. Read the named crash log before treating the surviving JVM as the cause.
 - NT4 connection failures and Google Drive sign-in errors do not invalidate a successfully rendered offline window.
-- After startup-related changes, perform two launch → capture → graceful-close cycles. One successful launch can hide an orphan-process or one-launch-only regression.
+- After startup-related changes, perform two launch â†’ capture â†’ graceful-close cycles. One successful launch can hide an orphan-process or one-launch-only regression.

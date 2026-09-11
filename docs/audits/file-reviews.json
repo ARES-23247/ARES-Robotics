@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e45ceb036398a8d32024ceb250045da00abc398482f784dbe585dc7083b2061b",
+      "sha256": "3f3cbf34f061e31fbd9c66a6462f8a586dc83be986c2518294f4118c7497bc03",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5608,7 +5608,8 @@
         "docs/audits/mechanism-integration-audit.md: pass109 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-physics-boundary-audit.md: pass110 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-swerve-tracking-audit.md: pass111 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-controller-facade-audit.md: pass112 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-controller-facade-audit.md: pass112 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/shared-guidance-audit.md: pass113 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9304,6 +9305,195 @@
       "scope": "Reconciles grouped six-source/three-existing-test review, nine new methods/four before failures, primitive boxing and runtime evidence with declared physical/configuration limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+      ]
+    },
+    "AGENTS.md": {
+      "sha256": "af0c4ccb663cefe817ec7256ae4e4a7d2c5a5df1f6573320434ab15ee73f4721",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full root/adapter instruction review: canonical routing, relative imports, Always On metadata where applicable, product delegation, size and no machine-local policy duplication. Official discovery conventions and local verifier/ignore rules agree. No personal tool settings changed.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    "GEMINI.md": {
+      "sha256": "1c08d58a20d3f7922e9f8ae15dc448fd6eaa21b4b270b34eb4f58d4efab0dfef",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full root/adapter instruction review: canonical routing, relative imports, Always On metadata where applicable, product delegation, size and no machine-local policy duplication. Official discovery conventions and local verifier/ignore rules agree. No personal tool settings changed.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    "docs/agents/README.md": {
+      "sha256": "cb588acbd270dd3ca13cee7d4493f03cec777ac6bd0c14bd599fe5787b6e662e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full setup/maintenance README review: canonical adapters/skills, local tracking/ignore/CI checks and size limit. Official Codex/Gemini/Antigravity documentation checked for discovery/import/reload/activation conventions. Installed editor configuration and actual skill execution are not certified.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/rules/ares-workspace.md": {
+      "sha256": "ee5787d99405038613ec32b6c170c84be2d300e3dab2e7db6fc7dec6f8650a2e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full root/adapter instruction review: canonical routing, relative imports, Always On metadata where applicable, product delegation, size and no machine-local policy duplication. Official discovery conventions and local verifier/ignore rules agree. No personal tool settings changed.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-build-release/SKILL.md": {
+      "sha256": "d23243ed40a6c83a61f0caf9bd307f192516ff6b4bf47a66b1006e85c457c421",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-subsystem-authoring/SKILL.md": {
+      "sha256": "79ae97647c429e4c75cea320fdcba62b5dc9b204707c2b95fc991263cb063d1a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full normative authoring/descriptor/checklist guidance review: generated versus user ownership, source reference/schema/tuning routing, capability metadata, homing/follower/feedforward/safety/teaching requirements. References verified against current paths and schema declarations. This checks instructions, not achievement of every runtime/UI requirement.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-workspace/SKILL.md": {
+      "sha256": "9c14e78cd95ac2b0baa1cc6f22f33d4858ed55e4ef133b3790a8a49dce19264b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full product-map/runtime-contract/workspace guidance review: canonical ownership, Redux/clock/coordinates/telemetry/safety boundaries, references and skill routing. Paths and invariant consistency checked; normative rules are not a claim of full runtime compliance.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/SKILL.md": {
+      "sha256": "18f4fbe8dafe2bc05e1156cd02e9506c4f9d1f5263c7c7ff442a8437f6c7ce02",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full guidance review against startup/build declarations and helper parameters. Corrected broad killExisting ownership and title-helper ambiguity; scoped exit checks to owned PID, documented skipKill+isolated home and consistent compile/run dependency mode. Link/policy verification passed. No GUI/helper runtime or process-termination test claim.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/references/startup-recovery.md": {
+      "sha256": "34ac1f10b1a6c71a4391514fa18e02bd798535d58ee657769c185c15e029133b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full guidance review against startup/build declarations and helper parameters. Corrected broad killExisting ownership and title-helper ambiguity; scoped exit checks to owned PID, documented skipKill+isolated home and consistent compile/run dependency mode. Link/policy verification passed. No GUI/helper runtime or process-termination test claim.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-workspace/references/repository-map.md": {
+      "sha256": "cb4bc99ac2b0688b7ba4d5d345c81f5862dc5451dee311215f37675d11ab1b1b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full product-map/runtime-contract/workspace guidance review: canonical ownership, Redux/clock/coordinates/telemetry/safety boundaries, references and skill routing. Paths and invariant consistency checked; normative rules are not a claim of full runtime compliance.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-workspace/references/runtime-contracts.md": {
+      "sha256": "0b86cb28189c378e4ee3767e9a2ba5908c20deb3213cc9020ec525c076ea68fb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full product-map/runtime-contract/workspace guidance review: canonical ownership, Redux/clock/coordinates/telemetry/safety boundaries, references and skill routing. Paths and invariant consistency checked; normative rules are not a claim of full runtime compliance.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-subsystem-authoring/references/descriptor-contract.md": {
+      "sha256": "a066b8c90f0f862c90398e6d01befa303b77c3b70ee76f9271e0699817d0cee5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full normative authoring/descriptor/checklist guidance review: generated versus user ownership, source reference/schema/tuning routing, capability metadata, homing/follower/feedforward/safety/teaching requirements. References verified against current paths and schema declarations. This checks instructions, not achievement of every runtime/UI requirement.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-subsystem-authoring/references/review-checklist.md": {
+      "sha256": "a2266b27e1bd501982ac31db0c5efbcb9b5f96b84826c54ebd85a3b058bc2b21",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full normative authoring/descriptor/checklist guidance review: generated versus user ownership, source reference/schema/tuning routing, capability metadata, homing/follower/feedforward/safety/teaching requirements. References verified against current paths and schema declarations. This checks instructions, not achievement of every runtime/UI requirement.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-build-release/references/commands.md": {
+      "sha256": "b77b865277bd1996a5f2d977172c93863923d42f184eeedd71e6010284821795",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    ".agents/skills/ares-build-release/references/failure-modes.md": {
+      "sha256": "7df7639a9ae1e9dd98c7e49280aaceaa1b9a16f9cfef867582cf7b3efd352094",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/verify_agent_guidance.py": {
+      "sha256": "7a3a557096b31a1badaca786b22ec1717aacc50a93f5f5fd0b7fc3cfa5c90dcd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read full verifier: required tracked/nonignored guidance, adapter imports/frontmatter/size, root8KiB size, machine-home rejection and local-link traversal. All six disposable-repository regression tests and live checkout check passed. This small checker validates guidance packaging/consistency, not semantic runtime compliance.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/tests/test_agent_guidance.py": {
+      "sha256": "4d56ed146c781bb71596d0280742051e0b5af0330d0e5bfc46dd2cc664956040",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and ran all six tests: complete disposable checkout, untracked reference, ignored tracked file, missing links/skill, adapter activation/import/size drift, and repository overrides of broad personal ignores. Temporary repositories and cleanup preserve live Git state.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    "docs/agents/WORKSPACE_GUIDE.md": {
+      "sha256": "0fddffe76d3d6556b3f8bd615095acc29640ca9f4325849a55489265bf2e8cf6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Desktop launch/cleanup section reviewed and corrected for all-ARES-JVM killExisting scope, process ownership, multi-window ambiguity, isolated skipKill launches, owned PID exit and consistent dependency mode. Other engineering-guide sections remain outside this pass.",
+      "evidence": [
+        "docs/audits/shared-guidance-audit.md",
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/shared-guidance-audit.md": {
+      "sha256": "a14cac52bcafb8b990fdb891db60c3ae8c8f6e9a557428e0a150b75fbb0a7439",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles15guidance+2Python whole-file reviews, partial workspace guide, confirmed cleanup/mode documentation errors, six existing tests and official source checks with explicit runtime/UI limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
       ]
     }
   }
