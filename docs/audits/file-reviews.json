@@ -5543,7 +5543,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "bd71cd2eed2ee299cf7e1542bf921a491022c8f7f0ea7115d8abb96b97579c35",
+      "sha256": "dc4da3a6c683c96981df0b7b21e26e7b5ff0ab54f95be13202c98670f19d834b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5600,7 +5600,8 @@
         "docs/audits/frc-homing-failure-audit.md: pass103 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-disable-cleanup-audit.md: pass104 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-startup-ownership-audit.md: pass105 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-initialization-handoff-audit.md: pass106 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-initialization-handoff-audit.md: pass106 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-dashboard-input-lifecycle-audit.md: pass107 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -8910,6 +8911,45 @@
       "scope": "Reviewed composition ownership gap, lifecycle guards, five host tests, unchanged dependency scope and explicit remaining native/concurrency limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/FrcDashboardDriveInput.kt": {
+      "sha256": "f7228bb9af863f2b30ae46aaca30b4f3ebe8f92791c79091fa6baca002ef05ea",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Read whole input and axis mapping. Reproduced closed-poll leased command and subscriber failure skipping publisher closure; added closed guard and attempt-all close. Removed redundant readiness check and uppercase allocation. Real local NT/DS simulation tests cover queue/mode/expiry/enable/disable. Remaining partial: constructor partial failure, concurrency and queue backlog timestamp age.",
+      "evidence": [
+        "docs/audits/frc-dashboard-input-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass107-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/FrcDashboardDriveInputTest.kt": {
+      "sha256": "32377e8184f5cbfeb334ec7a2cdf7b589870291e80d4739e626d7d8a81d16584",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed all five existing mapping/protocol tests: neutral handshake, axis signs/scaling, expiry/re-handshake, flags, malformed input and acknowledgement. This is test-file review, not whole shared protocol certification.",
+      "evidence": [
+        "docs/audits/frc-dashboard-input-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass107-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/FrcDashboardInputLifecycleTest.kt": {
+      "sha256": "6ba8ec76b8d265af386a597c6e89f0975703653ac259ba61252dbdc70c7c01a2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read and executed four new methods with two preserved failure-before cases. Isolated real local NT instances and host HAL exercise closed polling, throwing subscriber with publisher lifetime checks, queued frames/mode/expiry and DS simulation enable/disable including closure. Instances close; simulated enable/attachment reset. No physical output claim.",
+      "evidence": [
+        "docs/audits/frc-dashboard-input-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass107-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-dashboard-input-lifecycle-audit.md": {
+      "sha256": "241be1474d12784b8c09c82da25dbd84fda940618f27818160accc05f9490b64",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reviewed two reproduced lifecycle failures, polling redundancies, four new integration tests, five existing tests and scoped validation/remaining queue and constructor limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass107-verified-evidence/summary.json"
       ]
     }
   }

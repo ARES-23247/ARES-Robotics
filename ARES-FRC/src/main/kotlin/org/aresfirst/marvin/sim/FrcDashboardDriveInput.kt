@@ -11,6 +11,7 @@ import edu.wpi.first.networktables.StringSubscriber
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
+import org.aresfirst.marvin.FrcCleanupFailures
 /** Reads queued NT4 updates and applies only fresh, explicitly field-centric TeleOp commands. */
 internal class FrcDashboardDriveInput(
     instance: NetworkTableInstance = NetworkTableInstance.getDefault(),
@@ -39,17 +40,19 @@ internal class FrcDashboardDriveInput(
     private val acknowledgement = DoubleArray(DesktopDriveFrameGate.ACK_VALUE_COUNT)
     private var studioOwnsDriverStation = false
     private var studioControlRequested = false
+    private var closed = false
 
     fun poll(nowMs: Long = RobotController.getFPGATime() / 1_000L): DesktopDriveFrameGate? {
+        if (closed) return null
         subscriber.readQueue().forEach { update -> gate.observe(update.value, nowMs) }
         driverStationCommandSubscriber.readQueue().forEach { update ->
             studioOwnsDriverStation = true
-            studioControlRequested = update.value.trim().uppercase() == DRIVER_STATION_ENABLE_TELEOP
+            studioControlRequested = update.value.trim().equals(DRIVER_STATION_ENABLE_TELEOP, ignoreCase = true)
         }
         val command = gate.takeIf { it.receiverReady(nowMs) && it.isTeleopMode && it.isFieldCentric }
         if (studioOwnsDriverStation) {
             applyDriverStationState(
-                studioControlRequested && gate.receiverReady(nowMs) && command != null,
+                studioControlRequested && command != null,
             )
         }
 
@@ -66,12 +69,17 @@ internal class FrcDashboardDriveInput(
     }
 
     override fun close() {
-        if (studioOwnsDriverStation) applyDriverStationState(enabled = false)
-        driverStationStatePublisher.set(DRIVER_STATION_DISABLED)
-        subscriber.close()
-        driverStationCommandSubscriber.close()
-        acknowledgementPublisher.close()
-        driverStationStatePublisher.close()
+        if (closed) return
+        closed = true
+        studioControlRequested = false
+        val failures = FrcCleanupFailures()
+        failures.attempt { if (studioOwnsDriverStation) applyDriverStationState(enabled = false) }
+        failures.attempt { driverStationStatePublisher.set(DRIVER_STATION_DISABLED) }
+        failures.attempt { subscriber.close() }
+        failures.attempt { driverStationCommandSubscriber.close() }
+        failures.attempt { acknowledgementPublisher.close() }
+        failures.attempt { driverStationStatePublisher.close() }
+        failures.throwIfAny()
     }
 
     private fun applyDriverStationState(enabled: Boolean) {
