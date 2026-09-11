@@ -19,11 +19,8 @@ internal fun splineStationarySamples(points: List<PathPlannerJsonParser.Waypoint
             return (a <= b && b <= c && c <= d && a < d) || (a >= b && b >= c && c >= d && a > d)
         }
         if (monotone { it.x } || monotone { it.y }) continue
-        fun coefficients(axis: (Translation2d) -> Double): Array<BigDecimal> {
-            val v = p.map { BigDecimal(axis(it)) }
-            return arrayOf(v[3] - THREE * v[2] + THREE * v[1] - v[0], TWO * (v[2] - TWO * v[1] + v[0]), v[1] - v[0])
-        }
-        val x = coefficients { it.x }; val y = coefficients { it.y }
+        val x = splineDerivativeCoefficients(p[0], p[1], p[2], p[3]) { it.x }
+        val y = splineDerivativeCoefficients(p[0], p[1], p[2], p[3]) { it.y }
         val common = commonDerivative(x, y) ?: continue
         for ((root, repeated) in realRoots(common)) {
             if (root <= BigDecimal.ZERO || root >= BigDecimal.ONE) continue
@@ -39,6 +36,13 @@ internal fun splineStationarySamples(points: List<PathPlannerJsonParser.Waypoint
 private val TWO = BigDecimal.valueOf(2)
 private val THREE = BigDecimal.valueOf(3)
 private val FOUR = BigDecimal.valueOf(4)
+internal fun splineDerivativeCoefficients(
+    p0: Translation2d, p1: Translation2d, p2: Translation2d, p3: Translation2d,
+    axis: (Translation2d) -> Double
+): Array<BigDecimal> {
+    val a = BigDecimal(axis(p0)); val b = BigDecimal(axis(p1)); val c = BigDecimal(axis(p2)); val d = BigDecimal(axis(p3))
+    return arrayOf(d - THREE * c + THREE * b - a, TWO * (c - TWO * b + a), b - a)
+}
 private fun zero(v: BigDecimal) = v.signum() == 0
 private fun constant(p: Array<BigDecimal>) = zero(p[0]) && zero(p[1])
 

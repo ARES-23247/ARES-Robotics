@@ -47,7 +47,10 @@ object SplineMotionProfiler {
      * 100,000-sample budget before allocating path samples. Do not mutate input lists during construction.
      * Constraint boundaries supplement the regular grid, including zero-width zones. Edge speed
      * caps apply to both endpoints; acceleration bounds cover endpoints and the edge interior.
-     * Geometry between samples remains an approximation; this does not certify unsampled extrema.
+     * Regular intervals use conservative derivative bounds to cap both endpoint speeds and refine
+     * unresolved bounds within the same sample budget. Intervals touching singular stops retain
+     * pointwise handling; their interior curvature is not certified. Geometry and arc length between
+     * samples remain approximations. Exact interval arithmetic adds construction cost on curved paths.
      * Interior stationary roots supplement the grid and retain their exact root classification
      * after conversion to floating-point parameters. Unrepresentable interior parameters reject.
      *
@@ -62,7 +65,8 @@ object SplineMotionProfiler {
         val sampling = splineSamplePlan(parsedWaypoints.size) { parsedWaypoints[it].anchor }
         val stationary = splineStationarySamples(parsedWaypoints)
         val stationaryCursor = SplineStationaryCursor(stationary)
-        val relativePositions = splineRelativePositions(data, sampling, stationary)
+        val boundedGrid = boundSplineIntervals(parsedWaypoints, splineRelativePositions(data, sampling, stationary), stationary)
+        val relativePositions = boundedGrid.positions
 
         val pathPoints = ArrayList<PathPoint>(relativePositions.size)
         val forcedStops = BooleanArray(relativePositions.size)
@@ -139,7 +143,7 @@ object SplineMotionProfiler {
         applyRotations(pathPoints, relativePositions, data, startRotDeg, endRotDeg)
 
         // Forward and backward motion profiling sweeps
-        applyMotionProfile(pathPoints, relativePositions, data.startVel, data.endVel, data.defaultMaxVel, data.defaultMaxAccel, data.constraintZones, forcedStops)
+        applyMotionProfile(pathPoints, relativePositions, data.startVel, data.endVel, data.defaultMaxVel, data.defaultMaxAccel, data.constraintZones, forcedStops, boundedGrid.edgeSpeedCeilings)
 
         // Parse path events
         val pathEvents = mutableListOf<PathEvent>()
@@ -174,8 +178,9 @@ object SplineMotionProfiler {
         val parsedWaypoints = naturalCubicWaypointControls(points)
         val stationary = splineStationarySamples(parsedWaypoints)
         val stationaryCursor = SplineStationaryCursor(stationary)
-        val relativePositions = splineRelativePositions(parsedWaypoints.size, sampling,
-            DoubleArray(stationary.size) { stationary[it].relativePosition })
+        val boundedGrid = boundSplineIntervals(parsedWaypoints, splineRelativePositions(parsedWaypoints.size, sampling,
+            DoubleArray(stationary.size) { stationary[it].relativePosition }), stationary)
+        val relativePositions = boundedGrid.positions
 
         val pathPoints = ArrayList<PathPoint>(relativePositions.size)
         val forcedStops = BooleanArray(relativePositions.size)
@@ -245,7 +250,7 @@ object SplineMotionProfiler {
             pathPoints[idx] = p.copy(pose = Pose2d(p.pose.x, p.pose.y, Rotation2d(interpAngle)))
         }
 
-        applyMotionProfile(pathPoints, emptyList(), 0.0, 0.0, maxVelocityMps, maxAccelerationMps2, emptyList(), forcedStops)
+        applyMotionProfile(pathPoints, emptyList(), 0.0, 0.0, maxVelocityMps, maxAccelerationMps2, emptyList(), forcedStops, boundedGrid.edgeSpeedCeilings)
 
         return Path(pathPoints, emptyList())
     }
@@ -332,7 +337,8 @@ object SplineMotionProfiler {
         defaultMaxAccel: Double,
         constraintZones: List<PathPlannerJsonParser.ParsedConstraintsZone>,
         forcedStops: BooleanArray,
-        maxCentripetalAccel: Double = 2.0
+        edgeSpeedCeilings: DoubleArray,
+        maxCentripetalAccel: Double = SPLINE_CENTRIPETAL_ACCELERATION
     ) {
         // Resolve each point's limits once. These points are private to construction,
         // so changing their velocity fields avoids allocating copies during both sweeps.
@@ -352,12 +358,12 @@ object SplineMotionProfiler {
             previousMaxAccel = maxAccel
             val curvature = Math.abs(pathPoints[i].curvature)
             pathPoints[i].velocityMps = if (curvature > 0.0) {
-                minOf(maxVel, Math.sqrt(maxCentripetalAccel / curvature))
+                minOf(maxVel, Math.sqrt(maxCentripetalAccel) / Math.sqrt(curvature))
             } else maxVel
-            if (i > 0 && zoneCursor != null) {
+            if (i > 0) {
                 // Every zone boundary is sampled, so the edge interior has one priority winner.
                 // Both ends must respect that cap for interpolated speeds to remain valid.
-                val edgeMaxVel = edgeZone?.maxVelocity ?: defaultMaxVel
+                val edgeMaxVel = minOf(edgeSpeedCeilings[i], edgeZone?.maxVelocity ?: defaultMaxVel)
                 pathPoints[i - 1].velocityMps = minOf(pathPoints[i - 1].velocityMps, edgeMaxVel)
                 pathPoints[i].velocityMps = minOf(pathPoints[i].velocityMps, edgeMaxVel)
             }
