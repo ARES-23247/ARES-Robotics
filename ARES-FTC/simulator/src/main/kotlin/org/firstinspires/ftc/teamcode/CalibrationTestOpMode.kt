@@ -12,13 +12,13 @@ class CalibrationTestOpMode : LinearOpMode() {
     override fun runOpMode() {
         val flywheel = SimulatedFlywheelIO()
         val robot = FtcMecanumRobot(hardwareMap, pinpointName = "pinpoint")
-        robot.sysIdFlywheelIO = flywheel
-        robot.isLiveTuningEnabled = true
-
-        waitForStart()
-        // Match the physical tuning OpMode: calibration ownership does not exist during INIT.
-        robot.enableCalibrationMode()
         try {
+            robot.sysIdFlywheelIO = flywheel
+            robot.isLiveTuningEnabled = true
+            waitForStart()
+            if (isStopRequested || Thread.currentThread().isInterrupted) return
+            // Match the physical tuning OpMode: calibration ownership does not exist during INIT.
+            robot.enableCalibrationMode()
             while (opModeIsActive()) {
                 flywheel.refresh()
                 robot.update()
@@ -44,11 +44,12 @@ class CalibrationTestOpMode : LinearOpMode() {
         }
 
         override fun setVelocityRpm(rpm: Double, maxEffortScale: Double) {
-            appliedVoltage = (rpm / RPM_PER_VOLT).coerceIn(-12.0, 12.0)
+            val limit = if (maxEffortScale.isFinite()) 12.0 * maxEffortScale.coerceIn(0.0, 1.0) else 0.0
+            appliedVoltage = if (rpm.isFinite()) (rpm / RPM_PER_VOLT).coerceIn(-limit, limit) else 0.0
         }
 
         override fun setAppliedVoltage(volts: Double) {
-            appliedVoltage = volts.coerceIn(-12.0, 12.0)
+            appliedVoltage = if (volts.isFinite()) volts.coerceIn(-12.0, 12.0) else 0.0
         }
 
         override val velocityRpm: Double

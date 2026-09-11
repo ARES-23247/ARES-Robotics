@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "efd9a97cba981b273db163f9bf561eca6049c7b4299ee2dd016b29df0222b4b6",
+      "sha256": "639e7266e85750ef79ef371ba301e5651f96a10d6c9a611d0791775f2c348da7",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12842,6 +12842,46 @@
       "evidence": [
         "docs/audits/ftc-null-diagnostic-audit.md",
         "ARESLib-Kotlin/build/audit-pass176-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/simulator/src/main/kotlin/org/firstinspires/ftc/teamcode/CalibrationTestOpMode.kt": {
+      "sha256": "375c3d2f1ba8c7ddbe17744f3bfc6e97a90fae06953f860f7ed417481e1f5d16",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full static read and deterministic plant tests. Invalid voltage/RPM/effort neutralize; finite effort caps applied voltage. Setup/wait/enable moved under cleanup, stop/interruption guard added. Actual lifecycle interruption/enablement cleanup not yet fault-injected; fixed-step smoke plant not physical calibration.",
+      "evidence": [
+        "docs/audits/ftc-calibration-plant-audit.md",
+        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/simulator/src/main/kotlin/org/firstinspires/ftc/teamcode/CalibrationVerificationApp.kt": {
+      "sha256": "fd36de1ea688464bd8e901ad0d1ac90f73d618f6527c556cd4bf5536a0983858",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full static read of headless NT4 supervisor; startup/resource cleanup before inner try and wall-clock deadline behavior require further correction/validation. No headless runner or socket startup executed in this pass.",
+      "evidence": [
+        "docs/audits/ftc-calibration-plant-audit.md",
+        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/CalibrationPlantTest.kt": {
+      "sha256": "04738af858256f3ddb7f5bb7e4a0944d25efac9dcd93657e0162106e8b2bc94b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three-test private-plant fixture review: +/-12V saturation/safe coasting, NaN/infinity voltage neutral recovery, finite quarter/zero/negative/nonfinite effort and invalid RPM. Two tests failed before fixes; full simulator suite passes.",
+      "evidence": [
+        "docs/audits/ftc-calibration-plant-audit.md",
+        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-calibration-plant-audit.md": {
+      "sha256": "01556254aeaec7d2b5fc8085807ae02a63c95b7196ade77aedd0e9baf9d3fdda",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass177 report checked against source, before/after/full simulator XML and root checks; mathematical smoke-model and untested lifecycle limits explicit.",
+      "evidence": [
+        "docs/audits/ftc-calibration-plant-audit.md",
+        "ARESLib-Kotlin/build/audit-pass177-verified-evidence/summary.json"
       ]
     }
   }
