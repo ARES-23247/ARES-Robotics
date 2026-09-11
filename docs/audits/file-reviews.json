@@ -5557,7 +5557,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "84bc915ac3744833a9cdb07cb0edd9da518be8720a7d3c838833f2d582dc9069",
+      "sha256": "5747ac9f7513e3ebbb6b499c08b390de497acb2bad8340609f0acd0d4ee86de2",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13254,6 +13254,46 @@
         "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
         "docs/audits/costmap-footprint-inflation-audit.md",
         "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/verify-imported-histories.ps1": {
+      "sha256": "9686c1978289b7dad939090e5abf6396d53fdee1d4fa2184f18ed29509619c3e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full script reviewed: six historical identities verified in the actual repository; existence, import/source ancestry and subtree mismatch cases exercised via real disposable Git graphs in PowerShell 7 and Windows PowerShell. Import ancestry false pass fixed.",
+      "evidence": [
+        "docs/audits/imported-history-verification-audit.md",
+        "ARESLib-Kotlin/build/audit-pass185-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/verify-imported-histories.sh": {
+      "sha256": "83b1fd0da5499f033546308f275f253454496287bab483b8f10cf7626e40aff0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full script reviewed: records match PowerShell and all six imports verified in the actual repository; Git Bash graph fixtures cover success and all existing/missing/ancestry/tree rejection paths. Import ancestry false pass fixed.",
+      "evidence": [
+        "docs/audits/imported-history-verification-audit.md",
+        "ARESLib-Kotlin/build/audit-pass185-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/tests/test_imported_histories.py": {
+      "sha256": "30cfdef3aacd83863cd985ce1b2a9d1111f34ca298b183fcebe4d26276ff2f6e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Seven cases reviewed and executed in the 67-test root tooling suite. Six graph scenarios run under three installed shell interpreters with isolated Git environment, binary object input, spaced paths and external working directory. Three original unsafe acceptances reproduced before verifier fix.",
+      "evidence": [
+        "docs/audits/imported-history-verification-audit.md",
+        "ARESLib-Kotlin/build/audit-pass185-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/imported-history-verification-audit.md": {
+      "sha256": "834df33f427ab6dd81ca2a77b397a966e9b1f05c8043da053de323bb99626045",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Findings and scope checked against three baseline failures, 67 passing root tests, six real import checks per entry point and explicit runtime/audit limitations.",
+      "evidence": [
+        "docs/audits/imported-history-verification-audit.md",
+        "ARESLib-Kotlin/build/audit-pass185-verified-evidence/summary.json"
       ]
     }
   }
