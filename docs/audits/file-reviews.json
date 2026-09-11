@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "fdf956782bb62bfc504f9a8d02d084757b65bbc758a1030206eb7fade10d109a",
+      "sha256": "4d75d10f035e308eedb7dd4821b9814fe9bf6f938f265294d27acddc8dc2ce32",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5612,7 +5612,8 @@
         "docs/audits/shared-guidance-audit.md: pass113 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-simulator-telemetry-audit.md: pass114 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-autonomous-lifecycle-audit.md: pass115 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-native-drive-task-audit.md: pass116 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-native-drive-task-audit.md: pass116 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-redux-state-audit.md: pass117 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9114,13 +9115,15 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/Dyn4jSimulation.kt": {
-      "sha256": "cce14800f509638cc4903fbb3ae3a03ad0276c0a58a9f84337a213aa41ed69a6",
+      "sha256": "ecd107a8e8d92251146d1373f74208d6efff8be6eebc585cb7fd76a49e1e9e01",
       "review": "partial",
       "validation": "passed",
-      "scope": "Early finite0..50s timestep gate before scratch/live configuration/effort/model mutations. New real-simulation invalid-time/recovery test reproduced inconsistent acceptance and now passes. Remaining simulation logic outside entry boundary remains partial.",
+      "scope": "Early finite0..50s timestep gate before scratch/live configuration/effort/model mutations. New real-simulation invalid-time/recovery test reproduced inconsistent acceptance and now passes. Remaining simulation logic outside entry boundary remains partial. Pass117: Inventory-storage delta review: metadata reconciliation clamps direct counts0..40 before deque loops; intake gate shares same existing40 limit. Direct reflection regression handlesIntMAX/IntMIN and repeatedgrow/shrink without unbounded allocation. Other simulator paths remain partial, including simultaneous event accounting and world lifecycle.",
       "evidence": [
         "docs/audits/frc-physics-boundary-audit.md",
-        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
+        "docs/audits/frc-redux-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/Dyn4jPhysicsWorld.kt": {
@@ -9242,13 +9245,15 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinConfig.kt": {
-      "sha256": "aad2bce9d2c4c79f4970aec59c052ba1f43a4e284150b99a091a77979c68b79f",
+      "sha256": "c943ad992f2ed4d9ed2a1b64071ff5e9cd686253021957ae29370bc19c99cbee",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full structural configuration review: units and finite/ordered/matching shot tables, cowl limits, mechanism geometry/limits/presets, shooter offset/rearward direction, field target coupling. Constructed validated ShotConfig and sampled public outputs0..10m for monotone finite safe values. Checked-in calibration/survey and official-coordinate comments are not independently physically certified.",
+      "scope": "Full structural configuration review: units and finite/ordered/matching shot tables, cowl limits, mechanism geometry/limits/presets, shooter offset/rearward direction, field target coupling. Constructed validated ShotConfig and sampled public outputs0..10m for monotone finite safe values. Checked-in calibration/survey and official-coordinate comments are not independently physically certified. Pass117: Delta review after full pass112 configuration review: centralized the preexisting simulator40-piece limit as INVENTORY_CAPACITY and traced reducer, intake gate and metadata consumers. Boundary tests0..40/extremeInt and generated/project policy passed. Does not independently certify physical hopper capacity.",
       "evidence": [
         "docs/audits/frc-controller-facade-audit.md",
-        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass112-verified-evidence/summary.json",
+        "docs/audits/frc-redux-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/config/CanonicalDrivebaseConfig.kt": {
@@ -9676,6 +9681,65 @@
       "scope": "Reconciles completed partial adapter review, six reproduced defects, twelve new methods/eight-before-six-fail evidence, numeric boundary checks, FRC237/coreGC5/policy results and explicit task/hardware/concurrency limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass116-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinAction.kt": {
+      "sha256": "0f37224563ba9141f8ea909b0365e3cd7e939b9cf9954c8ea5a19b43abd291df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full action DTO review: RPM/RPS/degrees/rotations/voltage units, RobotClock action timestamps, transfer/safety/recovery semantics, invalid-by-default observation flags, timer phases and ownership. Removed duplicate StartTransfer comment. Setters/flags/timestamps exercised via existing8 and new11 reducer methods; authorization remains with lifecycle callers.",
+      "evidence": [
+        "docs/audits/frc-redux-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinState.kt": {
+      "sha256": "3f0af1d03ad1db30bc7c20c24dfc64fc95aae116c4304aaa5ddf1b658df38d61",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full immutable state/default/helper review: typed measurement/command units, readiness proof, transfer and safety fields, independent copies and generic fallback. Shared immutable fallback replaces repeated allocation. Invalid climber position now selects neutral voltage rather than active minimum endpoint; finite travel clamp retained. One separate before regression failed; full FRC248 passed.",
+      "evidence": [
+        "docs/audits/frc-redux-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinReducer.kt": {
+      "sha256": "ed9af5d94d3f89989bc178aab714f5fe9966c29443f620e319952a94c19f8915",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full reducer review: core timestamp propagation, safety/fault ordering, command gating, transfers/slamtake, detector edges/inventory, sensor validity/deadbands and drive neutralization. Fixed stale timer restart, bounded counts before arithmetic, nonfinite cache repair, normalized RPM comparisons, one outer sensor-state copy and unchanged nested/drive reuse. Six original failures reproduced plus separate climber helper failure; state/edge/fault semantics passed11new+8existing methods.",
+      "evidence": [
+        "docs/audits/frc-redux-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/reducer/MarvinStateAuditTest.kt": {
+      "sha256": "78e36245cc13f926041da7d66c9fbf6d3f2c755fb01a59906925e41bb13d38f6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed11methods: stale/duplicate/invalid/priorcycle timer events, assignment/detector overflow bounds, nested identity with root time, repeated invalidRPM, nonfinite cache repair, immutable fallback, deadbands/validity edges, fault command suppression with sensor updates, repeated detector-invalid recovery, bounded metadata, invalid climber neutral mode/finite clamps. Eight-before-sixfail plus separateone-before-onefail evidence; simulator resource closes viause.",
+      "evidence": [
+        "docs/audits/frc-redux-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/reducer/MarvinReducerTest.kt": {
+      "sha256": "ac315743580b41fadff0e11b0fd00a883cf289e61b01aea04fd43e2769d6699b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Read/executed all8existing reducer methods: climber geometry/units, no implicit cross-mechanism rewrite, all setter actions, slamtake phases/cancel, invalid detector, held-piece recovery, invalid flywheel and per-motor readiness proof. Supplemented by11new edge/efficiency methods.",
+      "evidence": [
+        "docs/audits/frc-redux-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-redux-state-audit.md": {
+      "sha256": "00cf1a5e371dfa5cc27b965a352478a583ad452df750046c3812b2ff8cd6c120",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Reconciles3complete action/state/reducer files, existing8/new11tests, reviewed configuration delta and partial simulator metadata delta, seven reproduced regression failures across two before runs, FRC248/coreGC5/policy and explicit hardware/performance limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
       ]
     }
   }

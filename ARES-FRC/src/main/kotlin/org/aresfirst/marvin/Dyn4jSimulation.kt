@@ -167,7 +167,7 @@ class Dyn4jSimulation(
         val intakeDeployed = intakePivotSim.angleDegrees > 45.0
         val intakeSpinning = simIntakeRollerVoltage > 1.0
 
-        if (intakeDeployed && intakeSpinning && state.superstructure.marvin.inventoryCount < 40) {
+        if (intakeDeployed && intakeSpinning && state.superstructure.marvin.inventoryCount < org.aresfirst.marvin.marvin.MarvinConfig.INVENTORY_CAPACITY) {
             for (i in physicsWorld.balls.indices.reversed()) {
                 val ball = physicsWorld.balls[i]
                 val bx = ball.transform.translationX
@@ -332,7 +332,7 @@ class Dyn4jSimulation(
     }
 
     private fun reconcileInventoryMetadata(inventoryCount: Int) {
-        val boundedCount = inventoryCount.coerceAtLeast(0)
+        val boundedCount = inventoryCount.coerceIn(0, org.aresfirst.marvin.marvin.MarvinConfig.INVENTORY_CAPACITY)
         while (inventoryPieces.size > boundedCount) inventoryPieces.removeLast()
         while (inventoryPieces.size < boundedCount) inventoryPieces.addLast(nextFallbackPiece("inventory"))
     }

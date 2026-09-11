@@ -158,13 +158,16 @@ data class MarvinState(
         controlMode = ClimberControlMode.VOLTAGE
     ))
 
-    fun withClimberPositionRotations(rotations: Double) = copy(climber = climber.copy(
-        targetPositionRotations = rotations.takeIf { it.isFinite() }?.coerceIn(
-            MarvinConfig.MechanismLimits.climberMinRotations,
-            MarvinConfig.MechanismLimits.climberMaxRotations
-        ) ?: MarvinConfig.MechanismLimits.climberMinRotations,
-        controlMode = ClimberControlMode.POSITION_ROTATIONS
-    ))
+    fun withClimberPositionRotations(rotations: Double): MarvinState {
+        if (!rotations.isFinite()) return withClimberVoltage(0.0)
+        return copy(climber = climber.copy(
+            targetPositionRotations = rotations.coerceIn(
+                MarvinConfig.MechanismLimits.climberMinRotations,
+                MarvinConfig.MechanismLimits.climberMaxRotations
+            ),
+            controlMode = ClimberControlMode.POSITION_ROTATIONS
+        ))
+    }
 }
 
 /**
@@ -174,4 +177,7 @@ data class MarvinState(
  * startup code; production [ARESRobot][org.aresfirst.marvin.ARESRobot] installs MarvinState.
  */
 val SuperstructureState.marvin: MarvinState
-    get() = this.custom as? MarvinState ?: MarvinState()
+    get() = this.custom as? MarvinState ?: DEFAULT_MARVIN_STATE
+
+// Every field and nested slice is immutable; fallback reads can safely share this value.
+private val DEFAULT_MARVIN_STATE = MarvinState()
