@@ -93,7 +93,7 @@ class VisionAlignControllerTest {
         val measurement = VisionMeasurement(
             timestampMs = 1_000L,
             tagId = 7,
-            // Limelight target-space Y is positive downward. Z is already the solved
+            // Limelight target-space Y is positive upward. Z is already the solved
             // tag-normal separation and must remain independent of IMU pitch.
             robotPoseTargetSpace = Pose3d(Translation3d(0.0, 1.0, 1.5), Rotation3d())
         )

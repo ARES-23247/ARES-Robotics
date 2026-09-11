@@ -11,13 +11,18 @@ interface SysIdMechanismIO {
     fun stop() = setCharacterizationVoltage(0.0)
 }
 
-/** Converts the shared flywheel contract from RPM to the SysId standard of radians/second. */
+/**
+ * Converts cached RPM to radians/second. The existing flywheel characterization routines
+ * run forward only: voltage is bounded to 0..12 V and nonfinite requests neutralize.
+ * The owner must refresh feedback and authorize hardware before using this adapter.
+ */
 class FlywheelSysIdAdapter(private val flywheel: FlywheelIO) : SysIdMechanismIO {
     override val mechanism: SysIdMechanism = SysIdMechanism.FLYWHEEL
     override val velocity: Double
         get() = flywheel.velocityRpm * (2.0 * Math.PI / 60.0)
     override val measurementValid: Boolean
-        get() = flywheel.velocityValid && velocity.isFinite()
+        // The conversion factor is finite and less than one, so finite RPM cannot overflow.
+        get() = flywheel.velocityValid && flywheel.velocityRpm.isFinite()
 
     override fun setCharacterizationVoltage(volts: Double) {
         flywheel.setAppliedVoltage(volts.takeIf { it.isFinite() }?.coerceIn(0.0, 12.0) ?: 0.0)

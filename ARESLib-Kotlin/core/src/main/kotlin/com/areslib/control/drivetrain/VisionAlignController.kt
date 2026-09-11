@@ -15,18 +15,23 @@ import kotlin.math.sin
  *
  * Transforms target-space camera measurements into robot-centric translational and rotational control demands.
  * Includes low-pass exponential filtering for vision noise mitigation, rate-of-change jump filtering for PnP pose flips,
- * deadband bounds to prevent limit-cycle jitter, P-D + $k_S$ friction compensation for heading control, and automated sweep search behaviors when tag tracking is temporarily lost.
+ * deadbands, bounded PID + $k_S$ heading control, and two-sweep search when tracking is lost.
  *
  * ### Target-Space & Coordinate Transformation Mathematics:
- * In Limelight target space ($Z$ outward depth, $X$ right offset, $Y$ down):
+ * In Limelight target space ($Z$ outward depth, $X$ right offset, $Y$ up):
  * $$e_{forward} = |Z| - d_{target}, \quad e_{left} = X$$
  * $$\phi = -\text{rotation.y} \quad \text{(Robot heading yaw in target space, CCW-positive)}$$
  * Robot-centric coordinate frame error rotation:
  * $$\begin{bmatrix} e_X \\ e_Y \end{bmatrix} = \begin{bmatrix} \cos\phi & \sin\phi \\ -\sin\phi & \cos\phi \end{bmatrix} \begin{bmatrix} e_{forward} \\ e_{left} \end{bmatrix}$$
  * Target-pointing heading error for camera FOV centering:
  * $$e_{\theta} = \text{wrap}\left(\text{atan2}(e_{left}, Z) - \phi\right)$$
- * Rotational Control Law (P-D + $k_S$ static friction feedforward):
- * $$u_{\omega} = \text{coerce}\left(K_p \cdot e_{\theta} + K_d \frac{\Delta e_{\theta}}{\Delta t} + \text{sign}(e_{\theta}) \cdot k_S, -\omega_{max}, \omega_{max}\right)$$
+ * Heading control uses the deadband-subtracted filtered error, derivative of the filtered
+ * heading error, and an integral gain of $0.1 K_p$ with its accumulator bounded to +/-0.3.
+ * First, repeated-time, and reacquired samples do not integrate or differentiate; later
+ * positive time steps are capped at 200 ms. Target changes and clock rewind reset history.
+ * Translation preserves direction under a magnitude cap (`clampTranslationX`) and an
+ * additional lateral cap (`clampTranslationY`). Nonrepresentable arithmetic neutralizes
+ * the entire command and clears tracking history for recovery.
  *
  * ### Physical Units & Coordinate System:
  * - Target Distance ($d_{target}, Z$): Meters ($m$)
@@ -34,7 +39,8 @@ import kotlin.math.sin
  * - Robot Yaw ($\phi, e_{\theta}$): Radians ($rad$), counter-clockwise positive
  * - Linear Velocity Commands ($u_X, u_Y$): Meters per second ($m/s$)
  * - Angular Velocity Command ($u_{\omega}$): Radians per second ($rad/s$)
- * - Data Freshness Threshold: $\le 250$ milliseconds ($ms$)
+ * - Data Freshness Threshold: $0 \le age < 250$ milliseconds ($ms$)
+ * - Returned actions are independently owned and allocate; this is not a zero-allocation API.
  *
  * @see RobotState
  * @see RobotAction.JoystickDriveIntent
@@ -52,7 +58,10 @@ class VisionAlignController {
     // Tag search state
     private var lastKnownSearchDirection = 0.0 // +1.0 = rotate CCW, -1.0 = rotate CW
     private var tagLostTimestampMs = 0L
+    private var searchActive = false
     private var wasTrackingTag = false
+    private var alignmentActive = false
+    private var previousTargetTagId = 0
 
     /**
      * Calculates the required driver intent to align the robot with the specified target AprilTag.
@@ -68,25 +77,30 @@ class VisionAlignController {
         isAlignmentRequested: Boolean,
         @Suppress("UNUSED_PARAMETER") imuPitch: Double = 0.0
     ): RobotAction.JoystickDriveIntent? {
+        val now = RobotClock.currentTimeMillis()
         if (!isAlignmentRequested) {
-            // Reset state when button is released
-            wasTrackingTag = false
-            tagLostTimestampMs = 0L
-            hasPrevFiltered = false
-            prevErrHeadingForD = 0.0
-            prevLoopTimeMs = RobotClock.currentTimeMillis()
-            integralAccum = 0.0
+            reset(now)
+            alignmentActive = false
             return null
         }
 
-        val now = RobotClock.currentTimeMillis()
+        if (!alignmentActive || previousTargetTagId != targetTagId || now < prevLoopTimeMs) {
+            reset(now)
+        }
+        alignmentActive = true
+        previousTargetTagId = targetTagId
+        val elapsedMs = now - prevLoopTimeMs
+        prevLoopTimeMs = now
+        // An ordered subtraction overflow is a long forward interval, never a 1 ms step.
+        val dtSec = if (elapsedMs < 0L) 0.2 else elapsedMs.coerceAtMost(200L) / 1000.0
         
-        // Require reasonably fresh data (<= 250ms) for active closed-loop control
+        // Require fresh data (age < 250ms), rejecting future time before subtraction wraps.
         var activeMeasurement: com.areslib.state.VisionMeasurementSnapshot? = null
         for (i in 0 until state.vision.measurements.size) {
             val measurement = state.vision.measurements[i]
             val ageMs = now - measurement.timestampMs
-            if (measurement.tagId == targetTagId && ageMs in 0L..249L && isUsableTargetSpace(measurement, state)) {
+            if (measurement.tagId == targetTagId && measurement.timestampMs <= now &&
+                ageMs in 0L..249L && isUsableTargetSpace(measurement, state)) {
                 activeMeasurement = measurement
                 break
             }
@@ -94,7 +108,7 @@ class VisionAlignController {
 
         if (activeMeasurement != null) {
             // Tag reacquired — reset search state
-            tagLostTimestampMs = 0L
+            searchActive = false
             
             val robotPoseTargetSpace = activeMeasurement.robotPoseTargetSpace
             
@@ -103,7 +117,7 @@ class VisionAlignController {
             val rawZ = robotPoseTargetSpace.z
             // robotPoseTargetSpace is already a solved pose in the tag frame, not a camera
             // ray. Its Z component is the tag-normal separation and must not be rotated a
-            // second time using robot IMU pitch. Y is Limelight-down and is intentionally
+            // second time using robot IMU pitch. Y is vertical and is intentionally
             // irrelevant to planar ground-robot alignment.
             val distanceZ = abs(rawZ)
             val targetDistanceMeters = tuning.visionAlign.targetDistanceMeters.finiteNonNegative()
@@ -128,8 +142,11 @@ class VisionAlignController {
             
             val phi = sanitizedYaw
             // Rotate translation errors into robot-centric frame using the correct -phi rotation matrix
-            val errX = errorForwardT * cos(phi) + errorLeftT * sin(phi)
-            val errY = -errorForwardT * sin(phi) + errorLeftT * cos(phi)
+            val cosPhi = cos(phi)
+            val sinPhi = sin(phi)
+            val errX = errorForwardT * cosPhi + errorLeftT * sinPhi
+            val errY = -errorForwardT * sinPhi + errorLeftT * cosPhi
+            if (!errX.isFinite() || !errY.isFinite()) return neutralize(now)
             
             // Heading goal: rotate to keep the tag centered in the camera FOV
             val pointingTarget = atan2(errorLeftT, distanceZ)
@@ -171,20 +188,22 @@ class VisionAlignController {
                 errYFiltered * kP_translation
             } else 0.0
 
+            if (!ctrlX.isFinite() || !ctrlY.isFinite()) return neutralize(now)
             val maxClamp = tuning.visionAlign.clampTranslationX.finiteNonNegative()
             val magnitude = kotlin.math.hypot(ctrlX, ctrlY)
+            var scale = 1.0
             if (magnitude > maxClamp) {
-                val scale = maxClamp / magnitude
-                ctrlX *= scale
-                ctrlY *= scale
+                scale = maxClamp / magnitude
             }
+            val lateralClamp = tuning.visionAlign.clampTranslationY.finiteNonNegative()
+            if (abs(ctrlY) > lateralClamp) scale = minOf(scale, lateralClamp / abs(ctrlY))
+            ctrlX *= scale
+            ctrlY *= scale
             
             val kS_rotational = tuning.visionAlign.ksRotational.finiteOrZero()
             
             // Compute derivative term: rate of heading error change
-            val dtSec = ((now - prevLoopTimeMs).coerceIn(1, 200)) / 1000.0
-            prevLoopTimeMs = now
-            val headingErrorRate = if (hadPreviousMeasurement) {
+            val headingErrorRate = if (hadPreviousMeasurement && dtSec > 0.0) {
                 wrapAngle(errHeadingFiltered - prevErrHeadingForD) / dtSec
             } else 0.0
             prevErrHeadingForD = errHeadingFiltered
@@ -194,14 +213,16 @@ class VisionAlignController {
                 val currentSign = sign(errHeadingFiltered)
                 val activeErr = errHeadingFiltered - currentSign * headingErrorDeadband
                 
-                integralAccum += activeErr * dtSec
+                if (hadPreviousMeasurement) integralAccum += activeErr * dtSec
                 integralAccum = integralAccum.coerceIn(-0.3, 0.3)
                 
                 val pTerm = activeErr * kP_rotation
                 val iTerm = (kP_rotation * 0.1) * integralAccum
                 val dTerm = headingErrorRate * kD_rotation
                 val rotationClamp = tuning.visionAlign.clampRotation.finiteNonNegative()
-                (pTerm + iTerm + dTerm + currentSign * kS_rotational).coerceIn(-rotationClamp, rotationClamp)
+                val rawOmega = pTerm + iTerm + dTerm + currentSign * kS_rotational
+                if (!rawOmega.isFinite()) return neutralize(now)
+                rawOmega.coerceIn(-rotationClamp, rotationClamp)
             } else {
                 integralAccum = 0.0
                 0.0
@@ -218,27 +239,29 @@ class VisionAlignController {
                 targetXVelocity = ctrlX,
                 targetYVelocity = ctrlY,
                 targetAngularVelocity = ctrlOmega,
+                timestampMs = now,
                 isFieldCentric = false
             )
         } else {
             val tuning = state.tuning
             hasPrevFiltered = false
             prevErrHeadingForD = 0.0
-            prevLoopTimeMs = RobotClock.currentTimeMillis()
+            integralAccum = 0.0
             
             // Tag is not visible while requested — initiate search rotation
-            if (tagLostTimestampMs == 0L) {
-                tagLostTimestampMs = RobotClock.currentTimeMillis()
+            if (!searchActive) {
+                searchActive = true
+                tagLostTimestampMs = now
                 if (!wasTrackingTag) lastKnownSearchDirection = -1.0 // start CW
             }
             
             val firstSweepMs = tuning.visionAlign.searchFirstSweepMs.coerceAtLeast(0L)
             val secondSweepMs = tuning.visionAlign.searchSecondSweepMs.coerceAtLeast(0L)
             val totalSearchMs = if (Long.MAX_VALUE - firstSweepMs < secondSweepMs) Long.MAX_VALUE else firstSweepMs + secondSweepMs
-            val timeSinceLost = RobotClock.currentTimeMillis() - tagLostTimestampMs
+            val timeSinceLost = now - tagLostTimestampMs
             val searchSpeed = tuning.visionAlign.searchSpeed.finiteOrZero()
             
-            if (timeSinceLost < totalSearchMs) {
+            if (timeSinceLost >= 0L && timeSinceLost < totalSearchMs) {
                 // Active search
                 val currentDirection = if (timeSinceLost < firstSweepMs) lastKnownSearchDirection else -lastKnownSearchDirection
                 val searchOmega = currentDirection * searchSpeed
@@ -246,6 +269,7 @@ class VisionAlignController {
                     targetXVelocity = 0.0,
                     targetYVelocity = 0.0,
                     targetAngularVelocity = searchOmega,
+                    timestampMs = now,
                     isFieldCentric = false
                 )
             } else {
@@ -254,10 +278,26 @@ class VisionAlignController {
                     targetXVelocity = 0.0,
                     targetYVelocity = 0.0,
                     targetAngularVelocity = 0.0,
+                    timestampMs = now,
                     isFieldCentric = false
                 )
             }
         }
+    }
+
+    private fun reset(now: Long) {
+        hasPrevFiltered = false
+        prevErrHeadingForD = 0.0
+        integralAccum = 0.0
+        prevLoopTimeMs = now
+        searchActive = false
+        wasTrackingTag = false
+        lastKnownSearchDirection = -1.0
+    }
+
+    private fun neutralize(now: Long): RobotAction.JoystickDriveIntent {
+        reset(now)
+        return RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0, timestampMs = now, isFieldCentric = false)
     }
 
     private fun isUsableTargetSpace(
