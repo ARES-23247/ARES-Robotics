@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "858dd56cb39ab48d5d0e70b3ce178152cd239cac2c5eac0fa139bc168baab57b",
+      "sha256": "884b007bccedbde5e2e934ab58b911472bd71969e0984c3ad089de99bccbd358",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12623,15 +12623,17 @@
       ]
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/AresTeleOpDSL.kt": {
-      "sha256": "ceab7cf8e571367f1f8761223be4fe37e60d7747f5b5cdf7a111dccf4f0a080f",
-      "review": "partial",
+      "sha256": "bca1c300ae5a73cd823b69154e65d3afb2fdee0231d458704faf94876f53991f",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full static read plus real normal input-adapter/frame reuse, timestamp, drive opt-in and output-order tests. Direct cancellation/close hooks and failed-close reference clearing verified. Robot/generated-runtime construction rollback and shared SDK failure/repeated lifecycle integration still open.",
+      "scope": "Full season adapter normal single-OpMode ownership review. Pass170 startup; pass171 actual frame reuse, timestamps, drive gates, heading forwarding, cancellation and failed-close reference cleanup; pass172 construction rollback and successful transfer. Closes robot if setup fails before shared lifecycle owns it; preserves original error. Shared repeated/out-of-order SDK callbacks and physical IO/timing excluded.",
       "evidence": [
         "docs/audits/ftc-capability-policy-audit.md",
         "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json",
         "docs/audits/ftc-teleop-loop-audit.md",
-        "ARESLib-Kotlin/build/audit-pass171-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass171-verified-evidence/summary.json",
+        "docs/audits/ftc-teleop-construction-audit.md",
+        "ARESLib-Kotlin/build/audit-pass172-verified-evidence/summary.json"
       ]
     },
     "docs/audits/ftc-capability-policy-audit.md": {
@@ -12706,6 +12708,26 @@
       "evidence": [
         "docs/audits/ftc-teleop-loop-audit.md",
         "ARESLib-Kotlin/build/audit-pass171-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresTeleOpConstructionTest.kt": {
+      "sha256": "587b564b4f3487b62fa69ccbec7f35726cdf0ffd43592fe9f4cbe0cc53e3040f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full three constructor-intercept test review: failed generated-runtime construction, telemetry/close errors, successful ownership transfer. Two failed before fix; three focused and 136 full FTC tests pass. No real hardware construction.",
+      "evidence": [
+        "docs/audits/ftc-teleop-construction-audit.md",
+        "ARESLib-Kotlin/build/audit-pass172-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-teleop-construction-audit.md": {
+      "sha256": "3701527a859103451d79a788d598199ee2d68b6c26826cc11f9848a2d14f6aab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against source, before/after XML, full FTC validation and root policy evidence; actual motor neutralization and shared SDK lifecycle limits stated.",
+      "evidence": [
+        "docs/audits/ftc-teleop-construction-audit.md",
+        "ARESLib-Kotlin/build/audit-pass172-verified-evidence/summary.json"
       ]
     }
   }

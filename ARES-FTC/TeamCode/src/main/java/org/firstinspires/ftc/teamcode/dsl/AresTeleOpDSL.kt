@@ -53,8 +53,19 @@ abstract class AresTeleOpBase : FtcTeleOpBase<AresRobot>(), AresFtcRuntimeOption
     protected open val allowGeneratedDrive: Boolean = false
 
     override fun buildRobot() = AresRobot(hardwareMap, telemetry).also { robot ->
-        generatedRuntime = FtcGeneratedProjectRuntime(robot)
-        robot.addTelemetry("ARES/Controls/Source", requireNotNull(generatedRuntime).controlsSource)
+        try {
+            generatedRuntime = FtcGeneratedProjectRuntime(robot)
+            robot.addTelemetry("ARES/Controls/Source", requireNotNull(generatedRuntime).controlsSource)
+        } catch (failure: Throwable) {
+            // The shared lifecycle owns the robot only after this method returns successfully.
+            generatedRuntime = null
+            try {
+                robot.close()
+            } catch (closeFailure: Throwable) {
+                if (closeFailure !== failure) failure.addSuppressed(closeFailure)
+            }
+            throw failure
+        }
     }
 
     override fun getBaseRobot(robot: AresRobot) = robot.base
