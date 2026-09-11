@@ -4,6 +4,7 @@ import com.ares.analytics.shared.models.DriverProfile
 import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.test.runTest
 import java.io.File
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -12,16 +13,61 @@ import kotlin.test.assertTrue
  * DriverAnalysisServiceTest class.
  */
 class DriverAnalysisServiceTest {
+    private val databases = mutableListOf<DatabaseService>()
+    private val temporaryFiles = mutableListOf<File>()
+
+    private fun temporaryFile(prefix: String, suffix: String): File =
+        File.createTempFile(prefix, suffix).also { temporaryFiles.add(it) }
+
+    @AfterTest
+    fun releaseFixtures() {
+        try {
+            databases.forEach { it.close() }
+        } finally {
+            temporaryFiles.forEach { it.delete() }
+        }
+    }
+
+
+    @Test
+    fun jitterRequiresSamplingAboveTheWholeBandNyquistLimit() = runTest {
+        val directory = java.nio.file.Files.createTempDirectory("driver_jitter_sampling").toFile()
+        val database = DatabaseService(File(directory, "telemetry.db").path)
+        try {
+            val service = DriverAnalysisService(database, SysIdService(database), File(directory, "profiles.json").path)
+            val slowFrames = List(128) { index ->
+                TelemetryFrame(index * 50L, "slow", "Gamepad1/LeftX",
+                    0.5 * kotlin.math.sin(2.0 * kotlin.math.PI * index / 20.0))
+            }
+            database.insertTelemetryFrames(slowFrames)
+            val insufficient = service.analyzeDriverJitter("slow")
+            kotlin.test.assertFalse(insufficient.hasJitter)
+            assertTrue(insufficient.message.contains("Insufficient"),
+                "20 Hz sampling cannot establish absence of jitter across the full 8-12 Hz band")
+
+            // One undersampled axis must not hide usable evidence from the other axis.
+            database.insertTelemetryFrames(List(128) { index ->
+                TelemetryFrame(index * 10L, "slow", "Gamepad1/LeftY",
+                    0.1 * kotlin.math.sin(2.0 * kotlin.math.PI * 10.0 * index / 100.0))
+            })
+            val detected = service.analyzeDriverJitter("slow")
+            assertTrue(detected.hasJitter)
+            assertEquals(10.0, detected.peakFrequencyHz, 0.5)
+        } finally {
+            database.close()
+            directory.deleteRecursively()
+        }
+    }
 
     @Test
     /**
      * testProfilesCRUD fun.
      */
     fun testProfilesCRUD() = runTest {
-        val tempDb = File.createTempFile("driver_crud_db", ".db").apply { deleteOnExit() }
-        val databaseService = DatabaseService(tempDb.absolutePath)
+        val tempDb = temporaryFile("driver_crud_db", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath).also { databases.add(it) }
         val sysIdService = SysIdService(databaseService)
-        val tempFile = File.createTempFile("driver_profiles", ".json")
+        val tempFile = temporaryFile("driver_profiles", ".json")
         tempFile.delete() // Delete so DriverAnalysisService writes defaults
         val service = DriverAnalysisService(databaseService, sysIdService, tempFile.absolutePath)
 
@@ -46,10 +92,10 @@ class DriverAnalysisServiceTest {
      * testAnalyzeDriverJitter fun.
      */
     fun testAnalyzeDriverJitter() = runTest {
-        val tempDb = File.createTempFile("driver_jitter_db", ".db").apply { deleteOnExit() }
-        val databaseService = DatabaseService(tempDb.absolutePath)
+        val tempDb = temporaryFile("driver_jitter_db", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath).also { databases.add(it) }
         val sysIdService = SysIdService(databaseService)
-        val tempFile = File.createTempFile("driver_profiles", ".json")
+        val tempFile = temporaryFile("driver_profiles", ".json")
         tempFile.delete() // Delete so DriverAnalysisService writes defaults
         val service = DriverAnalysisService(databaseService, sysIdService, tempFile.absolutePath)
         val sessionId = "test-session"
@@ -81,15 +127,15 @@ class DriverAnalysisServiceTest {
 
     @Test
     fun testAnalyzeDriverCoaching() = runTest {
-        val tempDb = File.createTempFile("driver_coaching_db", ".db").apply { deleteOnExit() }
-        val databaseService = DatabaseService(tempDb.absolutePath)
+        val tempDb = temporaryFile("driver_coaching_db", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath).also { databases.add(it) }
         val sysIdService = SysIdService(databaseService)
-        val tempFile = File.createTempFile("driver_profiles", ".json")
+        val tempFile = temporaryFile("driver_profiles", ".json")
         tempFile.delete()
         val service = DriverAnalysisService(databaseService, sysIdService, tempFile.absolutePath)
         val sessionId = "coaching-session"
 
-        // Generate telemetry with spin-translating (scrub)
+        // Generate simultaneous translation and rotation; this alone does not prove wheel scrub
         val frames = mutableListOf<TelemetryFrame>()
         for (i in 0 until 100) {
             val t = (i * 20).toLong()
@@ -112,9 +158,9 @@ class DriverAnalysisServiceTest {
 
     @Test
     fun coachingJoinsTopicsByTimestampInsteadOfListPosition() = runTest {
-        val tempDb = File.createTempFile("driver_alignment_db", ".db").apply { deleteOnExit() }
-        val databaseService = DatabaseService(tempDb.absolutePath)
-        val tempFile = File.createTempFile("driver_profiles", ".json").apply { delete() }
+        val tempDb = temporaryFile("driver_alignment_db", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath).also { databases.add(it) }
+        val tempFile = temporaryFile("driver_profiles", ".json").apply { delete() }
         val service = DriverAnalysisService(databaseService, SysIdService(databaseService), tempFile.absolutePath)
         val sessionId = "alignment-session"
         val frames = buildList {
@@ -139,10 +185,10 @@ class DriverAnalysisServiceTest {
 
     @Test
     fun testAnalyzeDriverJitterOnCleanSignalReturnsNoJitter() = runTest {
-        val tempDb = File.createTempFile("driver_clean_db", ".db").apply { deleteOnExit() }
-        val databaseService = DatabaseService(tempDb.absolutePath)
+        val tempDb = temporaryFile("driver_clean_db", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath).also { databases.add(it) }
         val sysIdService = SysIdService(databaseService)
-        val tempFile = File.createTempFile("driver_profiles", ".json").apply { delete() }
+        val tempFile = temporaryFile("driver_profiles", ".json").apply { delete() }
         val service = DriverAnalysisService(databaseService, sysIdService, tempFile.absolutePath)
         val sessionId = "clean-session"
         val gamepadX = "/Gamepad1/LeftX"
@@ -169,10 +215,10 @@ class DriverAnalysisServiceTest {
 
     @Test
     fun testAnalyzeDriverCoachingOnEmptySessionReturnsInsufficientData() = runTest {
-        val tempDb = File.createTempFile("driver_empty_db", ".db").apply { deleteOnExit() }
-        val databaseService = DatabaseService(tempDb.absolutePath)
+        val tempDb = temporaryFile("driver_empty_db", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath).also { databases.add(it) }
         val sysIdService = SysIdService(databaseService)
-        val tempFile = File.createTempFile("driver_profiles", ".json").apply { delete() }
+        val tempFile = temporaryFile("driver_profiles", ".json").apply { delete() }
         val service = DriverAnalysisService(databaseService, sysIdService, tempFile.absolutePath)
 
         val report = service.analyzeDriverCoaching("non-existent-session")

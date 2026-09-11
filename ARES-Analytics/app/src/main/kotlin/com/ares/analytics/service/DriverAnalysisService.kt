@@ -185,9 +185,14 @@ class DriverAnalysisService(
         // reporting an aliased frequency with false precision.
         if (deltas.any { kotlin.math.abs(it - medianDtMs) > medianDtMs * MAX_SAMPLE_JITTER_FRACTION }) return null
 
+        val sampleRateHz = 1000.0 / medianDtMs
+        // The entire detection band must be below Nyquist. An undersampled capture
+        // cannot establish absence of jitter, even if its observable bins look quiet.
+        if (sampleRateHz <= 2.0 * JITTER_BAND_HZ.endInclusive) return null
+
         val fft = sysIdService.performFftAnalysis(
             DoubleArray(sorted.size) { sorted[it].value },
-            1000.0 / medianDtMs
+            sampleRateHz
         )
         if (fft.frequencies.isEmpty()) return null
 

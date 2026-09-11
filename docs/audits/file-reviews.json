@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "9c60c77b1829f80f7383cf63f8bde8c6df9e4409db75f6fa1b7dfb7caeb84a18",
+      "sha256": "97000fb6c494a7d4f379be8634fdcddad673c84f1920f95acf8b6c86d7d700b0",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11458,6 +11458,56 @@
       "evidence": [
         "docs/audits/xrp-simulator-test-evidence-audit.md",
         "ARESLib-Kotlin/build/audit-pass139-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DriverAnalysisService.kt": {
+      "sha256": "95f5c4948e32489315628aa020bdf4ac005835285977d609d6a535a99009a4fa",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full file read. Fixed jitter FFT accepting captures below the full8-12Hz band Nyquist requirement; reject sample rates<=24Hz before FFT allocation. Actual20Hz database regression failed before; valid100Hz second-axis jitter still detected. Remaining: persistence failure/constructor concurrency consistency, coaching timestamp/duplicates/extreme numeric behavior and broader imperfect-sampling confidence.",
+      "evidence": [
+        "docs/audits/studio-driver-jitter-sampling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass140-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DriverAnalysisServiceTest.kt": {
+      "sha256": "b1de2fb4246681d196abc37e773bf6318fd1680950e5778c23db458b8f0f1be7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full seven-method class reviewed: CRUD, mixed-frequency jitter, clean signal, synchronized coaching, missing timestamp and empty data; new20Hz rejection/100Hz second-axis recovery case. Added after-test DB/resource tracking for old fixtures and corrected unsupported scrub comment. Seven focused and full app suite pass; no hardware or live GUI claim.",
+      "evidence": [
+        "docs/audits/studio-driver-jitter-sampling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass140-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/TelemetryMetricCatalog.kt": {
+      "sha256": "54285c56b861c8a812e3b22e946409d5b7fc75c51acc6ece9cc13c948cc0426f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full enum/data class/catalog: seven definitions, dimensions/rate metadata, normalized alias sets, provenance-preserving lookup and unknown handling. Definitions have distinct keys; no runtime mutation or repeated lookup construction. Catalog alias tests and shared suite pass; expected rates are metadata, not observed transport guarantees.",
+      "evidence": [
+        "docs/audits/studio-driver-jitter-sampling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass140-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/TelemetryMetricCatalogTest.kt": {
+      "sha256": "cf43f5488aab90cd389f3b6e2d7dbf961750e701f797da1e2bb56db1d35a115f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-test class: leading slash normalization, battery alias lookup, distinct drive voltage identity and unknown key handling. Shared suite17 tests passes/up-to-date with unchanged source.",
+      "evidence": [
+        "docs/audits/studio-driver-jitter-sampling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass140-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-driver-jitter-sampling-audit.md": {
+      "sha256": "60483e82a509f6eb5751a596f7ce6b5fd0c6ac82e543f5b1d8b5e141a731bb55",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass140 report checked against observed failing assertion, focused results, final Studio XML counts/skip identities and actual implementation. Explicit remaining service scopes and skipped capability limits.",
+      "evidence": [
+        "docs/audits/studio-driver-jitter-sampling-audit.md",
+        "ARESLib-Kotlin/build/audit-pass140-verified-evidence/summary.json"
       ]
     }
   }
