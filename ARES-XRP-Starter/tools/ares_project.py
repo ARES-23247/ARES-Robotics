@@ -434,8 +434,8 @@ class GeneratedSafetyTest(unittest.TestCase):
             self.assertIn(default_id, routines)
 
     def test_generated_superstructure_references_and_interlocks_are_valid(self):
-        from pathlib import Path
-        self.assertFalse(list((Path.cwd() / ".ares" / "superstructures").glob("*.aressuperstructure")),
+        from tools import ares_project
+        self.assertFalse(list((ares_project.ROOT / ".ares" / "superstructures").glob("*.aressuperstructure")),
                          "XRP superstructures are not a generated runtime capability")
 
     def test_fail_closed_link_policy(self):

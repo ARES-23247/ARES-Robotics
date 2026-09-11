@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "ce3928e11cbc4f30ed4b28d87d697f061021f93953eca9bbdfebfd882742399b",
+      "sha256": "7f5c31eb7c7c6f48c52f7acd1413070a55036392ce0e4b0db0cae2080a8e033a",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11195,13 +11195,15 @@
       ]
     },
     "ARES-XRP-Starter/tests/test_generated_project.py": {
-      "sha256": "553b581300d1d302c3f24b91ecf7dd71b743b867f21406c477dd442a76c1f751",
+      "sha256": "0c00de3c5258f7c3a60a6d7bd3fb0f01324d125da3cec6496889dbe68e81419d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source: fingerprint fixture, sampled IO math, regeneration/discovery, board ports, mecanum generation, runtime config and routine creation. Added exact literal-string round trips and discovery membership/uniqueness checks. 108 host tests pass; shared-reference checks do not establish Studio execution or physical hardware.",
+      "scope": "Full source: fingerprint fixture, sampled IO math, regeneration/discovery, board ports, mecanum generation, runtime config and routine creation. Added exact literal-string round trips and discovery membership/uniqueness checks. 108 host tests pass; shared-reference checks do not establish Studio execution or physical hardware. Pass138: generated unsupported-superstructure check now uses canonical project ROOT, not caller cwd. New regression failed before and passes after; full120 host tests also pass from monorepo root.",
       "evidence": [
         "docs/audits/xrp-project-serialization-audit.md",
-        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json",
+        "docs/audits/xrp-launcher-root-audit.md",
+        "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
       ]
     },
     "ARES-XRP-Starter/tests/test_hardware.py": {
@@ -11215,17 +11217,19 @@
       ]
     },
     "ARES-XRP-Starter/tools/ares_project.py": {
-      "sha256": "2c1a16454492b6e10dde0e49abed1f701a881b661ae601daf3966d6428f69afd",
+      "sha256": "721b570bedba851ed6adb426449dc3ff48b77d2496e3dcad9a1db20b2e331f59",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full source read; passes135-137 fix Python literal string preservation, nonfinite JSON/routine inputs, duplicate enabled entries and JUnit outcome/XML fidelity. Four reporting regressions and119 full host tests pass. Remaining scopes: full schema/type policy, autonomous feature preservation, generated safety-test non-vacuity and remaining CLI/process edge cases. No periodic/hardware performance claim.",
+      "scope": "Full source read; passes135-137 fix Python literal string preservation, nonfinite JSON/routine inputs, duplicate enabled entries and JUnit outcome/XML fidelity. Four reporting regressions and119 full host tests pass. Remaining scopes: full schema/type policy, autonomous feature preservation, generated safety-test non-vacuity and remaining CLI/process edge cases. No periodic/hardware performance claim. Pass138: generated unsupported-superstructure check now uses canonical project ROOT, not caller cwd. New regression failed before and passes after; full120 host tests also pass from monorepo root.",
       "evidence": [
         "docs/audits/xrp-project-serialization-audit.md",
         "ARESLib-Kotlin/build/audit-pass135-verified-evidence/summary.json",
         "docs/audits/xrp-autonomous-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass136-verified-evidence/summary.json",
         "docs/audits/xrp-junit-reporting-audit.md",
-        "ARESLib-Kotlin/build/audit-pass137-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass137-verified-evidence/summary.json",
+        "docs/audits/xrp-launcher-root-audit.md",
+        "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
       ]
     },
     "ARES-XRP-Starter/.ares/project.json": {
@@ -11375,6 +11379,65 @@
       "evidence": [
         "docs/audits/xrp-junit-reporting-audit.md",
         "ARESLib-Kotlin/build/audit-pass137-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/ares": {
+      "sha256": "c0d7f62bbbf1aa109e97e360ca1b9f1cc56dc057883fbc122760b9d093965c4b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full two-line POSIX launcher: quoted script path, all arguments and exec exit propagation. Corrected Git mode100644 to100755. Git Bash on Windows fixture with spaced path/argument and exit19 passed; native Linux/macOS untested.",
+      "evidence": [
+        "docs/audits/xrp-launcher-root-audit.md",
+        "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/ares.bat": {
+      "sha256": "18668623467162815b4be65181e3a2f4f509418fdde4bb9b3e1cd43f6bfc03f7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full Windows wrapper: local environment scope, py -3 preference, python fallback, quoted tool path and child exit propagation. Both interpreter branches passed spaced-path/argument stub and exit19. No device command executed.",
+      "evidence": [
+        "docs/audits/xrp-launcher-root-audit.md",
+        "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/.gitignore": {
+      "sha256": "c20d0a93f66fac509aed017038e65ada43234abd31bdd24a562c748bce39b9e8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full ignore rules: disposable build outputs, Python cache/bytecode and local xrp_secrets.py. git check-ignore confirms representative paths ignored and public secrets example retained.",
+      "evidence": [
+        "docs/audits/xrp-launcher-root-audit.md",
+        "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/xrp_secrets.example.py": {
+      "sha256": "c1a223dabb664f7af2345ca3f648f7355b87a001d966712ec7e3795b6349a9a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full one-variable placeholder example, no credential present. Intended ignored local copy documented; host compilation sweep passes and example is not ignored.",
+      "evidence": [
+        "docs/audits/xrp-launcher-root-audit.md",
+        "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-XRP-Starter/README.md": {
+      "sha256": "2e17d7a679d8a2e03b73cac8fa416e5f25c28098c862f9dd3836487064054326",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Full README read. Wrapper usage, generated paths, ignored secrets and host verification evidence checked; executable-bit mismatch fixed. Broader Studio authoring/control flows, firmware installation provenance and physical/deployment claims still require targeted review.",
+      "evidence": [
+        "docs/audits/xrp-launcher-root-audit.md",
+        "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/xrp-launcher-root-audit.md": {
+      "sha256": "c4c245c9688780d3508f241672d99a4089a42fc53a05ad07381e4420b6ba0bf3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass138 report verified against mode metadata, failing/passing root-check regression, actual120-test XML and launcher/ignore observations; platform and broader integration limits explicit.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass138-verified-evidence/summary.json"
       ]
     }
   }

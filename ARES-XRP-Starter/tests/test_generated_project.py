@@ -1,7 +1,9 @@
 import importlib.util
+import io
 import json
 import pathlib
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -13,6 +15,24 @@ for candidate in (ROOT / "lib", ROOT.parent / "ARESLib-Kotlin" / "ares-micro"):
 
 
 class GeneratedProjectTest(unittest.TestCase):
+    def test_generated_superstructure_check_uses_project_root_instead_of_caller_directory(self):
+        from tools import ares_project
+        namespace = {}
+        exec(ares_project.generated_test_source(), namespace)
+        with tempfile.TemporaryDirectory() as directory:
+            project_root = pathlib.Path(directory) / "project"
+            unsupported = project_root / ".ares" / "superstructures"
+            unsupported.mkdir(parents=True)
+            (unsupported / "unsupported.aressuperstructure").write_text("{}", encoding="utf-8")
+            with mock.patch.object(ares_project, "ROOT", project_root), mock.patch.object(
+                pathlib.Path, "cwd", return_value=pathlib.Path(directory) / "caller"
+            ):
+                case = namespace["GeneratedSafetyTest"](
+                    "test_generated_superstructure_references_and_interlocks_are_valid")
+                result = unittest.TextTestRunner(stream=io.StringIO()).run(case)
+            self.assertEqual(len(result.failures), 1, "Unsupported project file must fail from any caller directory")
+            self.assertFalse(result.errors)
+
     def test_runtime_identity_fingerprints_the_same_files_as_studio(self):
         import hashlib
         tool_spec = importlib.util.spec_from_file_location("fingerprint_tool", ROOT / "tools/ares_project.py")
