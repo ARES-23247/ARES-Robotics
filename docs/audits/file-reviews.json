@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "d28cd5102afe736de20998a99af8e203fa6cf7f39a906111170bdcd91cd9f2b3",
+      "sha256": "1650acc0c1a2a99047bd9a2b239c57d58bc0f11d265002a4f3189ec99d9403d1",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -11591,6 +11591,36 @@
       "scope": "Pass142 report verified against two failing inference regressions, corrected implementation, finalStudio counts/skip identities and retained inference limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/SessionTelemetryModels.kt": {
+      "sha256": "4440b05155673cde38832d887a4e0938d50e99905f44fc6a09dd8a917e6671e5",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "All206 lines read. Timestamp conversion and TelemetryFrame invariants reviewed: bounded exactms-to-us, nonnegative same-millisecond explicitus and sampleOrder. Legacy/default and precise/text JSON roundtrip plus invalid decoding verified;25 shared tests pass. Remaining: simulation external-update gating, diagnostic key validation, alert/threshold ranges and summary/trajectory consumer compatibility.",
+      "evidence": [
+        "docs/audits/studio-telemetry-timestamp-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass143-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/TelemetryFrameTimestampTest.kt": {
+      "sha256": "5db714a91527d36bc0fdf4c0a1f4df04d8966f9728f1f3fbd41c101ff2c174a0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full five-method timestamp test class read. Existing constructor bounds and microsecond bucket tests plus three realAppJson cases for legacy defaults, precise ordered textual roundtrip and invalid decoding. All25 shared tests pass; no runtime source correction needed.",
+      "evidence": [
+        "docs/audits/studio-telemetry-timestamp-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass143-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-telemetry-timestamp-contract-audit.md": {
+      "sha256": "ba595f8a6be71a37b667b5894dc0db80acad780a8f412ab8efedd1746feb5917",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass143 report checked against timestamp arithmetic, real serializer tests,25-test XML and explicit remaining model scopes. Test-only validation scope distinguished from previous downstream evidence.",
+      "evidence": [
+        "docs/audits/studio-telemetry-timestamp-contract-audit.md",
+        "ARESLib-Kotlin/build/audit-pass143-verified-evidence/summary.json"
       ]
     }
   }
