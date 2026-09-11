@@ -17,6 +17,62 @@ class EstimateMotorTimingTest {
 
     @AfterEach fun restoreClock() = RobotClock.useSystemTime()
 
+    @Test fun `read only reset contract preserves the reference and performs no device read`() {
+        val encoder = Encoder().apply { ticks = 123 }
+        val io = EstimateMotorIO(encoder)
+        RobotClock.useMockTime(1000L)
+        io.updateInputs()
+        io.resetEncoder()
+        assertEquals(123.0, io.position)
+        assertEquals(1, encoder.reads)
+        encoder.ticks = 133
+        RobotClock.useMockTime(1020L)
+        io.updateInputs()
+        assertEquals(133.0, io.position)
+        assertEquals(500.0, io.velocity)
+    }
+
+    @Test fun `forward signed counter rollover preserves displacement and velocity`() {
+        val encoder = Encoder().apply { ticks = Int.MAX_VALUE - 5 }
+        val io = EstimateMotorIO(encoder)
+        RobotClock.useMockTime(1000L)
+        io.updateInputs()
+        val before = io.position
+        encoder.ticks = Int.MIN_VALUE + 4
+        RobotClock.useMockTime(1020L)
+        io.updateInputs()
+        assertEquals(before + 10.0, io.position)
+        assertEquals(500.0, io.velocity)
+    }
+
+    @Test fun `reverse signed counter rollover preserves displacement and velocity`() {
+        val encoder = Encoder().apply { ticks = Int.MIN_VALUE + 5 }
+        val io = EstimateMotorIO(encoder)
+        RobotClock.useMockTime(1000L)
+        io.updateInputs()
+        val before = io.position
+        encoder.ticks = Int.MAX_VALUE - 4
+        RobotClock.useMockTime(1020L)
+        io.updateInputs()
+        assertEquals(before - 10.0, io.position)
+        assertEquals(-500.0, io.velocity)
+    }
+
+    @Test fun `same timestamp rollover does not discard the derivative displacement`() {
+        val encoder = Encoder().apply { ticks = Int.MAX_VALUE - 5 }
+        val io = EstimateMotorIO(encoder)
+        RobotClock.useMockTime(1000L)
+        io.updateInputs()
+        val before = io.position
+        encoder.ticks = Int.MIN_VALUE + 4
+        io.updateInputs()
+        encoder.ticks = Int.MIN_VALUE + 14
+        RobotClock.useMockTime(1020L)
+        io.updateInputs()
+        assertEquals(before + 20.0, io.position)
+        assertEquals(1000.0, io.velocity)
+    }
+
     @Test
     fun `same millisecond samples do not discard displacement from velocity`() {
         val encoder = Encoder()

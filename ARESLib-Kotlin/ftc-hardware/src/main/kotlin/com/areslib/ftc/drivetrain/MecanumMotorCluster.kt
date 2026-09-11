@@ -80,6 +80,8 @@ class MecanumMotorCluster(
     val rrIO = EstimateMotorIO(rearRight)
 
     private var lastWarningTime = 0L
+    private var closed = false
+    private var closeNeutralConfirmed = false
 
     /** True after an invalid request or failed motor write until neutral succeeds explicitly. */
     var outputFaultLatched: Boolean = false
@@ -135,7 +137,7 @@ class MecanumMotorCluster(
      * @param rr Rear-right motor power.
      */
     fun setMotorPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
-        if (outputFaultLatched || !fl.isFinite() || !fr.isFinite() || !rl.isFinite() || !rr.isFinite()) {
+        if (closed || outputFaultLatched || !fl.isFinite() || !fr.isFinite() || !rl.isFinite() || !rr.isFinite()) {
             outputFaultLatched = true
             setCachedPowers(0.0, 0.0, 0.0, 0.0)
             applyNeutral()
@@ -166,7 +168,7 @@ class MecanumMotorCluster(
      * @param scale Master power scale factor.
      */
     fun applyPowerScale(scale: Double) {
-        val s = if (scale.isFinite()) scale.coerceIn(0.0, 1.0) else 0.0
+        val s = if (!closed && scale.isFinite()) scale.coerceIn(0.0, 1.0) else 0.0
         flIO.powerScale = s
         frIO.powerScale = s
         rlIO.powerScale = s
@@ -200,6 +202,10 @@ class MecanumMotorCluster(
 
     /** Clears the latch only after all four motors accept an explicit neutral command. */
     fun recoverWithNeutral(): Boolean {
+        if (closed) {
+            safe()
+            return false
+        }
         setCachedPowers(0.0, 0.0, 0.0, 0.0)
         val recovered = applyNeutral()
         outputFaultLatched = !recovered
@@ -240,10 +246,17 @@ class MecanumMotorCluster(
         if (power.isFinite()) power.coerceIn(-1.0, 1.0) else 0.0
 
     /**
-     * Releases motor IO resources upon OpMode completion.
+     * Permanently inhibits output, attempts neutral on every motor, then closes cached IO.
+     * A failed neutral is reported and may be retried by calling close again; it cannot reopen output.
      */
     override fun close() {
-        var firstFailure: Throwable? = null
+        if (closeNeutralConfirmed) return
+        closed = true
+        outputFaultLatched = true
+        applyPowerScale(0.0)
+        setCachedPowers(0.0, 0.0, 0.0, 0.0)
+        var firstFailure: Throwable? = if (applyNeutral()) null else
+            IllegalStateException("Failed to neutralize every drivetrain motor during close")
         for (motor in arrayOf(flIO, frIO, rlIO, rrIO)) {
             try {
                 motor.close()
@@ -252,5 +265,6 @@ class MecanumMotorCluster(
             }
         }
         firstFailure?.let { throw it }
+        closeNeutralConfirmed = true
     }
 }

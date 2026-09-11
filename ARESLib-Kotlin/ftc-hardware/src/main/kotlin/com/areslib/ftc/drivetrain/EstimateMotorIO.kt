@@ -39,6 +39,8 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     private var lastTime = 0L
     private var hasPositionSample = false
     private var hasVelocitySample = false
+    private var lastRawPosition = 0
+    private var hasRawPosition = false
     @Volatile private var closed = false
 
     /**
@@ -70,12 +72,21 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     fun updateInputs() {
         if (closed) return
         try {
-            cachedPosition = motor.currentPosition.toDouble()
+            val rawPosition = motor.currentPosition
             val now = RobotClock.currentTimeMillis()
             if (now < 0L) {
                 hasPositionSample = false
                 return
             }
+            // Subtract in the counter's signed 32-bit domain before widening. This unwraps
+            // rollover provided fewer than 2^31 ticks elapsed between successful reads.
+            cachedPosition = if (hasRawPosition) {
+                cachedPosition + (rawPosition - lastRawPosition).toDouble()
+            } else {
+                rawPosition.toDouble()
+            }
+            lastRawPosition = rawPosition
+            hasRawPosition = true
             val elapsed = now - lastTime
             if (hasPositionSample && now >= lastTime && elapsed in 0L..MAX_POSITION_SAMPLE_AGE_MS) {
                 val dt = (now - lastTime) / 1000.0
@@ -103,7 +114,7 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
     override val velocity: Double
         get() = if (positionSampleFresh() && hasVelocitySample) cachedVelocity else Double.NaN
 
-    /** Cumulative encoder ticks; NaN under the same validity rules as [velocity]. */
+    /** Unwrapped cumulative ticks; NaN under the same observation-freshness rules as [velocity]. */
     override val position: Double
         get() = if (positionSampleFresh()) cachedPosition else Double.NaN
 
@@ -125,7 +136,10 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
         hasCurrentSample = false
     }
 
-    /** Resets the local motor encoder zero reference (no-op to preserve cached estimates). */
+    /**
+     * Intentionally leaves the encoder reference unchanged; this read-only wrapper cannot reset hardware.
+     * External SDK counter resets require a new wrapper to establish a new cumulative reference.
+     */
     override fun resetEncoder() {
         // No-op to avoid side-effects in estimation wrapper
     }
