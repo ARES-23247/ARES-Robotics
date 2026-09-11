@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "5361a0a67e2e20e31cda508b04bc9be1651daa9277c072e5789f256c3d18feab",
+      "sha256": "aa865df2ee41bf1eff58f0c79e9cbde035b4f7916e24509b89826c91d9694162",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5627,7 +5627,8 @@
         "docs/audits/frc-regression-evidence-audit.md: pass128 test/fixture records and self-fingerprint refreshed",
         "docs/audits/frc-build-selection-audit.md: pass129 dependencyselection records and self-fingerprint refreshed",
         "docs/audits/frc-native-extraction-audit.md: pass130 nativeextraction records and self-fingerprint refreshed",
-        "docs/audits/frc-documentation-consistency-audit.md: pass131 documentation records and self-fingerprint refreshed"
+        "docs/audits/frc-documentation-consistency-audit.md: pass131 documentation records and self-fingerprint refreshed",
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md: pass132 vendor/wrapper records and self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -11056,6 +11057,95 @@
       "scope": "Documents10completedMarkdownreviews,correctedcontroller/toolchain/path/safety/operationsinstructions,unchangedpolicy/notices,validationandexplicitnonruntime/nonhardware/nonlegalcertificationlimits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/gradlew": {
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "FullPOSIXlauncher source review: Java/OS/argument/quoting/exit paths; byte-identical to freshGradle8.14.5generatedreference. bash-nandGitBashWindows--versionpass. NativeLinux/macOS/AIXpathsnotexecuted; upstreamvendoredscriptretained.",
+      "evidence": [
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md",
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/gradlew.bat": {
+      "sha256": "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "FullWindowslauncher source review: JavaHOME/PATHselection,quoting,argumentforwardingandexitstatus; byte-identicaltofreshGradle8.14.5reference. RepeatedactualWindowsGradleruns pass. Vendorartifactunchanged.",
+      "evidence": [
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md",
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/gradle/wrapper/gradle-wrapper.jar": {
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Vendoredbinary accounted by exact43,764byte/referenceSHA256match againstfreshwrapper generatedbyinstalledGradle8.14.5; invokedbyWindowsandGitBash launchers. Notdecompilationofauditofeveryclass orindependentdistributionauthentication.",
+      "evidence": [
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md",
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/vendordeps/Phoenix6-26.1.1.json": {
+      "sha256": "7c647b98b18c6c31bad484703f006f7aa9f39ca2195b77022686136425f94a73",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullvendordescriptor read/parse: UUID/name/year/version,1Java14JNI14CPPentries,uniquepersectioncoords/platforms,all26.1.1,hardwarevssoftwaresimmodes/LinuxAthena consistent. ApplicablecoordinatescachedandWindowsFRCsuitepreviouslypassed; notallforeignplatform/C++binaryresolutionorvendorinternalaudit.",
+      "evidence": [
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md",
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/LICENSE": {
+      "sha256": "8611f3ab1fc89a726dc7c8fe2824783ed8f8c595d3172b520c213e0560123665",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fulllicensepolicyartifact read andbytecomparisonagainstpackagedcopy; unchanged. Notrobotexecutableandnolegalrights/compliancecertification.",
+      "evidence": [
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md",
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/NOTICE": {
+      "sha256": "ed55fab07d58b9c90fc5960a5d49e0958ce0707691619bf48bb7076cd8b82ad0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "FullFRCapplicationnotice read,byte-identicaltopackagedcopy;unchangedattribution retained. Notlegalcompliancecertification.",
+      "evidence": [
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md",
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/resources/META-INF/LICENSE": {
+      "sha256": "8611f3ab1fc89a726dc7c8fe2824783ed8f8c595d3172b520c213e0560123665",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Fullpackagedlicense accountedbyexactroottextcomparison/read;unchanged. Notrobotexecutableorindependentlegalcompliancecertification.",
+      "evidence": [
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md",
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/main/resources/META-INF/NOTICE": {
+      "sha256": "ed55fab07d58b9c90fc5960a5d49e0958ce0707691619bf48bb7076cd8b82ad0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "FullpackagedFRCapplicationnotice read/exactrootcomparison;unchanged. Noattributionremovalorlegalcompliancecertification.",
+      "evidence": [
+        "docs/audits/frc-vendor-wrapper-artifact-audit.md",
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-vendor-wrapper-artifact-audit.md": {
+      "sha256": "dc547539193ce37b81ef31e41075b8218d77bc5df1166a94a48c6425dff8b711",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Accounts8vendor/wrapper/policyartifacts, exactreferencegeneration/hashes,POSIXWindowslaunch,descriptorcoordinate/platformchecksandexplicitupstream/foreignOS/legallimits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass132-verified-evidence/summary.json"
       ]
     }
   }
