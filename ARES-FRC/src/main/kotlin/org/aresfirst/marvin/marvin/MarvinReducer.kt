@@ -92,7 +92,17 @@ object MarvinReducer {
                 transferStartedAtMs = -1L,
                 transferConsumedForTrigger = false
             )
-            is SetInventoryCount -> currentMarvin.copy(inventoryCount = action.count.coerceIn(0, MarvinConfig.INVENTORY_CAPACITY))
+            is SetInventoryCount -> {
+                val detected = action.simulatedPieceDetected
+                val feeder = currentMarvin.feeder
+                val observedFeeder = if (detected == null || (feeder.pieceDetectionValid &&
+                    feeder.gamePieceDetected == detected && feeder.previousGamePieceDetected == detected)) feeder
+                else feeder.copy(gamePieceDetected = detected, previousGamePieceDetected = detected,
+                    pieceDetectionValid = true)
+                val count = action.count.coerceIn(0, MarvinConfig.INVENTORY_CAPACITY)
+                if (count == currentMarvin.inventoryCount && observedFeeder === feeder) currentMarvin
+                else currentMarvin.copy(inventoryCount = count, feeder = observedFeeder)
+            }
             is SetClimberPositionRotations -> currentMarvin.withClimberPositionRotations(action.rotations)
             is StartSlamtake -> {
                 currentMarvin.copy(

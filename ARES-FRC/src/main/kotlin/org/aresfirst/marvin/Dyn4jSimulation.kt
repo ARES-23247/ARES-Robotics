@@ -39,8 +39,9 @@ class FlyingBall(
  * Dyn4j owns the planar robot and grounded pieces while [FlyingBall] supplies the vertical axis
  * for launched pieces. Field X/Y are blue-origin meters, headings are CCW-positive radians, and
  * [step] receives seconds. Public IO adapters expose the same units and validity contracts as the
- * RoboRIO hardware adapters. The optional feeder detector defaults to unavailable, in which case
- * collection emits an explicit inventory action instead of silently losing the collected piece.
+ * RoboRIO hardware adapters. Collection and shooting commit one inventory observation per frame.
+ * A configured virtual detector joins that observation so later sensor reads cannot recount it.
+ * The optional feeder detector defaults to unavailable.
  *
  * The mutable `sim*` fields are the private simulation bus shared with adapters in `sim.io`.
  * Callers should command and observe the typed IO properties instead of mutating those fields.
@@ -123,7 +124,10 @@ class Dyn4jSimulation(
 
         if (dt <= 0.0) return actions
 
-        reconcileInventoryMetadata(state.superstructure.marvin.inventoryCount)
+        val initialInventory = state.superstructure.marvin.inventoryCount.coerceIn(0, MarvinConfig.INVENTORY_CAPACITY)
+        var inventoryCount = initialInventory
+        var inventoryChanged = initialInventory != state.superstructure.marvin.inventoryCount
+        reconcileInventoryMetadata(initialInventory)
 
         val fieldConfigJson = fieldConfigSubscriber.get()
         if (fieldConfigJson.isNotBlank() && fieldConfigJson != lastFieldConfigJson) {
@@ -167,7 +171,7 @@ class Dyn4jSimulation(
         val intakeDeployed = intakePivotSim.angleDegrees > 45.0
         val intakeSpinning = simIntakeRollerVoltage > 1.0
 
-        if (intakeDeployed && intakeSpinning && state.superstructure.marvin.inventoryCount < org.aresfirst.marvin.marvin.MarvinConfig.INVENTORY_CAPACITY) {
+        if (intakeDeployed && intakeSpinning && inventoryCount < MarvinConfig.INVENTORY_CAPACITY) {
             for (i in physicsWorld.balls.indices.reversed()) {
                 val ball = physicsWorld.balls[i]
                 val bx = ball.transform.translationX
@@ -177,11 +181,8 @@ class Dyn4jSimulation(
                     physicsWorld.world.removeBody(ball)
                     physicsWorld.balls.removeAt(i)
                     inventoryPieces.addLast(metadata)
-                    if (feederPieceDetectorConfigured) {
-                        simFeederPieceDetected = true
-                    } else {
-                        actions.add(SetInventoryCount(state.superstructure.marvin.inventoryCount + 1, timestamp))
-                    }
+                    inventoryCount++
+                    inventoryChanged = true
                     if (debug) println("BALL INGESTED!")
                     break
                 }
@@ -194,11 +195,11 @@ class Dyn4jSimulation(
         // rejected — making the simulated robot unable to score through real control paths.
         val feederSpinning = kotlin.math.abs(simFeederVoltage) >
             org.aresfirst.marvin.marvin.MarvinSuperstructure.FEEDER_SPIN_THRESHOLD_VOLTS
-        if (flywheelAtSpeed && feederSpinning && state.superstructure.marvin.inventoryCount > 0 && shootCooldownTimer <= 0.0) {
+        // A piece captured into an initially empty hopper cannot reach the shooter this frame.
+        if (flywheelAtSpeed && feederSpinning && initialInventory > 0 && shootCooldownTimer <= 0.0) {
             shootCooldownTimer = 0.15
-            val newCount = state.superstructure.marvin.inventoryCount - 1
-            actions.add(org.aresfirst.marvin.marvin.SetInventoryCount(newCount, timestamp))
-            simFeederPieceDetected = newCount > 0
+            inventoryCount--
+            inventoryChanged = true
 
             val vLaunch = flywheelRps * 0.18
             val hoodRad = Math.toRadians(simCowlAngle)
@@ -228,7 +229,13 @@ class Dyn4jSimulation(
             val metadata = inventoryPieces.pollFirst() ?: nextFallbackPiece("launched")
             val flyingBall = FlyingBall(bx, by, bz, vx, vy, vz, metadata)
             physicsWorld.flyingBalls.add(flyingBall)
-            if (debug) println("BALL SHOT (2.5D)! Pos: ($bx, $by, $bz), Vel: ($vx, $vy, $vz). Inventory left: $newCount")
+            if (debug) println("BALL SHOT (2.5D)! Pos: ($bx, $by, $bz), Vel: ($vx, $vy, $vz). Inventory left: $inventoryCount")
+        }
+
+        if (inventoryChanged) {
+            simFeederPieceDetected = inventoryCount > 0
+            actions.add(SetInventoryCount(inventoryCount, timestamp,
+                if (feederPieceDetectorConfigured) simFeederPieceDetected else null))
         }
 
         val g = 9.80665

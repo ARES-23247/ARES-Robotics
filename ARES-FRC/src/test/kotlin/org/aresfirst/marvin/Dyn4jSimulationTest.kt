@@ -56,11 +56,8 @@ class Dyn4jSimulationTest {
         }
         assertTrue(pivotDegrees > 45.0, "Intake pivot should have deployed beyond 45 degrees")
 
-        // Ingestion sets the simulated detector edge rather than mutating inventory directly.
-        // The actual +1 inventory increment is applied by MarvinReducer on the
-        // false->true transition of SuperstructureSensorUpdate.pieceDetected in the
-        // full robot loop (MarvinSuperstructure.readSensors), so it is not observable
-        // from Dyn4jSimulation.step() in isolation.
+        // Ingestion exposes the virtual detector and emits an atomic count/detector observation.
+        // SimInventoryAuditTest also dispatches that action and reads sensors to reject recounting.
         assertTrue(pieceDetected, "Sim should signal feeder piece-detected after ball ingestion")
     }
 

@@ -66,10 +66,17 @@ data class ClearMechanismSafetyFault @kotlin.jvm.JvmOverloads constructor(
     override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
 ) : RobotAction
 
-/** Replaces the simulated/estimated game-piece inventory count. */
+/**
+ * Replaces the simulated/estimated game-piece inventory count.
+ *
+ * [simulatedPieceDetected], when supplied by a configured virtual detector, commits its
+ * observation with the count. The next sensor read must not count that same event again.
+ * Ordinary inventory assignments leave detector observations unchanged.
+ */
 data class SetInventoryCount @kotlin.jvm.JvmOverloads constructor(
     val count: Int,
-    override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis()
+    override val timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
+    val simulatedPieceDetected: Boolean? = null
 ) : RobotAction
 
 /** Selects the intake's calibrated stowed (`false`) or deployed (`true`) target. */

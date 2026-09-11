@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "4d75d10f035e308eedb7dd4821b9814fe9bf6f938f265294d27acddc8dc2ce32",
+      "sha256": "318ef3d28c4c8a42057b56fac70d555eef60dc5501571b9929fdde44257ff073",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5613,7 +5613,8 @@
         "docs/audits/frc-simulator-telemetry-audit.md: pass114 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-autonomous-lifecycle-audit.md: pass115 scopes and canonical self-fingerprint refreshed",
         "docs/audits/frc-native-drive-task-audit.md: pass116 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-redux-state-audit.md: pass117 scopes and canonical self-fingerprint refreshed"
+        "docs/audits/frc-redux-state-audit.md: pass117 scopes and canonical self-fingerprint refreshed",
+        "docs/audits/frc-sim-inventory-audit.md: pass118 scopes and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -9115,15 +9116,17 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/Dyn4jSimulation.kt": {
-      "sha256": "ecd107a8e8d92251146d1373f74208d6efff8be6eebc585cb7fd76a49e1e9e01",
+      "sha256": "5402f1ddc88c62602dd22adb0cbd383e6cdc0635a3cbdb8be783031b66fab045",
       "review": "partial",
       "validation": "passed",
-      "scope": "Early finite0..50s timestep gate before scratch/live configuration/effort/model mutations. New real-simulation invalid-time/recovery test reproduced inconsistent acceptance and now passes. Remaining simulation logic outside entry boundary remains partial. Pass117: Inventory-storage delta review: metadata reconciliation clamps direct counts0..40 before deque loops; intake gate shares same existing40 limit. Direct reflection regression handlesIntMAX/IntMIN and repeatedgrow/shrink without unbounded allocation. Other simulator paths remain partial, including simultaneous event accounting and world lifecycle.",
+      "scope": "Early finite0..50s timestep gate before scratch/live configuration/effort/model mutations. New real-simulation invalid-time/recovery test reproduced inconsistent acceptance and now passes. Remaining simulation logic outside entry boundary remains partial. Pass117: Inventory-storage delta review: metadata reconciliation clamps direct counts0..40 before deque loops; intake gate shares same existing40 limit. Direct reflection regression handlesIntMAX/IntMIN and repeatedgrow/shrink without unbounded allocation. Other simulator paths remain partial, including simultaneous event accounting and world lifecycle. Pass118: Inventory-event delta: bounded local count accumulates capture and shot, one atomic count/virtual-detector action prevents lost captures and sensor double credit. Preserves initial-empty no-shot and full-hopper collection ordering. Actual Store/sensor tests prove conservation, retained captured metadata, extreme counts and detector configurations. Other simulator scopes remain partial.",
       "evidence": [
         "docs/audits/frc-physics-boundary-audit.md",
         "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
         "docs/audits/frc-redux-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json",
+        "docs/audits/frc-sim-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/Dyn4jPhysicsWorld.kt": {
@@ -9515,13 +9518,15 @@
       ]
     },
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/Dyn4jSimulationTest.kt": {
-      "sha256": "c9f1c103cba2ee04ea5e44516ef76e21ce4df4e0008a0c0788e33f42a625cd0a",
+      "sha256": "ace555ac887499fd4159fc6d326b738d17a6fa52692d7d8469012817eea716d9",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Read all eleven existing methods and executed with full FRC suite. Covers detector handoff, launch/projectile/scoring/landing, telemetry, cowl units, field rebuild, capture geometry and field-centric drive. Corrected array-retaining mock and added attempt-all cleanup for eleven sim instances plus robust publisher cleanup. Near-capacity detector test does not independently prove reducer inventory bounds.",
+      "scope": "Read all eleven existing methods and executed with full FRC suite. Covers detector handoff, launch/projectile/scoring/landing, telemetry, cowl units, field rebuild, capture geometry and field-centric drive. Corrected array-retaining mock and added attempt-all cleanup for eleven sim instances plus robust publisher cleanup. Near-capacity detector test does not independently prove reducer inventory bounds. Pass118: Updated obsolete detector-only ingestion comment to atomic observation contract; all existing11 simulator methods executed with full FRC259. New dedicated integration suite exercises event dispatch and repeated sensor reads.",
       "evidence": [
         "docs/audits/frc-simulator-telemetry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass114-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass114-verified-evidence/summary.json",
+        "docs/audits/frc-sim-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/sim/SimTelemetryPublisherAuditTest.kt": {
@@ -9684,13 +9689,15 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinAction.kt": {
-      "sha256": "0f37224563ba9141f8ea909b0365e3cd7e939b9cf9954c8ea5a19b43abd291df",
+      "sha256": "ea470658aaf993ec47ef43dccdfec0ef09057f8b89f97e9cdfa6f9f19864e40a",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full action DTO review: RPM/RPS/degrees/rotations/voltage units, RobotClock action timestamps, transfer/safety/recovery semantics, invalid-by-default observation flags, timer phases and ownership. Removed duplicate StartTransfer comment. Setters/flags/timestamps exercised via existing8 and new11 reducer methods; authorization remains with lifecycle callers.",
+      "scope": "Full action DTO review: RPM/RPS/degrees/rotations/voltage units, RobotClock action timestamps, transfer/safety/recovery semantics, invalid-by-default observation flags, timer phases and ownership. Removed duplicate StartTransfer comment. Setters/flags/timestamps exercised via existing8 and new11 reducer methods; authorization remains with lifecycle callers. Pass118: Delta adds optional simulatedPieceDetected after timestamp, preserving ordinary calls and Java overloads. Only configured simulator supplies snapshot; ordinary count actions preserve observations. Same event commits count and edge history without fabricating unrelated sensor freshness.",
       "evidence": [
         "docs/audits/frc-redux-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json",
+        "docs/audits/frc-sim-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinState.kt": {
@@ -9704,13 +9711,15 @@
       ]
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinReducer.kt": {
-      "sha256": "ed9af5d94d3f89989bc178aab714f5fe9966c29443f620e319952a94c19f8915",
+      "sha256": "2aee4bfbb889bcd9588f7f97ea9f97f9d4d06bd510c2ee720555b39ae26ccd7d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full reducer review: core timestamp propagation, safety/fault ordering, command gating, transfers/slamtake, detector edges/inventory, sensor validity/deadbands and drive neutralization. Fixed stale timer restart, bounded counts before arithmetic, nonfinite cache repair, normalized RPM comparisons, one outer sensor-state copy and unchanged nested/drive reuse. Six original failures reproduced plus separate climber helper failure; state/edge/fault semantics passed11new+8existing methods.",
+      "scope": "Full reducer review: core timestamp propagation, safety/fault ordering, command gating, transfers/slamtake, detector edges/inventory, sensor validity/deadbands and drive neutralization. Fixed stale timer restart, bounded counts before arithmetic, nonfinite cache repair, normalized RPM comparisons, one outer sensor-state copy and unchanged nested/drive reuse. Six original failures reproduced plus separate climber helper failure; state/edge/fault semantics passed11new+8existing methods. Pass118: Delta atomically applies virtual count/detector snapshot and last trusted edge; ordinary assignments preserve feeder observations/commands. Identical observations preserve nested identity while root time advances. Actual sensor reads neither recredit shots nor miss captures; slamtake still stops. Full FRC259 passed.",
       "evidence": [
         "docs/audits/frc-redux-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json",
+        "docs/audits/frc-sim-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json"
       ]
     },
     "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/reducer/MarvinStateAuditTest.kt": {
@@ -9740,6 +9749,25 @@
       "scope": "Reconciles3complete action/state/reducer files, existing8/new11tests, reviewed configuration delta and partial simulator metadata delta, seven reproduced regression failures across two before runs, FRC248/coreGC5/policy and explicit hardware/performance limits.",
       "evidence": [
         "ARESLib-Kotlin/build/audit-pass117-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/SimInventoryAuditTest.kt": {
+      "sha256": "0bbef580751175a8cdb37a8137898f97607fac3de285bf44eb274de46da552b9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Authored/read/executed11 methods: simultaneous capture/shot with and without detector; prior held/clear beam; shot with remaining inventory; last shot; held-detector collections; capacity ordering; initially empty no immediate shot; idle no actions; extreme state repair; ordinary observation preservation/duplicate identity/root timestamp; slamtake stop. Physical deque/ground/flight conservation and captured metadata assertions; all simulations closed viause. Initial8 methods reproduced6 failures; final11 pass.",
+      "evidence": [
+        "docs/audits/frc-sim-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-sim-inventory-audit.md": {
+      "sha256": "b61a01a2ffd9bc534827c9082d5ce610dfe51865dabaf2063f3d8b8e7cab6f78",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Documents reproduced simultaneous-event and virtual-detector accounting failures, atomic fix and duplicate-action removal, FRC259/coreGC5/policy evidence, source compatibility and explicit desktop/hardware/performance limits.",
+      "evidence": [
+        "ARESLib-Kotlin/build/audit-pass118-verified-evidence/summary.json"
       ]
     }
   }
