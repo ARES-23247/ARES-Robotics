@@ -171,12 +171,13 @@ fun List<RoutineStep>.lastRoutineDriveTarget(): RoutinePose? = asReversed().firs
 }
 
 fun List<RoutineStep>.routineDriveStepsInExecutionOrder(): List<RoutineDriveStep> = buildList {
-    this@routineDriveStepsInExecutionOrder.forEach { step ->
+    fun visit(step: RoutineStep) {
         step.drive?.let(::add)
-        step.deadline?.let { addAll(listOf(it).routineDriveStepsInExecutionOrder()) }
-        addAll(step.children.routineDriveStepsInExecutionOrder())
-        addAll(step.elseChildren.routineDriveStepsInExecutionOrder())
+        step.deadline?.let(::visit)
+        step.children.forEach(::visit)
+        step.elseChildren.forEach(::visit)
     }
+    this@routineDriveStepsInExecutionOrder.forEach(::visit)
 }
 
 /** Replaces exactly one nested node without depending on its current list position. */
@@ -202,17 +203,32 @@ fun List<RoutineStep>.removeStepById(stepId: String): List<RoutineStep> = mapNot
 
 /** Moves a node only within its owning sibling lane. */
 fun List<RoutineStep>.moveStepById(stepId: String, direction: Int): List<RoutineStep> {
+    if (direction == 0) return this
     val index = indexOfFirst { it.stepId == stepId }
     if (index >= 0) {
-        val destination = index + direction
-        if (destination !in indices) return this
-        return toMutableList().apply { add(destination, removeAt(index)) }
+        val destination = index.toLong() + direction
+        if (destination < 0 || destination >= size) return this
+        return toMutableList().apply { add(destination.toInt(), removeAt(index)) }
     }
-    return map { step -> step.copy(
-        children = step.children.moveStepById(stepId, direction),
-        deadline = step.deadline,
-        elseChildren = step.elseChildren.moveStepById(stepId, direction)
-    ) }
+    var updated: MutableList<RoutineStep>? = null
+    for (i in indices) {
+        val original = this[i]
+        val changed = original.moveDescendantsById(stepId, direction)
+        if (changed !== original) {
+            if (updated == null) updated = toMutableList()
+            updated[i] = changed
+        }
+    }
+    return updated ?: this
+}
+
+private fun RoutineStep.moveDescendantsById(stepId: String, direction: Int): RoutineStep {
+    val updatedChildren = children.moveStepById(stepId, direction)
+    // The deadline itself has no sibling lane, but its descendants may have one.
+    val updatedDeadline = deadline?.moveDescendantsById(stepId, direction)
+    val updatedElse = elseChildren.moveStepById(stepId, direction)
+    return if (updatedChildren === children && updatedDeadline === deadline && updatedElse === elseChildren) this
+    else copy(children = updatedChildren, deadline = updatedDeadline, elseChildren = updatedElse)
 }
 
 fun List<RoutineStep>.withRoutineRouteWaypoints(

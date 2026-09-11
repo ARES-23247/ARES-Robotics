@@ -5545,7 +5545,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "1b1daccae7d233e4d4b0e33172d541b5ffbe7791d74760355f41bdf21bbe5c8a",
+      "sha256": "6e24eefc57621b91b156ca1e618b6b9c0ed7c70d76c0c22b62fae337f05ee649",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12287,13 +12287,15 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutineEditorModel.kt": {
-      "sha256": "8a98d59b5bf469f714287ad1943dba901a7e82fbe18b1df90f24be1d6b1e853a",
+      "sha256": "f16bcf2ae1f65872ef06a8b97f98bcc39ce60eb6503935d3aeed72d98d934ff9",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass161 traced guided default/clamp callers and guided/routine pose validation; fix impossible-footprint acceptance and nonfinite autonomous starts by explicit finite/feasibility/range checks. Broader tree mutation, execution ordering, argument/catalog validation remain open.",
+      "scope": "Pass161 finite/feasible footprint checks; pass162 tree mutation and route traversal reviewed, fixes deadline descendant moves, no-op copying, subtree route-list duplication. Mixed deadline/branch traversal, replacement order and identities tested. Broader catalog/argument edge cases, arbitrary invalid/deep trees and identity uniqueness remain open.",
       "evidence": [
         "docs/audits/studio-routine-footprint-feasibility-audit.md",
-        "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json",
+        "docs/audits/studio-routine-tree-edit-audit.md",
+        "ARESLib-Kotlin/build/audit-pass162-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/pathing/AutoFieldBoundsTest.kt": {
@@ -12324,6 +12326,26 @@
       "evidence": [
         "docs/audits/studio-routine-footprint-feasibility-audit.md",
         "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/routine/RoutineEditorModelTest.kt": {
+      "sha256": "c991894cd6aab0608e8e928353471fcb2ccce8338fa63eb0b182ce78346664eb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full 11-test review: XRP bounds, default nodes, nested clamping, deadline collection/replacement order, stable edits/removal, catalog argument/action checks, deadline descendant reordering and no-op reference preservation. Corrected overstrict degree/radian test equality to tolerance; two before failures were production regressions, third was test assertion precision.",
+      "evidence": [
+        "docs/audits/studio-routine-tree-edit-audit.md",
+        "ARESLib-Kotlin/build/audit-pass162-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/studio-routine-tree-edit-audit.md": {
+      "sha256": "f26aae2bfc94938af95827e70c95962a58c4223b32d503e0d14c0f1732102f3f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against initial failure XML distinguishing two defects from precision assertion, 11 focused tests, full app XML and policy/link evidence; scope limits explicit.",
+      "evidence": [
+        "docs/audits/studio-routine-tree-edit-audit.md",
+        "ARESLib-Kotlin/build/audit-pass162-verified-evidence/summary.json"
       ]
     }
   }

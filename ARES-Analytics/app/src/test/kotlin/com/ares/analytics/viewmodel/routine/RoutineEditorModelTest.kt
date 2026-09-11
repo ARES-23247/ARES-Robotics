@@ -20,8 +20,55 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.test.assertSame
 
 class RoutineEditorModelTest {
+    @Test
+    fun `reordering reaches sibling lanes nested inside a deadline`() {
+        val first = RoutineStep.wait(0.1, stepId = "first")
+        val second = RoutineStep.wait(0.2, stepId = "second")
+        val deadline = RoutineStep.together(listOf(first, second), stepId = "deadline-group")
+        val companion = RoutineStep.wait(1.0, stepId = "companion")
+        val root = RoutineStep.deadline(deadline, listOf(companion), stepId = "root")
+        val changed = listOf(root).moveStepById("second", -1).single()
+        assertEquals(listOf("second", "first"), changed.deadline!!.children.map { it.stepId })
+        assertSame(companion, changed.children.single())
+        assertEquals(root.stepId, changed.stepId)
+        assertEquals(deadline.stepId, changed.deadline!!.stepId)
+    }
+
+    @Test
+    fun `ineffective moves preserve the original tree and list instances`() {
+        val leaf = RoutineStep.wait(0.1, stepId = "leaf")
+        val tree = listOf(RoutineStep.together(listOf(leaf), stepId = "group"))
+        assertSame(tree, tree.moveStepById("missing", 1))
+        assertSame(tree, tree.moveStepById("leaf", 0))
+        assertSame(tree, tree.moveStepById("leaf", -1))
+        assertSame(tree, tree.moveStepById("leaf", Int.MAX_VALUE))
+        assertSame(tree, tree.moveStepById("group", 0))
+    }
+
+    @Test
+    fun `route collection visits nested deadlines children and else lanes consistently`() {
+        fun drive(x: Double) = RoutineStep.driveTo(RoutineDriveStep(RoutinePose(x, 0.0, 0.0)))
+        val steps = listOf(
+            RoutineStep.deadline(
+                RoutineStep.together(listOf(drive(0.1), drive(0.2))),
+                listOf(RoutineStep.branch("test", listOf(drive(0.3)), listOf(drive(0.4)))),
+            ),
+            drive(0.5),
+        )
+        assertEquals(listOf(0.1, 0.2, 0.3, 0.4, 0.5),
+            steps.routineDriveStepsInExecutionOrder().map { it.target.xMeters })
+        assertEquals(RoutinePose(0.5, 0.0, 0.0), steps.lastRoutineDriveTarget())
+        val replacements = (1..5).map { Waypoint(it / 10.0, 0.1, rotationDeg = it.toDouble()) }
+        val updated = steps.withRoutineRouteWaypoints(replacements.iterator(), League.FTC, RobotDimensions(0.2, 0.2))
+        assertEquals(replacements.map { it.x }, updated.routineDriveStepsInExecutionOrder().map { it.target.xMeters })
+        replacements.zip(updated.routineDriveStepsInExecutionOrder()).forEach { (waypoint, drive) ->
+            assertEquals(waypoint.rotationDeg!!, Math.toDegrees(drive.target.headingRadians), 1e-12)
+        }
+    }
+
     @Test
     fun `XRP center-origin goals use the XRP practice field rather than FRC corner bounds`() {
         val dimensions = RobotDimensions.defaultFor(League.XRP)
