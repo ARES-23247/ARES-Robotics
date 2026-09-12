@@ -105,6 +105,15 @@ release task metadata. Cleanup preserves the original exception. This is command
 validation; hardware feedback freshness, arming, output enforcement, and physical stopping
 remain responsibilities of the downstream robot pipeline.
 
+Direct `PathfindToPoseTask` initialization also neutralizes before validating or planning,
+so a failure before delegate creation cannot retain an old command. Nonpositive or
+nonfinite profile limits fail before path expansion. Initialization/execution exceptions
+mark the wrapper failed, remove its deadline, and preserve the primary exception through
+neutralization/callback cleanup. Only RUNNING wrappers may tick or report completion;
+end the old lifecycle before reinitializing, including after metadata-only cancel/reset.
+A zero-translation target uses a stationary target sample so its requested heading is
+retained and tracked; completion still requires final pose/heading tolerance.
+
 Only cached lookup/idle overhead is allocation-free. Motion still includes delegated
 path work and immutable Redux actions; no whole-loop zero-allocation or hardware timing
 claim follows from these tests.
