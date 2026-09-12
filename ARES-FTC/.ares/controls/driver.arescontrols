@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "documentId": "driver",
-  "revision": 1,
+  "revision": 2,
   "name": "Field-centric driver controls",
-  "description": "Starter scheme: left stick translates field-centric (X forward, Y left), right stick rotates CCW-positive. Axes invert to FTC SDK sign conventions and shape with the season deadband and expo; the sink applies alliance mirroring.",
+  "description": "Alliance-wall field-centric controls: stick forward drives away from the driver wall (Red +Y, Blue -Y), and stick right drives toward the driver's right (Red +X, Blue -X). Right stick rotates CCW-positive. The sink applies alliance mirroring once.",
   "controllers": [
     {
       "slot": "driver",
@@ -37,7 +37,7 @@
       "event": "VALUE",
       "target": {
         "kind": "DRIVE",
-        "key": "vx",
+        "key": "vy",
         "arguments": {},
         "routinePolicy": "IGNORE_IF_RUNNING"
       },
@@ -71,7 +71,7 @@
           "outputMaximum": 1.0,
           "deadband": 0.05,
           "exponent": 1.0,
-          "inverted": true
+          "inverted": false
         },
         "thresholdDirection": "ABOVE",
         "zoneHysteresis": 0.0,
@@ -80,7 +80,7 @@
       "event": "VALUE",
       "target": {
         "kind": "DRIVE",
-        "key": "vy",
+        "key": "vx",
         "arguments": {},
         "routinePolicy": "IGNORE_IF_RUNNING"
       },

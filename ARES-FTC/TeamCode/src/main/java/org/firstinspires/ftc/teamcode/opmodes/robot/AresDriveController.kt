@@ -56,8 +56,9 @@ class AresDriveController(private val base: FtcMecanumRobot) {
 
     /**
      * Reads normalized FTC gamepad axes and commands the frame selected by
-     * [FtcMecanumRobot.teleopDriveFrame]. FTC stick Y and right-stick rotation are negative in SDK
-     * coordinates, hence those two negations. Alliance mirroring applies only to field-relative
+     * [FtcMecanumRobot.teleopDriveFrame]. Input shaping uses robot-style forward/left axes;
+     * field-relative commands map forward to Red +Y and right to Red +X, away from the alliance wall.
+     * CCW rotation is -rightStickX. Alliance mirroring applies only to field-relative
      * translation; robot-relative controls retain the robot's physical forward/left axes.
      */
     fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true) {
@@ -69,7 +70,7 @@ class AresDriveController(private val base: FtcMecanumRobot) {
         when (base.teleopDriveFrame) {
             FtcTeleopDriveFrame.FIELD_RELATIVE -> {
                 base.mecanumDrive.driveFieldRelativeNormalized(
-                    mirrorXForBlue(), mirrorYForBlue(), smoothRot, useHeadingLock
+                    -mirrorYForBlue(), mirrorXForBlue(), smoothRot, useHeadingLock
                 )
             }
             FtcTeleopDriveFrame.ROBOT_RELATIVE -> {
