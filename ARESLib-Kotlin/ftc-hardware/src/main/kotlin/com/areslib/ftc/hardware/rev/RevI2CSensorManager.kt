@@ -25,6 +25,7 @@ import com.areslib.hardware.actuator.MotorIO
  * @see ImuInputs
  */
 class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
+    private val telemetryPublisher = com.areslib.hardware.sensor.ImuTelemetryPublisher(this)
     private var headingOffset = 0.0
     private val lock = Any()
 
@@ -92,6 +93,9 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
 
         imuThread.start()
     }
+
+    override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) =
+        telemetryPublisher.publish(telemetry, prefix)
 
     /**
      * Updates IMU heading, pitch, roll, and yaw velocity inputs into pre-allocated [ImuInputs] target.

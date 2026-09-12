@@ -10,7 +10,10 @@ interface CurrentSourceIO {
     /** Cached supply or best-available aggregate current in amperes. */
     val currentAmps: Double
 
-    /** Validates an already-sampled value without performing a second hardware/cache read. */
+    /**
+     * Validates an already-sampled value without resampling numeric current values.
+     * Implementations may consult cached freshness/health flags, never hardware.
+     */
     fun isCurrentReadingValid(readingAmps: Double): Boolean = readingAmps.isFinite() && readingAmps >= 0.0
 
     /** Whether [currentAmps] is a fresh, finite, non-negative observation. */

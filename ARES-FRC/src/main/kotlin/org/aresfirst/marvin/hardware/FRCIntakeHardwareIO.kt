@@ -178,9 +178,7 @@ class FRCIntakeHardwareIO(
         get() = cachedCurrentValid
 
     override fun isCurrentReadingValid(readingAmps: Double): Boolean =
-        cachedCurrentValid && readingAmps.isFinite() && readingAmps >= 0.0 &&
-            pivotCurrentAmps.isFinite() && pivotCurrentAmps >= 0.0 &&
-            rollerCurrentAmps.isFinite() && rollerCurrentAmps >= 0.0
+        super<IntakeIO>.isCurrentReadingValid(readingAmps)
 
     override fun close() = closeTalons(pivotMotor, rollerMotor)
 

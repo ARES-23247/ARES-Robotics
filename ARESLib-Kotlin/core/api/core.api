@@ -1710,6 +1710,11 @@ public final class com/areslib/hardware/sensor/ImuInputs {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/hardware/sensor/ImuTelemetryPublisher {
+	public fun <init> (Lcom/areslib/hardware/sensor/ImuIO;)V
+	public final fun publish (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
+}
+
 public abstract interface class com/areslib/hardware/sensor/MultizoneDistanceSensorIO {
 	public fun copyDistancesMetersInto ([D)I
 	public abstract fun getColumns ()I

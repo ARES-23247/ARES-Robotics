@@ -214,6 +214,9 @@ class FtcServo(servo: Servo) : ServoIO {
 class FtcImu(imu: IMU) : ImuIO, AutoCloseable {
     private val delegate = RevImuController(imu)
 
+    override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) =
+        delegate.logTelemetry(telemetry, prefix)
+
     /** Updates IMU orientation inputs into [ImuInputs] buffer. */
     override fun updateInputs(inputs: ImuInputs) = delegate.updateInputs(inputs)
 

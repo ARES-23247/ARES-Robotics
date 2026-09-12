@@ -92,8 +92,21 @@ interface IntakeIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     }
 
     override fun safe() {
-        setPivotVoltage(0.0)
-        setRollerVoltage(0.0)
+        var firstFailure: Throwable? = null
+        try {
+            setPivotVoltage(0.0)
+        } catch (failure: Throwable) {
+            firstFailure = failure
+        }
+        try {
+            setRollerVoltage(0.0)
+        } catch (failure: Throwable) {
+            if (firstFailure == null) throw failure
+            if (firstFailure !== failure && firstFailure.suppressed.none { it === failure }) {
+                firstFailure.addSuppressed(failure)
+            }
+        }
+        firstFailure?.let { throw it }
     }
 
     /** Preserves the pivot target while independently limiting closed-loop effort. */
@@ -128,14 +141,18 @@ interface IntakeIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
     val rollerCurrentValid: Boolean
         get() = false
 
-    /** Aggregate pivot and roller current used by the system power budget. */
+    /** Samples each cached constituent once; invalid constituents make the aggregate unavailable. */
     override val currentAmps: Double
-        get() = pivotCurrentAmps.coerceAtLeast(0.0) + rollerCurrentAmps.coerceAtLeast(0.0)
+        get() {
+            val pivot = pivotCurrentAmps
+            val roller = rollerCurrentAmps
+            return if (pivot.isFinite() && pivot >= 0.0 && roller.isFinite() && roller >= 0.0) {
+                pivot + roller
+            } else Double.NaN
+        }
 
     override fun isCurrentReadingValid(readingAmps: Double): Boolean =
-        rollerCurrentValid && readingAmps.isFinite() && readingAmps >= 0.0 &&
-            pivotCurrentAmps.isFinite() && pivotCurrentAmps >= 0.0 &&
-            rollerCurrentAmps.isFinite() && rollerCurrentAmps >= 0.0
+        rollerCurrentValid && readingAmps.isFinite() && readingAmps >= 0.0
 
     /**
      * Gets the roller motor encoder velocity in ticks per second.
