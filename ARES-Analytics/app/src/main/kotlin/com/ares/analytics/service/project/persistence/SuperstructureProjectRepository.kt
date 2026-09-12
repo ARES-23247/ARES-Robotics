@@ -27,7 +27,8 @@ data class SavedSuperstructureDocument(
  */
 class SuperstructureProjectRepository {
     fun list(projectPath: String): ProjectDocumentListing<SuperstructureDocument> {
-        val directory = directory(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val directory = directory(paths)
         if (!directory.isDirectory) return ProjectDocumentListing(emptyList(), emptyList())
         val decoded = mutableListOf<Pair<File, SuperstructureDocument>>()
         val diagnostics = mutableListOf<ProjectDocumentDiagnostic>()
@@ -35,7 +36,7 @@ class SuperstructureProjectRepository {
             .orEmpty()
             .sortedBy { it.name.lowercase() }
             .forEach { file ->
-                runCatching { SuperstructureDocumentCodec.decode(file.readText()) }
+                runCatching { SuperstructureDocumentCodec.decode(paths.check(file).readText()) }
                     .onSuccess { decoded += file to it }
                     .onFailure { error ->
                         diagnostics += ProjectDocumentDiagnostic(
@@ -78,7 +79,8 @@ class SuperstructureProjectRepository {
 
     fun load(projectPath: String, rawId: String): SuperstructureDocument {
         val id = ProjectDocumentId(rawId)
-        val file = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val file = currentFile(paths, id)
         require(file.isFile) { "Superstructure '${id.value}' does not exist" }
         return SuperstructureDocumentCodec.decode(file.readText()).also { document ->
             require(document.superstructureId == id.value) {
@@ -89,7 +91,7 @@ class SuperstructureProjectRepository {
 
     fun contentHash(document: SuperstructureDocument): String = SuperstructureDocumentCodec.contentHash(document)
 
-    fun file(projectPath: String, rawId: String): File = currentFile(projectPath, ProjectDocumentId(rawId))
+    fun file(projectPath: String, rawId: String): File = currentFile(ProjectPathOwnership(projectPath), ProjectDocumentId(rawId))
 
     fun save(
         projectPath: String,
@@ -106,7 +108,8 @@ class SuperstructureProjectRepository {
             projectErrors.joinToString("; ") { "${it.path}: ${it.message}" }
         }
         val id = ProjectDocumentId(validated.superstructureId)
-        val current = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val current = currentFile(paths, id)
         return ProjectDocumentWriteLocks.withLock(current) {
             val previous = current.takeIf(File::isFile)?.let { file ->
                 SuperstructureDocumentCodec.decode(file.readText()).also {
@@ -126,9 +129,17 @@ class SuperstructureProjectRepository {
 
             val encoded = SuperstructureDocumentCodec.encode(validated)
             val hash = SuperstructureDocumentCodec.contentHash(validated)
-            val history = historyFile(projectPath, id, hash)
-            val createdHistory = !history.exists()
-            if (createdHistory) AtomicProjectFileWriter.write(history, encoded, replaceExisting = false)
+            if (previous != null && actualHash != hash) {
+                ensureHistoryCheckpoint(
+                    historyFile(paths, id, requireNotNull(actualHash)),
+                    SuperstructureDocumentCodec.encode(previous), actualHash,
+                    SuperstructureDocumentCodec::decode, SuperstructureDocumentCodec::contentHash,
+                )
+            }
+            val history = historyFile(paths, id, hash)
+            val createdHistory = ensureHistoryCheckpoint(
+                history, encoded, hash, SuperstructureDocumentCodec::decode, SuperstructureDocumentCodec::contentHash,
+            )
             if (actualHash != hash || !current.exists()) {
                 AtomicProjectFileWriter.write(current, encoded, replaceExisting = true)
             }
@@ -136,11 +147,11 @@ class SuperstructureProjectRepository {
         }
     }
 
-    private fun directory(projectPath: String): File = resolveProjectPath(projectPath, ".ares/superstructures")
+    private fun directory(paths: ProjectPathOwnership): File = paths.resolve(".ares/superstructures")
 
-    private fun currentFile(projectPath: String, id: ProjectDocumentId): File =
-        File(directory(projectPath), "${id.value}.aressuperstructure")
+    private fun currentFile(paths: ProjectPathOwnership, id: ProjectDocumentId): File =
+        paths.check(File(directory(paths), "${id.value}.aressuperstructure"))
 
-    private fun historyFile(projectPath: String, id: ProjectDocumentId, hash: String): File =
-        File(resolveProjectPath(projectPath, ".ares/history/superstructures/${id.value}"), "$hash.aressuperstructure")
+    private fun historyFile(paths: ProjectPathOwnership, id: ProjectDocumentId, hash: String): File =
+        paths.check(File(paths.resolve(".ares/history/superstructures/${id.value}"), "$hash.aressuperstructure"))
 }

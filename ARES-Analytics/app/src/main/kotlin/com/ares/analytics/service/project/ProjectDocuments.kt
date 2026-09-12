@@ -10,10 +10,10 @@ import com.ares.analytics.service.project.persistence.ProjectDocumentDiagnostic
 import com.areslib.project.schema.ProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentListing
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
+import com.ares.analytics.service.project.persistence.ProjectPathOwnership
 import com.ares.analytics.service.project.persistence.RoutineProjectRepository
 import com.ares.analytics.service.project.persistence.SubsystemProjectRepository
 import com.ares.analytics.service.project.persistence.SuperstructureProjectRepository
-import com.ares.analytics.service.project.persistence.requireProjectRoot
 import com.ares.analytics.service.project.persistence.resolveProjectPath
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.drivetrain.DrivetrainDocumentCodec
@@ -70,7 +70,8 @@ class AresProjectDocuments(
         projectPath: String,
         targetPlatform: ControllerInputPlatform?,
     ): AresProjectDocumentSnapshot {
-        val root = requireProjectRoot(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val root = paths.root
         val routineListing = routines.list(root.path)
         val controlsListing = controls.list(root.path)
         val profileListing = controllers.list(root.path)
@@ -124,6 +125,7 @@ class AresProjectDocuments(
         )
 
         val drivetrainListing = loadFiles(
+            paths,
             File(root, ".ares/drivetrains"),
             "aresdrivetrain",
             ProjectDocumentKind.DRIVETRAIN,
@@ -131,6 +133,7 @@ class AresProjectDocuments(
         )
         diagnostics += drivetrainListing.diagnostics
         val tuningComponentListing = loadFiles(
+            paths,
             File(root, ".ares/tuning-components"),
             "arestuningcomponent",
             ProjectDocumentKind.TUNING_COMPONENT,
@@ -141,6 +144,7 @@ class AresProjectDocuments(
             subsystemListing.documents.flatMap { it.tuningParameters } +
             tuningComponentListing.documents.flatMap { it.parameters }
         val tuningProfileListing = loadFiles(
+            paths,
             File(root, ".ares/tuning"),
             "arestuning",
             ProjectDocumentKind.TUNING_PROFILE,
@@ -149,7 +153,7 @@ class AresProjectDocuments(
 
         val fieldFile = projectMetadata?.let { ProjectLayout.fieldDefinitionFile(root.path, it.toStudioLeague()) }
         val field = fieldFile?.takeIf(File::isFile)?.let { file ->
-            runCatching { RobotFieldDocument.decode(file.readText()) }.getOrElse { error ->
+            runCatching { RobotFieldDocument.decode(paths.check(file).readText()) }.getOrElse { error ->
                 diagnostics += ProjectDocumentDiagnostic(
                     ProjectDocumentKind.FIELD,
                     file,
@@ -237,11 +241,17 @@ class AresProjectDocuments(
     }
 
     private fun <T> loadFiles(
+        paths: ProjectPathOwnership,
         directory: File,
         extension: String,
         kind: ProjectDocumentKind,
         decode: (String) -> T,
     ): ProjectDocumentListing<T> {
+        runCatching { paths.check(directory) }.exceptionOrNull()?.let { error ->
+            return ProjectDocumentListing(emptyList(), listOf(
+                ProjectDocumentDiagnostic(kind, directory, error.message ?: "Project document directory is not accessible"),
+            ))
+        }
         if (!directory.isDirectory) return ProjectDocumentListing(emptyList(), emptyList())
         val documents = mutableListOf<T>()
         val diagnostics = mutableListOf<ProjectDocumentDiagnostic>()
@@ -249,7 +259,7 @@ class AresProjectDocuments(
             .orEmpty()
             .sortedBy { it.name.lowercase() }
             .forEach { file ->
-                runCatching { decode(file.readText()) }
+                runCatching { decode(paths.check(file).readText()) }
                     .onSuccess(documents::add)
                     .onFailure { error ->
                         diagnostics += ProjectDocumentDiagnostic(

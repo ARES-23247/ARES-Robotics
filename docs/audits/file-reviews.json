@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "a4012c3c4826f22b3eb959ed4e3e1d89886aa5cc966548e7de4831bc23f3dcc2",
+      "sha256": "e1a75f54ba3cb8e4c7835938ee2d4389c36d9d408711bc2e874329b2b38798d3",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5646,7 +5646,8 @@
         "docs/audits/frc-documentation-consistency-audit.md: pass131 documentation records and self-fingerprint refreshed",
         "docs/audits/frc-vendor-wrapper-artifact-audit.md: pass132 vendor/wrapper records and self-fingerprint refreshed",
         "docs/audits/frc-world-replacement-audit.md: pass133 worldreplacement records and self-fingerprint refreshed",
-        "docs/audits/project-history-recovery-integrity-audit.md: pass198 scoped records reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/project-history-recovery-integrity-audit.md: pass198 scoped records reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/project-document-path-ownership-audit.md: pass199 scoped records reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -12064,13 +12065,16 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/FieldDocumentStore.kt": {
-      "sha256": "853e750851fc9de44daabec61d1756f45eede348154b2d199067b566c3e4fef3",
+      "sha256": "f86934ea261ca61f4b3a4c68a5b167fce48ba3293cdd131d5d121e0bd10ecde4",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full source read; fix missing project-league validation at load, incoming save and existing-document save boundaries before checkpoints/replacement. Six cross-league combinations/defaults/file-history preservation tested. Remaining mapper behavior and checkpoint failure/concurrency semantics open.",
+      "scope": "Passes 155 and 199: Full source read; cross-league validation and history preservation retained. Current field and checkpoint leaf files now pass project ownership checks using one root identity per operation. Real file-link read/write regressions exercise FTC/FRC/XRP; linked checkpoint rejection and existing field document/mapper tests pass. Remaining mapper integration, checkpoint failure/concurrency semantics and external path replacement are not closed by suite execution.",
       "evidence": [
         "docs/audits/studio-field-project-league-audit.md",
-        "ARESLib-Kotlin/build/audit-pass155-verified-evidence/"
+        "ARESLib-Kotlin/build/audit-pass155-verified-evidence/",
+        "docs/audits/project-document-path-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/InitialFieldPresetInstaller.kt": {
@@ -14155,14 +14159,17 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectDocumentStore.kt": {
-      "sha256": "2e80b281e3b2cdd899ec660ae30a491f56fa20fcdbabc837f906d9c754ccfdf1",
+      "sha256": "aa3a5b6682cbba599c93e5524faa62799942f8e5025eb2da5eb75afbae9fc8cb",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 198: Full source read. Fix no-replacement publication and recovery moves, checkpoint validation/preservation before current replacement, wrong-document history restoration, revision/hash filename validation, duplicate logical history and the second-read substitution window. Selected documents are retained and hashes reused. Twelve new store cases and 17 existing repository cases passed. Remaining path ownership, external writer/locking races, recovery edge cases and interruption/provider durability are not closed by suite execution.",
+      "scope": "Passes 198-199: Entire source read. Exclusive publication, current/parent checkpoint integrity, selected history snapshot restoration and identity/hash validation are covered. Pass199 adds per-operation real-root ownership for directories and every listed/current/history/recovery leaf; caller-relative logical paths are preserved. Shared locks resolve aliases including missing suffixes, and singleton diagnostics avoid a redundant load. Targeted real Windows link/alias regressions and full Studio tests pass. External path replacement, lock-map lifetime growth, cross-process writers and recovery/interruption/provider edge cases remain open.",
       "evidence": [
         "docs/audits/project-history-recovery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json",
+        "docs/audits/project-document-path-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectMutationTransaction.kt": {
@@ -14207,6 +14214,61 @@
         "docs/audits/project-history-recovery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/SuperstructureProjectRepository.kt": {
+      "sha256": "4dd9da3449ca4c809d15e913c73554e4b690ef695e08fdc5c7c8bb57c3502496",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass199: Entire source read. Listing/current/history paths now reject stable outside links; listed failures remain diagnostics. Save validates matching history bytes by normalized full hash and restores missing previous checkpoints before replacement, using the shared helper. New linked-current/history and corrupt/missing-checkpoint cases plus existing hash-bound/model integration tests pass. Remaining multi-file concurrency, external replacement, interrupted publication and broader project-reference failure combinations need coverage.",
+      "evidence": [
+        "docs/audits/project-document-path-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/ProjectDocuments.kt": {
+      "sha256": "98fca35ea265cd6b02fb813a06d15ad8a046d6c95b8d753d0bfbba1a57ad084c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass199: Entire source read. The direct field/drivetrain/tuning-component/tuning-profile reads now validate directories and leaf files before decoding, preserving ownership diagnostics and excluding outside content from the assembler. Tests cover file symlinks and Windows directory junctions; existing project-model architecture tests and full Studio pass. Cross-file snapshot consistency, issue-file mapping and remaining assembler/diagnostic combinations require dedicated coverage.",
+      "evidence": [
+        "docs/audits/project-document-path-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectMetadataRepository.kt": {
+      "sha256": "3cbee20cfe783f5c9890c830506f9705352e0283389c79bc99367f4e4dfe031c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass199: Entire source read while tracing project resolver callers. Existing save/review/repair byte ownership, hash checks and stable JSON shape validation were inspected; the shared resolver now rejects outside existing links and missing descendants. Existing repository and architecture suites passed. No direct metadata-specific link test or exhaustive malformed-field/legacy/unreviewed-save policy audit is claimed; these remain open.",
+      "evidence": [
+        "docs/audits/project-document-path-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectDocumentPathOwnershipTest.kt": {
+      "sha256": "b93ee51e0b1fd338a2c9b9bbaf84d9a24e2aea4d59fd00f329c18cb0e08ec24e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass199: Entire new 17-case test file read and executed. Real codecs/repositories, Windows junctions and file symlinks cover current/history/recovery/snapshot ownership, root alias compatibility, corrupt/missing superstructure checkpoints and competing locks on a missing file. Fixtures clean links before temporary roots; subprocess/executor ownership and bounded waits reviewed. First15 baseline cases had14 failures; later snapshot baseline failed. Final loops exercised both stores and all three field leagues; malformed non-field snapshot payloads require ownership errors before codec errors.",
+      "evidence": [
+        "docs/audits/project-document-path-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "docs/audits/project-document-path-ownership-audit.md": {
+      "sha256": "2642c880059b755f0e73dfc437774e53deed3e85b966adbffc5761d9fa91381b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass199: Entire report checked against baseline/final XML, source changes, full Studio results and policy output. Separates confirmed stable-filesystem ownership failures, lock identity, checkpoint integrity, structural efficiency changes and unverified concurrent/interruption/hardware boundaries.",
+      "evidence": [
+        "docs/audits/project-document-path-ownership-audit.md",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
       ]
     }
   }

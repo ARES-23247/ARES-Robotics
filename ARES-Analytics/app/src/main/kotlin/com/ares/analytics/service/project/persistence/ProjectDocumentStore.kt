@@ -2,6 +2,7 @@ package com.ares.analytics.service.project.persistence
 
 import com.ares.analytics.service.forceDirectoryIfSupported
 import com.ares.analytics.service.publishPreparedFileExclusively
+import com.ares.analytics.service.resolveExistingPath
 import com.ares.analytics.service.writeAndForceFile
 import com.ares.analytics.util.Sha256
 import com.areslib.project.schema.ProjectDocumentId
@@ -80,7 +81,8 @@ abstract class VersionedProjectDocumentStore<T>(
     protected abstract fun sameContent(previous: T, draft: T): Boolean
 
     fun list(projectPath: String): ProjectDocumentListing<T> {
-        val directory = projectDirectory(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val directory = projectDirectory(paths)
         if (!directory.isDirectory) return ProjectDocumentListing(emptyList(), emptyList())
 
         val decodedDocuments = mutableListOf<Pair<File, T>>()
@@ -89,7 +91,7 @@ abstract class VersionedProjectDocumentStore<T>(
             file.isFile && file.name.endsWith(".$extension", ignoreCase = true)
         }.orEmpty().sortedBy { it.name.lowercase() }.forEach { file ->
             runCatching {
-                decode(file.readText()).also { document -> ProjectDocumentId(documentId(document)) }
+                decode(paths.check(file).readText()).also { document -> ProjectDocumentId(documentId(document)) }
             }
                 .onSuccess { document -> decodedDocuments += file to document }
                 .onFailure { error ->
@@ -135,7 +137,8 @@ abstract class VersionedProjectDocumentStore<T>(
 
     fun load(projectPath: String, rawDocumentId: String): T {
         val id = ProjectDocumentId(rawDocumentId)
-        val file = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val file = currentFile(paths, id)
         require(file.isFile) { "${kind.displayName} '${id.value}' does not exist" }
         return decode(file.readText()).also { document ->
             require(documentId(document) == id.value) {
@@ -148,7 +151,8 @@ abstract class VersionedProjectDocumentStore<T>(
         // Encode first so validation fails before any directory or file is changed.
         val validatedDraft = decode(encode(draft))
         val id = ProjectDocumentId(documentId(validatedDraft))
-        val currentFile = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths, id)
         return ProjectDocumentWriteLocks.withLock(currentFile) {
         val previous = currentFile.takeIf(File::isFile)?.let { file ->
             decode(file.readText()).also { document ->
@@ -165,15 +169,15 @@ abstract class VersionedProjectDocumentStore<T>(
         }
         val encoded = encode(normalized)
         val hash = if (normalized === previous) requireNotNull(previousHash) else contentHash(normalized)
-        val directory = historyDirectory(projectPath, id)
+        val directory = historyDirectory(paths, id)
         if (previous != null && normalized !== previous) {
             val parentHash = requireNotNull(previousHash)
             ensureHistoryCheckpoint(
-                File(directory, historyFileName(revision(previous), parentHash, extension)),
+                paths.check(File(directory, historyFileName(revision(previous), parentHash, extension))),
                 encode(previous), parentHash, ::decode, ::contentHash,
             )
         }
-        val historyFile = File(directory, historyFileName(revision(normalized), hash, extension))
+        val historyFile = paths.check(File(directory, historyFileName(revision(normalized), hash, extension)))
         val createdRevision = ensureHistoryCheckpoint(historyFile, encoded, hash, ::decode, ::contentHash)
         if (previous != normalized || !currentFile.exists()) {
             AtomicProjectFileWriter.write(currentFile, encoded, replaceExisting = true)
@@ -188,7 +192,8 @@ abstract class VersionedProjectDocumentStore<T>(
      */
     fun removalPlan(projectPath: String, rawDocumentId: String): ProjectDocumentRemovalPlan {
         val id = ProjectDocumentId(rawDocumentId)
-        val currentFile = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths, id)
         require(currentFile.isFile) { "${kind.displayName} '${id.value}' does not exist" }
         return ProjectDocumentWriteLocks.withLock(currentFile) {
             val document = decode(currentFile.readText()).also { loaded ->
@@ -203,10 +208,10 @@ abstract class VersionedProjectDocumentStore<T>(
                 revision = revision(document),
                 contentHash = hash,
                 currentFile = currentFile,
-                recoveryFile = File(
-                    recoveryDirectory(projectPath, id),
+                recoveryFile = paths.check(File(
+                    recoveryDirectory(paths, id),
                     "${revision(document).toString().padStart(4, '0')}-${hash.take(12)}.$extension",
-                ),
+                )),
             )
         }
     }
@@ -223,7 +228,8 @@ abstract class VersionedProjectDocumentStore<T>(
     ): RemovedProjectDocument {
         require(expectedContentHash.matches(Regex("[a-f0-9]{64}"))) { "Invalid removal confirmation hash" }
         val id = ProjectDocumentId(rawDocumentId)
-        val currentFile = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths, id)
         return ProjectDocumentWriteLocks.withLock(currentFile) {
             require(currentFile.isFile) { "${kind.displayName} '${id.value}' no longer exists" }
             val document = decode(currentFile.readText()).also { loaded ->
@@ -235,10 +241,10 @@ abstract class VersionedProjectDocumentStore<T>(
             require(currentHash == expectedContentHash) {
                 "${kind.displayName.capitalizeForMessage()} '${id.value}' changed after review. Review the removal again."
             }
-            val recoveryFile = File(
-                recoveryDirectory(projectPath, id),
+            val recoveryFile = paths.check(File(
+                recoveryDirectory(paths, id),
                 "${revision(document).toString().padStart(4, '0')}-${currentHash.take(12)}.$extension",
-            )
+            ))
             recoveryFile.parentFile.mkdirs()
             if (recoveryFile.exists()) {
                 require(Files.mismatch(currentFile.toPath(), recoveryFile.toPath()) == -1L) {
@@ -272,9 +278,10 @@ abstract class VersionedProjectDocumentStore<T>(
     ): T {
         require(expectedContentHash.matches(Regex("[a-f0-9]{64}"))) { "Invalid recovery confirmation hash" }
         val id = ProjectDocumentId(rawDocumentId)
-        val currentFile = currentFile(projectPath, id)
-        val recoveryRoot = recoveryDirectory(projectPath, id).canonicalFile
-        val recoveryFile = resolveProjectPath(projectPath, rawRecoveryPath).canonicalFile
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths, id)
+        val recoveryRoot = recoveryDirectory(paths, id).canonicalFile
+        val recoveryFile = paths.resolve(rawRecoveryPath)
         require(
             recoveryFile.parentFile == recoveryRoot &&
                 recoveryFile.name.endsWith(".$extension", ignoreCase = true)
@@ -311,12 +318,13 @@ abstract class VersionedProjectDocumentStore<T>(
 
     /** Decode each checkpoint once; keep the selected immutable document instead of reading it again. */
     private fun scanHistory(projectPath: String, id: ProjectDocumentId, accept: (T, String, File) -> Unit) {
+        val paths = ProjectPathOwnership(projectPath)
         val diagnostics = mutableListOf<ProjectDocumentDiagnostic>()
-        historyDirectory(projectPath, id)
+        historyDirectory(paths, id)
             .listFiles { file -> file.isFile && file.name.endsWith(".$extension", ignoreCase = true) }
             .orEmpty().forEach { file ->
                 runCatching {
-                    val raw = file.readText()
+                    val raw = paths.check(file).readText()
                     val document = decode(raw)
                     require(documentId(document) == id.value) {
                         "History file '${file.name}' declares '${documentId(document)}', not '${id.value}'"
@@ -344,17 +352,16 @@ abstract class VersionedProjectDocumentStore<T>(
         return save(projectPath, withRevision(historical, revision(current), contentHash(current)))
     }
 
-    private fun projectDirectory(projectPath: String): File =
-        resolveProjectPath(projectPath, ".ares/$directoryName")
+    private fun projectDirectory(paths: ProjectPathOwnership): File = paths.resolve(".ares/$directoryName")
 
-    private fun historyDirectory(projectPath: String, id: ProjectDocumentId): File =
-        resolveProjectPath(projectPath, ".ares/history/$historyName/${id.value}")
+    private fun historyDirectory(paths: ProjectPathOwnership, id: ProjectDocumentId): File =
+        paths.resolve(".ares/history/$historyName/${id.value}")
 
-    private fun recoveryDirectory(projectPath: String, id: ProjectDocumentId): File =
-        resolveProjectPath(projectPath, ".ares/recovery/$historyName/${id.value}")
+    private fun recoveryDirectory(paths: ProjectPathOwnership, id: ProjectDocumentId): File =
+        paths.resolve(".ares/recovery/$historyName/${id.value}")
 
-    private fun currentFile(projectPath: String, id: ProjectDocumentId): File =
-        File(projectDirectory(projectPath), "${id.value}.$extension")
+    private fun currentFile(paths: ProjectPathOwnership, id: ProjectDocumentId): File =
+        paths.check(File(projectDirectory(paths), "${id.value}.$extension"))
 }
 
 private fun String.capitalizeForMessage(): String = replaceFirstChar { character ->
@@ -384,7 +391,8 @@ internal abstract class SingletonProjectDocumentStore<T>(
     protected abstract fun sameContent(previous: T, draft: T): Boolean
 
     fun load(projectPath: String): Result<T> {
-        val file = currentFile(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val file = currentFile(paths)
         if (!file.isFile) return Result.failure(
             NoSuchElementException("${kind.displayName} does not exist at ${file.path}")
         )
@@ -393,7 +401,8 @@ internal abstract class SingletonProjectDocumentStore<T>(
 
     fun save(projectPath: String, draft: T): SavedProjectRevision<T> {
         val validatedDraft = decode(encode(draft))
-        val currentFile = currentFile(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths)
         return ProjectDocumentWriteLocks.withLock(currentFile) {
         val previous = currentFile.takeIf(File::isFile)?.let { decode(it.readText()) }
         val previousHash = previous?.let(::contentHash)
@@ -404,15 +413,15 @@ internal abstract class SingletonProjectDocumentStore<T>(
         }
         val encoded = encode(normalized)
         val hash = if (normalized === previous) requireNotNull(previousHash) else contentHash(normalized)
-        val directory = historyDirectory(projectPath)
+        val directory = historyDirectory(paths)
         if (previous != null && normalized !== previous) {
             val parentHash = requireNotNull(previousHash)
             ensureHistoryCheckpoint(
-                File(directory, historyFileName(revision(previous), parentHash, extension)),
+                paths.check(File(directory, historyFileName(revision(previous), parentHash, extension))),
                 encode(previous), parentHash, ::decode, ::contentHash,
             )
         }
-        val historyFile = File(directory, historyFileName(revision(normalized), hash, extension))
+        val historyFile = paths.check(File(directory, historyFileName(revision(normalized), hash, extension)))
         val createdRevision = ensureHistoryCheckpoint(historyFile, encoded, hash, ::decode, ::contentHash)
         if (previous != normalized || !currentFile.exists()) {
             AtomicProjectFileWriter.write(currentFile, encoded, replaceExisting = true)
@@ -431,10 +440,11 @@ internal abstract class SingletonProjectDocumentStore<T>(
     }
 
     private fun scanHistory(projectPath: String, accept: (T, String, File) -> Unit) {
-        historyDirectory(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        historyDirectory(paths)
             .listFiles { file -> file.isFile && file.name.endsWith(".$extension", ignoreCase = true) }
             .orEmpty().forEach { file ->
-                val raw = file.readText()
+                val raw = paths.check(file).readText()
                 val document = decode(raw)
                 val hash = contentHash(document)
                 validateHistoryFileName(file, revision(document), hash, raw, extension)
@@ -454,16 +464,16 @@ internal abstract class SingletonProjectDocumentStore<T>(
     }
 
     fun diagnostic(projectPath: String): ProjectDocumentDiagnostic? {
-        val file = currentFile(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val file = currentFile(paths)
         if (!file.isFile) return null
-        return load(projectPath).exceptionOrNull()?.let { error ->
+        return runCatching { decode(file.readText()) }.exceptionOrNull()?.let { error ->
             ProjectDocumentDiagnostic(kind, file, error.message ?: "Document could not be decoded")
         }
     }
 
-    private fun currentFile(projectPath: String): File = resolveProjectPath(projectPath, ".ares/$fileName")
-    private fun historyDirectory(projectPath: String): File =
-        resolveProjectPath(projectPath, ".ares/history/$historyName")
+    private fun currentFile(paths: ProjectPathOwnership): File = paths.resolve(".ares/$fileName")
+    private fun historyDirectory(paths: ProjectPathOwnership): File = paths.resolve(".ares/history/$historyName")
 }
 
 private fun historyFileName(revision: Int, hash: String, extension: String): String =
@@ -480,7 +490,7 @@ private fun validateHistoryFileName(file: File, revision: Int, hash: String, raw
     }
 }
 
-private fun <T> ensureHistoryCheckpoint(
+internal fun <T> ensureHistoryCheckpoint(
     file: File,
     encoded: String,
     expectedHash: String,
@@ -505,21 +515,32 @@ internal fun requireProjectRoot(projectPath: String): File {
 }
 
 /** Resolves through existing symlinks and rejects any target that escapes the chosen repository. */
-internal fun resolveProjectPath(projectPath: String, relativePath: String): File {
-    val root = requireProjectRoot(projectPath)
-    val target = File(root, relativePath).canonicalFile
-    require(target.toPath().startsWith(root.toPath())) {
-        "Project document path escapes the selected repository"
+internal fun resolveProjectPath(projectPath: String, relativePath: String): File =
+    ProjectPathOwnership(projectPath).resolve(relativePath)
+
+/** One operation's root identity; every target, including listed leaf files, is checked separately. */
+internal class ProjectPathOwnership(projectPath: String) {
+    val root: File = requireProjectRoot(projectPath)
+    private val realRoot = root.toPath().toRealPath()
+
+    // Preserve the logical path returned to callers, which use it for project-relative change lists.
+    fun resolve(relativePath: String): File = check(File(root, relativePath).canonicalFile)
+
+    fun check(file: File): File {
+        require(file.canonicalFile.toPath().startsWith(root.toPath()) &&
+            resolveExistingPath(file.toPath()).startsWith(realRoot)) {
+            "Project document path escapes the selected repository"
+        }
+        return file
     }
-    return target
 }
 
 /** Serializes revision allocation and current-file replacement for each canonical document. */
 internal object ProjectDocumentWriteLocks {
-    private val locks = java.util.concurrent.ConcurrentHashMap<String, Any>()
+    private val locks = java.util.concurrent.ConcurrentHashMap<java.nio.file.Path, Any>()
 
     fun <T> withLock(file: File, block: () -> T): T {
-        val lock = locks.computeIfAbsent(file.canonicalPath) { Any() }
+        val lock = locks.computeIfAbsent(resolveExistingPath(file.toPath())) { Any() }
         return synchronized(lock) { block() }
     }
 }
