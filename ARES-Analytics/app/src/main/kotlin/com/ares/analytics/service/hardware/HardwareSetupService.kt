@@ -30,7 +30,7 @@ enum class HardwareAddressKind(val label: String) {
     CAN("CAN device"),
     PWM("PWM channel"),
     I2C("I2C device"),
-    DIO("digital-input channel"),
+    DIO("digital I/O channel"),
     ANALOG("analog-input channel"),
     SPI("SPI device"),
     PNEUMATICS("pneumatics module/channel"),
@@ -102,7 +102,10 @@ data class HardwareSetupSnapshot(
         get() = issues.filter { it.severity == HardwareIssueSeverity.ERROR }
 
     val canReview: Boolean
-        get() = items.isNotEmpty() && errorIssues.isEmpty()
+        get() = items.isNotEmpty() && issues.none { it.severity == HardwareIssueSeverity.ERROR }
+
+    val readyForPhysicalValidation: Boolean
+        get() = canReview && reviewStatus == HardwareReviewStatus.CURRENT && simulationVerification.verified
 }
 
 data class HardwareReviewRequest(
@@ -363,11 +366,13 @@ class HardwareSetupService(
             )
         }
         items.filter { it.address.isNotBlank() }
-            .groupBy(::collisionKey)
+            .flatMap { item -> collisionKeys(item).map { key -> key to item } }
+            .groupBy({ it.first }, { it.second })
             .filterValues { it.size > 1 }
-            .values
-            .forEach { conflicts ->
-                val address = conflicts.first().addressDescription
+            .forEach { (key, conflicts) ->
+                val address = if (key.startsWith("dio:")) {
+                    "${HardwareAddressKind.DIO.label}: ${key.removePrefix("dio:")}"
+                } else conflicts.first().addressDescription
                 issues += HardwareInventoryIssue(
                     HardwareIssueSeverity.ERROR,
                     "$address is claimed by ${conflicts.joinToString { "${it.ownerDisplayName} / ${it.displayName}" }}. Physical addresses must have one owner.",
@@ -402,7 +407,7 @@ class HardwareSetupService(
             reviewStatus = review.status,
             reviewedBy = review.reviewedBy,
             simulationVerification = simulationVerification,
-            physicalValidation = review.physicalValidation,
+            physicalValidation = review.physicalValidation.takeIf { issues.none { it.severity == HardwareIssueSeverity.ERROR } },
         )
     }
 
@@ -448,11 +453,13 @@ class HardwareSetupService(
         request: HardwarePhysicalValidationRequest,
     ): HardwareSetupSnapshot {
         val snapshot = inspect(projectPath, league)
-        require(snapshot.reviewStatus == HardwareReviewStatus.CURRENT) {
-            "Record a current configuration review before physical validation."
-        }
-        require(snapshot.simulationVerification.verified) {
-            "Resolve deterministic commissioning simulation failures before physical validation."
+        require(snapshot.readyForPhysicalValidation) {
+            when {
+                !snapshot.canReview -> "Resolve hardware inventory errors before physical validation."
+                snapshot.reviewStatus != HardwareReviewStatus.CURRENT ->
+                    "Record a current configuration review before physical validation."
+                else -> "Resolve deterministic commissioning simulation failures before physical validation."
+            }
         }
         val validator = request.validatedBy.trim()
         val evidence = request.evidenceSummary.trim()
@@ -564,6 +571,12 @@ class HardwareSetupService(
             HardwareReviewReadResult(HardwareReviewStatus.STALE, validReviews.first().reviewedBy, null)
         }
     }
+
+    private fun collisionKeys(item: HardwareInventoryItem): List<String> =
+        if (item.addressKind == HardwareAddressKind.DIO) {
+            // A quadrature encoder owns each channel, not one composite "A/B" address.
+            item.address.split('/').map { "dio:$it" }
+        } else listOf(collisionKey(item))
 
     private fun collisionKey(item: HardwareInventoryItem): String = when (item.addressKind) {
         HardwareAddressKind.FTC_HARDWARE_MAP -> "ftc:${item.address.lowercase()}"

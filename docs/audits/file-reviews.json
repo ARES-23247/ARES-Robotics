@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "998e04c680eb5c5d0013df1331fa95be4487c9ced8acd4b24796dcd000a7b453",
+      "sha256": "2ff131da828ebe95d34386b568010124b976e39135c4893c637b319837030e47",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13874,25 +13874,31 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareCommissioningModel.kt": {
-      "sha256": "292c312f5a98b8e5c449b40270ddc85f027354ac2e1dc7012b92b45a67ac503c",
-      "review": "partial",
+      "sha256": "f2126d3ad1be60449173391a35b0ced35ca907712b7c005fb577433c27cb9372",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 193: Entire model and plan generation read; traced relevant setup UI/clipboard and existing commissioning tests. Open confirmed/static concerns: inventory errors and duplicate addresses do not gate diagnostic availability, and clipboard emits partial checks when diagnostic is unavailable. Requires next-pass regression/fix; no hardware actuation occurs in this model.",
+      "scope": "Pass 194: Complete commissioning model, advisory DTO and clipboard review; block diagnostics on inventory errors, ambiguous roles and duplicate motor names; clipboard mirrors availability; follower-only checks have no independent pulse proposal; non-FTC clipboard omits FTC hardware setup path. Real descriptor and eligibility regressions pass. Proposals never actuate hardware.",
       "evidence": [
         "docs/audits/subsystem-health-evidence-audit.md",
         "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json",
+        "docs/audits/hardware-commissioning-gates-audit.md",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareInventoryFormatting.kt": {
-      "sha256": "34dea660e27b9c764140d43987cb800774325077df5e8cd72554d701960dd7de",
-      "review": "partial",
+      "sha256": "6340807344e9a44cf6a8d95942ac3bb2ce058aba83fbf8ef8aab5cc0ea335340",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 193: Entire address/format/detail helper read against inventory call boundary and selected setup tests. Long upper-bound Double-to-Long formatting saturation requires regression/fix. Complete platform/address mapping and extreme-value behavior remain open.",
+      "scope": "Pass 194: Complete formatting/address/detail helper review; FRC absolute encoder mapping corrected to DIO against generated DutyCycleEncoder adapter and official WPILib API. Numeric Long upper boundary is exclusive with one integral conversion; positive/negative bounds, neighbors, fractions and exceptional magnitudes tested. Existing orientation, Prism, follower and setup tests exercise metadata; FTC/XRP address routing remains in the separately partial service.",
       "evidence": [
         "docs/audits/subsystem-health-evidence-audit.md",
         "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json",
+        "docs/audits/hardware-commissioning-gates-audit.md",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/SubsystemHealthTelemetryTest.kt": {
@@ -13937,6 +13943,72 @@
         "docs/audits/subsystem-health-evidence-audit.md",
         "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareSetupService.kt": {
+      "sha256": "e0b2a2ecd03542b38579087fd63f6dcc862ab905e56827f45d7382ecba112fc4",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 194: Entire source read; fix per-channel quadrature DIO ownership, shared physical-readiness gate, invalid-inventory physical evidence suppression and removal of the filtered issue-list allocation in the reviewability predicate. Regressions cover actual decoded docs, cross-document collisions, same-hash malformed docs, evidence rejection without writes and existing review/hash flows. XRP namespace/CAN bus edge cases, concurrent source edits, evidence path ownership, append ordering/races remain open.",
+      "evidence": [
+        "docs/audits/hardware-commissioning-gates-audit.md",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/hardware/HardwareSetupViewModel.kt": {
+      "sha256": "5070f5f4dc8f975d45d4f1de987ba5e469825edbe53524f11e7e20d74dffa7d8",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 194: Entire view-model/state source read. Physical-evidence eligibility uses the shared inventory/review/simulation predicate and is tested against an invalid same-hash inventory. Async cancellation/operation replacement, field preservation and review checklist lifecycle remain open.",
+      "evidence": [
+        "docs/audits/hardware-commissioning-gates-audit.md",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/HardwareSetupScreen.kt": {
+      "sha256": "f953b6ddb8f865c9c2bd7bdaab66835d21f86102c4330dae91da51212081230f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 194: Reviewed evidence ladder, physical form and commissioning cache boundaries; all use shared readiness, and plan cache now follows full snapshot. Real offscreen Compose test proves same-hash error changes eligibility. Remaining screen and platform-specific presentation are not fully reviewed; no visible Studio launch claimed.",
+      "evidence": [
+        "docs/audits/hardware-commissioning-gates-audit.md",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareSetupServiceTest.kt": {
+      "sha256": "db0835d9e788f3a5ef858ed6e15bbed76f026d8325a558d94227243edfc9e59e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 194: Entire test file read; original cases preserved and expanded. Numeric/actual descriptor/commissioning/evidence/Compose regressions pass in final focused and full suites. Physical evidence records are synthetic fixtures, not hardware tests.",
+      "evidence": [
+        "docs/audits/hardware-commissioning-gates-audit.md",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareInventoryFormattingTest.kt": {
+      "sha256": "c8c51be66beeba71a2ed6d348835878ac0ce2aa8f5de4bbe2c1f252dcbcbd82f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 194: Entire test file read; original cases preserved and expanded. Numeric/actual descriptor/commissioning/evidence/Compose regressions pass in final focused and full suites. Physical evidence records are synthetic fixtures, not hardware tests.",
+      "evidence": [
+        "docs/audits/hardware-commissioning-gates-audit.md",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "docs/audits/hardware-commissioning-gates-audit.md": {
+      "sha256": "e5cfea37faeec8d2abc00ffcc749598aff8fcffa0710c08bc75cf98d9ec84e6f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 194: Report reconciled with 5 initial, 3 port and 2 physical-evidence baseline failures, final 21 focused tests, full 1861-test result, policy and explicit partial/HIL limitations.",
+      "evidence": [
+        "docs/audits/hardware-commissioning-gates-audit.md",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
       ]
     }
   }

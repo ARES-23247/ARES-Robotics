@@ -47,7 +47,7 @@ data class HardwareCommissioningPlan(
     val clipboardText: String
         get() = buildString {
             appendLine("ARES hardware configuration")
-            appendLine("Driver Station > Configure Robot > Hardware")
+            if (hardwareMapEntries.isNotEmpty()) appendLine("Driver Station > Configure Robot > Hardware")
             hardwareMapEntries.forEach { item ->
                 append("- ").append(item.displayName).append(": ")
                 append(item.address.ifBlank { "NOT CONFIGURED" })
@@ -57,7 +57,7 @@ data class HardwareCommissioningPlan(
                     append("    • ").appendLine(detail)
                 }
             }
-            if (ftcMotorChecks.isNotEmpty()) {
+            if (ftcDiagnosticAvailable && ftcMotorChecks.isNotEmpty()) {
                 appendLine()
                 appendLine("ARES Drivetrain Diagnostic (hold to run; release to stop)")
                 ftcMotorChecks.forEach { check ->
@@ -66,6 +66,11 @@ data class HardwareCommissioningPlan(
                     append("; configured ").append(check.configuredDirection)
                     appendLine()
                 }
+            }
+            if (!ftcDiagnosticAvailable) {
+                appendLine()
+                append("Drivetrain diagnostic unavailable: ")
+                appendLine(ftcDiagnosticBlockReason ?: "Resolve the hardware configuration before running the diagnostic.")
             }
             if (subsystemChecks.isNotEmpty()) {
                 appendLine()
@@ -90,7 +95,8 @@ data class HardwareCommissioningPlan(
  * Builds the novice commissioning workflow from the exact reviewed descriptor snapshot.
  *
  * A diagnostic is offered only for an FTC mecanum inventory with one configured motor in each
- * canonical wheel role. Ambiguous or incomplete mappings fail closed instead of guessing.
+ * canonical wheel role, distinct motor names and no blocking inventory errors.
+ * Ambiguous or incomplete mappings fail closed instead of guessing.
  */
 fun HardwareSetupSnapshot.commissioningPlan(): HardwareCommissioningPlan {
     val hardwareMapEntries = items
@@ -149,14 +155,20 @@ fun HardwareSetupSnapshot.commissioningPlan(): HardwareCommissioningPlan {
             configuredDirection = if (item.inverted) "REVERSED" else "NORMAL",
         )
     }
-    val available = checks.size == controls.size
+    val blockingIssue = issues.firstOrNull { it.severity == HardwareIssueSeverity.ERROR }
+    val blockReason = when {
+        blockingIssue != null -> "Resolve hardware inventory errors before running the diagnostic: ${blockingIssue.message}"
+        checks.size != controls.size ->
+            "Configure exactly one front-left, front-right, rear-left, and rear-right motor before running the diagnostic."
+        checks.map { it.hardwareMapName.lowercase() }.distinct().size != controls.size ->
+            "Assign a distinct hardware-map name to each drive motor before running the diagnostic."
+        else -> null
+    }
     return HardwareCommissioningPlan(
         hardwareMapEntries = hardwareMapEntries,
         ftcMotorChecks = checks,
-        ftcDiagnosticAvailable = available,
-        ftcDiagnosticBlockReason = if (available) null else {
-            "Configure exactly one front-left, front-right, rear-left, and rear-right motor before running the diagnostic."
-        },
+        ftcDiagnosticAvailable = blockReason == null,
+        ftcDiagnosticBlockReason = blockReason,
         subsystemChecks = subsystemChecks,
     )
 }

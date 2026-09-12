@@ -8,6 +8,7 @@ internal fun DriveHardwareRole.readableName(): String = name.lowercase().replace
 
 internal fun SubsystemHardwareKind.readableName(): String = name.lowercase().replace('_', ' ')
 
+/** FRC physical port family; FTC and XRP use their platform-specific inventory mappings. */
 internal fun SubsystemHardwareDocument.addressKind(): HardwareAddressKind = when (kind) {
     SubsystemHardwareKind.MOTOR -> HardwareAddressKind.CAN
     SubsystemHardwareKind.POSITIONAL_SERVO,
@@ -19,9 +20,9 @@ internal fun SubsystemHardwareDocument.addressKind(): HardwareAddressKind = when
     SubsystemHardwareKind.COLOR_SENSOR -> HardwareAddressKind.I2C
     SubsystemHardwareKind.DIGITAL_INPUT,
     SubsystemHardwareKind.DIGITAL_OUTPUT,
-    SubsystemHardwareKind.QUADRATURE_ENCODER -> HardwareAddressKind.DIO
+    SubsystemHardwareKind.QUADRATURE_ENCODER,
+    SubsystemHardwareKind.ABSOLUTE_ENCODER -> HardwareAddressKind.DIO
     SubsystemHardwareKind.ANALOG_INPUT,
-    SubsystemHardwareKind.ABSOLUTE_ENCODER,
     SubsystemHardwareKind.DISTANCE_SENSOR -> HardwareAddressKind.ANALOG
     SubsystemHardwareKind.IMU -> HardwareAddressKind.SPI
     SubsystemHardwareKind.SOLENOID -> HardwareAddressKind.PNEUMATICS
@@ -49,8 +50,14 @@ internal fun SubsystemHardwareDocument.configurationDetails(): List<String> = bu
     currentLimitAmps?.let { add("Configured current limit: ${formatSetupNumber(it)} A") }
 }
 
-internal fun formatSetupNumber(value: Double): String =
-    if (value == value.toLong().toDouble()) value.toLong().toString() else value.toString()
+internal fun formatSetupNumber(value: Double): String {
+    // Long.MAX_VALUE rounds up to 2^63 as a Double, so that upper boundary is exclusive.
+    if (value >= Long.MIN_VALUE.toDouble() && value < -Long.MIN_VALUE.toDouble()) {
+        val integral = value.toLong()
+        if (value == integral.toDouble()) return integral.toString()
+    }
+    return value.toString()
+}
 
 internal val MOTION_ACTUATOR_KINDS = setOf(
     SubsystemHardwareKind.MOTOR,

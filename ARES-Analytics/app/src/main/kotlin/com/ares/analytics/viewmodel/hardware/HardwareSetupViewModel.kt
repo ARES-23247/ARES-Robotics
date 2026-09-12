@@ -44,8 +44,7 @@ data class HardwareSetupState(
             limitsAndCurrentTested && faultRecoveryTested
 
     val canSavePhysicalValidation: Boolean
-        get() = !loading && !saving && snapshot?.reviewStatus == com.ares.analytics.service.hardware.HardwareReviewStatus.CURRENT &&
-            snapshot.simulationVerification.verified && physicalValidatorName.trim().length >= 2 &&
+        get() = !loading && !saving && snapshot?.readyForPhysicalValidation == true && physicalValidatorName.trim().length >= 2 &&
             physicalEvidenceSummary.trim().length >= 20 && physicalChecklistComplete
 }
 
