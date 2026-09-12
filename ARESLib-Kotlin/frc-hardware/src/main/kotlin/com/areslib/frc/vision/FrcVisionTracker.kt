@@ -1,6 +1,8 @@
 package com.areslib.frc.vision
 
 import com.areslib.action.RobotAction
+import com.areslib.frc.FrcLimelightIO
+import com.areslib.hardware.drive.SwerveHardwareIO
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionRecoveryConsensus
 import com.areslib.hardware.vision.VisionFrameGate
@@ -39,7 +41,7 @@ import com.areslib.math.wrapAngle
 class FrcVisionTracker(
     private val store: Store,
     val visionIO: VisionIO?,
-    private val swerveIO: com.areslib.hardware.drive.SwerveHardwareIO?,
+    private val swerveIO: SwerveHardwareIO?,
     private val isSimulation: Boolean,
     // Phoenix 6 uses its own monotonic timebase for vision rewind. Supplying an FPGA
     // timestamp directly can place the observation in the wrong estimator epoch.
@@ -61,6 +63,8 @@ class FrcVisionTracker(
     private var stationarySinceMs = 0L
     private var recoveryStartedMs = 0L
     private val historicalPose = DoubleArray(3)
+    private var fallbackTimeSampled = false
+    private var fallbackTimeSeconds = Double.NaN
 
     /** Allows calibration to observe camera frames without contaminating odometry-only routes. */
     var fusionEnabled: Boolean = true
@@ -72,7 +76,7 @@ class FrcVisionTracker(
             }
         }
 
-    /** Human-readable status string describing active vision filter state (`"ACCEPTED"`, `"REJECTED_FAR"`, `"REJECTED_AMBIGUOUS"`, `"NO TARGET"`, `"OFFLINE"`). */
+    /** Human-readable filter/IO state, including `REJECTED_TIMESTAMP` when no usable estimator time is available. */
     override val lastVisionStatus: String
         get() = _lastVisionStatus
 
@@ -115,6 +119,8 @@ class FrcVisionTracker(
     }
 
     private fun updateFrame(timestampMs: Long) {
+        fallbackTimeSampled = false
+        fallbackTimeSeconds = Double.NaN
         if (!frameGate.beginUpdate(timestampMs)) {
             resetRecovery()
             stationaryTracking = false
@@ -177,6 +183,7 @@ class FrcVisionTracker(
                 var rejectedCount = 0
                 var recoverySnapped = false
                 var residualRejected = false
+                var timestampRejected = false
                 if (!recoveryAllowed) resetRecovery()
                 for (i in visionInputs.measurements.indices) {
                     val measurement = visionInputs.measurements[i]
@@ -188,6 +195,9 @@ class FrcVisionTracker(
                 }
                 for (i in freshMeasurements.indices) {
                     val measurement = freshMeasurements[i]
+                    // Calibration still publishes fresh observations below. It does not need
+                    // vendor clock conversion, history queries or a second physical filter.
+                    if (!fusionEnabled) continue
                     val distance = measurementRange(measurement)
                     if (recoveryAllowed && considerRecovery(measurement, timestampMs, drive, distance)) {
                         recoverySnapped = true
@@ -198,12 +208,15 @@ class FrcVisionTracker(
                     // Use full euclidean target-space distance; tag-normal depth (z) alone would
                     // let an off-axis robot at (x=5, z=1) pass the 6 m filter.
                     val filterConfig = store.state.vision.filterConfig
-                    val timestampSec = measurementTimestampSeconds(measurement, timestampMs)
-                    val hasHistoricalPose = try {
-                        swerveIO?.samplePoseAt(timestampSec, historicalPose) == true
-                    } catch (_: Throwable) {
-                        false
+                    val timestampSec = if (swerveIO != null) {
+                        measurementTimestampSeconds(measurement, timestampMs)
+                    } else Double.NaN
+                    if (swerveIO != null && !timestampSec.isFinite()) {
+                        rejectedCount++
+                        timestampRejected = true
+                        continue
                     }
+                    val hasHistoricalPose = sampleHistoricalPose(timestampSec)
                     val referenceX = if (hasHistoricalPose) historicalPose[0] else drive.poseEstimator.estimatedPoseX
                     val referenceY = if (hasHistoricalPose) historicalPose[1] else drive.poseEstimator.estimatedPoseY
                     val referenceHeading = if (hasHistoricalPose) historicalPose[2] else drive.poseEstimator.estimatedPoseHeading
@@ -262,6 +275,7 @@ class FrcVisionTracker(
                     !fusionEnabled -> "FUSION_DISABLED"
                     recoverySnapped -> "RESEED_SNAP"
                     acceptedCount > 0 || (isSimulation && rejectedCount == 0) -> "ACCEPTED"
+                    timestampRejected -> "REJECTED_TIMESTAMP"
                     rejectedCount > 0 -> if (residualRejected) "REJECTED_RESIDUAL" else "REJECTED_FILTERED"
                     else -> "NO TARGET"
                 }
@@ -280,6 +294,12 @@ class FrcVisionTracker(
     private fun validStdDevOrFallback(value: Double, fallback: Double): Double =
         if (value.isFinite() && value > 0.0) value else fallback
 
+    /**
+     * Prefer the camera's converted native capture time. Otherwise subtract its RobotClock
+     * age from one estimator-clock snapshot shared by this update. Failed/nonfinite snapshots
+     * stay unavailable for the whole batch; a later update may retry. No latency is subtracted
+     * again from an already converted native capture timestamp.
+     */
     private fun measurementTimestampSeconds(measurement: VisionMeasurement, nowMs: Long): Double {
         if (measurement.captureTimestampMicros > 0L) {
             val converted = try {
@@ -289,8 +309,32 @@ class FrcVisionTracker(
             }
             if (converted.isFinite()) return converted
         }
+        if (!fallbackTimeSampled) {
+            fallbackTimeSampled = true
+            fallbackTimeSeconds = try {
+                estimatorTimeSecondsProvider()
+            } catch (_: Throwable) {
+                Double.NaN
+            }
+        }
         val latencyMs = (nowMs - measurement.timestampMs).coerceIn(0L, 1_000L)
-        return estimatorTimeSecondsProvider() - latencyMs / 1_000.0
+        return fallbackTimeSeconds - latencyMs / 1_000.0
+    }
+
+    /** Missing, failed or incomplete history uses the caller's current valid drive estimate. */
+    private fun sampleHistoricalPose(timestampSeconds: Double): Boolean {
+        val io = swerveIO ?: return false
+        // Never credit values left by a previous sample if an alternate IO writes only part
+        // of the output. The concrete CTRE adapter already writes all three finite values.
+        historicalPose[0] = Double.NaN
+        historicalPose[1] = Double.NaN
+        historicalPose[2] = Double.NaN
+        return try {
+            io.samplePoseAt(timestampSeconds, historicalPose) &&
+                historicalPose[0].isFinite() && historicalPose[1].isFinite() && historicalPose[2].isFinite()
+        } catch (_: Throwable) {
+            false
+        }
     }
 
     private fun measurementRange(measurement: VisionMeasurement): Double {
@@ -380,4 +424,3 @@ class FrcVisionTracker(
         const val ENABLED_IMU_MODE = 4
     }
 }
-
