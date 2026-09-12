@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "1e4a200c5bac2ddef4ad497345ad33b57558a1fd931b285f7c19232418cf2c0d",
+      "sha256": "316ce18db20454714cb26ee03d045e160a8ab212eaf3fde67d83af8f1b80a671",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5650,7 +5650,8 @@
         "docs/audits/project-document-path-ownership-audit.md: pass199 scoped records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/project-metadata-catalog-restoration-audit.md: pass200 scoped records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/project-identity-inspection-repair-audit.md",
-        "docs/audits/project-identity-concurrency-audit.md"
+        "docs/audits/project-identity-concurrency-audit.md",
+        "docs/audits/project-identity-numeric-validation-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -14473,6 +14474,36 @@
       "evidence": [
         "docs/audits/project-identity-concurrency-audit.md",
         "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityValidation.kt": {
+      "sha256": "b5b80d7deaba5b5a16e02a8781da1bd15a588eea3790e6e55deb95b8eb63a92d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass203: Entire file reviewed under validated-current-metadata inputs. Numeric inputs now preserve exact Double values instead of six-decimal rounding; SSIDs/display names preserve literal accepted strings while stable keys retain normalization. Immutable regexes replace per-edit pattern compilation; unreachable suggested-ID fallback removed. Fourteen new cases cover finite extremes/adjacent values, bounds and error mapping, field fit, all editable diff entries, platform/default/runtime/authoring selection, key/string constraints and actual no-op/name-only editor persistence. No physical sizing, Wi-Fi interoperability or all-consumer arithmetic claim.",
+      "evidence": [
+        "docs/audits/project-identity-numeric-validation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass203-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityValidationAuditTest.kt": {
+      "sha256": "8a830abd2434ae76081d756d99bee6b91099a2c48b4cd1fe43e56835d907b9aa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass203: Entire fourteen-case test file authored/read/executed. Seven initial regression cases all failed against baseline. Final tests exercise exact geometry and threshold round trips, literal names/SSID, workspace precision, actual editor no-op and name-only writes/history, field/key/XRP bounds, coordinate/runtime defaults, complete editable diff mappings and hostile-label ID suggestions. Real owned temporary files and TestScope dispatcher; extrema are schema-contract cases rather than physical validation.",
+      "evidence": [
+        "docs/audits/project-identity-numeric-validation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass203-verified-evidence"
+      ]
+    },
+    "docs/audits/project-identity-numeric-validation-audit.md": {
+      "sha256": "df1f391825ccb705279965c28e49f35c742e4e6500ce2cedc9e7612fccee4d08",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass203: Report checked against all seven baseline failures, fourteen new final cases, source/runtime-call-site inspection, focused results and recorded full-suite/policy results. Separates mathematical preservation and structural work reduction from physical/network/competition certification and remaining wider file coverage.",
+      "evidence": [
+        "docs/audits/project-identity-numeric-validation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass203-verified-evidence"
       ]
     }
   }

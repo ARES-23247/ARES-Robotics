@@ -3,7 +3,10 @@ package com.ares.analytics.viewmodel.project
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.areslib.project.*
-import java.util.Locale
+
+private val STABLE_ID_PATTERN = Regex("[A-Za-z][A-Za-z0-9._-]{0,63}")
+private val GROUP_KEY_PATTERN = Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,31}")
+private val UNSAFE_ID_CHARACTERS = Regex("[^A-Za-z0-9._-]+")
 
 internal data class ProjectIdentityDraftValidation(
     val document: AresProjectMetadataDocument?,
@@ -17,24 +20,24 @@ internal fun validateProjectIdentityDraft(
 ): ProjectIdentityDraftValidation {
     val errors = linkedMapOf<ProjectIdentityField, String>()
     val projectId = draft.projectId.trim()
-    if (!projectId.matches(Regex("[A-Za-z][A-Za-z0-9._-]{0,63}"))) {
+    if (!projectId.matches(STABLE_ID_PATTERN)) {
         errors[ProjectIdentityField.PROJECT_ID] =
             "Use a stable ID that starts with a letter and contains only letters, numbers, dot, underscore, or dash."
     }
     val teamId = draft.teamId.trim()
-    if (!teamId.matches(Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,31}"))) {
+    if (!teamId.matches(GROUP_KEY_PATTERN)) {
         errors[ProjectIdentityField.TEAM_ID] = "Use the team number or another stable team key."
     }
     val seasonId = draft.seasonId.trim()
-    if (!seasonId.matches(Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,31}"))) {
+    if (!seasonId.matches(GROUP_KEY_PATTERN)) {
         errors[ProjectIdentityField.SEASON_ID] = "Use a stable season key such as 2026."
     }
     val robotId = draft.robotId.trim()
-    if (!robotId.matches(Regex("[A-Za-z][A-Za-z0-9._-]{0,63}"))) {
+    if (!robotId.matches(STABLE_ID_PATTERN)) {
         errors[ProjectIdentityField.ROBOT_ID] = "Use a stable robot key that starts with a letter."
     }
-    val displayName = draft.displayName.trim()
-    if (displayName.isEmpty() || displayName.length > 80) {
+    val displayName = draft.displayName
+    if (displayName.isBlank() || displayName.length > 80) {
         errors[ProjectIdentityField.DISPLAY_NAME] = "Enter a robot name using 1 to 80 characters."
     }
     fun parse(field: ProjectIdentityField, raw: String, label: String): Double? {
@@ -98,7 +101,7 @@ private fun ProjectIdentityDraft.runtimeOptions(
         xrp = AresXrpRuntimeOptionsDocument(
             controllerModel = xrpControllerModel,
             wifiMode = xrpWifiMode,
-            ssid = xrpSsid.trim(),
+            ssid = xrpSsid,
             port = requireNotNull(xrpPort),
             deadmanTimeoutMs = requireNotNull(xrpDeadman),
             brownoutThresholdVolts = requireNotNull(xrpBrownout),
@@ -180,8 +183,8 @@ internal fun projectIdentityChanges(
 
 private fun suggestedProjectId(config: WorkspaceConfig): String {
     val raw = "team${config.teamId}-${config.robotId}-${config.seasonId}"
-    val normalized = raw.replace(Regex("[^A-Za-z0-9._-]+"), "-").trim('-', '.', '_').take(64)
-    return normalized.takeIf { it.firstOrNull()?.isLetter() == true } ?: "project-${normalized.take(56)}"
+    // The fixed ASCII prefix already guarantees a letter-led ID after sanitizing/truncation.
+    return raw.replace(UNSAFE_ID_CHARACTERS, "-").trim('-', '.', '_').take(64)
 }
 
 internal val STABLE_IDENTITY_FIELDS = setOf(
@@ -208,4 +211,5 @@ private fun League.coordinateConvention(): AresCoordinateConvention = when (this
     League.FRC -> AresCoordinateConvention.BLUE_CORNER_ORIGIN_CCW
 }
 
-private fun Double.asInput(): String = String.format(Locale.ROOT, "%.6f", this).trimEnd('0').trimEnd('.')
+/** Editable canonical values must round-trip exactly; display rounding belongs outside the input. */
+private fun Double.asInput(): String = toString().removeSuffix(".0")
