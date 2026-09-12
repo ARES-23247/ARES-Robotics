@@ -1786,6 +1786,15 @@ public final class com/areslib/hardware/vision/VisionFilterConfig$Companion {
 	public final fun ftcDefaults ()Lcom/areslib/hardware/vision/VisionFilterConfig;
 }
 
+public final class com/areslib/hardware/vision/VisionFrameGate {
+	public fun <init> (JJ)V
+	public synthetic fun <init> (JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun accept (Lcom/areslib/state/VisionMeasurement;)Z
+	public final fun beginUpdate (J)Z
+	public final fun clear ()V
+	public final fun isRecent (J)Z
+}
+
 public abstract interface class com/areslib/hardware/vision/VisionIO : com/areslib/hardware/LoggableDevice {
 	public fun getCameraPoses ()Ljava/util/List;
 	public fun setImuMode (I)V

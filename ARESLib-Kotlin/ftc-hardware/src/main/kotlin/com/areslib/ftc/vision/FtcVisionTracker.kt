@@ -3,6 +3,7 @@ package com.areslib.ftc.vision
 import com.areslib.action.RobotAction
 import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.hardware.vision.VisionIO
+import com.areslib.hardware.vision.VisionFrameGate
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.hardware.vision.VisionOutlierFilter
 import com.areslib.Store
@@ -67,9 +68,9 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private var accumY = 0.0
     private var accumSin = 0.0
     private var accumCos = 0.0
-    private val recentSourceIds = arrayOfNulls<String>(8)
-    private val recentFrameIds = LongArray(8) { Long.MIN_VALUE }
-    private val recentTimestampsMs = LongArray(8) { Long.MIN_VALUE }
+    private val frameGate = VisionFrameGate(500L)
+    private var updating = false
+    private var lastRecoveryUpdateMs = 0L
     private val freshMeasurements = ArrayList<com.areslib.state.VisionMeasurement>(8)
     /** Flag tracking whether initial vision pose alignment has executed. */
     var hasInitializedPoseWithVision = false
@@ -77,13 +78,50 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     /**
      * Executes 50Hz vision update loop: polls hardware, filters outliers, triggers pose snaps, and dispatches [RobotAction.VisionMeasurementsReceived].
      *
-     * @param timestampMs Current system time in milliseconds ($ms$).
+     * @param timestampMs Current RobotClock time in milliseconds ($ms$).
      */
     override fun update(timestampMs: Long) {
+        check(!updating) { "Vision tracker update is not reentrant" }
+        updating = true
+        try {
+            updateFrame(timestampMs)
+        } catch (failure: Throwable) {
+            clearInputs()
+            resetRecoveryAccumulator()
+            lastLimelightPose = null
+            publishStatus("IO_ERROR")
+            throw failure
+        } finally {
+            updating = false
+        }
+    }
+
+    private fun clearInputs() {
+        visionInputs.isConnected = false
+        visionInputs.measurements = emptyList()
+        visionInputs.cameraPoses = emptyList()
+        freshMeasurements.clear()
+    }
+
+    private fun publishStatus(status: String) {
+        lastVisionStatus = status
+        com.areslib.telemetry.RobotStatusTracker.visionConnected = isConnected
+        com.areslib.telemetry.RobotStatusTracker.visionStatus = status
+    }
+
+    private fun updateFrame(timestampMs: Long) {
+        if (!frameGate.beginUpdate(timestampMs)) {
+            resetRecoveryAccumulator()
+            lastLimelightPose = null
+        }
+        val recoveryAge = timestampMs - lastRecoveryUpdateMs
+        if (consecutiveVisionRejections > 0 && (recoveryAge < 0L || recoveryAge > 500L)) resetRecoveryAccumulator()
+        clearInputs()
 
         val io = limelightIO ?: run {
-            com.areslib.telemetry.RobotStatusTracker.visionConnected = false
-            com.areslib.telemetry.RobotStatusTracker.visionStatus = "OFFLINE"
+            resetRecoveryAccumulator()
+            lastLimelightPose = null
+            publishStatus("OFFLINE")
             return
         }
 
@@ -101,19 +139,25 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             )
         )
         io.updateInputs(visionInputs)
+        if (!visionInputs.isConnected) {
+            clearInputs()
+            resetRecoveryAccumulator()
+            lastLimelightPose = null
+            publishStatus("OFFLINE")
+            return
+        }
+        if (lastLimelightPose != null && !frameGate.isRecent(lastLimelightTimeMs)) lastLimelightPose = null
         if (visionInputs.measurements.isEmpty()) {
-            if (lastLimelightPose != null && timestampMs - lastLimelightTimeMs > 500L) {
-                lastLimelightPose = null
-            }
+            resetRecoveryAccumulator()
             lastVisionStatus = "NO TARGET"
             com.areslib.telemetry.RobotStatusTracker.visionConnected = visionInputs.isConnected
             com.areslib.telemetry.RobotStatusTracker.visionStatus = lastVisionStatus
             return
         }
 
-        freshMeasurements.clear()
-        for (candidate in visionInputs.measurements) {
-            if (isFreshFrame(candidate, timestampMs)) freshMeasurements.add(candidate)
+        for (i in visionInputs.measurements.indices) {
+            val candidate = visionInputs.measurements[i]
+            if (frameGate.accept(candidate)) freshMeasurements.add(candidate)
         }
         if (freshMeasurements.isEmpty()) {
             lastVisionStatus = "STALE_FRAME"
@@ -250,6 +294,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                 accumSin += kotlin.math.sin(p2d.heading.radians)
                 accumCos += kotlin.math.cos(p2d.heading.radians)
                 consecutiveVisionRejections++
+                lastRecoveryUpdateMs = timestampMs
 
                 val reqThreshold = tuning.recovery.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
                 if (consecutiveVisionRejections >= reqThreshold) {
@@ -336,6 +381,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
     private fun resetRecoveryAccumulator() {
         consecutiveVisionRejections = 0
+        lastRecoveryUpdateMs = 0L
         accumX = 0.0
         accumY = 0.0
         accumSin = 0.0
@@ -345,38 +391,6 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private fun shockMagnitude(xG: Double, yG: Double, zG: Double): Double {
         val dynamicZ = if (zG == 0.0) 0.0 else zG - 1.0
         return kotlin.math.sqrt(xG * xG + yG * yG + dynamicZ * dynamicZ)
-    }
-
-    private fun isFreshFrame(measurement: com.areslib.state.VisionMeasurement, nowMs: Long): Boolean {
-        if (measurement.timestampMs <= 0L || measurement.timestampMs > nowMs + 50L ||
-            nowMs - measurement.timestampMs > 500L) {
-            return false
-        }
-
-        val sourceId = measurement.sourceId.ifEmpty { "default" }
-        var emptySlot = -1
-        for (i in recentSourceIds.indices) {
-            val existing = recentSourceIds[i]
-            if (existing == sourceId) {
-                val duplicate = if (measurement.frameId != 0L) {
-                    measurement.frameId == recentFrameIds[i] ||
-                        measurement.timestampMs <= recentTimestampsMs[i]
-                } else {
-                    measurement.timestampMs <= recentTimestampsMs[i]
-                }
-                if (duplicate) return false
-                recentFrameIds[i] = measurement.frameId
-                recentTimestampsMs[i] = measurement.timestampMs
-                return true
-            }
-            if (existing == null && emptySlot == -1) emptySlot = i
-        }
-
-        val slot = if (emptySlot >= 0) emptySlot else sourceId.hashCode().and(Int.MAX_VALUE) % recentSourceIds.size
-        recentSourceIds[slot] = sourceId
-        recentFrameIds[slot] = measurement.frameId
-        recentTimestampsMs[slot] = measurement.timestampMs
-        return true
     }
 
     private fun distanceSq(pose3d: com.areslib.math.geometry.Pose3d, pose2d: com.areslib.math.geometry.Pose2d): Double {
