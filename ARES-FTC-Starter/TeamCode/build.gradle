@@ -30,6 +30,11 @@ def canonicalMonorepoFtcRuntimeDir = new File(
 android {
     namespace = 'org.firstinspires.ftc.teamcode'
 
+    compileOptions {
+        // Control Hubs run API 25. ARES logging/tuning use java.nio.file and File.toPath (API 26).
+        coreLibraryDesugaringEnabled true
+    }
+
     sourceSets {
         main.java.srcDir generatedAresSubsystemMainDir
         main.java.srcDir generatedAresDrivebaseMainDir
@@ -78,6 +83,7 @@ def aresSimulatorRuntime = System.getProperty('os.name').toLowerCase().contains(
         : 'simulator-runtime-linux')
 
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
     implementation project(':FtcRobotController')
     implementation platform("org.aresfirst.ares:ares-bom:$aresVersion")
     implementation 'org.aresfirst.ares:core'

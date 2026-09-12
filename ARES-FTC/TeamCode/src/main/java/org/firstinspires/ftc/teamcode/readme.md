@@ -71,8 +71,29 @@ separate, and refuses to silently overwrite code that a person may have customiz
 
 - Meters and seconds internally.
 - Heading and angular velocity in radians, CCW-positive.
+- Pinpoint supplies primary heading and turn rate. The drivetrain/Control Hub IMU fallback is used only when Pinpoint is unavailable or unhealthy.
+- Stick-forward drives away from the alliance wall: Red +Y, Blue -Y. Stick-right is Red +X, Blue -X. This matches the Red +90-degree / Blue -90-degree starting headings; the EKF heading keeps these directions fixed as the robot turns.
 - Field-centric blue-alliance control negates both translational joystick axes before the core drive call; rotation keeps its CCW sign.
 - Robot Controller drive names are `fl`, `fr`, `rl`, and `rr`.
 - Use `RobotClock` for debounce and elapsed time.
 
 From the repository root, run `.\gradlew.bat :TeamCode:testDebugUnitTest` in PowerShell.
+
+## Control Hub Android compatibility
+
+Control Hubs running Android 7.1 (API 25) require the `desugar_jdk_libs_nio` dependency and
+`coreLibraryDesugaringEnabled` in TeamCode. ARES logging and tuning use `File.toPath`,
+`FileChannel.open`, and `java.nio.file`; a desktop unit-test pass does not verify their availability
+on the hub. Keep this packaging configuration in the FTC starter as well.
+
+Build `:TeamCode:assembleDebugAndroidTest`, install the app and test APKs, then run:
+
+```text
+adb -s <hub> shell am instrument -w com.qualcomm.ftcrobotcontroller.test/org.firstinspires.ftc.teamcode.AndroidInitCompatibilityInstrumentation
+```
+
+The test checks the compiled IMU adapter against the actual Android FTC SDK using a fake sensor,
+then exercises the production telemetry logger's initialization, locked file reservation,
+frame write, shutdown/finalization, and NIO path operations in a unique app-cache directory. It
+does not construct robot hardware or start an OpMode. Require its `PASS` result, then remove the
+test package and separately verify the configured OpMode reaches INIT on the physical robot.

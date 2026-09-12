@@ -241,12 +241,14 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         updateHardwareInputs()
-        refreshCachedImu(timestamp)
+        refreshCachedImu()
         val s2 = com.areslib.util.RobotClock.nanoTime()
 
         val pinpoint = pinpointIO
         val pinpointCandidate = pinpoint?.getPoseUpdate()
-        val pinpointHealthy = pinpoint != null && pinpointCandidate != null && pinpoint.isHealthy(timestamp)
+        // Sampling finishes after the frame timestamp. Compare freshness at consumption so a
+        // newly acquired I2C reading is not rejected as a future (negative-age) observation.
+        val pinpointHealthy = pinpoint != null && pinpointCandidate != null && pinpoint.isHealthy()
         val previousSource = odometrySourceArbiter.activeSource
         var selectedSource = odometrySourceArbiter.update(pinpoint != null, pinpointHealthy)
 
@@ -257,7 +259,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 // it. This prevents a discontinuity if the robot moved during the outage.
                 pinpoint.initialize(store.state.drive.poseEstimator.estimatedPose, resetHardware = false)
                 val rebased = pinpoint.getPoseUpdate()
-                if (pinpoint.lastInitializeSucceeded && pinpoint.isHealthy(timestamp)) {
+                if (pinpoint.lastInitializeSucceeded && pinpoint.isHealthy()) {
                     rebased
                 } else {
                     odometrySourceArbiter.forceFallback()
@@ -301,7 +303,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         poseUpdate.rollDegrees = Math.toDegrees(cachedImuInputs.rollRadians)
         poseUpdate.pitchVelocityDegPerSec = Math.toDegrees(cachedImuInputs.pitchVelocityRadPerSec)
         poseUpdate.rollVelocityDegPerSec = Math.toDegrees(cachedImuInputs.rollVelocityRadPerSec)
-        poseUpdate.angularVelocityRadiansPerSecond = cachedImuInputs.yawVelocityRadPerSec
+        poseUpdate.imuMeasurementsValid = cachedImuInputs.timestampMs > 0L
+        if (selectedSource != FtcOdometrySource.PINPOINT) {
+            poseUpdate.angularVelocityRadiansPerSecond = cachedImuInputs.yawVelocityRadPerSec
+        }
         poseUpdate.applyControlHubGyroCorrection =
             selectedSource == FtcOdometrySource.DRIVETRAIN_FALLBACK && cachedImuInputs.timestampMs > 0L
         store.dispatch(poseUpdate)
@@ -352,22 +357,17 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
-    private fun refreshCachedImu(timestampMs: Long) {
+    private fun refreshCachedImu() {
         val imu = imuIO
         if (imu == null) {
-            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
-            cachedImuInputs.pitchRadians = 0.0
-            cachedImuInputs.rollRadians = 0.0
-            cachedImuInputs.yawVelocityRadPerSec = 0.0
-            cachedImuInputs.pitchVelocityRadPerSec = 0.0
-            cachedImuInputs.rollVelocityRadPerSec = 0.0
-            cachedImuInputs.timestampMs = 0L
+            invalidateCachedImu()
             return
         }
 
         try {
             imu.updateInputs(imuSampleBuffer)
-            val sampleAgeMs = timestampMs - imuSampleBuffer.timestampMs
+            // Hardware or an asynchronous IMU sample may finish after the frame-start timestamp.
+            val sampleAgeMs = com.areslib.util.RobotClock.currentTimeMillis() - imuSampleBuffer.timestampMs
             val valid = imuSampleBuffer.timestampMs > 0L && sampleAgeMs in 0..IMU_MAX_SAMPLE_AGE_MS &&
                 imuSampleBuffer.headingRadians.isFinite() && imuSampleBuffer.pitchRadians.isFinite() &&
                 imuSampleBuffer.rollRadians.isFinite() && imuSampleBuffer.yawVelocityRadPerSec.isFinite() &&
@@ -389,13 +389,15 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     private fun invalidateCachedImu() {
-            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
-            cachedImuInputs.pitchRadians = 0.0
-            cachedImuInputs.rollRadians = 0.0
-            cachedImuInputs.yawVelocityRadPerSec = 0.0
-            cachedImuInputs.pitchVelocityRadPerSec = 0.0
-            cachedImuInputs.rollVelocityRadPerSec = 0.0
-            cachedImuInputs.timestampMs = 0L
+        // Retain the last RAW heading (initially zero), but mark the sample invalid.
+        // Fallback adds its field offset separately. Feeding the fused field heading
+        // back here would add that offset again every frame and fabricate rotation.
+        cachedImuInputs.pitchRadians = 0.0
+        cachedImuInputs.rollRadians = 0.0
+        cachedImuInputs.yawVelocityRadPerSec = 0.0
+        cachedImuInputs.pitchVelocityRadPerSec = 0.0
+        cachedImuInputs.rollVelocityRadPerSec = 0.0
+        cachedImuInputs.timestampMs = 0L
     }
 
     private fun reseedOdometrySources(pose: Pose2d) {

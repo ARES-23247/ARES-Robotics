@@ -9,7 +9,14 @@ package com.qualcomm.hardware.rev
 class RevHubOrientationOnRobot(
     val logoFacingDirection: LogoFacingDirection,
     val usbFacingDirection: UsbFacingDirection
-) {
+) : com.qualcomm.robotcore.hardware.ImuOrientationOnRobot {
+    // The simulator supplies robot-frame IMU samples directly; mounting transforms are not modeled.
+    override fun imuCoordinateSystemOrientationFromPerspectiveOfRobot(): org.firstinspires.ftc.robotcore.external.navigation.Quaternion =
+        throw UnsupportedOperationException("Simulated IMU samples are already in the robot frame")
+    override fun imuRotationOffset(): org.firstinspires.ftc.robotcore.external.navigation.Quaternion =
+        throw UnsupportedOperationException("Simulated IMU samples are already in the robot frame")
+    override fun angularVelocityTransform(): org.firstinspires.ftc.robotcore.external.navigation.Quaternion =
+        throw UnsupportedOperationException("Simulated IMU samples are already in the robot frame")
     enum class LogoFacingDirection {
         UP, DOWN, FORWARD, BACKWARD, LEFT, RIGHT
     }

@@ -60,7 +60,9 @@ interface DigitalChannel : HardwareDevice {
  * Mock representation of an FTC [IMU].
  */
 interface IMU : HardwareDevice {
-    class Parameters(val hubOrientationOnRobot: com.qualcomm.hardware.rev.RevHubOrientationOnRobot)
+    class Parameters(@JvmField var imuOrientationOnRobot: ImuOrientationOnRobot) {
+        fun copy(): Parameters = Parameters(imuOrientationOnRobot)
+    }
 
     fun initialize(parameters: Parameters): Boolean
     fun resetYaw()

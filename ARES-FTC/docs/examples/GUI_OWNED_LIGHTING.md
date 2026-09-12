@@ -22,6 +22,18 @@ forward**, and **Cycle backward** actions for the left and right targets. Forwar
 white and wraps to red; backward walks the same visible choices in reverse. **Off** remains an
 explicit named set-color choice rather than an extra stop in the cycle.
 
+In **Direct Mecanum Drivetrain**, the driver D-pad cycles one color per press:
+
+| D-pad | Indicator | Action |
+| --- | --- | --- |
+| Left | Left | Previous color |
+| Right | Left | Next color |
+| Down | Right | Previous color |
+| Up | Right | Next color |
+
+Holding a direction keeps the selected color. Release and press again to advance again.
+These bindings live in `.ares/controls/driver.arescontrols` and use the generated color actions.
+
 ## Runtime flow
 
 `TeleOp or autonomous choice → generated action → Redux reducer → immutable subsystem state → generated controller → shared IO contract → FTC or mock adapter`
