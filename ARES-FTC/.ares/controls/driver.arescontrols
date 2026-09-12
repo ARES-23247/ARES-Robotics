@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "documentId": "driver",
-  "revision": 2,
+  "revision": 3,
   "name": "Field-centric driver controls",
   "description": "Alliance-wall field-centric controls: stick forward drives away from the driver wall (Red +Y, Blue -Y), and stick right drives toward the driver's right (Red +X, Blue -X). Right stick rotates CCW-positive. The sink applies alliance mirroring once.",
   "controllers": [
@@ -138,6 +138,54 @@
         "rearmNeutralThreshold": 0.05,
         "valueArgumentKey": "value"
       },
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "left-light-previous",
+      "displayName": "Left indicator: previous color",
+      "source": {"kind": "BUTTON", "controllerSlot": "driver", "controlIds": ["dpad_left"], "transform": null, "thresholdDirection": "ABOVE", "zoneHysteresis": 0.0, "chordWindowSeconds": 0.075},
+      "event": "PRESS",
+      "target": {"kind": "ACTION", "key": "subsystem.indicator-lights.cycleBackward.leftColor", "arguments": {}, "routinePolicy": "IGNORE_IF_RUNNING"},
+      "timing": {"pressDebounceSeconds": 0.0, "releaseDebounceSeconds": 0.0, "cooldownSeconds": 0.0},
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "left-light-next",
+      "displayName": "Left indicator: next color",
+      "source": {"kind": "BUTTON", "controllerSlot": "driver", "controlIds": ["dpad_right"], "transform": null, "thresholdDirection": "ABOVE", "zoneHysteresis": 0.0, "chordWindowSeconds": 0.075},
+      "event": "PRESS",
+      "target": {"kind": "ACTION", "key": "subsystem.indicator-lights.cycleForward.leftColor", "arguments": {}, "routinePolicy": "IGNORE_IF_RUNNING"},
+      "timing": {"pressDebounceSeconds": 0.0, "releaseDebounceSeconds": 0.0, "cooldownSeconds": 0.0},
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "right-light-previous",
+      "displayName": "Right indicator: previous color",
+      "source": {"kind": "BUTTON", "controllerSlot": "driver", "controlIds": ["dpad_down"], "transform": null, "thresholdDirection": "ABOVE", "zoneHysteresis": 0.0, "chordWindowSeconds": 0.075},
+      "event": "PRESS",
+      "target": {"kind": "ACTION", "key": "subsystem.indicator-lights.cycleBackward.rightColor", "arguments": {}, "routinePolicy": "IGNORE_IF_RUNNING"},
+      "timing": {"pressDebounceSeconds": 0.0, "releaseDebounceSeconds": 0.0, "cooldownSeconds": 0.0},
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "right-light-next",
+      "displayName": "Right indicator: next color",
+      "source": {"kind": "BUTTON", "controllerSlot": "driver", "controlIds": ["dpad_up"], "transform": null, "thresholdDirection": "ABOVE", "zoneHysteresis": 0.0, "chordWindowSeconds": 0.075},
+      "event": "PRESS",
+      "target": {"kind": "ACTION", "key": "subsystem.indicator-lights.cycleForward.rightColor", "arguments": {}, "routinePolicy": "IGNORE_IF_RUNNING"},
+      "timing": {"pressDebounceSeconds": 0.0, "releaseDebounceSeconds": 0.0, "cooldownSeconds": 0.0},
+      "analogPolicy": null,
       "priority": 0,
       "suppressConstituentBindings": false,
       "enabled": true
