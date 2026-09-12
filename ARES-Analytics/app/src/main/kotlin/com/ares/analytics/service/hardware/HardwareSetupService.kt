@@ -4,7 +4,8 @@ import com.ares.analytics.service.drivebase.DriveHardwareRole
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
 import com.ares.analytics.service.commissioning.CommissioningSimulationSummary
 import com.ares.analytics.service.commissioning.CommissioningVerificationService
-import com.ares.analytics.service.writeFileAtomically
+import com.ares.analytics.service.BeforeAtomicReplace
+import com.ares.analytics.service.NO_OP_BEFORE_ATOMIC_REPLACE
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.project.persistence.SubsystemProjectRepository
 import com.ares.analytics.util.Sha256
@@ -18,8 +19,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
 import java.time.Clock
 
 enum class HardwareInventoryOwner { DRIVEBASE, SUBSYSTEM }
@@ -201,6 +200,8 @@ class HardwareSetupService(
     private val subsystemRepository: SubsystemProjectRepository = SubsystemProjectRepository(),
     private val commissioningVerificationService: CommissioningVerificationService = CommissioningVerificationService(),
     private val clock: Clock = Clock.systemUTC(),
+    /** Test seam after evidence bytes are prepared and before their publication. */
+    private val beforeEvidencePublish: BeforeAtomicReplace = NO_OP_BEFORE_ATOMIC_REPLACE,
 ) {
     fun inspect(projectPath: String, league: League): HardwareSetupSnapshot = inspectHardware(projectPath, league).snapshot
 
@@ -458,7 +459,7 @@ class HardwareSetupService(
             sources = inspection.sources,
             recordedAtEpochMillis = clock.millis(),
         )
-        appendEvidence(configurationReviewDirectory(File(snapshot.projectPath)), review.recordedAtEpochMillis, review)
+        appendEvidence(File(snapshot.projectPath), HardwareEvidenceKind.CONFIGURATION, review.recordedAtEpochMillis, review)
         return inspect(projectPath, league)
     }
 
@@ -499,7 +500,7 @@ class HardwareSetupService(
             limitsAndCurrentTested = true,
             faultRecoveryTested = true,
         )
-        appendEvidence(physicalValidationDirectory(File(snapshot.projectPath)), validation.recordedAtEpochMillis, validation)
+        appendEvidence(File(snapshot.projectPath), HardwareEvidenceKind.PHYSICAL, validation.recordedAtEpochMillis, validation)
         return inspect(projectPath, league)
     }
 
@@ -529,9 +530,8 @@ class HardwareSetupService(
         currentSources: List<HardwareSourceFingerprint>,
         issues: MutableList<HardwareInventoryIssue>,
     ): HardwareReviewReadResult {
-        val reviewFiles = configurationReviewDirectory(root).listFiles { file -> file.isFile && file.extension == "json" }
-            ?.sortedByDescending(File::getName)
-            .orEmpty()
+        val evidence = HardwareEvidenceStore(root.toPath())
+        val reviewFiles = evidence.files(HardwareEvidenceKind.CONFIGURATION).sortedByDescending(File::getName)
         if (reviewFiles.isEmpty()) return HardwareReviewReadResult(HardwareReviewStatus.NOT_REVIEWED, null, null)
         val decodedReviews = reviewFiles.mapNotNull { file ->
             runCatching { HARDWARE_REVIEW_JSON.decodeFromString<HardwareReviewDocument>(file.readText()) }
@@ -559,10 +559,8 @@ class HardwareSetupService(
             review.inventoryHash == inventoryHash && review.sources.sortedBy(HardwareSourceFingerprint::path) == currentSources
         }
         return if (currentReview != null) {
-            val physical = physicalValidationDirectory(root)
-                .listFiles { file -> file.isFile && file.extension == "json" }
-                ?.sortedByDescending(File::getName)
-                .orEmpty()
+            val physical = evidence.files(HardwareEvidenceKind.PHYSICAL)
+                .sortedByDescending(File::getName)
                 .asSequence()
                 .mapNotNull { file ->
                     runCatching { HARDWARE_REVIEW_JSON.decodeFromString<HardwarePhysicalValidationDocument>(file.readText()) }
@@ -631,23 +629,9 @@ class HardwareSetupService(
         return Sha256.hex(canonical)
     }
 
-    private fun configurationReviewDirectory(root: File): File = File(root, ".ares/evidence/hardware/configuration")
-
-    private fun physicalValidationDirectory(root: File): File = File(root, ".ares/evidence/hardware/physical")
-
-    private inline fun <reified T> appendEvidence(directory: File, recordedAtEpochMillis: Long, document: T) {
+    private inline fun <reified T> appendEvidence(root: File, kind: HardwareEvidenceKind, recordedAtEpochMillis: Long, document: T) {
         val encoded = HARDWARE_REVIEW_JSON.encodeToString(document).trimEnd() + System.lineSeparator()
-        val hash = Sha256.hex(encoded).take(12)
-        val target = File(directory, "$recordedAtEpochMillis-$hash.json")
-        require(!target.exists()) { "This exact evidence record already exists; append-only evidence is never replaced." }
-        writeFileAtomically(target) { temporary ->
-            Files.writeString(
-                temporary.toPath(),
-                encoded,
-                StandardOpenOption.TRUNCATE_EXISTING,
-                StandardOpenOption.WRITE,
-            )
-        }
+        HardwareEvidenceStore(root.toPath()).append(kind, recordedAtEpochMillis, encoded, beforeEvidencePublish)
     }
 
     private fun requireReviewedInventory(snapshot: HardwareSetupSnapshot, expectedInventoryHash: String) {

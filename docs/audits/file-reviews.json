@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "863d0e8d243a9cfa535dfc47bd274036b667af1b37bb072dbf01b6fdee28ad2c",
+      "sha256": "3c81a9f1e13d2af4d3d6aa7603f4f8a64ac8a1f7c41bc81d0458a921a34dc07e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13946,10 +13946,10 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareSetupService.kt": {
-      "sha256": "3c00f24738952750465e17b0874791a3ff03b673cde1bcab8a69d19b2009ab59",
+      "sha256": "79faa322ea6de13ecefd0cb8808bf845c1ec7bddcb75b5e98d1142c7622acb0d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 196: Full source reviewed across passes 194-196; inspect/save/readback and source ownership guard rechecked. Both evidence requests require the displayed inventory hash; mismatches reject before append. Configuration review retains the exact inspected source fingerprints instead of re-reading/hashing edited files, and resolves its containment root once. Three product regressions reproduced and fixed with real view-model/file flows. Earlier port/collision/readiness fixes retained. Remaining: evidence-directory ownership, append races/ordering, clock/record validation edges, physical-save source ownership, cross-file inspection consistency, XRP namespaces and CAN/bus identity.",
+      "scope": "Pass 197: Source reviewed across passes194-197; list/read/append boundary now uses a confined evidence store, replacing the append-time existence-check/atomic-replacement race. Actual junction tests prove both configuration and physical reads/writes reject outside evidence directories; a publication hook reproduces the late-existing record overwrite. Pass196 submitted-inventory/source-hash fixes and earlier collision/readiness fixes retained. Remaining: hostile directory mutation and interrupted fallback recovery, timestamp/record ordering and semantic validation, physical-source ownership, cross-file inspection consistency, XRP namespaces and CAN/bus identity.",
       "evidence": [
         "docs/audits/hardware-commissioning-gates-audit.md",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
@@ -13959,7 +13959,10 @@
         "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json",
         "docs/audits/hardware-evidence-binding-audit.md",
         "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
-        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json",
+        "docs/audits/hardware-evidence-storage-audit.md",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/hardware/HardwareSetupViewModel.kt": {
@@ -14079,6 +14082,50 @@
         "docs/audits/hardware-evidence-binding-audit.md",
         "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
         "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareEvidenceStore.kt": {
+      "sha256": "b1302a7977ab2c82c9d6375689042b47b09d440fbce32f63760663ffacd08cd7",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 197: Entire new store read and exercised. Existing-parent real-path resolution confines listed paths and append directories; completed flushed bytes publish with hard-link creation or exclusive CREATE_NEW fallback. Tests cover concurrent writers, late destinations, UTF-8, duplicates, pre-publication failures, cleanup and forced fallback. Remains partial for continuously hostile parent replacement between checks/OS calls and interrupted fallback-write recovery; fallback visibility is explicitly weaker than atomic complete-file publication.",
+      "evidence": [
+        "docs/audits/hardware-evidence-storage-audit.md",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareEvidenceStorageTest.kt": {
+      "sha256": "a46c0b2dfbf2648081552ccc3e13ff8d1d7915488c91e80a69631070cca82359",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 197: Entire integration test source reviewed; six baseline cases had five failures (four real outside-junction read/write paths and deterministic late target replacement). Final eight cases pass, including linked project roots and failed-publication cleanup. Owned junctions are removed before temporary-tree cleanup and executor workers joined; no physical hardware evidence is inferred.",
+      "evidence": [
+        "docs/audits/hardware-evidence-storage-audit.md",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareEvidenceStoreTest.kt": {
+      "sha256": "95796f1598d0665c63fd76b2451ec40e1f7e302a5cadda7e2ca3b10ab93dcb1a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 197: Entire five-case store test file reviewed and executed. Complete UTF-8 publication, unsupported/IO-error hard-link fallback, competing destination preservation, pre-publication cleanup and duplicate preservation are checked with actual local files and injected provider failures. No alternate physical filesystem provider is claimed.",
+      "evidence": [
+        "docs/audits/hardware-evidence-storage-audit.md",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "docs/audits/hardware-evidence-storage-audit.md": {
+      "sha256": "08d196e9edeb81a0fba7a4129d5a5d075a76f3a4cb5a79ae6858bc4f5db4c9b9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 197: Report reconciles five of six baseline failures, 48 focused cases, full1891-test/6-skip validation, repository policy and official Java Files API semantics. Documents point-in-time path ownership, fallback visibility/recovery and outstanding service/provider/hardware limits.",
+      "evidence": [
+        "docs/audits/hardware-evidence-storage-audit.md",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json"
       ]
     }
   }
