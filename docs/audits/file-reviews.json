@@ -5557,7 +5557,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e17ef20b228464bc7b3488f09227d444c2d40904b63e2eb353bd055b0e2f6405",
+      "sha256": "53541bc8315e517bc3af9da78dd7d83d5e7ae05e35614b7e07d1ddbcb932a408",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13394,6 +13394,166 @@
       "evidence": [
         "docs/audits/markdown-link-boundaries-audit.md",
         "ARESLib-Kotlin/build/audit-pass188-verified-evidence/summary.json"
+      ]
+    },
+    ".gitignore": {
+      "sha256": "486a9eb184f935a93fea19c079c9fe472b459cb7d0f4611ec3fbb9fcf1abfd2d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/.gitignore": {
+      "sha256": "960816cdfb354e0f9afb70e0e0d67867680a1977ce92c68027c0b6a6908fcc30",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/gradle/wrapper/gradle-wrapper.properties": {
+      "sha256": "4caad57c6bba888beed7bb0eec4cb05a980705fe6dfa5cb460ce81e5af0ce62f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/.gitattributes": {
+      "sha256": "1cfd491ecd06ceeef6701b5ad1a4f0467072737b27ce26e89dc23392ca754c45",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/.gitignore": {
+      "sha256": "ea4de99e6418db5402d70793d990539d7a92dc6d7d34f78b1930e21805adb07e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/gradle/wrapper/gradle-wrapper.properties": {
+      "sha256": "121de7c6b1ac7a858a270db34d183b7cb67f4e5ec32afaf7f4eb16adba92f35a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC-Starter/.gitattributes": {
+      "sha256": "adbf1de52cd7a3ce9bbbf702ac2edceca6d3c15acfb8bc62a67e8a7036e01b33",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC-Starter/.gitignore": {
+      "sha256": "4b6804d8b2470960db67d9521fc28a96076ecc28b9bf50a8147603e5b84da575",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC-Starter/gradle/wrapper/gradle-wrapper.properties": {
+      "sha256": "cc9996e1b641176fded450c88cecacbb1c06bb7c4e111d2f11f0164af143cfbe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.gitattributes": {
+      "sha256": "1ef861384a16f5b136a1378820080842e4cc9d24a52b7f5e452bfb8394ef684c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.gitignore": {
+      "sha256": "e0b8d693ea5ff30b060d68e986fcbd1302a1102bde2c08ca7f33b6dad01342e9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/gradle/wrapper/gradle-wrapper.properties": {
+      "sha256": "cc9996e1b641176fded450c88cecacbb1c06bb7c4e111d2f11f0164af143cfbe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/.gitignore": {
+      "sha256": "b310645073b1c46db63b9740b072ecaa817f4e718d33c44bfdf0098483c7692f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/gradle/wrapper/gradle-wrapper.properties": {
+      "sha256": "cc9996e1b641176fded450c88cecacbb1c06bb7c4e111d2f11f0164af143cfbe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/tools/sim-launcher-daemon/.gitignore": {
+      "sha256": "727e9b68a4c0ea4ae8d93805b4c1d2b1ed8dac56a66d2abd1f475ea6eaa0e5d0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/git-and-wrapper-configuration-audit.md": {
+      "sha256": "b0a8f063c54e8260174d13c9a835a1f47b9d3cb4156bbf073b13e4700c07e001",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 189 report checked against all fifteen reviewed configuration files and observed 78-check evidence; explicit declarative, download and runtime limits.",
+      "evidence": [
+        "docs/audits/git-and-wrapper-configuration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
       ]
     }
   }
