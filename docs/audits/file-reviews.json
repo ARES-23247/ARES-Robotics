@@ -5557,7 +5557,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "5747ac9f7513e3ebbb6b499c08b390de497acb2bad8340609f0acd0d4ee86de2",
+      "sha256": "fd4a6052d92bcb76da7cb0bc55fd0af82bc7bbbe0135c00c70c0981f60a67be5",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13294,6 +13294,36 @@
       "evidence": [
         "docs/audits/imported-history-verification-audit.md",
         "ARESLib-Kotlin/build/audit-pass185-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/prepare-clean-monorepo-checkout.ps1": {
+      "sha256": "e838616c967ddd3c37b6ef18fbde8e1e73a06b6660019ccc7c2d1ebe599227cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Full script reviewed. One checked porcelain-v2 Git snapshot replaces three subprocesses; detached/unborn states, status failure preserving report, explicit untracked files and trailing-separator equality verified in both PowerShell versions and a real workspace read. Immediate-child discovery and inventory-only scope are explicit.",
+      "evidence": [
+        "docs/audits/migration-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass186-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/tests/test_migration_inventory.py": {
+      "sha256": "e6cc6a89ce7ca98d5f840d0c33bb4ce830f95c4052d8d4f3dc9e6bff8690abbb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Six real-repository cases run under PowerShell 7 and Windows PowerShell; ten original failing subcases reproduced. Checks root/child and detached linked repositories, unborn HEAD, corrupt index, equivalent destination, no-Git folder, individual untracked files, unchanged HEAD/index/source contents and no destination creation.",
+      "evidence": [
+        "docs/audits/migration-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass186-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/migration-inventory-audit.md": {
+      "sha256": "4a7723ea88cb90bbf3ac7a0e2d57d1e043bb60b2434d9652ddd2f43885c3c622",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Findings and stated scope reconciled with ten baseline failures, six focused cases in two interpreters, 73 passing tooling tests and the real inventory output.",
+      "evidence": [
+        "docs/audits/migration-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass186-verified-evidence/summary.json"
       ]
     }
   }
