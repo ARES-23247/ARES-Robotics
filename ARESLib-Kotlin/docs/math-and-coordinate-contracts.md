@@ -593,3 +593,19 @@ coherently. Cumulative times must remain finite and strictly distinguishable. Th
 finite-difference bounds on a piecewise-linear spatial seed; they do not prove continuous jerk,
 force feasibility, smooth corner traversal or physical robot tracking. Requested entry/exit speeds
 may be reduced by uniform time stretching, with a handover warning retained.
+
+## Spatial spline headings
+
+Positive spline travel interpolates robot heading by normalized traveled distance without
+an absolute minimum-length threshold. The cosine ease uses the equivalent squared-sine
+form to retain small representable progress. Parsed endpoint/rotation-target headings
+and point-towards offsets are wrapped before interpolation or bearing addition; this
+uses the represented Double radian period, not arbitrary-precision degree reduction.
+Point-towards offsets and rotation-anchor interval arithmetic are cached during construction.
+
+A generated path with exactly zero sampled travel retains the requested final orientation
+at every sample, with zero translational speed. This is a stationary heading goal for
+the follower, not a timed or angularly constrained turn trajectory. Parsed paths retain
+their explicit rotation-anchor/zone precedence; coincident parsed anchors do not define
+a temporal rotation sequence. Spatial sample, arc-length and continuous curvature limits
+remain as documented on the spline profiler.

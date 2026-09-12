@@ -163,6 +163,8 @@ object SplineMotionProfiler {
      * Generates a natural cubic path with C2-continuous geometry and interpolated robot heading.
      * Fewer than two points retain the empty-path result. Other requests share the facade's
      * finite geometry/positive-limit policy and the 100,000-sample trajectory budget.
+     * Positive travel interpolates heading independently of scale. Zero travel retains the
+     * final orientation as a stationary goal; it does not define a timed angular profile.
      */
     fun generateHermitePath(
         points: List<Translation2d>,
@@ -243,8 +245,8 @@ object SplineMotionProfiler {
         val totalDist = pathPoints.last().distanceMeters
         for (idx in pathPoints.indices) {
             val dCurr = pathPoints[idx].distanceMeters
-            val t = if (totalDist < 1e-6) 0.0 else dCurr / totalDist
-            val t2 = (1.0 - Math.cos(t * Math.PI)) / 2.0
+            val t = if (totalDist == 0.0) 1.0 else dCurr / totalDist
+            val t2 = cosineEase(t)
             val interpAngle = startAngle + delta * t2
             val p = pathPoints[idx]
             pathPoints[idx] = p.copy(pose = Pose2d(p.pose.x, p.pose.y, Rotation2d(interpAngle)))
@@ -253,6 +255,12 @@ object SplineMotionProfiler {
         applyMotionProfile(pathPoints, emptyList(), 0.0, 0.0, maxVelocityMps, maxAccelerationMps2, emptyList(), forcedStops, boundedGrid.edgeSpeedCeilings)
 
         return Path(pathPoints, emptyList())
+    }
+
+    /** Equivalent to (1 - cos(pi*t))/2 without cancellation near zero progress. */
+    private fun cosineEase(t: Double): Double {
+        val sine = Math.sin(t * (Math.PI / 2.0))
+        return sine * sine
     }
 
     private fun constrainJunction(point: PathPoint, forcedStops: BooleanArray, index: Int, outgoing: SplineDifferential) {
@@ -271,16 +279,20 @@ object SplineMotionProfiler {
         endRotDeg: Double
     ) {
         val explicitRotations = arrayOfNulls<Double>(pathPoints.size)
-        explicitRotations[0] = Math.toRadians(startRotDeg)
-        explicitRotations[pathPoints.size - 1] = Math.toRadians(endRotDeg)
+        explicitRotations[0] = wrapAngle(Math.toRadians(startRotDeg))
+        explicitRotations[pathPoints.size - 1] = wrapAngle(Math.toRadians(endRotDeg))
 
+        val pointTowardsOffsets = DoubleArray(data.pointTowardsZones.size) {
+            wrapAngle(Math.toRadians(data.pointTowardsZones[it].rotationOffset))
+        }
         for (idx in pathPoints.indices) {
             val pos = relativePositions[idx]
-            for (zone in data.pointTowardsZones) {
+            for (zoneIndex in data.pointTowardsZones.indices) {
+                val zone = data.pointTowardsZones[zoneIndex]
                 if (pos >= zone.minWaypointRelativePos && pos <= zone.maxWaypointRelativePos) {
                     val dx = zone.x - pathPoints[idx].pose.x
                     val dy = zone.y - pathPoints[idx].pose.y
-                    explicitRotations[idx] = Math.atan2(dy, dx) + Math.toRadians(zone.rotationOffset)
+                    explicitRotations[idx] = wrapAngle(Math.atan2(dy, dx) + pointTowardsOffsets[zoneIndex])
                     break
                 }
             }
@@ -295,13 +307,17 @@ object SplineMotionProfiler {
                     Math.abs(relativePositions[after] - target.waypointRelativePos)) before else after
             }
             if (explicitRotations[bestIdx] == null) {
-                explicitRotations[bestIdx] = Math.toRadians(target.rotationDegrees)
+                explicitRotations[bestIdx] = wrapAngle(Math.toRadians(target.rotationDegrees))
             }
         }
 
         // Walk anchor intervals once instead of rescanning both sides of every sample.
         var prevIdx = 0
         var nextIdx = 0
+        var intervalStartDistance = 0.0
+        var intervalDistance = 0.0
+        var intervalStartAngle = 0.0
+        var intervalAngleDelta = 0.0
         for (idx in pathPoints.indices) {
             if (explicitRotations[idx] != null) {
                 prevIdx = idx
@@ -311,17 +327,14 @@ object SplineMotionProfiler {
                 if (nextIdx <= idx) {
                     nextIdx = idx + 1
                     while (nextIdx < pathPoints.lastIndex && explicitRotations[nextIdx] == null) nextIdx++
+                    intervalStartDistance = pathPoints[prevIdx].distanceMeters
+                    intervalDistance = pathPoints[nextIdx].distanceMeters - intervalStartDistance
+                    intervalStartAngle = explicitRotations[prevIdx]!!
+                    intervalAngleDelta = wrapAngle(explicitRotations[nextIdx]!! - intervalStartAngle)
                 }
                 val dCurr = pathPoints[idx].distanceMeters
-                val dPrev = pathPoints[prevIdx].distanceMeters
-                val dNext = pathPoints[nextIdx].distanceMeters
-                val denom = dNext - dPrev
-                val t = if (Math.abs(denom) < 1e-6) 0.0 else (dCurr - dPrev) / denom
-                val t2 = (1.0 - Math.cos(t * Math.PI)) / 2.0
-                val startAngle = explicitRotations[prevIdx]!!
-                val endAngle = explicitRotations[nextIdx]!!
-                val delta = wrapAngle(endAngle - startAngle)
-                val interpAngle = startAngle + delta * t2
+                val t = if (intervalDistance == 0.0) 0.0 else (dCurr - intervalStartDistance) / intervalDistance
+                val interpAngle = intervalStartAngle + intervalAngleDelta * cosineEase(t)
                 val p = pathPoints[idx]
                 pathPoints[idx] = p.copy(pose = Pose2d(p.pose.x, p.pose.y, Rotation2d(interpAngle)))
             }
