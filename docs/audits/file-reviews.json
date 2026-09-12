@@ -3330,10 +3330,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "1646b7c52a2faa889a6bd6eb6e7cd1b9793256188e44aef396f96dc93ed8f044",
+      "sha256": "96bef311010240cb3a8d9aa968e75be6d2543234b7a7abe11c00047a435f6137",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Version/tree/hash identity checked against source commit 54aafe0f, tree af2998dac603d828aeb9a77bf1e2411ea104e1ed, candidate 17.0.12-rc.af2998dac603 and exact rebuilt local archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and 101 tooling tests passed; no public release. Pass206: Local version/tree/hash identities verified against source commit 2e1a2938, tree c6d7742429b063b7fb9bf3b51cb87d8b839fe60d, candidate 17.0.13-rc.c6d7742429b0 and exact rebuilt archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and tooling passed; no public release. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Version/tree/hash identity checked against source commit 54aafe0f, tree af2998dac603d828aeb9a77bf1e2411ea104e1ed, candidate 17.0.12-rc.af2998dac603 and exact rebuilt local archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and 101 tooling tests passed; no public release. Pass206: Local version/tree/hash identities verified against source commit 2e1a2938, tree c6d7742429b063b7fb9bf3b51cb87d8b839fe60d, candidate 17.0.13-rc.c6d7742429b0 and exact rebuilt archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and tooling passed; no public release. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained. Pass 208: Reviewed candidate/source identity, version and bundle hash/pin updates. Existing broader review status retained.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3566,7 +3566,9 @@
         "docs/audits/spline-heading-lighting-timeline-audit.md",
         "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
         "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5587,10 +5589,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "ccf0bec145ea85ab935fd8559a250166dfea2cd74fdd4b4173001af44d532b03",
+      "sha256": "5d838f00725f4d8b944a5d4699c43ba3f691fb36d82780adfe6e74e8576b2092",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -5683,7 +5685,9 @@
         "docs/audits/spline-heading-lighting-timeline-audit.md",
         "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
         "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -7192,25 +7196,29 @@
       "sha256": "402ea666c330437f4ad60a9407c4d2d33c85c8ed27124703296d7eecc5f8b86d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full file read; current-batch innovation computation, exact identity ownership, translation/full-pose DOF, finite statistical rejection and early rejection paths traced and tested. Metadata references never escape processing and immutable values survive packet recycling. Broader camera-source sequencing, filter configuration and recovery interactions remain separate review/test scopes; full candidate tests alone do not close those scopes. Pass78: Reported positive finite observation standard deviations bypass geometric noise inflation per axis; unspecified axes retain baseline model and MT2 heading stays uninformative. Store-configured ambiguity limit reaches the inner filter and unavailable ambiguity is ignored consistently. Actual Store tests pass; broader camera-source/recovery interactions remain partial.",
+      "scope": "Full file read; current-batch innovation computation, exact identity ownership, translation/full-pose DOF, finite statistical rejection and early rejection paths traced and tested. Metadata references never escape processing and immutable values survive packet recycling. Broader camera-source sequencing, filter configuration and recovery interactions remain separate review/test scopes; full candidate tests alone do not close those scopes. Pass78: Reported positive finite observation standard deviations bypass geometric noise inflation per axis; unspecified axes retain baseline model and MT2 heading stays uninformative. Store-configured ambiguity limit reaches the inner filter and unavailable ambiguity is ignored consistently. Actual Store tests pass; broader camera-source/recovery interactions remain partial. Pass 208: Context only: historical prefilter inputs and downstream stddev/NIS policy were traced for composite/filter compatibility. Broader existing partial scopes remain open.",
       "evidence": [
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
         "docs/audits/vision-noise-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotState.kt": {
       "sha256": "697a0f3bebf51e00a462010da803fa78e54e6cca97c90b16eab83ee7dcd92aa8",
       "review": "partial",
       "validation": "passed",
-      "scope": "Only VisionMeasurement/VisionState and DriveState portions inspected. Appended immutable flat NIS identity/statistic fields, zero DOF validity convention and reset semantics tested through Store. Cached measuredMotionValid and estimator timestamp routing traced for collection. Remaining state slices and complete file contracts unreviewed.",
+      "scope": "Only VisionMeasurement/VisionState and DriveState portions inspected. Appended immutable flat NIS identity/statistic fields, zero DOF validity convention and reset semantics tested through Store. Cached measuredMotionValid and estimator timestamp routing traced for collection. Remaining state slices and complete file contracts unreviewed. Pass 208: Context only: pooled VisionMeasurement metadata and clock fields establish shared/source-domain contracts. Wider state and collection ownership is not closed by this pass.",
       "evidence": [
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/CalibrationNumericsAuditTest.kt": {
@@ -13020,10 +13028,10 @@
       ]
     },
     "release/ares-versions.properties": {
-      "sha256": "34bd2381f1c54a869fe47ee53ee0fa4f220f3e2a51cebbd81b319c5ec2f3e34f",
+      "sha256": "64ed9d19f37fa8bc2f98e9140776a845ac7988c9443752fa509097c4de134d16",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Version/tree/hash identity checked against source commit 54aafe0f, tree af2998dac603d828aeb9a77bf1e2411ea104e1ed, candidate 17.0.12-rc.af2998dac603 and exact rebuilt local archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and 101 tooling tests passed; no public release. Pass206: Local version/tree/hash identities verified against source commit 2e1a2938, tree c6d7742429b063b7fb9bf3b51cb87d8b839fe60d, candidate 17.0.13-rc.c6d7742429b0 and exact rebuilt archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and tooling passed; no public release. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Version/tree/hash identity checked against source commit 54aafe0f, tree af2998dac603d828aeb9a77bf1e2411ea104e1ed, candidate 17.0.12-rc.af2998dac603 and exact rebuilt local archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and 101 tooling tests passed; no public release. Pass206: Local version/tree/hash identities verified against source commit 2e1a2938, tree c6d7742429b063b7fb9bf3b51cb87d8b839fe60d, candidate 17.0.13-rc.c6d7742429b0 and exact rebuilt archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and tooling passed; no public release. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained. Pass 208: Reviewed candidate/source identity, version and bundle hash/pin updates. Existing broader review status retained.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -13044,14 +13052,16 @@
         "docs/audits/spline-heading-lighting-timeline-audit.md",
         "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
         "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
       ]
     },
     "release/starter-artifacts.properties": {
-      "sha256": "4ff8ec1335c8eaf319fd19fe4bed2742f0ed82241d90f945ad519284f851c71e",
+      "sha256": "93682128c999e3f19b807e58c1fbf1636f14a5bb37bc69487badb2aaff07bf8a",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Version/tree/hash identity checked against source commit 54aafe0f, tree af2998dac603d828aeb9a77bf1e2411ea104e1ed, candidate 17.0.12-rc.af2998dac603 and exact rebuilt local archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and 101 tooling tests passed; no public release. Pass206: Local version/tree/hash identities verified against source commit 2e1a2938, tree c6d7742429b063b7fb9bf3b51cb87d8b839fe60d, candidate 17.0.13-rc.c6d7742429b0 and exact rebuilt archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and tooling passed; no public release. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Version/tree/hash identity checked against source commit 54aafe0f, tree af2998dac603d828aeb9a77bf1e2411ea104e1ed, candidate 17.0.12-rc.af2998dac603 and exact rebuilt local archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and 101 tooling tests passed; no public release. Pass206: Local version/tree/hash identities verified against source commit 2e1a2938, tree c6d7742429b063b7fb9bf3b51cb87d8b839fe60d, candidate 17.0.13-rc.c6d7742429b0 and exact rebuilt archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and tooling passed; no public release. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained. Pass 208: Reviewed candidate/source identity, version and bundle hash/pin updates. Existing broader review status retained.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -13072,14 +13082,16 @@
         "docs/audits/spline-heading-lighting-timeline-audit.md",
         "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
         "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
       ]
     },
     ".github/workflows/build-distributions.yml": {
-      "sha256": "c270d84e573b5a0782a1ae5213248103d454562789022a14030564c0b4f24501",
+      "sha256": "4464bc959c3014fade3d5c48a6883e6258a73e9d6968becf5444291c5291600f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Library/app versions and four template URL/hash pins match canonical manifests and Studio preflight. Remaining workflow behavior is outside this pass. Pass 191: changed version, archive URL and SHA pins checked against canonical manifests and rebuilt bytes; local policy passed. No workflow execution or release claimed. Pass204: Only version/template URL/hash pins synchronized with canonical manifests and locally rebuilt archives. Broader workflow remains partial; no remote workflow execution. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Changed environment version/URL/hash pins match canonical local manifests and archive bytes. Static pin alignment and Studio release preflight passed; remote workflow execution not exercised. Pass206: Changed environment version/URL/hash pins align with canonical local identities and new archive bytes; release preflight passed. Remote workflow not exercised. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained.",
+      "scope": "Library/app versions and four template URL/hash pins match canonical manifests and Studio preflight. Remaining workflow behavior is outside this pass. Pass 191: changed version, archive URL and SHA pins checked against canonical manifests and rebuilt bytes; local policy passed. No workflow execution or release claimed. Pass204: Only version/template URL/hash pins synchronized with canonical manifests and locally rebuilt archives. Broader workflow remains partial; no remote workflow execution. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Changed environment version/URL/hash pins match canonical local manifests and archive bytes. Static pin alignment and Studio release preflight passed; remote workflow execution not exercised. Pass206: Changed environment version/URL/hash pins align with canonical local identities and new archive bytes; release preflight passed. Remote workflow not exercised. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained. Pass 208: Reviewed candidate/source identity, version and bundle hash/pin updates. Existing broader review status retained.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -13100,7 +13112,9 @@
         "docs/audits/spline-heading-lighting-timeline-audit.md",
         "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
         "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
       ]
     },
     "docs/audits/pathing-cell-traversal-audit.md": {
@@ -14926,126 +14940,6 @@
         "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.14.zip": {
-      "sha256": "91464e3ae7e160220bb3b9d2c9a655d4cb4e4556e55eb65a2e73fc895b7af5e9",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage. Pass205: New local archive identity/hash verified. Entry comparison against prior bytes changed only release/ares-versions.properties with no added/removed entries. Source/dependency consumer gates passed; complete generated-project integration and target hardware remain opt-in/external, no remote publication. Pass206: New local immutable archive identity verified by SHA-256 and entry-level comparison: only release/ares-versions.properties changed; no added/removed entries. Full source/candidate consumers passed. Complete generated-project integration and target hardware remain external/opt-in; no publication. Pass 207: Refreshed immutable local version; verified old/new SHA-256 and normalized ZIP content comparison. Only release/ares-versions.properties differs from the preceding bundle.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
-        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
-        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
-        "ARESLib-Kotlin/build/audit-pass204-verified-evidence",
-        "docs/audits/path-initialization-routine-preview-audit.md",
-        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
-        "docs/audits/spline-heading-lighting-timeline-audit.md",
-        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
-        "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.14.zip": {
-      "sha256": "c949abef8fa6f1c2bbc79fe4a5141af0be85d90e6178a8572aaae523edb9f047",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage. Pass205: New local archive identity/hash verified. Entry comparison against prior bytes changed only release/ares-versions.properties with no added/removed entries. Source/dependency consumer gates passed; complete generated-project integration and target hardware remain opt-in/external, no remote publication. Pass206: New local immutable archive identity verified by SHA-256 and entry-level comparison: only release/ares-versions.properties changed; no added/removed entries. Full source/candidate consumers passed. Complete generated-project integration and target hardware remain external/opt-in; no publication. Pass 207: Refreshed immutable local version; verified old/new SHA-256 and normalized ZIP content comparison. Only release/ares-versions.properties differs from the preceding bundle.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
-        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
-        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
-        "ARESLib-Kotlin/build/audit-pass204-verified-evidence",
-        "docs/audits/path-initialization-routine-preview-audit.md",
-        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
-        "docs/audits/spline-heading-lighting-timeline-audit.md",
-        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
-        "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.13.zip": {
-      "sha256": "275a1998d8db86b55c74ec2c3dbd5597e0279cb0f6a3b334d3a5a649b0226588",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage. Pass205: New local archive identity/hash verified. Entry comparison against prior bytes changed only release/ares-versions.properties with no added/removed entries. Source/dependency consumer gates passed; complete generated-project integration and target hardware remain opt-in/external, no remote publication. Pass206: New local immutable archive identity verified by SHA-256 and entry-level comparison: only release/ares-versions.properties changed; no added/removed entries. Full source/candidate consumers passed. Complete generated-project integration and target hardware remain external/opt-in; no publication. Pass 207: Refreshed immutable local version; verified old/new SHA-256 and normalized ZIP content comparison. Only release/ares-versions.properties differs from the preceding bundle.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
-        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
-        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
-        "ARESLib-Kotlin/build/audit-pass204-verified-evidence",
-        "docs/audits/path-initialization-routine-preview-audit.md",
-        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
-        "docs/audits/spline-heading-lighting-timeline-audit.md",
-        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
-        "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.13.zip": {
-      "sha256": "4dee52667ed8069fa8ace5b4014bbf41e54cf9454c7d4c74c068326d75f17c4b",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage. Pass205: New local archive identity/hash verified. Entry comparison against prior bytes changed only release/ares-versions.properties with no added/removed entries. Source/dependency consumer gates passed; complete generated-project integration and target hardware remain opt-in/external, no remote publication. Pass206: New local immutable archive identity verified by SHA-256 and entry-level comparison: only release/ares-versions.properties changed; no added/removed entries. Full source/candidate consumers passed. Complete generated-project integration and target hardware remain external/opt-in; no publication. Pass 207: Refreshed immutable local version; verified old/new SHA-256 and normalized ZIP content comparison. Only release/ares-versions.properties differs from the preceding bundle.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
-        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
-        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
-        "ARESLib-Kotlin/build/audit-pass204-verified-evidence",
-        "docs/audits/path-initialization-routine-preview-audit.md",
-        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
-        "docs/audits/spline-heading-lighting-timeline-audit.md",
-        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
-        "docs/audits/controller-input-runtime-audit.md",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
-      ]
-    },
     "docs/audits/controller-input-runtime-audit.md": {
       "sha256": "e787769080ceaf8239704382d2c18534585772b1dd44b277ca9cdf7ce70e7cf3",
       "review": "reviewed",
@@ -15054,6 +14948,294 @@
       "evidence": [
         "docs/audits/controller-input-runtime-audit.md",
         "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/CompositeVisionIO.kt": {
+      "sha256": "6ad59a2ac3eb58e3f48ba4b6a783f8c60301243ecdc343c1e89a6c04d1782048",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full file: distinct identity ownership, child reset and disconnected rejection, shared-ms stable correlation and timestamp overflow, validity before selection, scaled quality scoring, reusable buffers, reentrant polling, idempotent close and aggregate forwarding/cleanup failures. Borrowed lifetime, tiny-N quadratic sort, high-water allocation and downstream cross-poll freshness are explicit.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/VisionIO.kt": {
+      "sha256": "e082e9df4b77413e072c1c9e376e59caadd8cf183619422a09a0493669758dc1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full interface and input-container contract: cached polling, disconnected/invalid empty observations, camera mounts, borrowed collection/pooled-pose lifetime, shared RobotClock milliseconds versus native source microseconds, default orientation/IMU hooks. Implementor lifecycle/freshness remains separately tracked.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/VisionOutlierFilter.kt": {
+      "sha256": "68461cd666751af4468db9bcfb7c3d23cd42b5f88d18ff3e337fd9428bb899b0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full file: scalar configuration caching, FRC default tag-map policy, observation metadata/quaternion validity, norm and heading extremes, rotated footprint/expanded-bound arithmetic, ordinary/unknown metadata compatibility and unchanged optional-stddev/downstream policy. Exact variance and explicit corner oracles plus allocation checks passed; broader Store configuration collection ownership is separate.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/vision/CompositeVisionBoundaryAuditTest.kt": {
+      "sha256": "aba84e0114786bcd4c60ecf50cd02b9e51b0b01a3421785303f5c7ab213884f9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full regression file reviewed: independent numeric/corner oracles, lifecycle/clock/quality failures or warmed allocation measurement. Thirty new methods pass; no physical timing or general numerical error bound is claimed.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/vision/VisionFilterBoundaryAuditTest.kt": {
+      "sha256": "79de157df783c9b021e9b30ba5ef9244dc75cc5c37f7295d1e415b274bf4f5f6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full regression file reviewed: independent numeric/corner oracles, lifecycle/clock/quality failures or warmed allocation measurement. Thirty new methods pass; no physical timing or general numerical error bound is claimed.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/vision/VisionLoopAllocationAuditTest.kt": {
+      "sha256": "49fa86bd2f29e16062a683cefb587f9c0406c609933f261956ed6f516d693ac9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full regression file reviewed: independent numeric/corner oracles, lifecycle/clock/quality failures or warmed allocation measurement. Thirty new methods pass; no physical timing or general numerical error bound is claimed.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/vision/VisionNoiseRejectionTest.kt": {
+      "sha256": "25a327bcfb1d47cafff7b0555579f5f0de07a1bfc5140c34abf6816a06d5c9e5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full test file reviewed. Delayed vision now observes truth at capture time and corrects a separate biased odometry control stream: 0.400 m control error versus 0.06818 m fused error. Outlier case remains deterministic; simulated evidence only.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/vision/VisionSimulatorFixture.kt": {
+      "sha256": "5c9ebbe0a21ca52e47ae1f93fbe1457d20ea1e706f32b6fdcc57bd9317e612b4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full internal test fixture reviewed: deterministic random observations, tag geometry/range, noise/outlier branches and capture-time truth contract. This is not the production camera simulator.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/vision/VisionOutlierFilterTest.kt": {
+      "sha256": "29511dfd27ee0e3c3ca3fb3955ae0f528accc21e434c3ade3a5d86e6ee7189bf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full test file reviewed: existing ordinary filtering, metadata/footprint or composite aggregation/IMU behavior checked alongside new boundary regressions; current module tests passed.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/vision/VisionOutlierFilterMetadataTest.kt": {
+      "sha256": "29078248aa23c49de233d29220c053f63c506bb53d8fa276dd484d77c02b3cab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full test file reviewed: existing ordinary filtering, metadata/footprint or composite aggregation/IMU behavior checked alongside new boundary regressions; current module tests passed.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/CompositeVisionIOTest.kt": {
+      "sha256": "92e283df94a1908925c93bb86f2424fb7bab21d2b458ead9272083ae7781ef30",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 208: Full test file reviewed: existing ordinary filtering, metadata/footprint or composite aggregation/IMU behavior checked alongside new boundary regressions; current module tests passed.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionTracker.kt": {
+      "sha256": "76e1f5fb0e6d7fe6613a3aba51ab90fc037f25ab4575db4865c3df1397f29b0a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 208: Context only: sampling before dispatch, candidate selection and per-source freshness/de-duplication were inspected. Recovery, full lifecycle, timestamp extremes, shutdown and error paths still require dedicated review/tests.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/vision/FrcVisionTracker.kt": {
+      "sha256": "37b9e7215b84b533a88afba665c644d728d39a1c3f6111e654fecbb1fd4eb6b9",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 208: Context only: drive-signal gates, sampling, common filtering, native-time conversion consumers and freshness ring were inspected. Recovery consensus, complete source-clock extremes and lifecycle remain unclosed.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcLimelightIO.kt": {
+      "sha256": "c04c33b20353abb050f4758869f3afdbddcb1b0d8a6da577f2734803ee9b0802",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 208: Context only: shared-millisecond versus native-microsecond timestamp production and metadata population were traced. The full NT sampling/coherence, freshness, recovery and lifecycle implementation remains unreviewed.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcLimelightFactory.kt": {
+      "sha256": "1b410ab6a24f67b0c82d58a66fa824248051b5314bfa51f12f905e41c178ddb1",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 208: Constructor ownership and rollback were read to trace composite ownership. Failure identity/self-suppression, duplicate resource rollback and full fault cases need focused validation before closure.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.15.zip": {
+      "sha256": "834b69cff9a0adca8b0b58711032eff5fced923f941820fdea5d73df3ad26dc4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage. Pass205: New local archive identity/hash verified. Entry comparison against prior bytes changed only release/ares-versions.properties with no added/removed entries. Source/dependency consumer gates passed; complete generated-project integration and target hardware remain opt-in/external, no remote publication. Pass206: New local immutable archive identity verified by SHA-256 and entry-level comparison: only release/ares-versions.properties changed; no added/removed entries. Full source/candidate consumers passed. Complete generated-project integration and target hardware remain external/opt-in; no publication. Pass 207: Refreshed immutable local version; verified old/new SHA-256 and normalized ZIP content comparison. Only release/ares-versions.properties differs from the preceding bundle. Pass 208: New immutable local bundle version; verified old/new SHA-256 and ZIP entry comparison. Only release/ares-versions.properties differs.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence",
+        "docs/audits/path-initialization-routine-preview-audit.md",
+        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
+        "docs/audits/spline-heading-lighting-timeline-audit.md",
+        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
+        "docs/audits/controller-input-runtime-audit.md",
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.15.zip": {
+      "sha256": "90286adc567a693ec2d2c14031cc37d942871898b6302a495a09ea9bd77b801b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage. Pass205: New local archive identity/hash verified. Entry comparison against prior bytes changed only release/ares-versions.properties with no added/removed entries. Source/dependency consumer gates passed; complete generated-project integration and target hardware remain opt-in/external, no remote publication. Pass206: New local immutable archive identity verified by SHA-256 and entry-level comparison: only release/ares-versions.properties changed; no added/removed entries. Full source/candidate consumers passed. Complete generated-project integration and target hardware remain external/opt-in; no publication. Pass 207: Refreshed immutable local version; verified old/new SHA-256 and normalized ZIP content comparison. Only release/ares-versions.properties differs from the preceding bundle. Pass 208: New immutable local bundle version; verified old/new SHA-256 and ZIP entry comparison. Only release/ares-versions.properties differs.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence",
+        "docs/audits/path-initialization-routine-preview-audit.md",
+        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
+        "docs/audits/spline-heading-lighting-timeline-audit.md",
+        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
+        "docs/audits/controller-input-runtime-audit.md",
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.14.zip": {
+      "sha256": "1a353b7c60bb47a6a962061ed577d14141490dbe856013cbdeabe6defda5ae00",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage. Pass205: New local archive identity/hash verified. Entry comparison against prior bytes changed only release/ares-versions.properties with no added/removed entries. Source/dependency consumer gates passed; complete generated-project integration and target hardware remain opt-in/external, no remote publication. Pass206: New local immutable archive identity verified by SHA-256 and entry-level comparison: only release/ares-versions.properties changed; no added/removed entries. Full source/candidate consumers passed. Complete generated-project integration and target hardware remain external/opt-in; no publication. Pass 207: Refreshed immutable local version; verified old/new SHA-256 and normalized ZIP content comparison. Only release/ares-versions.properties differs from the preceding bundle. Pass 208: New immutable local bundle version; verified old/new SHA-256 and ZIP entry comparison. Only release/ares-versions.properties differs.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence",
+        "docs/audits/path-initialization-routine-preview-audit.md",
+        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
+        "docs/audits/spline-heading-lighting-timeline-audit.md",
+        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
+        "docs/audits/controller-input-runtime-audit.md",
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.14.zip": {
+      "sha256": "78709b5277fea13d9a04b6cc8cce3a15af0a7cdda1be7dc52af0df8fc182387f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage. Pass205: New local archive identity/hash verified. Entry comparison against prior bytes changed only release/ares-versions.properties with no added/removed entries. Source/dependency consumer gates passed; complete generated-project integration and target hardware remain opt-in/external, no remote publication. Pass206: New local immutable archive identity verified by SHA-256 and entry-level comparison: only release/ares-versions.properties changed; no added/removed entries. Full source/candidate consumers passed. Complete generated-project integration and target hardware remain external/opt-in; no publication. Pass 207: Refreshed immutable local version; verified old/new SHA-256 and normalized ZIP content comparison. Only release/ares-versions.properties differs from the preceding bundle. Pass 208: New immutable local bundle version; verified old/new SHA-256 and ZIP entry comparison. Only release/ares-versions.properties differs.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence",
+        "docs/audits/path-initialization-routine-preview-audit.md",
+        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
+        "docs/audits/spline-heading-lighting-timeline-audit.md",
+        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
+        "docs/audits/controller-input-runtime-audit.md",
+        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/composite-vision-filter-audit.md": {
+      "sha256": "e4d71e0713409b44ab3fe8bb060598a370ada5675d246cb51a072d3b9e81cf88",
+      "review": "reviewed",
+      "validation": "not-applicable",
+      "scope": "Pass 208: Reviewed current findings, test/oracle evidence, source identity, file accounting and physical/source-clock limitations.",
+      "evidence": [
+        "docs/audits/composite-vision-filter-audit.md",
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
       ]
     }
   }
