@@ -91,7 +91,7 @@ try {
                 $false
             )
             try {
-                Get-ChildItem -LiteralPath $source -Recurse -File |
+                Get-ChildItem -LiteralPath $source -Recurse -File -Force |
                     Where-Object Name -ne '.ares-starter-mirror.json' |
                     Sort-Object { [System.IO.Path]::GetRelativePath($source, $_.FullName).Replace('\', '/') } |
                     ForEach-Object {

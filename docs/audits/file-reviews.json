@@ -5557,7 +5557,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "fd4a6052d92bcb76da7cb0bc55fd0af82bc7bbbe0135c00c70c0981f60a67be5",
+      "sha256": "8ea978959dac11fea4b53aed3922015f231986630b606ebaed812c14d4806670",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13324,6 +13324,46 @@
       "evidence": [
         "docs/audits/migration-inventory-audit.md",
         "ARESLib-Kotlin/build/audit-pass186-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/export-starter-mirrors.ps1": {
+      "sha256": "bfdb9a6c921b428b2283d2fdc9de78854eecdae37172e3e12ef9d6136f8a8867",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Tracked XRP overlay, keyed mirror hash checks, Unicode/space filenames, sibling-prefix containment, hidden files and existing-output refusal tested. Four pre-fix failures reproduced; four real mirrors verified. Reparse-point containment and interrupted export recovery remain open.",
+      "evidence": [
+        "docs/audits/starter-export-boundaries-audit.md",
+        "ARESLib-Kotlin/build/audit-pass187-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/build-starter-archives.ps1": {
+      "sha256": "690d6588620cfd7c9e28af79c9eb6cd739f25f642c0ac8907088b49ae6942c87",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Hidden-file enumeration included. Fixture archives verify identical repeated bytes, LF text, binary preservation, fixed timestamps and executable wrapper permissions; all four real outputs match existing pins/bundles. Failure recovery and cross-locale ordering remain open.",
+      "evidence": [
+        "docs/audits/starter-export-boundaries-audit.md",
+        "ARESLib-Kotlin/build/audit-pass187-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/tests/test_starter_export.py": {
+      "sha256": "b84319952bb03e2f949d600a6c50653b26f2d17dccf0e8d04289d38019d3dd20",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Seven real Git/PowerShell export/archive cases reviewed and executed in 80-test root suite. Synthetic private/local files only, restored tamper fixtures, Unicode/spaces, hidden output and deterministic text/binary/permission/timestamp assertions.",
+      "evidence": [
+        "docs/audits/starter-export-boundaries-audit.md",
+        "ARESLib-Kotlin/build/audit-pass187-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/starter-export-boundaries-audit.md": {
+      "sha256": "9be453f10da673ab002f28c99abc0e2d617530f7bc71fad378d69f5d7d10aa32",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Claims reconciled with four baseline failures, fixture correction, 80 passing tooling tests, four real mirror checks and exact archive hash equality. Partial-review and runtime/locale limitations explicit.",
+      "evidence": [
+        "docs/audits/starter-export-boundaries-audit.md",
+        "ARESLib-Kotlin/build/audit-pass187-verified-evidence/summary.json"
       ]
     }
   }
