@@ -9,8 +9,9 @@ import com.areslib.hardware.LoggableDevice
  * Mutable, caller-owned snapshot filled by [VisionIO.updateInputs].
  *
  * Poses use meters and radians. Field-pose headings are CCW-positive. Camera mount poses are
- * robot-relative; each translation is from robot center to camera in the robot frame. Implementors
- * should replace snapshot collections rather than mutate lists retained from a previous cycle.
+ * robot-relative; each translation is from robot center to camera in the robot frame. Collections and
+ * pooled measurements may be borrowed until the next poll or close. Consumers must finish reading
+ * within that lifetime, or take owned copies when retaining observations (as Redux does).
  */
 data class VisionIOInputs(
     var isConnected: Boolean = false,
@@ -25,6 +26,9 @@ data class VisionIOInputs(
  * disconnected or invalid source reports `isConnected = false` and an empty measurement list; it
  * must not replay stale detections. Implementations may allocate outside strict robot hot paths,
  * but should cache SDK handles and avoid hidden device reads from properties.
+ * Observation `timestampMs` is capture time in the shared RobotClock millisecond domain.
+ * `captureTimestampMicros` may use a source-specific epoch and requires the platform's clock
+ * conversion before comparison with another clock domain.
  */
 interface VisionIO : LoggableDevice {
     /**

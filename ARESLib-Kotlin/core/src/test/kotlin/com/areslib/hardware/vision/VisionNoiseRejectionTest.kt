@@ -35,56 +35,47 @@ class VisionNoiseRejectionTest {
     @Test
     fun `test EKF convergence under noise and latency`() {
         val store = Store()
+        val odometryOnly = Store()
         val simulator = VisionSimulator()
-
         val totalSteps = 100
-        val dt = 0.02 // 20ms steps
-        var currentTimeMs = 1000L
-
-        // Ground-truth robot moves along x-axis from x=0.0 to x=2.0
-        val trueXSpeed = 1.0 // 1.0 m/s
+        val dt = 0.02
+        val startTimeMs = 1000L
+        val latencyMs = 80L
+        val trueXSpeed = 0.5
+        val biasedOdometrySpeed = 0.7
 
         for (step in 1..totalSteps) {
-            currentTimeMs += (dt * 1000).toLong()
-            val simPose = Pose2d(trueXSpeed * (step * dt), 0.0, Rotation2d(0.0))
-
-            // 1. Dispatch Odometry observation
-            store.dispatch(
-                RobotAction.DriveHardwareUpdate(
-                    xVelocity = trueXSpeed,
-                    yVelocity = 0.0,
-                    angularVelocity = 0.0,
-                    deltaX = trueXSpeed * dt,
-                    deltaY = 0.0,
-                    deltaHeading = 0.0,
-                    timestampMs = currentTimeMs
-                )
+            val nowMs = startTimeMs + step * 20L
+            val odometry = RobotAction.DriveHardwareUpdate(
+                xVelocity = biasedOdometrySpeed, yVelocity = 0.0, angularVelocity = 0.0,
+                deltaX = biasedOdometrySpeed * dt, deltaY = 0.0, deltaHeading = 0.0,
+                timestampMs = nowMs
             )
+            store.dispatch(odometry)
+            odometryOnly.dispatch(odometry)
 
-            // 2. Periodically inject simulated visual measurements (every 100ms) with 80ms latency
             if (step % 5 == 0) {
-                val visionMeasurements = simulator.generateMeasurements(
-                    truePose = simPose,
-                    currentTimestampMs = currentTimeMs,
-                    latencyMs = 80L,
-                    outlierProbability = 0.0 // Verify pure noise convergence first
+                // The observed pose belongs to capture time, not to the time the frame arrives.
+                val captureElapsedSeconds = (nowMs - latencyMs - startTimeMs) / 1000.0
+                val capturePose = Pose2d(trueXSpeed * captureElapsedSeconds, 0.0, Rotation2d(0.0))
+                val observations = simulator.generateMeasurements(
+                    truePose = capturePose, currentTimestampMs = nowMs,
+                    latencyMs = latencyMs, outlierProbability = 0.0
                 )
-
-                store.dispatch(
-                    RobotAction.VisionMeasurementsReceived(visionMeasurements, currentTimeMs)
-                )
+                assertTrue(observations.all { it.timestampMs == nowMs - latencyMs })
+                store.dispatch(RobotAction.VisionMeasurementsReceived(observations, nowMs))
             }
         }
 
-        val estimatedPose = store.state.drive.poseEstimator.estimatedPose
-        val finalTruePose = Pose2d(trueXSpeed * (totalSteps * dt), 0.0, Rotation2d(0.0))
-
-        println("Final true pose: $finalTruePose")
-        println("Final estimated EKF pose: $estimatedPose")
-
-        // EKF must successfully track the true pose within 15cm accuracy under standard Gaussian noise & 80ms latency
-        assertEquals(finalTruePose.x, estimatedPose.x, 0.15, "EKF X coordinate should converge to true pose")
-        assertEquals(finalTruePose.y, estimatedPose.y, 0.10, "EKF Y coordinate should converge to true pose")
-        assertEquals(finalTruePose.heading.radians, estimatedPose.heading.radians, 0.05, "EKF Heading should converge to true pose")
+        val estimated = store.state.drive.poseEstimator.estimatedPose
+        val trueX = trueXSpeed * totalSteps * dt
+        val odometryError = kotlin.math.abs(odometryOnly.state.drive.poseEstimator.estimatedPoseX - trueX)
+        val fusedError = kotlin.math.abs(estimated.x - trueX)
+        println("Delayed noisy vision: odometry error=$odometryError m, fused error=$fusedError m")
+        assertTrue(odometryError > 0.3, "The control stream must accumulate measurable odometry bias")
+        assertTrue(fusedError < 0.15 && fusedError < odometryError / 2.0,
+            "Delayed vision must correct the biased odometry, not merely track perfect odometry")
+        assertEquals(0.0, estimated.y, 0.10)
+        assertEquals(0.0, estimated.heading.radians, 0.05)
     }
 }

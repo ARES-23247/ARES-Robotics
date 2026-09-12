@@ -17,6 +17,7 @@ internal class VisionSimulator(
         4 to Pose3d(Translation3d(-1.8, -1.8, 0.5), Rotation3d(0.0, 0.0, 0.0)),
     ),
 ) {
+    /** [truePose] is the truth at capture time, [currentTimestampMs] minus [latencyMs]. */
     fun generateMeasurements(
         truePose: Pose2d,
         currentTimestampMs: Long,
