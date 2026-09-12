@@ -28,13 +28,13 @@ class MecanumRobotDoubleImuTest {
         assertEquals(
             -0.75,
             robot.mockImu.getRobotAngularVelocity(AngleUnit.RADIANS)
-                .getZRotationRate(AngleUnit.RADIANS).toDouble(),
+                .zRotationRate.toDouble(),
             1e-6,
         )
         assertEquals(
             Math.toDegrees(-0.75),
             robot.mockImu.getRobotAngularVelocity(AngleUnit.DEGREES)
-                .getZRotationRate(AngleUnit.DEGREES).toDouble(),
+                .zRotationRate.toDouble(),
             1e-5,
         )
     }

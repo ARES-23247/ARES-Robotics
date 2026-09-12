@@ -316,10 +316,13 @@ public class com/qualcomm/hardware/lynx/commands/standard/LynxAck : com/qualcomm
 	public fun <init> (Lcom/qualcomm/hardware/lynx/LynxModule;Z)V
 }
 
-public final class com/qualcomm/hardware/rev/RevHubOrientationOnRobot {
+public final class com/qualcomm/hardware/rev/RevHubOrientationOnRobot : com/qualcomm/robotcore/hardware/ImuOrientationOnRobot {
 	public fun <init> (Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;)V
+	public fun angularVelocityTransform ()Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;
 	public final fun getLogoFacingDirection ()Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection;
 	public final fun getUsbFacingDirection ()Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot$UsbFacingDirection;
+	public fun imuCoordinateSystemOrientationFromPerspectiveOfRobot ()Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;
+	public fun imuRotationOffset ()Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;
 }
 
 public final class com/qualcomm/hardware/rev/RevHubOrientationOnRobot$LogoFacingDirection : java/lang/Enum {
@@ -844,8 +847,15 @@ public final class com/qualcomm/robotcore/hardware/IMU$DefaultImpls {
 }
 
 public final class com/qualcomm/robotcore/hardware/IMU$Parameters {
-	public fun <init> (Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot;)V
-	public final fun getHubOrientationOnRobot ()Lcom/qualcomm/hardware/rev/RevHubOrientationOnRobot;
+	public field imuOrientationOnRobot Lcom/qualcomm/robotcore/hardware/ImuOrientationOnRobot;
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/ImuOrientationOnRobot;)V
+	public final fun copy ()Lcom/qualcomm/robotcore/hardware/IMU$Parameters;
+}
+
+public abstract interface class com/qualcomm/robotcore/hardware/ImuOrientationOnRobot {
+	public abstract fun angularVelocityTransform ()Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;
+	public abstract fun imuCoordinateSystemOrientationFromPerspectiveOfRobot ()Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;
+	public abstract fun imuRotationOffset ()Lorg/firstinspires/ftc/robotcore/external/navigation/Quaternion;
 }
 
 public abstract interface class com/qualcomm/robotcore/hardware/NormalizedColorSensor : com/qualcomm/robotcore/hardware/HardwareDevice {
@@ -1017,17 +1027,20 @@ public final class org/firstinspires/ftc/robotcore/external/navigation/AngleUnit
 }
 
 public final class org/firstinspires/ftc/robotcore/external/navigation/AngularVelocity {
+	public field acquisitionTime J
+	public field angleUnit Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;
+	public field xRotationRate F
+	public field yRotationRate F
+	public field zRotationRate F
 	public fun <init> ()V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;F)V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;FF)V
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;FFF)V
 	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;FFFJ)V
 	public synthetic fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;FFFJILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getAcquisitionTime ()J
-	public final fun getUnit ()Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;
-	public final fun getXRotationRate ()F
-	public final fun getXRotationRate (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)F
-	public final fun getYRotationRate ()F
-	public final fun getYRotationRate (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)F
-	public final fun getZRotationRate ()F
-	public final fun getZRotationRate (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)F
+	public fun <init> (Lorg/firstinspires/ftc/robotcore/external/navigation/UnnormalizedAngleUnit;FFFJ)V
+	public final fun toAngleUnit (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)Lorg/firstinspires/ftc/robotcore/external/navigation/AngularVelocity;
 }
 
 public final class org/firstinspires/ftc/robotcore/external/navigation/AxesOrder : java/lang/Enum {

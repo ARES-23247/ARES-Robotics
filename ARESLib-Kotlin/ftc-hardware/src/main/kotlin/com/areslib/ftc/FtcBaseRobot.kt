@@ -246,7 +246,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         val pinpoint = pinpointIO
         val pinpointCandidate = pinpoint?.getPoseUpdate()
-        val pinpointHealthy = pinpoint != null && pinpointCandidate != null && pinpoint.isHealthy(timestamp)
+        // Sampling finishes after the frame timestamp. Compare freshness at consumption so a
+        // newly acquired I2C reading is not rejected as a future (negative-age) observation.
+        val pinpointHealthy = pinpoint != null && pinpointCandidate != null && pinpoint.isHealthy()
         val previousSource = odometrySourceArbiter.activeSource
         var selectedSource = odometrySourceArbiter.update(pinpoint != null, pinpointHealthy)
 
@@ -257,7 +259,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
                 // it. This prevents a discontinuity if the robot moved during the outage.
                 pinpoint.initialize(store.state.drive.poseEstimator.estimatedPose, resetHardware = false)
                 val rebased = pinpoint.getPoseUpdate()
-                if (pinpoint.lastInitializeSucceeded && pinpoint.isHealthy(timestamp)) {
+                if (pinpoint.lastInitializeSucceeded && pinpoint.isHealthy()) {
                     rebased
                 } else {
                     odometrySourceArbiter.forceFallback()
@@ -301,7 +303,9 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         poseUpdate.rollDegrees = Math.toDegrees(cachedImuInputs.rollRadians)
         poseUpdate.pitchVelocityDegPerSec = Math.toDegrees(cachedImuInputs.pitchVelocityRadPerSec)
         poseUpdate.rollVelocityDegPerSec = Math.toDegrees(cachedImuInputs.rollVelocityRadPerSec)
-        poseUpdate.angularVelocityRadiansPerSecond = cachedImuInputs.yawVelocityRadPerSec
+        if (selectedSource != FtcOdometrySource.PINPOINT) {
+            poseUpdate.angularVelocityRadiansPerSecond = cachedImuInputs.yawVelocityRadPerSec
+        }
         poseUpdate.applyControlHubGyroCorrection =
             selectedSource == FtcOdometrySource.DRIVETRAIN_FALLBACK && cachedImuInputs.timestampMs > 0L
         store.dispatch(poseUpdate)
