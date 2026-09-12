@@ -6,6 +6,9 @@ import com.areslib.telemetry.SimInputBridge.LEASE_TIMEOUT_MS
 import com.areslib.telemetry.SimInputBridge.MAX_TRANSLATION_MPS
 import com.areslib.telemetry.SimInputBridge.MAX_OMEGA_RADIANS_PER_SECOND
 import com.areslib.util.RobotClock
+import com.areslib.telemetry.schema.DesktopDriveProtocol
+import com.areslib.telemetry.schema.DesktopDriveFrameGate
+import com.areslib.telemetry.schema.DesktopDriveReceiverStatus as ReceiverStatus
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 
@@ -16,17 +19,6 @@ import kotlin.math.abs
  * Receiver time, not sender time or repeated polls, determines the 500 ms lease.
  */
 class DriveFrameReceiver {
-    /** Stable numeric states carried by the atomic acknowledgement frame. */
-    private enum class ReceiverStatus(val code: Int) {
-        WAITING_FOR_FRAME(0),
-        WAITING_FOR_NEUTRAL(1),
-        ARMED_NEUTRAL(2),
-        ACTIVE(3),
-        EXPIRED(4),
-        INVALID_FRAME(5),
-        OUT_OF_ORDER(6),
-    }
-
     private val neutralFrame = CommandFrame(
         vx = 0.0,
         vy = 0.0,
@@ -164,7 +156,7 @@ class DriveFrameReceiver {
     private fun reject(status: ReceiverStatus): CommandFrame {
         sessionArmed = false
         receiverStatus = status
-        rejectedFrameCount++
+        if (rejectedFrameCount < Long.MAX_VALUE) rejectedFrameCount++
         frame.set(neutralFrame)
         return neutralFrame
     }
@@ -249,29 +241,28 @@ class DriveFrameReceiver {
 
 }
 
-private const val FRAME_VALUE_COUNT = 8
-private const val FRAME_VERSION = 2.0
-private const val ACK_VERSION = 1.0
-private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991.0
-private const val VERSION_INDEX = 0
-private const val SESSION_INDEX = 1
-private const val SEQUENCE_INDEX = 2
-private const val CLIENT_TIME_INDEX = 3
-private const val VX_INDEX = 4
-private const val VY_INDEX = 5
-private const val OMEGA_INDEX = 6
-private const val FLAGS_INDEX = 7
+private const val FRAME_VALUE_COUNT = DesktopDriveProtocol.VALUE_COUNT
+private const val FRAME_VERSION = DesktopDriveProtocol.VERSION
+private const val ACK_VERSION = DesktopDriveFrameGate.ACK_VERSION
+private const val MAX_SAFE_INTEGER = DesktopDriveProtocol.MAX_SAFE_INTEGER_DOUBLE
+private const val VERSION_INDEX = DesktopDriveProtocol.VERSION_INDEX
+private const val SESSION_INDEX = DesktopDriveProtocol.SESSION_INDEX
+private const val SEQUENCE_INDEX = DesktopDriveProtocol.SEQUENCE_INDEX
+private const val CLIENT_TIME_INDEX = DesktopDriveProtocol.CLIENT_TIME_INDEX
+private const val VX_INDEX = DesktopDriveProtocol.VX_INDEX
+private const val VY_INDEX = DesktopDriveProtocol.VY_INDEX
+private const val OMEGA_INDEX = DesktopDriveProtocol.OMEGA_INDEX
+private const val FLAGS_INDEX = DesktopDriveProtocol.FLAGS_INDEX
 
-private const val FLAG_INTAKE = 1L shl 0
-private const val FLAG_FLYWHEEL = 1L shl 1
-private const val FLAG_TRANSFER = 1L shl 2
-private const val FLAG_TELEOP = 1L shl 3
-private const val FLAG_FIELD_CENTRIC = 1L shl 4
-private const val FLAG_RED_ALLIANCE = 1L shl 5
-private const val FLAG_BUTTON_A = 1L shl 6
-private const val FLAG_BUTTON_B = 1L shl 7
-private const val FLAG_BUTTON_X = 1L shl 8
-private const val FLAG_POSE_RESET = 1L shl 9
-private const val KNOWN_FLAGS_MASK = (1L shl 10) - 1L
-private const val ACTUATING_OR_EDGE_FLAGS = FLAG_INTAKE or FLAG_FLYWHEEL or FLAG_TRANSFER or
-    FLAG_BUTTON_A or FLAG_BUTTON_B or FLAG_BUTTON_X or FLAG_POSE_RESET
+private const val FLAG_INTAKE = DesktopDriveProtocol.FLAG_INTAKE
+private const val FLAG_FLYWHEEL = DesktopDriveProtocol.FLAG_FLYWHEEL
+private const val FLAG_TRANSFER = DesktopDriveProtocol.FLAG_TRANSFER
+private const val FLAG_TELEOP = DesktopDriveProtocol.FLAG_TELEOP
+private const val FLAG_FIELD_CENTRIC = DesktopDriveProtocol.FLAG_FIELD_CENTRIC
+private const val FLAG_RED_ALLIANCE = DesktopDriveProtocol.FLAG_RED_ALLIANCE
+private const val FLAG_BUTTON_A = DesktopDriveProtocol.FLAG_BUTTON_A
+private const val FLAG_BUTTON_B = DesktopDriveProtocol.FLAG_BUTTON_B
+private const val FLAG_BUTTON_X = DesktopDriveProtocol.FLAG_BUTTON_X
+private const val FLAG_POSE_RESET = DesktopDriveProtocol.FLAG_POSE_RESET
+private const val KNOWN_FLAGS_MASK = DesktopDriveProtocol.KNOWN_FLAGS_MASK
+private const val ACTUATING_OR_EDGE_FLAGS = DesktopDriveProtocol.ACTUATING_OR_EDGE_FLAGS

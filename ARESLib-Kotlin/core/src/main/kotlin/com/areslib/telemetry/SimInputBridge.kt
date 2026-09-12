@@ -2,6 +2,8 @@ package com.areslib.telemetry
 
 import com.areslib.networktables.NT4Server
 import com.areslib.util.RobotClock
+import com.areslib.telemetry.schema.DesktopDriveProtocol
+import com.areslib.telemetry.schema.DesktopDriveFrameGate
 
 /**
  * Process-wide NT4 adapter for the canonical [DriveFrameReceiver]. The payload is exactly
@@ -30,7 +32,7 @@ object SimInputBridge {
     )
 
     private val receiver = DriveFrameReceiver()
-    private val inputBuffer = DoubleArray(8)
+    private val inputBuffer = DoubleArray(DesktopDriveProtocol.VALUE_COUNT)
     private val malformedFrame = DoubleArray(0)
 
     @Synchronized
@@ -56,8 +58,8 @@ object SimInputBridge {
     @JvmStatic
     fun reset() { receiver.reset(); inputBuffer.fill(0.0) }
 
-    const val ACK_VALUE_COUNT = 9
+    const val ACK_VALUE_COUNT = DesktopDriveFrameGate.ACK_VALUE_COUNT
     const val LEASE_TIMEOUT_MS = 500L
-    const val MAX_TRANSLATION_MPS = 8.0
-    const val MAX_OMEGA_RADIANS_PER_SECOND = 4.0 * Math.PI
+    const val MAX_TRANSLATION_MPS = DesktopDriveProtocol.MAX_TRANSLATION_METERS_PER_SECOND
+    const val MAX_OMEGA_RADIANS_PER_SECOND = DesktopDriveProtocol.MAX_ANGULAR_RADIANS_PER_SECOND
 }
