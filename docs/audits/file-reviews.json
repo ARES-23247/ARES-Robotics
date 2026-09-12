@@ -3314,10 +3314,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "622109cfec21c2fa52c3135598a2a6fad6e3fdbd96a5ca14f73b057907819e7b",
+      "sha256": "445b5a81bc8aa9a30f814275b688ee7bf54ec9d85d6d0e3e7e079dfaf8b17f72",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Frozen library tree c5f40142a878a9e306c5da007dad737b037f9668 equals committed library source. Candidate 17.0.8-rc.c5f40142a878 passed library/API/local publication and serial consumers.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3540,7 +3540,9 @@
         "docs/audits/static-costmap-geometry-audit.md",
         "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
         "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -4494,12 +4496,14 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/networktables/NT4Server.kt": {
-      "sha256": "3da65c9514304dcfffdf4c41536eff2d7c32fb554a96c5687df526566f88b1dd",
+      "sha256": "af1ccd153a1ad92e83b66b79bdde9c98e189a65929348dd1536b2f0701b76795",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "scope": "Pass 191: extracted connection-owned storage; transport-drain gate and configured capacities retained, 106 focused networking/codegen tests plus full library/API and candidate consumers passed. Remaining server behavior retains prior partial scope.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/DriveFrameReceiver.kt": {
@@ -5557,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "d60031a7ee63eec54825aa557a4bbd80ec15fc3c9ac920fced78d5c2ab1e8a19",
+      "sha256": "a93be238be918ca175c161c62c8eff3cb3d637de6d2e536deffbba152f768546",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -12975,10 +12979,10 @@
       ]
     },
     "release/ares-versions.properties": {
-      "sha256": "e05c13fcb9fa9ef7049cfab90f416add10ba8dea9a0cda5dffcfc22271a232d9",
+      "sha256": "998c0608b2b31bdbf06a1a6399191450439edd9a753cafc14977d780ff93f391",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Canonical ARES 17.0.8, Studio 7.0.9 and unique template versions verified by policy, archive manifests and consumer preflight. No public publication claim.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -12989,14 +12993,16 @@
         "docs/audits/static-costmap-geometry-audit.md",
         "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
         "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
       ]
     },
     "release/starter-artifacts.properties": {
-      "sha256": "32335a168384328dce47bd2bd8f209352bee28813f8ffccf457c2f15b7a1574a",
+      "sha256": "ec530133a28eb488d1958d60efe41803298ec6994ab6030c8cd78253a5078340",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Four SHA-256 values match canonical archives and bundled copies accepted by Studio preflight and project creation; fresh exported builds and hardware remain separate.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -13007,14 +13013,16 @@
         "docs/audits/static-costmap-geometry-audit.md",
         "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
         "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
       ]
     },
     ".github/workflows/build-distributions.yml": {
-      "sha256": "18a36e4c0732886d27e38a79f056a821d2af47a4aaf134dc9dc79ffa9caeee25",
+      "sha256": "10e11120edcafe36dbe39a237ee6d8ee6bd97a10bd75961ca159f184472dc413",
       "review": "partial",
       "validation": "passed",
-      "scope": "Library/app versions and four template URL/hash pins match canonical manifests and Studio preflight. Remaining workflow behavior is outside this pass.",
+      "scope": "Library/app versions and four template URL/hash pins match canonical manifests and Studio preflight. Remaining workflow behavior is outside this pass. Pass 191: changed version, archive URL and SHA pins checked against canonical manifests and rebuilt bytes; local policy passed. No workflow execution or release claimed.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -13025,7 +13033,9 @@
         "docs/audits/static-costmap-geometry-audit.md",
         "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
         "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
       ]
     },
     "docs/audits/pathing-cell-traversal-audit.md": {
@@ -13180,78 +13190,6 @@
       "validation": "passed",
       "scope": "Claims reconciled with baseline/focused/full library and serial consumer XML, logs, hashes and explicit opt-in/hardware limitations.",
       "evidence": [
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.8.zip": {
-      "sha256": "055fce7dc8ec78b70e48b7a7c929e10f2903a5d7fcb3614ea26a73e30299edea",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Generated canonical archive accounted for through export, exact SHA-256/manifest checks and Studio project creation. This does not mark embedded source fully reviewed or establish fresh exported build/hardware results.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.8.zip": {
-      "sha256": "f4f14b441e7e4b3d022c7ca6d014c5132b15a18b9448b0a8b1f0c89b073f2ad8",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Generated canonical archive accounted for through export, exact SHA-256/manifest checks and Studio project creation. This does not mark embedded source fully reviewed or establish fresh exported build/hardware results.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.8.zip": {
-      "sha256": "33d3add5f09926a24a01f47ad0d1db12b79daebec68c5f994731a771c4cabe77",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Generated canonical archive accounted for through export, exact SHA-256/manifest checks and Studio project creation. This does not mark embedded source fully reviewed or establish fresh exported build/hardware results.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.8.zip": {
-      "sha256": "42115d6d497bddc159fa8a8ff2cb3480c382b8decfff9974e8986b652baf19e8",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Generated canonical archive accounted for through export, exact SHA-256/manifest checks and Studio project creation. This does not mark embedded source fully reviewed or establish fresh exported build/hardware results.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
         "docs/audits/costmap-footprint-inflation-audit.md",
         "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json"
       ]
@@ -13557,23 +13495,27 @@
       ]
     },
     "scripts/verify-monorepo-policy.ps1": {
-      "sha256": "771ed2e83a3da3fde71f86d93df71b49c3f8bb26fe4a8057bea058304086ac80",
+      "sha256": "1e2c34d4306f7701a7abb532a38c242e2b1e617e1b105c1cdd4065112e441610",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 190: source inventory, tracked/ignored/hidden/new/deleted files, Git failure, retired names/namespaces and existing nonempty-line threshold verified with twelve fixture cases in two shells and real repository policy. Remaining: physical-line enforcement/decomposition, regex syntax boundaries, symlinks, absolute-path exclusions, release/guidance checks.",
+      "scope": "Pass 191: physical-line enforcement fixed with streaming reader; blank-line 1000/1001 regression failed before fix in both shells; 13 policy cases and full 101-test tooling suite pass. Prior regex, path, symlink, release and guidance review limitations remain.",
       "evidence": [
         "docs/audits/policy-source-inventory-audit.md",
-        "ARESLib-Kotlin/build/audit-pass190-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass190-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
       ]
     },
     "scripts/tests/test_monorepo_policy.py": {
-      "sha256": "9253dfc82060ea8ab8a2d71bda4216bd7ba106dd20ca0ddbe8bfb43b3c85b4c3",
+      "sha256": "200553fa1dfff53d78d5932f67fa5e3cf46a2473d8f4ee12d4e77c40a2076f36",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 190: twelve real-policy temporary-Git fixtures; isolated guidance/doc-link stubs, synthetic release inputs, source inventory regressions, line threshold, namespace and fail-closed Git errors. Both PowerShell editions exercised; full tooling suite 100 passed.",
+      "scope": "Pass 191: thirteen real-policy temporary-Git fixtures in PowerShell 7 and Windows PowerShell 5.1, including new physical blank-line boundary. Full 101 tooling tests passed; dependency stubs and source-selection scope remain explicitly documented.",
       "evidence": [
         "docs/audits/policy-source-inventory-audit.md",
-        "ARESLib-Kotlin/build/audit-pass190-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass190-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
       ]
     },
     "docs/audits/policy-source-inventory-audit.md": {
@@ -13584,6 +13526,164 @@
       "evidence": [
         "docs/audits/policy-source-inventory-audit.md",
         "ARESLib-Kotlin/build/audit-pass190-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/networktables/NT4OwnedSendSlot.kt": {
+      "sha256": "d12e5cdd50133c39af8f7d58d24538fa73b732ca23bfd68ae94535c752583ade",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: complete extracted helper review at actual server inputs (8 KiB initial/4 MiB maximum); packer flush, backing-array growth, ByteBuffer rebinding/reset, capacity failures and allocation accounting traced. Existing transport ownership/allocation regressions and full library suite passed. Internal storage is used only behind the server drain gate, not a general-purpose public buffer API.",
+      "evidence": [
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/AresKotlinProjectGenerator.kt": {
+      "sha256": "5de08b80a882d2e2d3bcc0d89e8defab96e51ad984e1cf258bcad5772e0b148b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 191: request/result model extraction reviewed and 77 codegen tests, full library/API and all candidate consumers passed. Other renderer/compiler behavior still requires file-level review.",
+      "evidence": [
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/KotlinProjectCodegenModels.kt": {
+      "sha256": "7e0b8d91c5ba0a3cbf104e246054fdcc434e5f866e494577c3f6e5552abb55cf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: complete declarative request/result model extraction review, preserving public class identities, field types/defaults and visibility. Codegen tests and API compatibility passed; renderer behavior remains separately partial.",
+      "evidence": [
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt": {
+      "sha256": "cf16c5650b1b89c630d6384a8fd59c0f0d9803fea66ae1bdf298c658c3bb6a76",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 191: XRP scaffold responsibility extraction and call boundary reviewed; 34 focused view-model tests and full Studio/candidate matrix passed. Remaining authoring, mutation, persistence and generation behavior is not fully reviewed.",
+      "evidence": [
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/XrpExtensionScaffold.kt": {
+      "sha256": "555fbdd43d79bcb2d11694ec96a54f2105af9b6fbfd3fa3e2039cecb48e488e5",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 191: fixed invalid Python emitted by raw-string quoting; four tests execute actual host-Python factories, neutral recovery and unknown-action rejection, preserve existing user-owned bytes and check invalid paths/platform/kind exclusions. Remaining: concurrent external file creation, filesystem aliases, unusual document IDs and lifecycle integration; no MicroPython/HIL claim.",
+      "evidence": [
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/XrpExtensionScaffoldTest.kt": {
+      "sha256": "5e6663aa5e529243f89211504b171bd21219c7ce43bc4362ea69d8cc4966a5b5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: complete four-case JUnit 4 fixture review, temporary-folder cleanup and bounded Python process ownership; actual baseline SyntaxError and passing final Python execution observed. Interpreter-dependent case explicitly skips when Python is absent; no skip here.",
+      "evidence": [
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.10.zip": {
+      "sha256": "de57d6748a406b81176e67faf46597faaabcf532d430fd757084035ab7668876",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.10.zip": {
+      "sha256": "98c178bad8d0deec28106372211fa65056541bd25dc2147c2ed4e3199cd3fc46",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.9.zip": {
+      "sha256": "6f3ed04a198a9e87c6b046982c0c7fa2da545a40a4e07342c88d4d104143bb5b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.9.zip": {
+      "sha256": "a470f561ace298ce8f04f3acfa155f45ecda7397863c7162a8c137b720c08d44",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json"
+      ]
+    },
+    "docs/audits/source-decomposition-and-xrp-scaffold-audit.md": {
+      "sha256": "d62f3624b7177a821366f42cc7c7506682151c765043ab17b8a4f11c0b3099ad",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191 report reconciled to observed before/after regressions, focused/full XML totals, API/publication and robot APK gates, exact archive comparisons and explicit review/hardware/opt-in limitations.",
+      "evidence": [
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
       ]
     }
   }

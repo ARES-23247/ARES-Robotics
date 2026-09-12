@@ -99,6 +99,12 @@ class MonorepoPolicyTest(unittest.TestCase):
         p.write_text('package robot\n'+'// line\n'*1000,encoding='utf-8',newline='\n')
         self.verify(False,'exceed 1000 lines')
 
+    def test_physical_line_limit_counts_blank_lines(self):
+        p=self.write('ARES-FRC/src/main/kotlin/Large.kt','package robot\n'+'\n'*999)
+        self.verify(True)
+        p.write_text('package robot\n'+'\n'*1000,encoding='utf-8',newline='\n')
+        self.verify(False,'exceed 1000 lines')
+
     def test_deleted_source_does_not_break_inventory(self):
         (self.root/'ARES-FRC/src/main/kotlin/Robot.kt').unlink()
         self.verify(True)

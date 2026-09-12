@@ -181,7 +181,8 @@ $oversizedAresSources = $productionSources |
             $_.FullName -notmatch '[\\/]generated[\\/]'
     } |
     ForEach-Object {
-        $lineCount = (Get-Content -LiteralPath $_.FullName | Measure-Object -Line).Lines
+        $lineCount = 0
+        foreach ($line in [System.IO.File]::ReadLines($_.FullName)) { $lineCount++ }
         if ($lineCount -gt $maxAresOwnedSourceLines) {
             [PSCustomObject]@{
                 Path = $_.FullName.Substring($root.Length + 1)
