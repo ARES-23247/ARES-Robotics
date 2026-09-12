@@ -29,9 +29,10 @@ class HardwareRegistry {
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
     // Rebuilt only during registration. Loop readers retain one stable, identity-deduplicated snapshot.
     @Volatile private var lifecycleDevices = emptyArray<SubsystemIO>()
-    private val devicesNamesList = CopyOnWriteArrayList<String>()
-    private val devicesPrefixList = CopyOnWriteArrayList<String>()
-    private val devicesHeartbeatTopicList = CopyOnWriteArrayList<String>()
+    private class TelemetryEntry(val device: LoggableDevice, val prefix: String, val heartbeatTopic: String)
+    // Written under the registration monitor; each publish pass retains one coherent array.
+    private val telemetryEntries = ArrayList<TelemetryEntry>()
+    @Volatile private var telemetrySnapshot = emptyArray<TelemetryEntry>()
     private val deviceIndices = ConcurrentHashMap<String, Int>()
     private val closeables = CopyOnWriteArrayList<AutoCloseable>()
     private val topologyNodes = ConcurrentHashMap<String, TopologyNode>()
@@ -41,9 +42,13 @@ class HardwareRegistry {
     private val registeredMotorsByNameView: Map<String, MotorIO> = Collections.unmodifiableMap(cachedMotorsWithNames)
     private val cachedCurrentSourcesList = CopyOnWriteArrayList<CurrentSourceIO>()
     private val registeredCurrentSourcesView: List<CurrentSourceIO> = Collections.unmodifiableList(cachedCurrentSourcesList)
-    private val syncPolledDevices = CopyOnWriteArrayList<SyncPolledDevice>()
-    private val roundRobinDevices = CopyOnWriteArrayList<SyncPolledDevice>()
-    private val pollingFailureCounts = ConcurrentHashMap<SyncPolledDevice, Long>()
+    private class PollingEntry(val device: SyncPolledDevice) {
+        // Owned by the polling worker. Close discards entries before a new generation can register.
+        var consecutiveFailures = 0L
+    }
+    private val pollingEntriesByIdentity = IdentityHashMap<SyncPolledDevice, PollingEntry>()
+    @Volatile private var syncPolledDevices = emptyArray<PollingEntry>()
+    @Volatile private var roundRobinDevices = emptyArray<PollingEntry>()
     private val telemetryPublishSequence = AtomicLong(0L)
     
     @Volatile private var pollingGeneration = 0L
@@ -60,17 +65,19 @@ class HardwareRegistry {
     /**
      * Registers a lifecycle resource for best-effort closure by [closeAll].
      */
+    @Synchronized
     fun registerCloseable(closeable: AutoCloseable) {
-        closeables.addIfAbsent(closeable)
+        if (closeables.none { it === closeable }) closeables.add(closeable)
     }
 
     /**
      * Adds [device] to the primary polling list and starts the daemon on first registration.
      * Duplicate object registrations in this list are ignored.
      */
+    @Synchronized
     fun registerSyncPolledDevice(device: SyncPolledDevice) {
-        if (!syncPolledDevices.contains(device)) {
-            syncPolledDevices.add(device)
+        if (syncPolledDevices.none { it.device === device }) {
+            syncPolledDevices += pollingEntry(device)
         }
         startPollingThreadIfNeeded()
     }
@@ -79,12 +86,16 @@ class HardwareRegistry {
      * Adds [device] to the secondary round-robin list and starts the daemon if needed.
      * One entry from this list is serviced per pass independently of the primary list.
      */
+    @Synchronized
     fun registerRoundRobinDevice(device: SyncPolledDevice) {
-        if (!roundRobinDevices.contains(device)) {
-            roundRobinDevices.add(device)
+        if (roundRobinDevices.none { it.device === device }) {
+            roundRobinDevices += pollingEntry(device)
         }
         startPollingThreadIfNeeded()
     }
+
+    private fun pollingEntry(device: SyncPolledDevice): PollingEntry =
+        pollingEntriesByIdentity[device] ?: PollingEntry(device).also { pollingEntriesByIdentity[device] = it }
 
     @Synchronized
     private fun startPollingThreadIfNeeded() {
@@ -95,19 +106,25 @@ class HardwareRegistry {
                 var index = 0
                 var roundRobinIndex = 0
                 while (pollingGeneration == generation) {
+                    val primary = syncPolledDevices
+                    val secondary = roundRobinDevices
+                    if (pollingGeneration != generation) break
                     var polledAny = false
-                    if (syncPolledDevices.isNotEmpty()) {
-                        val idx = index % syncPolledDevices.size
-                        pollSafely(syncPolledDevices[idx])
-                        index++
+                    if (primary.isNotEmpty()) {
+                        if (index >= primary.size) index = 0
+                        pollSafely(primary[index])
+                        // Keep the cursor bounded instead of overflowing a lifetime Int counter.
+                        index = if (index == primary.lastIndex) 0 else index + 1
                         polledAny = true
                     }
-                    if (roundRobinDevices.isNotEmpty()) {
-                        val idx = roundRobinIndex % roundRobinDevices.size
-                        pollSafely(roundRobinDevices[idx])
-                        roundRobinIndex++
+                    if (pollingGeneration != generation) break
+                    if (secondary.isNotEmpty()) {
+                        if (roundRobinIndex >= secondary.size) roundRobinIndex = 0
+                        pollSafely(secondary[roundRobinIndex])
+                        roundRobinIndex = if (roundRobinIndex == secondary.lastIndex) 0 else roundRobinIndex + 1
                         polledAny = true
                     }
+                    if (pollingGeneration != generation) break
                     if (polledAny) {
                         try { Thread.sleep(kotlin.math.max(10L, pollingIntervalMs)) } catch (_: InterruptedException) { break }
                     } else {
@@ -127,15 +144,16 @@ class HardwareRegistry {
         worker.start()
     }
 
-    private fun pollSafely(device: SyncPolledDevice) {
+    private fun pollSafely(entry: PollingEntry) {
         try {
-            device.pollSync()
-            pollingFailureCounts.remove(device)
+            entry.device.pollSync()
+            entry.consecutiveFailures = 0L
         } catch (exception: Exception) {
-            val failures = pollingFailureCounts.merge(device, 1L) { prior, increment -> prior + increment } ?: 1L
+            val failures = if (entry.consecutiveFailures < Long.MAX_VALUE) entry.consecutiveFailures + 1L else Long.MAX_VALUE
+            entry.consecutiveFailures = failures
             if (failures == 1L || failures and (failures - 1L) == 0L) {
                 System.err.println(
-                    "HardwareRegistry: ${device.javaClass.simpleName} polling failed " +
+                    "HardwareRegistry: ${entry.device.javaClass.simpleName} polling failed " +
                         "($failures consecutive): ${exception.message}"
                 )
             }
@@ -179,32 +197,40 @@ class HardwareRegistry {
         if (existingIndex == null) {
             deviceIndices[name] = devicesList.size
             devicesList.add(device)
-            devicesNamesList.add(name)
-            devicesPrefixList.add(telemetryPrefix)
-            devicesHeartbeatTopicList.add(heartbeatTopic)
+            telemetryEntries.add(TelemetryEntry(device, telemetryPrefix, heartbeatTopic))
         } else {
             devicesList[existingIndex] = device
-            devicesPrefixList[existingIndex] = telemetryPrefix
-            devicesHeartbeatTopicList[existingIndex] = heartbeatTopic
+            telemetryEntries[existingIndex] = TelemetryEntry(device, telemetryPrefix, heartbeatTopic)
         }
 
         val shortName = if (name.startsWith("Motors/")) name.substring("Motors/".length) else name
         if (prior is MotorIO && prior !== device) {
-            cachedMotorsWithNames.remove(shortName, prior)
-            if (cachedMotorsWithNames.values.none { it === prior }) {
-                cachedMotorsList.remove(prior)
+            if (cachedMotorsWithNames[shortName] === prior) {
+                cachedMotorsWithNames.remove(shortName)
+                // A raw name and its Motors/ alias can share the same short lookup key.
+                for ((otherName, otherDevice) in devices) {
+                    if (otherDevice is MotorIO && otherName.removePrefix("Motors/") == shortName) {
+                        cachedMotorsWithNames[shortName] = otherDevice
+                        break
+                    }
+                }
+            }
+            if (devices.values.none { it === prior }) {
+                val index = cachedMotorsList.indexOfFirst { it === prior }
+                if (index >= 0) cachedMotorsList.removeAt(index)
             }
         }
         if (prior is CurrentSourceIO && prior !== device && devices.values.none { it === prior }) {
-            cachedCurrentSourcesList.remove(prior)
+            val index = cachedCurrentSourcesList.indexOfFirst { it === prior }
+            if (index >= 0) cachedCurrentSourcesList.removeAt(index)
         }
         if (device is MotorIO) {
             cachedMotorsWithNames[shortName] = device
-            if (!cachedMotorsList.contains(device)) {
+            if (cachedMotorsList.none { it === device }) {
                 cachedMotorsList.add(device)
             }
         }
-        if (device is CurrentSourceIO && !cachedCurrentSourcesList.contains(device)) {
+        if (device is CurrentSourceIO && cachedCurrentSourcesList.none { it === device }) {
             cachedCurrentSourcesList.add(device)
         }
         val seen = IdentityHashMap<SubsystemIO, Boolean>()
@@ -215,6 +241,7 @@ class HardwareRegistry {
             }
         }
         lifecycleDevices = lifecycle.toTypedArray()
+        telemetrySnapshot = telemetryEntries.toTypedArray()
     }
 
     /**
@@ -397,9 +424,9 @@ class HardwareRegistry {
                 Thread.currentThread().interrupt()
             }
         }
-        syncPolledDevices.clear()
-        roundRobinDevices.clear()
-        pollingFailureCounts.clear()
+        syncPolledDevices = emptyArray()
+        roundRobinDevices = emptyArray()
+        pollingEntriesByIdentity.clear()
 
         val closedByIdentity = Collections.newSetFromMap(IdentityHashMap<AutoCloseable, Boolean>())
         var firstFailure: Throwable? = null
@@ -426,9 +453,8 @@ class HardwareRegistry {
         devices.clear()
         devicesList.clear()
         lifecycleDevices = emptyArray()
-        devicesNamesList.clear()
-        devicesPrefixList.clear()
-        devicesHeartbeatTopicList.clear()
+        telemetryEntries.clear()
+        telemetrySnapshot = emptyArray()
         deviceIndices.clear()
         topologyNodes.clear()
         cachedMotorsWithNames.clear()
@@ -454,27 +480,31 @@ class HardwareRegistry {
     }
 
     /**
-     * Publishes registered devices in registration order. Concurrent registration skew and device
-     * telemetry failures are suppressed because diagnostics must not stop the robot loop.
+     * Publishes one coherent registration snapshot in order. Registration changes take effect on
+     * the next pass. Each device and its successful heartbeat are isolated from later producers.
+     * Heartbeats use exactly representable positive integers, wrapping to one before precision loss.
      */
     fun publishAll(telemetry: ITelemetry) {
-        try {
-            val count = kotlin.math.min(
-                devicesList.size,
-                kotlin.math.min(devicesPrefixList.size, devicesHeartbeatTopicList.size),
-            )
-            val publishSequence = telemetryPublishSequence.incrementAndGet().toDouble()
-            for (i in 0 until count) {
-                try {
-                    val device = devicesList[i]
-                    val prefix = devicesPrefixList[i]
-                    device.logTelemetry(telemetry, prefix)
-                    val heartbeatTopic = devicesHeartbeatTopicList[i]
-                    if (heartbeatTopic.isNotEmpty()) {
-                        telemetry.putNumber(heartbeatTopic, publishSequence)
-                    }
-                } catch (_: IndexOutOfBoundsException) { break }
+        val snapshot = telemetrySnapshot
+        val publishSequence = nextTelemetrySequence()
+        for (i in snapshot.indices) {
+            val entry = snapshot[i]
+            try {
+                entry.device.logTelemetry(telemetry, entry.prefix)
+                if (entry.heartbeatTopic.isNotEmpty()) {
+                    telemetry.putNumber(entry.heartbeatTopic, publishSequence)
+                }
+            } catch (_: Throwable) {
+                // Diagnostics are best effort; a failed producer must not hide healthy successors.
             }
-        } catch (_: Throwable) {}
+        }
+    }
+
+    private fun nextTelemetrySequence(): Double {
+        while (true) {
+            val current = telemetryPublishSequence.get()
+            val next = if (current >= 0L && current < 9_007_199_254_740_991L) current + 1L else 1L
+            if (telemetryPublishSequence.compareAndSet(current, next)) return next.toDouble()
+        }
     }
 }
