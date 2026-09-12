@@ -329,7 +329,7 @@ private fun ProjectIdentityForm(
                 value = state.draft.projectId,
                 onValueChange = { onUpdate(ProjectIdentityField.PROJECT_ID, it) },
                 error = state.fieldErrors[ProjectIdentityField.PROJECT_ID],
-                enabled = state.currentDocument == null &&
+                enabled = state.currentDocument == null && !state.saving &&
                     sourceAvailable &&
                     (state.protectedError == null || state.protectedContentHash != null),
                 help = "Starts with a letter; letters, numbers, dot, underscore, and dash only.",
@@ -339,7 +339,7 @@ private fun ProjectIdentityForm(
                 value = state.draft.teamId,
                 onValueChange = { onUpdate(ProjectIdentityField.TEAM_ID, it) },
                 error = state.fieldErrors[ProjectIdentityField.TEAM_ID],
-                enabled = state.currentDocument == null && runtimeOptionsEnabled,
+                enabled = state.currentDocument == null && !state.saving && runtimeOptionsEnabled,
                 help = "Usually your team number; stored with the project so another computer sees the same identity.",
             )
             IdentityField(
@@ -347,7 +347,7 @@ private fun ProjectIdentityForm(
                 value = state.draft.seasonId,
                 onValueChange = { onUpdate(ProjectIdentityField.SEASON_ID, it) },
                 error = state.fieldErrors[ProjectIdentityField.SEASON_ID],
-                enabled = state.currentDocument == null && runtimeOptionsEnabled,
+                enabled = state.currentDocument == null && !state.saving && runtimeOptionsEnabled,
                 help = "A stable season key such as 2026.",
             )
             IdentityField(
@@ -355,7 +355,7 @@ private fun ProjectIdentityForm(
                 value = state.draft.robotId,
                 onValueChange = { onUpdate(ProjectIdentityField.ROBOT_ID, it) },
                 error = state.fieldErrors[ProjectIdentityField.ROBOT_ID],
-                enabled = state.currentDocument == null && runtimeOptionsEnabled,
+                enabled = state.currentDocument == null && !state.saving && runtimeOptionsEnabled,
                 help = "Used by generated files and evidence records; change it only through a coordinated project rename.",
             )
             IdentityField(

@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "78e797443f12b4d0d98722b0d1bdb5421f296fb8a72b37f4a95978269b3a9144",
+      "sha256": "1e4a200c5bac2ddef4ad497345ad33b57558a1fd931b285f7c19232418cf2c0d",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5649,7 +5649,8 @@
         "docs/audits/project-history-recovery-integrity-audit.md: pass198 scoped records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/project-document-path-ownership-audit.md: pass199 scoped records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/project-metadata-catalog-restoration-audit.md: pass200 scoped records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/project-identity-inspection-repair-audit.md"
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "docs/audits/project-identity-concurrency-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -14359,33 +14360,39 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityViewModel.kt": {
-      "sha256": "12122d43944fc9075895ae544291158daf4d20a6db3003082ee8fed0c0834899",
+      "sha256": "d47516c9750a0de1311c64d13cc28dd9a4c5b8bc7efc2ddcaaa197ec1783fb0a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass201: Full source read; focused coverage of inspection, explicit unsupported schema state, current/unknown corruption, hash-bound review and repair with/without ProjectSession. Removed diagnostic-string classification and second disk read for the repair hash. Existing 12 editor tests and six new repair tests pass. Separate valid-document/session-revision capture, project switches, competing applies/edits and cancellation remain open; full lifecycle is not verified.",
+      "scope": "Pass201: Full source read; focused coverage of inspection, explicit unsupported schema state, current/unknown corruption, hash-bound review and repair with/without ProjectSession. Removed diagnostic-string classification and second disk read for the repair hash. Existing 12 editor tests and six new repair tests pass. Separate valid-document/session-revision capture, project switches, competing applies/edits and cancellation remain open; full lifecycle is not verified. Pass202: Full source reread; deterministic real-file/session tests close identified valid-document/revision and post-save revision mismatches, invalid snapshot reuse, concurrent draft loss, duplicate applies and cancellation busy/error defects. Creation refreshes the selected session and locks stable IDs; newer editable drafts survive success/failure. Captured post-save metadata must match the returned revision. Fourteen new concurrency cases and 63 focused tests pass. Broader platform-specific draft paths, serialized-owner assumptions, remaining duplicate inspection/session reads and integration boundaries remain explicit; this is not a universal UI concurrency guarantee.",
       "evidence": [
         "docs/audits/project-identity-inspection-repair-audit.md",
-        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence",
+        "docs/audits/project-identity-concurrency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectIdentityScreen.kt": {
-      "sha256": "5cc5c0da0a09216b808245212d23ed57ad0df84999701254ad2b7f109cc03d85",
+      "sha256": "666e8ae8bdbef976ba7314a5a16532e1d39aa01fd46b6ed83748cbc33d2ebd7f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass201: Inspected state collection and warning/review/repair rendering boundary. Protected card now consumes explicit unsupported version, not authoringModel in error text; older/newer and repairable presentation cases pass. The rest of the form, geometry displays, layout/interaction and rendered-window behavior are not accounted for by this partial review.",
+      "scope": "Pass201: Inspected state collection and warning/review/repair rendering boundary. Protected card now consumes explicit unsupported version, not authoringModel in error text; older/newer and repairable presentation cases pass. The rest of the form, geometry displays, layout/interaction and rendered-window behavior are not accounted for by this partial review. Pass202: Four stable-identity field enable conditions now also reject saving state, matching the viewmodel creation lock. Geometry, display-name and runtime fields stay editable and newer drafts are retained. Production condition wiring inspected and viewmodel contract tested; no rendered-window or full-screen review claim.",
       "evidence": [
         "docs/audits/project-identity-inspection-repair-audit.md",
-        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence",
+        "docs/audits/project-identity-concurrency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ProjectSessionTest.kt": {
       "sha256": "9166acbb23273e0823b3b1054273a101176198adbdaa759e8cf007c97fa41f5e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass201: Identity repair and retired-document diagnostic tests and relevant fixtures reviewed; updated the diagnostic assertion to require explicit unsupported schema 3 rather than a missing current field. All 12 tests rerun, but unrelated session/execution/drivebase test internals still require full review.",
+      "scope": "Pass201: Identity repair and retired-document diagnostic tests and relevant fixtures reviewed; updated the diagnostic assertion to require explicit unsupported schema 3 rather than a missing current field. All 12 tests rerun, but unrelated session/execution/drivebase test internals still require full review. Pass202: Remaining test bodies and fixtures read, completing static source inspection; all twelve tests rerun in the focused suite. Existing concurrency fixture uses unbounded latch/future waits and shutdown without join; process-service fixture ownership is still to be examined. Do not close the test-file review until those concerns are resolved.",
       "evidence": [
         "docs/audits/project-identity-inspection-repair-audit.md",
-        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence",
+        "docs/audits/project-identity-concurrency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/ProjectIdentityPresentationTest.kt": {
@@ -14446,6 +14453,26 @@
       "evidence": [
         "docs/audits/project-identity-inspection-repair-audit.md",
         "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityConcurrencyAuditTest.kt": {
+      "sha256": "6841c82992e98f55d1c66130258cfee975e44d6c6fd319010cfd7947df9e8f54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass202: Entire fourteen-case test file authored/read/executed. Uses real files/repositories/session, delegated assembly-time file substitution and bounded queued I/O under one coroutine owner; owned job cancelled/drained/completion-checked before temporary cleanup. Tests assert coherent load/save revisions, stale-write preservation, current draft/validation preservation, duplicate apply rejection, creation binding/ID locking, post-refresh interference, cancellation before dispatch and after commit, and project/load generation guards. Initial nine baseline cases had eight failures and one existing pass; all final cases pass.",
+      "evidence": [
+        "docs/audits/project-identity-concurrency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
+      ]
+    },
+    "docs/audits/project-identity-concurrency-audit.md": {
+      "sha256": "4602f5c16bc8c630c698068cef46a3b08ec182211e5ce697422ccdcc7bf966f0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass202: Entire report checked against baseline/focused XML and final implementation. Records eight observed baseline failures, fourteen deterministic final cases, revision/draft/cancellation semantics and limits on serialized-owner, external writers, UI and remaining session/test scope; final full-suite and policy results recorded when available.",
+      "evidence": [
+        "docs/audits/project-identity-concurrency-audit.md",
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
       ]
     }
   }
