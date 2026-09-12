@@ -36,11 +36,11 @@ class HardwareSetupServiceTest {
             val beforeReview = service.inspect(root.path, League.FTC)
             assertTrue(beforeReview.simulationVerification.verified)
             kotlin.test.assertFailsWith<IllegalArgumentException> {
-                service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest())
+                service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest(beforeReview))
             }
-            service.saveReview(root.path, League.FTC, completeReviewRequest())
+            service.saveReview(root.path, League.FTC, completeReviewRequest(beforeReview))
 
-            val validated = service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest())
+            val validated = service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest(beforeReview))
             assertEquals("Mentor One", validated.physicalValidation?.validatedBy)
             assertEquals(validated.inventoryHash, validated.physicalValidation?.inventoryHash)
             assertEquals(1_800_000_000_000L, validated.physicalValidation?.recordedAtEpochMillis)
@@ -76,6 +76,7 @@ class HardwareSetupServiceTest {
                 root.path,
                 League.FTC,
                 HardwareReviewRequest(
+                    expectedInventoryHash = initial.inventoryHash,
                     reviewerName = "Student Driver",
                     wiringMatched = true,
                     addressesChecked = true,
@@ -307,8 +308,9 @@ class HardwareSetupServiceTest {
             seedDrivebase(root)
             SubsystemProjectRepository().save(root.path, lift("arm"))
             val service = HardwareSetupService()
-            service.saveReview(root.path, League.FTC, completeReviewRequest())
-            val valid = service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest())
+            val displayed = service.inspect(root.path, League.FTC)
+            val reviewed = service.saveReview(root.path, League.FTC, completeReviewRequest(displayed))
+            val valid = service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest(reviewed))
             assertTrue(valid.physicalValidation != null)
             java.io.File(root, ".ares/subsystems/broken.aressubsystem").writeText("invalid subsystem")
             val invalid = service.inspect(root.path, League.FTC)
@@ -324,7 +326,7 @@ class HardwareSetupServiceTest {
         withInvalidReviewedProject { _, _, snapshot ->
             val state = com.ares.analytics.viewmodel.hardware.HardwareSetupState(
                 loading = false, snapshot = snapshot,
-                physicalValidatorName = "Mentor One", physicalEvidenceSummary = completePhysicalRequest().evidenceSummary,
+                physicalValidatorName = "Mentor One", physicalEvidenceSummary = completePhysicalRequest(snapshot).evidenceSummary,
                 directionsAndPolarityTested = true, unitsAndSensorsTested = true, disabledNeutralTested = true,
                 limitsAndCurrentTested = true, faultRecoveryTested = true,
             )
@@ -335,11 +337,11 @@ class HardwareSetupServiceTest {
 
     @Test
     fun `service rejects new physical evidence for an invalid inventory without writing a record`() =
-        withInvalidReviewedProject { root, service, _ ->
+        withInvalidReviewedProject { root, service, snapshot ->
             val directory = java.io.File(root, ".ares/evidence/hardware/physical")
             val before = directory.listFiles().orEmpty().associate { it.name to it.readText() }
             kotlin.test.assertFailsWith<IllegalArgumentException> {
-                service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest())
+                service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest(snapshot))
             }
             assertEquals(before, directory.listFiles().orEmpty().associate { it.name to it.readText() })
         }
@@ -483,7 +485,8 @@ class HardwareSetupServiceTest {
         )
     }
 
-    private fun completeReviewRequest() = HardwareReviewRequest(
+    private fun completeReviewRequest(snapshot: HardwareSetupSnapshot) = HardwareReviewRequest(
+        expectedInventoryHash = snapshot.inventoryHash,
         reviewerName = "Student Driver",
         wiringMatched = true,
         addressesChecked = true,
@@ -492,7 +495,8 @@ class HardwareSetupServiceTest {
         limitsChecked = true,
     )
 
-    private fun completePhysicalRequest() = HardwarePhysicalValidationRequest(
+    private fun completePhysicalRequest(snapshot: HardwareSetupSnapshot) = HardwarePhysicalValidationRequest(
+        expectedInventoryHash = snapshot.inventoryHash,
         validatedBy = "Mentor One",
         evidenceSummary = "Robot on blocks: direction, sensors, neutral, limits, current, and fault recovery all matched the written procedure.",
         directionsAndPolarityTested = true,

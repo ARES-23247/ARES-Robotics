@@ -122,6 +122,7 @@ class HardwareSetupViewModel(
             projectPath,
             league,
             HardwareReviewRequest(
+                expectedInventoryHash = requireNotNull(submitted.snapshot).inventoryHash,
                 reviewerName = submitted.reviewerName,
                 wiringMatched = submitted.wiringMatched,
                 addressesChecked = submitted.addressesChecked,
@@ -141,6 +142,7 @@ class HardwareSetupViewModel(
             projectPath,
             league,
             HardwarePhysicalValidationRequest(
+                expectedInventoryHash = requireNotNull(submitted.snapshot).inventoryHash,
                 validatedBy = submitted.physicalValidatorName,
                 evidenceSummary = submitted.physicalEvidenceSummary,
                 directionsAndPolarityTested = submitted.directionsAndPolarityTested,

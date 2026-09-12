@@ -543,10 +543,12 @@ class RobotProjectTemplateServiceTest {
             )
 
             assertTrue(templateDeploymentBlockReason(root)!!.contains("has not been compared"))
-            HardwareSetupService().saveReview(
+            val hardwareSetup = HardwareSetupService()
+            val displayedHardware = hardwareSetup.inspect(root.path, League.FTC)
+            hardwareSetup.saveReview(
                 root.path,
                 League.FTC,
-                HardwareReviewRequest("Team member", true, true, true, true, true),
+                HardwareReviewRequest(displayedHardware.inventoryHash, "Team member", true, true, true, true, true),
             )
             assertNull(templateDeploymentBlockReason(root))
         } finally {

@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "49745605bb4421bc24e021a235c71565d97fd8562e8cf542743122e0a20ab342",
+      "sha256": "863d0e8d243a9cfa535dfc47bd274036b667af1b37bb072dbf01b6fdee28ad2c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13946,31 +13946,37 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareSetupService.kt": {
-      "sha256": "e0b2a2ecd03542b38579087fd63f6dcc862ab905e56827f45d7382ecba112fc4",
+      "sha256": "3c00f24738952750465e17b0874791a3ff03b673cde1bcab8a69d19b2009ab59",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 194: Entire source read; fix per-channel quadrature DIO ownership, shared physical-readiness gate, invalid-inventory physical evidence suppression and removal of the filtered issue-list allocation in the reviewability predicate. Regressions cover actual decoded docs, cross-document collisions, same-hash malformed docs, evidence rejection without writes and existing review/hash flows. XRP namespace/CAN bus edge cases, concurrent source edits, evidence path ownership, append ordering/races remain open. Pass 195 persistence-boundary follow-up: both save requests omit the displayed inventory hash; submitted approval binding remains open. Existing service tests pass; this is not evidence that the source-edit gap is fixed.",
+      "scope": "Pass 196: Full source reviewed across passes 194-196; inspect/save/readback and source ownership guard rechecked. Both evidence requests require the displayed inventory hash; mismatches reject before append. Configuration review retains the exact inspected source fingerprints instead of re-reading/hashing edited files, and resolves its containment root once. Three product regressions reproduced and fixed with real view-model/file flows. Earlier port/collision/readiness fixes retained. Remaining: evidence-directory ownership, append races/ordering, clock/record validation edges, physical-save source ownership, cross-file inspection consistency, XRP namespaces and CAN/bus identity.",
       "evidence": [
         "docs/audits/hardware-commissioning-gates-audit.md",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json",
         "docs/audits/hardware-setup-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass195-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json",
+        "docs/audits/hardware-evidence-binding-audit.md",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/hardware/HardwareSetupViewModel.kt": {
-      "sha256": "ba17c0661fb92a2f443ea6cf46ef51122876bb63e0a5978e21a928c129cc1d63",
-      "review": "partial",
+      "sha256": "eff7cb40d10d9253f49f984e97ba35e67539acfba0c90614dee0735f411361c0",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 195: Entire view-model/state source reviewed. Shared operation identity, cancellation transparency/completion, atomic draft preservation, busy/save guards and checklist invalidation across inventory/readiness/failure transitions verified by 12 lifecycle cases, 33 focused tests and the full Studio suite. Remains partial for binding submitted approvals to the displayed inventory hash and the associated persistence/source-edit contract; cancellation does not undo blocking IO.",
+      "scope": "Pass 196: Complete state/view-model review combines pass195 lifecycle validation with both submitted-inventory hashes captured from immutable submitted state. Twelve lifecycle cases and real-service persistence tests cover state fencing, cancellation, edits, readiness transitions and stale forms. Save IO transaction/ownership issues remain scoped to the service; this view model does not promise rollback of blocking writes.",
       "evidence": [
         "docs/audits/hardware-commissioning-gates-audit.md",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json",
         "docs/audits/hardware-setup-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass195-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json",
+        "docs/audits/hardware-evidence-binding-audit.md",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/HardwareSetupScreen.kt": {
@@ -13985,14 +13991,17 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareSetupServiceTest.kt": {
-      "sha256": "db0835d9e788f3a5ef858ed6e15bbed76f026d8325a558d94227243edfc9e59e",
+      "sha256": "214de77372c28176c4a5853148f783050384a67f1d2d96e8de6ea005887d0487",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 194: Entire test file read; original cases preserved and expanded. Numeric/actual descriptor/commissioning/evidence/Compose regressions pass in final focused and full suites. Physical evidence records are synthetic fixtures, not hardware tests.",
+      "scope": "Pass 196: Entire test file previously reviewed; request-identity changes rechecked and all 18 existing tests retained and executed. Synthetic requests use inspected inventory snapshots; no physical validation is inferred. Final focused and full Studio validation passed.",
       "evidence": [
         "docs/audits/hardware-commissioning-gates-audit.md",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json",
+        "docs/audits/hardware-evidence-binding-audit.md",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareInventoryFormattingTest.kt": {
@@ -14037,6 +14046,39 @@
         "docs/audits/hardware-setup-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass195-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareEvidencePersistenceTest.kt": {
+      "sha256": "853bd45e9a1a55af31d7b7eacd73e0e9a136aadfab9a4a08f18b3ea12b3e1278",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 196: Entire new test file reviewed. Real canonical-descriptor/view-model/service flows reproduce both stale-form writes and mixed source hashes; unchanged forms succeed. Direct blank/unrelated hash tests assert specific mismatch errors and distinct content to exclude duplicate-file false positives. Invalid hardware-free fixture was ruled out and removed. All five final cases passed.",
+      "evidence": [
+        "docs/audits/hardware-evidence-binding-audit.md",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/RobotProjectTemplateServiceTest.kt": {
+      "sha256": "beb966bc6ca711b6ff244f292f613949acfcee562e6d86ba086e1e5eac5b5fec",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 196: Entire test source and fixtures read. Eighteen cases cover template identity/deployment policy, staged publication/rollback, cloud fallback/races, offline/bundled caching, pinned hashes, schema-compatible personalization, field presets, traversal/version rejection and bounded IDs. Hardware-review fixture now supplies its displayed inventory hash. All 18 passed in focused/full runs; this is not a full review of the production template service or a generated-project build.",
+      "evidence": [
+        "docs/audits/hardware-evidence-binding-audit.md",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "docs/audits/hardware-evidence-binding-audit.md": {
+      "sha256": "582ae3e76071f47ef22911a6bd6cbf193635951e257a22796bb4f0a973a32ab9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 196: Report reconciled with three confirmed baseline defects plus one rejected invalid-fixture candidate, two 53-test focused runs, the 1878-test/6-skip full run, repository policy and persistence/hardware limitations.",
+      "evidence": [
+        "docs/audits/hardware-evidence-binding-audit.md",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
+        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
       ]
     }
   }

@@ -109,6 +109,8 @@ data class HardwareSetupSnapshot(
 }
 
 data class HardwareReviewRequest(
+    /** Inventory shown when these human checks were completed; never inferred again at save time. */
+    val expectedInventoryHash: String,
     val reviewerName: String,
     val wiringMatched: Boolean,
     val addressesChecked: Boolean,
@@ -125,6 +127,8 @@ data class HardwarePhysicalValidationEvidence(
 )
 
 data class HardwarePhysicalValidationRequest(
+    /** Inventory shown when these human checks were completed; never inferred again at save time. */
+    val expectedInventoryHash: String,
     val validatedBy: String,
     val evidenceSummary: String,
     val directionsAndPolarityTested: Boolean,
@@ -168,6 +172,11 @@ private data class HardwarePhysicalValidationDocument(
     val faultRecoveryTested: Boolean,
 )
 
+private data class HardwareInspection(
+    val snapshot: HardwareSetupSnapshot,
+    val sources: List<HardwareSourceFingerprint>,
+)
+
 private data class HardwareReviewReadResult(
     val status: HardwareReviewStatus,
     val reviewedBy: String?,
@@ -193,7 +202,9 @@ class HardwareSetupService(
     private val commissioningVerificationService: CommissioningVerificationService = CommissioningVerificationService(),
     private val clock: Clock = Clock.systemUTC(),
 ) {
-    fun inspect(projectPath: String, league: League): HardwareSetupSnapshot {
+    fun inspect(projectPath: String, league: League): HardwareSetupSnapshot = inspectHardware(projectPath, league).snapshot
+
+    private fun inspectHardware(projectPath: String, league: League): HardwareInspection {
         val root = File(projectPath).canonicalFile
         require(root.isDirectory) { "Project directory does not exist: ${root.path}" }
 
@@ -396,7 +407,7 @@ class HardwareSetupService(
         val review = readReview(root, league, inventoryHash, normalizedSources, issues)
         val simulationVerification = commissioningVerificationService.verify(subsystemDocuments)
 
-        return HardwareSetupSnapshot(
+        val snapshot = HardwareSetupSnapshot(
             projectPath = root.path,
             league = league,
             inventoryHash = inventoryHash,
@@ -409,13 +420,16 @@ class HardwareSetupService(
             simulationVerification = simulationVerification,
             physicalValidation = review.physicalValidation.takeIf { issues.none { it.severity == HardwareIssueSeverity.ERROR } },
         )
+        return HardwareInspection(snapshot, normalizedSources)
     }
 
     fun saveReview(projectPath: String, league: League, request: HardwareReviewRequest): HardwareSetupSnapshot {
-        val snapshot = inspect(projectPath, league)
+        val inspection = inspectHardware(projectPath, league)
+        val snapshot = inspection.snapshot
         require(snapshot.canReview) {
             snapshot.errorIssues.joinToString(" ") { it.message }.ifBlank { "Fix hardware mapping errors before recording a review." }
         }
+        requireReviewedInventory(snapshot, request.expectedInventoryHash)
         val reviewer = request.reviewerName.trim()
         require(reviewer.length in 2..80) { "Enter the name of the team member who compared the configuration with the robot." }
         require(
@@ -423,13 +437,14 @@ class HardwareSetupService(
                 request.neutralOutputsChecked && request.limitsChecked,
         ) { "Complete every hardware review check before recording the review." }
 
-        val sourcePaths = snapshot.items.map(HardwareInventoryItem::sourcePath).distinct().sorted()
-        val sources = sourcePaths.map { path ->
-            val file = File(snapshot.projectPath, path).canonicalFile
-            require(file.isFile && file.toPath().startsWith(File(snapshot.projectPath).canonicalFile.toPath())) {
-                "Hardware source $path is missing or outside the project."
+        // Preserve the same descriptor hashes used to construct inventoryHash. Re-reading here
+        // could combine an earlier inventory with sources edited while its inspection completed.
+        val projectRoot = File(snapshot.projectPath).canonicalFile.toPath()
+        inspection.sources.forEach { source ->
+            val file = File(snapshot.projectPath, source.path).canonicalFile
+            require(file.isFile && file.toPath().startsWith(projectRoot)) {
+                "Hardware source ${source.path} is missing or outside the project."
             }
-            sourceFingerprint(path, file)
         }
         val review = HardwareReviewDocument(
             league = league.name,
@@ -440,7 +455,7 @@ class HardwareSetupService(
             directionsChecked = true,
             neutralOutputsChecked = true,
             limitsChecked = true,
-            sources = sources,
+            sources = inspection.sources,
             recordedAtEpochMillis = clock.millis(),
         )
         appendEvidence(configurationReviewDirectory(File(snapshot.projectPath)), review.recordedAtEpochMillis, review)
@@ -461,6 +476,7 @@ class HardwareSetupService(
                 else -> "Resolve deterministic commissioning simulation failures before physical validation."
             }
         }
+        requireReviewedInventory(snapshot, request.expectedInventoryHash)
         val validator = request.validatedBy.trim()
         val evidence = request.evidenceSummary.trim()
         require(validator.length in 2..80) { "Enter the team member who performed the physical checks." }
@@ -634,15 +650,9 @@ class HardwareSetupService(
         }
     }
 
-    private fun sourceFingerprint(path: String, file: File): HardwareSourceFingerprint {
-        val hash = when {
-            file.extension.equals("aresdrivetrain", ignoreCase = true) ->
-                DrivetrainDocumentCodec.contentHash(DrivetrainDocumentCodec.decode(file.readText()))
-            file.extension.equals("aressubsystem", ignoreCase = true) ->
-                SubsystemDocumentCodec.contentHash(SubsystemDocumentCodec.decode(file.readText()))
-            else -> error("Unsupported hardware source $path")
+    private fun requireReviewedInventory(snapshot: HardwareSetupSnapshot, expectedInventoryHash: String) {
+        require(snapshot.inventoryHash == expectedInventoryHash) {
+            "Hardware configuration changed since this checklist was loaded. Refresh Hardware Setup and repeat the checks for the current inventory."
         }
-        return HardwareSourceFingerprint(path, hash)
     }
-
 }
