@@ -10,16 +10,16 @@ permissions:
   contents: read
 
 env:
-  ARES_VERSION: 17.0.13
-  STUDIO_VERSION: 7.0.13
-  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.13/ARES-FTC-Starter-17.0.13.zip
-  FTC_STARTER_SHA256: 04f7faca966ffe94c638790a1da30ca78c455551fc476ca0bdb29837d6fcb8a7
-  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.13/ARES-FRC-Starter-17.0.13.zip
-  FRC_STARTER_SHA256: 7c268701e05de370641044a14dffd375c0b761f7e3f3abc27951df7530de4c14
-  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.13/ARES-XRP-Starter-3.0.12.zip
-  XRP_STARTER_SHA256: 5f745ac6fb11134241dd05be2f94de817b28142d1014aa973275c023e4be1fb3
-  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.13/ARES-Lightbot-Example-3.0.12.zip
-  LIGHTBOT_EXAMPLE_SHA256: cafb1ac5c0d405c2391cbe83515c207012c24a54fabfbd0748b6bce37540c6ed
+  ARES_VERSION: 17.0.14
+  STUDIO_VERSION: 7.0.14
+  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.14/ARES-FTC-Starter-17.0.14.zip
+  FTC_STARTER_SHA256: 91464e3ae7e160220bb3b9d2c9a655d4cb4e4556e55eb65a2e73fc895b7af5e9
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.14/ARES-FRC-Starter-17.0.14.zip
+  FRC_STARTER_SHA256: c949abef8fa6f1c2bbc79fe4a5141af0be85d90e6178a8572aaae523edb9f047
+  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.14/ARES-XRP-Starter-3.0.13.zip
+  XRP_STARTER_SHA256: 275a1998d8db86b55c74ec2c3dbd5597e0279cb0f6a3b334d3a5a649b0226588
+  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.14/ARES-Lightbot-Example-3.0.13.zip
+  LIGHTBOT_EXAMPLE_SHA256: 4dee52667ed8069fa8ace5b4014bbf41e54cf9454c7d4c74c068326d75f17c4b
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
