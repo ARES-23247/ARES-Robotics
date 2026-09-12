@@ -3,6 +3,7 @@ package com.areslib.ftc.vision
 import com.areslib.action.RobotAction
 import com.areslib.ftc.drivetrain.PinpointIO
 import com.areslib.hardware.vision.VisionIO
+import com.areslib.hardware.vision.VisionRecoveryConsensus
 import com.areslib.hardware.vision.VisionFrameGate
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.hardware.vision.VisionOutlierFilter
@@ -21,8 +22,8 @@ import com.areslib.math.wrapAngle
  *
  * ### Recovery States & Thresholds:
  * - **Initialization Snap**: Re-seeds EKF and Pinpoint odometry pose when stationary if `hasInitializedPoseWithVision` is `false`.
- * - **Kidnapped Robot Recovery**: Accumulates vision target poses over consecutive EKF rejections (`consecutiveVisionRejections >= stolenRobotRejectionThreshold`).
- *   Re-seeds EKF pose when robot velocity $< \text{stolenRobotVelocityThreshold}$ ($0.1\text{m/s}$) and angular velocity $< \text{stolenRobotAngularVelocityThreshold}$ ($0.2\text{rad/s}$).
+ * - **Kidnapped Robot Recovery**: Accumulates vision target poses over consistent divergent observations until the configured whole-sample requirement is met.
+ *   Re-seeds EKF pose when robot velocity $< \text{stolenRobotVelocityThreshold}$ ($0.1\text{m/s}$) and angular velocity $< \text{stolenRobotAngularVelocityThreshold}$ ($0.25\text{rad/s}$).
  *
  * @param store Redux store instance holding [RobotState].
  * @param limelightIO Underlying vision hardware IO instance ([VisionIO]).
@@ -63,16 +64,12 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     /** True if the vision sensor hardware is connected and responding. */
     override val isConnected: Boolean
         get() = limelightIO != null && visionInputs.isConnected
-    private var consecutiveVisionRejections = 0
-    private var accumX = 0.0
-    private var accumY = 0.0
-    private var accumSin = 0.0
-    private var accumCos = 0.0
+    private val recoveryConsensus = VisionRecoveryConsensus()
     private val frameGate = VisionFrameGate(500L)
     private var updating = false
     private var lastRecoveryUpdateMs = 0L
     private val freshMeasurements = ArrayList<com.areslib.state.VisionMeasurement>(8)
-    /** Flag tracking whether initial vision pose alignment has executed. */
+    /** True after a successful initial or recovery alignment; callers may request reinitialization. */
     var hasInitializedPoseWithVision = false
 
     /**
@@ -115,7 +112,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             lastLimelightPose = null
         }
         val recoveryAge = timestampMs - lastRecoveryUpdateMs
-        if (consecutiveVisionRejections > 0 && (recoveryAge < 0L || recoveryAge > 500L)) resetRecoveryAccumulator()
+        if (recoveryConsensus.sampleCount > 0L && (recoveryAge < 0L || recoveryAge > 500L)) resetRecoveryAccumulator()
         clearInputs()
 
         val io = limelightIO ?: run {
@@ -278,6 +275,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             val snapPose = if (recoveryPoseIsPlausible) recoveryPose2d else fieldPose2d
             reseedOdometry(snapPose)
             hasInitializedPoseWithVision = true
+            resetRecoveryAccumulator()
             lastVisionStatus = "INIT_ALIGN_SNAP"
             store.dispatch(RobotAction.PoseUpdate(
                 xMeters = snapPose.x,
@@ -298,44 +296,32 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             val isRejectedOrDivergent = isRecoverableRejection ||
                 (isAccepted && distance > 0.4) || independentYawDivergence
 
-            if (isRejectedOrDivergent && isStationary && (physicalPoseIsPlausible || recoveryPoseIsPlausible)) {
+            val requiredSamples = VisionRecoveryConsensus.requiredSamples(tuning.recovery.stolenRobotRejectionThreshold)
+            if (requiredSamples > 0L && isRejectedOrDivergent && isStationary &&
+                (physicalPoseIsPlausible || recoveryPoseIsPlausible)) {
                 // MT1 is deliberately kept out of normal high-rate fusion, but its yaw
                 // is independent of the gyro supplied to MT2. Consistent stationary MT1
                 // frames can therefore recover a robot that was lifted and rotated or
                 // whose gyro heading was reset/corrupted.
-                val p2d = if (recoveryPoseIsPlausible) {
-                    recoveryPose2d
-                } else if (measurement.solverType != com.areslib.state.VisionSolverType.MEGATAG2) {
-                    fieldPose2d
-                } else {
-                    Pose2d(fieldPose2d.x, fieldPose2d.y, Rotation2d(robotHeading))
+                val recoveryX = if (recoveryPoseIsPlausible) recoveryPose2d.x else fieldPose2d.x
+                val recoveryY = if (recoveryPoseIsPlausible) recoveryPose2d.y else fieldPose2d.y
+                val recoveryHeading = when {
+                    recoveryPoseIsPlausible -> recoveryPose2d.heading.radians
+                    measurement.solverType != com.areslib.state.VisionSolverType.MEGATAG2 -> fieldPose2d.heading.radians
+                    else -> robotHeading
                 }
-                if (consecutiveVisionRejections > 0) {
-                    val meanX = accumX / consecutiveVisionRejections
-                    val meanY = accumY / consecutiveVisionRejections
-                    val meanHeading = kotlin.math.atan2(accumSin, accumCos)
-                    val sampleTranslationError = kotlin.math.hypot(p2d.x - meanX, p2d.y - meanY)
-                    val sampleHeadingError = kotlin.math.abs(wrapAngle(p2d.heading.radians - meanHeading))
-                    if (sampleTranslationError > 0.35 || sampleHeadingError > Math.toRadians(20.0)) {
-                        resetRecoveryAccumulator()
-                    }
+                if (!recoveryConsensus.add(recoveryX, recoveryY, recoveryHeading)) {
+                    resetRecoveryAccumulator()
+                    publishStatus("REJ_INVALID")
+                    return
                 }
-                accumX += p2d.x
-                accumY += p2d.y
-                accumSin += kotlin.math.sin(p2d.heading.radians)
-                accumCos += kotlin.math.cos(p2d.heading.radians)
-                consecutiveVisionRejections++
                 lastRecoveryUpdateMs = timestampMs
 
-                val reqThreshold = tuning.recovery.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
-                if (consecutiveVisionRejections >= reqThreshold) {
-                    val avgX = accumX / consecutiveVisionRejections
-                    val avgY = accumY / consecutiveVisionRejections
-                    val avgHeading = kotlin.math.atan2(accumSin, accumCos)
-                    val snapPose = Pose2d(avgX, avgY, Rotation2d(avgHeading))
-
+                if (recoveryConsensus.sampleCount >= requiredSamples) {
+                    val snapPose = Pose2d(recoveryConsensus.meanX, recoveryConsensus.meanY,
+                        Rotation2d(recoveryConsensus.meanHeadingRad))
                     reseedOdometry(snapPose)
-
+                    hasInitializedPoseWithVision = true
                     resetRecoveryAccumulator()
 
                     lastVisionStatus = "RESEED_SNAP"
@@ -405,12 +391,8 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     }
 
     private fun resetRecoveryAccumulator() {
-        consecutiveVisionRejections = 0
+        recoveryConsensus.clear()
         lastRecoveryUpdateMs = 0L
-        accumX = 0.0
-        accumY = 0.0
-        accumSin = 0.0
-        accumCos = 0.0
     }
 
     private fun shockMagnitude(xG: Double, yG: Double, zG: Double): Double {

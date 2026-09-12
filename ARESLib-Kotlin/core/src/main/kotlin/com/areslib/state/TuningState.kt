@@ -120,6 +120,11 @@ data class DriverTuningState(
  * Shared Kidnapped / Stolen Robot Recovery thresholds.
  */
 data class RecoveryTuningState(
+    /**
+     * Positive finite observation requirement, rounded upward. FRC doubles single-tag requests
+     * before rounding. Invalid or Long-unrepresentable requirements disable automatic recovery;
+     * ordinary initial alignment uses its separate physical/stationarity policy.
+     */
     val stolenRobotRejectionThreshold: Double = 45.0,
     val stolenRobotVelocityThreshold: Double = 0.1,
     val stolenRobotAngularVelocityThreshold: Double = 0.25

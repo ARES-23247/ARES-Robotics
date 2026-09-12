@@ -2,6 +2,7 @@ package com.areslib.frc.vision
 
 import com.areslib.action.RobotAction
 import com.areslib.hardware.vision.VisionIO
+import com.areslib.hardware.vision.VisionRecoveryConsensus
 import com.areslib.hardware.vision.VisionFrameGate
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.hardware.vision.VisionOutlierFilter
@@ -56,11 +57,7 @@ class FrcVisionTracker(
     private var lastRecoveryUpdateMs = 0L
     private val freshMeasurements = ArrayList<VisionMeasurement>(8)
     private var stationaryTracking = false
-    private var recoveryCount = 0
-    private var recoveryX = 0.0
-    private var recoveryY = 0.0
-    private var recoverySin = 0.0
-    private var recoveryCos = 0.0
+    private val recoveryConsensus = VisionRecoveryConsensus()
     private var stationarySinceMs = 0L
     private var recoveryStartedMs = 0L
     private val historicalPose = DoubleArray(3)
@@ -123,7 +120,7 @@ class FrcVisionTracker(
             stationaryTracking = false
         }
         val recoveryAge = timestampMs - lastRecoveryUpdateMs
-        if (recoveryCount > 0 && (recoveryAge < 0L || recoveryAge > 1_000L)) resetRecovery()
+        if (recoveryConsensus.sampleCount > 0L && (recoveryAge < 0L || recoveryAge > 1_000L)) resetRecovery()
         clearInputs()
 
         visionIO?.let { io ->
@@ -332,32 +329,18 @@ class FrcVisionTracker(
             return false
         }
 
-        if (recoveryCount > 0) {
-            val meanX = recoveryX / recoveryCount
-            val meanY = recoveryY / recoveryCount
-            val meanHeading = kotlin.math.atan2(recoverySin, recoveryCos)
-            if (kotlin.math.hypot(candidate3d.x - meanX, candidate3d.y - meanY) > 0.35 ||
-                kotlin.math.abs(wrapAngle(candidate3d.rotation.z - meanHeading)) > Math.toRadians(20.0)) {
-                resetRecovery()
-            }
+        val requiredSamples = VisionRecoveryConsensus.requiredSamples(
+            store.state.tuning.recovery.stolenRobotRejectionThreshold, singleTag = measurement.tagCount == 1)
+        if (requiredSamples == 0L || !recoveryConsensus.add(candidate3d.x, candidate3d.y, candidate3d.rotation.z)) {
+            resetRecovery()
+            return false
         }
-
-        recoveryX += candidate3d.x
-        recoveryY += candidate3d.y
-        recoverySin += kotlin.math.sin(candidate3d.rotation.z)
-        recoveryCos += kotlin.math.cos(candidate3d.rotation.z)
-        if (recoveryCount == 0) recoveryStartedMs = timestampMs
-        recoveryCount++
+        if (recoveryConsensus.sampleCount == 1L) recoveryStartedMs = timestampMs
         lastRecoveryUpdateMs = timestampMs
-        val baseRequired = store.state.tuning.recovery.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
-        val required = if (measurement.tagCount >= 2) baseRequired else baseRequired * 2
-        if (recoveryCount < required || timestampMs - recoveryStartedMs < MIN_RECOVERY_CONSENSUS_MS) return false
+        if (recoveryConsensus.sampleCount < requiredSamples || timestampMs - recoveryStartedMs < MIN_RECOVERY_CONSENSUS_MS) return false
 
-        val snapPose = Pose2d(
-            recoveryX / recoveryCount,
-            recoveryY / recoveryCount,
-            Rotation2d(kotlin.math.atan2(recoverySin, recoveryCos))
-        )
+        val snapPose = Pose2d(recoveryConsensus.meanX, recoveryConsensus.meanY,
+            Rotation2d(recoveryConsensus.meanHeadingRad))
         swerveIO.seedPose(snapPose)
         store.dispatch(
             RobotAction.PoseUpdate(
@@ -383,12 +366,8 @@ class FrcVisionTracker(
     }
 
     private fun resetRecovery() {
-        recoveryCount = 0
+        recoveryConsensus.clear()
         lastRecoveryUpdateMs = 0L
-        recoveryX = 0.0
-        recoveryY = 0.0
-        recoverySin = 0.0
-        recoveryCos = 0.0
         recoveryStartedMs = 0L
     }
 
