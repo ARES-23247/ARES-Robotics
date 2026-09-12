@@ -2,6 +2,7 @@ package com.ares.analytics.service.project.persistence
 
 import com.ares.analytics.shared.AppJson
 import com.ares.analytics.util.Sha256
+import com.areslib.project.ARES_PROJECT_METADATA_SCHEMA_VERSION
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.project.AresProjectMetadataDocument
 import java.io.File
@@ -9,7 +10,6 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
 
 data class SavedProjectMetadata(
     val document: AresProjectMetadataDocument,
@@ -17,6 +17,16 @@ data class SavedProjectMetadata(
     val historyFile: File?,
     val created: Boolean,
     val repaired: Boolean = false,
+)
+
+/** The decode result and raw hash describe the same captured file contents. */
+internal data class ProjectMetadataInspection(
+    val result: Result<AresProjectMetadataDocument>,
+    val rawContentHash: String?,
+)
+
+internal class UnsupportedProjectMetadataSchemaException(val schemaVersion: Int) : IllegalArgumentException(
+    "Unsupported project metadata schema $schemaVersion; current Studio supports schema-$ARES_PROJECT_METADATA_SCHEMA_VERSION projects only and will not rewrite this project.",
 )
 
 /** Canonical, Git-tracked robot and field geometry at `.ares/project.json`. */
@@ -30,6 +40,20 @@ class ProjectMetadataRepository {
     }
 
     fun rawContentHash(projectPath: String): String = Sha256.fileHex(file(projectPath))
+
+    internal fun inspect(projectPath: String): ProjectMetadataInspection {
+        val target = file(projectPath)
+        if (!target.exists()) return ProjectMetadataInspection(
+            Result.failure(NoSuchElementException("Project metadata does not exist at ${target.path}")),
+            rawContentHash = null,
+        )
+        // I/O failures propagate without granting a repair token. Do not reread to hash a newer file.
+        val bytes = target.readBytes()
+        return ProjectMetadataInspection(
+            runCatching { decodeProjectMetadata(bytes.toString(Charsets.UTF_8)) },
+            Sha256.hex(bytes),
+        )
+    }
 
     /** Creates metadata once. Replacing an existing file requires a reviewed save or repair hash. */
     fun save(projectPath: String, document: AresProjectMetadataDocument): String =
@@ -102,9 +126,12 @@ class ProjectMetadataRepository {
             require(actualRawHash == expectedRawContentHash) {
                 "The invalid project identity changed after preview. Reload it, review the new repair, and try again."
             }
-            check(repositoryDecodeFails(rawBytes)) {
+            val decodeFailure = runCatching { decodeProjectMetadata(rawBytes.toString(Charsets.UTF_8)) }.exceptionOrNull()
+            check(decodeFailure != null) {
                 "The project identity became valid after preview. Reload it instead of replacing it through repair."
             }
+            // Reviewed repair restores damaged current/unknown-format bytes; it is not a migration.
+            if (decodeFailure is UnsupportedProjectMetadataSchemaException) throw decodeFailure
 
             val recovery = resolveProjectPath(projectPath, ".ares/recovery/project/$actualRawHash.raw")
             when {
@@ -124,10 +151,6 @@ class ProjectMetadataRepository {
         }
     }
 
-    private fun repositoryDecodeFails(bytes: ByteArray): Boolean = runCatching {
-        decodeProjectMetadata(bytes.toString(Charsets.UTF_8))
-    }.isFailure
-
 }
 /** Adds a stable, student-facing shape check before the library codec touches non-null Kotlin fields. */
 internal fun decodeProjectMetadata(json: String): AresProjectMetadataDocument {
@@ -136,6 +159,13 @@ internal fun decodeProjectMetadata(json: String): AresProjectMetadataDocument {
     }
     val objectValue = root as? JsonObject
         ?: throw IllegalArgumentException("Project metadata must be one JSON object.")
+    val schemaVersion = (objectValue["schemaVersion"] as? JsonPrimitive)
+        ?.takeUnless { it.isString }?.content?.toBigDecimalOrNull()
+        ?.let { runCatching { it.intValueExact() }.getOrNull() }
+    // Classify an explicit version before checking fields belonging to the current schema.
+    if (schemaVersion != null && schemaVersion != ARES_PROJECT_METADATA_SCHEMA_VERSION) {
+        throw UnsupportedProjectMetadataSchemaException(schemaVersion)
+    }
     val required = listOf(
         "schemaVersion",
         "projectId",
@@ -155,7 +185,7 @@ internal fun decodeProjectMetadata(json: String): AresProjectMetadataDocument {
     }
     fun primitive(field: String): JsonPrimitive = objectValue.getValue(field) as? JsonPrimitive
         ?: throw IllegalArgumentException("Project metadata field '$field' must be a single value.")
-    require(!primitive("schemaVersion").isString && primitive("schemaVersion").intOrNull != null) {
+    require(schemaVersion != null) {
         "Project metadata field 'schemaVersion' must be a whole number."
     }
     require(primitive("projectId").isString) {

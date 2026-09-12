@@ -46,12 +46,24 @@ class ProjectIdentityPresentationTest {
     @Test
     fun `unsupported project format directs users to create a current project`() {
         val explanation = protectedProjectIdentityExplanation(
-            "Project metadata is missing required field: authoringModel",
+            3,
         )
 
         assertTrue(explanation.orEmpty().contains("retired project format"))
         assertTrue(explanation.orEmpty().contains("schema-5 projects only"))
         assertTrue(explanation.orEmpty().contains("will not rewrite this project automatically"))
         assertTrue(explanation.orEmpty().contains("Create or export a current robot project"))
+    }
+
+    @Test
+    fun `current or unknown corruption has no unsupported schema explanation`() {
+        assertNull(protectedProjectIdentityExplanation(null))
+    }
+
+    @Test
+    fun `future schemas are explained as newer rather than retired`() {
+        val explanation = protectedProjectIdentityExplanation(6)
+        assertTrue(explanation.orEmpty().contains("newer project format"))
+        assertTrue(explanation.orEmpty().contains("will not rewrite this project automatically"))
     }
 }

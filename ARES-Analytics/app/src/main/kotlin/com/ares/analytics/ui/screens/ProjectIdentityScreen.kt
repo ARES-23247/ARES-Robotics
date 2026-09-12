@@ -28,6 +28,7 @@ import com.ares.analytics.viewmodel.project.ProjectIdentityField
 import com.ares.analytics.viewmodel.project.ProjectIdentityViewModel
 import com.areslib.project.AresFtcHubCommandTransport
 import com.areslib.project.AresXrpControllerModel
+import com.areslib.project.ARES_PROJECT_METADATA_SCHEMA_VERSION
 
 /** Reviewed editor for canonical `.ares/project.json`; workspace preferences remain separate. */
 @Composable
@@ -84,7 +85,13 @@ fun ProjectIdentityScreen(
                 item { MissingRobotSourceCard(error) }
             }
             state.protectedError?.let { error ->
-                item { ProtectedProjectIdentityCard(error, repairAvailable = state.protectedContentHash != null) }
+                item {
+                    ProtectedProjectIdentityCard(
+                        error,
+                        repairAvailable = state.protectedContentHash != null,
+                        unsupportedSchemaVersion = state.unsupportedSchemaVersion,
+                    )
+                }
             }
             item {
                 ProjectIdentityForm(
@@ -234,10 +241,10 @@ internal fun projectIdentityReviewGuidance(state: ProjectIdentityEditorState): S
     else -> null
 }
 
-internal fun protectedProjectIdentityExplanation(error: String): String? = when {
-    error.contains("authoringModel") ->
-        "This folder uses a retired project format. Current Studio supports schema-5 projects only and will not rewrite this project automatically. Create or export a current robot project from Studio."
-    else -> null
+internal fun protectedProjectIdentityExplanation(unsupportedSchemaVersion: Int?): String? {
+    if (unsupportedSchemaVersion == null) return null
+    val format = if (unsupportedSchemaVersion < ARES_PROJECT_METADATA_SCHEMA_VERSION) "retired" else "newer"
+    return "This folder uses a $format project format. Current Studio supports schema-$ARES_PROJECT_METADATA_SCHEMA_VERSION projects only and will not rewrite this project automatically. Create or export a current robot project from Studio."
 }
 
 @Composable
@@ -261,8 +268,8 @@ private fun ProjectIdentityDestinationCard(state: ProjectIdentityEditorState) {
 }
 
 @Composable
-private fun ProtectedProjectIdentityCard(error: String, repairAvailable: Boolean) {
-    val explanation = protectedProjectIdentityExplanation(error)
+private fun ProtectedProjectIdentityCard(error: String, repairAvailable: Boolean, unsupportedSchemaVersion: Int?) {
+    val explanation = protectedProjectIdentityExplanation(unsupportedSchemaVersion)
     Card(
         colors = CardDefaults.cardColors(containerColor = AresError.copy(alpha = 0.10f)),
         border = BorderStroke(1.dp, AresError),
@@ -271,7 +278,7 @@ private fun ProtectedProjectIdentityCard(error: String, repairAvailable: Boolean
             Icon(Icons.Default.Error, contentDescription = null, tint = AresError)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    if (explanation != null) "Retired project format · select a current project"
+                    if (explanation != null) "Unsupported project format · select a current project"
                     else if (repairAvailable) "Invalid project file preserved · reviewed repair available"
                     else "Protected project file · no write allowed",
                     color = AresTextPrimary,

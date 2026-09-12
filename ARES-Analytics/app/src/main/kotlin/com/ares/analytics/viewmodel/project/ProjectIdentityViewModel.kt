@@ -4,6 +4,8 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
+import com.ares.analytics.service.project.persistence.UnsupportedProjectMetadataSchemaException
+import com.areslib.project.ARES_PROJECT_METADATA_SCHEMA_VERSION
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
@@ -91,6 +93,8 @@ data class ProjectIdentityEditorState(
     val protectedError: String? = null,
     /** Hash of an invalid existing file that may be replaced only through reviewed repair. */
     val protectedContentHash: String? = null,
+    /** Explicit unsupported version from the inspected bytes; null is not evidence of an old format. */
+    val unsupportedSchemaVersion: Int? = null,
     val message: String? = null,
     val messageIsError: Boolean = false,
 ) {
@@ -379,17 +383,15 @@ class ProjectIdentityViewModel(
     }
 
     private fun inspect(config: WorkspaceConfig): ProjectIdentityEditorState {
-        val file = repository.file(config.projectPath)
-        val currentResult = repository.load(config.projectPath)
+        val inspected = repository.inspect(config.projectPath)
+        val currentResult = inspected.result
         val current = currentResult.getOrNull()
         val sessionRevision = current?.let {
             projectSession?.snapshot(config.projectPath, config.league.targetPlatform(), forceReload = true)?.revision
         }
-        val corruptError = currentResult.exceptionOrNull()?.takeIf { file.isFile }
-        val corruptHash = corruptError?.let { repository.rawContentHash(config.projectPath) }
-        val retiredSchema = corruptError?.message.orEmpty().let { message ->
-            message.contains("Unsupported project metadata schema") || message.contains("authoringModel")
-        }
+        val corruptError = currentResult.exceptionOrNull()?.takeIf { inspected.rawContentHash != null }
+        val corruptHash = corruptError?.let { inspected.rawContentHash }
+        val unsupportedSchema = corruptError as? UnsupportedProjectMetadataSchemaException
         val projectSourceError = ProjectLayout.validationError(config.projectPath, config.league)
         val mismatch = current?.takeIf { it.league != config.league.toAresLeague() }
         val draft = projectIdentityDraft(config, current)
@@ -406,15 +408,18 @@ class ProjectIdentityViewModel(
             generalErrors = validation.generalErrors,
             projectSourceError = projectSourceError,
             protectedError = when {
-                retiredSchema ->
-                    "The selected .ares/project.json uses a retired project format. Current Studio supports schema-5 projects only and will not rewrite this project."
+                unsupportedSchema != null -> {
+                    val format = if (unsupportedSchema.schemaVersion < ARES_PROJECT_METADATA_SCHEMA_VERSION) "retired" else "newer"
+                    "The selected .ares/project.json uses a $format project format. ${unsupportedSchema.message}"
+                }
                 corruptError != null ->
                     "The existing .ares/project.json cannot be used: ${corruptError.message}. Its exact bytes remain unchanged. Enter the measured robot dimensions, review the repair, and ARES will preserve the original under .ares/recovery/project before replacing it."
                 mismatch != null ->
                     "The canonical project is ${mismatch.league}, but this workspace is ${config.league}. Select the correct workspace league; ARES will not rewrite platform identity automatically."
                 else -> null
             },
-            protectedContentHash = corruptHash.takeUnless { retiredSchema },
+            protectedContentHash = corruptHash.takeUnless { unsupportedSchema != null },
+            unsupportedSchemaVersion = unsupportedSchema?.schemaVersion,
             message = when {
                 corruptError != null -> null
                 projectSourceError != null ->

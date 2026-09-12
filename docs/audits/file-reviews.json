@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8aa56096064abc26f49a3dcc355aeff9d5753b2e4bab176f2893137fa35e960e",
+      "sha256": "78e797443f12b4d0d98722b0d1bdb5421f296fb8a72b37f4a95978269b3a9144",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5648,7 +5648,8 @@
         "docs/audits/frc-world-replacement-audit.md: pass133 worldreplacement records and self-fingerprint refreshed",
         "docs/audits/project-history-recovery-integrity-audit.md: pass198 scoped records reviewed and canonical self-fingerprint refreshed",
         "docs/audits/project-document-path-ownership-audit.md: pass199 scoped records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/project-metadata-catalog-restoration-audit.md: pass200 scoped records reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/project-metadata-catalog-restoration-audit.md: pass200 scoped records reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/project-identity-inspection-repair-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -14243,17 +14244,19 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectMetadataRepository.kt": {
-      "sha256": "a7cfe1cae8bc97b60f2c894b997cebf0b7b26f3816a596b58f4e4fec85c0eeb1",
+      "sha256": "0f9c91378ade2d3ce6162b0286d917ce8f9edd454acd2d5b1844f2b06a8b91a5",
       "review": "partial",
       "validation": "passed",
-      "scope": "Passes199-200: Entire source read. Real path ownership retained. Unreviewed save now initializes only a missing file under the shared lock; replacing/repairing requires expected hashes. Reuses canonical encoded bytes for target/history/hash. Eight new tests cover concurrent initialization, malformed root/nested/numeric/geometry input, canonical hashes, no-op/stale/collision behavior, raw repair preservation, changed/missing/valid repair targets, linked paths and invalid drafts. Full Studio passed. Read/shape/hash snapshot consistency, retired-format repair eligibility and raw-text edge cases remain open.",
+      "scope": "Passes199-200: Entire source read. Real path ownership retained. Unreviewed save now initializes only a missing file under the shared lock; replacing/repairing requires expected hashes. Reuses canonical encoded bytes for target/history/hash. Eight new tests cover concurrent initialization, malformed root/nested/numeric/geometry input, canonical hashes, no-op/stale/collision behavior, raw repair preservation, changed/missing/valid repair targets, linked paths and invalid drafts. Full Studio passed. Read/shape/hash snapshot consistency, retired-format repair eligibility and raw-text edge cases remain open. Pass201: Full source read. Inspection derives decode result and raw hash from one byte capture. Explicit unsupported schema classification precedes current shape checks and is enforced before repository repair writes; exact decimal-to-Int version semantics match the library. Meaningful replacement, preservation, notation, missing/empty/directory and editor/session integration tests pass. Raw UTF-8/duplicate keys, external writers/path replacement and interrupted persistence remain open.",
       "evidence": [
         "docs/audits/project-document-path-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
         "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json",
         "docs/audits/project-metadata-catalog-restoration-audit.md",
         "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json",
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectDocumentPathOwnershipTest.kt": {
@@ -14353,6 +14356,96 @@
         "docs/audits/project-metadata-catalog-restoration-audit.md",
         "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityViewModel.kt": {
+      "sha256": "12122d43944fc9075895ae544291158daf4d20a6db3003082ee8fed0c0834899",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass201: Full source read; focused coverage of inspection, explicit unsupported schema state, current/unknown corruption, hash-bound review and repair with/without ProjectSession. Removed diagnostic-string classification and second disk read for the repair hash. Existing 12 editor tests and six new repair tests pass. Separate valid-document/session-revision capture, project switches, competing applies/edits and cancellation remain open; full lifecycle is not verified.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectIdentityScreen.kt": {
+      "sha256": "5cc5c0da0a09216b808245212d23ed57ad0df84999701254ad2b7f109cc03d85",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass201: Inspected state collection and warning/review/repair rendering boundary. Protected card now consumes explicit unsupported version, not authoringModel in error text; older/newer and repairable presentation cases pass. The rest of the form, geometry displays, layout/interaction and rendered-window behavior are not accounted for by this partial review.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ProjectSessionTest.kt": {
+      "sha256": "9166acbb23273e0823b3b1054273a101176198adbdaa759e8cf007c97fa41f5e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass201: Identity repair and retired-document diagnostic tests and relevant fixtures reviewed; updated the diagnostic assertion to require explicit unsupported schema 3 rather than a missing current field. All 12 tests rerun, but unrelated session/execution/drivebase test internals still require full review.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/ProjectIdentityPresentationTest.kt": {
+      "sha256": "8ad3c5c841e5120e389ff3e0c010c44a707c3638345ebece9212462335ca246b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass201: Entire six-test file reviewed and executed. Source/geometry/ready guidance tests retained; unsupported-version explanation now receives explicit classification, with unknown/current-corruption and future-format cases. Tests validate presentation functions, not rendered Compose pixels or interaction.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityViewModelTest.kt": {
+      "sha256": "13053a6b933ed7bfae51f3e2e01d5e077a534bc04202224e8d971467f30e0e4f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass200-201: Entire existing twelve-test file and owned temporary-project/coroutine fixtures read. Tests rerun for identity defaults/source rejection, reviewed creation, preview invalidation, stable ID and league protection, corruption/retired formats, exact-byte repair/stale rejection and geometry/XRP validation. No physical or rendered-window claim; other lifecycle behavior belongs to the partial production record.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityRepairAuditTest.kt": {
+      "sha256": "172f400e21601b60e8686693238783955d40decc61a69846a7871b1664be2868",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass201: Entire six-case test file authored/read/executed. Actual editor/repository/session flows cover missing/null/damaged current authoring model, unknown schema corruption, explicit unsupported versions with damaged fields, repository/session migration rejection, preview immutability and exact recovery bytes. Initial five regressions all failed against baseline. Owned TemporaryFolder and coroutine test scopes.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectMetadataInspectionAuditTest.kt": {
+      "sha256": "d0c8926ac36f2464f45ee32d2aa88be9e428b86afe870bcab4f379d60681a465",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass201: Entire five-case test file authored/read/executed. Captured valid/invalid snapshots survive file replacement, stale repair fails before recovery, exact raw/noncanonical hashes are preserved, missing/empty/directory outcomes are distinct, and decimal/integer/exponent schema representations agree with exact library conversion. These are deterministic post-capture substitutions, not cross-process race or atomic-read proof.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "docs/audits/project-identity-inspection-repair-audit.md": {
+      "sha256": "ecab5cf0dc54908ac630172f958a39b2ff24e8813d80b64353305cd3b734cf81",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass201: Report checked against baseline/focused XML and production changes. Separates repair-policy defects, structural read consistency and presentation changes from remaining raw-parser, lifecycle, session-coherence and external-writer limitations; final full-suite/policy results recorded after completion.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/ProjectSession.kt": {
+      "sha256": "8c74c6ec4da57a9c4e1800dad97fb53f9965b292cfd826491d4948d156d28b2e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass201: Inspected identity save/repair entry points, error state, selection conflict and stable-load revision assembly relevant to the editor boundary. Direct unsupported-schema repair now fails via the repository before canonical/recovery writes; new editor/session repair tests pass. Whole-file mutation/execution, backup recovery, concurrent fingerprint consistency and lifecycle remain unreviewed.",
+      "evidence": [
+        "docs/audits/project-identity-inspection-repair-audit.md",
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
       ]
     }
   }
