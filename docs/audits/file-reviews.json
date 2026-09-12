@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "a93be238be918ca175c161c62c8eff3cb3d637de6d2e536deffbba152f768546",
+      "sha256": "a3ecf4f2321f193e596d496513639f814b76ac7e1eeb1edca241214a0f6972ea",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13684,6 +13684,160 @@
       "evidence": [
         "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
         "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DriveFrameContractValidator.kt": {
+      "sha256": "e9d739045f19d9506270adc8aac7461bb70740b78949649d8d1ce2966b8e57b7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Complete sender validation/state review: length, finite and exact safe integers, flags, component/rotation limits, neutral session start, ordering, commit/reset; traced shared protocol and serialized outbound validation/commit boundary; existing Nt4ClientService validation tests.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DriveFrameTelemetryRecorder.kt": {
+      "sha256": "fccb9aa57bb8d16891da4171f777ef692e24ad46065a1403b318e11171b1c0f2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Complete conflated-recorder lifecycle, ownership and sampling review; cancel queue when worker completes and reject offers for inactive workers; baseline cancellation failures and three passing recorder tests. Best-effort race semantics remain; callers provide validated arrays.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/FrameBatcher.kt": {
+      "sha256": "49b17007b6d22f1dce105bbb8991683cfa5cfd53a61589755db37b361fed3b96",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 192: Reviewed complete sequential batching implementation; reject invalid size, update bounds only after successful transform, reuse unchanged frames/list; four DuckDB tests including original session isolation. Int count overflow and mixed-storage failure/retry atomicity remain open.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RobotLightingTelemetry.kt": {
+      "sha256": "ee12317addf139e4a7192c22e17f02c1b22a9240f24b4cb2af58d6e89e8e1ec2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Complete canonical lighting parser and grouped-map review: finite values, exact topic segments, nonblank descriptor/hardware identity, indicator versus Prism distinction and stable-name grouping; existing parser/display integration tests.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RobotTopicContract.kt": {
+      "sha256": "3dfaaaafe1965ce5e27c6d13e4a517c2136f41fac74b456212da0f48e5e4e5fe",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 192: Read all constants and traced FTC publication/request and FRC SmartDashboard selection compatibility. Full FRC ARES/Auto/Requested receiver routing remains unverified.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/UiTelemetryFanout.kt": {
+      "sha256": "6c2f9c35eba82ad3599a48526030eea452bab1f65a6bec6585f5f388d17f664a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 192: Read complete coalescing/epoch/replay implementation and two existing tests; corrected lossless-bus documentation against TelemetryStore. Disposal retention, cardinality bounds and additional concurrency races remain open.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/log/BaseLogDecoder.kt": {
+      "sha256": "5cd5a2b0f45a10573ae0259d39427fa40c595f7786fe92f9c63fac80f32c274d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Complete abstract decoder contract review; corrected frame-count versus payload-byte bounds and sequential buffer documentation; no concrete decoder implementation coverage inferred.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/log/TelemetryTopicExtractor.kt": {
+      "sha256": "5eeedaad5228489169a4a7023ac056412b36f422465c56747cd33f8f26be91f3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Complete thin adapter review against actual library normalizer: trim leading slashes only, retain case/separators/hardware IDs; fixed misleading documentation; log integration suite passed.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4Topic.kt": {
+      "sha256": "4a4cf131c28662fb0c0379d426ef34ed747ae76c91897d1685a8ab27adb69e9a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Declarative serializable metadata DTO fully inspected; corrected map ownership/thread-safety documentation; compiled and exercised by NT4 integration tests; no unconditional backing-map immutability claim.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DriveFrameTelemetryRecorderTest.kt": {
+      "sha256": "b481a7eaa70b75c20f72c34dc37b6b7b34e1fdb809afab05003438d57fa1f76c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Entire test file read; fixtures, assertions and scope checked; original cases preserved; final focused and full Studio suites passed.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/FrameBatcherTest.kt": {
+      "sha256": "2b4465ab8be49c4ba300f70543d726bdc4f2ec0b673a93c3f973a9e11a5b19eb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Entire test file read; fixtures, assertions and scope checked; original cases preserved; final focused and full Studio suites passed.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/UiTelemetryFanoutTest.kt": {
+      "sha256": "9d680374acbf12cf9473e6ebdb9ba30be4960498b7f641ec1274494f49560663",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Entire test file read; fixtures, assertions and scope checked; original cases preserved; final focused and full Studio suites passed.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/IndicatorLightsCardTest.kt": {
+      "sha256": "ae782541a30d23811978ade57009e0b9eff5d52bb36d972814ed21cfcdd1793b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Entire test file read; fixtures, assertions and scope checked; original cases preserved; final focused and full Studio suites passed.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "docs/audits/telemetry-buffer-lifecycle-audit.md": {
+      "sha256": "a13de3ea1088a32d5b4ce0b4a142aeb6420dee8a505a7ca129a23a13e45bd393",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 192: Entire report reconciled against observed regressions, restored original tests, final focused/full suite totals and explicit limitations.",
+      "evidence": [
+        "docs/audits/telemetry-buffer-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
+        "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
       ]
     }
   }

@@ -2,13 +2,33 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 class DriveFrameTelemetryRecorderTest {
+    @Test
+    fun `completed recorder rejects new snapshots`() = runBlocking {
+        val owner = Job()
+        val recorder = DriveFrameTelemetryRecorder(CoroutineScope(coroutineContext + owner)) { }
+        owner.cancelAndJoin()
+        assertFalse(recorder.offer(snapshot(1.0)))
+    }
+
+    @Test
+    fun `already cancelled scope cannot accept snapshots`() = runBlocking {
+        val owner = Job().apply { cancel() }
+        val recorder = DriveFrameTelemetryRecorder(CoroutineScope(coroutineContext + owner)) { }
+        owner.join()
+        assertFalse(recorder.offer(snapshot(1.0)))
+    }
+
     @Test
     fun `slow telemetry indexing never blocks offer and pending snapshots are conflated`() = runBlocking {
         val accepted = mutableListOf<TelemetryFrame>()

@@ -14,8 +14,8 @@ import kotlinx.serialization.Serializable
  * - Type: Protocol payload data type string (`"double"`, `"int"`, `"boolean"`, `"string"`, `"double[]"`, `"msgpack"`)
  *
  * ### Thread Safety & Performance Guarantees:
- * Immutable Kotlin data class. Instances can be safely shared across concurrent coroutine contexts and threads
- * without external locking overhead.
+ * Properties are read-only references. The metadata map is not defensively copied; callers must
+ * stop mutating its backing map before sharing a topic across coroutine contexts or threads.
  *
  * @property id The numeric topic identifier assigned by the NetworkTables server during announce handshake.
  * @property name The fully qualified topic key path (e.g., `"Drive/Odom_Heading"`).
