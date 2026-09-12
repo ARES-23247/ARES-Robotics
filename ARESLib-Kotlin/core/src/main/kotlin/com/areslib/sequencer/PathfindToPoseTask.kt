@@ -118,13 +118,29 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
         delegateTask?.resume(state) ?: emptyList()
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        // Delegate cleanup runs first so a throwing cleanup still leaves this wrapper
-        // eligible for a terminal status via the default implementation.
-        val delegateActions = delegateTask?.end(state, interrupted) ?: emptyList()
-        delegateTask?.let { delegate ->
-            if (TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) propagateDelegateFailure(delegate)
+        var failure: Throwable? = null
+        var delegateActions: List<RobotAction> = emptyList()
+        val delegate = delegateTask
+        try { delegateActions = delegate?.end(state, interrupted) ?: emptyList() }
+        catch (error: Throwable) {
+            TaskStateMachine.markFailed(this)
+            failure = error
         }
-        return delegateActions + super.end(state, interrupted)
+        try { delegate?.releaseRuntimeState() }
+        catch (error: Throwable) {
+            TaskStateMachine.markFailed(this)
+            if (failure == null) failure = error else if (error !== failure) failure.addSuppressed(error)
+        }
+        if (delegate != null && TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
+            propagateDelegateFailure(delegate)
+        }
+        var ownActions: List<RobotAction> = emptyList()
+        try { ownActions = super.end(state, interrupted) }
+        catch (error: Throwable) {
+            if (failure == null) failure = error else if (error !== failure) failure.addSuppressed(error)
+        }
+        failure?.let { throw it }
+        return if (ownActions.isEmpty()) delegateActions else delegateActions + ownActions
     }
 
     private fun propagateDelegateFailure(delegate: Task) {

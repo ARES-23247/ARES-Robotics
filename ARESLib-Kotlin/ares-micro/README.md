@@ -10,6 +10,20 @@ ARES Robotics on-device MicroPython runtime for the Raspberry Pi Pico W and XRP 
 - **ARES Studio Driver Station Tether**: Dedicated non-blocking `ares-xrp/1` newline-delimited JSON over TCP 5811 with explicit sessions, monotonic sequences, request revisions, arming, and a deadman lease. XRP does not impersonate FTC/FRC NT4.
 - **Loop work**: Sensor inputs are read during the control cycle. Disconnected robots skip telemetry state snapshots, and unconstrained robots skip simulator pose tuples. JSON messages and controller return values still allocate; this is not a zero-allocation loop.
 
+## Numeric conventions
+
+Kinematics use meters per second, CCW-positive radians per second, and wheel order
+FL/FR/BL/BR for mecanum. Dimensions must be finite and positive. Forward kinematics
+avoid overflowing intermediate wheel averages and preserve rotation with very small
+or large geometry. Mecanum inverse kinematics reuse the rotational term across wheels.
+`wrap_angle` preserves already-normalized values and signed endpoints in [-pi, pi],
+then reduces larger finite inputs by the represented floating-point period. It does
+not provide arbitrary-precision reduction by mathematical pi. Nonfinite angles are
+rejected. Arc-to-chord scaling is stable near zero for curved odometry integration.
+
+Host tests use CPython's 64-bit floats. MicroPython precision depends on the target
+build; these tests do not establish physical loop times or target-port numerical limits.
+
 ## Control and lifecycle
 
 Pass the measured, finite positive period in seconds to `XrpRobot.step(dt)`. Invalid

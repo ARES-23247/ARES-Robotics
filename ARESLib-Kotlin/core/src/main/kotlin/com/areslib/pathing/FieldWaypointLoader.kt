@@ -3,9 +3,9 @@ package com.areslib.pathing
 import java.io.File
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.io.IOException
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import java.util.Collections
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 
@@ -46,7 +46,10 @@ data class FieldWaypoint(
 /**
  * Field Landmark Waypoint File Resolver and Cache.
  *
- * Dynamically parses `field_waypoints.json` from disk storage or embedded classpath resources.
+ * Parses `field_waypoints.json` from disk storage or embedded classpath resources. Successful,
+ * missing, and invalid reads are cached until [clearCache]; preload before timing-critical motion.
+ * Records require unique nonblank IDs/names and explicit finite X/Y/heading values. An invalid
+ * file yields an empty map rather than a partially usable or ambiguous set of motion targets.
  */
 object FieldWaypointLoader {
     private val SEARCH_PATHS = listOf(
@@ -63,18 +66,12 @@ object FieldWaypointLoader {
         "../../TeamCode/src/main/assets/paths"
     )
 
-    private val gson = Gson()
-    private val waypointListType = object : TypeToken<List<FieldWaypoint>>() {}.type
-    private var cachedWaypoints: Map<String, FieldWaypoint>? = null
+    private val cache = FieldWaypointCache(::findJson)
 
-    /**
-     * Loads and returns all registered field landmark waypoints indexed by name.
-     *
-     * @return Map of waypoint names to [FieldWaypoint] records.
-     */
-    fun loadAllWaypoints(): Map<String, FieldWaypoint> {
-        if (cachedWaypoints != null) return cachedWaypoints!!
+    /** Loads an immutable waypoint map. Missing/invalid files stay empty until [clearCache]. */
+    fun loadAllWaypoints(): Map<String, FieldWaypoint> = cache.load()
 
+    private fun findJson(): String? {
         var jsonString: String? = null
         val fileName = "field_waypoints.json"
 
@@ -114,20 +111,7 @@ object FieldWaypointLoader {
             }
         }
 
-        if (jsonString == null) {
-            System.err.println("WARN: field_waypoints.json not found in any standard directory or classpath.")
-            return emptyMap()
-        }
-
-        return try {
-            val list: List<FieldWaypoint> = gson.fromJson(jsonString, waypointListType)
-            val map = list.associateBy { it.name }
-            cachedWaypoints = map
-            map
-        } catch (e: Exception) {
-            System.err.println("ERROR: Failed to parse field_waypoints.json: ${e.message}")
-            emptyMap()
-        }
+        return jsonString
     }
 
     /**
@@ -144,7 +128,68 @@ object FieldWaypointLoader {
      * Clears internal waypoint memory cache, forcing next read pass to reload from disk.
      */
     fun clearCache() {
-        cachedWaypoints = null
+        cache.clear()
     }
 }
 
+
+/** One immutable snapshot per explicit load/reload, including unsuccessful resolution. */
+internal class FieldWaypointCache(private val readJson: () -> String?) {
+    @Volatile private var snapshot: Map<String, FieldWaypoint>? = null
+
+    fun load(): Map<String, FieldWaypoint> = snapshot ?: loadUncached()
+
+    @Synchronized fun clear() { snapshot = null }
+
+    @Synchronized private fun loadUncached(): Map<String, FieldWaypoint> {
+        snapshot?.let { return it }
+        val loaded = try {
+            val json = readJson()
+            if (json == null) {
+                System.err.println("WARN: field_waypoints.json not found in any standard directory or classpath.")
+                emptyMap()
+            } else {
+                val root = JsonParser.parseString(json)
+                require(root.isJsonArray) { "Expected an array of waypoints" }
+                val names = LinkedHashMap<String, FieldWaypoint>()
+                val ids = HashSet<String>()
+                for (element in root.asJsonArray) {
+                    require(element.isJsonObject) { "Each waypoint must be an object" }
+                    val item = element.asJsonObject
+                    val id = requiredString(item, "id")
+                    val name = requiredString(item, "name")
+                    require(ids.add(id) && !names.containsKey(name)) { "Waypoint IDs and names must be unique" }
+                    val lock = item.get("locked")
+                    require(lock == null || (lock.isJsonPrimitive && lock.asJsonPrimitive.isBoolean)) {
+                        "Waypoint locked must be boolean"
+                    }
+                    names[name] = FieldWaypoint(id, name,
+                        requiredNumber(item, "x"), requiredNumber(item, "y"),
+                        requiredNumber(item, "headingDegrees"), lock?.asBoolean ?: false)
+                }
+                Collections.unmodifiableMap(names)
+            }
+        } catch (failure: Exception) {
+            System.err.println("ERROR: Failed to load field_waypoints.json: ${failure.message}")
+            emptyMap()
+        }
+        snapshot = loaded
+        return loaded
+    }
+
+    private fun requiredString(item: JsonObject, key: String): String {
+        val value = item.get(key)
+        require(value != null && value.isJsonPrimitive && value.asJsonPrimitive.isString) {
+            "Waypoint $key must be a string"
+        }
+        return value.asString.also { require(it.isNotBlank()) { "Waypoint $key must not be blank" } }
+    }
+
+    private fun requiredNumber(item: JsonObject, key: String): Double {
+        val value = item.get(key)
+        require(value != null && value.isJsonPrimitive && value.asJsonPrimitive.isNumber) {
+            "Waypoint $key must be an explicit number"
+        }
+        return value.asDouble.also { require(it.isFinite()) { "Waypoint $key must be finite" } }
+    }
+}

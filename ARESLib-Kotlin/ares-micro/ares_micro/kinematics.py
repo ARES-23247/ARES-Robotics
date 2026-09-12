@@ -6,17 +6,36 @@ Zero-dependency, pure-Python forward and inverse kinematics calculations.
 import math
 
 def wrap_angle(angle_rad):
-    """Normalizes an angle to [-pi, pi]."""
+    """Normalizes a finite angle to [-pi, pi], retaining signed endpoints."""
     if not math.isfinite(angle_rad):
         raise ValueError("Angle must be finite")
-    wrapped = (angle_rad + math.pi) % (2.0 * math.pi) - math.pi
-    return math.pi if wrapped == -math.pi and angle_rad > 0.0 else wrapped
+    if -math.pi <= angle_rad <= math.pi:
+        return float(angle_rad)
+    wrapped = math.fmod(angle_rad, 2.0 * math.pi)
+    if wrapped > math.pi:
+        wrapped -= 2.0 * math.pi
+    elif wrapped < -math.pi:
+        wrapped += 2.0 * math.pi
+    return wrapped
 
 
 def arc_chord_scale(delta_heading):
     """SE(2) arc-to-chord factor for a midpoint rotation, stable at zero."""
+    if not math.isfinite(delta_heading):
+        raise ValueError("Heading delta must be finite")
     half = delta_heading * 0.5
     return 1.0 - half * half / 6.0 if abs(half) < 1e-6 else math.sin(half) / half
+
+
+def _mean(a, b):
+    total = a + b
+    # Sum first to preserve subnormal inputs; scale first only on overflow.
+    return total * 0.5 if math.isfinite(total) else a * 0.5 + b * 0.5
+
+
+def _quarter_sum(a, b, c, d):
+    total = a + b + c + d
+    return total * 0.25 if math.isfinite(total) else a * 0.25 + b * 0.25 + c * 0.25 + d * 0.25
 
 class DifferentialDriveKinematics:
     """
@@ -39,8 +58,9 @@ class DifferentialDriveKinematics:
         :param omega: Angular velocity (rad/s, CCW positive)
         :return: Tuple of (left_mps, right_mps)
         """
-        left = vx - (omega * self._half_track)
-        right = vx + (omega * self._half_track)
+        rotation = omega * self._half_track if self._half_track * 2.0 == self.track_width else (omega * self.track_width) * 0.5
+        left = vx - rotation
+        right = vx + rotation
         return (left, right)
 
     def to_chassis_speeds(self, left_mps, right_mps):
@@ -50,8 +70,9 @@ class DifferentialDriveKinematics:
         :param right_mps: Right wheel surface velocity (m/s)
         :return: Tuple of (vx_mps, omega_rad_per_sec)
         """
-        vx = (right_mps + left_mps) / 2.0
-        omega = (right_mps - left_mps) / self.track_width
+        vx = _mean(right_mps, left_mps)
+        difference = right_mps - left_mps
+        omega = difference / self.track_width if math.isfinite(difference) else right_mps / self.track_width - left_mps / self.track_width
         return (vx, omega)
 
 
@@ -66,24 +87,33 @@ class MecanumKinematics:
             raise ValueError("Dimensions must be positive")
         self.track_width = float(track_width_meters)
         self.wheel_base = float(wheel_base_meters)
-        self.k = (self.track_width / 2.0) + (self.wheel_base / 2.0)
-        self._inv_4k = 1.0 / (4.0 * self.k)
+        self.k = _mean(self.track_width, self.wheel_base)
 
     def to_wheel_speeds(self, vx, vy, omega):
         """
         Calculates (FL, FR, BL, BR) wheel surface speeds (m/s).
         """
-        fl = vx - vy - (omega * self.k)
-        fr = vx + vy + (omega * self.k)
-        bl = vx + vy - (omega * self.k)
-        br = vx - vy + (omega * self.k)
+        rotation = omega * self.k
+        minus_lateral = vx - vy
+        plus_lateral = vx + vy
+        fl = minus_lateral - rotation
+        fr = plus_lateral + rotation
+        bl = plus_lateral - rotation
+        br = minus_lateral + rotation
         return (fl, fr, bl, br)
 
     def to_chassis_speeds(self, fl, fr, bl, br):
         """
         Calculates (vx, vy, omega) from 4 wheel speeds (m/s).
         """
-        vx = (fl + fr + bl + br) * 0.25
-        vy = (-fl + fr + bl - br) * 0.25
-        omega = (-fl + fr - bl + br) * self._inv_4k
+        vx = _quarter_sum(fl, fr, bl, br)
+        vy = _quarter_sum(-fl, fr, bl, -br)
+        turn_sum = -fl + fr - bl + br
+        if math.isfinite(turn_sum):
+            quarter_turn = turn_sum * 0.25
+            # Tiny wheel deltas can still imply a representable angle for tiny geometry.
+            omega = ((turn_sum / self.k) * 0.25 if quarter_turn * 4.0 != turn_sum
+                     else quarter_turn / self.k)
+        else:
+            omega = _quarter_sum(-fl, fr, -bl, br) / self.k
         return (vx, vy, omega)

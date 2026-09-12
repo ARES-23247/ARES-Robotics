@@ -88,6 +88,27 @@ or observations suppress updates. Gain calculation rescales overflowing variance
 and opposite-sign extreme measurements use a finite weighted combination instead of an
 overflowing residual. Ordinary updates retain their direct arithmetic path.
 
+## Named waypoint loading and FTC request lifecycle
+
+`FieldWaypointLoader` requires explicit finite X/Y coordinates in meters and headings
+in degrees, nonblank unique IDs/names, and a boolean `locked` field when supplied.
+It rejects the whole file when records are invalid or ambiguous. Returned maps are
+immutable. Successful, missing, and invalid resolutions are cached; call `clearCache`
+after deploying or correcting a file. Preload outside timing-critical motion.
+
+The FTC mecanum wrapper resolves no waypoint files while inactive and reuses a converted
+pose for a held waypoint. Reloaded waypoint records refresh that pose; an active path
+retains its target until the request is released. Completed/failed path requests remain
+latched until release, so holding a button does not repeatedly plan. Failure, cancellation,
+clock reversal/overflow, and lifecycle exceptions attempt neutral Redux drive intent and
+release task metadata. Cleanup preserves the original exception. This is command-side
+validation; hardware feedback freshness, arming, output enforcement, and physical stopping
+remain responsibilities of the downstream robot pipeline.
+
+Only cached lookup/idle overhead is allocation-free. Motion still includes delegated
+path work and immutable Redux actions; no whole-loop zero-allocation or hardware timing
+claim follows from these tests.
+
 ## Control, wheel limits, and sampled trajectories
 
 Continuous PID wraps both position error and the measurement difference used by its derivative.
