@@ -5557,7 +5557,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8ea978959dac11fea4b53aed3922015f231986630b606ebaed812c14d4806670",
+      "sha256": "e17ef20b228464bc7b3488f09227d444c2d40904b63e2eb353bd055b0e2f6405",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13364,6 +13364,36 @@
       "evidence": [
         "docs/audits/starter-export-boundaries-audit.md",
         "ARESLib-Kotlin/build/audit-pass187-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/verify-doc-links.ps1": {
+      "sha256": "f90b7e2a235b0ac644987cdd396b9e663c089a5327bf058cee3adc680f112b9d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Fence delimiter/length state, quoted titles on angle destinations, NUL Git filenames and explicit UTF-8 checked in two PowerShell versions; plain-text lines bypass inline regex work. Ten baseline failures reproduced; real 349-document scan passes. Reference links, nested containers, multiline/escaped/balanced destinations and anchor existence remain open.",
+      "evidence": [
+        "docs/audits/markdown-link-boundaries-audit.md",
+        "ARESLib-Kotlin/build/audit-pass188-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/tests/test_doc_links.py": {
+      "sha256": "64a9ec056d21e0095370eaf024d1b4993193be15aaf6022d7d7901e175636890",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Eight cases run under PowerShell 7 and Windows PowerShell covering code fences, real links after fences, angle titles, Unicode, existing encoded paths, historical exclusions, inline code, external links and machine-local file rejection. Tests validate both acceptance and rejection; all pass in 88-test tooling suite.",
+      "evidence": [
+        "docs/audits/markdown-link-boundaries-audit.md",
+        "ARESLib-Kotlin/build/audit-pass188-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/markdown-link-boundaries-audit.md": {
+      "sha256": "29bd77db30c4bd0d34630e1b9c187e1ce90780fbed357cf3f47888f3cbcdf3a1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Report checked against CommonMark fence rules, ten baseline failures, PowerShell overload refinement, 88 passing tooling tests and the final 349-document policy scan. Remaining parser coverage explicitly limited.",
+      "evidence": [
+        "docs/audits/markdown-link-boundaries-audit.md",
+        "ARESLib-Kotlin/build/audit-pass188-verified-evidence/summary.json"
       ]
     }
   }
