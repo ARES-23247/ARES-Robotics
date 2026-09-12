@@ -5557,7 +5557,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "53541bc8315e517bc3af9da78dd7d83d5e7ae05e35614b7e07d1ddbcb932a408",
+      "sha256": "d60031a7ee63eec54825aa557a4bbd80ec15fc3c9ac920fced78d5c2ab1e8a19",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13554,6 +13554,36 @@
       "evidence": [
         "docs/audits/git-and-wrapper-configuration-audit.md",
         "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/verify-monorepo-policy.ps1": {
+      "sha256": "771ed2e83a3da3fde71f86d93df71b49c3f8bb26fe4a8057bea058304086ac80",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 190: source inventory, tracked/ignored/hidden/new/deleted files, Git failure, retired names/namespaces and existing nonempty-line threshold verified with twelve fixture cases in two shells and real repository policy. Remaining: physical-line enforcement/decomposition, regex syntax boundaries, symlinks, absolute-path exclusions, release/guidance checks.",
+      "evidence": [
+        "docs/audits/policy-source-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass190-verified-evidence/summary.json"
+      ]
+    },
+    "scripts/tests/test_monorepo_policy.py": {
+      "sha256": "9253dfc82060ea8ab8a2d71bda4216bd7ba106dd20ca0ddbe8bfb43b3c85b4c3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 190: twelve real-policy temporary-Git fixtures; isolated guidance/doc-link stubs, synthetic release inputs, source inventory regressions, line threshold, namespace and fail-closed Git errors. Both PowerShell editions exercised; full tooling suite 100 passed.",
+      "evidence": [
+        "docs/audits/policy-source-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass190-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/policy-source-inventory-audit.md": {
+      "sha256": "047cea8a6f00671094abd356524d766cc2bd390de3392fe73a876e45cdcd6a61",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 190 report reconciled against source diff, baseline/focused/full test results and real policy timing. Documents explicit pending physical-line issue and source files, partial policy scope, and no runtime validation claim.",
+      "evidence": [
+        "docs/audits/policy-source-inventory-audit.md",
+        "ARESLib-Kotlin/build/audit-pass190-verified-evidence/summary.json"
       ]
     }
   }
