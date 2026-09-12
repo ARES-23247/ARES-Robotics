@@ -241,7 +241,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         updateHardwareInputs()
-        refreshCachedImu(timestamp)
+        refreshCachedImu()
         val s2 = com.areslib.util.RobotClock.nanoTime()
 
         val pinpoint = pinpointIO
@@ -357,7 +357,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
-    private fun refreshCachedImu(timestampMs: Long) {
+    private fun refreshCachedImu() {
         val imu = imuIO
         if (imu == null) {
             invalidateCachedImu()
@@ -366,7 +366,8 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         try {
             imu.updateInputs(imuSampleBuffer)
-            val sampleAgeMs = timestampMs - imuSampleBuffer.timestampMs
+            // Hardware or an asynchronous IMU sample may finish after the frame-start timestamp.
+            val sampleAgeMs = com.areslib.util.RobotClock.currentTimeMillis() - imuSampleBuffer.timestampMs
             val valid = imuSampleBuffer.timestampMs > 0L && sampleAgeMs in 0..IMU_MAX_SAMPLE_AGE_MS &&
                 imuSampleBuffer.headingRadians.isFinite() && imuSampleBuffer.pitchRadians.isFinite() &&
                 imuSampleBuffer.rollRadians.isFinite() && imuSampleBuffer.yawVelocityRadPerSec.isFinite() &&

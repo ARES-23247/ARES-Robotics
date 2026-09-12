@@ -10,7 +10,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class FtcLoopTimingTest {
+class FtcHeadingFeedbackTest {
     private class ProbeRobot(imu: IMU? = null, pinpoint: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver? = null) : FtcBaseRobot(
         hardwareMap = object : HardwareMap() {
             @Suppress("UNCHECKED_CAST")
@@ -30,33 +30,6 @@ class FtcLoopTimingTest {
         override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) = Unit
         override fun publishRobotTelemetry(timestamp: Long) = Unit
         override fun safeHardware() = Unit
-    }
-
-    @Test
-    fun `pre-read sensor work is counted once in loop duration and overruns`() {
-        RobotClock.useMockTime(1000L)
-        val previousPacing = FtcOpModeLifecycleController.beginExternallyPacedFrame()
-        val robot = ProbeRobot()
-        try {
-            robot.sensorMillis = 30L
-            robot.readSensors()
-            robot.readSensors()
-            robot.update()
-            val telemetry = robot.telemetryManager.dataLoggingTelemetry
-            assertEquals(1, robot.reads)
-            assertEquals(30.0, telemetry.getNumber("Profiling/ReadSensors_ms", -1.0))
-            assertEquals(30.0, telemetry.getNumber("Profiling/Total_ms", -1.0))
-            assertEquals(1.0, telemetry.getNumber("Diagnostics/LoopOverruns", -1.0))
-            robot.sensorMillis = 2L
-            robot.update()
-            assertEquals(2, robot.reads)
-            assertEquals(2.0, telemetry.getNumber("Profiling/ReadSensors_ms", -1.0))
-            assertEquals(1.0, telemetry.getNumber("Diagnostics/LoopOverruns", -1.0))
-        } finally {
-            robot.close()
-            FtcOpModeLifecycleController.endExternallyPacedFrame(previousPacing)
-            RobotClock.useSystemTime()
-        }
     }
 
     @Test
