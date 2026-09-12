@@ -154,16 +154,18 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/PathfindToPoseTask.kt": {
-      "sha256": "d0a59bf244e8618bd38ae5958e30802fa6f7b1550ebfe6752e65fdadde7ecca5",
+      "sha256": "3e85c8542de74d442a4d5e6414e4e2a793fa6c43f9604065125599558a33fffb",
       "review": "partial",
       "validation": "passed",
-      "scope": "Earlier changed-section review retained; pass62 delegate completion uses shared gate and propagates delegate failure during end. Existing pathfind lifecycle and full consumer suites passed. Planning/initialization/resource ownership and other behavior still require full-file audit.",
+      "scope": "Earlier changed-section review retained; pass62 delegate completion uses shared gate and propagates delegate failure during end. Existing pathfind lifecycle and full consumer suites passed. Planning/initialization/resource ownership and other behavior still require full-file audit. Pass204: Full source read; terminal delegate cleanup now releases metadata and finishes the outer status/deadline even after cleanup failure, tested directly and through FTC. Remains partial for direct initialization/generation exception neutralization, reuse and planning ownership; investigate generation failure before delegate creation.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/task-completion-boundary-audit.md",
         "ARESLib-Kotlin/build/audit-pass62-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass62-library.log",
-        "ARESLib-Kotlin/build/audit-pass62-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass62-verified-evidence",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/FilterRecoveryAuditTest.kt": {
@@ -258,12 +260,14 @@
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/PathfindToPoseTaskLifecycleTest.kt": {
-      "sha256": "b4e7d13f9d26f2eb54d95a57ac44e9236241dc9f2a43d288d215be21e0010660",
-      "review": "partial",
+      "sha256": "4b0f7566a2d114fef9703001350f0f00ef3ffdfb051b9612f68ae275cd80ff8f",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass204: Complete test/fixture review; independent expected numeric/physical or lifecycle outcomes, bounded concurrency waits, owned cleanup and explicit host allocation boundaries. Focused and full module suites passed; no physical hardware claim.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcSwerveRobot.kt": {
@@ -727,12 +731,14 @@
       ]
     },
     "ARESLib-Kotlin/ares-micro/README.md": {
-      "sha256": "8e783346e0a8eaf0635bddc754299a92f0cfb26dcbf77777b0729ecc3da1b5d9",
+      "sha256": "b5d904a1d1edb8e412657556bf2f9add7deba3de8111aa81c50d7dee6cad2d7c",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Full runtime documentation review, updated for profile/feedforward defaults, reset, unsupported features and allocation/device limitations. Source and tests substantiate the changed mechanism contract. Hardware installation remains unexecuted.",
+      "scope": "Full runtime documentation review, updated for profile/feedforward defaults, reset, unsupported features and allocation/device limitations. Source and tests substantiate the changed mechanism contract. Hardware installation remains unexecuted. Pass204: Numeric conventions and precision/physical limitations checked against source and 130 host tests; prior complete document review retained.",
       "evidence": [
-        "docs/audits/xrp-profile-feedforward-audit.md"
+        "docs/audits/xrp-profile-feedforward-audit.md",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     },
     "ARESLib-Kotlin/ares-micro/ares_micro/__init__.py": {
@@ -3237,10 +3243,10 @@
       ]
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
-      "sha256": "40f7191298c9b5f66f2f17146f35c20761854e063c3e70c591666680d25572fd",
+      "sha256": "58a6e13d1caa7892e6a319825ba48e05d2dc187e87d9e35dc5c14a03d186bb90",
       "review": "partial",
       "validation": "not-applicable",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope. Pass72: Added map-interchange derivation, blue-wall alignment rule, yaw/extents transforms, precision/overflow behavior, source fmap dimension fallback and editor preview transaction semantics; verified against source/tests. Remaining accumulated document stays partial. Pass76: Updated numerical kernel, scalar lifecycle and timing/snapshot sections reconciled with source and tests. Explicit allocation, reset, clock and source-ownership limits retained; broader document topics remain separate scopes. Pass78: Vision sections updated for reported noise, independent-axis normalization, Joseph covariance, ambiguity and atomic scratch replay. Known-tag planar heuristic documented. Rest of guide retains prior review scope.",
+      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope. Pass72: Added map-interchange derivation, blue-wall alignment rule, yaw/extents transforms, precision/overflow behavior, source fmap dimension fallback and editor preview transaction semantics; verified against source/tests. Remaining accumulated document stays partial. Pass76: Updated numerical kernel, scalar lifecycle and timing/snapshot sections reconciled with source and tests. Explicit allocation, reset, clock and source-ownership limits retained; broader document topics remain separate scopes. Pass78: Vision sections updated for reported noise, independent-axis normalization, Joseph covariance, ambiguity and atomic scratch replay. Known-tag planar heuristic documented. Rest of guide retains prior review scope. Pass204: Added waypoint schema, cache/reload, request latching, lifecycle failure and allocation boundaries reconciled with source/tests. Wider accumulated document remains partial.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3310,14 +3316,16 @@
         "ARESLib-Kotlin/build/audit-pass76-final-focused.log",
         "docs/audits/vision-noise-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "445b5a81bc8aa9a30f814275b688ee7bf54ec9d85d6d0e3e7e079dfaf8b17f72",
+      "sha256": "71e2c549f33437139e65060a5bb480a2cb50828097ec1ad1a8043fceef9c2afa",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3542,7 +3550,9 @@
         "docs/audits/costmap-footprint-inflation-audit.md",
         "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
         "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     },
     "docs/audits/primitive-filter-audit.md": {
@@ -5561,10 +5571,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "316ce18db20454714cb26ee03d045e160a8ab212eaf3fde67d83af8f1b80a671",
+      "sha256": "f770d04b2adfb03ec6fdb08a61b5a97f6118ac807067a4187d6951072d168444",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -12988,10 +12998,10 @@
       ]
     },
     "release/ares-versions.properties": {
-      "sha256": "998c0608b2b31bdbf06a1a6399191450439edd9a753cafc14977d780ff93f391",
+      "sha256": "19241fd7d1c643ba3f2d94f2c78e1ca7e3f19bbf8476e891b9e9b15e52fc533a",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -13004,14 +13014,16 @@
         "docs/audits/costmap-footprint-inflation-audit.md",
         "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
         "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     },
     "release/starter-artifacts.properties": {
-      "sha256": "ec530133a28eb488d1958d60efe41803298ec6994ab6030c8cd78253a5078340",
+      "sha256": "cc8137a10621ef97b40b0126b3a73da9e264b5808a241de22b4670a6565ed91b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release.",
+      "scope": "Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -13024,14 +13036,16 @@
         "docs/audits/costmap-footprint-inflation-audit.md",
         "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
         "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     },
     ".github/workflows/build-distributions.yml": {
-      "sha256": "10e11120edcafe36dbe39a237ee6d8ee6bd97a10bd75961ca159f184472dc413",
+      "sha256": "59a1e47146cff05bc7ce559e1be69d1535b6e6d4b0048dcce32a2d629bf2e94c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Library/app versions and four template URL/hash pins match canonical manifests and Studio preflight. Remaining workflow behavior is outside this pass. Pass 191: changed version, archive URL and SHA pins checked against canonical manifests and rebuilt bytes; local policy passed. No workflow execution or release claimed.",
+      "scope": "Library/app versions and four template URL/hash pins match canonical manifests and Studio preflight. Remaining workflow behavior is outside this pass. Pass 191: changed version, archive URL and SHA pins checked against canonical manifests and rebuilt bytes; local policy passed. No workflow execution or release claimed. Pass204: Only version/template URL/hash pins synchronized with canonical manifests and locally rebuilt archives. Broader workflow remains partial; no remote workflow execution. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate.",
       "evidence": [
         "docs/audits/pathing-cell-traversal-audit.md",
         "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
@@ -13044,7 +13058,9 @@
         "docs/audits/costmap-footprint-inflation-audit.md",
         "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
         "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     },
     "docs/audits/pathing-cell-traversal-audit.md": {
@@ -13595,94 +13611,6 @@
       "evidence": [
         "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
         "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.10.zip": {
-      "sha256": "de57d6748a406b81176e67faf46597faaabcf532d430fd757084035ab7668876",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
-        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.10.zip": {
-      "sha256": "98c178bad8d0deec28106372211fa65056541bd25dc2147c2ed4e3199cd3fc46",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
-        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.9.zip": {
-      "sha256": "6f3ed04a198a9e87c6b046982c0c7fa2da545a40a4e07342c88d4d104143bb5b",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
-        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.9.zip": {
-      "sha256": "a470f561ace298ce8f04f3acfa155f45ecda7397863c7162a8c137b720c08d44",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build.",
-      "evidence": [
-        "docs/audits/pathing-cell-traversal-audit.md",
-        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
-        "docs/audits/costmap-raster-heap-audit.md",
-        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
-        "docs/audits/theta-endpoint-state-audit.md",
-        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
-        "docs/audits/static-costmap-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
-        "docs/audits/costmap-footprint-inflation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
-        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json"
       ]
     },
     "docs/audits/source-decomposition-and-xrp-scaffold-audit.md": {
@@ -14504,6 +14432,182 @@
       "evidence": [
         "docs/audits/project-identity-numeric-validation-audit.md",
         "ARESLib-Kotlin/build/audit-pass203-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/ares_micro/kinematics.py": {
+      "sha256": "d314066cc213c0abac4324cf3f252a574f053bab99c0fbfdca7839487df86b9b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass204: Full review of angle normalization, arc-chord factor, dimension validation, wheel ordering/signs and differential/mecanum arithmetic; seven focused numerical methods and all 130 host tests passed. CPython float64 evidence; target precision, physical loop times and arbitrary correctly-rounded sums are not established.",
+      "evidence": [
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/FieldWaypointLoader.kt": {
+      "sha256": "9903ead132a105057f06d1cacbc43605d1ee329b02684af9e4178f337ac12714",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass204: Full static review of filesystem/classpath resolution, waypoint units, schema validation and immutable explicit cache/reload lifecycle. Six tests cover missing/malformed/reload/finite/duplicate/immutable/concurrent cache behavior and warm zero-allocation lookups. Android storage resolution reviewed statically; no device execution.",
+      "evidence": [
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/MecanumTrajectoryFollower.kt": {
+      "sha256": "7e50d57398ca4babf758b2718f1e7d5b6454737aed16ed2b99f6ac50653463d6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass204: Full request-edge, timeout/failure/cancel/exception, elapsed overflow, waypoint pose/error reuse and tuning review. Six lifecycle regressions, two existing wrapper tests and one allocation/refresh test passed. Corrected whole-follower zero-GC claim; real motion allocations and downstream hardware enforcement remain distinct.",
+      "evidence": [
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/ares-micro/tests/test_kinematics_numeric_audit.py": {
+      "sha256": "1a5ced44c4cfdb99716d58055ff037bcae2951a0fc1837c5c7734ab3efcb59ff",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass204: Complete test/fixture review; independent expected numeric/physical or lifecycle outcomes, bounded concurrency waits, owned cleanup and explicit host allocation boundaries. Focused and full module suites passed; no physical hardware claim.",
+      "evidence": [
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/FieldWaypointLoaderAuditTest.kt": {
+      "sha256": "67ea9b0c365dc729541bf62a2b2baa4c52bc32588d49e08cc921780d360546dd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass204: Complete test/fixture review; independent expected numeric/physical or lifecycle outcomes, bounded concurrency waits, owned cleanup and explicit host allocation boundaries. Focused and full module suites passed; no physical hardware claim.",
+      "evidence": [
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/MecanumTrajectoryLifecycleAuditTest.kt": {
+      "sha256": "8647a0702662c07d9f276d792cf985a506aecfd9937d3bf3bae77b3faa758694",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass204: Complete test/fixture review; independent expected numeric/physical or lifecycle outcomes, bounded concurrency waits, owned cleanup and explicit host allocation boundaries. Focused and full module suites passed; no physical hardware claim.",
+      "evidence": [
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/MecanumWaypointAllocationAuditTest.kt": {
+      "sha256": "6c20d6d1fcce392a75683d2001b4f1ae330830d3ac0678b9b2f12f139976b1d4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass204: Complete test/fixture review; independent expected numeric/physical or lifecycle outcomes, bounded concurrency waits, owned cleanup and explicit host allocation boundaries. Focused and full module suites passed; no physical hardware claim.",
+      "evidence": [
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-17.0.11.zip": {
+      "sha256": "4ee8a4d66943fa6b7a3a407daf56ad041d3e2306325b0294823e3de6505abf53",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-17.0.11.zip": {
+      "sha256": "7e51227bb3676569272ef8b2f364f421a31ced71b82eb8ab286cdbee27857140",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.10.zip": {
+      "sha256": "07dd7232d89968cacaed9e1d35af37441db3d9ff45712f8539e40193d40c8644",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.10.zip": {
+      "sha256": "e7f75f029e296e9d2cbe3413ded23e870800695f8161e913e8c05be59d4f35a2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 191: generated archive fully accounted for by deterministic rebuild and exact SHA pins. All entries/order/metadata match prior archive after versioned root rename; only release/ares-versions.properties bytes changed as expected. No independent claim of every embedded source review or fresh exported-project build. Pass204: Complete archive inventory and SHA checked; old/new entry comparison proves dependency-manifest-only changes except XRP also receives the corrected MicroPython kinematics file. No added/removed entries. Container integrity is separate from executable source coverage.",
+      "evidence": [
+        "docs/audits/pathing-cell-traversal-audit.md",
+        "ARESLib-Kotlin/build/audit-pass180-verified-evidence/summary.json",
+        "docs/audits/costmap-raster-heap-audit.md",
+        "ARESLib-Kotlin/build/audit-pass181-verified-evidence/summary.json",
+        "docs/audits/theta-endpoint-state-audit.md",
+        "ARESLib-Kotlin/build/audit-pass182-verified-evidence/summary.json",
+        "docs/audits/static-costmap-geometry-audit.md",
+        "ARESLib-Kotlin/build/audit-pass183-verified-evidence/summary.json",
+        "docs/audits/costmap-footprint-inflation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass184-verified-evidence/summary.json",
+        "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-content-diff.json",
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/archive-hashes.json",
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
+      ]
+    },
+    "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md": {
+      "sha256": "44d9740100f3e457bb3ca102be92e0eee7ce0b44ba956ba738840a836e4dc4d1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass204: Final report checked against baseline logs, 27 focused Kotlin tests, full library/robot/starter/Studio/Python/tooling evidence (5021 passes, six explicit Studio skips), policy, candidate/archive hashes and final file accounting. Physical and remaining source limitations are explicit.",
+      "evidence": [
+        "docs/audits/waypoint-lifecycle-micro-kinematics-audit.md",
+        "ARESLib-Kotlin/build/audit-pass204-verified-evidence"
       ]
     }
   }
