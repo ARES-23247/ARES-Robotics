@@ -44,6 +44,9 @@ import com.areslib.routine.RoutineStep
 import com.areslib.routine.RoutineStepKind
 import com.areslib.routine.RoutineValidationSeverity
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +74,7 @@ class PathPlannerViewModel(
     val state: StateFlow<PathPlannerState> = _state.asStateFlow()
 
     private var playbackJob: kotlinx.coroutines.Job? = null
+    private var routinePreviewJob: Job? = null
     private var projectRefreshJob: Job? = null
     private val projectRefreshGeneration = AtomicLong()
     @Volatile private var selectedProjectPath: String? = null
@@ -816,68 +820,57 @@ class PathPlannerViewModel(
         }
     }
 
+    @Synchronized
     private fun recalculateRoutinePreview() {
+        routinePreviewJob?.cancel()
+        playbackJob?.cancel()
         val snapshot = _state.value
+        val projectGeneration = projectRefreshGeneration.get()
         val draft = snapshot.routine
         val analysis = analyzeRoutinePreview(draft, snapshot.availableRoutines)
-        if (analysis.warning != null) {
-            playbackJob?.cancel()
-            if (_state.value.routine == draft) {
-                _state.update {
-                    it.copy(
-                        trajectory = null,
-                        previewActions = emptyList(),
-                        estimatedDuration = 0.0,
-                        playbackTime = 0.0,
-                        isPlaying = false,
-                        routinePreviewWarning = analysis.warning
-                    )
-                }
-            }
-            return
+
+        fun matchesInputs(current: PathPlannerState): Boolean =
+            projectRefreshGeneration.get() == projectGeneration &&
+                current.routine == draft &&
+                current.activeLeague == snapshot.activeLeague &&
+                current.autonomousEntry == snapshot.autonomousEntry &&
+                current.availableRoutines == snapshot.availableRoutines
+
+        // Invalidate the previous timeline immediately, including while a replacement
+        // is being generated. Check the inputs inside the atomic state update.
+        _state.update { current ->
+            if (!matchesInputs(current)) current else current.copy(
+                trajectory = null,
+                previewActions = emptyList(),
+                estimatedDuration = 0.0,
+                playbackTime = 0.0,
+                isPlaying = false,
+                routinePreviewWarning = analysis.warning,
+            )
         }
-        val drives = analysis.drives
-        val previewStart = snapshot.autonomousEntry?.startingPose ?: drives.firstOrNull()?.target
-        scope.launch(Dispatchers.Default) {
-            if (previewStart == null || analysis.steps.isEmpty()) {
-                if (_state.value.routine == draft) {
-                    _state.update {
-                        it.copy(
-                            trajectory = null,
-                            previewActions = emptyList(),
-                            estimatedDuration = 0.0,
-                            playbackTime = 0.0,
-                            isPlaying = false,
-                            routinePreviewWarning = null
-                        )
-                    }
-                }
-                return@launch
-            }
+        if (analysis.warning != null || analysis.steps.isEmpty()) return
+        val previewStart = snapshot.autonomousEntry?.startingPose ?: analysis.drives.firstOrNull()?.target
+            ?: return
+        routinePreviewJob = scope.launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
+            if (!isActive) return@launch
             val preview = routinePreviewCompiler.compile(
                 steps = analysis.steps,
                 previewStart = previewStart,
                 hasAutonomousStart = snapshot.autonomousEntry != null,
                 league = snapshot.activeLeague,
+                checkActive = { ensureActive() },
             )
-            val latest = _state.value
-            if (latest.routine == draft &&
-                latest.activeLeague == snapshot.activeLeague &&
-                latest.autonomousEntry == snapshot.autonomousEntry &&
-                latest.availableRoutines == snapshot.availableRoutines
-            ) {
-                _state.update {
-                    it.copy(
-                        trajectory = preview.trajectory,
-                        previewActions = preview.actions,
-                        estimatedDuration = preview.estimatedDurationSeconds,
-                        playbackTime = 0.0,
-                        isPlaying = false,
-                        routinePreviewWarning = null
-                    )
-                }
+            _state.update { current ->
+                if (!isActive || !matchesInputs(current)) current else current.copy(
+                    trajectory = preview.trajectory,
+                    previewActions = preview.actions,
+                    estimatedDuration = preview.estimatedDurationSeconds,
+                    playbackTime = 0.0,
+                    isPlaying = false,
+                    routinePreviewWarning = preview.warning,
+                )
             }
-        }
+        }.also { it.start() }
     }
 
     private fun Waypoint.toRoutinePose(): RoutinePose = RoutinePose(

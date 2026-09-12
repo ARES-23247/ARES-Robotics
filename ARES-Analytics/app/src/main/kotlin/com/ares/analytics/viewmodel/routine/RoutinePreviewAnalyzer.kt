@@ -2,6 +2,7 @@ package com.ares.analytics.viewmodel.routine
 
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineDriveStep
+import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineStep
 import com.areslib.routine.RoutineStepKind
 
@@ -19,7 +20,10 @@ internal fun analyzeRoutinePreview(
     root: RoutineDocument,
     availableRoutines: List<RoutineDocument>,
 ): RoutinePreviewAnalysis {
-    val routinesById = (availableRoutines + root).associateBy(RoutineDocument::documentId)
+    // The edited root intentionally replaces its saved copy. Other duplicate IDs are
+    // ambiguous only when called; unrelated library entries do not affect this preview.
+    val routinesById = availableRoutines.filter { it.documentId != root.documentId }
+        .groupBy(RoutineDocument::documentId)
     val deterministicSteps = mutableListOf<RoutineStep>()
     val drives = mutableListOf<RoutineDriveStep>()
     val activeCalls = linkedSetOf(root.documentId)
@@ -36,6 +40,7 @@ internal fun analyzeRoutinePreview(
             }
             when (step.kind) {
                 RoutineStepKind.DRIVE_TO -> {
+                    routinePreviewStepWarning(step)?.let { return "Preview unavailable: $it." }
                     deterministicSteps += step
                     step.drive?.let(drives::add)
                 }
@@ -46,15 +51,21 @@ internal fun analyzeRoutinePreview(
                     if (count > MAX_ROUTINE_PREVIEW_STEPS) {
                         return "Preview unavailable: repeat count exceeds $MAX_ROUTINE_PREVIEW_STEPS."
                     }
-                    repeat(count) {
-                        visit(step.children, depth + 1)?.let { return it }
+                    if (step.children.isNotEmpty()) {
+                        repeat(count) {
+                            visit(step.children, depth + 1)?.let { return it }
+                        }
                     }
                 }
                 RoutineStepKind.CALL -> {
                     val routineId = step.routineId
                         ?: return "Preview unavailable: called routine ID is missing."
-                    val called = routinesById[routineId]
+                    val candidates = if (routineId == root.documentId) listOf(root) else routinesById[routineId]
                         ?: return "Preview unavailable: called routine '$routineId' is not loaded."
+                    if (candidates.size != 1) {
+                        return "Preview unavailable: called routine '$routineId' has duplicate IDs."
+                    }
+                    val called = candidates.single()
                     if (!activeCalls.add(routineId)) {
                         return "Preview unavailable: routine call cycle includes '$routineId'."
                     }
@@ -70,19 +81,41 @@ internal fun analyzeRoutinePreview(
                 RoutineStepKind.ACTION,
                 RoutineStepKind.WAIT,
                 RoutineStepKind.WAIT_UNTIL,
-                -> deterministicSteps += step
+                -> {
+                    routinePreviewStepWarning(step)?.let { return "Preview unavailable: $it." }
+                    deterministicSteps += step
+                }
             }
         }
         return null
     }
 
     val warning = visit(root.steps, depth = 0)
+    if (warning != null) return RoutinePreviewAnalysis(emptyList(), emptyList(), warning)
     return RoutinePreviewAnalysis(
         steps = deterministicSteps.toList(),
         drives = drives,
         warning = warning,
     )
 }
+
+/** Structural checks shared by direct compilation and active control-flow expansion. */
+internal fun routinePreviewStepWarning(step: RoutineStep): String? = when (step.kind) {
+    RoutineStepKind.ACTION ->
+        if (step.actionKey.isNullOrBlank()) "action key is missing" else null
+    RoutineStepKind.WAIT ->
+        if (step.durationSeconds?.let { it.isFinite() && it >= 0.0 } != true)
+            "wait duration must be finite and non-negative" else null
+    RoutineStepKind.WAIT_UNTIL ->
+        if (step.timeoutSeconds?.let { it.isFinite() && it > 0.0 } != true)
+            "wait-until timeout must be finite and positive" else null
+    RoutineStepKind.DRIVE_TO ->
+        if (step.drive?.target?.isFinitePreviewPose() != true) "drive target must be present and finite" else null
+    else -> "unsupported ${step.kind} step"
+}
+
+internal fun RoutinePose.isFinitePreviewPose(): Boolean =
+    xMeters.isFinite() && yMeters.isFinite() && headingRadians.isFinite()
 
 private fun compositePreviewWarning(kind: RoutineStepKind): String {
     val label = when (kind) {

@@ -92,7 +92,7 @@ data class PathPlannerState(
     val previewActions: List<RoutinePreviewAction> = emptyList(),
     val isPlaying: Boolean = false,
     val playbackTime: Double = 0.0,
-    /** Non-null when one routine has multiple possible timelines and preview is suppressed. */
+    /** Non-null when invalid steps, ambiguous control flow, or generation failure suppress preview. */
     val routinePreviewWarning: String? = null,
     val capabilityStatus: String = "Select a project to discover robot actions",
     val activeLeague: League = League.FTC,

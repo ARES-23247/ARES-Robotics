@@ -11,10 +11,10 @@ import com.areslib.pathing.TrajectoryLimits
 import com.areslib.pathing.TrajectoryPlanner
 import com.areslib.pathing.TrajectoryPreset
 import com.areslib.pathing.TrajectoryRequest
-import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineStep
 import com.areslib.routine.RoutineStepKind
+import java.util.concurrent.CancellationException
 
 private val ROUTINE_PREVIEW_LIMITS = TrajectoryLimits(
     maxVelocityMps = 3.0,
@@ -29,6 +29,7 @@ internal data class RoutineTrajectoryPreview(
     val trajectory: Trajectory?,
     val estimatedDurationSeconds: Double,
     val actions: List<RoutinePreviewAction> = emptyList(),
+    val warning: String? = null,
 )
 
 /** One instant action on the deterministic structural preview timeline. */
@@ -48,15 +49,46 @@ internal class RoutineTrajectoryPreviewCompiler(
         previewStart: RoutinePose?,
         hasAutonomousStart: Boolean,
         league: League,
+        checkActive: () -> Unit = {},
     ): RoutineTrajectoryPreview {
         if (previewStart == null) return RoutineTrajectoryPreview(null, 0.0)
+        return try {
+            compileTimeline(steps, previewStart, hasAutonomousStart, league, checkActive)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            RoutineTrajectoryPreview(
+                trajectory = null,
+                estimatedDurationSeconds = 0.0,
+                warning = "Preview unavailable: ${failure.message ?: "trajectory generation failed"}.",
+            )
+        }
+    }
 
+    private fun compileTimeline(
+        steps: List<RoutineStep>,
+        previewStart: RoutinePose,
+        hasAutonomousStart: Boolean,
+        league: League,
+        checkActive: () -> Unit,
+    ): RoutineTrajectoryPreview {
+        checkActive()
+        require(previewStart.isFinitePreviewPose()) { "start pose must be finite" }
+        steps.firstNotNullOfOrNull(::routinePreviewStepWarning)?.let { error(it) }
         val driveModel = if (league == League.FRC) DriveModel.SWERVE else DriveModel.MECANUM
         var current = previewStart.toPose2d()
         var timeOffset = 0.0
         val previewStates = mutableListOf<TrajectoryState>()
         val actions = mutableListOf<RoutinePreviewAction>()
         var driveIndex = 0
+
+        fun shiftedTime(duration: Double): Double {
+            val next = timeOffset + duration
+            require(next.isFinite() && (duration == 0.0 || next > timeOffset)) {
+                "timeline duration exceeds numeric precision"
+            }
+            return next
+        }
 
         fun appendStationaryState() {
             val prior = previewStates.lastOrNull()
@@ -74,21 +106,22 @@ internal class RoutineTrajectoryPreviewCompiler(
         appendStationaryState()
 
         steps.forEach { step ->
+            checkActive()
             when (step.kind) {
                 RoutineStepKind.ACTION -> actions += RoutinePreviewAction(
                     timeSeconds = timeOffset,
                     stepId = step.stepId,
                     actionKey = requireNotNull(step.actionKey),
-                    arguments = step.arguments,
+                    arguments = step.arguments.toMap(),
                 )
                 RoutineStepKind.WAIT -> {
-                    timeOffset += requireNotNull(step.durationSeconds)
+                    timeOffset = shiftedTime(requireNotNull(step.durationSeconds))
                     appendStationaryState()
                 }
                 RoutineStepKind.WAIT_UNTIL -> {
                     // A condition may finish earlier at runtime; the declared timeout is the only
                     // safe, deterministic upper bound the editor can preview.
-                    timeOffset += requireNotNull(step.timeoutSeconds)
+                    timeOffset = shiftedTime(requireNotNull(step.timeoutSeconds))
                     appendStationaryState()
                 }
                 RoutineStepKind.DRIVE_TO -> {
@@ -104,10 +137,10 @@ internal class RoutineTrajectoryPreviewCompiler(
                     }
 
                     val target = drive.target.toPose2d()
-                    val preset = runCatching {
-                        TrajectoryPreset.valueOf(drive.motionPresetKey.uppercase())
-                    }.getOrDefault(TrajectoryPreset.BALANCED)
-                    val generated = trajectoryPlanner.generate(
+                    val preset = TrajectoryPreset.entries.firstOrNull {
+                        it.name.equals(drive.motionPresetKey, ignoreCase = true)
+                    } ?: TrajectoryPreset.BALANCED
+                    val result = trajectoryPlanner.generate(
                         TrajectoryRequest(
                             waypoints = listOf(current, target),
                             driveModel = driveModel,
@@ -115,12 +148,20 @@ internal class RoutineTrajectoryPreviewCompiler(
                             limits = ROUTINE_PREVIEW_LIMITS,
                             preferredEngine = null,
                         ),
-                    ).trajectory ?: return@forEach
+                    )
+                    checkActive()
+                    check(result.isSuccess) { "drive ${driveIndex + 1} could not be generated" }
+                    val generated = checkNotNull(result.trajectory)
+                    val endTime = shiftedTime(generated.durationSeconds)
 
                     generated.states.forEachIndexed { index, sample ->
                         if (previewStates.isEmpty() || index > 0) {
+                            val sampleTime = shiftedTime(sample.timeSeconds)
+                            require(previewStates.lastOrNull()?.let { sampleTime > it.timeSeconds } != false) {
+                                "drive ${driveIndex + 1} sample times exceed numeric precision"
+                            }
                             previewStates += TrajectoryState(
-                                timeSeconds = sample.timeSeconds + timeOffset,
+                                timeSeconds = sampleTime,
                                 x = sample.pose.x,
                                 y = sample.pose.y,
                                 headingRad = sample.pose.heading.radians,
@@ -128,7 +169,7 @@ internal class RoutineTrajectoryPreviewCompiler(
                             )
                         }
                     }
-                    timeOffset += generated.durationSeconds
+                    timeOffset = endTime
                     current = target
                     driveIndex++
                 }
@@ -136,6 +177,7 @@ internal class RoutineTrajectoryPreviewCompiler(
             }
         }
 
+        checkActive()
         return RoutineTrajectoryPreview(
             trajectory = previewStates.takeIf { timeOffset > 0.0 && it.size >= 2 }
                 ?.let { Trajectory(timeOffset, it) },
