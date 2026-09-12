@@ -14,6 +14,7 @@ import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.controls.ControllerInputPlatform
 import com.ares.analytics.service.project.persistence.AutonomousCatalogProjectRepository
 import com.ares.analytics.service.project.persistence.RoutineProjectRepository
@@ -175,30 +176,40 @@ class PathPlannerViewModel(
                             robotLengthMeters = dimensions.lengthMeters,
                             robotWidthMeters = dimensions.widthMeters,
                         )
-                        val savedRevision = withContext(Dispatchers.IO) {
-                            val session = projectSession
-                            val revision = current.projectRevision
-                            if (session != null && revision != null) {
-                                when (val result = session.saveProjectIdentity(revision, updatedMetadata)) {
-                                    is ProjectSessionMutationResult.Applied -> result.snapshot.revision
-                                    is ProjectSessionMutationResult.Stale -> error(
-                                        "The project changed after the autonomous editor loaded. Reload before changing the robot footprint.",
+                        try {
+                            val savedRevision = withContext(Dispatchers.IO) {
+                                val session = projectSession
+                                val revision = current.projectRevision
+                                if (session != null && revision != null) {
+                                    when (val result = session.saveProjectIdentity(revision, updatedMetadata)) {
+                                        is ProjectSessionMutationResult.Applied -> result.snapshot.revision
+                                        is ProjectSessionMutationResult.Stale -> error(
+                                            "The project changed after the autonomous editor loaded. Reload before changing the robot footprint.",
+                                        )
+                                        is ProjectSessionMutationResult.Conflict -> error(result.message)
+                                        is ProjectSessionMutationResult.Failed -> error(result.message)
+                                    }
+                                } else {
+                                    metadataRepository.saveReviewed(
+                                        projectPath,
+                                        AresProjectMetadataCodec.contentHash(metadata),
+                                        updatedMetadata,
                                     )
-                                    is ProjectSessionMutationResult.Conflict -> error(result.message)
-                                    is ProjectSessionMutationResult.Failed -> error(result.message)
+                                    null
                                 }
-                            } else {
-                                metadataRepository.save(projectPath, updatedMetadata)
-                                null
                             }
-                        }
-                        _state.update { current ->
-                            current.copy(
-                                projectMetadata = updatedMetadata,
-                                robotDimensions = dimensions,
-                                projectRevision = savedRevision ?: current.projectRevision,
-                                saveStatus = "Saved canonical robot footprint to .ares/project.json"
-                            )
+                            _state.update { current ->
+                                current.copy(
+                                    projectMetadata = updatedMetadata,
+                                    robotDimensions = dimensions,
+                                    projectRevision = savedRevision ?: current.projectRevision,
+                                    saveStatus = "Saved canonical robot footprint to .ares/project.json"
+                                )
+                            }
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                            throw cancelled
+                        } catch (error: Exception) {
+                            _state.update { it.copy(saveStatus = "Failed to save canonical robot footprint: ${error.message}") }
                         }
                     }
                 }

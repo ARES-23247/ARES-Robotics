@@ -31,11 +31,9 @@ class ProjectMetadataRepository {
 
     fun rawContentHash(projectPath: String): String = Sha256.fileHex(file(projectPath))
 
-    fun save(projectPath: String, document: AresProjectMetadataDocument): String {
-        val encoded = AresProjectMetadataCodec.encode(document)
-        AtomicProjectFileWriter.write(file(projectPath), encoded, replaceExisting = true)
-        return AresProjectMetadataCodec.contentHash(document)
-    }
+    /** Creates metadata once. Replacing an existing file requires a reviewed save or repair hash. */
+    fun save(projectPath: String, document: AresProjectMetadataDocument): String =
+        saveReviewed(projectPath, expectedContentHash = null, document).contentHash
 
     /**
      * Saves only after the caller reviewed a proposal based on [expectedContentHash].
@@ -46,26 +44,28 @@ class ProjectMetadataRepository {
         expectedContentHash: String?,
         document: AresProjectMetadataDocument,
     ): SavedProjectMetadata {
-        val normalized = AresProjectMetadataCodec.decode(AresProjectMetadataCodec.encode(document))
+        val encoded = AresProjectMetadataCodec.encode(document)
+        val normalized = AresProjectMetadataCodec.decode(encoded)
         val target = file(projectPath)
         return ProjectDocumentWriteLocks.withLock(target) {
             val previous = target.takeIf(File::isFile)?.let { current ->
                 decodeProjectMetadata(current.readText())
             }
-            val actualHash = previous?.let(AresProjectMetadataCodec::contentHash)
+            val previousEncoded = previous?.let(AresProjectMetadataCodec::encode)
+            val actualHash = previousEncoded?.let(Sha256::hex)
             require(actualHash == expectedContentHash) {
                 "Project identity changed after preview. Reload it, review the new diff, and try again."
             }
 
-            val proposedHash = AresProjectMetadataCodec.contentHash(normalized)
+            val proposedHash = Sha256.hex(encoded)
             if (proposedHash == actualHash) {
                 return@withLock SavedProjectMetadata(normalized, proposedHash, historyFile = null, created = false)
             }
 
-            val historyFile = previous?.let { old ->
+            val historyFile = previous?.let {
                 val oldHash = requireNotNull(actualHash)
                 val history = resolveProjectPath(projectPath, ".ares/history/project/$oldHash.json")
-                val oldContent = AresProjectMetadataCodec.encode(old)
+                val oldContent = requireNotNull(previousEncoded)
                 when {
                     !history.exists() -> AtomicProjectFileWriter.write(history, oldContent, replaceExisting = false)
                     history.readText() != oldContent -> error(
@@ -74,7 +74,7 @@ class ProjectMetadataRepository {
                 }
                 history
             }
-            AtomicProjectFileWriter.write(target, AresProjectMetadataCodec.encode(normalized), replaceExisting = previous != null)
+            AtomicProjectFileWriter.write(target, encoded, replaceExisting = previous != null)
             SavedProjectMetadata(normalized, proposedHash, historyFile, created = previous == null)
         }
     }
@@ -90,7 +90,8 @@ class ProjectMetadataRepository {
         expectedRawContentHash: String,
         document: AresProjectMetadataDocument,
     ): SavedProjectMetadata {
-        val normalized = AresProjectMetadataCodec.decode(AresProjectMetadataCodec.encode(document))
+        val encoded = AresProjectMetadataCodec.encode(document)
+        val normalized = AresProjectMetadataCodec.decode(encoded)
         val target = file(projectPath)
         return ProjectDocumentWriteLocks.withLock(target) {
             require(target.isFile) {
@@ -112,10 +113,10 @@ class ProjectMetadataRepository {
                     "Project identity recovery collision at ${recovery.path}; no files were replaced.",
                 )
             }
-            AtomicProjectFileWriter.write(target, AresProjectMetadataCodec.encode(normalized), replaceExisting = true)
+            AtomicProjectFileWriter.write(target, encoded, replaceExisting = true)
             SavedProjectMetadata(
                 document = normalized,
-                contentHash = AresProjectMetadataCodec.contentHash(normalized),
+                contentHash = Sha256.hex(encoded),
                 historyFile = recovery,
                 created = false,
                 repaired = true,

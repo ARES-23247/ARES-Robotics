@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e1a75f54ba3cb8e4c7835938ee2d4389c36d9d408711bc2e874329b2b38798d3",
+      "sha256": "8aa56096064abc26f49a3dcc355aeff9d5753b2e4bab176f2893137fa35e960e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5647,7 +5647,8 @@
         "docs/audits/frc-vendor-wrapper-artifact-audit.md: pass132 vendor/wrapper records and self-fingerprint refreshed",
         "docs/audits/frc-world-replacement-audit.md: pass133 worldreplacement records and self-fingerprint refreshed",
         "docs/audits/project-history-recovery-integrity-audit.md: pass198 scoped records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/project-document-path-ownership-audit.md: pass199 scoped records reviewed and canonical self-fingerprint refreshed"
+        "docs/audits/project-document-path-ownership-audit.md: pass199 scoped records reviewed and canonical self-fingerprint refreshed",
+        "docs/audits/project-metadata-catalog-restoration-audit.md: pass200 scoped records reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -14159,17 +14160,20 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectDocumentStore.kt": {
-      "sha256": "aa3a5b6682cbba599c93e5524faa62799942f8e5025eb2da5eb75afbae9fc8cb",
+      "sha256": "95a77ab79d5cee6154d8af14a6d37decc17be8d67bb6de5fca314ee9def0bb3f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Passes 198-199: Entire source read. Exclusive publication, current/parent checkpoint integrity, selected history snapshot restoration and identity/hash validation are covered. Pass199 adds per-operation real-root ownership for directories and every listed/current/history/recovery leaf; caller-relative logical paths are preserved. Shared locks resolve aliases including missing suffixes, and singleton diagnostics avoid a redundant load. Targeted real Windows link/alias regressions and full Studio tests pass. External path replacement, lock-map lifetime growth, cross-process writers and recovery/interruption/provider edge cases remain open.",
+      "scope": "Passes198-200: Entire shared store source read in198/199; pass200 inspected singleton restoration and added optional selected-snapshot validation before current/history mutation. Callback is exercised once against captured content, rejects without writes and cannot be followed by a substituted historical reread. Prior exclusive publication, checkpoint integrity, root/leaf ownership and alias-lock cases remain validated. External path replacement, lock-map growth, cross-process writers and interrupted recovery/provider behavior remain open.",
       "evidence": [
         "docs/audits/project-history-recovery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json",
         "docs/audits/project-document-path-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
-        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json",
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectMutationTransaction.kt": {
@@ -14239,14 +14243,17 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectMetadataRepository.kt": {
-      "sha256": "3cbee20cfe783f5c9890c830506f9705352e0283389c79bc99367f4e4dfe031c",
+      "sha256": "a7cfe1cae8bc97b60f2c894b997cebf0b7b26f3816a596b58f4e4fec85c0eeb1",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass199: Entire source read while tracing project resolver callers. Existing save/review/repair byte ownership, hash checks and stable JSON shape validation were inspected; the shared resolver now rejects outside existing links and missing descendants. Existing repository and architecture suites passed. No direct metadata-specific link test or exhaustive malformed-field/legacy/unreviewed-save policy audit is claimed; these remain open.",
+      "scope": "Passes199-200: Entire source read. Real path ownership retained. Unreviewed save now initializes only a missing file under the shared lock; replacing/repairing requires expected hashes. Reuses canonical encoded bytes for target/history/hash. Eight new tests cover concurrent initialization, malformed root/nested/numeric/geometry input, canonical hashes, no-op/stale/collision behavior, raw repair preservation, changed/missing/valid repair targets, linked paths and invalid drafts. Full Studio passed. Read/shape/hash snapshot consistency, retired-format repair eligibility and raw-text edge cases remain open.",
       "evidence": [
         "docs/audits/project-document-path-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
-        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json",
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectDocumentPathOwnershipTest.kt": {
@@ -14269,6 +14276,83 @@
         "docs/audits/project-document-path-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass199-verified-evidence/focused-final-summary.json",
         "ARESLib-Kotlin/build/audit-pass199-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/AutonomousCatalogProjectRepository.kt": {
+      "sha256": "542f4eb54117688bc3b0ea48b4535e7bc748c680603ad7c59379971423cb06ef",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass200: Entire facade read. Load/save/diagnostic and all historical restoration/reference branches exercised with real repositories and codecs. Restore validates the selected immutable snapshot before writes, eliminating duplicate listing/sort/reread/rescan. Empty-known-set membership remains explicit; intrinsic validation avoids repeating membership lookups. Eight focused catalog/callback cases plus existing repository/routine-builder tests pass. Accounted under stable filesystem/reference state; no transaction across concurrent edits to every referenced routine is claimed.",
+      "evidence": [
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/RoutineProjectRepository.kt": {
+      "sha256": "a1c8eaaeab13c4492a7dcb024e1f6c6fd10e7c8a92b94448530b05fb5fec35ac",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass200: Entire facade read. All overrides directly bind routine codec, IDs/names/revisions, linear parent hash and normalized same-content comparison to the shared versioned store. Real repository round-trip/no-op/history/restore/reference tests and existing routine-builder suite pass. Shared-store path/concurrency/interruption limitations remain documented on its own partial record; this file adds no separate IO or timing behavior.",
+      "evidence": [
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt": {
+      "sha256": "215ec5778dde628f2ee5ee55914a5b773e40429d1a83069e718be380b3c05b92",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass200: Footprint-update branch and connected project-refresh/identity boundaries reviewed, not the whole large view model. Non-session update now supplies the loaded canonical hash, preserves history, reports save failure without installing false success, and rethrows cancellation. Three real-IO/scoped-coroutine tests prove stale/corrupt preservation and successful prior-geometry checkpointing; existing routine-builder/full Studio suites pass. Broader editor lifecycle, project-switch, competing intents and managed-session UI failure cases remain open.",
+      "evidence": [
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectMetadataPersistenceAuditTest.kt": {
+      "sha256": "cc459637da964581c573d4a444a1f2876768068f73ba7ee6ac20b6588fda3dea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass200: Entire eight-case new test file read/executed. Covers concurrent creation with owned barrier/executor teardown, invalid JSON/numeric/nested/geometry matrices, canonical hash/history/no-op/stale/collision behavior, exact invalid binary repair bytes, changed/missing/valid repair targets and direct outside file links. Link removed before owned TemporaryFolder cleanup. Two creation cases failed in the baseline; six existing behaviors already passed.",
+      "evidence": [
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/PathPlannerMetadataAuditTest.kt": {
+      "sha256": "6063420bc2f04818624822e424470b1c8b1204bd1e5dcab0ecfc3a98b1f81139",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass200: Entire three-case new file read/executed against actual PathPlannerViewModel and disk IO. Waits for loaded/save-outcome states; checks concurrent/corrupt byte preservation, UI metadata/error state, canonical history retention and absence of escaped coroutine failures. Owned SupervisorJob is cancelled/joined. All three failed against the old footprint write path and pass after the fix.",
+      "evidence": [
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/AutonomousCatalogRestoreAuditTest.kt": {
+      "sha256": "27b232eea883da20dcfeb4ea62fd1d9623df4548a718328e424909efe55342cf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass200: Entire eight-case new test file read/executed. Real catalog/routine stores cover entry metadata and revision preservation, empty-known-set and corrupt-reference rejection, current/history corruption, historical repair of invalid current references and diagnostics. Generic singleton tests validate once against the same restored snapshot and reject before writes; controlled file substitution exercises the snapshot boundary. No timing/read-count benchmark claim.",
+      "evidence": [
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "docs/audits/project-metadata-catalog-restoration-audit.md": {
+      "sha256": "e751e171cccbb0d3b1a7f0a631cf82a37c576fb50fc236b9e204c9f981af8b40",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass200: Entire report checked against baseline/final XML, source changes, full Studio results and repository policy. Distinguishes five confirmed failing save cases from preexisting successful numeric/repair checks, structural redundant-work removal and untested cross-file/lifecycle/repair-policy boundaries.",
+      "evidence": [
+        "docs/audits/project-metadata-catalog-restoration-audit.md",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json"
       ]
     }
   }

@@ -452,13 +452,18 @@ internal abstract class SingletonProjectDocumentStore<T>(
             }
     }
 
-    fun restore(projectPath: String, requestedHash: String): SavedProjectRevision<T> {
+    fun restore(
+        projectPath: String,
+        requestedHash: String,
+        validateSelected: (T) -> Unit = {},
+    ): SavedProjectRevision<T> {
         require(requestedHash.matches(Regex("[a-f0-9]{64}"))) { "Invalid revision hash" }
         var selected: T? = null
         scanHistory(projectPath) { document, hash, _ ->
             if (hash == requestedHash && selected == null) selected = document
         }
         val historical = selected ?: error("Revision $requestedHash was not found for ${kind.displayName}")
+        validateSelected(historical)
         val current = load(projectPath).getOrThrow()
         return save(projectPath, withRevision(historical, revision(current)))
     }
