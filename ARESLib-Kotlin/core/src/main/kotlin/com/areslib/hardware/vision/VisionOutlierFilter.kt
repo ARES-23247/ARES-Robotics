@@ -5,6 +5,7 @@ import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.wrapAngle
 import com.areslib.state.VisionMeasurement
+import com.areslib.state.DriveState
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.sqrt
@@ -144,64 +145,74 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
             linearAccelYG: Double = 0.0,
             linearAccelZG: Double = 1.0
         ): Boolean {
-            if (!config.isValidConfiguration) return false
+            if (!robotPoseX.isFinite() || !robotPoseY.isFinite() || !robotHeadingRad.isFinite()) return false
             val pose = measurement.targetPose
-            if (!hasValidVisionObservation(measurement) ||
-                !robotPoseX.isFinite() || !robotPoseY.isFinite() || !robotHeadingRad.isFinite() ||
+            val yaw = pose.rotation.z
+            if (!isPhysicalObservationValid(config, measurement, pose, measurement.ambiguity,
+                    measurement.ambiguityAvailable, yaw, angularVelocityRadPerSec,
+                    linearAccelXG, linearAccelYG, linearAccelZG)) return false
+            val distance = stableNorm(pose.x - robotPoseX, pose.y - robotPoseY)
+            val headingDiff = wrapAngle(yaw - wrapAngle(robotHeadingRad))
+            return distance <= config.maxDistanceMeters && abs(headingDiff) <= config.maxRotationDeviationRad
+        }
+
+        /**
+         * Physical validity for initialization/recovery, without estimate-distance or yaw-residual
+         * gates that would prevent recovering a displaced robot. Reported camera range still obeys
+         * [VisionFilterConfig.maxDistanceMeters]. With [useRecoveryPose], validates the independent
+         * pose and its own ambiguity; an invalid normal solve does not invalidate a good independent
+         * solve. Shared tag/geometry/latency metadata, motion/shock limits and field bounds still apply.
+         * Callers separately require fresh frames, valid measured drive feedback and recovery policy.
+         */
+        fun isValidForRecovery(
+            config: VisionFilterConfig,
+            measurement: VisionMeasurement,
+            useRecoveryPose: Boolean = false,
+            angularVelocityRadPerSec: Double = 0.0,
+            linearAccelXG: Double = 0.0,
+            linearAccelYG: Double = 0.0,
+            linearAccelZG: Double = 1.0
+        ): Boolean {
+            if (useRecoveryPose && !measurement.hasRecoveryPose) return false
+            val pose = if (useRecoveryPose) measurement.recoveryPose else measurement.targetPose
+            val ambiguity = if (useRecoveryPose) measurement.recoveryAmbiguity else measurement.ambiguity
+            val ambiguityAvailable = if (useRecoveryPose) measurement.recoveryAmbiguityAvailable else measurement.ambiguityAvailable
+            return isPhysicalObservationValid(config, measurement, pose, ambiguity, ambiguityAvailable,
+                pose.rotation.z, angularVelocityRadPerSec, linearAccelXG, linearAccelYG, linearAccelZG)
+        }
+
+        /**
+         * Validates cached drive feedback before camera hints or automatic pose alignment.
+         * Freshness is represented by the producer-owned validity flags; finite zero fallbacks from
+         * invalid samples cannot establish stationarity. No hardware reads occur in this predicate.
+         */
+        fun isDriveObservationValid(drive: DriveState): Boolean =
+            drive.measuredMotionValid && drive.imuMeasurementsValid &&
+                drive.poseEstimator.estimatedPoseX.isFinite() && drive.poseEstimator.estimatedPoseY.isFinite() &&
+                drive.poseEstimator.estimatedPoseHeading.isFinite() &&
+                drive.measuredFieldXVelocityMetersPerSecond.isFinite() &&
+                drive.measuredFieldYVelocityMetersPerSecond.isFinite() &&
+                drive.measuredAngularVelocityRadiansPerSecond.isFinite() &&
+                drive.pitchDegrees.isFinite() && drive.rollDegrees.isFinite() &&
+                drive.xAccelerationG.isFinite() && drive.yAccelerationG.isFinite() && drive.zAccelerationG.isFinite()
+
+        private fun isPhysicalObservationValid(
+            config: VisionFilterConfig, measurement: VisionMeasurement, pose: Pose3d,
+            ambiguity: Double, ambiguityAvailable: Boolean, yaw: Double,
+            angularVelocityRadPerSec: Double, linearAccelXG: Double, linearAccelYG: Double, linearAccelZG: Double
+        ): Boolean {
+            if (!config.isValidConfiguration || !hasValidVisionMetadata(measurement) ||
+                !hasFiniteUnitVisionPose(pose) ||
                 !angularVelocityRadPerSec.isFinite() || !linearAccelXG.isFinite() ||
                 !linearAccelYG.isFinite() || !linearAccelZG.isFinite()) return false
-            val roll = pose.rotation.x
-            val pitch = pose.rotation.y
-            val yaw = pose.rotation.z
-
-            // 1. Check available solve ambiguity.
-            if (measurement.ambiguityAvailable && measurement.ambiguity > config.maxAmbiguity) {
-                return false
-            }
+            if (ambiguityAvailable && (!ambiguity.isFinite() || ambiguity < 0.0 || ambiguity > config.maxAmbiguity)) return false
             if (config.allowedTagIds.isNotEmpty() && measurement.tagId !in config.allowedTagIds) return false
-
-            // Reject camera-reported impossible geometry without inventing a universal
-            // target-area threshold (which is lens/exposure/pipeline dependent).
             if (measurement.averageTagDistanceMeters >= 0.0 &&
-                measurement.averageTagDistanceMeters > config.maxDistanceMeters) {
-                return false
-            }
-
-            // 2. Check 3D spatial boundaries using the rotated robot footprint.
-            val tagPose3d = pose
-            if (!poseWithinFieldBounds(config, tagPose3d, roll, pitch, yaw)) {
-                return false
-            }
-
-            // 3. Check Distance
-            val dx = tagPose3d.x - robotPoseX
-            val dy = tagPose3d.y - robotPoseY
-            val distance = stableNorm(dx, dy)
-
-            if (distance > config.maxDistanceMeters) {
-                return false
-            }
-
-            // 4. Check Yaw rotation alignment relative to robot gyro heading
-            val headingDiff = wrapAngle(yaw - wrapAngle(robotHeadingRad))
-
-            if (kotlin.math.abs(headingDiff) > config.maxRotationDeviationRad) {
-                return false
-            }
-
-            // 5. Check Angular Velocity Lockout (Motion Blur guard)
-            if (kotlin.math.abs(angularVelocityRadPerSec) > config.maxAngularVelocityRadPerSec) {
-                return false
-            }
-
-            // 6. Check High-G Shock Lockout (Collision guard)
+                measurement.averageTagDistanceMeters > config.maxDistanceMeters) return false
+            if (!poseWithinFieldBounds(config, pose, pose.rotation.x, pose.rotation.y, yaw)) return false
+            if (abs(angularVelocityRadPerSec) > config.maxAngularVelocityRadPerSec) return false
             val dynamicZ = if (linearAccelZG == 0.0) 0.0 else linearAccelZG - 1.0
-            val shockMagnitude = stableNorm(linearAccelXG, linearAccelYG, dynamicZ)
-            if (shockMagnitude > config.maxAccelerationG) {
-                return false
-            }
-
-            return true
+            return stableNorm(linearAccelXG, linearAccelYG, dynamicZ) <= config.maxAccelerationG
         }
 
         /**
@@ -270,9 +281,11 @@ class VisionOutlierFilter(val config: VisionFilterConfig = VisionFilterConfig())
 
 /** Cheap configuration-independent validation before correlation can hide a usable observation. */
 internal fun hasValidVisionObservation(measurement: VisionMeasurement): Boolean =
-    hasFiniteUnitVisionPose(measurement.targetPose) && measurement.tagCount > 0 &&
-        (!measurement.ambiguityAvailable || (measurement.ambiguity.isFinite() && measurement.ambiguity >= 0.0)) &&
-        measurement.tagSpanMeters.isFinite() && measurement.averageTagDistanceMeters.isFinite() &&
+    hasFiniteUnitVisionPose(measurement.targetPose) && hasValidVisionMetadata(measurement) &&
+        (!measurement.ambiguityAvailable || (measurement.ambiguity.isFinite() && measurement.ambiguity >= 0.0))
+
+private fun hasValidVisionMetadata(measurement: VisionMeasurement): Boolean =
+    measurement.tagCount > 0 && measurement.tagSpanMeters.isFinite() && measurement.averageTagDistanceMeters.isFinite() &&
         measurement.averageTagAreaPercent.isFinite() && measurement.latencyMs.isFinite() && measurement.latencyMs >= 0.0
 
 private fun hasFiniteUnitVisionPose(pose: Pose3d): Boolean {

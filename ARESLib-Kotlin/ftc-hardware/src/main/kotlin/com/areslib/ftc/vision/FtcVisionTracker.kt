@@ -126,24 +126,29 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         }
 
         val driveBeforeVision = store.state.drive
-        io.setOrientation(
-            yawDegrees = Math.toDegrees(driveBeforeVision.poseEstimator.estimatedPoseHeading),
-            yawRateDegPerSec = Math.toDegrees(driveBeforeVision.measuredAngularVelocityRadiansPerSecond),
-            pitchDegrees = driveBeforeVision.pitchDegrees,
-            pitchRateDegPerSec = 0.0,
-            rollDegrees = driveBeforeVision.rollDegrees,
-            rollRateDegPerSec = 0.0,
-            linearVelocityMps = kotlin.math.hypot(
-                driveBeforeVision.measuredFieldXVelocityMetersPerSecond,
-                driveBeforeVision.measuredFieldYVelocityMetersPerSecond
-            )
-        )
+        val yawDegrees = Math.toDegrees(wrapAngle(driveBeforeVision.poseEstimator.estimatedPoseHeading))
+        val yawRate = Math.toDegrees(driveBeforeVision.measuredAngularVelocityRadiansPerSecond)
+        val measuredLinearSpeed = kotlin.math.hypot(
+            driveBeforeVision.measuredFieldXVelocityMetersPerSecond,
+            driveBeforeVision.measuredFieldYVelocityMetersPerSecond)
+        val driveSignalsValid = VisionOutlierFilter.isDriveObservationValid(driveBeforeVision) &&
+            yawDegrees.isFinite() && yawRate.isFinite() && measuredLinearSpeed.isFinite()
+        if (driveSignalsValid) {
+            io.setOrientation(yawDegrees, yawRate, driveBeforeVision.pitchDegrees, 0.0,
+                driveBeforeVision.rollDegrees, 0.0, measuredLinearSpeed)
+        }
         io.updateInputs(visionInputs)
         if (!visionInputs.isConnected) {
             clearInputs()
             resetRecoveryAccumulator()
             lastLimelightPose = null
             publishStatus("OFFLINE")
+            return
+        }
+        if (!driveSignalsValid) {
+            resetRecoveryAccumulator()
+            lastLimelightPose = null
+            publishStatus("REJ_DRIVE_SIGNALS")
             return
         }
         if (lastLimelightPose != null && !frameGate.isRecent(lastLimelightTimeMs)) lastLimelightPose = null
@@ -183,12 +188,12 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val measurement = bestMeasurement
         lastLimelightTimeMs = measurement.timestampMs
 
-        val robotPose = store.state.drive.poseEstimator.estimatedPose
+        val robotPose = robotPoseForSelection
         val robotHeading = robotPose.heading.radians
         val fieldPose3d = measurement.targetPose
         val fieldPose2d = fieldPose3d.toPose2d()
         val recoveryPose3d = if (measurement.hasRecoveryPose) measurement.recoveryPose else fieldPose3d
-        val recoveryPose2d = recoveryPose3d.toPose2d()
+        val recoveryPose2d = if (measurement.hasRecoveryPose) recoveryPose3d.toPose2d() else fieldPose2d
 
         // Limelight field poses are canonical and alliance-independent. Alliance mirroring belongs
         // only at the season driver-input boundary.
@@ -200,16 +205,20 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val fieldYaw = fieldPose3d.rotation.z
         val headingDiff = wrapAngle(fieldYaw - robotHeading)
         val recoveryHeadingDiff = wrapAngle(recoveryPose2d.heading.radians - robotHeading)
-        val recoveryPoseIsPlausible = measurement.hasRecoveryPose &&
-            recoveryPose2d.x.isFinite() && recoveryPose2d.y.isFinite() &&
-            recoveryPose2d.heading.radians.isFinite() &&
-            VisionOutlierFilter.isPoseWithinFieldBounds(store.state.vision.filterConfig, recoveryPose3d)
+        val filterConfig = store.state.vision.filterConfig
+        val physicalPoseIsPlausible = VisionOutlierFilter.isValidForRecovery(
+            filterConfig, measurement, false, driveBeforeVision.measuredAngularVelocityRadiansPerSecond,
+            driveBeforeVision.xAccelerationG, driveBeforeVision.yAccelerationG, driveBeforeVision.zAccelerationG)
+        val recoveryPoseIsPlausible = VisionOutlierFilter.isValidForRecovery(
+            filterConfig, measurement, true, driveBeforeVision.measuredAngularVelocityRadiansPerSecond,
+            driveBeforeVision.xAccelerationG, driveBeforeVision.yAccelerationG, driveBeforeVision.zAccelerationG)
 
         lastVisionStatus = checkVisionOutlierRejection(
             measurement,
             fieldPose3d,
             distance,
-            headingDiff
+            headingDiff,
+            physicalPoseIsPlausible
         )
         val passesPhysicalFilters = lastVisionStatus == "ACCEPTED"
 
@@ -237,9 +246,9 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         val tuning = store.state.tuning
         val velThreshold = tuning.recovery.stolenRobotVelocityThreshold
         val angularThreshold = tuning.recovery.stolenRobotAngularVelocityThreshold
-        val isStationary = kotlin.math.abs(store.state.drive.measuredFieldXVelocityMetersPerSecond) < velThreshold &&
-                           kotlin.math.abs(store.state.drive.measuredFieldYVelocityMetersPerSecond) < velThreshold &&
-                           kotlin.math.abs(store.state.drive.measuredAngularVelocityRadiansPerSecond) < angularThreshold
+        val isStationary = velThreshold.isFinite() && velThreshold > 0.0 &&
+            angularThreshold.isFinite() && angularThreshold > 0.0 && measuredLinearSpeed < velThreshold &&
+            kotlin.math.abs(driveBeforeVision.measuredAngularVelocityRadiansPerSecond) < angularThreshold
 
         if (!hasInitializedPoseWithVision && isAccepted && isStationary) {
             // A stationary MT1 pose gives initialization an independent yaw reference;
@@ -267,7 +276,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             val isRejectedOrDivergent = isRecoverableRejection ||
                 (isAccepted && distance > 0.4) || independentYawDivergence
 
-            if (isRejectedOrDivergent && isStationary) {
+            if (isRejectedOrDivergent && isStationary && (physicalPoseIsPlausible || recoveryPoseIsPlausible)) {
                 // MT1 is deliberately kept out of normal high-rate fusion, but its yaw
                 // is independent of the gyro supplied to MT2. Consistent stationary MT1
                 // frames can therefore recover a robot that was lifted and rotated or
@@ -338,11 +347,19 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         measurement: com.areslib.state.VisionMeasurement,
         fieldPose3d: com.areslib.math.geometry.Pose3d,
         distance: Double,
-        headingDiff: Double
+        headingDiff: Double,
+        physicalPoseIsPlausible: Boolean
     ): String {
         val filterConfig = store.state.vision.filterConfig
         val drive = store.state.drive
+        if (!distance.isFinite() || !headingDiff.isFinite()) return "REJ_INVALID"
+        if (physicalPoseIsPlausible) return when {
+            distance > filterConfig.maxDistanceMeters -> "REJ_DIST"
+            kotlin.math.abs(headingDiff) > filterConfig.maxRotationDeviationRad -> "REJ_YAW"
+            else -> "ACCEPTED"
+        }
 
+        // Physical validation already ran once. Detailed reasons are only needed on rejection.
         return when {
             (measurement.ambiguityAvailable && !measurement.ambiguity.isFinite()) || !fieldPose3d.x.isFinite() ||
                 !fieldPose3d.y.isFinite() || !fieldPose3d.z.isFinite() ||
@@ -359,23 +376,9 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             !VisionOutlierFilter.isPoseWithinFieldBounds(filterConfig, fieldPose3d) -> {
                 "REJ_BOUNDS"
             }
-            distance > filterConfig.maxDistanceMeters -> {
-                "REJ_DIST"
-            }
-            kotlin.math.abs(headingDiff) > filterConfig.maxRotationDeviationRad -> {
-                "REJ_YAW"
-            }
-            kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) > filterConfig.maxAngularVelocityRadPerSec -> {
-                "REJ_RATE"
-            }
-            shockMagnitude(
-                drive.xAccelerationG,
-                drive.yAccelerationG,
-                drive.zAccelerationG
-            ) > filterConfig.maxAccelerationG -> {
-                "REJ_SHOCK"
-            }
-            else -> "ACCEPTED"
+            kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) > filterConfig.maxAngularVelocityRadPerSec -> "REJ_RATE"
+            shockMagnitude(drive.xAccelerationG, drive.yAccelerationG, drive.zAccelerationG) > filterConfig.maxAccelerationG -> "REJ_SHOCK"
+            else -> "REJ_FILTERED"
         }
     }
 
@@ -390,7 +393,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
 
     private fun shockMagnitude(xG: Double, yG: Double, zG: Double): Double {
         val dynamicZ = if (zG == 0.0) 0.0 else zG - 1.0
-        return kotlin.math.sqrt(xG * xG + yG * yG + dynamicZ * dynamicZ)
+        return kotlin.math.hypot(kotlin.math.hypot(xG, yG), dynamicZ)
     }
 
     private fun distanceSq(pose3d: com.areslib.math.geometry.Pose3d, pose2d: com.areslib.math.geometry.Pose2d): Double {

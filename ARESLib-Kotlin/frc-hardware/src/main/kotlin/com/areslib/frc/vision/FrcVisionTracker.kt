@@ -131,22 +131,22 @@ class FrcVisionTracker(
             val disabled = isDisabledProvider()
             // MegaTag2 needs the field-relative estimator heading. Raw Pigeon yaw can
             // differ after CTRE resetPose() applies an odometry heading offset.
-            val yaw = Math.toDegrees(drive.poseEstimator.estimatedPoseHeading)
-            val driveSignalsValid = drive.measuredMotionValid && drive.imuMeasurementsValid &&
-                yaw.isFinite()
+            val yaw = Math.toDegrees(wrapAngle(drive.poseEstimator.estimatedPoseHeading))
+            val yawRate = Math.toDegrees(drive.measuredAngularVelocityRadiansPerSecond)
+            val measuredLinearSpeed = kotlin.math.hypot(
+                drive.measuredFieldXVelocityMetersPerSecond, drive.measuredFieldYVelocityMetersPerSecond)
+            val driveSignalsValid = VisionOutlierFilter.isDriveObservationValid(drive) &&
+                yaw.isFinite() && yawRate.isFinite() && measuredLinearSpeed.isFinite()
             io.setImuMode(if (disabled) DISABLED_IMU_MODE else ENABLED_IMU_MODE)
             if (driveSignalsValid) {
                 io.setOrientation(
                     yawDegrees = yaw,
-                    yawRateDegPerSec = Math.toDegrees(drive.measuredAngularVelocityRadiansPerSecond),
+                    yawRateDegPerSec = yawRate,
                     pitchDegrees = drive.pitchDegrees,
                     pitchRateDegPerSec = 0.0,
                     rollDegrees = drive.rollDegrees,
                     rollRateDegPerSec = 0.0,
-                    linearVelocityMps = Math.hypot(
-                        drive.measuredFieldXVelocityMetersPerSecond,
-                        drive.measuredFieldYVelocityMetersPerSecond
-                    )
+                    linearVelocityMps = measuredLinearSpeed
                 )
             }
             io.updateInputs(visionInputs)
@@ -163,11 +163,11 @@ class FrcVisionTracker(
                 publishStatus("REJECTED_DRIVE_SIGNALS")
                 return@let
             }
-            val measuredLinearSpeed = kotlin.math.hypot(
-                drive.measuredFieldXVelocityMetersPerSecond, drive.measuredFieldYVelocityMetersPerSecond)
-            val stationary = measuredLinearSpeed < store.state.tuning.recovery.stolenRobotVelocityThreshold &&
-                kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) <
-                    store.state.tuning.recovery.stolenRobotAngularVelocityThreshold
+            val velocityThreshold = store.state.tuning.recovery.stolenRobotVelocityThreshold
+            val angularThreshold = store.state.tuning.recovery.stolenRobotAngularVelocityThreshold
+            val stationary = velocityThreshold.isFinite() && velocityThreshold > 0.0 &&
+                angularThreshold.isFinite() && angularThreshold > 0.0 && measuredLinearSpeed < velocityThreshold &&
+                kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) < angularThreshold
             if (!stationary) stationaryTracking = false
             else if (!stationaryTracking) {
                 stationarySinceMs = timestampMs
@@ -191,7 +191,8 @@ class FrcVisionTracker(
                 }
                 for (i in freshMeasurements.indices) {
                     val measurement = freshMeasurements[i]
-                    if (recoveryAllowed && considerRecovery(measurement, timestampMs, drive)) {
+                    val distance = measurementRange(measurement)
+                    if (recoveryAllowed && considerRecovery(measurement, timestampMs, drive, distance)) {
                         recoverySnapped = true
                         acceptedCount++
                         continue
@@ -199,13 +200,6 @@ class FrcVisionTracker(
                     // Distance-based outlier rejection: skip fusion for far/ambiguous tags.
                     // Use full euclidean target-space distance; tag-normal depth (z) alone would
                     // let an off-axis robot at (x=5, z=1) pass the 6 m filter.
-                    val ts = measurement.robotPoseTargetSpace
-                    val targetSpaceDistance = kotlin.math.hypot(kotlin.math.hypot(ts.x, ts.y), ts.z)
-                    val distance = when {
-                        measurement.averageTagDistanceMeters >= 0.0 -> measurement.averageTagDistanceMeters
-                        targetSpaceDistance > MIN_VALID_TARGET_RANGE_METERS -> targetSpaceDistance
-                        else -> Double.NaN
-                    }
                     val filterConfig = store.state.vision.filterConfig
                     val timestampSec = measurementTimestampSeconds(measurement, timestampMs)
                     val hasHistoricalPose = try {
@@ -302,10 +296,18 @@ class FrcVisionTracker(
         return estimatorTimeSecondsProvider() - latencyMs / 1_000.0
     }
 
+    private fun measurementRange(measurement: VisionMeasurement): Double {
+        if (measurement.averageTagDistanceMeters >= 0.0) return measurement.averageTagDistanceMeters
+        val target = measurement.robotPoseTargetSpace
+        val distance = kotlin.math.hypot(kotlin.math.hypot(target.x, target.y), target.z)
+        return if (distance > MIN_VALID_TARGET_RANGE_METERS) distance else Double.NaN
+    }
+
     private fun considerRecovery(
         measurement: VisionMeasurement,
         timestampMs: Long,
-        drive: com.areslib.state.DriveState
+        drive: com.areslib.state.DriveState,
+        targetRange: Double
     ): Boolean {
         if (!measurement.hasRecoveryPose || swerveIO == null) {
             resetRecovery()
@@ -313,29 +315,10 @@ class FrcVisionTracker(
         }
         val candidate3d = measurement.recoveryPose
         val filterConfig = store.state.vision.filterConfig
-        val targetSpace = measurement.robotPoseTargetSpace
-        val targetSpaceRange = kotlin.math.sqrt(
-            targetSpace.x * targetSpace.x + targetSpace.y * targetSpace.y + targetSpace.z * targetSpace.z
-        )
-        val targetRange = when {
-            measurement.averageTagDistanceMeters >= 0.0 -> measurement.averageTagDistanceMeters
-            targetSpaceRange > MIN_VALID_TARGET_RANGE_METERS -> targetSpaceRange
-            else -> Double.NaN
-        }
-        val dynamicZ = if (drive.zAccelerationG == 0.0) 0.0 else drive.zAccelerationG - 1.0
-        val shockMagnitude = kotlin.math.sqrt(
-            drive.xAccelerationG * drive.xAccelerationG +
-                drive.yAccelerationG * drive.yAccelerationG + dynamicZ * dynamicZ
-        )
-        val plausible = (!measurement.recoveryAmbiguityAvailable ||
-            (measurement.recoveryAmbiguity.isFinite() &&
-                measurement.recoveryAmbiguity <= filterConfig.maxAmbiguity)) &&
-            (filterConfig.allowedTagIds.isEmpty() || measurement.tagId in filterConfig.allowedTagIds) &&
-            candidate3d.x.isFinite() && candidate3d.y.isFinite() && candidate3d.rotation.z.isFinite() &&
-            targetRange.isFinite() && targetRange <= MAX_TARGET_RANGE_METERS &&
-            kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) <= filterConfig.maxAngularVelocityRadPerSec &&
-            shockMagnitude.isFinite() && shockMagnitude <= filterConfig.maxAccelerationG &&
-            VisionOutlierFilter.isPoseWithinFieldBounds(filterConfig, candidate3d)
+        val plausible = targetRange.isFinite() && targetRange <= MAX_TARGET_RANGE_METERS &&
+            VisionOutlierFilter.isValidForRecovery(filterConfig, measurement, true,
+                drive.measuredAngularVelocityRadiansPerSecond, drive.xAccelerationG,
+                drive.yAccelerationG, drive.zAccelerationG)
         if (!plausible) {
             resetRecovery()
             return false

@@ -1842,11 +1842,14 @@ public final class com/areslib/hardware/vision/VisionOutlierFilter {
 }
 
 public final class com/areslib/hardware/vision/VisionOutlierFilter$Companion {
+	public final fun isDriveObservationValid (Lcom/areslib/state/DriveState;)Z
 	public final fun isPoseWithinFieldBounds (Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/math/geometry/Pose3d;)Z
 	public final fun isValid (Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/VisionMeasurement;DDDDDDD)Z
 	public final fun isValid (Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/VisionMeasurement;DLcom/areslib/math/geometry/Pose2d;DDDD)Z
 	public static synthetic fun isValid$default (Lcom/areslib/hardware/vision/VisionOutlierFilter$Companion;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/VisionMeasurement;DDDDDDDILjava/lang/Object;)Z
 	public static synthetic fun isValid$default (Lcom/areslib/hardware/vision/VisionOutlierFilter$Companion;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/VisionMeasurement;DLcom/areslib/math/geometry/Pose2d;DDDDILjava/lang/Object;)Z
+	public final fun isValidForRecovery (Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/VisionMeasurement;ZDDDD)Z
+	public static synthetic fun isValidForRecovery$default (Lcom/areslib/hardware/vision/VisionOutlierFilter$Companion;Lcom/areslib/hardware/vision/VisionFilterConfig;Lcom/areslib/state/VisionMeasurement;ZDDDDILjava/lang/Object;)Z
 }
 
 public final class com/areslib/input/AnalogBinding {
