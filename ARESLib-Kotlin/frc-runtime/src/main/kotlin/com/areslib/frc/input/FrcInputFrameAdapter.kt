@@ -70,7 +70,7 @@ internal class WpilibGenericHidSource(private val hid: GenericHID) : FrcHidSourc
  * Unlike an `XboxController` adapter, this class never truncates the device to the standard Xbox
  * surface. All raw buttons reported by devices such as the Flydigi Vader 5 Pro are preserved (up
  * to [FrcButtonIndex.MAX_RAW_BUTTON_COUNT]). Raw axes retain the WPILib convention and must be
- * finite in `[-1, 1]`; malformed readings become zero. Disconnects, impossible metadata counts,
+ * finite in `[-1, 1]`; malformed readings read as zero and are marked unavailable. Disconnects, impossible metadata counts,
  * or a runtime read failure publish a completely neutral disconnected frame.
  *
  * The backing [InputFrame] is owned by the caller and reused on every robot loop. Normal sampling
@@ -86,6 +86,9 @@ public class FrcInputFrameAdapter(
         frame: InputFrame,
         sampleTimeNanos: Long = RobotClock.nanoTime(),
     ) {
+        if (frame.buttonCapacity < FrcButtonIndex.COUNT_WITH_PRIMARY_POV) {
+            frame.beginSample(connected = false, sampleTimeNanos = sampleTimeNanos)
+        }
         require(frame.buttonCapacity >= FrcButtonIndex.COUNT_WITH_PRIMARY_POV) {
             "FRC input frame requires at least ${FrcButtonIndex.COUNT_WITH_PRIMARY_POV} buttons"
         }
@@ -142,6 +145,7 @@ public class FrcInputFrameAdapter(
 
             val primaryPov = if (povCount > 0) source.pov(0) else POV_NOT_PRESSED
             val validPov = primaryPov >= 0 && primaryPov <= 359
+            if (povCount == 0 || (!validPov && primaryPov != POV_NOT_PRESSED)) return
             frame.setButton(
                 FrcButtonIndex.POV_UP,
                 validPov && (primaryPov >= 315 || primaryPov <= 45),
@@ -166,7 +170,7 @@ public class FrcInputFrameAdapter(
     }
 
     private fun validAxis(value: Double): Double =
-        if (value.isFinite() && value >= -1.0 && value <= 1.0) value else 0.0
+        if (value.isFinite() && value >= -1.0 && value <= 1.0) value else Double.NaN
 
     private companion object {
         const val POV_NOT_PRESSED: Int = -1

@@ -10,6 +10,12 @@ package com.areslib.input
 interface DigitalSource {
     fun sample(frame: InputFrame, nowNanos: Long): Boolean
 
+    /** Whether this sample contains usable feedback for the source. Missing feedback bypasses debounce. */
+    fun isAvailable(frame: InputFrame): Boolean = frame.isConnected
+
+    /** Whether every physical member is neutral, for re-arming after cancellation or feedback loss. */
+    fun isNeutral(frame: InputFrame, nowNanos: Long): Boolean = !sample(frame, nowNanos)
+
     /** Clears source history after disconnect, disable, or time rewind. */
     fun reset()
 }
@@ -21,6 +27,8 @@ class RawButtonSource(val buttonIndex: Int) : DigitalSource {
     }
 
     override fun sample(frame: InputFrame, nowNanos: Long): Boolean = frame.button(buttonIndex)
+
+    override fun isAvailable(frame: InputFrame): Boolean = frame.isButtonAvailable(buttonIndex)
 
     override fun reset() = Unit
 }
@@ -59,6 +67,10 @@ class AxisThresholdSource(
     }
 
     override fun sample(frame: InputFrame, nowNanos: Long): Boolean {
+        if (!isAvailable(frame)) {
+            active = false
+            return false
+        }
         val value = transform.apply(frame.axis(axisIndex))
         active = when (direction) {
             ThresholdDirection.ABOVE -> if (active) value > releaseThreshold else value >= pressThreshold
@@ -66,6 +78,8 @@ class AxisThresholdSource(
         }
         return active
     }
+
+    override fun isAvailable(frame: InputFrame): Boolean = frame.isAxisAvailable(axisIndex)
 
     override fun reset() {
         active = false
@@ -94,6 +108,10 @@ class ChordSource(
     }
 
     override fun sample(frame: InputFrame, nowNanos: Long): Boolean {
+        if (!isAvailable(frame)) {
+            reset()
+            return false
+        }
         var allActive = true
         var earliestPress = Long.MAX_VALUE
         var latestPress = Long.MIN_VALUE
@@ -111,17 +129,43 @@ class ChordSource(
             }
             index++
         }
-        return allActive && latestPress - earliestPress <= simultaneityWindowNanos
+        val spread = latestPress - earliestPress
+        return allActive && spread >= 0L && spread <= simultaneityWindowNanos
+    }
+
+    override fun isAvailable(frame: InputFrame): Boolean {
+        var index = 0
+        while (index < sourceArray.size) {
+            if (!sourceArray[index].isAvailable(frame)) return false
+            index++
+        }
+        return true
+    }
+
+    override fun isNeutral(frame: InputFrame, nowNanos: Long): Boolean {
+        var allNeutral = true
+        var index = 0
+        while (index < sourceArray.size) {
+            if (!sourceArray[index].isNeutral(frame, nowNanos)) allNeutral = false
+            index++
+        }
+        return allNeutral
     }
 
     override fun reset() {
+        var failure: Throwable? = null
         var index = 0
         while (index < sourceArray.size) {
-            sourceArray[index].reset()
             previousActive[index] = false
             pressedAtNanos[index] = 0L
+            try {
+                sourceArray[index].reset()
+            } catch (next: Throwable) {
+                failure = inputFailure(failure, next)
+            }
             index++
         }
+        failure?.let { throw it }
     }
 
     companion object {

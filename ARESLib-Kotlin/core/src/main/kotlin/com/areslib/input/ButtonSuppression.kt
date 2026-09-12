@@ -5,24 +5,22 @@ import java.util.Arrays
 /**
  * Per-frame button-consumption state shared by generated chord and single-button sources.
  *
- * The state is preallocated and keyed by [InputFrame.sequence]. Generated runtimes evaluate
+ * The state is preallocated and keyed by frame identity and [InputFrame.sequence]. Generated runtimes evaluate
  * suppressing chords before lower-priority constituent bindings. When a chord activates, its raw
  * buttons read as neutral to [SuppressibleButtonSource] for the remainder of that sample.
  */
 class ButtonSuppressionState(buttonCapacity: Int = InputFrame.DEFAULT_BUTTON_CAPACITY) {
-    private val suppressedWords = LongArray((buttonCapacity + Long.SIZE_BITS - 1) / Long.SIZE_BITS)
+    private val suppressedWords = LongArray(buttonWordCount(buttonCapacity))
     private var sequence = Long.MIN_VALUE
+    private var sampledFrame: InputFrame? = null
 
     val capacity: Int = buttonCapacity
 
-    init {
-        require(buttonCapacity > 0) { "buttonCapacity must be positive" }
-    }
-
-    internal fun beginFrame(frameSequence: Long) {
-        if (sequence == frameSequence) return
+    internal fun beginFrame(frame: InputFrame) {
+        if (sampledFrame === frame && sequence == frame.sequence) return
         Arrays.fill(suppressedWords, 0L)
-        sequence = frameSequence
+        sequence = frame.sequence
+        sampledFrame = frame
     }
 
     internal fun suppress(buttonIndex: Int) {
@@ -48,11 +46,15 @@ class SuppressibleButtonSource(
     }
 
     override fun sample(frame: InputFrame, nowNanos: Long): Boolean {
-        suppression.beginFrame(frame.sequence)
+        suppression.beginFrame(frame)
         return !suppression.isSuppressed(buttonIndex) && frame.button(buttonIndex)
     }
 
     override fun reset() = Unit
+
+    override fun isAvailable(frame: InputFrame): Boolean = frame.isButtonAvailable(buttonIndex)
+
+    override fun isNeutral(frame: InputFrame, nowNanos: Long): Boolean = !frame.button(buttonIndex)
 }
 
 /**
@@ -81,7 +83,7 @@ class SuppressingButtonChordSource(
     }
 
     override fun sample(frame: InputFrame, nowNanos: Long): Boolean {
-        suppression.beginFrame(frame.sequence)
+        suppression.beginFrame(frame)
         val active = delegate.sample(frame, nowNanos)
         if (active) consumedUntilNeutral = true
         if (consumedUntilNeutral) {
@@ -98,7 +100,11 @@ class SuppressingButtonChordSource(
     }
 
     override fun reset() {
-        delegate.reset()
         consumedUntilNeutral = false
+        delegate.reset()
     }
+
+    override fun isAvailable(frame: InputFrame): Boolean = delegate.isAvailable(frame)
+
+    override fun isNeutral(frame: InputFrame, nowNanos: Long): Boolean = delegate.isNeutral(frame, nowNanos)
 }

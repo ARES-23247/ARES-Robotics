@@ -21,6 +21,9 @@ data class AxisTransform(
     val outputMin: Double = -1.0,
     val outputMax: Double = 1.0,
 ) {
+    private val positiveSpan = inputMax - inputCenter
+    private val negativeSpan = inputCenter - inputMin
+
     init {
         require(inputMin.isFinite() && inputCenter.isFinite() && inputMax.isFinite()) {
             "axis calibration values must be finite"
@@ -41,17 +44,20 @@ data class AxisTransform(
 
         val clamped = rawValue.coerceIn(inputMin, inputMax)
         var normalized = when {
-            clamped >= inputCenter -> (clamped - inputCenter) / (inputMax - inputCenter)
+            clamped >= inputCenter -> if (positiveSpan.isFinite()) (clamped - inputCenter) / positiveSpan
+                else (clamped * 0.5 - inputCenter * 0.5) / (inputMax * 0.5 - inputCenter * 0.5)
             inputCenter == inputMin -> 0.0
-            else -> (clamped - inputCenter) / (inputCenter - inputMin)
+            negativeSpan.isFinite() -> (clamped - inputCenter) / negativeSpan
+            else -> (clamped * 0.5 - inputCenter * 0.5) / (inputCenter * 0.5 - inputMin * 0.5)
         }
 
         val magnitude = abs(normalized)
         normalized = if (magnitude <= deadband) {
             0.0
         } else {
-            val rescaled = ((magnitude - deadband) / (1.0 - deadband)).pow(exponent)
-            if (normalized < 0.0) -rescaled else rescaled
+            val rescaled = (magnitude - deadband) / (1.0 - deadband)
+            val shaped = if (exponent == 1.0) rescaled else rescaled.pow(exponent)
+            if (normalized < 0.0) -shaped else shaped
         }
 
         if (inverted) normalized = -normalized
