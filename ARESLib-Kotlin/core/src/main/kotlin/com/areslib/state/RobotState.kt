@@ -276,7 +276,12 @@ data class VisionState(
     val lastNisFrameId: Long = 0L,
     val lastNisTagId: Int = -1,
     val lastNisSolverType: VisionSolverType = VisionSolverType.UNKNOWN,
-    val lastNisAccepted: Boolean = false
+    val lastNisAccepted: Boolean = false,
+    /** Original input index requested by the current vision batch; -1 means unavailable. */
+    val diagnosticMeasurementIndex: Int = -1,
+    /** Result for [diagnosticMeasurementIndex], independent of the last batch or NIS outcome. */
+    val diagnosticMeasurementAccepted: Boolean = false,
+    val diagnosticMeasurementRejectionReason: String? = null
 )
 
 /**

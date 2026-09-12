@@ -171,47 +171,66 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             return
         }
 
-        val robotPoseForSelection = store.state.drive.poseEstimator.estimatedPose
-        var bestMeasurement = freshMeasurements[0]
-        var bestAmbiguity = bestMeasurement.ambiguity
-        var bestDistanceSq = distanceSq(bestMeasurement.targetPose, robotPoseForSelection)
-        
-        for (i in 1 until freshMeasurements.size) {
-            val m = freshMeasurements[i]
-            val mDistSq = distanceSq(m.targetPose, robotPoseForSelection)
-            if (m.ambiguity < bestAmbiguity || (m.ambiguity == bestAmbiguity && mDistSq < bestDistanceSq)) {
-                bestMeasurement = m
-                bestAmbiguity = m.ambiguity
-                bestDistanceSq = mDistSq
+        val robotPose = driveBeforeVision.poseEstimator.estimatedPose
+        val filterConfig = store.state.vision.filterConfig
+        var bestIndex = 0
+        var bestQuality = -1
+        var bestAmbiguity = Double.POSITIVE_INFINITY
+        var bestDistance = Double.POSITIVE_INFINITY
+        var physicalPoseIsPlausible = false
+        var recoveryPoseIsPlausible = false
+        for (i in freshMeasurements.indices) {
+            val candidate = freshMeasurements[i]
+            val normalValid = VisionOutlierFilter.isValidForRecovery(filterConfig, candidate, false,
+                driveBeforeVision.measuredAngularVelocityRadiansPerSecond, driveBeforeVision.xAccelerationG,
+                driveBeforeVision.yAccelerationG, driveBeforeVision.zAccelerationG)
+            val recoveryValid = VisionOutlierFilter.isValidForRecovery(filterConfig, candidate, true,
+                driveBeforeVision.measuredAngularVelocityRadiansPerSecond, driveBeforeVision.xAccelerationG,
+                driveBeforeVision.yAccelerationG, driveBeforeVision.zAccelerationG)
+            // Prefer a usable normal solve; retain independent-only solves for recovery. When all
+            // candidates are invalid, keep the first solely for its rejection status/diagnostics.
+            val quality = if (normalValid) 2 else if (recoveryValid) 1 else 0
+            val pose = if (normalValid) candidate.targetPose else candidate.recoveryPose
+            val ambiguityAvailable = if (normalValid) candidate.ambiguityAvailable else candidate.recoveryAmbiguityAvailable
+            val ambiguity = if (!ambiguityAvailable) Double.POSITIVE_INFINITY else
+                if (normalValid) candidate.ambiguity else candidate.recoveryAmbiguity
+            val distance = if (quality == 0) Double.POSITIVE_INFINITY else distance(pose, robotPose)
+            var better = quality > bestQuality
+            if (quality == bestQuality && quality > 0) {
+                better = ambiguity < bestAmbiguity
+                if (ambiguity == bestAmbiguity) {
+                    better = distance < bestDistance
+                    if (distance.isInfinite() && bestDistance.isInfinite()) {
+                        val best = freshMeasurements[bestIndex]
+                        val bestPose = if (physicalPoseIsPlausible) best.targetPose else best.recoveryPose
+                        better = quarterDistance(pose, robotPose) < quarterDistance(bestPose, robotPose)
+                    }
+                }
+            }
+            if (better) {
+                bestIndex = i
+                bestQuality = quality
+                bestAmbiguity = ambiguity
+                bestDistance = distance
+                physicalPoseIsPlausible = normalValid
+                recoveryPoseIsPlausible = recoveryValid
             }
         }
-        val measurement = bestMeasurement
-        lastLimelightTimeMs = measurement.timestampMs
-
-        val robotPose = robotPoseForSelection
+        val measurement = freshMeasurements[bestIndex]
         val robotHeading = robotPose.heading.radians
         val fieldPose3d = measurement.targetPose
         val fieldPose2d = fieldPose3d.toPose2d()
-        val recoveryPose3d = if (measurement.hasRecoveryPose) measurement.recoveryPose else fieldPose3d
-        val recoveryPose2d = if (measurement.hasRecoveryPose) recoveryPose3d.toPose2d() else fieldPose2d
+        val recoveryPose2d = if (measurement.hasRecoveryPose) measurement.recoveryPose.toPose2d() else fieldPose2d
 
-        // Limelight field poses are canonical and alliance-independent. Alliance mirroring belongs
-        // only at the season driver-input boundary.
-        lastLimelightPose = fieldPose2d
+        // This public pose feeds calibration and telemetry. Rejected or independent-only normal
+        // solves must not appear as a valid normal camera observation.
+        lastLimelightPose = if (physicalPoseIsPlausible) fieldPose2d else null
+        if (physicalPoseIsPlausible) lastLimelightTimeMs = measurement.timestampMs
 
-        val dx = fieldPose2d.x - robotPose.x
-        val dy = fieldPose2d.y - robotPose.y
-        val distance = kotlin.math.hypot(dx, dy)
+        val distance = if (physicalPoseIsPlausible) bestDistance else distance(fieldPose3d, robotPose)
         val fieldYaw = fieldPose3d.rotation.z
         val headingDiff = wrapAngle(fieldYaw - robotHeading)
         val recoveryHeadingDiff = wrapAngle(recoveryPose2d.heading.radians - robotHeading)
-        val filterConfig = store.state.vision.filterConfig
-        val physicalPoseIsPlausible = VisionOutlierFilter.isValidForRecovery(
-            filterConfig, measurement, false, driveBeforeVision.measuredAngularVelocityRadiansPerSecond,
-            driveBeforeVision.xAccelerationG, driveBeforeVision.yAccelerationG, driveBeforeVision.zAccelerationG)
-        val recoveryPoseIsPlausible = VisionOutlierFilter.isValidForRecovery(
-            filterConfig, measurement, true, driveBeforeVision.measuredAngularVelocityRadiansPerSecond,
-            driveBeforeVision.xAccelerationG, driveBeforeVision.yAccelerationG, driveBeforeVision.zAccelerationG)
 
         lastVisionStatus = checkVisionOutlierRejection(
             measurement,
@@ -225,19 +244,22 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         // Fuse once through the authoritative EKF path before recovery logic consumes
         // the decision. This prevents a tracker-side approximation from disagreeing
         // with the estimator's full covariance/Mahalanobis calculation.
-        store.dispatch(RobotAction.VisionMeasurementsReceived(
+        val visionResult = store.dispatchAndGetState(RobotAction.VisionMeasurementsReceived(
             freshMeasurements,
             timestampMs,
-            stdDevs
-        ))
+            stdDevs,
+            diagnosticMeasurementIndex = bestIndex
+        )).vision
         if (passesPhysicalFilters && hasInitializedPoseWithVision) {
-            lastVisionStatus = if (store.state.vision.lastMeasurementAccepted) {
+            lastVisionStatus = if (visionResult.diagnosticMeasurementIndex != bestIndex) {
+                "REJ_EKF"
+            } else if (visionResult.diagnosticMeasurementAccepted) {
                 "ACCEPTED"
             } else {
-                when (store.state.vision.lastRejectionReason) {
+                when (visionResult.diagnosticMeasurementRejectionReason) {
                     "mahalanobis_rejected" -> "REJ_MAHALANOBIS"
                     null -> "REJ_EKF"
-                    else -> "REJ_EKF_${store.state.vision.lastRejectionReason}"
+                    else -> "REJ_EKF_${visionResult.diagnosticMeasurementRejectionReason}"
                 }
             }
         }
@@ -396,10 +418,12 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         return kotlin.math.hypot(kotlin.math.hypot(xG, yG), dynamicZ)
     }
 
-    private fun distanceSq(pose3d: com.areslib.math.geometry.Pose3d, pose2d: com.areslib.math.geometry.Pose2d): Double {
-        val dx = pose3d.x - pose2d.x
-        val dy = pose3d.y - pose2d.y
-        return dx * dx + dy * dy
-    }
-}
+    private fun distance(pose3d: com.areslib.math.geometry.Pose3d, pose2d: Pose2d): Double =
+        kotlin.math.hypot(pose3d.x - pose2d.x, pose3d.y - pose2d.y)
 
+    // Only needed to order distances larger than Double.MAX_VALUE. Scaling both finite poses
+    // before subtraction also handles opposite-sign endpoints without overflow; ordinary tiny
+    // distances use the unscaled hypot path above.
+    private fun quarterDistance(pose3d: com.areslib.math.geometry.Pose3d, pose2d: Pose2d): Double =
+        kotlin.math.hypot(pose3d.x * 0.25 - pose2d.x * 0.25, pose3d.y * 0.25 - pose2d.y * 0.25)
+}

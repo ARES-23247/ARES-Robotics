@@ -23,7 +23,10 @@ internal data class VisionEstimatorDiagnostics(
     val lastNisFrameId: Long = 0L,
     val lastNisTagId: Int = -1,
     val lastNisSolverType: com.areslib.state.VisionSolverType = com.areslib.state.VisionSolverType.UNKNOWN,
-    val lastNisAccepted: Boolean = false
+    val lastNisAccepted: Boolean = false,
+    val diagnosticMeasurementIndex: Int = -1,
+    val diagnosticMeasurementAccepted: Boolean = false,
+    val diagnosticMeasurementRejectionReason: String? = null
 )
 
 /** A filtered public action plus private-runtime diagnostics for one camera frame. */
@@ -48,6 +51,8 @@ internal class StoreVisionMeasurementProcessor {
     ): PreparedVisionMeasurements {
         val measurements = action.measurements
         val validMeasurements = ArrayList<VisionMeasurement>(measurements.size)
+        val diagnosticIndex = if (action.diagnosticMeasurementIndex in measurements.indices) action.diagnosticMeasurementIndex else -1
+        var diagnosticValidIndex = -1
 
         for (i in 0 until measurements.size) {
             val measurement = measurements[i]
@@ -63,6 +68,7 @@ internal class StoreVisionMeasurementProcessor {
                     linearAccelYG = state.drive.yAccelerationG,
                     linearAccelZG = state.drive.zAccelerationG
                 )) {
+                if (i == diagnosticIndex) diagnosticValidIndex = validMeasurements.size
                 validMeasurements.add(measurement)
             }
         }
@@ -80,6 +86,8 @@ internal class StoreVisionMeasurementProcessor {
         var lastNisMeasurement: VisionMeasurement? = null
         var lastNis = 0.0
         var lastNisAccepted = false
+        var diagnosticAccepted = false
+        var diagnosticReason: String? = if (diagnosticIndex >= 0) "prefilter_rejected" else null
 
         if (action.fuseIntoPoseEstimator) {
             for (i in 0 until validMeasurements.size) {
@@ -130,6 +138,10 @@ internal class StoreVisionMeasurementProcessor {
                 )
                 lastAccepted = estimator.lastMeasurementAccepted
                 lastReason = estimator.lastRejectionReason
+                if (i == diagnosticValidIndex) {
+                    diagnosticAccepted = lastAccepted
+                    diagnosticReason = lastReason
+                }
                 // Early rejection leaves the workspace's previous NIS untouched. Only these
                 // outcomes establish a new finite innovation for this particular observation.
                 if ((lastAccepted || lastReason == "mahalanobis_rejected") &&
@@ -158,6 +170,8 @@ internal class StoreVisionMeasurementProcessor {
             rejectedCountDelta = measurements.size - validMeasurements.size
             lastAccepted = validMeasurements.isNotEmpty()
             lastReason = if (!lastAccepted && measurements.isNotEmpty()) "external_filter_rejected" else null
+            diagnosticAccepted = diagnosticValidIndex >= 0
+            diagnosticReason = if (diagnosticIndex >= 0 && !diagnosticAccepted) "external_filter_rejected" else null
         }
 
         return PreparedVisionMeasurements(
@@ -178,7 +192,10 @@ internal class StoreVisionMeasurementProcessor {
                 lastNisFrameId = lastNisMeasurement?.frameId ?: 0L,
                 lastNisTagId = lastNisMeasurement?.tagId ?: -1,
                 lastNisSolverType = lastNisMeasurement?.solverType ?: com.areslib.state.VisionSolverType.UNKNOWN,
-                lastNisAccepted = lastNisAccepted
+                lastNisAccepted = lastNisAccepted,
+                diagnosticMeasurementIndex = diagnosticIndex,
+                diagnosticMeasurementAccepted = diagnosticAccepted,
+                diagnosticMeasurementRejectionReason = diagnosticReason
             )
         )
     }

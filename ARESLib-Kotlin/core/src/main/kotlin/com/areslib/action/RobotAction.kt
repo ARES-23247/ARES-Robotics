@@ -54,12 +54,16 @@ interface RobotAction {
      * @property fuseIntoPoseEstimator False when an upstream estimator has already consumed
      *   these observations. The vision slice is still updated for diagnostics and dashboards,
      *   but the ARES EKF is left unchanged.
+     * @property diagnosticMeasurementIndex Optional index in the original [measurements] list for
+     *   a dedicated acceptance/rejection result in VisionState. -1 disables it. Invalid indices
+     *   produce no selected result. Selection does not change filtering or fusion order.
      */
     data class VisionMeasurementsReceived(
         val measurements: List<com.areslib.state.VisionMeasurement>,
         override val timestampMs: Long,
         val customVisionStdDevs: Vector3? = null,
-        val fuseIntoPoseEstimator: Boolean = true
+        val fuseIntoPoseEstimator: Boolean = true,
+        val diagnosticMeasurementIndex: Int = -1
     ) : RobotAction
 
     /**

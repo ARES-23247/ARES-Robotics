@@ -300,6 +300,12 @@ object ActionReplay {
             val timestampMs = payload.requiredLong("timestampMs")
             // Normalize once so the generic Gson adapter need not reparse the decimal epoch.
             payload.addProperty("timestampMs", timestampMs)
+            // Older schema-1 vision logs predate this optional diagnostic selector. It does not
+            // affect fusion; omission must retain the historical behavior without selecting index 0.
+            if (actionClass == RobotAction.VisionMeasurementsReceived::class.java &&
+                !payload.has("diagnosticMeasurementIndex")) {
+                payload.addProperty("diagnosticMeasurementIndex", -1)
+            }
             validateCorePayload(payload, actionClass)
             val decoded = when (actionClass) {
                 RobotAction.UpdateSubsystemState::class.java -> decodeSubsystemUpdate(payload, timestampMs)

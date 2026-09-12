@@ -62,6 +62,15 @@ class Store(
      * @param action The [RobotAction] describing the state transition.
      */
     fun dispatch(action: RobotAction) {
+        dispatchAndGetState(action)
+    }
+
+    /**
+     * Dispatches with the same ordering/failure semantics as [dispatch], returning the immutable
+     * snapshot committed by this action. A subscriber or concurrent caller may dispatch again
+     * before this method returns; that later state does not replace the returned snapshot.
+     */
+    fun dispatchAndGetState(action: RobotAction): RobotState {
         val currentState: RobotState
         synchronized(this) {
             checkReductionHealthy()
@@ -73,6 +82,7 @@ class Store(
         for (i in snapshot.indices) {
             snapshot[i](currentState)
         }
+        return currentState
     }
 
     /**
