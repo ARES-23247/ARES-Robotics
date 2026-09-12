@@ -36,7 +36,7 @@ dependencies {
     implementation("com.google.api-client:google-api-client:2.9.0")
 
     // Google Gen AI SDK (supports Gemini through Vertex AI / enterprise mode)
-    implementation("com.google.genai:google-genai:1.68.0")
+    implementation("com.google.genai:google-genai:1.70.0")
 
     // Logging
     implementation("ch.qos.logback:logback-classic:1.6.3")
