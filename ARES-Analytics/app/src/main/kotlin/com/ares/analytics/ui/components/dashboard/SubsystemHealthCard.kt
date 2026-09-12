@@ -18,11 +18,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,7 +29,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.service.hardware.SubsystemHealthAccumulator
 import com.ares.analytics.service.hardware.SubsystemHealthSnapshot
 import com.ares.analytics.service.hardware.SubsystemHealthStatus
 import com.ares.analytics.ui.theme.AresAmber
@@ -44,7 +41,6 @@ import com.ares.analytics.ui.theme.AresSurfaceElevated
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresTextTertiary
-import kotlinx.coroutines.delay
 
 /** Generic health view for every GUI-generated or hand-authored subsystem using ARES telemetry. */
 @Composable
@@ -52,22 +48,16 @@ fun SubsystemHealthCard(
     nt4ClientService: Nt4ClientService,
     modifier: Modifier = Modifier,
 ) {
-    val accumulator = remember { SubsystemHealthAccumulator() }
-    var nowNs by remember { mutableLongStateOf(System.nanoTime()) }
-
-    LaunchedEffect(nt4ClientService) {
-        nt4ClientService.uiTelemetryFlow.collect { frame ->
-            accumulator.accept(frame, System.nanoTime())
+    val snapshots = key(nt4ClientService) {
+        val observations = remember(nt4ClientService) {
+            observeSubsystemHealth(
+                nt4ClientService.uiTelemetryFlow,
+                nt4ClientService.telemetryStore::currentTargetEpoch,
+                nt4ClientService.telemetryStore::isCurrentNotifiedFrame,
+            )
         }
+        observations.collectAsState(emptyList()).value
     }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(250L)
-            nowNs = System.nanoTime()
-        }
-    }
-
-    val snapshots = accumulator.snapshots(nowNs)
     SubsystemHealthContent(snapshots = snapshots, modifier = modifier)
 }
 

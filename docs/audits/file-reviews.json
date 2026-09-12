@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "a3ecf4f2321f193e596d496513639f814b76ac7e1eeb1edca241214a0f6972ea",
+      "sha256": "998e04c680eb5c5d0013df1331fa95be4487c9ced8acd4b24796dcd000a7b453",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13838,6 +13838,105 @@
         "docs/audits/telemetry-buffer-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass192-verified-evidence/focused-restored-summary.json",
         "ARESLib-Kotlin/build/audit-pass192-verified-evidence/studio-app-restored-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/SubsystemHealthTelemetry.kt": {
+      "sha256": "956895c02f491a0af3a8515f58390e3f71309d975f7223a2e9f411fdb5e83478",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 193: Complete source read and expanded input/freshness tests: finite numeric canonical flags, invalid evidence replacement/recovery, heartbeat-owned liveness, backward/wrapping receipt clock, exact topic identity and target-epoch resets. Missing-signal set reused per snapshot. Lifetime bounds on distinct subsystem/measurement names remain open.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SubsystemHealthCard.kt": {
+      "sha256": "4b8b082a286ba70a0ee3d2486eb5d5d26cb32db005021a4080ce83fa41812ba8",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 193: Complete card/render source read; replaced unkeyed accumulator and timer with owned observation flow; target/service changes and disposal tested via real offscreen Compose composition, existing rendered status screenshot inspected. Full replay selection/seek semantics remain open.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SubsystemHealthObservation.kt": {
+      "sha256": "1b4a5e64cf5bdc836e296d847db882a5678d5884158d743d649d5f424a5bf49e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 193: Complete new observation helper reviewed/tested: current frame identity plus epoch recheck, epoch-aware sampling, retained-heartbeat exclusion while preserving same-target flags, 4 Hz publication and structured collector cancellation. High-cardinality limits belong to the separately partial accumulator; replay-mode choice belongs to the partial card integration.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareCommissioningModel.kt": {
+      "sha256": "292c312f5a98b8e5c449b40270ddc85f027354ac2e1dc7012b92b45a67ac503c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 193: Entire model and plan generation read; traced relevant setup UI/clipboard and existing commissioning tests. Open confirmed/static concerns: inventory errors and duplicate addresses do not gate diagnostic availability, and clipboard emits partial checks when diagnostic is unavailable. Requires next-pass regression/fix; no hardware actuation occurs in this model.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareInventoryFormatting.kt": {
+      "sha256": "34dea660e27b9c764140d43987cb800774325077df5e8cd72554d701960dd7de",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 193: Entire address/format/detail helper read against inventory call boundary and selected setup tests. Long upper-bound Double-to-Long formatting saturation requires regression/fix. Complete platform/address mapping and extreme-value behavior remain open.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/SubsystemHealthTelemetryTest.kt": {
+      "sha256": "30026244b2cb8fdc3cb8d546a73d26d9baeb1efa6fb59775f79834ac81ee3df1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 193: Entire test file read and validated; original model cases preserved; deterministic regression, observer/epoch/clock/burst or actual Compose ownership coverage as applicable; focused/full suites passed.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/SubsystemHealthObservationTest.kt": {
+      "sha256": "c0f467dfc54aa94863aa51d5f9ee1e6ca2a53d922dcb2c3584622846a5c7906c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 193: Entire test file read and validated; original model cases preserved; deterministic regression, observer/epoch/clock/burst or actual Compose ownership coverage as applicable; focused/full suites passed.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/SubsystemHealthCompositionTest.kt": {
+      "sha256": "536095286c5ff11295190945ed524415dcc6310936ade7b226d798db6b16c6fd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 193: Entire test file read and validated; original model cases preserved; deterministic regression, observer/epoch/clock/burst or actual Compose ownership coverage as applicable; focused/full suites passed.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "docs/audits/subsystem-health-evidence-audit.md": {
+      "sha256": "e8898e937842be3187189d3d9d3e1e4e9be5d5b9d0e55ca2080ff2ab8ccb83bc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 193: Report reconciled with six baseline failures, 30 focused passes, full 1849-test result, inspected offscreen screenshot and explicit remaining coverage.",
+      "evidence": [
+        "docs/audits/subsystem-health-evidence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
       ]
     }
   }
