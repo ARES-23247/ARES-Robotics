@@ -102,7 +102,7 @@ abstract class FrcBaseRobot(
     private var lastUpdateTime = 0L
     private var previousEnabled: Boolean? = null
     private var topologyPublished = false
-    private var closed = false
+    @Volatile private var closed = false
 
     /** First fatal loop failure. A robot instance remains inhibited after this is set. */
     @Volatile
@@ -119,13 +119,15 @@ abstract class FrcBaseRobot(
      *
      * Executes the full sensor-read → state-update → output-write → telemetry pipeline
      * in a single deterministic cycle. Called once per scheduler tick (~50 Hz).
+     * Calls begun after [close] are rejected before any provider, hardware or telemetry work.
      *
      * @param gamepad1 Optional driver gamepad state.
      * @param gamepad2 Optional operator gamepad state.
      */
     fun update(gamepad1: GamepadState? = null, gamepad2: GamepadState? = null) {
+        check(!closed) { "Robot is closed" }
         fatalUpdateFailure?.let { failure ->
-            safeHardware()
+            attemptSafetyAfterFailure(failure)
             throw failure
         }
         try {
@@ -181,12 +183,18 @@ abstract class FrcBaseRobot(
             fatalUpdateFailure = e
             System.err.println("FrcBaseRobot: Exception in update loop: ${e.message}")
             e.printStackTrace()
-            try {
-                safeHardware()
-            } catch (safetyFailure: Throwable) {
-                e.addSuppressed(safetyFailure)
-            }
+            attemptSafetyAfterFailure(e)
             throw e
+        }
+    }
+
+    private fun attemptSafetyAfterFailure(primary: Throwable) {
+        try {
+            safeHardware()
+        } catch (failure: Throwable) {
+            if (primary !== failure && primary.suppressed.none { it === failure }) {
+                primary.addSuppressed(failure)
+            }
         }
     }
 
@@ -223,6 +231,7 @@ abstract class FrcBaseRobot(
      * been written.
      */
     fun publishHardwareTopology(robotId: String) {
+        check(!closed) { "Robot is closed" }
         if (topologyPublished) return
         val json = hardwareRegistry.getTopologyJson(robotId)
         telemetryManager.publisher.publishTopology(json, flush = false)
@@ -260,6 +269,8 @@ abstract class FrcBaseRobot(
     /**
      * Gracefully shuts down the robot: stops web server, closes telemetry,
      * releases all registered subsystems and hardware resources.
+     * Closure is terminal even if cleanup fails. The lifecycle owner must quiesce in-flight
+     * updates and other foreground callbacks before closing; this does not cancel active IO.
      */
     @Synchronized
     open fun close() {

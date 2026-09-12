@@ -27,6 +27,8 @@ import com.areslib.hardware.actuator.*
 class HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
+    // Rebuilt only during registration. Loop readers retain one stable, identity-deduplicated snapshot.
+    @Volatile private var lifecycleDevices = emptyArray<SubsystemIO>()
     private val devicesNamesList = CopyOnWriteArrayList<String>()
     private val devicesPrefixList = CopyOnWriteArrayList<String>()
     private val devicesHeartbeatTopicList = CopyOnWriteArrayList<String>()
@@ -205,6 +207,14 @@ class HardwareRegistry {
         if (device is CurrentSourceIO && !cachedCurrentSourcesList.contains(device)) {
             cachedCurrentSourcesList.add(device)
         }
+        val seen = IdentityHashMap<SubsystemIO, Boolean>()
+        val lifecycle = ArrayList<SubsystemIO>()
+        for (registered in devicesList) {
+            if (registered is SubsystemIO && seen.put(registered, true) == null) {
+                lifecycle.add(registered)
+            }
+        }
+        lifecycleDevices = lifecycle.toTypedArray()
     }
 
     /**
@@ -336,31 +346,33 @@ class HardwareRegistry {
     fun getRegisteredCurrentSources(): List<CurrentSourceIO> = registeredCurrentSourcesView
 
     /**
-     * Calls [SubsystemIO.refresh] once for every registered subsystem in registration order.
+     * Calls [SubsystemIO.refresh] once per physical object in first-name registration order.
+     * Aliases retain separate telemetry entries but share a single hardware read.
      * Unlike safety and close passes, refresh exceptions propagate to the caller.
      */
     fun refreshAll() {
-        for (i in 0 until devicesList.size) {
-            val device = devicesList[i]
-            if (device is SubsystemIO) {
-                device.refresh()
-            }
+        val snapshot = lifecycleDevices
+        for (i in snapshot.indices) {
+            snapshot[i].refresh()
         }
     }
 
     /**
-     * Invokes every registered subsystem's fail-safe output and suppresses individual failures so
-     * one broken device cannot prevent the remaining devices from being stopped.
+     * Invokes each physical object's fail-safe output once. Ordinary exceptions remain suppressed;
+     * other throwables are rethrown after every device has been attempted, with distinct additional
+     * failures suppressed onto the first. A broken device cannot skip the remaining safety outputs.
      */
     fun safeAll() {
-        for (i in 0 until devicesList.size) {
-            val device = devicesList[i]
-            if (device is SubsystemIO) {
-                try {
-                    device.safe()
-                } catch (_: Exception) {}
+        var firstFailure: Throwable? = null
+        val snapshot = lifecycleDevices
+        for (i in snapshot.indices) {
+            try {
+                snapshot[i].safe()
+            } catch (failure: Throwable) {
+                if (failure !is Exception) firstFailure = retainFailure(firstFailure, failure)
             }
         }
+        firstFailure?.let { throw it }
     }
 
     /**
@@ -368,6 +380,9 @@ class HardwareRegistry {
      * best-effort basis, and clears all registry state. Registered devices close before auxiliary
      * services so actuator shutdown cannot wait behind a logger drain. Resources shared between
      * ownership lists close once by identity. Safe during repeated test/OpMode teardown.
+     * Ordinary close exceptions are suppressed; other throwables are rethrown only after all
+     * resources have been attempted and registry state cleared. Owners must quiesce registration
+     * and foreground callbacks before closing; the bounded join cannot cancel blocked device IO.
      */
     fun closeAll() {
         val thread = synchronized(this) {
@@ -387,12 +402,15 @@ class HardwareRegistry {
         pollingFailureCounts.clear()
 
         val closedByIdentity = Collections.newSetFromMap(IdentityHashMap<AutoCloseable, Boolean>())
+        var firstFailure: Throwable? = null
         for (i in 0 until devicesList.size) {
             val device = devicesList[i]
             if (device is AutoCloseable && closedByIdentity.add(device)) {
                 try {
                     device.close()
-                } catch (_: Exception) {}
+                } catch (failure: Throwable) {
+                    if (failure !is Exception) firstFailure = retainFailure(firstFailure, failure)
+                }
             }
         }
         for (i in 0 until closeables.size) {
@@ -400,11 +418,14 @@ class HardwareRegistry {
             if (!closedByIdentity.add(closeable)) continue
             try {
                 closeable.close()
-            } catch (_: Exception) {}
+            } catch (failure: Throwable) {
+                if (failure !is Exception) firstFailure = retainFailure(firstFailure, failure)
+            }
         }
         closeables.clear()
         devices.clear()
         devicesList.clear()
+        lifecycleDevices = emptyArray()
         devicesNamesList.clear()
         devicesPrefixList.clear()
         devicesHeartbeatTopicList.clear()
@@ -414,6 +435,15 @@ class HardwareRegistry {
         cachedMotorsList.clear()
         cachedCurrentSourcesList.clear()
         telemetryPublishSequence.set(0L)
+        firstFailure?.let { throw it }
+    }
+
+    private fun retainFailure(primary: Throwable?, failure: Throwable): Throwable {
+        if (primary == null) return failure
+        if (primary !== failure && primary.suppressed.none { it === failure }) {
+            primary.addSuppressed(failure)
+        }
+        return primary
     }
 
     /**
