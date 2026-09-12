@@ -303,6 +303,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         poseUpdate.rollDegrees = Math.toDegrees(cachedImuInputs.rollRadians)
         poseUpdate.pitchVelocityDegPerSec = Math.toDegrees(cachedImuInputs.pitchVelocityRadPerSec)
         poseUpdate.rollVelocityDegPerSec = Math.toDegrees(cachedImuInputs.rollVelocityRadPerSec)
+        poseUpdate.imuMeasurementsValid = cachedImuInputs.timestampMs > 0L
         if (selectedSource != FtcOdometrySource.PINPOINT) {
             poseUpdate.angularVelocityRadiansPerSecond = cachedImuInputs.yawVelocityRadPerSec
         }
@@ -359,13 +360,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     private fun refreshCachedImu(timestampMs: Long) {
         val imu = imuIO
         if (imu == null) {
-            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
-            cachedImuInputs.pitchRadians = 0.0
-            cachedImuInputs.rollRadians = 0.0
-            cachedImuInputs.yawVelocityRadPerSec = 0.0
-            cachedImuInputs.pitchVelocityRadPerSec = 0.0
-            cachedImuInputs.rollVelocityRadPerSec = 0.0
-            cachedImuInputs.timestampMs = 0L
+            invalidateCachedImu()
             return
         }
 
@@ -393,13 +388,15 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     private fun invalidateCachedImu() {
-            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
-            cachedImuInputs.pitchRadians = 0.0
-            cachedImuInputs.rollRadians = 0.0
-            cachedImuInputs.yawVelocityRadPerSec = 0.0
-            cachedImuInputs.pitchVelocityRadPerSec = 0.0
-            cachedImuInputs.rollVelocityRadPerSec = 0.0
-            cachedImuInputs.timestampMs = 0L
+        // Retain the last RAW heading (initially zero), but mark the sample invalid.
+        // Fallback adds its field offset separately. Feeding the fused field heading
+        // back here would add that offset again every frame and fabricate rotation.
+        cachedImuInputs.pitchRadians = 0.0
+        cachedImuInputs.rollRadians = 0.0
+        cachedImuInputs.yawVelocityRadPerSec = 0.0
+        cachedImuInputs.pitchVelocityRadPerSec = 0.0
+        cachedImuInputs.rollVelocityRadPerSec = 0.0
+        cachedImuInputs.timestampMs = 0L
     }
 
     private fun reseedOdometrySources(pose: Pose2d) {

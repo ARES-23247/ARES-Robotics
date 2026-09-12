@@ -103,6 +103,64 @@ class FtcLoopTimingTest {
     }
 
     @Test
+    fun `missing IMU does not repeatedly apply the field heading offset`() {
+        RobotClock.useMockTime(1000L)
+        val robot = ProbeRobot()
+        val pacing = FtcOpModeLifecycleController.beginExternallyPacedFrame()
+        try {
+            robot.resetPoseForAlliance()
+            val seededHeading = robot.store.state.drive.poseEstimator.estimatedPoseHeading
+            kotlin.test.assertTrue(kotlin.math.abs(seededHeading) > 1.0)
+            val drive = com.areslib.subsystem.MecanumDriveFacade(robot.store)
+            drive.driveFieldRelativeNormalized(0.0, 0.0, 0.0, useHeadingLock = true)
+            repeat(12) {
+                RobotClock.useMockTime(1020L + it * 20L)
+                robot.update()
+                assertEquals(seededHeading, robot.store.state.drive.poseEstimator.estimatedPoseHeading, 1e-9)
+                drive.driveFieldRelativeNormalized(0.0, 0.0, 0.0, useHeadingLock = true)
+                assertEquals(0.0, robot.store.state.drive.angularVelocityRadiansPerSecond, 1e-9)
+                assertEquals(0.0, robot.imuHeading, 1e-9)
+                assertEquals(0L, robot.imuTimestamp)
+            }
+        } finally {
+            robot.close()
+            FtcOpModeLifecycleController.endExternallyPacedFrame(pacing)
+            RobotClock.useSystemTime()
+        }
+    }
+
+    @Test
+    fun `stale IMU retains raw heading without feeding back the field offset`() {
+        RobotClock.useMockTime(1000L)
+        val imu = object : IMU {
+            override fun initialize(parameters: IMU.Parameters) = true
+            override fun resetYaw() = Unit
+            override fun getRobotYawPitchRollAngles() = YawPitchRollAngles(AngleUnit.RADIANS, 0.5)
+            override fun getRobotAngularVelocity(unit: AngleUnit) = AngularVelocity(AngleUnit.RADIANS)
+        }
+        val robot = ProbeRobot(imu)
+        val pacing = FtcOpModeLifecycleController.beginExternallyPacedFrame()
+        try {
+            robot.update()
+            assertEquals(0.5, robot.imuHeading, 1e-9)
+            (robot.imuIO as AutoCloseable).close()
+            robot.resetPoseForAlliance()
+            val seededHeading = robot.store.state.drive.poseEstimator.estimatedPoseHeading
+            repeat(12) {
+                RobotClock.useMockTime(2000L + it * 20L)
+                robot.update()
+                assertEquals(seededHeading, robot.store.state.drive.poseEstimator.estimatedPoseHeading, 1e-9)
+                assertEquals(0.5, robot.imuHeading, 1e-9)
+                assertEquals(0L, robot.imuTimestamp)
+            }
+        } finally {
+            robot.close()
+            FtcOpModeLifecycleController.endExternallyPacedFrame(pacing)
+            RobotClock.useSystemTime()
+        }
+    }
+
+    @Test
     fun `IMU sample newer than frame start is valid when consumed`() {
         RobotClock.useMockTime(1000L)
         val imu = object : IMU {
