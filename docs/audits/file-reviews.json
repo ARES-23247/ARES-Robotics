@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "2ff131da828ebe95d34386b568010124b976e39135c4893c637b319837030e47",
+      "sha256": "49745605bb4421bc24e021a235c71565d97fd8562e8cf542743122e0a20ab342",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -13949,22 +13949,28 @@
       "sha256": "e0b2a2ecd03542b38579087fd63f6dcc862ab905e56827f45d7382ecba112fc4",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 194: Entire source read; fix per-channel quadrature DIO ownership, shared physical-readiness gate, invalid-inventory physical evidence suppression and removal of the filtered issue-list allocation in the reviewability predicate. Regressions cover actual decoded docs, cross-document collisions, same-hash malformed docs, evidence rejection without writes and existing review/hash flows. XRP namespace/CAN bus edge cases, concurrent source edits, evidence path ownership, append ordering/races remain open.",
+      "scope": "Pass 194: Entire source read; fix per-channel quadrature DIO ownership, shared physical-readiness gate, invalid-inventory physical evidence suppression and removal of the filtered issue-list allocation in the reviewability predicate. Regressions cover actual decoded docs, cross-document collisions, same-hash malformed docs, evidence rejection without writes and existing review/hash flows. XRP namespace/CAN bus edge cases, concurrent source edits, evidence path ownership, append ordering/races remain open. Pass 195 persistence-boundary follow-up: both save requests omit the displayed inventory hash; submitted approval binding remains open. Existing service tests pass; this is not evidence that the source-edit gap is fixed.",
       "evidence": [
         "docs/audits/hardware-commissioning-gates-audit.md",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json",
+        "docs/audits/hardware-setup-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/hardware/HardwareSetupViewModel.kt": {
-      "sha256": "5070f5f4dc8f975d45d4f1de987ba5e469825edbe53524f11e7e20d74dffa7d8",
+      "sha256": "ba17c0661fb92a2f443ea6cf46ef51122876bb63e0a5978e21a928c129cc1d63",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 194: Entire view-model/state source read. Physical-evidence eligibility uses the shared inventory/review/simulation predicate and is tested against an invalid same-hash inventory. Async cancellation/operation replacement, field preservation and review checklist lifecycle remain open.",
+      "scope": "Pass 195: Entire view-model/state source reviewed. Shared operation identity, cancellation transparency/completion, atomic draft preservation, busy/save guards and checklist invalidation across inventory/readiness/failure transitions verified by 12 lifecycle cases, 33 focused tests and the full Studio suite. Remains partial for binding submitted approvals to the displayed inventory hash and the associated persistence/source-edit contract; cancellation does not undo blocking IO.",
       "evidence": [
         "docs/audits/hardware-commissioning-gates-audit.md",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json",
+        "docs/audits/hardware-setup-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/HardwareSetupScreen.kt": {
@@ -14009,6 +14015,28 @@
         "docs/audits/hardware-commissioning-gates-audit.md",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/hardware/HardwareSetupViewModelTest.kt": {
+      "sha256": "7d674f29ade0f838c9c82b0c3bc4566ec68e6c1d089d4623022651d97620815e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 195: Entire new test file reviewed and executed; owned scopes and bounded barriers reproduce stale completion, draft overwrite, cancellation/busy lifecycle, ineligible/repeated saves and every checklist reset including readiness recovery. Eight original baseline cases had seven failures; an additional readiness baseline failed. All 12 final lifecycle cases passed in focused and full Studio runs.",
+      "evidence": [
+        "docs/audits/hardware-setup-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "docs/audits/hardware-setup-lifecycle-audit.md": {
+      "sha256": "720c878ab3e2e5914445d853809cf5fb01ef34f39f368637e035024cb2506f43",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 195: Report reconciled with the seven original and one readiness baseline failures, 33 focused tests, full 1873-test/6-skip result, policy checks and explicit persistence/IO/hardware limitations.",
+      "evidence": [
+        "docs/audits/hardware-setup-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass195-verified-evidence/studio-app-summary.json"
       ]
     }
   }
