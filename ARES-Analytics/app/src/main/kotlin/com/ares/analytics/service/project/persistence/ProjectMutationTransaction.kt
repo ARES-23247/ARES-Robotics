@@ -1,5 +1,7 @@
 package com.ares.analytics.service.project.persistence
 
+import com.ares.analytics.service.resolveExistingPath
+import com.ares.analytics.util.Sha256
 import java.io.File
 import java.nio.file.Files
 import java.util.UUID
@@ -17,6 +19,9 @@ internal object ProjectMutationTransaction {
     private const val MANIFEST = "manifest.tsv"
     private const val COMMITTED = "COMMITTED"
     private const val BACKUP = "baseline"
+    private const val MANIFEST_HEADER = "V\t2\n"
+
+    private data class RecoveryManifest(val scopes: List<String>, val baseline: Set<String>)
 
     fun <T> run(
         projectRoot: File,
@@ -35,7 +40,12 @@ internal object ProjectMutationTransaction {
                 root,
                 ".ares/recovery/transactions/${operation.safeSegment()}-${UUID.randomUUID()}",
             )
-            val baseline = baselineFiles(root, scopes)
+            val baseline = baselineFiles(root, scopes).onEach { relative ->
+                require(normalizeRelativePath(relative) == relative) {
+                    "Project transaction path cannot be represented in its recovery manifest: $relative"
+                }
+            }
+            validateBaselineScope(root, scopes, baseline)
             transaction.mkdirs()
             baseline.forEach { relative ->
                 val source = resolveInside(root, relative)
@@ -45,10 +55,7 @@ internal object ProjectMutationTransaction {
             }
             AtomicProjectFileWriter.write(
                 File(transaction, MANIFEST),
-                buildString {
-                    scopes.forEach { append("S\t").appendLine(it) }
-                    baseline.forEach { append("F\t").appendLine(it) }
-                },
+                encodeManifest(scopes, baseline),
                 replaceExisting = false,
             )
 
@@ -83,10 +90,7 @@ internal object ProjectMutationTransaction {
         require(manifest.isFile) {
             "Incomplete project transaction '${transaction.name}' has no recovery manifest. Preserve it for manual recovery."
         }
-        val lines = manifest.readLines()
-        val scopes = lines.filter { it.startsWith("S\t") }.map { normalizeRelativePath(it.substring(2)) }
-        val baseline = lines.filter { it.startsWith("F\t") }.map { normalizeRelativePath(it.substring(2)) }.toSet()
-        require(scopes.isNotEmpty()) { "Project transaction '${transaction.name}' has no declared recovery scopes." }
+        val (scopes, baseline) = decodeManifest(root, manifest.readText())
 
         baseline.forEach { relative ->
             val backup = File(transaction, "$BACKUP/$relative")
@@ -101,6 +105,57 @@ internal object ProjectMutationTransaction {
             AtomicProjectFileWriter.write(resolveInside(root, relative), backup.readBytes(), replaceExisting = true)
         }
         transaction.deleteRecursively()
+    }
+
+    private fun encodeManifest(scopes: List<String>, baseline: List<String>): String {
+        val body = buildString {
+            append(MANIFEST_HEADER)
+            scopes.forEach { append("S\t").append(it).append('\n') }
+            baseline.forEach { append("F\t").append(it).append('\n') }
+        }
+        return body + "H\t${Sha256.hex(body)}\n"
+    }
+
+    private fun decodeManifest(root: File, raw: String): RecoveryManifest {
+        // Exclusive publication can fall back to CREATE_NEW on providers without hard links.
+        // Validate the complete new-format file before treating any prefix as a rollback plan.
+        val entries = if (raw.startsWith("V\t")) {
+            require(raw.startsWith(MANIFEST_HEADER)) { "Unsupported project transaction manifest version." }
+            val checksumStart = raw.lastIndexOf("\nH\t") + 1
+            require(checksumStart >= MANIFEST_HEADER.length) { "Incomplete project transaction manifest." }
+            val body = raw.substring(0, checksumStart)
+            require(raw.substring(checksumStart) == "H\t${Sha256.hex(body)}\n") {
+                "Project transaction manifest checksum is invalid or incomplete. Preserve it for manual recovery."
+            }
+            body.removePrefix(MANIFEST_HEADER)
+        } else {
+            // Preserve recovery of transactions written before versioned manifests were introduced.
+            raw
+        }
+        val scopes = mutableListOf<String>()
+        val baseline = linkedSetOf<String>()
+        entries.lineSequence().filter(String::isNotEmpty).forEach { line ->
+            require(line.startsWith("S\t") || line.startsWith("F\t")) {
+                "Invalid project transaction manifest record."
+            }
+            val relative = normalizeRelativePath(line.substring(2))
+            if (line.startsWith("S\t")) scopes += relative else baseline += relative
+        }
+        require(scopes.isNotEmpty()) { "Project transaction manifest has no declared recovery scopes." }
+        validateBaselineScope(root, scopes, baseline)
+        return RecoveryManifest(scopes, baseline)
+    }
+
+    private fun validateBaselineScope(root: File, scopes: List<String>, baseline: Collection<String>) {
+        val realRoot = root.toPath().toRealPath()
+        fun ownedPath(relative: String) = resolveExistingPath(resolveInside(root, relative).toPath()).also { path ->
+            require(path.startsWith(realRoot)) { "Project transaction path escapes the real project root: $relative" }
+        }
+        val scopePaths = scopes.map(::ownedPath)
+        baseline.forEach { relative ->
+            val path = ownedPath(relative)
+            require(scopePaths.any(path::startsWith)) { "Project transaction baseline is outside its declared scopes: $relative" }
+        }
     }
 
     private fun baselineFiles(root: File, scopes: List<String>): List<String> = currentFiles(root, scopes)
@@ -122,6 +177,9 @@ internal object ProjectMutationTransaction {
     }
 
     private fun normalizeRelativePath(value: String): String {
+        require(value.none { it == '\t' || it == '\r' || it == '\n' }) {
+            "Project transaction paths must not contain manifest delimiters."
+        }
         val normalized = value.replace('\\', '/').trim().trimStart('/')
         require(normalized.isNotBlank() && normalized != ".") { "Project transaction scope is empty." }
         require(normalized.split('/').none { it == ".." || it.isBlank() }) { "Invalid project transaction scope: $value" }

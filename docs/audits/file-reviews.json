@@ -5561,7 +5561,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3c81a9f1e13d2af4d3d6aa7603f4f8a64ac8a1f7c41bc81d0458a921a34dc07e",
+      "sha256": "a4012c3c4826f22b3eb959ed4e3e1d89886aa5cc966548e7de4831bc23f3dcc2",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim.",
@@ -5645,7 +5645,8 @@
         "docs/audits/frc-native-extraction-audit.md: pass130 nativeextraction records and self-fingerprint refreshed",
         "docs/audits/frc-documentation-consistency-audit.md: pass131 documentation records and self-fingerprint refreshed",
         "docs/audits/frc-vendor-wrapper-artifact-audit.md: pass132 vendor/wrapper records and self-fingerprint refreshed",
-        "docs/audits/frc-world-replacement-audit.md: pass133 worldreplacement records and self-fingerprint refreshed"
+        "docs/audits/frc-world-replacement-audit.md: pass133 worldreplacement records and self-fingerprint refreshed",
+        "docs/audits/project-history-recovery-integrity-audit.md: pass198 scoped records reviewed and canonical self-fingerprint refreshed"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -14085,14 +14086,17 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/hardware/HardwareEvidenceStore.kt": {
-      "sha256": "b1302a7977ab2c82c9d6375689042b47b09d440fbce32f63760663ffacd08cd7",
+      "sha256": "c36dfc67333c6912772989ef4748bce68d0a45133e93410238d0d9a5e29df28e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 197: Entire new store read and exercised. Existing-parent real-path resolution confines listed paths and append directories; completed flushed bytes publish with hard-link creation or exclusive CREATE_NEW fallback. Tests cover concurrent writers, late destinations, UTF-8, duplicates, pre-publication failures, cleanup and forced fallback. Remains partial for continuously hostile parent replacement between checks/OS calls and interrupted fallback-write recovery; fallback visibility is explicitly weaker than atomic complete-file publication.",
+      "scope": "Pass 197: Entire new store read and exercised. Existing-parent real-path resolution confines listed paths and append directories; completed flushed bytes publish with hard-link creation or exclusive CREATE_NEW fallback. Tests cover concurrent writers, late destinations, UTF-8, duplicates, pre-publication failures, cleanup and forced fallback. Remains partial for continuously hostile parent replacement between checks/OS calls and interrupted fallback-write recovery; fallback visibility is explicitly weaker than atomic complete-file publication. Pass 198: Re-read entire store and extracted exclusive publication, forced writes and existing-link resolution for shared project persistence use. Existing five store and eight real-service storage tests passed in the final focused suite; previous ownership/interrupted-write limitations remain.",
       "evidence": [
         "docs/audits/hardware-evidence-storage-audit.md",
         "ARESLib-Kotlin/build/audit-pass197-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json",
+        "docs/audits/project-history-recovery-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareEvidenceStorageTest.kt": {
@@ -14126,6 +14130,83 @@
         "docs/audits/hardware-evidence-storage-audit.md",
         "ARESLib-Kotlin/build/audit-pass197-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExclusiveFilePublication.kt": {
+      "sha256": "64f936ffb409d4add63af09f580a261e81fc992319e1edf29c5cd23824e075e5",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 198: Entire extracted publisher read. Hard-link or CREATE_NEW arbitration never replaces existing destinations; prepared data is forced and directory flush is best effort. Exercised through evidence-store fallback/late-writer tests and project immutable-write/recovery-move tests. Partial for interrupted fallback recovery, physical provider behavior and concurrent source/parent replacement; fallback visibility is not atomic.",
+      "evidence": [
+        "docs/audits/project-history-recovery-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExistingPathResolution.kt": {
+      "sha256": "babf790c38135b7371fd4d0f5d219f1715df3db931e6f9b359b6d9b889970120",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 198: Entire extracted existing-link/missing-suffix resolver read. Exercised by hardware evidence ownership and project transaction scope tests, including Windows junctions, explicit aliases, linked descendants and deleted current directories. Point-in-time resolution only; hostile swaps and the Unix symlink execution branch remain unverified. Callers own the root-containment decision.",
+      "evidence": [
+        "docs/audits/project-history-recovery-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectDocumentStore.kt": {
+      "sha256": "2e80b281e3b2cdd899ec660ae30a491f56fa20fcdbabc837f906d9c754ccfdf1",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 198: Full source read. Fix no-replacement publication and recovery moves, checkpoint validation/preservation before current replacement, wrong-document history restoration, revision/hash filename validation, duplicate logical history and the second-read substitution window. Selected documents are retained and hashes reused. Twelve new store cases and 17 existing repository cases passed. Remaining path ownership, external writer/locking races, recovery edge cases and interruption/provider durability are not closed by suite execution.",
+      "evidence": [
+        "docs/audits/project-history-recovery-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectMutationTransaction.kt": {
+      "sha256": "2e38b7e41dc77ec9e522f70a445bb5cb4d81a6aeee74e8947557ef3fd2adb86f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 198: Full source read. New manifests carry a version and full-body checksum; recovery validates completeness, record types and real baseline scope membership before mutation. Preflight rejects delimiters and linked descendants outside real declared scopes, preserving declared aliases and missing-current-directory recovery. Thirteen cases pass, including three original legacy/rollback/commit cases. Legacy manifests lack completeness checksums. Backup integrity/durability, multiple interrupted transaction ordering, rollback failures, external writers and hostile path replacement remain open.",
+      "evidence": [
+        "docs/audits/project-history-recovery-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectDocumentStoreAuditTest.kt": {
+      "sha256": "b555adf674ea35ef3ddbd18cd0a20bee871dffb640bb12fe257f8e397668bf79",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 198: Entire new 12-case test file read and executed. Real generic versioned/singleton store fixtures cover publication collisions, corrupt/missing checkpoints, wrong-document and changed-read restoration, filename/hash validation, legacy normalization, revision semantics and raw-byte recovery moves. Owned TemporaryFolder cleanup. Initial 8-case baseline had six failures; snapshot-selection assertion was refined to preserve captured content.",
+      "evidence": [
+        "docs/audits/project-history-recovery-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectMutationTransactionTest.kt": {
+      "sha256": "9a634b9c8415aa2748c0abce578a1bf865bb9444edbe9cec166cef5f1547d2e8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 198: Entire test file read and all 13 cases executed. Preserves three original rollback/legacy-recovery/commit cases; adds new-manifest truncation/checksum/type/version/scope/delimiter checks, valid sealed recovery, deleted current directories, declared aliases and linked descendants. Actual Windows junctions are removed before owned temporary trees; the creation subprocess is bounded and owned. Initial six failures and a later linked-descendant failure are archived.",
+      "evidence": [
+        "docs/audits/project-history-recovery-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+      ]
+    },
+    "docs/audits/project-history-recovery-integrity-audit.md": {
+      "sha256": "0b1928c3e10cd75a9fd476c9e7c02ed8bbec19f591e431eb806113e33d5f3d5a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 198: Entire report checked against baseline XML, final 55-case focused evidence, full Studio XML and repository policy. Separates corrected behavior, structural efficiency changes, legacy compatibility, point-in-time path checks and untested filesystem/power-loss/hardware limits.",
+      "evidence": [
+        "docs/audits/project-history-recovery-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
       ]
     }
   }
