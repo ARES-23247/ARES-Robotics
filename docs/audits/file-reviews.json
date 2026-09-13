@@ -5627,7 +5627,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "d5dc99b0c391665572ede7e9ec1e39730d22cd4b690bddcb369298b515400e30",
+      "sha256": "289a707eefbd558ab1e543b4fe481a5346a476849965881682a157e7407d1c3f",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -16097,6 +16097,116 @@
         "ARESLib-Kotlin/build/audit-pass218-verified-evidence/summary.json"
       ],
       "sha256": "cb20735426cfb19d93b8ffa8afb707a112c89e87997e0c36e3e511f13197cf8e"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyCard.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete card/row/icon/color/filter/export/session/telemetry review with producer and database traces. Actual offscreen rendering reproduced duplicate controller keys and frozen current. Card now consumes indexed unique-depth rows, keyed cached-session state and one fresh telemetry observer; suppresses live readings for cache/offline, uses canonical motor identity, finite numeric values and encoder-native velocity label. Markdown escaping, repeated-copy feedback token and visible 56dp search field fixed. Headless nested/live/cached captures inspected; native HWND/clipboard interaction not claimed.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "5a45f768f145275a94f28ad6edaaa277b49e22f07b2d39a4fd845ec1452f59f6"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyPresentation.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete pure row/filter/export helper review. Expected O(nodes) indexed iterative preorder, visited identities, deterministic root/cycle opening, first-definition ownership for old duplicate IDs, flat searched/category results. 20000-node chain with exactly one source traversal, all 18 enum categories, orphan/self/cyclic/out-of-order shapes, literal Markdown cells and null/zero port defaults tested. Original repeated per-node category allocations and orphan root rescans removed.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "f4f82388520a162d9c780ded33791121f36d578e19c459ff976032bb45aa5ee8"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyObservation.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete bounded topology-key tracker, one collector/10Hz sampler and Compose ownership review. Canonical Motor IDs precede friendly alias; non-motors ignored. String placeholders/nonfinite values unknown and invalid canonical observations cannot revive aliases. Inclusive 2s per-metric desktop receipt freshness, source epochs, clock rewind suppression, retained-frame exclusion, disabled/cached/changed-source disposal and immutable map snapshots tested. Unrelated publication volume does not increase presentation sampling; no physical timing benchmark.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "9b09d3f0a25e5b7bf90b87b47aa715c9b59a523af95c17ec822a7420d0da2f08"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologySelection.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete keyed asynchronous cache selector review. Database/session changes initialize empty/loading state; only nonblank resolved robot IDs query cache, mismatched identity and storage errors are contained, CancellationException rethrows. Tests include late completion after cancelled selection and changing database owner. Live selection never falls back to retired cache. Underlying persistence is latest-per-robot, not session-time topology; UI label makes this explicit.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "44a22969cc237c52727530fb9d5f27c79e8428bbb2f54d88aa2063decba9eb65"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyCardTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete original five-test fixture/body review; filters/tree now execute production helpers instead of divergent copied logic. Only the actual NT4 flow test opens a database; NT4 service and database close before removable-file assertion. Search, category, hierarchy depths, JSON and Markdown export checks pass.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "7a560b25d71a84fb369d8471baea85443316e184478ad389bb09b58df646c475"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/HardwareTopologyWireCompatibilityTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete original golden JSON and single consumer test review/execution. Released robot ID/schema/controller/motor/metadata decode contract remains intact with the unchanged pass218 library candidate.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "1a469f9ae488df9c9feada9efa5a4c6b95107fa6dce591d0d2247ad9f505db1a"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyPresentationAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete eight-method review. Independent expected node/depth/category lists, cycle/orphan/self-parent and duplicate identity handling, 20000-node stack-safe traversal with source-read counter, combined trimmed search/category behavior, escaped Markdown row structure and port-zero/default handling.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "414dce3c7625cc03a3bc22849da01dbb388440dd3a1bcb8b58a5ec62080e7728"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyObservationAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete eight-method review. Actual tracker/flow/Compose paths test ID and alias precedence, motor category, invalid sample replacement, per-metric expiry, clock/epoch reset, owned snapshots and honest units. 1000 unrelated publications yield no extra sampler outputs; retained/old target data rejected and subscriptions counted through disable/reenable/disposal.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "bfbf36366a74ebeb2cd70086145df59b5902ac43d4ccd72e8f375a650be42ff7"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologySelectionAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete four-method mock storage/Compose fixture review. Calls use real coroutine continuations and deferred gates, including deliberate NonCancellable completion. Every scene/gate is closed/released. Tests verify live/no-cache behavior, session loading clears previous robot, late completion isolation, missing/blank identities, storage error/mismatch containment and database replacement.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "bd472a17d22b42e5ee6d5b85343b1cd7f4099ee798b4e47ada82a397f3793464"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyRenderAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete three-method actual-card render review. Two unchanged-production failures captured: duplicate expansion key and unchanged image after current update. Fixed nested/live-before/live-after/cached images saved and inspected. Cached render verifies no live map/store/flow access despite unrelated 77A live input. Each offscreen scene closes; fixtures mock clipboard and services rather than launching network/native windows.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "a22721cddc9fc21e3554a1ab7ea1551b001add23155218252df808d8abc23604"
+    },
+    "docs/audits/studio-hardware-topology-presentation-audit.md": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 219: Complete report checked against baseline failures, final focused/full tests, source-only findings, offscreen visual evidence, unchanged library hashes and file coverage; native and hardware limits stated.",
+      "evidence": [
+        "docs/audits/studio-hardware-topology-presentation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
+      ],
+      "sha256": "302e996306083bd1201348eae4c81494e1405bb720b0077a66188218ea1dad7e"
     }
   }
 }
