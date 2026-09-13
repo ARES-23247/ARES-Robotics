@@ -8,22 +8,30 @@ object DsEventLogParser {
     private val xmlTags = listOf("<TagVersion>", "<time>", "<count>", "<flags>", "<Code>", "<location>", "<stack>")
 
     /**
-     * Cleans XML tags from raw Driver Station event log messages.
+     * Cleans legacy tag-delimited Driver Station messages (not a general XML document).
+     * Metadata runs end at the next opening angle bracket; unknown tags and the legacy
+     * space after message/details markers retain their existing interpretation.
      */
     fun cleanXmlTags(rawMessage: String): String {
-        var text = rawMessage
-        for (tag in xmlTags) {
-            while (text.contains(tag)) {
-                val tagIndex = text.indexOf(tag)
-                val nextIndex = text.indexOf("<", tagIndex + 1)
-                text = if (nextIndex != -1) {
-                    text.substring(0, tagIndex) + text.substring(nextIndex)
-                } else {
-                    text.substring(0, tagIndex)
-                }
+        val text = StringBuilder(rawMessage.length)
+        var cursor = 0
+        while (cursor < rawMessage.length) {
+            val tagIndex = rawMessage.indexOf('<', cursor)
+            if (tagIndex < 0) {
+                text.append(rawMessage, cursor, rawMessage.length)
+                break
+            }
+            text.append(rawMessage, cursor, tagIndex)
+            val metadataTag = xmlTags.firstOrNull { rawMessage.startsWith(it, tagIndex) }
+            cursor = when {
+                metadataTag != null -> rawMessage.indexOf('<', tagIndex + metadataTag.length)
+                    .let { if (it < 0) rawMessage.length else it }
+                rawMessage.startsWith("<message> ", tagIndex) -> tagIndex + "<message> ".length
+                rawMessage.startsWith("<details> ", tagIndex) -> tagIndex + "<details> ".length
+                else -> { text.append('<'); tagIndex + 1 }
             }
         }
-        return text.replace("<message> ", "").replace("<details> ", "").trim()
+        return text.toString().trim()
     }
 
     /**
