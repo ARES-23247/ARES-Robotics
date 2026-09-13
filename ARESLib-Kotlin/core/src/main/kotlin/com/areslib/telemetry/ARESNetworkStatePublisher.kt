@@ -21,8 +21,8 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     private val covarianceArray = DoubleArray(3)
     private val estimatedPoseArray = DoubleArray(3)
     private val visionPoseArray = DoubleArray(3)
-    private val gamepad1Topics = gamepadTopics("Gamepad1")
-    private val gamepad2Topics = gamepadTopics("Gamepad2")
+    private val gamepad1Topics = GamepadTelemetry.topics("Gamepad1")
+    private val gamepad2Topics = GamepadTelemetry.topics("Gamepad2")
     private var indicatorNames = emptyArray<String>()
     private var indicatorTopics = emptyArray<String>()
     
@@ -97,11 +97,11 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         // ── Loop Time & Diagnostics ──
         if (dtSeconds != null) {
             val loopMs = dtSeconds * 1000.0
-            telemetry.putNumber("Robot/LoopTimeMs", loopMs)
-            telemetry.putNumber("Profiling/LoopTime_ms", loopMs)
-            if (dtSeconds > 0) {
-                telemetry.putNumber("Profiling/Hz", 1.0 / dtSeconds)
-            }
+            val frequency = 1.0 / dtSeconds
+            val valid = dtSeconds > 0.0 && loopMs.isFinite() && frequency.isFinite()
+            telemetry.putNumber("Robot/LoopTimeMs", if (valid) loopMs else Double.NaN)
+            telemetry.putNumber("Profiling/LoopTime_ms", if (valid) loopMs else Double.NaN)
+            telemetry.putNumber("Profiling/Hz", if (valid) frequency else Double.NaN)
         }
 
         // ── Power / Battery ──
@@ -124,7 +124,8 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         val visionMeasurementAgeMs = if (newestVisionMeasurement == null) {
             Long.MAX_VALUE
         } else {
-            RobotClock.currentTimeMillis() - newestVisionMeasurement.timestampMs
+            val nowMs = RobotClock.currentTimeMillis()
+            if (nowMs < newestVisionMeasurement.timestampMs) Long.MAX_VALUE else nowMs - newestVisionMeasurement.timestampMs
         }
         val primaryMeasurement = if (
             state.vision.hasTarget && visionMeasurementAgeMs in 0L..VISION_TARGET_FRESHNESS_MS
@@ -217,10 +218,10 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         }
 
         // ── Gamepad 1 ──
-        publishGamepad(gamepad1Topics, gamepad1 ?: emptyGamepadState)
+        GamepadTelemetry.publish(telemetry, gamepad1Topics, gamepad1 ?: emptyGamepadState)
 
         // ── Gamepad 2 ──
-        publishGamepad(gamepad2Topics, gamepad2 ?: emptyGamepadState)
+        GamepadTelemetry.publish(telemetry, gamepad2Topics, gamepad2 ?: emptyGamepadState)
 
         // ── Indicator Lights ──
         publishIndicatorLights(state.superstructure.indicatorLights)
@@ -253,35 +254,6 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
         telemetry.putString("ARES/Auto/CommandCatalog", commandCatalogJson)
     }
 
-    /** Publishes against constructor-cached keys so the 50-100 Hz path does not format strings. */
-    private fun publishGamepad(topics: Array<String>, gamepad: GamepadState) {
-        telemetry.putNumber(topics[0], gamepad.leftStickX.toDouble())
-        telemetry.putNumber(topics[1], gamepad.leftStickY.toDouble())
-        telemetry.putNumber(topics[2], gamepad.rightStickX.toDouble())
-        telemetry.putNumber(topics[3], gamepad.rightStickY.toDouble())
-        telemetry.putNumber(topics[4], gamepad.leftTrigger.toDouble())
-        telemetry.putNumber(topics[5], gamepad.rightTrigger.toDouble())
-        telemetry.putBoolean(topics[6], gamepad.a)
-        telemetry.putBoolean(topics[7], gamepad.b)
-        telemetry.putBoolean(topics[8], gamepad.x)
-        telemetry.putBoolean(topics[9], gamepad.y)
-        telemetry.putBoolean(topics[10], gamepad.dpadUp)
-        telemetry.putBoolean(topics[11], gamepad.dpadDown)
-        telemetry.putBoolean(topics[12], gamepad.dpadLeft)
-        telemetry.putBoolean(topics[13], gamepad.dpadRight)
-        telemetry.putBoolean(topics[14], gamepad.leftBumper)
-        telemetry.putBoolean(topics[15], gamepad.rightBumper)
-        telemetry.putBoolean(topics[16], gamepad.c)
-        telemetry.putBoolean(topics[17], gamepad.z)
-        telemetry.putBoolean(topics[18], gamepad.m1)
-        telemetry.putBoolean(topics[19], gamepad.m2)
-        telemetry.putBoolean(topics[20], gamepad.m3)
-        telemetry.putBoolean(topics[21], gamepad.m4)
-        telemetry.putBoolean(topics[22], gamepad.touchpad)
-        telemetry.putBoolean(topics[23], gamepad.share)
-        telemetry.putBoolean(topics[24], gamepad.options)
-    }
-
     /** Caches dynamic indicator keys and uses indexed lookups to avoid a Map iterator per frame. */
     private fun publishIndicatorLights(lights: Map<String, Double>) {
         var rebuildTopics = lights.size != indicatorNames.size
@@ -294,6 +266,9 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
             }
         }
         if (rebuildTopics) {
+            for (i in indicatorNames.indices) {
+                if (!lights.containsKey(indicatorNames[i])) telemetry.putNumber(indicatorTopics[i], 0.0)
+            }
             indicatorNames = lights.keys.toTypedArray()
             indicatorTopics = Array(indicatorNames.size) { index ->
                 "Superstructure/IndicatorLight/${indicatorNames[index]}"
@@ -328,33 +303,5 @@ class ARESNetworkStatePublisher(private val telemetry: ITelemetry) {
     private companion object {
         val UNKNOWN_TAG_FIELD_POSITION = doubleArrayOf(Double.NaN, Double.NaN, Double.NaN)
 
-        fun gamepadTopics(prefix: String): Array<String> = arrayOf(
-            "$prefix/LeftStick_X",
-            "$prefix/LeftStick_Y",
-            "$prefix/RightStick_X",
-            "$prefix/RightStick_Y",
-            "$prefix/LeftTrigger",
-            "$prefix/RightTrigger",
-            "$prefix/A",
-            "$prefix/B",
-            "$prefix/X",
-            "$prefix/Y",
-            "$prefix/DpadUp",
-            "$prefix/DpadDown",
-            "$prefix/DpadLeft",
-            "$prefix/DpadRight",
-            "$prefix/LeftBumper",
-            "$prefix/RightBumper",
-            "$prefix/C",
-            "$prefix/Z",
-            "$prefix/M1",
-            "$prefix/M2",
-            "$prefix/M3",
-            "$prefix/M4",
-            "$prefix/Touchpad",
-            "$prefix/Share",
-            "$prefix/Options"
-        )
     }
-
 }

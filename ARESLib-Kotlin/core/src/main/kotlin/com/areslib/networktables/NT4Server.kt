@@ -857,8 +857,7 @@ class NT4Server(
         @JvmStatic
         fun publishTopic(topic: String, value: Any) {
             val s = serverInstance ?: return
-            val cleanTopic = if (topic.startsWith("/")) topic.substring(1) else topic
-            s.putTopic(cleanTopic, value)
+            s.putTopic(topic, value)
         }
 
         @JvmStatic
@@ -909,7 +908,7 @@ class NT4Server(
             val v = entry?.value?.getAsObject()
             return when (v) {
                 is DoubleArray -> v
-                is FloatArray -> v.map { it.toDouble() }.toDoubleArray()
+                is FloatArray -> DoubleArray(v.size) { v[it].toDouble() }
                 else -> defaultValue
             }
         }
@@ -933,14 +932,7 @@ class NT4Server(
         }
 
         private fun getEntryFlexible(topic: String): NT4Entry? {
-            var entry = entries[topic]
-            if (entry == null) {
-                entry = entries["/$topic"]
-            }
-            if (entry == null && topic.startsWith("/")) {
-                entry = entries[topic.substring(1)]
-            }
-            return entry
+            return entries[topic.trimStart('/')]?.takeIf { it.hasValue }
         }
     }
 }

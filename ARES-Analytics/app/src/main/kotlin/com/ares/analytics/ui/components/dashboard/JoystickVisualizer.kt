@@ -237,8 +237,8 @@ fun SingleGamepadVisualizer(
             dpadRight = (currentFrame.values["$gamepadId/DpadRight"] ?: 0.0) > 0.5
             lb = (currentFrame.values["$gamepadId/LeftBumper"] ?: 0.0) > 0.5
             rb = (currentFrame.values["$gamepadId/RightBumper"] ?: 0.0) > 0.5
-            btnStart = (currentFrame.values["$gamepadId/Start"] ?: currentFrame.values["$gamepadId/Options"] ?: 0.0) > 0.5
-            btnBack = (currentFrame.values["$gamepadId/Back"] ?: currentFrame.values["$gamepadId/Share"] ?: 0.0) > 0.5
+            btnStart = gamepadMenuPressed(currentFrame.values["$gamepadId/Start"], currentFrame.values["$gamepadId/Options"])
+            btnBack = gamepadMenuPressed(currentFrame.values["$gamepadId/Back"], currentFrame.values["$gamepadId/Share"])
             btnLS = (currentFrame.values["$gamepadId/LeftStickButton"] ?: 0.0) > 0.5
             btnRS = (currentFrame.values["$gamepadId/RightStickButton"] ?: 0.0) > 0.5
         }
@@ -248,6 +248,7 @@ fun SingleGamepadVisualizer(
             // composition scope leaves the old collector alive, allowing remote zeroes and the
             // held keyboard value to alternate on the same visual state.
             LaunchedEffect(nt4ClientService, gamepadId) {
+                val menuButtons = GamepadMenuButtons(gamepadId)
                 nt4ClientService.uiTelemetryFlow.collect { frame ->
                     val key = frame.key
                     val value = frame.value
@@ -268,8 +269,11 @@ fun SingleGamepadVisualizer(
                         "$gamepadId/DpadRight" -> dpadRight = value > 0.5
                         "$gamepadId/LeftBumper" -> lb = value > 0.5
                         "$gamepadId/RightBumper" -> rb = value > 0.5
-                        "$gamepadId/Start", "$gamepadId/Options" -> btnStart = value > 0.5
-                        "$gamepadId/Back", "$gamepadId/Share" -> btnBack = value > 0.5
+                        "$gamepadId/Start", "$gamepadId/Options", "$gamepadId/Back", "$gamepadId/Share" -> {
+                            menuButtons.accept(key, value)
+                            btnStart = menuButtons.startPressed
+                            btnBack = menuButtons.backPressed
+                        }
                         "$gamepadId/LeftStickButton" -> btnLS = value > 0.5
                         "$gamepadId/RightStickButton" -> btnRS = value > 0.5
                     }

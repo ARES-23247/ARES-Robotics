@@ -2,10 +2,13 @@ package com.areslib.telemetry
 
 import com.areslib.networktables.NT4Instance
 import com.areslib.networktables.NT4Server
+import com.areslib.networktables.NT4Value
 
 /**
- * Modern Kotlin NT4 telemetry implementation.
- * Streams telemetry and state data directly to ARES-Analytics.
+ * Typed telemetry adapter over the process-wide NT4 server.
+ * Numeric getters accept published double, float and integer values; other getters require their
+ * corresponding scalar type. Absent values, placeholders and incompatible types use the default.
+ * Construction starts the shared server if absent; close leaves that server owned by the process.
  */
 class NT4Telemetry : ITelemetry {
     private val inst = NT4Instance.defaultInstance
@@ -22,42 +25,45 @@ class NT4Telemetry : ITelemetry {
     }
 
     override fun putNumber(key: String, value: Double) {
-        val ntKey = if (key.startsWith("/")) key.substring(1) else key
-        try { NT4Server.publishTopic(ntKey, value) } catch (e: Exception) { /* swallow */ }
+        try { NT4Server.publishTopic(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putBoolean(key: String, value: Boolean) {
-        val ntKey = if (key.startsWith("/")) key.substring(1) else key
-        try { NT4Server.publishTopic(ntKey, value) } catch (e: Exception) { /* swallow */ }
+        try { NT4Server.publishTopic(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putString(key: String, value: String) {
-        val ntKey = if (key.startsWith("/")) key.substring(1) else key
-        try { NT4Server.publishTopic(ntKey, value) } catch (e: Exception) { /* swallow */ }
+        try { NT4Server.publishTopic(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putDoubleArray(key: String, value: DoubleArray) {
-        val ntKey = if (key.startsWith("/")) key.substring(1) else key
-        try { NT4Server.publishTopic(ntKey, value) } catch (e: Exception) { /* swallow */ }
+        try { NT4Server.publishTopic(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun getNumber(key: String, defaultValue: Double): Double {
-        val ntKey = if (key.startsWith("/")) key.substring(1) else key
-        return try { NT4Server.getDouble(ntKey, defaultValue) } catch (e: Exception) { defaultValue }
+        return when (val value = publishedValue(key)) {
+            is NT4Value.DoubleVal -> value.value
+            is NT4Value.FloatVal -> value.value.toDouble()
+            is NT4Value.LongVal -> value.value.toDouble()
+            else -> defaultValue
+        }
     }
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
-        val ntKey = if (key.startsWith("/")) key.substring(1) else key
-        return try { NT4Server.getBoolean(ntKey, defaultValue) } catch (e: Exception) { defaultValue }
+        return (publishedValue(key) as? NT4Value.BooleanVal)?.value ?: defaultValue
     }
 
     override fun getString(key: String, defaultValue: String): String {
-        val ntKey = if (key.startsWith("/")) key.substring(1) else key
-        return try { NT4Server.getString(ntKey, defaultValue) } catch (e: Exception) { defaultValue }
+        return (publishedValue(key) as? NT4Value.StringVal)?.value ?: defaultValue
     }
 
+    // Canonical lookup occurs once at the registry boundary. Reading the typed immutable value
+    // avoids boxing numeric results or snapshotting arrays that are incompatible with a getter.
+    private fun publishedValue(key: String): NT4Value? =
+        inst.defaultServer?.getTopicEntry(key)?.takeIf { it.hasValue }?.value
+
     fun putPose2d(key: String, xMeters: Double, yMeters: Double, rotationRadians: Double) {
-        putDoubleArray(key, doubleArrayOf(xMeters, yMeters, rotationRadians))
+        logPoseArray2d(key, xMeters, yMeters, rotationRadians)
     }
 
     override fun update() {
