@@ -1,10 +1,10 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.service.calibration.CameraCalibrationSolver
-import com.ares.analytics.service.calibration.OdometryCalibrationSolver
 
 /**
- * 3D spatial pose vector representing mechanism translation and orientation in 3D field space.
+ * Camera mounting pose in robot coordinates: forward X, left Y, up Z.
+ * Orientation applies Rz(yaw) Ry(pitch) Rx(roll) to aligned camera forward/left/up vectors.
  *
  * @property x Translational X offset in meters ($m$).
  * @property y Translational Y offset in meters ($m$).
@@ -14,21 +14,23 @@ import com.ares.analytics.service.calibration.OdometryCalibrationSolver
  * @property yaw Rotation angle around Z axis in radians ($rad$), **CCW-positive** (0 = +X).
  */
 data class Pose3d(
-    val x: Double, // Left-Right (meters)
-    val y: Double, // Up-Down (meters)
-    val z: Double, // Depth (meters)
+    val x: Double,
+    val y: Double,
+    val z: Double,
     val roll: Double,
     val pitch: Double,
     val yaw: Double // Heading (radians, CCW-positive)
 )
 
 /**
- * Diagnostic metrics produced by camera or odometry calibration solvers.
+ * Local linear uncertainty for an equal-weight camera translation fit with IID isotropic errors.
  *
  * @property pose Solved 6-DOF target pose [Pose3d].
  * @property standardErrors Standard error vector for parameter estimates.
  * @property covarianceMatrix $6 \times 6$ parameter estimation covariance matrix.
- * @property reducedChiSquared Goodness-of-fit reduced Chi-Squared statistic ($\chi_\nu^2$).
+ * @property reducedChiSquared Legacy name for residual variance in square meters, SSE/(3N-6).
+ * This is not a dimensionless reduced chi-squared: no known observation variances were supplied.
+ * Covariance order is x,y,z,roll,pitch,yaw in meters/radians; systematic bias is not represented.
  */
 data class CalibrationDiagnostics(
     val pose: Pose3d,
@@ -36,6 +38,8 @@ data class CalibrationDiagnostics(
     val covarianceMatrix: Array<DoubleArray>,
     val reducedChiSquared: Double
 ) {
+    val residualVariance: Double get() = reducedChiSquared
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -43,7 +47,7 @@ data class CalibrationDiagnostics(
         if (pose != other.pose) return false
         if (!standardErrors.contentEquals(other.standardErrors)) return false
         if (!covarianceMatrix.contentDeepEquals(other.covarianceMatrix)) return false
-        if (reducedChiSquared != other.reducedChiSquared) return false
+        if (reducedChiSquared.compareTo(other.reducedChiSquared) != 0) return false
         return true
     }
 
@@ -56,13 +60,20 @@ data class CalibrationDiagnostics(
     }
 }
 
+/**
+ * Observation of a known tag while the level robot rotates at a fixed field origin.
+ * Legacy targetSpaceX/Y/Z names hold the TAG in CAMERA optical coordinates (right/down/forward,
+ * meters), as in Limelight targetpose_cameraspace. They must not contain camerapose_targetspace
+ * or robotPoseTargetSpace. The three optical rotation fields are retained for source compatibility
+ * and are unused by this translation-only fit. Tag field positions are relative to the rotation
+ * center; translated robot motion cannot be inferred from gyro heading alone.
+ */
 data class CalibrationMeasurement(
     val gyroHeading: Double, // radians (CCW-positive)
     val tagId: Int,
     val tagFieldX: Double,
     val tagFieldY: Double,
     val tagFieldZ: Double,
-    // Tag relative target space measurements from Limelight
     val targetSpaceX: Double,
     val targetSpaceY: Double,
     val targetSpaceZ: Double,
@@ -71,13 +82,13 @@ data class CalibrationMeasurement(
     val targetSpaceYaw: Double
 )
 
-class CalibrationService(private val databaseService: DatabaseService) {
+class CalibrationService(databaseService: DatabaseService) {
 
     private val cameraSolver = CameraCalibrationSolver(databaseService)
-    private val odometrySolver = OdometryCalibrationSolver(databaseService)
 
     /**
-     * Solves for the 6-DOF camera extrinsic calibration offset using a Levenberg-Marquardt approach
+     * Solves for the camera mounting pose by rigid least-squares alignment.
+     * Invalid or unobservable observations throw IllegalArgumentException.
      */
     fun solveCameraExtrinsics(measurements: List<CalibrationMeasurement>): Pose3d {
         return cameraSolver.solveCameraExtrinsics(measurements)

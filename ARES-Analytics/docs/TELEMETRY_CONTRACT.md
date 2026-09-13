@@ -156,8 +156,33 @@ FTC drivetrain devices are normally `fl`, `fr`, `rl`, and `rr`. Dashboard widget
 | `Calibration/GyroHeading` | `double` | robot gyro heading in radians |
 | `Calibration/TagIndex` | `double` | selected tag index/ID |
 | `Calibration/CameraIndex` | `double` | selected camera index |
-| `Calibration/CameraToTag` | `double[]` | measured camera-to-tag transform parameters |
-| `Calibration/TagField` | `double[]` | known tag field position/pose parameters |
+| `Calibration/CameraToTag` | `double[]` | tag translation in camera optical coordinates: right X, down Y, forward Z (meters); remaining rotation fields are unused by the translation fit |
+| `Calibration/TagField` | `double[]` | known tag X/Y/Z in meters relative to the fixed robot rotation center, using field forward/left/up axes |
+
+The camera extrinsic solver consumes tag-in-camera observations (`targetpose_cameraspace`),
+not camera-in-tag or robot-in-tag poses. The optical basis converts to ARES forward/left/up
+as `(z, -x, -y)` before applying mounting roll/pitch/yaw. This camera-space conversion does
+not change the separate `VisionMeasurement.robotPoseTargetSpace` alignment contract.
+See the [Limelight camera-space axes](https://docs.limelightvision.io/docs/docs-limelight/pipeline-apriltag/apriltag-coordinate-systems).
+
+The calibration robot must remain level and rotate about a fixed, known origin; gyro heading
+alone cannot compensate for translational motion. Supply at least three noncollinear tag
+vectors. Multiple known tags at one heading can satisfy this requirement; a heading sweep
+with repeated or collinear vectors cannot. Invalid or unobservable data raises an error,
+not a successful all-zero pose. Reported residual variance is SSE/(3N-6) in square meters,
+with an IID isotropic-noise local covariance approximation, not a dimensionless chi-squared.
+
+Normalized array samples use `/0`, `/1`, `/2` suffixes, optionally scoped as
+`/<camera index>/<component>`. A scoped stream must be complete; it is never filled from a
+generic stream. Camera and tag IDs must be exact nonnegative integers. CameraIndex is required;
+IsActive, when present, must be true and fresh. Each required scalar must be within 100 ms of
+the tag sample, using source microseconds to choose the nearest update. Rotation elements 3
+through 5 are unnecessary. Database loading selects only the 16 relevant generic/scoped topics,
+pages without per-topic downsampling, and rejects recordings above 100,000 selected updates
+or whose row count changes while loading. Use a completed recording; equal-count concurrent
+edits are not detected by that count check. This scalar-log association is
+not an atomic capture-time guarantee; independently delayed topic updates can still invalidate
+the physical assumptions of a recorded run.
 
 Limelight target-space yaw is `-robotPoseTargetSpace.rotation.y`. Rotation Z is tilt/roll in that boundary and must not be treated as robot heading.
 

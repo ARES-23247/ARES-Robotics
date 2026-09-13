@@ -5689,7 +5689,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "8276d4b5ad40ad63e586a594859d2c5c1fc96340004fa31f44263c7c76d969fe",
+      "sha256": "e4d506cd10d7ea82933b966048455708fb014620fab8728b83d4cf7f2951123c",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18347,6 +18347,76 @@
         "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
       ],
       "sha256": "d3c8f21584349bdd2d91665c63fca0842b18f94e98d5b4af2ebbac2ce985dd03"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/CalibrationService.kt": {
+      "sha256": "400c3a4979440dc95ab5bbfd3639c0a62d56ac61555928bd2ceb62831275c70a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 239: Complete model/facade review: optical camera observation versus robot mounting frames clarified, residual variance units/legacy alias documented, equality/hash aligned for signed zero and NaN, direct/run diagnostic delegation tested and unused empty odometry owner removed. Arrays remain caller-owned result data. Invalid or unobservable input fails explicitly; fixed-origin calibration assumptions documented.",
+      "evidence": [
+        "docs/audits/camera-calibration-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/calibration/CameraCalibrationSolver.kt": {
+      "sha256": "fd6d88d1aacfbcdaa3b008c5dc58ae30807767101b4e511cce7a5d253d1cb5e4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 239: Complete numerical and loading review: optical right/down/forward basis, proper rigid SVD fit, centroid translation, noncollinear planar rank, reflection ambiguity, canonical Euler singular pose versus unidentifiable uncertainty, analytic covariance and finite limits. Both fitting entry points read N inputs once; duplicated LM/finite differences and quadratic heading gate removed. Database selects 16 relevant topics, bounded count and ordered unsampled pages; count changes fail. Completed recording required; equal-count concurrent replacements and physical model assumptions remain explicit external limits. Twelve failing baselines and 26-method audit plus four service tests support scope.",
+      "evidence": [
+        "docs/audits/camera-calibration-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/calibration/CalibrationMeasurementLoader.kt": {
+      "sha256": "21f4c7e5fb2cd8812893f8eacb33f3833a680bdd6740e2f13fc86fa3bc1e657d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 239: Complete new loader reviewed/tested: one classification pass, exact bounded component/camera grammar, normalized leading slashes, complete scoped namespaces, exact nonnegative identities, authoritative numeric/text handling and active flags, only required translations, microsecond nearest lookup with deterministic earlier ties and 100ms freshness. Supported timestamp extrema tested; scalar proximity is not atomic capture evidence.",
+      "evidence": [
+        "docs/audits/camera-calibration-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/CalibrationServiceTest.kt": {
+      "sha256": "5852e2b0a09c927df843bdca3bf1a15cc702469dafca86a50dafc72d4c50b41d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 239: Complete four-method facade suite revised/executed with independently composed physical rotations and tight pose checks, real owned DuckDB run/diagnostic roundtrip, explicit empty-input failures, no unused DBs for pure tests and close-before-delete cleanup. Removes self-mirroring geometry and zero-success assertions.",
+      "evidence": [
+        "docs/audits/camera-calibration-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/calibration/CameraCalibrationMathAuditTest.kt": {
+      "sha256": "237cefce9d498718b2002f3c9313d976615a0ef78156f70c0e157ecc8338acc6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 239: Complete new 26-method suite reviewed/executed: 12 preserved failing behavior baselines; independent axis geometry, mixed-angle/heading wrap, planar/reflected/degenerate/numeric/gimbal cases, closed-form and central-difference covariance, equality/hash, both 12000-input access counts, camera namespaces/identity/text/active/skew/source-time cases and bounded paged database behavior. Boundary fixtures corrected to respect TelemetryFrame millisecond/microsecond domain invariants; owned DBs closed and removed.",
+      "evidence": [
+        "docs/audits/camera-calibration-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/docs/TELEMETRY_CONTRACT.md": {
+      "sha256": "f928de29cfe0e1089262cd13d14911fb19135dcf6bbe1764c0c1cc7b0cc0f9c6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 239: Calibration section verified against camera solver, loader, shared publisher signature/call sites and current primary Limelight camera-space docs. Defines optical/robot axes, fixed rotation origin, observability/uncertainty, exact topics, source-time association, selected-topic limits and concurrency/capture limitations. Other telemetry sections retain pending substantive review.",
+      "evidence": [
+        "docs/audits/camera-calibration-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/camera-calibration-math-audit.md": {
+      "sha256": "571a824ed0c641fef9e81000c33a51d07598bbc9bd30ec3089830c21a8ca5dcd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 239: Records confirmed camera/robot-frame error, false success and uncertainty, malformed/inactive loader data, shared rigid SVD solution, independent numerical/loader tests, structural efficiency, deleted empty odometry placeholder, retained immutable library evidence and physical/concurrency limits.",
+      "evidence": [
+        "docs/audits/camera-calibration-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+      ]
     }
   }
 }
