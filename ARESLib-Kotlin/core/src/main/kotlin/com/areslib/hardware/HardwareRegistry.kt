@@ -35,7 +35,10 @@ class HardwareRegistry {
     @Volatile private var telemetrySnapshot = emptyArray<TelemetryEntry>()
     private val deviceIndices = ConcurrentHashMap<String, Int>()
     private val closeables = CopyOnWriteArrayList<AutoCloseable>()
-    private val topologyNodes = ConcurrentHashMap<String, TopologyNode>()
+    // Registration owns metadata. A null cache is rebuilt lazily under the same monitor;
+    // constructing a robot does not repeatedly sort every partially registered topology.
+    private val topologyNodes = LinkedHashMap<String, TopologyNode>()
+    @Volatile private var topologySnapshot: List<TopologyNode>? = emptyList()
     private val cachedMotorsWithNames = ConcurrentHashMap<String, MotorIO>()
     private val cachedMotorsList = CopyOnWriteArrayList<MotorIO>()
     private val registeredMotorsView: List<MotorIO> = Collections.unmodifiableList(cachedMotorsList)
@@ -165,7 +168,6 @@ class HardwareRegistry {
      * Names should be unique; reusing a name replaces both map lookup data and the ordered
      * refresh/publish entry. Separately registered polling and closeable resources retain their ownership.
      */
-    @Synchronized
     fun registerDevice(name: String, device: LoggableDevice) {
         registerDevice(name, "Hardware/$name", device)
     }
@@ -177,15 +179,29 @@ class HardwareRegistry {
      * physical-device address. Keeping this explicit prevents the registry's normal `Hardware/`
      * namespace from silently changing that public telemetry contract.
      */
-    @Synchronized
     fun registerTelemetryDevice(prefix: String, device: LoggableDevice) {
         registerDevice(prefix, prefix, device)
     }
 
-    private fun registerDevice(name: String, telemetryPrefix: String, device: LoggableDevice) {
+    @Synchronized
+    private fun registerDevice(
+        name: String,
+        telemetryPrefix: String,
+        device: LoggableDevice,
+        topology: TopologyNode? = null,
+    ) {
         require(name.isNotBlank()) { "Hardware device name must not be blank" }
         require(telemetryPrefix.isNotBlank() && !telemetryPrefix.startsWith('/')) {
             "Telemetry prefix must be non-blank and omit the leading slash"
+        }
+        // Validate and acquire caller-owned metadata before changing any device/cache state.
+        // An explicit physical ID may differ from the logical telemetry name, but must be unique.
+        val ownedTopology = topology?.let { node ->
+            require(node.id.isNotBlank()) { "Hardware topology node ID must not be blank" }
+            require(topologyNodes.none { (key, value) -> key != name && value.id == node.id }) {
+                "Duplicate hardware topology node ID: ${node.id}"
+            }
+            node.copy(metadata = Collections.unmodifiableMap(LinkedHashMap(node.metadata)))
         }
         val prior = devices.put(name, device)
         val heartbeatTopic = if (telemetryPrefix.startsWith("Subsystems/")) {
@@ -242,6 +258,14 @@ class HardwareRegistry {
         }
         lifecycleDevices = lifecycle.toTypedArray()
         telemetrySnapshot = telemetryEntries.toTypedArray()
+        val previousTopology = topologyNodes[name]
+        // Bare re-registration of the same object keeps its address. A new object has no
+        // known address until explicitly supplied; never describe it using retired metadata.
+        val nextTopology = ownedTopology ?: previousTopology.takeIf { prior === device }
+        if (nextTopology != previousTopology) {
+            if (nextTopology == null) topologyNodes.remove(name) else topologyNodes[name] = nextTopology
+            topologySnapshot = null
+        }
     }
 
     /**
@@ -264,27 +288,25 @@ class HardwareRegistry {
 
     fun registerMotor(name: String, motor: MotorIO, parentHub: String, port: Int) {
         val cleanName = "Motors/$name"
-        registerMotor(name, motor)
-        topologyNodes[cleanName] = TopologyNode(
+        registerDevice(cleanName, "Hardware/$cleanName", motor, TopologyNode(
             id = cleanName,
             type = TopologyNodeType.MOTOR,
             displayName = name,
             parentId = parentHub,
             port = port
-        )
+        ))
     }
 
     /** Registers an FTC servo and records its parent hub and zero-based port for topology export. */
     fun registerServo(name: String, servo: ServoIO, parentHub: String, port: Int) {
         val cleanName = "Servos/$name"
-        registerServo(name, servo)
-        topologyNodes[cleanName] = TopologyNode(
+        registerDevice(cleanName, "Hardware/$cleanName", servo, TopologyNode(
             id = cleanName,
             type = TopologyNodeType.SERVO,
             displayName = name,
             parentId = parentHub,
             port = port
-        )
+        ))
     }
 
     // ────────────────────────────────────────────────────────────────────────────
@@ -293,42 +315,49 @@ class HardwareRegistry {
 
     fun registerMotor(name: String, motor: MotorIO, canBus: String, canId: Int, busPosition: Int? = null) {
         val cleanName = "Motors/$name"
-        registerMotor(name, motor)
-        topologyNodes[cleanName] = TopologyNode(
+        registerDevice(cleanName, "Hardware/$cleanName", motor, TopologyNode(
             id = cleanName,
             type = TopologyNodeType.CAN_MOTOR_CONTROLLER,
             displayName = name,
             canId = canId,
             canBus = canBus,
             busPosition = busPosition
-        )
+        ))
     }
 
     /** Registers a CAN device and derives its topology type from its logical [name]. */
     fun registerDevice(name: String, device: LoggableDevice, canBus: String, canId: Int, busPosition: Int? = null) {
-        registerDevice(name, device)
-        topologyNodes[name] = TopologyNode(
+        registerDevice(name, "Hardware/$name", device, TopologyNode(
             id = name,
             type = getDeviceNodeType(name),
-            displayName = name.split("/").last(),
+            displayName = name.substringAfterLast('/'),
             canId = canId,
             canBus = canBus,
             busPosition = busPosition
-        )
+        ))
     }
 
     // ────────────────────────────────────────────────────────────────────────────
     // Generic Topology Overload & Builder
     // ────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Registers a device and its physical address as one operation. Metadata is copied, so the
+     * caller must keep the supplied map stable until this call returns. Explicit node IDs may
+     * differ from logical names, but blank or duplicate IDs are rejected before replacement.
+     */
     fun registerDevice(name: String, device: LoggableDevice, topology: TopologyNode) {
-        registerDevice(name, device)
-        topologyNodes[name] = topology
+        registerDevice(name, "Hardware/$name", device, topology)
     }
 
-    /** Builds a point-in-time topology snapshot. Concurrent-map node order is unspecified. */
+    /** Builds an owned, read-only snapshot ordered by node ID; retained snapshots never change. */
     fun buildTopology(robotId: String): HardwareTopology {
-        return HardwareTopology(robotId, topologyNodes.values.sortedBy { it.id })
+        val nodes = topologySnapshot ?: synchronized(this) {
+            topologySnapshot ?: Collections.unmodifiableList(topologyNodes.values.sortedBy { it.id }).also {
+                topologySnapshot = it
+            }
+        }
+        return HardwareTopology(robotId, nodes)
     }
 
     /** Serializes the current topology snapshot as JSON for dashboard discovery. */
@@ -457,6 +486,7 @@ class HardwareRegistry {
         telemetrySnapshot = emptyArray()
         deviceIndices.clear()
         topologyNodes.clear()
+        topologySnapshot = emptyList()
         cachedMotorsWithNames.clear()
         cachedMotorsList.clear()
         cachedCurrentSourcesList.clear()
