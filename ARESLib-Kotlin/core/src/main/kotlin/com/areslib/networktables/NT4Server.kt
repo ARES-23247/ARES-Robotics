@@ -446,48 +446,7 @@ class NT4Server(
         dataType: Int,
         dataValue: Any
     ) {
-        when (NT4Value.fromId(dataType)) {
-            NT4Type.BOOLEAN -> targetPacker.packBoolean(dataValue as Boolean)
-            NT4Type.DOUBLE -> targetPacker.packDouble((dataValue as Number).toDouble())
-            NT4Type.INT -> targetPacker.packLong((dataValue as Number).toLong())
-            NT4Type.FLOAT -> targetPacker.packFloat((dataValue as Number).toFloat())
-            NT4Type.STRING -> targetPacker.packString(dataValue.toString())
-            NT4Type.BOOLEAN_ARRAY -> {
-                val arr = dataValue as BooleanArray
-                targetPacker.packArrayHeader(arr.size)
-                for (b in arr) targetPacker.packBoolean(b)
-            }
-            NT4Type.DOUBLE_ARRAY -> {
-                val arr = dataValue as DoubleArray
-                targetPacker.packArrayHeader(arr.size)
-                for (d in arr) targetPacker.packDouble(d)
-            }
-            NT4Type.INT_ARRAY -> {
-                val arr = dataValue as LongArray
-                targetPacker.packArrayHeader(arr.size)
-                for (l in arr) targetPacker.packLong(l)
-            }
-            NT4Type.FLOAT_ARRAY -> {
-                val arr = dataValue as FloatArray
-                targetPacker.packArrayHeader(arr.size)
-                for (f in arr) targetPacker.packFloat(f)
-            }
-            NT4Type.STRING_ARRAY -> {
-                @Suppress("UNCHECKED_CAST")
-                val arr = dataValue as Array<String>
-                targetPacker.packArrayHeader(arr.size)
-                for (s in arr) targetPacker.packString(s)
-            }
-            else -> {
-                if (dataType == 5 || dataType == 7 || dataType == 8) {
-                    val bytes = dataValue as? ByteArray ?: ByteArray(0)
-                    targetPacker.packBinaryHeader(bytes.size)
-                    targetPacker.writePayload(bytes)
-                } else {
-                    targetPacker.packNil()
-                }
-            }
-        }
+        NT4BinaryValueEncoder.pack(targetPacker, dataType, dataValue)
     }
 
     /**

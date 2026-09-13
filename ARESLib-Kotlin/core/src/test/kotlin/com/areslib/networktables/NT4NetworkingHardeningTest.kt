@@ -471,39 +471,42 @@ class NT4NetworkingHardeningTest {
 
     @Test
     fun analyticsWireDecoderBoundsFrameCountArraysBlobsAndNestingBeforeAllocation() {
-        fun tupleWith(writeValue: (org.msgpack.core.MessagePacker) -> Unit): ByteArray {
+        fun tupleWith(typeId: Int, writeValue: (org.msgpack.core.MessagePacker) -> Unit): ByteArray {
             val output = ByteArrayOutputStream()
             MessagePack.newDefaultPacker(output).use { packer ->
                 packer.packArrayHeader(4)
                 packer.packLong(1L)
                 packer.packLong(10L)
-                packer.packInt(5)
+                packer.packInt(typeId)
                 writeValue(packer)
             }
             return output.toByteArray()
         }
 
-        val oversizedArray = tupleWith { it.packArrayHeader(NT4WireProtocol.MAX_ARRAY_ELEMENTS + 1) }
-        val oversizedBlob = tupleWith { it.packBinaryHeader(NT4WireProtocol.MAX_BINARY_BYTES + 1) }
-        val excessiveNesting = tupleWith { packer ->
-            repeat(NT4WireProtocol.MAX_VALUE_NESTING_DEPTH + 2) { packer.packArrayHeader(1) }
-            packer.packNil()
+        val oversizedArray = tupleWith(17) { it.packArrayHeader(NT4WireProtocol.MAX_ARRAY_ELEMENTS + 1) }
+        val oversizedBlob = tupleWith(5) { it.packBinaryHeader(NT4WireProtocol.MAX_BINARY_BYTES + 1) }
+        val excessiveNesting = tupleWith(17) { packer ->
+            repeat(2) { packer.packArrayHeader(1) }
+            packer.packDouble(1.0)
         }
         assertTrue(NT4WireProtocol.unpackMessageFrames(oversizedArray).isEmpty())
         assertTrue(NT4WireProtocol.unpackMessageFrames(oversizedBlob).isEmpty())
         assertTrue(NT4WireProtocol.unpackMessageFrames(excessiveNesting).isEmpty())
 
-        val tooManyMessages = ByteArrayOutputStream()
-        MessagePack.newDefaultPacker(tooManyMessages).use { packer ->
-            repeat(NT4WireProtocol.MAX_MESSAGES_PER_FRAME + 1) {
+        MessagePack.newDefaultBufferPacker().use { packer ->
+            repeat(NT4WireProtocol.MAX_MESSAGES_PER_FRAME) {
                 packer.packArrayHeader(4)
                 packer.packLong(it.toLong())
                 packer.packLong(10L)
                 packer.packInt(0)
-                packer.packNil()
+                packer.packBoolean(false)
             }
+            assertEquals(NT4WireProtocol.MAX_MESSAGES_PER_FRAME,
+                NT4WireProtocol.unpackMessageFrames(packer.toByteArray()).size)
+            packer.packArrayHeader(4); packer.packLong(1); packer.packLong(10)
+            packer.packInt(0); packer.packBoolean(false)
+            assertTrue(NT4WireProtocol.unpackMessageFrames(packer.toByteArray()).isEmpty())
         }
-        assertTrue(NT4WireProtocol.unpackMessageFrames(tooManyMessages.toByteArray()).isEmpty())
     }
 
     @Test

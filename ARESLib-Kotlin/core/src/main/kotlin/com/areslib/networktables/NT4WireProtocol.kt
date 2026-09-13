@@ -2,7 +2,6 @@ package com.areslib.networktables
 
 import org.msgpack.core.MessagePack
 import org.msgpack.value.ValueType
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 
 /**
@@ -16,7 +15,8 @@ data class NT4ValueMessage(
 )
 
 /**
- * Spec-compliant NT4 wire-protocol encoder and decoder using MsgPack stream buffers.
+ * NT4 wire encoder and bounded frame decoder. Arrays retain List values on this diagnostic/client
+ * API. Float-typed input may use integer carriers for compatibility; integer topics require integers.
  */
 object NT4WireProtocol {
 
@@ -24,27 +24,14 @@ object NT4WireProtocol {
      * Encodes a single topic payload into NT4 MsgPack binary array `[topicId, timestampUs, typeId, value]`.
      */
     fun encodeValueMessage(topicId: Long, timestampUs: Long, typeId: Int, value: Any?): ByteArray {
-        val out = ByteArrayOutputStream()
-        val packer = MessagePack.newDefaultPacker(out)
-        
-        packer.packArrayHeader(4)
-        packer.packLong(topicId)
-        packer.packLong(timestampUs)
-        packer.packInt(typeId)
-        
-        when (value) {
-            is Boolean -> packer.packBoolean(value)
-            is Number -> packer.packDouble(value.toDouble())
-            is String -> packer.packString(value)
-            is ByteArray -> {
-                packer.packBinaryHeader(value.size)
-                packer.writePayload(value)
-            }
-            else -> packer.packNil()
+        return MessagePack.newDefaultBufferPacker().use { packer ->
+            packer.packArrayHeader(4)
+            packer.packLong(topicId)
+            packer.packLong(timestampUs)
+            packer.packInt(typeId)
+            NT4BinaryValueEncoder.pack(packer, typeId, value)
+            packer.toByteArray()
         }
-        
-        packer.flush()
-        return out.toByteArray()
     }
 
     /**
@@ -82,44 +69,37 @@ object NT4WireProtocol {
         val topicId = unpacker.unpackLong()
         val timestampUs = unpacker.unpackLong()
         val typeId = unpacker.unpackInt()
-        return NT4ValueMessage(topicId, timestampUs, typeId, unpackValue(unpacker))
+        return NT4ValueMessage(topicId, timestampUs, typeId, unpackValue(unpacker, typeId))
     }
 
-    private fun unpackValue(unpacker: org.msgpack.core.MessageUnpacker, depth: Int = 0): Any? {
-        if (depth > MAX_VALUE_NESTING_DEPTH) {
-            throw IOException("NT4 value nesting exceeds maximum depth")
-        }
-        val format = unpacker.getNextFormat()
-        return when (format.valueType) {
-            ValueType.NIL -> { unpacker.unpackNil(); null }
-            ValueType.BOOLEAN -> unpacker.unpackBoolean()
+    /** Validates each carrier while decoding; typed arrays need no second scan or nested lists. */
+    private fun unpackValue(unpacker: org.msgpack.core.MessageUnpacker, typeId: Int): Any = when (typeId) {
+        0 -> unpacker.unpackBoolean()
+        1, 3 -> when (unpacker.nextFormat.valueType) {
             ValueType.INTEGER -> unpacker.unpackLong()
             ValueType.FLOAT -> unpacker.unpackDouble()
-            ValueType.STRING -> {
-                val len = unpacker.unpackRawStringHeader()
-                requireLength("string value", len, MAX_STRING_BYTES)
-                val payload = ByteArray(len)
-                unpacker.readPayload(payload)
-                String(payload, Charsets.UTF_8)
-            }
-            ValueType.ARRAY -> {
-                val declaredSize = unpacker.unpackArrayHeader()
-                requireLength("array value", declaredSize, MAX_ARRAY_ELEMENTS)
-                val list = ArrayList<Any?>(declaredSize)
-                for (i in 0 until declaredSize) {
-                    // Decode every accepted element so nested string/blob/array bounds cannot be
-                    // bypassed by a skip path. The declared list itself is capped at 4096.
-                    list.add(unpackValue(unpacker, depth + 1))
-                }
-                list
-            }
-            ValueType.BINARY -> {
-                val len = unpacker.unpackBinaryHeader()
-                requireLength("binary value", len, MAX_BINARY_BYTES)
-                unpacker.readPayload(len)
-            }
-            else -> throw IOException("Unsupported NT4 MessagePack value type ${format.valueType}")
+            else -> throw IOException("NT4 floating value requires a numeric carrier")
         }
+        2 -> unpacker.unpackLong()
+        4 -> {
+            val length = unpacker.unpackRawStringHeader()
+            requireLength("string value", length, MAX_STRING_BYTES)
+            String(unpacker.readPayload(length), Charsets.UTF_8)
+        }
+        5, 7, 8 -> {
+            val length = unpacker.unpackBinaryHeader()
+            requireLength("binary value", length, MAX_BINARY_BYTES)
+            unpacker.readPayload(length)
+        }
+        in 16..20 -> {
+            val length = unpacker.unpackArrayHeader()
+            requireLength("array value", length, MAX_ARRAY_ELEMENTS)
+            val values = ArrayList<Any>(length)
+            // Child type IDs 0..4 are scalar, so the protocol permits exactly one array level.
+            repeat(length) { values.add(unpackValue(unpacker, typeId - 16)) }
+            values
+        }
+        else -> throw IOException("Unsupported NT4 type ID $typeId")
     }
 
     private fun requireLength(label: String, length: Int, maximum: Int) {
@@ -131,5 +111,4 @@ object NT4WireProtocol {
     internal const val MAX_STRING_BYTES = 65_536
     internal const val MAX_BINARY_BYTES = 1_048_576
     internal const val MAX_FRAME_BYTES = 4_194_304
-    internal const val MAX_VALUE_NESTING_DEPTH = 4
 }
