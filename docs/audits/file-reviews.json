@@ -1416,17 +1416,19 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningViewModel.kt": {
-      "sha256": "a5bf9b6ed49733925185f02f5f89a503f9f54b781a8d82a7ac1593c11365ee60",
+      "sha256": "37e0b5d96afb4df6e94084ad55071bcdec8c27fdcec88af74be95eda264f4e63",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scoped external-proposal collector and load-readiness review. Waits for loaded profile, synchronously stages or rejects whole proposals, aggregates rejection messages, clears old catalog on load and invalidates readiness synchronously and guards obsolete load results with atomic request revisions. Defers queue acknowledgement if readiness changes before staging, with reload revision notifications surviving conflation. Actual queue/load, failed-load isolation and controlled out-of-order load tests pass; 119/328 lines, 74/334 branches overall. Nonce/acknowledgement, promotion, profile switch, telemetry and exhaustive load scheduler interleavings remain open. Pass 235: Read-only promotion call path: stores/compares complete confirmation token, forwards reviewed typed changes and metadata, and executes persistence on existing Dispatchers.IO. No UI/model mutation here; broader state lifecycle retains partial status.",
+      "scope": "Scoped external-proposal collector and load-readiness review. Waits for loaded profile, synchronously stages or rejects whole proposals, aggregates rejection messages, clears old catalog on load and invalidates readiness synchronously and guards obsolete load results with atomic request revisions. Defers queue acknowledgement if readiness changes before staging, with reload revision notifications surviving conflation. Actual queue/load, failed-load isolation and controlled out-of-order load tests pass; 119/328 lines, 74/334 branches overall. Nonce/acknowledgement, promotion, profile switch, telemetry and exhaustive load scheduler interleavings remain open. Pass 235: Read-only promotion call path: stores/compares complete confirmation token, forwards reviewed typed changes and metadata, and executes persistence on existing Dispatchers.IO. No UI/model mutation here; broader state lifecycle retains partial status. Pass 237: Review/promotion lifecycle now covered: captured intent context and rechecked IO inputs; load-generation-bound completion; retain newer drafts, provenance/reviewer metadata and other selected profiles; update canonical by UID and invalidate reviews; checkpoint current-context notification; IO review/evidence work with latest-generation and draft guards; duplicate in-flight suppression and cancellation/retry recovery. Selected profile/rows memoized per immutable state; repeated-access and copied-state freshness checks pass. Eight failing baselines and 15 new methods plus full Studio validate this boundary. Live push/nonces/acknowledgement, reconnection, telemetry sampling and exhaustive load interleavings remain partial.",
       "evidence": [
         "docs/audits/tuning-proposal-delivery-audit.md",
         "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
         "ARESLib-Kotlin/build/audit-pass20-policy-final.log",
         "docs/audits/studio-tuning-promotion-persistence-audit.md",
-        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json",
+        "docs/audits/tuning-promotion-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSignalGenerator.kt": {
@@ -5683,7 +5685,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "7303e67a640b320ccac35417059e6a2d2ae35c131ea5a61eaf491fcb861392ab",
+      "sha256": "9d18412bc234b70dcdf491b3f737652153cc892b0e401056a54fd65ecba96d46",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18175,10 +18177,12 @@
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/tuning/GainTuningPanel.kt": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 236: Partial value binding review: editor initialization consumes exact displayValue; TypedValueCell preserves full exact accessibility content; inherited source comparison now uses selected profile UID and labels declaration defaults explicitly. Full Studio compile/model suites pass. Broader rendered UI and editor/project-switch state remain unreviewed.",
+      "scope": "Pass 236: Partial value binding review: editor initialization consumes exact displayValue; TypedValueCell preserves full exact accessibility content; inherited source comparison now uses selected profile UID and labels declaration defaults explicitly. Full Studio compile/model suites pass. Broader rendered UI and editor/project-switch state remain unreviewed. Pass 237: Read-only trace of both state.rows consumers (component grouping and empty-state text). Per-state lazy resolution removes their duplicate validation/sorting. Wider raw-editor/project-switch lifecycle and rendered UI remain partial; no panel source edit.",
       "evidence": [
         "docs/audits/tuning-value-resolution-display-audit.md",
-        "ARESLib-Kotlin/build/audit-pass236-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass236-verified-evidence/summary.json",
+        "docs/audits/tuning-promotion-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json"
       ],
       "sha256": "3f185366b16fbd5f26edc3167c8f6b09ae0e7b6ad421b3f498b69b1ed24e861e"
     },
@@ -18201,6 +18205,26 @@
         "ARESLib-Kotlin/build/audit-pass236-verified-evidence/summary.json"
       ],
       "sha256": "46a0c177737b45fcd5a492c0cc74d36277993c2bc565f07c37234589724f7a42"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/TuningPromotionLifecycleAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 237: Complete 15-method regression suite reviewed/executed: real held canonical replacement across project/profile/new-draft changes, rollback failure isolation, late/current checkpoint failures, evidence caller-thread and stale/latest-result gates, row input-access counting and copied-state freshness, duplicate confirmation/save/checkpoint count, retry, identical-token copied-project queue, cancelled queued request recovery and invalid-token compatibility. Fixtures release latches and single-use queued tasks, join/cancel jobs, stop clients, close databases and remove owned temporary directories.",
+      "evidence": [
+        "docs/audits/tuning-promotion-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json"
+      ],
+      "sha256": "e9aa9008ca806b16a5f5132a9dc79099a8e42e6de3e859808e2ce77b287bb4e3"
+    },
+    "docs/audits/tuning-promotion-lifecycle-audit.md": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 237: Reconciles eight baseline assertion failures, 15 final new methods, 65 focused and 2139 full passing Studio results/six unchanged skips, counted row reuse, unchanged candidate hashes and remaining runtime/UI/hardware limits.",
+      "evidence": [
+        "docs/audits/tuning-promotion-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json"
+      ],
+      "sha256": "3aca6ac36b60e9b1a7a9493266629f00a1a785d07452ef4707a4e56521cda6be"
     }
   }
 }
