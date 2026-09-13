@@ -151,30 +151,13 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
     }
 
     /** Extract Euler roll angle in radians ($rad$). */
-    val x: Double get() {
-        if (atPitchSingularity(1.0 - 2.0 * (q.y * q.y + q.z * q.z), 2.0 * (q.w * q.z + q.x * q.y))) return 0.0
-        val sinr_cosp = 2.0 * (q.w * q.x + q.y * q.z)
-        val cosr_cosp = 1.0 - 2.0 * (q.x * q.x + q.y * q.y)
-        return atan2(sinr_cosp, cosr_cosp)
-    }
+    val x: Double get() = quaternionRoll(q.w, q.x, q.y, q.z)
 
     /** Extract Euler pitch angle in radians ($rad$). */
-    val y: Double get() {
-        val sinp = 2.0 * (q.w * q.y - q.z * q.x)
-        val r00 = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        val r10 = 2.0 * (q.w * q.z + q.x * q.y)
-        return atan2(sinp, hypot(r00, r10))
-    }
+    val y: Double get() = quaternionPitch(q.w, q.x, q.y, q.z)
 
     /** Extract Euler yaw angle in radians ($rad$), CCW-positive. */
-    val z: Double get() {
-        val siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
-        val cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        if (atPitchSingularity(cosy_cosp, siny_cosp)) {
-            return atan2(2.0 * (q.w * q.z - q.x * q.y), 1.0 - 2.0 * (q.x * q.x + q.z * q.z))
-        }
-        return atan2(siny_cosp, cosy_cosp)
-    }
+    val z: Double get() = quaternionYaw(q.w, q.x, q.y, q.z)
 
     companion object {
         private fun fromEulerAngles(roll: Double, pitch: Double, yaw: Double): Quaternion {
@@ -196,10 +179,6 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
         }
     }
 }
-
-// At this roundoff-sized boundary the two Euler axes are indistinguishable. Use the
-// same decision for roll and yaw so their chosen representation remains coherent.
-private fun atPitchSingularity(r00: Double, r10: Double): Boolean = abs(r00) + abs(r10) <= 1e-15
 
 /**
  * 3D Spatial Pose $(\mathbf{t}, \mathbf{R})$ combining 3D translation and 3D rotation.

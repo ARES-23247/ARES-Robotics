@@ -27,6 +27,18 @@ rootReducer + season reducer  ---> immutable RobotState
 
 Reducers calculate state only. Device reads, telemetry writes, file access, clocks, and background work belong outside reducers.
 
+Unchanged path progress and repeated indicator, Prism or identical subsystem instances reuse
+their existing slices. The root reuses its snapshot only when every reduced slice and the action
+timestamp are unchanged. Store observers still receive each dispatch. Custom subsystem values
+must be immutable; a distinct instance is published without invoking user-defined equality.
+Path values retain their existing shared ownership: do not mutate their point/event lists or
+payloads while a retained state or follower uses them.
+
+Vision retention copies pooled measurements into scalar immutable snapshots, including all three
+poses. Mutable rotations and retained poses share Euler extraction, including the roll-zero
+representation at pitch singularities and accurate pitch near them. Quaternion components must
+remain unit length; snapshot capture does not validate sensor data.
+
 ## Module boundaries
 
 ### `core`

@@ -31,6 +31,11 @@ object PathReducer {
                 )
             }
             is RobotAction.UpdatePathProgress -> {
+                // Match data-class Double equality, including NaN and signed zero.
+                if (java.lang.Double.compare(state.currentDistanceMeters, action.distanceProgressMeters) == 0 &&
+                    java.lang.Double.compare(state.crossTrackErrorMeters, action.crossTrackErrorMeters) == 0 &&
+                    java.lang.Double.compare(state.alongTrackErrorMeters, action.alongTrackErrorMeters) == 0 &&
+                    java.lang.Double.compare(state.headingErrorRadians, action.headingErrorRadians) == 0) return state
                 state.copy(
                     currentDistanceMeters = action.distanceProgressMeters,
                     crossTrackErrorMeters = action.crossTrackErrorMeters,

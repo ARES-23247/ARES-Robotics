@@ -15,6 +15,24 @@ import kotlin.test.assertTrue
 class RootReducerTest {
 
     @Test
+    fun `tuning updates only selected vision limits and retains unrelated slices`() {
+        val initial = RobotState()
+        val tuning = initial.tuning.copy(vision = initial.tuning.vision.copy(
+            maxDistanceMeters = 3.5, maxAmbiguity = 0.1, mahalanobisThreshold = 9.0))
+        val after = rootReducer(initial, RobotAction.UpdateTuningState(tuning, 10L))
+        assertEquals(tuning, after.tuning)
+        assertEquals(initial.vision.copy(filterConfig = initial.vision.filterConfig.copy(
+            maxDistanceMeters = 3.5, maxAmbiguity = 0.1, mahalanobisThreshold = 9.0)), after.vision)
+        kotlin.test.assertSame(initial.drive, after.drive)
+        kotlin.test.assertSame(initial.pathState, after.pathState)
+        kotlin.test.assertSame(initial.routineState, after.routineState)
+        kotlin.test.assertSame(initial.superstructure, after.superstructure)
+        kotlin.test.assertSame(initial.costmap, after.costmap)
+        assertEquals(10L, after.timestampMs)
+        assertEquals(0L, initial.timestampMs)
+    }
+
+    @Test
     fun `test drive hardware update modifies odometry purely`() {
         val initialState = RobotState()
         
