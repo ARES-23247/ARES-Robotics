@@ -5683,7 +5683,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "43de927cce9c46c33e79195c0d7f2da61dc0aadb6b95eafe633d120a6e12aea8",
+      "sha256": "7303e67a640b320ccac35417059e6a2d2ae35c131ea5a61eaf491fcb861392ab",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18141,14 +18141,16 @@
       "sha256": "a813136c4a8370797c7929025a9e9aa59e55e375e9c9742f5450850a7515b780"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningProfileModels.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 235: Read-only review identity trace: displayValue rounds doubles to five decimal places and is locale-sensitive; it is now excluded from approval hashing. Typed change/provenance DTOs and buildTuningReview policy/shape flow traced. Broader display, inheritance/status and proposal resolution remain partial.",
+      "scope": "Pass 235: Read-only review identity trace: displayValue rounds doubles to five decimal places and is locale-sensitive; it is now excluded from approval hashing. Typed change/provenance DTOs and buildTuningReview policy/shape flow traced. Broader display, inheritance/status and proposal resolution remain partial. Pass 236: Complete pure model review: exact locale-independent editable Double display, declaration validation/default parity with TypedTuningRuntime, selected snapshot equality, direct/inherited/default source UID/status, exact typed live observations and integer numeric fallback, bounds/vendor/shape/no-op proposal handling and nonblank provenance origins with optional notes. Parent/key lookup sets, reused comparator and cached numeric checks remove redundant work. Fifteen new methods plus existing focused/full Studio suites pass; no concurrent caller mutation or timing claim.",
       "evidence": [
         "docs/audits/studio-tuning-promotion-persistence-audit.md",
-        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json",
+        "docs/audits/tuning-value-resolution-display-audit.md",
+        "ARESLib-Kotlin/build/audit-pass236-verified-evidence/summary.json"
       ],
-      "sha256": "a10b94b918ddb70c1616ee05aba57431ab2161149bdc96c628372a3e80d3c67e"
+      "sha256": "256092d39aebb7e3e2dab45f44c5e0c8a3c3346b40189eca0223dc0fe0b74f54"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AtomicFilePersistence.kt": {
       "review": "partial",
@@ -18169,6 +18171,36 @@
         "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
       ],
       "sha256": "b84a9ee27e538d2cee287f619e459f805a1a5e769e752726061d7e920d020f55"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/tuning/GainTuningPanel.kt": {
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 236: Partial value binding review: editor initialization consumes exact displayValue; TypedValueCell preserves full exact accessibility content; inherited source comparison now uses selected profile UID and labels declaration defaults explicitly. Full Studio compile/model suites pass. Broader rendered UI and editor/project-switch state remain unreviewed.",
+      "evidence": [
+        "docs/audits/tuning-value-resolution-display-audit.md",
+        "ARESLib-Kotlin/build/audit-pass236-verified-evidence/summary.json"
+      ],
+      "sha256": "3f185366b16fbd5f26edc3167c8f6b09ae0e7b6ad421b3f498b69b1ed24e861e"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/tuning/TuningValueResolutionAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 236: Complete 15-method regression suite reviewed/executed: seeded raw-bit Double round trips, bounded extreme display, decimal-comma locale, robot/default parity for all five types, no-op defaults, snapshot/declaration rejection, exact integer observations, malformed feedback, blank-origin rejection, 32 inheritance/override masks, UID/key distinction, optional notes, observation precedence and bounded input-read work. Locale restored in finally; no external resources owned.",
+      "evidence": [
+        "docs/audits/tuning-value-resolution-display-audit.md",
+        "ARESLib-Kotlin/build/audit-pass236-verified-evidence/summary.json"
+      ],
+      "sha256": "b16d4cf1ac2fbea0f60f2a27246f12c6307a076408fb8a089c29360869d81f6c"
+    },
+    "docs/audits/tuning-value-resolution-display-audit.md": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 236: Reconciles ten baseline failures, 15 new methods, 63 focused and 2124 full passing Studio results/six unchanged skips, measured list accesses, unchanged candidate hashes and review/physical/UI limitations.",
+      "evidence": [
+        "docs/audits/tuning-value-resolution-display-audit.md",
+        "ARESLib-Kotlin/build/audit-pass236-verified-evidence/summary.json"
+      ],
+      "sha256": "46a0c177737b45fcd5a492c0cc74d36277993c2bc565f07c37234589724f7a42"
     }
   }
 }
