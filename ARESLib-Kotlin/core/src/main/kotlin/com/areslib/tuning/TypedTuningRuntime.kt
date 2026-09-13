@@ -5,6 +5,7 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.util.Collections
 
 enum class TuningUpdateResult {
     APPLIED, UNKNOWN_PARAMETER, INVALID_VALUE, SESSION_NOT_ARMED, ROBOT_MUST_BE_DISABLED,
@@ -37,22 +38,45 @@ data class TuningMetadataSnapshot(
 /**
  * Policy-aware typed tuning store. It never writes the canonical checked-in profile.
  * Values are indexed once; periodic typed reads allocate nothing.
+ * Construction validates the initial values and owns snapshots of declaration/metadata lists.
  */
 class TypedTuningRuntime(
     declarations: List<TuningParameterDeclaration>,
     canonicalValues: Map<String, TuningValue>,
-    val metadata: TuningMetadataSnapshot,
+    metadata: TuningMetadataSnapshot,
 ) {
-    private val declarations = declarations.sortedBy { it.uid }.toTypedArray()
+    private val declarations = declarations.sortedBy { it.uid }.map(::snapshotDeclaration).toTypedArray()
+    val metadata: TuningMetadataSnapshot = metadata.copy(
+        declarations = Collections.unmodifiableList(metadata.declarations.map(::snapshotDeclaration)),
+        profileUids = Collections.unmodifiableList(metadata.profileUids.toList()),
+    )
     private val indices = this.declarations.mapIndexed { index, declaration -> declaration.uid to index }.toMap()
     private val values = Array(this.declarations.size) { index ->
         canonicalValues[this.declarations[index].uid] ?: this.declarations[index].defaultValue
     }
-    private val canonicalValues = values.copyOf()
+    private val canonicalSnapshot = values.copyOf()
     private val locallyChanged = BooleanArray(this.declarations.size)
 
+    init {
+        val declarationIssues = validateTuningParameterDeclarations(this.declarations.toList())
+        require(declarationIssues.isEmpty()) { "Invalid tuning declarations: $declarationIssues" }
+        require(this.metadata.declarations.size == this.declarations.size &&
+            this.metadata.declarations.associateBy { it.uid } == this.declarations.associateBy { it.uid }) {
+            "Tuning metadata must describe exactly the runtime declarations"
+        }
+        require(canonicalValues.keys.all(indices::containsKey)) { "Canonical values contain an unknown tuning parameter" }
+        val initialProfile = TuningProfileDocument(
+            uid = this.metadata.canonicalProfileUid, profileId = "runtime-initial", displayName = "Runtime initial values",
+            description = "Validated initial tuning values", projectId = this.metadata.projectId,
+            drivebaseUid = this.metadata.drivebaseUid, authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
+            values = this.declarations.indices.map { TuningAssignment(this.declarations[it].uid, values[it]) },
+        )
+        val valueIssues = validateTuningProfileDocument(initialProfile, this.declarations.toList())
+        require(valueIssues.isEmpty()) { "Invalid initial tuning values: $valueIssues" }
+    }
+
     fun value(parameterUid: String): TuningValue? = indices[parameterUid]?.let(values::get)
-    fun canonicalValue(parameterUid: String): TuningValue? = indices[parameterUid]?.let(canonicalValues::get)
+    fun canonicalValue(parameterUid: String): TuningValue? = indices[parameterUid]?.let(canonicalSnapshot::get)
     fun double(parameterUid: String): Double = requireNotNull(value(parameterUid)?.doubleValue) { "'$parameterUid' is not a double parameter" }
     fun int(parameterUid: String): Int = requireNotNull(value(parameterUid)?.intValue) { "'$parameterUid' is not an integer parameter" }
     fun boolean(parameterUid: String): Boolean = requireNotNull(value(parameterUid)?.booleanValue) { "'$parameterUid' is not a boolean parameter" }
@@ -89,7 +113,7 @@ class TypedTuningRuntime(
         }
         if (policyResult != null) return policyResult
         values[index] = candidate
-        locallyChanged[index] = true
+        locallyChanged[index] = candidate != canonicalSnapshot[index]
         return TuningUpdateResult.APPLIED
     }
 
@@ -97,7 +121,7 @@ class TypedTuningRuntime(
     internal fun restoreAfterFailedApply(parameterUid: String, previous: TuningValue) {
         val index = requireNotNull(indices[parameterUid]) { "Unknown tuning parameter '$parameterUid'" }
         values[index] = previous
-        locallyChanged[index] = previous != canonicalValues[index]
+        locallyChanged[index] = previous != canonicalSnapshot[index]
     }
 
     /** Creates an experimental overlay only; callers choose an explicit robot-local path. */
@@ -115,6 +139,9 @@ class TypedTuningRuntime(
                 .map { TuningAssignment(declarations[it].uid, values[it]) },
         )
 }
+
+private fun snapshotDeclaration(declaration: TuningParameterDeclaration): TuningParameterDeclaration =
+    declaration.copy(enumOptions = Collections.unmodifiableList(declaration.enumOptions.toList()))
 
 /** Persists only LOCAL_EXPERIMENTAL overlays, atomically, outside canonical `.ares/tuning`. */
 object LocalTuningOverlayStore {
