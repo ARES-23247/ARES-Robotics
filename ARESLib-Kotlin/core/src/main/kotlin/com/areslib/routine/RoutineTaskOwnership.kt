@@ -17,6 +17,7 @@ internal class RoutineTaskOwnership {
         check(TaskStateMachine.getStatus(task) == TaskStatus.PENDING) {
             "Routine task factories must return unstarted task instances"
         }
+        RoutineTaskClaims.acquire(task)
         released[task] = false
         nodes.add(task)
         return task
@@ -50,6 +51,7 @@ internal class RoutineTaskOwnership {
             // An overriding metadata hook must not strand strong callback references/deadlines.
             TaskTimeoutManager.reset(task)
             TaskCallbacks.reset(task)
+            RoutineTaskClaims.release(task)
         }
     }
 
@@ -89,8 +91,10 @@ internal class RoutineTaskOwnership {
 }
 
 /** Preserves terminal status and deadline gates across private routine decorators. */
-internal abstract class RoutineTaskWrapper(protected val ownership: RoutineTaskOwnership) : Task {
+internal abstract class RoutineTaskWrapper(protected val ownership: RoutineTaskOwnership) : Task, TaskTimeoutContainer {
     protected abstract val delegate: Task?
+
+    override fun suspendChildTimeouts(paused: Boolean) { delegate?.setTimeoutSuspended(paused) }
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
@@ -188,4 +192,14 @@ private fun combineFailures(first: Throwable?, next: Throwable): Throwable {
     if (first == null) return next
     if (first !== next && first.suppressed.none { it === next }) first.addSuppressed(next)
     return first
+}
+
+/** A weak identity claim prevents two unstarted compilations from sharing a factory task. */
+private object RoutineTaskClaims {
+    private val claimed = WeakIdentityMap<Task, Boolean>()
+    @Synchronized fun acquire(task: Task) {
+        check(claimed[task] != true) { "Routine task already belongs to another compiled invocation" }
+        claimed[task] = true
+    }
+    @Synchronized fun release(task: Task) { claimed.remove(task) }
 }

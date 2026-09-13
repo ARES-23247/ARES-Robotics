@@ -222,10 +222,16 @@ object TaskTimeoutManager {
     }
 }
 
+/** Transparent decorators expose their child deadlines when nested in an executor-owned tree. */
+internal interface TaskTimeoutContainer {
+    fun suspendChildTimeouts(paused: Boolean)
+}
+
 /** Pause only running watchdogs; resuming must never start a queued child's clock. */
 internal fun Task.setTimeoutSuspended(paused: Boolean) {
     if (paused) TaskTimeoutManager.pause(this) else TaskTimeoutManager.resume(this)
     when (this) {
+        is TaskTimeoutContainer -> suspendChildTimeouts(paused)
         is SequentialTaskGroup -> suspendTimeouts(paused)
         is ParallelTaskGroup -> suspendTimeouts(paused)
         is ParallelRaceGroup -> suspendTimeouts(paused)

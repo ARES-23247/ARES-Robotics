@@ -301,6 +301,41 @@ class RoutineCompilationOwnershipAuditTest {
         assertEquals(2, releases)
     }
 
+    @Test fun separateCompilationsCannotAcquireTheSamePendingTask() {
+        val shared = leaf(onCheck = { false })
+        val document = routine("shared-pending", "Shared pending") { action("same") }
+        val first = compile(document) { shared }
+        try {
+            assertTrue(first.isSuccess)
+            val second = compile(document) { shared }
+            try { assertFalse(second.isSuccess, "Two compiled invocations acquired one pending task") }
+            finally { second.task?.releaseRuntimeState() }
+        } finally { first.task?.releaseRuntimeState() }
+        // Releasing the owner frees the claim while preserving normal task-status rules.
+        val third = compile(document) { shared }
+        assertTrue(third.isSuccess)
+        third.task?.releaseRuntimeState()
+    }
+
+    @Test fun nestedCompiledRoutinesParticipateInExecutorTimeoutSuspension() {
+        val timed = leaf(onCheck = { false }).withTimeout(10L)
+        val compiled = requireNotNull(compile(routine("nested-timeout", "Nested timeout") { action("timed") }) { timed }.task)
+        val outer = SequentialTaskGroup(listOf(compiled))
+        val executor = TaskExecutor()
+        try {
+            executor.addTask(outer); executor.update(RobotState(), 1_000L)
+            RobotClock.useMockTime(1_005L)
+            executor.suspend()
+            RobotClock.useMockTime(2_000L); TaskTimeoutManager.runWatchdogCheck(2_000L)
+            assertEquals(TaskStatus.RUNNING, TaskStateMachine.getStatus(timed))
+            executor.resume()
+            RobotClock.useMockTime(2_005L); TaskTimeoutManager.runWatchdogCheck(2_005L)
+            assertEquals(TaskStatus.RUNNING, TaskStateMachine.getStatus(timed))
+            RobotClock.useMockTime(2_006L); TaskTimeoutManager.runWatchdogCheck(2_006L)
+            assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(timed))
+        } finally { executor.cancelAll(RobotState()); compiled.releaseRuntimeState() }
+    }
+
     private fun manager(store: Store, factory: (String) -> Task?): RoutineManager = RoutineManager(
         bindings(factory), { store.state }, store::dispatch
     )
