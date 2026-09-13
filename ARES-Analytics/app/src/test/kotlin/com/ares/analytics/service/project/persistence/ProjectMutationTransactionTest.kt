@@ -13,6 +13,37 @@ import kotlin.test.assertTrue
 
 class ProjectMutationTransactionTest {
     @Test
+    fun `session recovery cannot roll back another live transaction`() = withProject { root ->
+        val current = File(root, ".ares/tuning/test.arestuning").apply { parentFile.mkdirs(); writeText("before") }
+        val written = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val recovering = java.util.concurrent.CountDownLatch(1)
+        val executor = java.util.concurrent.Executors.newFixedThreadPool(2)
+        lateinit var recovery: java.util.concurrent.Future<*>
+        val mutation = executor.submit {
+            ProjectMutationTransaction.run(root, "held-save", listOf(".ares/tuning/test.arestuning")) {
+                current.writeText("committed value")
+                written.countDown()
+                check(release.await(10, TimeUnit.SECONDS))
+            }
+        }
+        try {
+            assertTrue(written.await(5, TimeUnit.SECONDS))
+            recovery = executor.submit { recovering.countDown(); ProjectMutationTransaction.recover(root) }
+            assertTrue(recovering.await(5, TimeUnit.SECONDS))
+            assertFailsWith<java.util.concurrent.TimeoutException> { recovery.get(200, TimeUnit.MILLISECONDS) }
+        } finally {
+            release.countDown()
+            executor.shutdown()
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) executor.shutdownNow()
+            assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS))
+        }
+        mutation.get(1, TimeUnit.SECONDS)
+        recovery.get(1, TimeUnit.SECONDS)
+        assertEquals("committed value", current.readText())
+    }
+
+    @Test
     fun `failed multi-document mutation restores exact baseline and removes partial files`() = withProject { root ->
         val existing = File(root, ".ares/routines/existing.aresroutine").apply {
             parentFile.mkdirs()

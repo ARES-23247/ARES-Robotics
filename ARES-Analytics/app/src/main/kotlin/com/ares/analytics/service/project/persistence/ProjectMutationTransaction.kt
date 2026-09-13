@@ -75,12 +75,16 @@ internal object ProjectMutationTransaction {
     /** Restores every incomplete transaction before a canonical project is read. */
     fun recover(projectRoot: File) {
         val root = projectRoot.canonicalFile
-        val transactions = File(root, ".ares/recovery/transactions")
-        transactions.listFiles(File::isDirectory).orEmpty().sortedBy(File::getName).forEach { transaction ->
-            if (File(transaction, COMMITTED).isFile) {
-                transaction.deleteRecursively()
-            } else {
-                restore(root, transaction)
+        // Another session can load while a save is active. Its journal is recoverable only after
+        // that owner releases the same project lock; otherwise recovery undoes a live mutation.
+        ProjectDocumentWriteLocks.withLock(File(root, ".ares/.project-mutation-transaction")) {
+            val transactions = File(root, ".ares/recovery/transactions")
+            transactions.listFiles(File::isDirectory).orEmpty().sortedBy(File::getName).forEach { transaction ->
+                if (File(transaction, COMMITTED).isFile) {
+                    transaction.deleteRecursively()
+                } else {
+                    restore(root, transaction)
+                }
             }
         }
     }

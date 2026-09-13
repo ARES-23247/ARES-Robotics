@@ -1419,12 +1419,14 @@
       "sha256": "a5bf9b6ed49733925185f02f5f89a503f9f54b781a8d82a7ac1593c11365ee60",
       "review": "partial",
       "validation": "passed",
-      "scope": "Scoped external-proposal collector and load-readiness review. Waits for loaded profile, synchronously stages or rejects whole proposals, aggregates rejection messages, clears old catalog on load and invalidates readiness synchronously and guards obsolete load results with atomic request revisions. Defers queue acknowledgement if readiness changes before staging, with reload revision notifications surviving conflation. Actual queue/load, failed-load isolation and controlled out-of-order load tests pass; 119/328 lines, 74/334 branches overall. Nonce/acknowledgement, promotion, profile switch, telemetry and exhaustive load scheduler interleavings remain open.",
+      "scope": "Scoped external-proposal collector and load-readiness review. Waits for loaded profile, synchronously stages or rejects whole proposals, aggregates rejection messages, clears old catalog on load and invalidates readiness synchronously and guards obsolete load results with atomic request revisions. Defers queue acknowledgement if readiness changes before staging, with reload revision notifications surviving conflation. Actual queue/load, failed-load isolation and controlled out-of-order load tests pass; 119/328 lines, 74/334 branches overall. Nonce/acknowledgement, promotion, profile switch, telemetry and exhaustive load scheduler interleavings remain open. Pass 235: Read-only promotion call path: stores/compares complete confirmation token, forwards reviewed typed changes and metadata, and executes persistence on existing Dispatchers.IO. No UI/model mutation here; broader state lifecycle retains partial status.",
       "evidence": [
         "docs/audits/tuning-proposal-delivery-audit.md",
         "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
-        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log",
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSignalGenerator.kt": {
@@ -5681,7 +5683,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "1c2df47e405eb28d0fee78da2610d1aa631e324f36647c0ce8d978c838be2c49",
+      "sha256": "43de927cce9c46c33e79195c0d7f2da61dc0aadb6b95eafe633d120a6e12aea8",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -14470,14 +14472,16 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/ProjectMutationTransaction.kt": {
-      "sha256": "2e38b7e41dc77ec9e522f70a445bb5cb4d81a6aeee74e8947557ef3fd2adb86f",
+      "sha256": "1e5c8df85f218a9468210dd4e31437bd5ae3d196c60e8c8b12b858e12fee54a0",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 198: Full source read. New manifests carry a version and full-body checksum; recovery validates completeness, record types and real baseline scope membership before mutation. Preflight rejects delimiters and linked descendants outside real declared scopes, preserving declared aliases and missing-current-directory recovery. Thirteen cases pass, including three original legacy/rollback/commit cases. Legacy manifests lack completeness checksums. Backup integrity/durability, multiple interrupted transaction ordering, rollback failures, external writers and hostile path replacement remain open.",
+      "scope": "Pass 198: Full source read. New manifests carry a version and full-body checksum; recovery validates completeness, record types and real baseline scope membership before mutation. Preflight rejects delimiters and linked descendants outside real declared scopes, preserving declared aliases and missing-current-directory recovery. Thirteen cases pass, including three original legacy/rollback/commit cases. Legacy manifests lack completeness checksums. Backup integrity/durability, multiple interrupted transaction ordering, rollback failures, external writers and hostile path replacement remain open. Pass 235: Active-recovery race reproduced in a separate baseline; recover now acquires the same project lock used by run, preventing another session from rolling back live work. Existing 14-method recovery suite and session integration pass. Other recovery-engine boundaries retain partial status.",
       "evidence": [
         "docs/audits/project-history-recovery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json",
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectDocumentStoreAuditTest.kt": {
@@ -14492,14 +14496,16 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectMutationTransactionTest.kt": {
-      "sha256": "9a634b9c8415aa2748c0abce578a1bf865bb9444edbe9cec166cef5f1547d2e8",
+      "sha256": "311a5bef7a3356f3e9cff335511089563d29700d1af71ca4cb3c27539d9f8841",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 198: Entire test file read and all 13 cases executed. Preserves three original rollback/legacy-recovery/commit cases; adds new-manifest truncation/checksum/type/version/scope/delimiter checks, valid sealed recovery, deleted current directories, declared aliases and linked descendants. Actual Windows junctions are removed before owned temporary trees; the creation subprocess is bounded and owned. Initial six failures and a later linked-descendant failure are archived.",
+      "scope": "Pass 198: Entire test file read and all 13 cases executed. Preserves three original rollback/legacy-recovery/commit cases; adds new-manifest truncation/checksum/type/version/scope/delimiter checks, valid sealed recovery, deleted current directories, declared aliases and linked descendants. Actual Windows junctions are removed before owned temporary trees; the creation subprocess is bounded and owned. Initial six failures and a later linked-descendant failure are archived. Pass 235: Existing recovery suite plus one new live-transaction/recovery concurrency test: requires recovery to wait, joins both owners and verifies committed bytes survive. All 14 methods pass; previous manifest/path/failure scopes retained.",
       "evidence": [
         "docs/audits/project-history-recovery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json",
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
       ]
     },
     "docs/audits/project-history-recovery-integrity-audit.md": {
@@ -14742,10 +14748,12 @@
       "sha256": "8c74c6ec4da57a9c4e1800dad97fb53f9965b292cfd826491d4948d156d28b2e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass201: Inspected identity save/repair entry points, error state, selection conflict and stable-load revision assembly relevant to the editor boundary. Direct unsupported-schema repair now fails via the repository before canonical/recovery writes; new editor/session repair tests pass. Whole-file mutation/execution, backup recovery, concurrent fingerprint consistency and lifecycle remain unreviewed.",
+      "scope": "Pass201: Inspected identity save/repair entry points, error state, selection conflict and stable-load revision assembly relevant to the editor boundary. Direct unsupported-schema repair now fails via the repository before canonical/recovery writes; new editor/session repair tests pass. Whole-file mutation/execution, backup recovery, concurrent fingerprint consistency and lifecycle remain unreviewed. Pass 235: Read-only integration: per-session mutation revision checks call tuning repository; loadStable invokes shared recovery. Shared recovery locking now prevents another loader from undoing a live save. The 12-case ProjectSession suite passed; broader session boundaries remain partial.",
       "evidence": [
         "docs/audits/project-identity-inspection-repair-audit.md",
-        "ARESLib-Kotlin/build/audit-pass201-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass201-verified-evidence",
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityConcurrencyAuditTest.kt": {
@@ -18101,6 +18109,66 @@
         "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json"
       ],
       "sha256": "de3149904d082c49fe3b159ac5f071b3cdc00050b9557c6d7a780b4a13863855"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningProfileRepository.kt": {
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 235: Promotion/review/evidence boundary: exact typed structural review tokens, declared policy/owner enforcement, all attached evidence hashed and physically confined, canonical/history/recovery alias rejection, shared project lock across revision and four-file recovery transaction. Static parser/pattern reuse and set-based obsolete assignment lookup also validated by full Studio tests. Catalog-loading ownership/identity, history text rendering and external mutation remain partial.",
+      "evidence": [
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+      ],
+      "sha256": "a1ebc0c9932f05c4dc755995c9d6a91941c44f5dd6ef51fa6a80a2810d42249d"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/tuning/TuningPromotionPersistenceAuditTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 235: Complete new 13-method suite: precise/delimiter/policy token identity, locale stability, external evidence aliases, manual/relative/paired evidence, authoritative policies, failed promotion rollback, competing repositories, valid calibration/manual evidence, duplicate/invalid typed changes, root/canonical/history/recovery aliases and real Windows locked-file recovery. Fixtures own their workers, links, file handles and temporary directories.",
+      "evidence": [
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+      ],
+      "sha256": "140b6292371f316ee0ce87fdd603470b1ef8b1a4a421f80b7924a046e3eb6554"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/tuning/TuningProfileAuthoringTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 235: Complete existing 12-method suite reviewed/executed: typed values, stable transport topics and nonces, profile identity/inheritance, typed proposal validation, bounds/vendor policy, promotion snapshots/history, checkpoint routing, evidence and stale revisions. Five previously unmanaged temporary project fixtures now use a JUnit cleanup rule; final 12-case rerun passed with assertions unchanged.",
+      "evidence": [
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+      ],
+      "sha256": "a813136c4a8370797c7929025a9e9aa59e55e375e9c9742f5450850a7515b780"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningProfileModels.kt": {
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 235: Read-only review identity trace: displayValue rounds doubles to five decimal places and is locale-sensitive; it is now excluded from approval hashing. Typed change/provenance DTOs and buildTuningReview policy/shape flow traced. Broader display, inheritance/status and proposal resolution remain partial.",
+      "evidence": [
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+      ],
+      "sha256": "a10b94b918ddb70c1616ee05aba57431ab2161149bdc96c628372a3e80d3c67e"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AtomicFilePersistence.kt": {
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 235: Read-only dependency review: unique same-directory staging, flush, strict atomic replacement and pre-replace failure seam used by promotion. Promotion tests exercise real failed replacement and caller rollback. Generic cleanup-failure handling and suspending/cancellation behavior remain partial.",
+      "evidence": [
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+      ],
+      "sha256": "04f091174c7a5d2080d5a1629cbfd6957b29051bcb4f96f1953d104fecfc871d"
+    },
+    "docs/audits/studio-tuning-promotion-persistence-audit.md": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 235: Reconciles nine failed baseline cases, 51 focused passes, 14 new methods, 2109 passing Studio results/six unchanged skips, fixture cleanup, unchanged library artifact hashes and remaining scoped limitations.",
+      "evidence": [
+        "docs/audits/studio-tuning-promotion-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+      ],
+      "sha256": "b84a9ee27e538d2cee287f619e459f805a1a5e769e752726061d7e920d020f55"
     }
   }
 }
