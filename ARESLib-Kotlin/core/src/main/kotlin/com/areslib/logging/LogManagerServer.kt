@@ -119,10 +119,13 @@ object LogManagerServer : NanoHTTPD(5002) {
     private fun serveApiLogs(): Response {
         val allFiles = linkedMapOf<String, LogFileInfo>()
         val formatter = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
-        // Requests address a basename. Match download precedence when both roots contain it.
+        // Requests address a basename. Match both exact spelling and filesystem lookup aliases.
         for ((directory, synced) in listOf(logDir to false, syncedDir to true)) {
             directory.listFiles { file -> isCompletedLogFile(file) }?.forEach { file ->
-                if (!allFiles.containsKey(file.name)) allFiles[file.name] = createLogFileInfo(file, synced, formatter)
+                if (!allFiles.containsKey(file.name) &&
+                    (!synced || !isCompletedLogFile(File(logDir, file.name)))) {
+                    allFiles[file.name] = createLogFileInfo(file, synced, formatter)
+                }
             }
         }
         return newFixedLengthResponse(Response.Status.OK, "application/json", gson.toJson(allFiles.values.sortedByDescending { it.lastModifiedMs }))

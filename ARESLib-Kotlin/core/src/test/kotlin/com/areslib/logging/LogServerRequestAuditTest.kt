@@ -76,6 +76,36 @@ class LogServerRequestAuditTest {
         assertFalse(inaccessible.name in listedNames())
         assertEquals(403, request("/api/download", params = mapOf("file" to listOf(inaccessible.name))).status)
     }
+    @Test fun `case-equivalent basenames follow filesystem download precedence`() {
+        verifyAliasPrecedence("$stem.csv", "$stem.CSV")
+    }
+    @Test fun `Unicode-equivalent basenames follow filesystem download precedence`() {
+        verifyAliasPrecedence("$stem-\u00e9.csv", "$stem-e\u0301.csv")
+    }
+    private fun verifyAliasPrecedence(primaryName: String, syncedName: String) {
+        val primary = file(primaryName, bytes = byteArrayOf(9))
+        val synced = file(syncedName, synced = true, bytes = byteArrayOf(4, 5, 6))
+        val rootLookup = File(RobotLogEnvironment.logDirectory, syncedName)
+        // Exercise the host's actual lookup rules without assuming case folding on Linux.
+        val aliasesPrimary = rootLookup.isFile && java.nio.file.Files.isSameFile(rootLookup.toPath(), primary.toPath())
+        val rows = JsonParser.parseString(request("/api/logs").text).asJsonArray
+            .map { it.asJsonObject }.filter { it["name"].asString in setOf(primaryName, syncedName) }
+        assertEquals(if (aliasesPrimary) 1 else 2, rows.size)
+        for (row in rows) {
+            val expected = if (row["synced"].asBoolean) synced else primary
+            val download = request("/api/download", params = mapOf("file" to listOf(row["name"].asString)))
+            assertEquals(200, download.status)
+            assertEquals(expected.length(), row["sizeBytes"].asLong)
+            assertContentEquals(expected.readBytes(), download.bytes)
+        }
+        assertContentEquals((if (aliasesPrimary) primary else synced).readBytes(),
+            request("/api/download", params = mapOf("file" to listOf(syncedName))).bytes)
+        LogManagerServer.configureDeleteToken(token)
+        assertEquals(200, request("/api/delete", NanoHTTPD.Method.POST,
+            mapOf("file" to listOf(syncedName)), mapOf("x-ares-delete-token" to token)).status)
+        assertFalse(synced.exists())
+        assertEquals(!aliasesPrimary, primary.exists())
+    }
     @Test fun `resolved active and outside aliases are not completed log candidates`() {
         val check = LogManagerServer.javaClass.getDeclaredMethod("isCompletedLogFile", File::class.java).apply { isAccessible = true }
         for (target in listOf(File(RobotLogEnvironment.logDirectory, "$stem.csv.active"), File(RobotLogEnvironment.logDirectory.parentFile, "$stem.csv"))) {

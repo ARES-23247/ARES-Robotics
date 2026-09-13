@@ -53,7 +53,8 @@ internal data class ARESDataLoggerMetrics(
  * the caller. Any [HashMap] passed to [logFrame] is cleared and returned to the logger's pool, so use
  * [obtainMap] for pooled producer frames and do not retain that reference. While writing, the file
  * ends in `.csv.active` or `.csv.gz.active`; [stop] blocks until every accepted frame is drained
- * and atomically exposes the completed name. The selected [policy] controls compression, rotation,
+ * and exposes the completed name after a successful writer close. Failed closes retain the active
+ * reservation for later recovery. The selected [policy] controls compression, rotation,
  * and completed-log retention. Importers can therefore ignore active files instead of guessing
  * from temporary size stability.
  *
@@ -251,9 +252,15 @@ class ARESDataLogger private constructor(
                     }
                 }
             } finally {
-                closeAndFinalizeCurrentLog()
-                workerDone.countDown()
-                if (wasInterrupted) Thread.currentThread().interrupt()
+                try {
+                    closeAndFinalizeCurrentLog()
+                } catch (failure: Exception) {
+                    System.err.println("ARESDataLogger: Error finalizing log: ${failure.message}")
+                } finally {
+                    // A filesystem/retention failure must never strand stop() after this worker exits.
+                    workerDone.countDown()
+                    if (wasInterrupted) Thread.currentThread().interrupt()
+                }
             }
         }
     }
@@ -450,9 +457,11 @@ class ARESDataLogger private constructor(
     private fun closeAndFinalizeCurrentLog() {
         val current = sink ?: return
         sink = null
+        var closedSuccessfully = false
         try {
-            current.writer.flush()
-            current.writer.close()
+            // use closes even after flush fails and preserves the original exception if both fail.
+            current.writer.use { it.flush() }
+            closedSuccessfully = true
         } catch (e: IOException) {
             System.err.println("ARESDataLogger: Failed to close writer: ${e.message}")
         } finally {
@@ -463,7 +472,8 @@ class ARESDataLogger private constructor(
                 if (current.channel.isOpen) current.channel.close()
             }
         }
-        finalizeLogFile(current.active, current.completed)
+        // Never advertise a possibly incomplete CSV/gzip stream as a completed log.
+        if (closedSuccessfully) finalizeLogFile(current.active, current.completed)
         enforceRetentionIfEnabled()
     }
 
