@@ -2361,7 +2361,9 @@ public final class com/areslib/logging/LogManagerServer : fi/iki/elonen/NanoHTTP
 	public static final field INSTANCE Lcom/areslib/logging/LogManagerServer;
 	public static final fun configureDeleteToken (Ljava/lang/String;)V
 	public fun serve (Lfi/iki/elonen/NanoHTTPD$IHTTPSession;)Lfi/iki/elonen/NanoHTTPD$Response;
+	public fun start (IZ)V
 	public final fun startServer ()V
+	public fun stop ()V
 }
 
 public final class com/areslib/logging/LogManagerServer$LogFileInfo {

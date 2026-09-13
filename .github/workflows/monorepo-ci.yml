@@ -74,6 +74,19 @@ jobs:
           -ParesVersion=${{ steps.identity.outputs.version }}
           --no-parallel --no-daemon --console=plain
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Test robot log dashboard in Chromium
+        shell: bash
+        run: |
+          browser_tools="$RUNNER_TEMP/ares-log-browser"
+          npm install --prefix "$browser_tools" --no-save --no-package-lock --no-audit --no-fund playwright@1.62.1
+          "$browser_tools/node_modules/.bin/playwright" install --with-deps chromium
+          NODE_PATH="$browser_tools/node_modules" node --test scripts/test_log_manager_dashboard.cjs
+
       - uses: actions/upload-artifact@v7
         with:
           name: ares-validation-repository
