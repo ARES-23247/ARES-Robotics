@@ -39,12 +39,20 @@ class DeviceResetAuditTest {
         assumeTrue(bean.isThreadAllocatedMemorySupported)
         bean.isThreadAllocatedMemoryEnabled = true
         val devices = Array(4) { Device() }
-        repeat(100_000) { anyDeviceResetOccurred(devices) { it.consumeReset() } }
         val thread = Thread.currentThread().id
+        // Warm the same sampling/profiler call sites that are measured, not a separate inline loop.
+        repeat(5) { allocatedForResetBatch(bean, thread, devices) }
+        repeat(2) { batch ->
+            assertEquals(0L, allocatedForResetBatch(bean, thread, devices), "Steady-state batch $batch")
+        }
+        assertTrue(devices.all { it.reads == 700_000 })
+    }
+
+    private fun allocatedForResetBatch(
+        bean: com.sun.management.ThreadMXBean, thread: Long, devices: Array<Device>,
+    ): Long {
         val before = bean.getThreadAllocatedBytes(thread)
         repeat(100_000) { anyDeviceResetOccurred(devices) { it.consumeReset() } }
-        val allocated = bean.getThreadAllocatedBytes(thread) - before
-        assertEquals(0L, allocated)
-        assertTrue(devices.all { it.reads == 200_000 })
+        return bean.getThreadAllocatedBytes(thread) - before
     }
 }
