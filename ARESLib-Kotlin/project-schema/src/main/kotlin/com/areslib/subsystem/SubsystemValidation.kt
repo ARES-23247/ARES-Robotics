@@ -386,6 +386,9 @@ object SubsystemSchema {
                 SubsystemValueType.INT -> {
                     if (field.defaultInt == null) issue("$path.defaultInt", "Int fields require a default")
                     if (field.defaultNumber != null || field.defaultBoolean != null || field.defaultText != null) issue(path, "Int field contains a default for another type")
+                    val value = field.defaultInt
+                    if (value != null && field.minimum != null && value < field.minimum) issue(path, "Default is below the minimum")
+                    if (value != null && field.maximum != null && value > field.maximum) issue(path, "Default is above the maximum")
                 }
                 SubsystemValueType.STRING -> {
                     if (field.defaultText == null) issue("$path.defaultText", "String fields require a default")
@@ -566,8 +569,4 @@ object SubsystemSchema {
         SubsystemHubFacingDirection.LEFT, SubsystemHubFacingDirection.RIGHT -> 2
     }
 
-    private fun duplicateSubsystemIds(ids: List<String>): Set<String> {
-        val seen = hashSetOf<String>()
-        return ids.filterNot(seen::add).toSet()
-    }
 }

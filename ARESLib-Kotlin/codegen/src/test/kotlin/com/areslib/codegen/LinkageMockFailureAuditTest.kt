@@ -28,7 +28,9 @@ class LinkageMockFailureAuditTest {
             kotlinTypeName = if (hugeTorque) "HugeArm" else "NormalArm",
             platform = SubsystemPlatform.FTC,
             hardware = listOf(shoulder.hardware, elbow.hardware),
-            stateFields = shoulder.stateFields + elbow.stateFields,
+            stateFields = (shoulder.stateFields + elbow.stateFields).map {
+                if (it.fieldId in setOf("shoulderPosition", "elbowPosition")) it.copy(unit = "rad") else it
+            },
             controlLoops = shoulder.controlLoops + elbow.controlLoops,
             linkage = SubsystemLinkageDocument(enabled = true, link1LengthMeters = 0.4, link2LengthMeters = 0.3,
                 link1MassKg = 1.0, link2MassKg = 0.5, link1CenterOfMassMeters = 0.2, link2CenterOfMassMeters = 0.15,

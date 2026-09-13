@@ -238,9 +238,14 @@ internal object SubsystemImplementationValidation {
             "joint2AngleFieldId" to linkage.joint2AngleFieldId,
         ).forEach { (name, id) ->
             val field = id?.let(fieldsById::get)
-            if (field == null || field.type != SubsystemValueType.DOUBLE || field.role != SubsystemFieldRole.MEASUREMENT) {
+            if (field == null || field.type != SubsystemValueType.DOUBLE ||
+                field.role != SubsystemFieldRole.MEASUREMENT || !SubsystemUnits.isCanonicalAngle(field.unit)
+            ) {
                 issue("$path.$name", "Each linkage joint requires a double measurement state field in radians")
             }
+        }
+        if (linkage.joint1AngleFieldId != null && linkage.joint1AngleFieldId == linkage.joint2AngleFieldId) {
+            issue(path, "Linkage joints must use distinct angle measurements")
         }
         val hardwareById = document.hardware.associateBy { it.hardwareId }
         listOf(
@@ -267,6 +272,15 @@ internal object SubsystemImplementationValidation {
         val interaction = document.implementation.simulation.interaction
         if (interaction.role == SimInteractionRole.NONE) return
         val path = "implementation.simulation.interaction"
+        listOf(
+            "triggerThreshold" to interaction.triggerThreshold,
+            "intakeDistanceMeters" to interaction.intakeDistanceMeters,
+            "captureRadiusMeters" to interaction.captureRadiusMeters,
+            "launchSpeedMps" to interaction.launchSpeedMps,
+            "launchElevationDeg" to interaction.launchElevationDeg,
+        ).forEach { (name, value) ->
+            if (!value.isFinite()) issue("$path.$name", "Simulator interaction values must be finite")
+        }
         val trigger = interaction.triggerActuatorId?.let { id -> document.hardware.singleOrNull { it.hardwareId == id } }
         if (trigger == null || trigger.kind !in SUBSYSTEM_ACTUATOR_KINDS || trigger.following != null) {
             issue("$path.triggerActuatorId", "Field interaction requires an independently controlled actuator output")
@@ -276,11 +290,6 @@ internal object SubsystemImplementationValidation {
         if (interaction.captureRadiusMeters <= 0.0) issue("$path.captureRadiusMeters", "Capture radius must be positive")
         if (interaction.launchSpeedMps <= 0.0) issue("$path.launchSpeedMps", "Launch speed must be positive")
         if (interaction.launchElevationDeg !in 0.0..90.0) issue("$path.launchElevationDeg", "Launch elevation must be between 0 and 90 degrees")
-    }
-
-    private fun duplicateSubsystemIds(ids: List<String>): Set<String> {
-        val seen = hashSetOf<String>()
-        return ids.filterNot(seen::add).toSet()
     }
 
     private val SUBSYSTEM_ACTUATOR_KINDS = setOf(

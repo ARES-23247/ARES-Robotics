@@ -402,6 +402,7 @@ data class SubsystemInterlockDocument(
     val thresholdValue: Double = 0.0,
     val targetStateName: String? = null,
     val forbiddenZoneDescription: String = "",
+    /** Custom implementation metadata only; generated interlocks use each actuator's safe output. */
     val safeFallbackValue: Double? = null,
 )
 

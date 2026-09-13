@@ -3,6 +3,9 @@ package com.areslib.subsystem
 /** Cross-subsystem identity and interlock validation. */
 internal object SubsystemProjectValidation {
     fun validateAll(documents: List<SubsystemDocument>): List<SubsystemValidationIssue> = buildList {
+        duplicateSubsystemIds(documents.map { it.documentId }).sorted().forEach { id ->
+            add(SubsystemValidationIssue("subsystems", "Subsystem document ID '$id' is duplicated"))
+        }
         val byUid = documents.groupBy { it.uid }
         byUid.filterValues { it.size > 1 }.keys.sorted().forEach { uid ->
             add(SubsystemValidationIssue("subsystems", "Subsystem UID '$uid' is duplicated"))

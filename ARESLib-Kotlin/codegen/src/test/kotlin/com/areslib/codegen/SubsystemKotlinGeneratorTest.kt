@@ -427,7 +427,9 @@ class SubsystemKotlinGeneratorTest {
             kotlinTypeName = "TwoJointArm",
             platform = SubsystemPlatform.FTC,
             hardware = listOf(shoulder.hardware, elbow.hardware),
-            stateFields = shoulder.stateFields + elbow.stateFields,
+            stateFields = (shoulder.stateFields + elbow.stateFields).map {
+                if (it.fieldId in setOf("shoulderPosition", "elbowPosition")) it.copy(unit = "rad") else it
+            },
             controlLoops = shoulder.controlLoops + elbow.controlLoops,
             linkage = SubsystemLinkageDocument(
                 enabled = true,

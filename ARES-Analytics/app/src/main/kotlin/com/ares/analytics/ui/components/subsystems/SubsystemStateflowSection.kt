@@ -733,20 +733,20 @@ fun InterlockMatrixCard(document: SubsystemDocument, state: SubsystemGeneratorSt
     val targets = state.documents.filter {
         it.uid != document.uid && it.implementation.kind.isAresGenerated() && it.stateFields.isNotEmpty()
     }.sortedBy { it.displayName.lowercase() }
+    val targetOptions = targets.map { "${it.displayName} (${it.documentId})" }
     EditorCard("Positional Interlocks (${document.interlocks.size})", Icons.Default.Lock) {
-        Text("Interlocks read another generated subsystem's immutable state and force this mechanism to a declared safe fallback when a rule is not satisfied.", color = AresTextSecondary, fontSize = 11.sp)
+        Text("Interlocks block movement when a listed condition is true or the other subsystem's feedback is unavailable. Each actuator then uses its configured safe output.", color = AresTextSecondary, fontSize = 11.sp)
         if (document.interlocks.isEmpty()) {
             Text("No positional interlocks configured.", color = AresTextTertiary, fontSize = 10.sp)
         }
         document.interlocks.forEach { interlock ->
             val target = targets.firstOrNull { it.uid == interlock.targetSubsystemUid }
-            val targetOptions = targets.map { it.displayName }
             Surface(color = AresSurface, border = BorderStroke(1.dp, AresBorder), shape = RoundedCornerShape(6.dp)) {
                 Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(interlock.interlockId, color = AresCyan, fontFamily = FontFamily.Monospace, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     if (targetOptions.isNotEmpty()) {
-                        DropdownSelector("Other subsystem", target?.displayName ?: targetOptions.first(), targetOptions) { selectedName ->
-                            val selected = targets.first { it.displayName == selectedName }
+                        DropdownSelector("Other subsystem", target?.let { "${it.displayName} (${it.documentId})" } ?: "Select a subsystem", targetOptions) { selectedName ->
+                            val selected = targets.getOrNull(targetOptions.indexOf(selectedName)) ?: return@DropdownSelector
                             val field = selected.stateFields.first()
                             viewModel.updateInterlock(interlock.interlockId) {
                                 it.copy(
@@ -771,15 +771,16 @@ fun InterlockMatrixCard(document: SubsystemDocument, state: SubsystemGeneratorSt
                             }
                         }
                         val field = fields.firstOrNull { it.fieldId == interlock.targetFieldId }
-                        val comparisons = if (field?.type in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)) {
+                        val numericField = field?.type in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)
+                        val comparisons = if (numericField) {
                             InterlockComparison.entries
                         } else {
                             listOf(InterlockComparison.EQUALS_STATE, InterlockComparison.NOT_EQUALS_STATE)
                         }
-                        EnumSelector("Permit movement when", interlock.comparison, comparisons) { comparison ->
+                        EnumSelector("Block movement when", interlock.comparison, comparisons) { comparison ->
                             viewModel.updateInterlock(interlock.interlockId) { it.copy(comparison = comparison) }
                         }
-                        if (interlock.comparison in setOf(InterlockComparison.LESS_THAN, InterlockComparison.GREATER_THAN)) {
+                        if (numericField) {
                             DoubleInput("Threshold (${field?.unit ?: "state units"})", interlock.thresholdValue) { value ->
                                 viewModel.updateInterlock(interlock.interlockId) { it.copy(thresholdValue = value) }
                             }
@@ -792,8 +793,15 @@ fun InterlockMatrixCard(document: SubsystemDocument, state: SubsystemGeneratorSt
                     TextInput("Student-facing reason", interlock.forbiddenZoneDescription) { value ->
                         viewModel.updateInterlock(interlock.interlockId) { it.copy(forbiddenZoneDescription = value) }
                     }
-                    NullableDoubleInput("Safe fallback output (optional)", interlock.safeFallbackValue) { value ->
-                        viewModel.updateInterlock(interlock.interlockId) { it.copy(safeFallbackValue = value) }
+                    if (!document.implementation.kind.isAresGenerated()) {
+                        NullableDoubleInput("Custom fallback output (implementation-owned)", interlock.safeFallbackValue) { value ->
+                            viewModel.updateInterlock(interlock.interlockId) { it.copy(safeFallbackValue = value) }
+                        }
+                    } else if (interlock.safeFallbackValue != null) {
+                        Text("This fallback override is unsupported. Use each actuator's configured safe output.", color = AresTextSecondary, fontSize = 11.sp)
+                        TextButton(onClick = { viewModel.updateInterlock(interlock.interlockId) { it.copy(safeFallbackValue = null) } }) {
+                            Text("Use configured safe outputs")
+                        }
                     }
                     TextButton(onClick = { viewModel.removeInterlock(interlock.interlockId) }) {
                         Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(14.dp))
