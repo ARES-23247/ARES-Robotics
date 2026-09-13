@@ -34,8 +34,13 @@ class CapabilityArgumentReader(
         minimum: Double? = null,
         maximum: Double? = null
     ): Double? {
-        val raw = arguments[key] ?: return defaultValue
-        val value = raw.toDoubleOrNull()
+        require(minimum == null || minimum.isFinite()) { "$capabilityKey argument '$key' minimum must be finite" }
+        require(maximum == null || maximum.isFinite()) { "$capabilityKey argument '$key' maximum must be finite" }
+        require(minimum == null || maximum == null || minimum <= maximum) {
+            "$capabilityKey argument '$key' minimum must not exceed maximum"
+        }
+        val raw = arguments[key]
+        val value = if (raw == null) defaultValue ?: return null else raw.toDoubleOrNull()
             ?: throw IllegalArgumentException("$capabilityKey argument '$key' must be a number")
         require(value.isFinite()) { "$capabilityKey argument '$key' must be finite" }
         require(minimum == null || value >= minimum) {

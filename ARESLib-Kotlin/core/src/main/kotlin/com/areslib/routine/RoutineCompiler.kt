@@ -6,12 +6,11 @@ import com.areslib.sequencer.ParallelRaceGroup
 import com.areslib.sequencer.ParallelTaskGroup
 import com.areslib.sequencer.SequentialTaskGroup
 import com.areslib.sequencer.Task
-import com.areslib.sequencer.TaskStateMachine
-import com.areslib.sequencer.TaskStatus
 import com.areslib.sequencer.TimeWaitTask
 import com.areslib.sequencer.WaitUntilTask
 import com.areslib.state.RobotState
 import com.areslib.util.RobotClock
+import java.util.ArrayDeque
 import kotlin.math.roundToLong
 
 /** Runtime adapters supplied by the generated project catalog and trajectory layer. */
@@ -35,7 +34,13 @@ data class RoutineCompilationResult(
         get() = task != null && issues.none { it.severity == RoutineValidationSeverity.ERROR }
 }
 
-/** Compiles trigger-neutral documents into tasks that produce Redux actions only. */
+/**
+ * Compiles a validated reachable routine tree into one owned task invocation.
+ * Factories must return fresh, unstarted tasks and perform no hardware work. Compilation owns
+ * callback/timeout cleanup even for rejected trees, unselected branches and queued cancellation.
+ * Documents and binding inputs must remain stable during compilation. Run and cancel the result
+ * through the robot's existing lifecycle owner; compilation does not start another control loop.
+ */
 class RoutineCompiler(
     private val documents: Map<String, RoutineDocument>,
     private val bindings: RoutineRuntimeBindings
@@ -47,32 +52,69 @@ class RoutineCompiler(
                 issues = listOf(compileError(routineId, "routine", "missing_routine", "Routine '$routineId' does not exist")),
                 resourceKeys = emptySet()
             )
-        val context = RoutineValidationContext(
-            documents = documents,
-            requireResolvedCalls = true,
-            hasAction = bindings.isActionKnown,
-            hasCondition = bindings.isConditionKnown,
-            resourcesForAction = bindings.resourcesForAction,
-            resourcesForDrive = bindings.resourcesForDrive
-        )
-        val issues = validateRoutine(document, context).toMutableList()
-        if (issues.any { it.severity == RoutineValidationSeverity.ERROR }) {
-            return RoutineCompilationResult(null, issues, resourcesFor(document, mutableSetOf()))
+        val ownership = RoutineTaskOwnership()
+        val issues = mutableListOf<RoutineValidationIssue>()
+        var resources: Set<String> = emptySet()
+        var result: Task? = null
+        try {
+            val context = RoutineValidationContext(
+                documents = documents,
+                requireResolvedCalls = true,
+                hasAction = bindings.isActionKnown,
+                hasCondition = bindings.isConditionKnown,
+                resourcesForAction = bindings.resourcesForAction,
+                resourcesForDrive = bindings.resourcesForDrive
+            )
+            validateReachable(document, context, issues)
+            if (issues.none { it.severity == RoutineValidationSeverity.ERROR }) {
+                // Resolve claims before factories acquire runtime metadata.
+                resources = resourcesFor(document, mutableSetOf())
+                val tree = compileSteps(
+                    owner = document, steps = document.steps, parentPath = "steps",
+                    executionId = executionId, callStack = mutableSetOf(document.documentId),
+                    issues = issues, ownership = ownership
+                )
+                if (issues.none { it.severity == RoutineValidationSeverity.ERROR }) {
+                    result = CompiledRoutineTask(tree, ownership)
+                }
+            }
+        } catch (failure: RuntimeException) {
+            issues += compileError(document.documentId, "routine", "task_compilation_failed",
+                "Routine tasks could not be compiled: ${failure.message ?: failure::class.simpleName}")
+        } finally {
+            if (result == null) {
+                try { ownership.releaseAll() } catch (failure: RuntimeException) {
+                    issues += compileError(document.documentId, "routine", "task_cleanup_failed",
+                        "Rejected routine metadata cleanup failed: ${failure.message ?: failure::class.simpleName}")
+                }
+            }
         }
+        return RoutineCompilationResult(result, issues, resources)
+    }
 
-        val task = compileSteps(
-            owner = document,
-            steps = document.steps,
-            parentPath = "steps",
-            executionId = executionId,
-            callStack = mutableSetOf(document.documentId),
-            issues = issues
-        )
-        return RoutineCompilationResult(
-            task = task.takeUnless { issues.any { issue -> issue.severity == RoutineValidationSeverity.ERROR } },
-            issues = issues,
-            resourceKeys = resourcesFor(document, mutableSetOf())
-        )
+    /** Validate only reachable documents, once each, before invoking any task factory. */
+    private fun validateReachable(
+        root: RoutineDocument,
+        context: RoutineValidationContext,
+        issues: MutableList<RoutineValidationIssue>
+    ) {
+        val visited = mutableSetOf<String>()
+        val pending = ArrayDeque<RoutineDocument>().also { it.add(root) }
+        while (pending.isNotEmpty()) {
+            val document = pending.removeFirst()
+            if (!visited.add(document.documentId)) continue
+            val diagnostics = validateRoutine(document, context)
+            issues.addAll(diagnostics)
+            if (diagnostics.any { it.severity == RoutineValidationSeverity.ERROR }) continue
+            val steps = ArrayDeque(document.steps)
+            while (steps.isNotEmpty()) {
+                val step = steps.removeFirst()
+                step.routineId?.let { documents[it]?.let(pending::addLast) }
+                step.deadline?.let(steps::addLast)
+                steps.addAll(step.children)
+                steps.addAll(step.elseChildren)
+            }
+        }
     }
 
     private fun compileSteps(
@@ -81,12 +123,13 @@ class RoutineCompiler(
         parentPath: String,
         executionId: Long,
         callStack: MutableSet<String>,
-        issues: MutableList<RoutineValidationIssue>
+        issues: MutableList<RoutineValidationIssue>,
+        ownership: RoutineTaskOwnership
     ): Task {
         val tasks = steps.mapNotNull { step ->
-            compileStep(owner, step, "$parentPath/${step.stepId}", executionId, callStack, issues)
+            compileStep(owner, step, "$parentPath/${step.stepId}", executionId, callStack, issues, ownership)
         }
-        return SequentialTaskGroup(tasks)
+        return ownership.internalNode(SequentialTaskGroup(tasks))
     }
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
@@ -96,25 +139,26 @@ class RoutineCompiler(
         path: String,
         executionId: Long,
         callStack: MutableSet<String>,
-        issues: MutableList<RoutineValidationIssue>
+        issues: MutableList<RoutineValidationIssue>,
+        ownership: RoutineTaskOwnership
     ): Task? {
         val compiled = when (step.kind) {
-            RoutineStepKind.ACTION -> resolveTask(owner, path, "action", issues) {
+            RoutineStepKind.ACTION -> resolveTask(owner, path, "action", issues, ownership) {
                 bindings.createActionTask(requireNotNull(step.actionKey), step.arguments)
             }
-            RoutineStepKind.DRIVE_TO -> resolveTask(owner, path, "drive", issues) {
+            RoutineStepKind.DRIVE_TO -> resolveTask(owner, path, "drive", issues, ownership) {
                 bindings.createDriveTask(requireNotNull(step.drive))
             }
-            RoutineStepKind.WAIT -> TimeWaitTask(secondsToMillis(requireNotNull(step.durationSeconds)))
+            RoutineStepKind.WAIT -> ownership.acquire(TimeWaitTask(secondsToMillis(requireNotNull(step.durationSeconds))))
             RoutineStepKind.WAIT_UNTIL -> {
                 val predicate = resolveCondition(owner, step, path, issues) ?: return null
-                WaitUntilTask(predicate).withTimeout(secondsToMillis(requireNotNull(step.timeoutSeconds)))
+                ownership.acquire(WaitUntilTask(predicate).withTimeout(secondsToMillis(requireNotNull(step.timeoutSeconds))))
             }
             RoutineStepKind.TOGETHER -> ParallelTaskGroup(
-                compileChildren(owner, step.children, "$path.children", executionId, callStack, issues)
+                compileChildren(owner, step.children, "$path.children", executionId, callStack, issues, ownership)
             )
             RoutineStepKind.FIRST_TO_FINISH -> ParallelRaceGroup(
-                compileChildren(owner, step.children, "$path.children", executionId, callStack, issues)
+                compileChildren(owner, step.children, "$path.children", executionId, callStack, issues, ownership)
             )
             RoutineStepKind.DEADLINE -> {
                 val deadline = compileStep(
@@ -123,11 +167,11 @@ class RoutineCompiler(
                     "$path.deadline",
                     executionId,
                     callStack,
-                    issues
+                    issues, ownership
                 ) ?: return null
                 ParallelDeadlineGroup(
                     deadline,
-                    compileChildren(owner, step.children, "$path.children", executionId, callStack, issues)
+                    compileChildren(owner, step.children, "$path.children", executionId, callStack, issues, ownership)
                 )
             }
             RoutineStepKind.CALL -> {
@@ -142,7 +186,7 @@ class RoutineCompiler(
                     return null
                 }
                 try {
-                    compileSteps(called, called.steps, "routine/$calledId/steps", executionId, callStack, issues)
+                    compileSteps(called, called.steps, "routine/$calledId/steps", executionId, callStack, issues, ownership)
                 } finally {
                     callStack.remove(calledId)
                 }
@@ -156,7 +200,7 @@ class RoutineCompiler(
                         "$path.repeat[$repetition].children",
                         executionId,
                         callStack,
-                        issues
+                        issues, ownership
                     )
                 }
                 SequentialTaskGroup(tasks)
@@ -169,7 +213,7 @@ class RoutineCompiler(
                     "$path.children",
                     executionId,
                     callStack,
-                    issues
+                    issues, ownership
                 )
                 val whenFalse = compileSteps(
                     owner,
@@ -177,12 +221,13 @@ class RoutineCompiler(
                     "$path.elseChildren",
                     executionId,
                     callStack,
-                    issues
+                    issues, ownership
                 )
-                ConditionalRoutineTask(predicate, whenTrue, whenFalse)
+                ConditionalRoutineTask(predicate, whenTrue, whenFalse, ownership)
             }
         } ?: return null
-        return RoutineStepLifecycleTask(executionId, owner.documentId, path, step.kind.name, compiled)
+        ownership.internalNode(compiled)
+        return ownership.register(RoutineStepLifecycleTask(executionId, owner.documentId, path, step.kind.name, compiled, ownership))
     }
 
     private fun compileChildren(
@@ -191,9 +236,10 @@ class RoutineCompiler(
         parentPath: String,
         executionId: Long,
         callStack: MutableSet<String>,
-        issues: MutableList<RoutineValidationIssue>
+        issues: MutableList<RoutineValidationIssue>,
+        ownership: RoutineTaskOwnership
     ): List<Task> = children.mapNotNull { child ->
-        compileStep(owner, child, "$parentPath/${child.stepId}", executionId, callStack, issues)
+        compileStep(owner, child, "$parentPath/${child.stepId}", executionId, callStack, issues, ownership)
     }
 
     private fun resolveCondition(
@@ -225,11 +271,14 @@ class RoutineCompiler(
         path: String,
         type: String,
         issues: MutableList<RoutineValidationIssue>,
+        ownership: RoutineTaskOwnership,
         factory: () -> Task?
     ): Task? = try {
         factory().also { task ->
             if (task == null) {
                 issues += compileError(owner.documentId, path, "unknown_${type}_task", "No executable $type is registered")
+            } else {
+                ownership.acquire(task)
             }
         }
     } catch (error: RuntimeException) {
@@ -264,120 +313,42 @@ class RoutineCompiler(
     }
 }
 
-/** Adds a step-entered action while transparently preserving the wrapped task lifecycle. */
+/** Adds step telemetry without weakening the child's task lifecycle. */
 private class RoutineStepLifecycleTask(
     private val executionId: Long,
     private val routineId: String,
     private val stepPath: String,
     private val stepKind: String,
-    private val delegate: Task
-) : Task {
+    override val delegate: Task,
+    ownership: RoutineTaskOwnership
+) : RoutineTaskWrapper(ownership) {
     override val name: String = "RoutineStep($stepPath:${delegate.name})"
     override val requiredResources: Long = delegate.requiredResources
 
     override fun initialize(state: RobotState): List<RobotAction> {
-        super.initialize(state)
         val actions = mutableListOf<RobotAction>(
-            RobotAction.RoutineStepEntered(
-                executionId = executionId,
-                routineId = routineId,
-                stepPath = stepPath,
-                stepKind = stepKind,
-                timestampMs = RobotClock.currentTimeMillis()
-            )
+            RobotAction.RoutineStepEntered(executionId, routineId, stepPath, stepKind, RobotClock.currentTimeMillis())
         )
-        actions.addAll(delegate.initialize(state))
+        actions.addAll(super.initialize(state))
         return actions
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        if (TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-            return false
-        }
-        val completed = delegate.isCompleted(state, elapsedMs)
-        if (TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-            return false
-        }
-        return completed
-    }
-
-    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-        super.execute(state, elapsedMs)
-        val actions = delegate.execute(state, elapsedMs)
-        if (TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-        }
-        return actions
-    }
-
-    override fun pause(state: RobotState): List<RobotAction> = delegate.pause(state)
-    override fun resume(state: RobotState): List<RobotAction> = delegate.resume(state)
-
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        val delegateFailed = TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED
-        val actions = delegate.end(state, interrupted || delegateFailed)
-        delegate.releaseRuntimeState()
-        super.end(state, interrupted || delegateFailed)
-        return actions
-    }
-
-    override fun releaseRuntimeState() {
-        delegate.releaseRuntimeState()
-        super.releaseRuntimeState()
     }
 }
 
-/** Chooses exactly one precompiled branch from the state snapshot observed at initialization. */
+/** Both branches belong to the compilation; only the selected branch receives runtime calls. */
 private class ConditionalRoutineTask(
     private val predicate: (RobotState) -> Boolean,
     private val whenTrue: Task,
-    private val whenFalse: Task
-) : Task {
+    private val whenFalse: Task,
+    ownership: RoutineTaskOwnership
+) : RoutineTaskWrapper(ownership) {
     override val name: String = "RoutineBranch"
     override val requiredResources: Long = whenTrue.requiredResources or whenFalse.requiredResources
     private var selected: Task? = null
+    override val delegate: Task? get() = selected
 
     override fun initialize(state: RobotState): List<RobotAction> {
-        super.initialize(state)
         selected = if (predicate(state)) whenTrue else whenFalse
-        return selected!!.initialize(state)
-    }
-
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        val task = checkNotNull(selected) { "Branch was not initialized" }
-        if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-            return false
-        }
-        val completed = task.isCompleted(state, elapsedMs)
-        if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-            return false
-        }
-        return completed
-    }
-
-    override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> =
-        checkNotNull(selected) { "Branch was not initialized" }.execute(state, elapsedMs)
-
-    override fun pause(state: RobotState): List<RobotAction> = selected?.pause(state).orEmpty()
-    override fun resume(state: RobotState): List<RobotAction> = selected?.resume(state).orEmpty()
-
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        val task = selected
-        val failed = task != null && TaskStateMachine.getStatus(task) == TaskStatus.FAILED
-        val actions = task?.end(state, interrupted || failed).orEmpty()
-        task?.releaseRuntimeState()
-        super.end(state, interrupted || failed)
-        selected = null
-        return actions
-    }
-
-    override fun releaseRuntimeState() {
-        selected?.releaseRuntimeState()
-        super.releaseRuntimeState()
+        return super.initialize(state)
     }
 }
 

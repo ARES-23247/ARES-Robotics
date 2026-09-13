@@ -190,7 +190,7 @@ class DriveStepBuilder internal constructor(private val target: RoutinePose) {
 @AresRoutineDsl
 class RoutineBranchBuilder internal constructor() {
     private var whenTrue: List<RoutineStep>? = null
-    private var whenFalse: List<RoutineStep> = emptyList()
+    private var whenFalse: List<RoutineStep>? = null
 
     fun then(block: RoutineBuilder.() -> Unit) {
         check(whenTrue == null) { "branch then { } may only be declared once" }
@@ -198,10 +198,10 @@ class RoutineBranchBuilder internal constructor() {
     }
 
     fun otherwise(block: RoutineBuilder.() -> Unit) {
-        check(whenFalse.isEmpty()) { "branch otherwise { } may only be declared once" }
+        check(whenFalse == null) { "branch otherwise { } may only be declared once" }
         whenFalse = RoutineBuilder().apply(block).snapshot()
     }
 
     internal fun trueSteps(): List<RoutineStep> = requireNotNull(whenTrue) { "branch requires then { }" }
-    internal fun falseSteps(): List<RoutineStep> = whenFalse
+    internal fun falseSteps(): List<RoutineStep> = whenFalse.orEmpty()
 }
