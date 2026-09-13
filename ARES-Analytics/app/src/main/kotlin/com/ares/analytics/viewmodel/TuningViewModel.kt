@@ -12,6 +12,7 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
 import com.areslib.tuning.TuningProfileDocument
 import com.areslib.tuning.TuningValue
+import com.areslib.telemetry.schema.TuningAcknowledgementCodec
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -121,11 +122,6 @@ class TuningViewModel(
     val state: StateFlow<TuningState> = _state.asStateFlow()
 
     init {
-        scope.launch {
-            nt4ClientService.isConnected.collect { connected ->
-                if (!connected) requestNonce = 0L
-            }
-        }
         proposalInbox?.let { inbox ->
             scope.launch {
                 combine(inbox.pendingCount, _state.map { it.loadRevision to (!it.isLoading && it.selectedProfile != null) }.distinctUntilChanged()) {
@@ -154,29 +150,33 @@ class TuningViewModel(
             }
         }
         scope.launch {
+            var catalog: List<TuningParameterDeclaration>? = null
+            var topics = emptyList<ObservedTuningTopics>()
             while (isActive) {
-                val declarations = _state.value.catalog
-                val typed = declarations.mapNotNull { declaration ->
-                    val frame = nt4ClientService.latestValues[TuningTransport.current(declaration)] ?: return@mapNotNull null
-                    frame.toTuningValue(declaration)?.let { declaration.key to it }
-                }.toMap()
-                val numeric = typed.mapNotNull { (key, value) -> value.numericValue()?.let { key to it } }.toMap()
-                val consumerSupport = declarations.mapNotNull { declaration ->
-                    val frame = nt4ClientService.latestValues[TuningTransport.consumerSupported(declaration)]
-                        ?: return@mapNotNull null
-                    declaration.uid to (frame.stringValue?.toBooleanStrictOrNull() ?: (frame.value != 0.0))
-                }.toMap()
-                if (_state.value.variables != numeric ||
-                    _state.value.liveTypedValues != typed ||
-                    _state.value.consumerSupportByUid != consumerSupport
-                ) {
-                    _state.update {
-                        it.copy(
-                            variables = numeric,
-                            liveTypedValues = typed,
-                            consumerSupportByUid = consumerSupport,
-                        )
+                val snapshot = _state.value
+                if (catalog !== snapshot.catalog) {
+                    catalog = snapshot.catalog
+                    topics = snapshot.catalog.map(::ObservedTuningTopics)
+                }
+                val typed = mutableMapOf<String, TuningValue>()
+                val numeric = mutableMapOf<String, Double>()
+                val consumerSupport = mutableMapOf<String, Boolean>()
+                for (topic in topics) {
+                    val declaration = topic.declaration
+                    val value = nt4ClientService.latestValues[topic.current]?.toTuningValue(declaration)
+                    if (value != null) {
+                        typed[declaration.key] = value
+                        value.numericValue()?.let { numeric[declaration.key] = it }
                     }
+                    nt4ClientService.latestValues[topic.consumerSupported]?.let {
+                        // An explicitly malformed support flag cannot authorize live testing.
+                        consumerSupport[declaration.uid] = it.tuningBoolean() == true
+                    }
+                }
+                _state.update {
+                    if (it.loadRevision != snapshot.loadRevision || it.catalog !== snapshot.catalog ||
+                        (it.variables == numeric && it.liveTypedValues == typed && it.consumerSupportByUid == consumerSupport)) it
+                    else it.copy(variables = numeric, liveTypedValues = typed, consumerSupportByUid = consumerSupport)
                 }
                 delay(200)
             }
@@ -329,68 +329,97 @@ class TuningViewModel(
         }
     }
 
-    private fun pushOne(key: String) = scope.launch {
-        val state = _state.value
-        val declaration = state.catalog.firstOrNull { it.key == key }
-        val value = state.proposals[key]
-        when {
-            declaration == null -> _state.update { it.copy(errorMessage = "$key is undeclared and cannot be pushed.") }
-            state.consumerSupportByUid[declaration.uid] == false -> _state.update {
-                it.copy(errorMessage = "${declaration.displayName} has no compiled runtime consumer in the connected robot. Regenerate or update the robot project before live testing.")
+    private fun TuningState.sameLiveInputsAs(snapshot: TuningState, key: String): Boolean =
+        sameWorkspaceAs(snapshot) && selectedProfileId == snapshot.selectedProfileId &&
+            profiles == snapshot.profiles && catalog == snapshot.catalog &&
+            proposals[key] == snapshot.proposals[key] && proposalProvenance[key] == snapshot.proposalProvenance[key]
+
+    private fun updateLiveStatus(snapshot: TuningState, key: String, status: String, error: String? = null) {
+        _state.update { if (it.sameLiveInputsAs(snapshot, key)) it.copy(saveStatus = status, errorMessage = error) else it }
+    }
+
+    private fun pushOne(key: String, snapshot: TuningState = _state.value) {
+        val connection = nt4ClientService.tuningConnectionId
+        scope.launch { sendLiveRequest(key, snapshot, connection) }
+    }
+
+    private suspend fun sendLiveRequest(key: String, snapshot: TuningState, connection: Long?) {
+        requestMutex.withLock {
+            val current = _state.value
+            if (!current.sameLiveInputsAs(snapshot, key)) return@withLock
+            val declaration = snapshot.catalog.firstOrNull { it.key == key }
+            val value = snapshot.proposals[key]
+            val validation = when {
+                declaration == null -> "$key is undeclared and cannot be pushed."
+                connection == null || nt4ClientService.tuningConnectionId != connection -> "The robot connection changed or is not ready. Review the live target and request a new test."
+                current.consumerSupportByUid[declaration.uid] == false -> "${declaration.displayName} has no valid runtime consumer support in the connected robot. Regenerate or update the robot project before live testing."
+                declaration.applyPolicy != TuningApplyPolicy.LIVE_SAFE -> "${declaration.displayName} is ${declaration.applyPolicy.name.lowercase().replace('_', ' ')} and cannot be live-pushed."
+                value == null -> "Stage and review a proposed value before live testing."
+                snapshot.selectedProfile == null -> "Load a canonical profile before live testing."
+                buildTuningReview(requireNotNull(snapshot.selectedProfile), snapshot.profiles, snapshot.catalog,
+                    mapOf(key to value), snapshot.proposalProvenance).second.isNotEmpty() -> "${declaration.displayName} is invalid for live testing."
+                else -> null
             }
-            declaration.applyPolicy != TuningApplyPolicy.LIVE_SAFE -> _state.update { it.copy(errorMessage = "${declaration.displayName} is ${declaration.applyPolicy.name.lowercase().replace('_', ' ')} and cannot be live-pushed.") }
-            value == null -> _state.update { it.copy(errorMessage = "Stage and review a proposed value before live testing.") }
-            buildTuningReview(state.selectedProfile ?: return@launch, state.profiles, state.catalog, mapOf(key to value), state.proposalProvenance).second.isNotEmpty() -> _state.update { it.copy(errorMessage = "${declaration.displayName} is invalid for live testing.") }
-            else -> requestMutex.withLock {
-                runCatching {
-                    val observedNonce = nt4ClientService.latestValues[TuningTransport.requestNonce(declaration)]?.value
-                    val nextNonce = nextTuningRequestNonce(requestNonce, observedNonce)
-                    when (declaration.type) {
-                        TuningParameterType.DOUBLE -> nt4ClientService.publishDouble(TuningTransport.requested(declaration), requireNotNull(value.doubleValue))
-                        TuningParameterType.INT -> nt4ClientService.publishDouble(TuningTransport.requested(declaration), requireNotNull(value.intValue).toDouble())
-                        TuningParameterType.BOOLEAN -> nt4ClientService.publishBoolean(TuningTransport.requested(declaration), requireNotNull(value.booleanValue))
-                        TuningParameterType.TEXT, TuningParameterType.ENUM -> nt4ClientService.publishString(TuningTransport.requested(declaration), requireNotNull(value.textValue))
-                    }
-                    requestNonce = nextNonce
-                    nt4ClientService.publishDouble(TuningTransport.requestNonce(declaration), requestNonce.toDouble())
-                    _state.update { it.copy(saveStatus = "Waiting for ${declaration.displayName} acknowledgement…", errorMessage = null) }
-                    val result = awaitTuningResult(declaration, requestNonce)
-                    require(result == "APPLIED") {
-                        "Robot rejected ${declaration.displayName}: ${result.lowercase().replace('_', ' ')}. The profile was not changed."
-                    }
+            if (validation != null) {
+                updateLiveStatus(snapshot, key, "Live tuning request was not sent.", validation)
+                return@withLock
+            }
+            val target = requireNotNull(declaration)
+            val nonce = try {
+                val acknowledged = TuningAcknowledgementCodec.decode(
+                    nt4ClientService.latestValues[TuningTransport.acknowledgement(target)]?.stringValue)?.nonce ?: -1L
+                nextTuningRequestNonce(maxOf(requestNonce, acknowledged),
+                    nt4ClientService.latestValues[TuningTransport.requestNonce(target)]?.value,
+                    nt4ClientService.latestValues[TuningTransport.processedNonce(target)]?.value)
+            } catch (failure: IllegalArgumentException) {
+                updateLiveStatus(snapshot, key, "Live tuning request was not sent.", failure.message)
+                return@withLock
+            }
+            try {
+                // Reserve under the request mutex; disconnects must not reset/reuse a nonce.
+                requestNonce = nonce
+                if (!nt4ClientService.publishTuningRequest(target, requireNotNull(value), nonce, requireNotNull(connection))) {
+                    updateLiveStatus(snapshot, key, "Live tuning request was not sent.", "The connection or outgoing queue was not ready. Request a new test when the robot is ready.")
+                    return@withLock
                 }
-                    .onSuccess { _state.update { it.copy(saveStatus = "Robot acknowledged ${declaration.displayName} as applied experimentally. The profile was not changed.", errorMessage = null) } }
-                    .onFailure { failure -> _state.update {
-                        it.copy(
-                            saveStatus = "No robot acknowledgement was received; the experimental result is unknown.",
-                            errorMessage = failure.message ?: "Live push failed.",
-                        )
-                    } }
+                updateLiveStatus(snapshot, key, "Waiting for ${target.displayName} acknowledgement…")
+                val result = awaitTuningResult(target, nonce, connection)
+                if (result == "APPLIED") {
+                    updateLiveStatus(snapshot, key, "Robot acknowledged ${target.displayName} as applied experimentally. The profile was not changed.")
+                } else {
+                    updateLiveStatus(snapshot, key, "Robot acknowledged ${target.displayName} but rejected the experimental change. The profile was not changed.",
+                        "Robot rejected ${target.displayName}: ${result.lowercase().replace('_', ' ')}. The profile was not changed.")
+                }
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                updateLiveStatus(snapshot, key, "No current robot acknowledgement was received; the experimental result is unknown.",
+                    failure.message ?: "Live push failed.")
             }
         }
     }
 
-    private suspend fun awaitTuningResult(declaration: TuningParameterDeclaration, nonce: Long): String {
+    private suspend fun awaitTuningResult(declaration: TuningParameterDeclaration, nonce: Long, connection: Long): String {
+        val acknowledgementTopic = TuningTransport.acknowledgement(declaration)
         repeat(30) {
-            val processed = nt4ClientService.latestValues[TuningTransport.processedNonce(declaration)]?.value
-            if (processed == nonce.toDouble()) {
-                return nt4ClientService.latestValues[TuningTransport.lastResult(declaration)]?.stringValue
-                    ?: error("Robot acknowledged the request without a result.")
-            }
+            check(nt4ClientService.tuningConnectionId == connection) { "The robot connection changed before acknowledging this request. Treat the result as unknown." }
+            val acknowledgement = TuningAcknowledgementCodec.decode(nt4ClientService.latestValues[acknowledgementTopic]?.stringValue)
+            if (acknowledgement?.nonce == nonce) return acknowledgement.result
             delay(100)
         }
-        error("Robot did not acknowledge the live tuning request within 3 seconds. Treat the result as unknown.")
+        error("Robot did not provide a matching atomic tuning acknowledgement within 3 seconds. Treat the result as unknown; older robot code must be updated before results can be verified.")
     }
 
     private fun pushAllExperimental() {
-        val eligible = _state.value.proposals.keys.filter { key ->
-            _state.value.catalog.firstOrNull { it.key == key }?.let { declaration ->
-                declaration.applyPolicy == TuningApplyPolicy.LIVE_SAFE &&
-                    _state.value.consumerSupportByUid[declaration.uid] != false
-            } == true
+        val snapshot = _state.value
+        val declarations = snapshot.catalog.associateBy { it.key }
+        val eligible = snapshot.proposals.keys.filter { key ->
+            declarations[key]?.let { it.applyPolicy == TuningApplyPolicy.LIVE_SAFE && snapshot.consumerSupportByUid[it.uid] != false } == true
         }
         if (eligible.isEmpty()) _state.update { it.copy(errorMessage = "No reviewed experimental-live proposals are available.") }
-        else eligible.forEach(::pushOne)
+        else {
+            val connection = nt4ClientService.tuningConnectionId
+            scope.launch { for (key in eligible) sendLiveRequest(key, snapshot, connection) }
+        }
     }
 
     private fun TuningState.sameWorkspaceAs(snapshot: TuningState): Boolean =
@@ -535,20 +564,32 @@ internal suspend fun recordTuningPromotionCheckpoint(
 
 private const val MAX_SAFE_REQUEST_NONCE = 9_007_199_254_740_991L
 
-internal fun nextTuningRequestNonce(local: Long, observed: Double?): Long {
-    val observedLong = observed?.takeIf { it.isFinite() && it % 1.0 == 0.0 && it in 0.0..MAX_SAFE_REQUEST_NONCE.toDouble() }?.toLong() ?: -1L
-    val base = maxOf(local, observedLong)
+internal fun nextTuningRequestNonce(local: Long, observed: Double?, processed: Double? = null): Long {
+    fun floor(value: Double?): Long = value?.takeIf {
+        it.isFinite() && it % 1.0 == 0.0 && it in 0.0..MAX_SAFE_REQUEST_NONCE.toDouble()
+    }?.toLong() ?: -1L
+    val base = maxOf(local, floor(observed), floor(processed))
     require(base < MAX_SAFE_REQUEST_NONCE) {
         "The robot tuning request nonce is exhausted. Restart both robot and dashboard before another live test; no value was requested."
     }
     return base + 1L
 }
 
+private data class ObservedTuningTopics(val declaration: TuningParameterDeclaration) {
+    val current = TuningTransport.current(declaration)
+    val consumerSupported = TuningTransport.consumerSupported(declaration)
+}
+
+private fun TelemetryFrame.tuningBoolean(): Boolean? {
+    val text = stringValue
+    return if (text != null) text.toBooleanStrictOrNull()
+        else when (value) { 0.0 -> false; 1.0 -> true; else -> null }
+}
+
 private fun TelemetryFrame.toTuningValue(declaration: TuningParameterDeclaration): TuningValue? = when (declaration.type) {
     TuningParameterType.DOUBLE -> value.takeIf(Double::isFinite)?.let { TuningValue(doubleValue = it) }
     TuningParameterType.INT -> value.takeIf { it.isFinite() && it % 1.0 == 0.0 && it in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble() }
         ?.let { TuningValue(intValue = it.toInt()) }
-    TuningParameterType.BOOLEAN -> stringValue?.toBooleanStrictOrNull()?.let { TuningValue(booleanValue = it) }
-        ?: value.takeIf(Double::isFinite)?.let { TuningValue(booleanValue = it != 0.0) }
+    TuningParameterType.BOOLEAN -> tuningBoolean()?.let { TuningValue(booleanValue = it) }
     TuningParameterType.TEXT, TuningParameterType.ENUM -> stringValue?.let { TuningValue(textValue = it) }
 }

@@ -1,6 +1,8 @@
 package com.areslib.tuning
 
 import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.schema.TuningAcknowledgement
+import com.areslib.telemetry.schema.TuningAcknowledgementCodec
 import com.areslib.util.RobotClock
 import java.nio.file.Path
 
@@ -76,6 +78,7 @@ class TuningManager(
                 telemetry.putNumber(topic.requestNonce, -1.0)
                 telemetry.putNumber(topic.processedNonce, -1.0)
                 telemetry.putString(topic.lastResult, "IDLE")
+                telemetry.putString(topic.acknowledgement, "")
             }
         }
         metadataPublished = true
@@ -148,8 +151,9 @@ class TuningManager(
     private fun acknowledge(topic: ParameterTopics, result: TuningUpdateResult, current: TuningValue, nonce: Long) {
         telemetry.putString(topic.lastResult, result.name)
         publishValue(topic.current, current)
-        // Publish last: matching ProcessedNonce commits Current and LastResult for the dashboard.
+        // Keep legacy scalar diagnostics. NT4 servers may batch these in a different order.
         telemetry.putNumber(topic.processedNonce, nonce.toDouble())
+        telemetry.putString(topic.acknowledgement, TuningAcknowledgementCodec.encode(TuningAcknowledgement(nonce, result.name)))
     }
 
     private fun persistLocalOverlay() {
@@ -218,6 +222,7 @@ class TuningManager(
         val requestNonce = "$root/RequestNonce"
         val processedNonce = "$root/ProcessedNonce"
         val lastResult = "$root/LastResult"
+        val acknowledgement = "$root/Acknowledgement"
     }
 
     private companion object {

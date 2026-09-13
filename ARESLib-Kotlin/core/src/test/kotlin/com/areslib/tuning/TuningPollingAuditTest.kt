@@ -1,6 +1,8 @@
 package com.areslib.tuning
 
 import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.schema.TuningAcknowledgement
+import com.areslib.telemetry.schema.TuningAcknowledgementCodec
 import java.lang.management.ManagementFactory
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -46,7 +48,8 @@ class TuningPollingAuditTest {
             manager.update((index + 1L) * 500L)
             assertEquals("INVALID_VALUE", wire.strings["$root/LastResult"], "value=$value")
             assertEquals(index.toDouble(), wire.numbers["$root/ProcessedNonce"])
-            assertEquals("$root/ProcessedNonce", wire.writes.last())
+            assertEquals("$root/Acknowledgement", wire.writes.last())
+            assertEquals(TuningAcknowledgement(index.toLong(), "INVALID_VALUE"), TuningAcknowledgementCodec.decode(wire.strings["$root/Acknowledgement"]))
             assertEquals(2, runtime.int("control.count"))
         }
         assertEquals(0, calls)
@@ -154,7 +157,46 @@ class TuningPollingAuditTest {
         manager.publishMetadataAndValues()
         assertEquals(7.0, wire.numbers["$root/ProcessedNonce"])
         assertEquals("APPLIED", wire.strings["$root/LastResult"])
+        assertEquals(TuningAcknowledgement(7, "APPLIED"), TuningAcknowledgementCodec.decode(wire.strings["$root/Acknowledgement"]))
         assertEquals(7.0, wire.numbers["$root/RequestNonce"])
+    }
+
+    @Test fun `atomic acknowledgement carries each policy and consumer outcome with its nonce`() {
+        val runtime = runtime(); val wire = Wire()
+        var armed = true; var supported = true; var accept = true; var throwFromConsumer = false
+        TuningManager(runtime, wire, { TuningApplyContext(armed, true) }, { _, _ ->
+            if (throwFromConsumer) error("consumer failed")
+            accept
+        }, { supported }).use { manager ->
+            assertNull(TuningAcknowledgementCodec.decode(wire.strings["$root/Acknowledgement"]))
+            fun checkRequest(nonce: Long, result: String) {
+                wire.request(3.0, nonce.toDouble())
+                if (throwFromConsumer) assertThrows(IllegalStateException::class.java) { manager.update((nonce + 1) * 500) }
+                else manager.update((nonce + 1) * 500)
+                assertEquals(TuningAcknowledgement(nonce, result), TuningAcknowledgementCodec.decode(wire.strings["$root/Acknowledgement"]))
+            }
+            armed = false; checkRequest(0, "SESSION_NOT_ARMED")
+            armed = true; supported = false; checkRequest(1, "CONSUMER_REJECTED")
+            supported = true; accept = false; checkRequest(2, "CONSUMER_REJECTED")
+            accept = true; throwFromConsumer = true; checkRequest(3, "APPLY_CALLBACK_FAILED")
+            throwFromConsumer = false; checkRequest(4, "APPLIED")
+            assertEquals(3, runtime.int("control.count"))
+            wire.writes.clear()
+            repeat(100) { manager.update(3_000L + it * 500L) }
+            assertTrue(wire.writes.isEmpty(), "Idle polling must not construct or publish acknowledgements")
+        }
+    }
+
+    @Test fun `failed atomic acknowledgement publication does not undo an accepted controller value`() {
+        val runtime = runtime(); val wire = Wire(); var controllerValue = 2
+        TuningManager(runtime, wire, { TuningApplyContext(true, true) }, { _, v -> controllerValue = v.intValue!!; true }, { true }).use { manager ->
+            wire.failStringKey = "$root/Acknowledgement"
+            wire.request(3.0, 1.0)
+            assertThrows(IllegalStateException::class.java) { manager.update(500) }
+            assertEquals(3, controllerValue)
+            assertEquals(controllerValue, runtime.int("control.count"))
+            assertNull(TuningAcknowledgementCodec.decode(wire.strings["$root/Acknowledgement"]))
+        }
     }
 
     @Test fun `every requested apply checks the current arm state after earlier callbacks`() {

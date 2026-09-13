@@ -14,4 +14,5 @@ object TuningTransport {
     fun requestNonce(declaration: TuningParameterDeclaration): String = "${parameterRoot(declaration)}/RequestNonce"
     fun processedNonce(declaration: TuningParameterDeclaration): String = "${parameterRoot(declaration)}/ProcessedNonce"
     fun lastResult(declaration: TuningParameterDeclaration): String = "${parameterRoot(declaration)}/LastResult"
+    fun acknowledgement(declaration: TuningParameterDeclaration): String = "${parameterRoot(declaration)}/Acknowledgement"
 }
