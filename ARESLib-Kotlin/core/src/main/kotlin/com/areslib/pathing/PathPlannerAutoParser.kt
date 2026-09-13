@@ -1,155 +1,155 @@
 package com.areslib.pathing
 
-import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.google.gson.JsonArray
-import com.areslib.sequencer.Task
-import com.areslib.sequencer.SequentialTaskGroup
-import com.areslib.sequencer.ParallelTaskGroup
-import com.areslib.sequencer.ParallelRaceGroup
-import com.areslib.sequencer.ParallelDeadlineGroup
-import com.areslib.sequencer.FollowPathTask
-import com.areslib.sequencer.TimeWaitTask
+import com.areslib.math.coordinate.AllianceMirroring
+import com.areslib.math.coordinate.FieldSymmetry
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.geometry.Rotation2d
+import com.areslib.sequencer.*
 import com.areslib.state.Alliance
-import java.io.File
-
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 
 /**
- * PathPlanner `.auto` JSON File Sequencer Parser.
- *
- * Deserializes PathPlanner autonomous routine structures into executable [Task] trees
- * (supporting sequential task sequences, parallel task triggers, named event commands, and path followers).
- *
- * @see AutoBuilder
- * @see DynamicPathLoader
+ * Compiles PathPlanner auto command trees at setup time. Coordinates are meters and JSON
+ * rotations are CCW-positive degrees. The explicit alliance is applied once at construction;
+ * changing robot state later does not change this compiled auto's geometry.
  */
 object PathPlannerAutoParser {
     private val gson = Gson()
+    private const val MAX_JSON_CHARACTERS = 4_194_304
+    private const val MAX_COMMAND_DEPTH = 64
+    private const val MAX_COMMAND_NODES = 4096
+    private val groupTypes = setOf("sequential", "parallel", "race", "deadline")
 
-    /**
-     * Extracts the "startingPose" block (used in newer PathPlanner autos)
-     */
-    fun getStartingPose(jsonString: String): com.areslib.math.geometry.Pose2d? {
-        val root = gson.fromJson(jsonString, JsonObject::class.java)
-        val startingPose = root.getAsJsonObject("startingPose") ?: return null
-        val position = startingPose.getAsJsonObject("position") ?: return null
-        
-        val x = position.get("x")?.asDouble ?: return null
-        val y = position.get("y")?.asDouble ?: return null
-        val rotation = startingPose.get("rotation")?.asDouble ?: 0.0
-        
-        return com.areslib.math.geometry.Pose2d(x, y, com.areslib.math.geometry.Rotation2d.fromDegrees(rotation))
+    /** Reads an optional legacy explicit starting pose. A present pose must be complete and finite. */
+    fun getStartingPose(jsonString: String): Pose2d? {
+        val root = root(jsonString)
+        val poseValue = root.get("startingPose") ?: return null
+        if (poseValue.isJsonNull) return null
+        val pose = objectValue(poseValue, "startingPose")
+        val position = objectValue(pose.get("position"), "startingPose.position")
+        val x = number(position, "x")
+        val y = number(position, "y")
+        val rotation = if (pose.has("rotation")) number(pose, "rotation") else 0.0
+        return Pose2d(x, y, Rotation2d.fromDegrees(rotation))
     }
 
-    /**
-     * Fallback for older autos: recursively finds the first "path" command
-     */
+    /** Finds the first authored path in depth-first command order without loading path files. */
     fun getFirstPathName(jsonString: String): String? {
-        val root = gson.fromJson(jsonString, JsonObject::class.java)
-        val commandObj = root.getAsJsonObject("command") ?: return null
-        return findFirstPathRecursively(commandObj)
-    }
-
-    private fun findFirstPathRecursively(node: JsonObject): String? {
-        val type = node.get("type")?.asString ?: return null
-        val data = node.getAsJsonObject("data") ?: return null
-
-        if (type.lowercase() == "path") {
-            return data.get("pathName")?.asString
-        }
-
-        if (type.lowercase() in listOf("sequential", "parallel", "race", "deadline")) {
-            val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
-            for (i in 0 until cmdsArray.size()) {
-                val found = findFirstPathRecursively(cmdsArray.get(i).asJsonObject)
-                if (found != null) return found
+        val command = root(jsonString).get("command") ?: return null
+        val budget = CommandBudget()
+        fun visit(value: JsonElement, depth: Int): String? {
+            budget.visit(depth)
+            val node = objectValue(value, "command")
+            val type = string(node, "type").lowercase()
+            val data = objectValue(node.get("data"), "command.data")
+            if (type == "path") return string(data, "pathName")
+            if (type in groupTypes) for (child in children(data)) {
+                visit(child, depth + 1)?.let { return it }
             }
+            return null
         }
-        return null
+        return visit(command, 0)
     }
 
-    /**
-     * Parses a PathPlanner .auto JSON string and compiles it into a Task.
-     */
-    @Suppress("UNUSED_PARAMETER")
+    /** Builds a fresh task tree; factories are called once per named-command occurrence. */
     fun parseAuto(
         jsonString: String,
         follower: HolonomicPathFollower,
         timestampMs: Long,
-        alliance: com.areslib.state.Alliance = com.areslib.state.Alliance.BLUE
+        alliance: Alliance = Alliance.BLUE
     ): Task {
-        val root = gson.fromJson(jsonString, JsonObject::class.java)
-        val commandObj = root.getAsJsonObject("command") ?: error("No root 'command' object in .auto file")
-        // NOTE: Alliance mirroring is handled downstream by FollowPathTask via
-        // AllianceMirroring.mirror(). Do NOT mirror paths here to avoid double-mirroring.
-        return parseCommandNode(commandObj, follower, timestampMs)
+        val command = objectValue(root(jsonString).get("command"), "command")
+        return parseCommandNode(command, follower, timestampMs, alliance, CommandBudget(), 0)
     }
 
     private fun parseCommandNode(
         node: JsonObject,
         follower: HolonomicPathFollower,
-        timestampMs: Long
+        timestampMs: Long,
+        alliance: Alliance,
+        budget: CommandBudget,
+        depth: Int
     ): Task {
-        val type = node.get("type")?.asString ?: error("Command node missing 'type'")
-        val data = node.getAsJsonObject("data") ?: error("Command node '$type' missing 'data'")
-
-        return when (type.lowercase()) {
-            "sequential" -> {
-                val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
-                val tasks = mutableListOf<Task>()
-                for (i in 0 until cmdsArray.size()) {
-                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs))
-                }
-                SequentialTaskGroup(tasks)
+        budget.visit(depth)
+        val type = string(node, "type").lowercase()
+        val data = objectValue(node.get("data"), "command.data")
+        if (type in groupTypes) {
+            val commands = children(data)
+            require(type != "deadline" || commands.size() > 0) { "Deadline command requires a deadline child" }
+            val tasks = ArrayList<Task>(commands.size())
+            for (child in commands) {
+                tasks.add(parseCommandNode(objectValue(child, "child command"), follower, timestampMs, alliance, budget, depth + 1))
             }
-            "parallel" -> {
-                val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
-                val tasks = mutableListOf<Task>()
-                for (i in 0 until cmdsArray.size()) {
-                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs))
-                }
-                ParallelTaskGroup(tasks)
+            return when (type) {
+                "sequential" -> SequentialTaskGroup(tasks)
+                "parallel" -> ParallelTaskGroup(tasks)
+                "race" -> ParallelRaceGroup(tasks)
+                else -> ParallelDeadlineGroup(tasks.first(), tasks.subList(1, tasks.size))
             }
-            "race" -> {
-                val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
-                val tasks = mutableListOf<Task>()
-                for (i in 0 until cmdsArray.size()) {
-                    tasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs))
-                }
-                ParallelRaceGroup(tasks)
-            }
-            "deadline" -> {
-                val cmdsArray = data.getAsJsonArray("commands") ?: JsonArray()
-                if (cmdsArray.size() == 0) {
-                    SequentialTaskGroup(emptyList())
-                } else {
-                    val deadlineTask = parseCommandNode(cmdsArray.get(0).asJsonObject, follower, timestampMs)
-                    val otherTasks = mutableListOf<Task>()
-                    for (i in 1 until cmdsArray.size()) {
-                        otherTasks.add(parseCommandNode(cmdsArray.get(i).asJsonObject, follower, timestampMs))
-                    }
-                    ParallelDeadlineGroup(deadlineTask, otherTasks)
-                }
-            }
+        }
+        return when (type) {
             "path" -> {
-                val pathName = data.get("pathName")?.asString ?: error("Path command missing 'pathName'")
-                val path = DynamicPathLoader.loadPath(pathName)
-                FollowPathTask(follower, path)
+                val path = DynamicPathLoader.loadPath(string(data, "pathName"))
+                val mirrored = AllianceMirroring.mirror(path, alliance, FieldSymmetry.MIRRORED)
+                FollowPathTask(follower, mirrored, mirrorForAlliance = false)
             }
             "wait" -> {
-                val waitTimeSec = data.get("waitTime")?.asDouble ?: error("Wait command missing 'waitTime'")
-                require(waitTimeSec.isFinite() && waitTimeSec >= 0.0 && waitTimeSec <= Long.MAX_VALUE / 1_000.0) {
-                    "Wait command duration must be finite, non-negative, and representable"
+                val seconds = number(data, "waitTime")
+                require(seconds >= 0.0 && seconds * 1000.0 < Long.MAX_VALUE.toDouble()) {
+                    "Wait command duration must be non-negative and representable in milliseconds"
                 }
-                val waitTimeMs = (waitTimeSec * 1000.0).toLong()
-                TimeWaitTask(waitTimeMs)
+                TimeWaitTask((seconds * 1000.0).toLong())
             }
             "named" -> {
-                val name = data.get("name")?.asString ?: error("Named command missing 'name'")
-                NamedCommands.getCommand(name, timestampMs)
-                    ?: error("Named command '$name' is not registered")
+                val name = string(data, "name")
+                NamedCommands.getCommand(name, timestampMs) ?: error("Named command '$name' is not registered")
             }
             else -> error("Unknown command type: '$type'")
+        }
+    }
+
+    private fun root(json: String): JsonObject {
+        require(json.isNotBlank() && json.length <= MAX_JSON_CHARACTERS) { "Auto JSON is empty or too large" }
+        return try {
+            objectValue(gson.fromJson(json, JsonElement::class.java), "auto")
+        } catch (failure: com.google.gson.JsonParseException) {
+            throw IllegalArgumentException("Invalid auto JSON", failure)
+        }
+    }
+
+    private fun objectValue(value: JsonElement?, label: String): JsonObject {
+        require(value != null && value.isJsonObject) { "$label must be an object" }
+        return value.asJsonObject
+    }
+
+    private fun string(node: JsonObject, key: String): String {
+        val value = node.get(key)
+        require(value != null && value.isJsonPrimitive && value.asJsonPrimitive.isString && value.asString.isNotBlank()) {
+            "$key must be a nonblank string"
+        }
+        return value.asString
+    }
+
+    private fun number(node: JsonObject, key: String): Double {
+        val value = node.get(key)
+        require(value != null && value.isJsonPrimitive && value.asJsonPrimitive.isNumber) { "$key must be a number" }
+        return value.asDouble.also { require(it.isFinite()) { "$key must be finite" } }
+    }
+
+    private fun children(data: JsonObject): JsonArray {
+        val value = data.get("commands")
+        require(value != null && value.isJsonArray) { "Group commands must be an array" }
+        require(value.asJsonArray.size() <= MAX_COMMAND_NODES) { "Too many auto commands" }
+        return value.asJsonArray
+    }
+
+    private class CommandBudget {
+        private var count = 0
+        fun visit(depth: Int) {
+            require(depth <= MAX_COMMAND_DEPTH && ++count <= MAX_COMMAND_NODES) { "Auto command tree is too deep or too large" }
         }
     }
 }

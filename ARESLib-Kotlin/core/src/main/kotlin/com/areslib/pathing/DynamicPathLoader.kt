@@ -1,29 +1,17 @@
 package com.areslib.pathing
 
-import java.io.File
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.IOException
 import com.areslib.sequencer.Task
+import com.areslib.state.Alliance
+import java.io.File
+import java.io.IOException
+import java.io.Reader
 
 /**
- * Resilient Cross-Platform PathPlanner Trajectory File Loader.
- *
- * Dynamically loads and parses PathPlanner `.path` and `.auto` JSON trajectory files
- * across Android Control Hub storage (`/sdcard/FIRST/...`) and FRC RoboRIO deploy directories (`/deploy/pathplanner/...`).
- *
- * ### Physical Units & Coordinate Conventions:
- * - Position $(x, y)$: Field-centric meters ($m$)
- * - Heading ($\theta$): Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
- * - Velocity ($v$): Meters per second ($m/s$)
- * - Acceleration ($a$): Meters per second squared ($m/s^2$)
- *
- * @see PathPlannerJsonParser
- * @see PathPlannerAutoParser
+ * Loads UTF-8 PathPlanner assets from robot/development filesystem locations, then classpath
+ * resources. Loading and motion profiling belong to autonomous setup, not the periodic loop.
+ * Each call returns fresh data, so edits are visible and mutable paths are not shared by a cache.
  */
 object DynamicPathLoader {
-
-
     private val SEARCH_PATHS = listOf(
         "/sdcard/FIRST/tuning/paths",
         "/sdcard/FIRST/paths",
@@ -37,122 +25,58 @@ object DynamicPathLoader {
         "../TeamCode/src/main/assets/pathplanner/paths",
         "../../TeamCode/src/main/assets/pathplanner/paths"
     )
+    private val AUTO_SEARCH_PATHS = SEARCH_PATHS.map { it.removeSuffix("/paths") + "/autos" }
+    private const val MAX_ASSET_NAME_LENGTH = 128
+    private const val MAX_JSON_CHARACTERS = 4_194_304
 
-    /**
-     * Attempts to find and parse a PathPlanner .path file dynamically by its name.
-     * Searches standard filesystem locations first, falling back to classpath streams if missing.
-     *
-     * @param pathName The name of the path (without the .path extension).
-     * @return The constructed [Path] mathematical trajectory.
-     * @throws IOException If the path file cannot be found in any search target or is unreadable.
-     */
-    fun loadPath(pathName: String): Path {
-        validateAssetName(pathName, "path")
-        var jsonString: String? = null
-        val fileName = "$pathName.path"
+    /** Searches a single asset name (without extension), then parses a fresh trajectory in meters. */
+    fun loadPath(pathName: String): Path =
+        PathPlannerParser.parsePath(loadJson(pathName, "path", SEARCH_PATHS))
 
-        // 1. Filesystem Search Pass
-        for (dirPath in SEARCH_PATHS) {
-            val file = resolveContainedFile(dirPath, fileName) ?: continue
-            if (file.exists() && file.isFile) {
+    /** Searches a single auto name (without extension) and returns its UTF-8 JSON. */
+    fun loadAutoJsonString(autoName: String): String = loadJson(autoName, "auto", AUTO_SEARCH_PATHS)
+
+    /** Loads and compiles an auto for the explicitly selected alliance. */
+    fun loadAuto(autoName: String, follower: HolonomicPathFollower, timestampMs: Long, alliance: Alliance = Alliance.BLUE): Task =
+        PathPlannerAutoParser.parseAuto(loadAutoJsonString(autoName), follower, timestampMs, alliance)
+
+    private fun loadJson(name: String, kind: String, searchPaths: List<String>): String {
+        validateAssetName(name, kind)
+        val fileName = "$name.$kind"
+        for (directory in searchPaths) {
+            val file = resolveContainedFile(directory, fileName) ?: continue
+            if (file.isFile) {
                 try {
-                    jsonString = file.readText(Charsets.UTF_8)
-                    break
-                } catch (e: Exception) {
-                    // Log or print warning, then proceed to next candidate
-                    System.err.println("WARN: Failed to read filesystem path at ${file.absolutePath}: ${e.message}")
+                    return file.reader(Charsets.UTF_8).use(::readBounded)
+                } catch (failure: IOException) {
+                    System.err.println("WARN: Failed to read filesystem $kind at ${file.absolutePath}: ${failure.message}")
                 }
             }
         }
-
-        // 2. Classpath Fallback Pass
-        if (jsonString == null) {
-            val classpathCandidates = listOf(
-                "/deploy/pathplanner/paths/$fileName",
-                "/$fileName",
-                "deploy/pathplanner/paths/$fileName"
-            )
-
-            for (resourcePath in classpathCandidates) {
-                val inputStream = javaClass.getResourceAsStream(resourcePath)
-                if (inputStream != null) {
-                    try {
-                        jsonString = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { it.readText() }
-                        break
-                    } catch (e: Exception) {
-                        System.err.println("WARN: Failed to read classpath resource at $resourcePath: ${e.message}")
-                    }
-                }
+        val resources = listOf("/deploy/pathplanner/${kind}s/$fileName", "/$fileName", "deploy/pathplanner/${kind}s/$fileName")
+        for (resource in resources) {
+            try {
+                val stream = javaClass.getResourceAsStream(resource) ?: continue
+                return stream.reader(Charsets.UTF_8).use(::readBounded)
+            } catch (failure: IOException) {
+                System.err.println("WARN: Failed to read classpath resource at $resource: ${failure.message}")
             }
         }
-
-        // 3. Complete Fallback or Validation Failure
-        if (jsonString == null) {
-            val scannedLocations = SEARCH_PATHS.map { File(it, fileName).absolutePath } + 
-                                   listOf("/deploy/pathplanner/paths/$fileName", "/$fileName")
-            throw IOException(
-                "Could not locate path '$pathName' anywhere in search space!\n" +
-                "Scanned locations:\n" + scannedLocations.joinToString("\n") { "  - $it" }
-            )
-        }
-
-        return PathPlannerParser.parsePath(jsonString)
+        val locations = searchPaths.map { File(it, fileName).absolutePath } + resources
+        throw IOException("Could not locate $kind '$name' anywhere in search space!\nScanned locations:\n" +
+            locations.joinToString("\n") { "  - $it" })
     }
 
-    fun loadAutoJsonString(autoName: String): String {
-        validateAssetName(autoName, "auto")
-        var jsonString: String? = null
-        val fileName = "$autoName.auto"
-        val autoSearchPaths = SEARCH_PATHS.map {
-            it.replace("/paths", "/autos")
-              .replace("pathplanner/paths", "pathplanner/autos")
+    /** Caps input before a read can allocate an arbitrarily large string; malformed assets fail in place. */
+    private fun readBounded(reader: Reader): String {
+        val buffer = CharArray(8192)
+        val text = StringBuilder()
+        while (true) {
+            val count = reader.read(buffer)
+            if (count < 0) return text.toString()
+            require(text.length <= MAX_JSON_CHARACTERS - count) { "PathPlanner asset exceeds $MAX_JSON_CHARACTERS characters" }
+            text.append(buffer, 0, count)
         }
-
-        // 1. Filesystem Search Pass
-        for (dirPath in autoSearchPaths) {
-            val file = resolveContainedFile(dirPath, fileName) ?: continue
-            if (file.exists() && file.isFile) {
-                try {
-                    jsonString = file.readText(Charsets.UTF_8)
-                    break
-                } catch (e: Exception) {
-                    System.err.println("WARN: Failed to read filesystem auto at ${file.absolutePath}: ${e.message}")
-                }
-            }
-        }
-
-        // 2. Classpath Fallback Pass
-        if (jsonString == null) {
-            val classpathCandidates = listOf(
-                "/deploy/pathplanner/autos/$fileName",
-                "/$fileName",
-                "deploy/pathplanner/autos/$fileName"
-            )
-
-            for (resourcePath in classpathCandidates) {
-                val inputStream = javaClass.getResourceAsStream(resourcePath)
-                if (inputStream != null) {
-                    try {
-                        jsonString = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { it.readText() }
-                        break
-                    } catch (e: Exception) {
-                        System.err.println("WARN: Failed to read classpath resource at $resourcePath: ${e.message}")
-                    }
-                }
-            }
-        }
-
-        // 3. Validation
-        if (jsonString == null) {
-            val scannedLocations = autoSearchPaths.map { File(it, fileName).absolutePath } + 
-                                   listOf("/deploy/pathplanner/autos/$fileName", "/$fileName")
-            throw IOException(
-                "Could not locate auto '$autoName' anywhere in search space!\n" +
-                "Scanned locations:\n" + scannedLocations.joinToString("\n") { "  - $it" }
-            )
-        }
-        
-        return jsonString
     }
 
     private fun validateAssetName(name: String, kind: String) {
@@ -164,28 +88,11 @@ object DynamicPathLoader {
         }
     }
 
-    private fun resolveContainedFile(directory: String, fileName: String): File? {
-        return try {
-            val base = File(directory).canonicalFile
-            val candidate = File(base, fileName).canonicalFile
-            if (candidate.toPath().startsWith(base.toPath())) candidate else null
-        } catch (_: IOException) {
-            null
-        }
-    }
-
-    private const val MAX_ASSET_NAME_LENGTH = 128
-
-    /**
-     * Attempts to find and parse a PathPlanner .auto file dynamically by its name.
-     *
-     * @param autoName The name of the auto (without the .auto extension).
-     * @param follower The holonomic path follower to attach to follow path commands.
-     * @param timestampMs Reference base timestamp for FSM task instantiation.
-     * @return The constructed [Task] sequence.
-     */
-    fun loadAuto(autoName: String, follower: HolonomicPathFollower, timestampMs: Long, alliance: com.areslib.state.Alliance = com.areslib.state.Alliance.BLUE): Task {
-        val jsonString = loadAutoJsonString(autoName)
-        return PathPlannerAutoParser.parseAuto(jsonString, follower, timestampMs, alliance)
+    private fun resolveContainedFile(directory: String, fileName: String): File? = try {
+        val base = File(directory).canonicalFile
+        val candidate = File(base, fileName).canonicalFile
+        if (candidate.toPath().startsWith(base.toPath())) candidate else null
+    } catch (_: IOException) {
+        null
     }
 }
