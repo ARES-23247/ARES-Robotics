@@ -7285,10 +7285,12 @@ public final class com/areslib/tuning/TuningApplyContext {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/areslib/tuning/TuningManager {
+public final class com/areslib/tuning/TuningManager : java/lang/AutoCloseable {
 	public static final field MAX_SAFE_DOUBLE_INTEGER D
 	public fun <init> (Lcom/areslib/tuning/TypedTuningRuntime;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Ljava/nio/file/Path;Ljava/nio/file/Path;)V
 	public synthetic fun <init> (Lcom/areslib/tuning/TypedTuningRuntime;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Ljava/nio/file/Path;Ljava/nio/file/Path;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public final fun getLocalOverlayPersistenceFailure ()Ljava/lang/Throwable;
 	public final fun publishMetadataAndValues ()V
 	public final fun update (J)V
 	public static synthetic fun update$default (Lcom/areslib/tuning/TuningManager;JILjava/lang/Object;)V

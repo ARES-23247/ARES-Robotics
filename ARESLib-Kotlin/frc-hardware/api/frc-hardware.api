@@ -88,6 +88,7 @@ public final class com/areslib/frc/FrcSwerveRobot : com/areslib/frc/FrcBaseRobot
 	public fun <init> ()V
 	public fun <init> (Lcom/areslib/hardware/drive/SwerveHardwareIO;Lcom/areslib/hardware/vision/VisionIO;ZLcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/hardware/HardwareRegistry;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function3;)V
 	public synthetic fun <init> (Lcom/areslib/hardware/drive/SwerveHardwareIO;Lcom/areslib/hardware/vision/VisionIO;ZLcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/hardware/HardwareRegistry;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function3;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
 	public final fun getDrive ()Lcom/areslib/subsystem/DriveSubsystem;
 	public fun getPowerManager ()Lcom/areslib/frc/power/FrcPowerManager;
 	public final fun getSwerveDrive ()Lcom/areslib/subsystem/SwerveDriveFacade;

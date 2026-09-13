@@ -1,10 +1,12 @@
 package com.areslib.tuning
 
 import com.google.gson.GsonBuilder
-import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.channels.FileChannel
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.util.Collections
 
 enum class TuningUpdateResult {
@@ -155,17 +157,37 @@ object LocalTuningOverlayStore {
         require(normalizedOutput.startsWith(allowedRoot) && normalizedOutput.toString().endsWith(".arestuning")) {
             "Runtime overlays must stay under .ares/local/tuning and use .arestuning"
         }
-        Files.createDirectories(normalizedOutput.parent)
-        val temporary = Files.createTempFile(normalizedOutput.parent, ".${normalizedOutput.fileName}.", ".tmp")
+        // Resolve the caller's project-root alias once, then check every child before creating the
+        // next directory. Resolving allowedRoot alone would bless a link into canonical profiles.
+        val realRoot = normalizedRoot.toRealPath()
+        var parent = realRoot
+        for (segment in normalizedRoot.relativize(normalizedOutput.parent)) {
+            parent = parent.resolve(segment)
+            try { Files.createDirectory(parent) } catch (_: FileAlreadyExistsException) { }
+            require(Files.isDirectory(parent) && parent.toRealPath() == parent) {
+                "Runtime overlay directories must not redirect outside their project-local path"
+            }
+        }
+        val destination = parent.resolve(normalizedOutput.fileName)
+        require(!Files.isSymbolicLink(destination) && !Files.isDirectory(destination) &&
+            (!Files.exists(destination) || destination.toRealPath() == destination)) {
+            "Runtime overlay destination must be an ordinary local file"
+        }
+        val temporary = Files.createTempFile(parent, ".${normalizedOutput.fileName}.", ".tmp")
+        var primaryFailure: Throwable? = null
         try {
             Files.writeString(temporary, gson.toJson(profile.copy(values = profile.values.sortedBy { it.parameterUid })))
-            try {
-                Files.move(temporary, normalizedOutput, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(temporary, normalizedOutput, StandardCopyOption.REPLACE_EXISTING)
-            }
+            FileChannel.open(temporary, StandardOpenOption.WRITE).use { it.force(true) }
+            // Unsupported atomic replacement is a failed save, not permission to risk old bytes.
+            Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } catch (failure: Throwable) {
+            primaryFailure = failure
+            throw failure
         } finally {
-            Files.deleteIfExists(temporary)
+            try { Files.deleteIfExists(temporary) } catch (cleanup: Throwable) {
+                if (primaryFailure == null) throw cleanup
+                if (primaryFailure !== cleanup) primaryFailure.addSuppressed(cleanup)
+            }
         }
     }
 }

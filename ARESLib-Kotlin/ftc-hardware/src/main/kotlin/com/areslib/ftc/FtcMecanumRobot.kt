@@ -188,8 +188,15 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val mecanumDrive = MecanumDriveFacade(store, headingGains, headingDeadzoneDeg)
 
     private val visionAlignController = VisionAlignController()
-    /** Optional declaration-driven tuning transport installed by the season composition root. */
+    private var tuningClosed = false
+    /** Owned tuning transport. Replace only with updates stopped; replacement drains the old writer. */
     var tuningManager: TuningManager? = null
+        @Synchronized set(value) {
+            check(!tuningClosed) { "Robot tuning is closed" }
+            if (field === value) return
+            field?.close()
+            field = value
+        }
 
     init {
         com.areslib.telemetry.RobotStatusTracker.ftcLimelightProxyConfigured = limelightProxyEnabled
@@ -492,12 +499,22 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /**
      * Shuts down subsystem threads, disables motor hardware, and clears proxy servers.
      */
+    @Synchronized
     override fun close() {
-        super.close()
-        // close() is teardown: stop the proxy instead of resurrecting it. Starting here (the
-        // historical behavior) re-spawned the proxy on every OpMode teardown even after an
-        // explicit stop, contradicting this method's own documentation.
-        if (isAndroid && limelightProxyEnabled) LimelightProxyAutoStart.stop()
+        if (tuningClosed) return
+        tuningClosed = true
+        var firstFailure: Throwable? = null
+        fun attempt(action: () -> Unit) {
+            try { action() } catch (failure: Throwable) {
+                if (firstFailure == null) firstFailure = failure
+                else if (firstFailure !== failure) firstFailure!!.addSuppressed(failure)
+            }
+        }
+        // Neutralize and release hardware before waiting on any filesystem operation.
+        attempt { super.close() }
+        attempt { tuningManager?.close() }
+        attempt { if (isAndroid && limelightProxyEnabled) LimelightProxyAutoStart.stop() }
+        firstFailure?.let { throw it }
     }
 
     private companion object {

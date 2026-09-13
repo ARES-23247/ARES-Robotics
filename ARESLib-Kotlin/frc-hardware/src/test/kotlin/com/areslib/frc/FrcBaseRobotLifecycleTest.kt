@@ -18,6 +18,79 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class FrcBaseRobotLifecycleTest {
+    private fun tuningManager() = com.areslib.tuning.TuningManager(
+        com.areslib.tuning.TypedTuningRuntime(emptyList(), emptyMap(),
+            com.areslib.tuning.TuningMetadataSnapshot("project.test", null, "profile.base", emptyList(), listOf("profile.base"))),
+        FrameTelemetry(), { com.areslib.tuning.TuningApplyContext(true, true) }, { _, _ -> true }, { true },
+    )
+
+    @Test
+    fun `swerve robot owns replacement and shutdown of tuning managers`() {
+        val robot = FrcSwerveRobot(baseTelemetry = FrameTelemetry(), isEnabledProvider = { false }, robotModeProvider = { "Disabled" })
+        val first = tuningManager(); val second = tuningManager()
+        try {
+            robot.tuningManager = first
+            robot.tuningManager = first
+            first.publishMetadataAndValues()
+            robot.tuningManager = second
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) { first.publishMetadataAndValues() }
+            second.publishMetadataAndValues()
+        } finally { robot.close() }
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) { second.publishMetadataAndValues() }
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) { robot.tuningManager = null }
+        robot.close()
+    }
+
+    @Test
+    fun `swerve telemetry cleanup failure still releases hardware before tuning close`() {
+        val failure = IllegalStateException("telemetry close failed")
+        val tuning = tuningManager()
+        val robot = FrcSwerveRobot(
+            baseTelemetry = FrameTelemetry(), isEnabledProvider = { false }, robotModeProvider = { "Disabled" },
+            telemetryManagerFactory = { store, telemetry, drive ->
+                object : FrcTelemetryManager(telemetry, store, drive) {
+                    override fun close() { super.close(); throw failure }
+                }
+            },
+        )
+        var hardwareClosed = false
+        robot.tuningManager = tuning
+        robot.hardwareRegistry.registerCloseable(AutoCloseable {
+            tuning.publishMetadataAndValues()
+            hardwareClosed = true
+        })
+        org.junit.jupiter.api.Assertions.assertSame(failure,
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) { robot.close() })
+        assertTrue(hardwareClosed)
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) { tuning.publishMetadataAndValues() }
+        robot.close()
+    }
+
+    @Test
+    fun `shared teardown failure does not skip remaining hardware cleanup`() {
+        val shared = IllegalStateException("shared teardown failure")
+        var resourcesClosed = 0
+        val robot = object : FrcBaseRobot(
+            baseTelemetry = FrameTelemetry(),
+            telemetryManagerFactory = { store, telemetry ->
+                object : FrcTelemetryManager(telemetry, store) {
+                    override fun close() { super.close(); throw shared }
+                }
+            },
+            isEnabledProvider = { false }, robotModeProvider = { "Disabled" },
+        ) {
+            override fun updateHardwareInputs(timestampMs: Long) = Unit
+            override fun writeHardwareOutputs(powerScale: Double, batteryVoltage: Double) = Unit
+            override fun safeHardware() { throw shared }
+        }
+        robot.hardwareRegistry.registerCloseable(AutoCloseable { resourcesClosed++ })
+        val actual = org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException::class.java) { robot.close() }
+        org.junit.jupiter.api.Assertions.assertSame(shared, actual)
+        assertEquals(1, resourcesClosed)
+        robot.close()
+        assertEquals(1, resourcesClosed)
+    }
+
     @BeforeEach
     fun setUp() {
         RobotClock.useMockTime(1_000L)

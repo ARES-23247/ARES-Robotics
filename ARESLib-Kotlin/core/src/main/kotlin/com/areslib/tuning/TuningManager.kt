@@ -10,6 +10,9 @@ import java.nio.file.Path
  * It publishes only known typed parameters, applies policy through [TypedTuningRuntime], and may
  * persist only an explicitly robot-local experimental overlay. It never reflects over Redux state,
  * writes canonical project profiles, or accepts unknown topic paths.
+ * Local saves run on an owned worker, coalescing pending snapshots. Inspect
+ * [localOverlayPersistenceFailure] for save failures; close after stopping updates to drain saves.
+ * Update, metadata publication, and close belong to one serialized robot lifecycle owner.
  */
 class TuningManager(
     private val runtime: TypedTuningRuntime,
@@ -21,11 +24,18 @@ class TuningManager(
     private val isConsumerSupported: (parameterUid: String) -> Boolean,
     private val localProjectRoot: Path? = null,
     private val localOverlayFile: Path? = null,
-) {
+) : AutoCloseable {
     private var lastUpdateTimestamp = 0L
     private var hasUpdateTimestamp = false
     private var metadataPublished = false
     private var overlayDirty = false
+    // Per-owner persistence boundary; tests can hold disk I/O without touching a robot filesystem.
+    internal var writeLocalOverlay: (Path, Path, TuningProfileDocument) -> Unit = LocalTuningOverlayStore::writeAtomically
+    private var overlayWriter: TuningOverlayWriter? = null
+    private var closed = false
+
+    /** Latest local disk failure, cleared after a successful write; consumer acceptance is separate. */
+    val localOverlayPersistenceFailure: Throwable? get() = overlayWriter?.failure
     private val topics = Array(runtime.metadata.declarations.size) { ParameterTopics(runtime.metadata.declarations[it]) }
     private val lastRequestNonce = LongArray(runtime.metadata.declarations.size) { -1L }
 
@@ -37,6 +47,7 @@ class TuningManager(
     }
 
     fun publishMetadataAndValues() {
+        check(!closed) { "Tuning manager is closed" }
         telemetry.putNumber(TuningTopics.SCHEMA_VERSION_TOPIC, TuningTopics.SCHEMA_VERSION.toDouble())
         telemetry.putString("${TuningTopics.ROOT}/ProjectId", runtime.metadata.projectId)
         telemetry.putString("${TuningTopics.ROOT}/DrivebaseUid", runtime.metadata.drivebaseUid.orEmpty())
@@ -76,6 +87,7 @@ class TuningManager(
      * and do not query apply context. Every proposal checks fresh arm/disable state separately.
      */
     fun update(timestampMs: Long = RobotClock.currentTimeMillis()) {
+        if (closed) return
         if (hasUpdateTimestamp) {
             if (timestampMs < lastUpdateTimestamp) {
                 lastUpdateTimestamp = timestampMs
@@ -130,7 +142,7 @@ class TuningManager(
                 acknowledge(topic, result, requireNotNull(runtime.value(declaration.uid)), nonce)
             }
         }
-        if (overlayDirty) persistLocalOverlay()
+        if (overlayDirty) persistLocalOverlay() else overlayWriter?.retry()
     }
 
     private fun acknowledge(topic: ParameterTopics, result: TuningUpdateResult, current: TuningValue, nonce: Long) {
@@ -141,15 +153,31 @@ class TuningManager(
     }
 
     private fun persistLocalOverlay() {
-        val projectRoot = localProjectRoot ?: return
+        val projectRoot = localProjectRoot ?: run { overlayDirty = false; return }
         val output = localOverlayFile ?: return
         val overlay = runtime.localOverlay(
             uid = "local.${runtime.metadata.projectId}.runtime",
             profileId = "runtime-experiment",
             displayName = "Runtime experiment",
         )
-        LocalTuningOverlayStore.writeAtomically(projectRoot, output, overlay)
+        val writer = overlayWriter ?: TuningOverlayWriter { writeLocalOverlay(projectRoot, output, it) }
+            .also { overlayWriter = it }
+        writer.submit(overlay)
         overlayDirty = false
+    }
+
+    /**
+     * Stop polling before close. Drains accepted local changes, including a commit whose telemetry
+     * acknowledgement failed. Robot owners must neutralize hardware before waiting for disk I/O.
+     */
+    override fun close() {
+        if (closed) return
+        closed = true
+        try {
+            if (overlayDirty) persistLocalOverlay()
+        } finally {
+            overlayWriter?.close()
+        }
     }
 
     private fun readValue(topic: String, type: TuningParameterType): TuningValue? = when (type) {
