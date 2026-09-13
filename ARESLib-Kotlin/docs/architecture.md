@@ -27,6 +27,19 @@ rootReducer + season reducer  ---> immutable RobotState
 
 Reducers calculate state only. Device reads, telemetry writes, file access, clocks, and background work belong outside reducers.
 
+The shared robot facade registers subsystems once by identity during initialization and exposes
+stable read-only registry snapshots. Its single-owner read/write loops use indexed traversal;
+nonfinite power scale becomes neutral and finite scale is bounded to zero through one.
+Subsystems must enforce enable, configuration and fresh-feedback policy and honor declared
+neutral when scale is zero. Platform owners catch loop failures and neutralize the robot.
+Subsystem closure is terminal: every neutral is attempted before any close, then every resource
+gets a close attempt. Ordinary cleanup exceptions retain best-effort behavior; serious throwables
+are reported after remaining attempts. FTC shutdown includes this shared subsystem teardown.
+
+Generated capability catalogs are setup-time data. Subsystem IDs and manual action keys must
+be unique; an equal generated descriptor can coexist with its one manual declaration.
+Range-filtered lighting choices always contain their declared default.
+
 Unchanged path progress and repeated indicator, Prism or identical subsystem instances reuse
 their existing slices. The root reuses its snapshot only when every reduced slice and the action
 timestamp are unchanged. Store observers still receive each dispatch. Custom subsystem values

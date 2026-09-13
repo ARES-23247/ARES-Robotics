@@ -52,9 +52,17 @@ fun subsystemNeutralRecoveryActionKey(subsystemId: String): String =
 fun subsystemCalibrationConfirmationActionKey(subsystemId: String): String =
     "subsystem.$subsystemId.confirm.calibration"
 
-/** Derives typed, novice-facing actions without duplicating them in `action-catalog.json`. */
-fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<SubsystemTargetCapability> =
-    documents.sortedBy { it.documentId }.flatMap { document ->
+/**
+ * Derives typed actions from valid documents with unique subsystem IDs during project setup.
+ * Named lighting defaults always belong to the range-filtered choices. This allocates catalog
+ * data and is not a periodic robot-loop operation.
+ */
+fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<SubsystemTargetCapability> {
+    val ids = HashSet<String>()
+    for (document in documents) {
+        require(ids.add(document.documentId)) { "Subsystem ID '${document.documentId}' is duplicated" }
+    }
+    return documents.sortedBy { it.documentId }.flatMap { document ->
         require(SubsystemSchema.validate(document).isEmpty()) {
             "Subsystem '${document.documentId}' must be valid before deriving actions"
         }
@@ -95,7 +103,7 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
                     descriptor = ActionDescriptor(
                         key = subsystemIndicatorCycleForwardActionKey(document.documentId, field.fieldId),
                         displayName = "Cycle ${field.displayName} forward",
-                        description = "Advances ${field.displayName.lowercase()} to the next visible named color and wraps from white to red.",
+                        description = "Advances ${field.displayName.lowercase()} to the next visible named color and wraps to the first allowed color.",
                         category = document.displayName,
                         parameters = emptyList(),
                         resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
@@ -110,7 +118,7 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
                     descriptor = ActionDescriptor(
                         key = subsystemIndicatorCycleBackwardActionKey(document.documentId, field.fieldId),
                         displayName = "Cycle ${field.displayName} backward",
-                        description = "Moves ${field.displayName.lowercase()} to the previous visible named color and wraps from red to white.",
+                        description = "Moves ${field.displayName.lowercase()} to the previous visible named color and wraps to the last allowed color.",
                         category = document.displayName,
                         parameters = emptyList(),
                         resources = listOf(ResourceClaim("subsystem.${document.documentId}")),
@@ -187,17 +195,22 @@ fun subsystemTargetCapabilities(documents: Collection<SubsystemDocument>): List<
         } else emptyList()
         targets + indicatorCycles + homing + neutralRecovery + calibrationConfirmation
     }
+}
 
 /**
  * Adds generated subsystem actions to an offline catalog while preserving every hand-authored
  * action. A manual action may share a generated key only when its complete descriptor is equal.
+ * Duplicate manual keys are invalid, including equal duplicates; they cannot hide a collision.
  */
 fun mergeSubsystemCapabilities(
     catalog: CapabilityCatalogDocument,
     documents: Collection<SubsystemDocument>,
 ): CapabilityCatalogDocument {
     val derived = subsystemTargetCapabilities(documents)
-    val existing = catalog.actions.associateBy { it.key }
+    val existing = LinkedHashMap<String, ActionDescriptor>()
+    for (action in catalog.actions) {
+        require(existing.put(action.key, action) == null) { "Catalog action '${action.key}' is duplicated" }
+    }
     documents.filter { it.implementation.kind == SubsystemImplementationKind.HAND_AUTHORED }
         .sortedBy { it.documentId }
         .forEach { document ->
@@ -269,7 +282,7 @@ private fun SubsystemStateFieldDocument.asCapabilityParameter(
                 else -> error("Named options require a supported actuator")
             },
             type = CapabilityParameterType.ENUM,
-            defaultText = defaultOption ?: namedOptions.first(),
+            defaultText = defaultOption?.takeIf { it in namedOptions } ?: namedOptions.first(),
             options = namedOptions,
         )
     }

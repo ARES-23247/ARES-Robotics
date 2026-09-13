@@ -575,6 +575,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         if (activeInstance === this) activeInstance = null
         closeBestEffort(
             { safeHardware() },
+            { closeSubsystems() },
             { lifecycleController.close() },
             { hardwareRegistry.closeAll() },
             { hardwareInitializer.close() }
@@ -587,7 +588,10 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             try {
                 action()
             } catch (failure: Throwable) {
-                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+                if (firstFailure == null) firstFailure = failure
+                else if (firstFailure !== failure && firstFailure.suppressed.none { it === failure }) {
+                    firstFailure.addSuppressed(failure)
+                }
             }
         }
         firstFailure?.let { throw it }

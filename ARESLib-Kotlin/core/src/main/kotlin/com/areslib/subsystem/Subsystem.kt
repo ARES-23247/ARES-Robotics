@@ -14,11 +14,15 @@ interface Subsystem : AutoCloseable {
 
     /**
      * Applies outputs/voltages to physical motor controllers or actuator loops.
+     * Scale is finite and bounded to [0, 1]. Scale zero must command declared safe neutral,
+     * including for actuators whose neutral is not a numeric zero. Implementations own
+     * configuration, fresh-feedback and explicit enable/arm checks before nonzero output.
      */
     fun writeOutputs(state: RobotState, scale: Double)
 
     /**
      * Closes background threads or open resources cleanly.
+     * AresRobot attempts neutral on all registered subsystems before closing any of them.
      */
     override fun close() {}
 }

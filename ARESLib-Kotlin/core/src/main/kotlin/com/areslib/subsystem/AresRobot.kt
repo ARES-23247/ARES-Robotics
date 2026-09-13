@@ -5,26 +5,15 @@ import com.areslib.state.RobotState
 import com.areslib.action.RobotAction
 import com.areslib.reducer.rootReducer
 import com.areslib.hardware.HardwareRegistry
+import java.util.Collections
 
 /**
- * Platform-independent base class for all ARES robots (FTC and FRC).
+ * Platform-independent Redux store and subsystem lifecycle owner.
  *
- * Provides:
- * - A central Redux [Store] for immutable state management
- * - A pluggable [Subsystem] registry for modular hardware lifecycle orchestration
- * - Shared lifecycle methods ([readAllSensors], [writeAllOutputs], [safeAll])
- *
- * Platform-specific subclasses (e.g., `FtcBaseRobot`, `FrcBaseRobot`) extend this
- * class to wire SDK-specific hardware initialization, telemetry backends, and
- * sensor polling. Team-specific code registers custom subsystems via [registerSubsystem].
- *
- * @param initialState The initial immutable robot state snapshot.
- * @param reducer The root reducer function composing all domain-specific sub-reducers.
- */
-/**
- * Class implementation for Ares Robot.
- *
- * Robotics framework control component.
+ * Register during initialization, then call read/write from one robot-loop owner. Platform
+ * owners must catch callback failures and neutralize the robot, and quiesce concurrent IO before
+ * closing. This class does not supply actuator enable, configuration or feedback-validity policy;
+ * each [Subsystem] enforces those requirements and treats output scale zero as safe neutral.
  */
 open class AresRobot(
     initialState: RobotState = RobotState(),
@@ -33,75 +22,119 @@ open class AresRobot(
 ) {
     val store = Store(initialState, reducer)
 
-    // ── Subsystem Registry ──
-    // Uses ArrayList with indexed access for zero-allocation iteration in hot paths.
-    private val subsystems = ArrayList<Subsystem>(8)
+    // Copy only during initialization; indexed reads and registry inspection allocate nothing.
+    private var subsystems: List<Subsystem> = emptyList()
+    private var lifecycleDepth = 0
+    private var safing = false
+    private var subsystemsClosed = false
 
     /**
-     * Registers a [Subsystem] for lifecycle management.
-     * Registered subsystems are polled in [readAllSensors] and commanded in [writeAllOutputs].
-     *
-     * Call this during robot initialization (e.g., in `robotInit()` or constructor),
-     * **not** inside update loops.
+     * Registers once by object identity in initialization order. Equal distinct instances remain
+     * independent. Registration from lifecycle callbacks or after closure is rejected.
      */
     fun registerSubsystem(subsystem: Subsystem) {
-        subsystems.add(subsystem)
+        check(!subsystemsClosed) { "Subsystem lifecycle is closed" }
+        check(lifecycleDepth == 0) { "Register subsystems during initialization, outside lifecycle callbacks" }
+        for (i in subsystems.indices) if (subsystems[i] === subsystem) return
+        val updated = ArrayList<Subsystem>(subsystems.size + 1)
+        updated.addAll(subsystems)
+        updated.add(subsystem)
+        subsystems = Collections.unmodifiableList(updated)
     }
 
-    /**
-     * Returns the list of registered subsystems.
-     * Useful for platform subclasses that need to iterate or inspect registered subsystems.
-     */
+    /** Stable read-only snapshot; later registration/closure does not change a retained list. */
     fun getRegisteredSubsystems(): List<Subsystem> = subsystems
 
     /**
-     * Reads all registered subsystem sensors and dispatches observations to the store.
-     * Called once per update cycle, before [writeAllOutputs].
-     *
-     * @param timestampMs Current timestamp from [com.areslib.util.RobotClock].
+     * Reads each registered subsystem once, in order, with the supplied RobotClock timestamp.
+     * Callback failures propagate to the platform loop owner. Calls after closure are rejected.
      */
     fun readAllSensors(timestampMs: Long) {
-        for (i in 0 until subsystems.size) {
-            subsystems[i].readSensors(store, timestampMs)
-        }
+        check(!subsystemsClosed) { "Subsystem lifecycle is closed" }
+        val snapshot = subsystems
+        lifecycleDepth++
+        try {
+            for (i in snapshot.indices) {
+                if (subsystemsClosed) return
+                snapshot[i].readSensors(store, timestampMs)
+            }
+        } finally { lifecycleDepth-- }
     }
 
     /**
-     * Writes store state to all registered subsystem hardware outputs.
-     * Called once per update cycle, after [readAllSensors].
-     *
-     * @param powerScale Global power scaling factor (0.0 to 1.0) from brownout protection.
+     * Writes one coherent Redux snapshot to every registered subsystem. Finite power scale is
+     * clamped to [0, 1]; nonfinite scale commands neutral. A callback that closes this lifecycle
+     * prevents later active writes in the batch. Calls after closure are rejected.
      */
     fun writeAllOutputs(powerScale: Double) {
+        check(!subsystemsClosed) { "Subsystem lifecycle is closed" }
+        val scale = if (powerScale.isFinite()) powerScale.coerceIn(0.0, 1.0) else 0.0
         val state = store.state
-        for (i in 0 until subsystems.size) {
-            subsystems[i].writeOutputs(state, powerScale)
-        }
+        val snapshot = subsystems
+        lifecycleDepth++
+        try {
+            for (i in snapshot.indices) {
+                if (subsystemsClosed) return
+                snapshot[i].writeOutputs(state, scale)
+            }
+        } finally { lifecycleDepth-- }
     }
 
     /**
-     * Emergency-stops all registered subsystems by writing zero-power outputs.
-     * Also invokes [HardwareRegistry.safeAll] for any
-     * hardware registered outside the subsystem lifecycle.
+     * Attempts neutral for every subsystem, then [HardwareRegistry.safeAll]. Reentrant safety
+     * calls leave the current safety traversal in charge. Ordinary exceptions retain legacy
+     * best-effort behavior; other throwables are rethrown only after remaining safety attempts.
      */
     open fun safeAll() {
-        val state = store.state
-        for (i in 0 until subsystems.size) {
-            try {
-                subsystems[i].writeOutputs(state, 0.0)
-            } catch (_: Throwable) {}
+        if (safing) return
+        safing = true
+        lifecycleDepth++
+        var failure: Throwable? = null
+        try {
+            val state = store.state
+            val snapshot = subsystems
+            for (i in snapshot.indices) {
+                if (subsystemsClosed) break
+                try { snapshot[i].writeOutputs(state, 0.0) }
+                catch (next: Throwable) { failure = retainFatalFailure(failure, next) }
+            }
+            try { hardwareRegistry.safeAll() }
+            catch (next: Throwable) { failure = retainFatalFailure(failure, next) }
+        } finally {
+            lifecycleDepth--
+            safing = false
         }
-        hardwareRegistry.safeAll()
+        failure?.let { throw it }
     }
 
     /**
-     * Closes all registered subsystems and releases their resources.
+     * Terminal, once-only subsystem teardown. Attempts neutral on every subsystem before closing
+     * any, then attempts every close even after failures. Registry resources remain owned by the
+     * platform's separate registry shutdown. Concurrent foreground callbacks must be quiesced first.
+     * Ordinary exceptions are suppressed; other throwables are aggregated by identity and rethrown.
      */
     open fun closeSubsystems() {
-        for (i in 0 until subsystems.size) {
-            try {
-                subsystems[i].close()
-            } catch (_: Throwable) {}
+        if (subsystemsClosed) return
+        subsystemsClosed = true
+        val snapshot = subsystems
+        subsystems = emptyList()
+        val state = store.state
+        var failure: Throwable? = null
+        for (i in snapshot.indices) {
+            try { snapshot[i].writeOutputs(state, 0.0) }
+            catch (next: Throwable) { failure = retainFatalFailure(failure, next) }
         }
+        for (i in snapshot.indices) {
+            try { snapshot[i].close() }
+            catch (next: Throwable) { failure = retainFatalFailure(failure, next) }
+        }
+        failure?.let { throw it }
+    }
+
+    private fun retainFatalFailure(first: Throwable?, next: Throwable): Throwable? {
+        if (next is Exception) return first
+        if (first == null) return next
+        if (first !== next && first.suppressed.none { it === next }) first.addSuppressed(next)
+        return first
     }
 }
