@@ -10,8 +10,7 @@ package com.areslib.subsystem
 interface PowerManager {
 
     /**
-     * The most recent filtered battery voltage in volts.
-     * Low-pass filtered to prevent positive-feedback sag oscillations.
+     * The most recent battery voltage in volts; filtering policy belongs to the platform.
      */
     val batteryVoltage: Double
 
@@ -24,6 +23,7 @@ interface PowerManager {
     /**
      * Total robot current draw in amperes.
      * May be physically measured (Floodgate sensor) or software-estimated from motor models.
+     * An unavailable or incomplete observation is NaN, not evidence of zero load.
      */
     val currentAmps: Double
 

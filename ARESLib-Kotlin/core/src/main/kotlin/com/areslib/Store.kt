@@ -129,6 +129,7 @@ class Store(
     private fun reduceWithRuntime(currentState: RobotState, action: RobotAction): RobotState {
         try {
             val prepared = poseEstimatorRuntime.prepare(currentState, action)
+                ?: return reducer(currentState, action)
             var reduced = reducer(currentState, prepared.publicAction)
             val estimatorAction = prepared.estimatorAction
             if (estimatorAction != null) {

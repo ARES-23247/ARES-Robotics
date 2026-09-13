@@ -172,9 +172,9 @@ class EstimatorTimingOwnershipAuditTest {
             scratchQ = Matrix3x3(), scratchCov = Matrix3x3())
     }
     private fun drive(runtime: PoseEstimatorRuntime, time: Long, deltaX: Double = 0.0) =
-        runtime.prepare(RobotState(), RobotAction.DriveHardwareUpdate(0.0, 0.0, 0.05, deltaX, 0.0, 0.0, time))
+        checkNotNull(runtime.prepare(RobotState(), RobotAction.DriveHardwareUpdate(0.0, 0.0, 0.05, deltaX, 0.0, 0.0, time)))
             .estimatorAction?.estimatorState
     private fun reset(runtime: PoseEstimatorRuntime, time: Long) =
-        runtime.prepare(RobotState(), RobotAction.PoseUpdate(0.0, 0.0, 0.0, time, isReset = true))
+        checkNotNull(runtime.prepare(RobotState(), RobotAction.PoseUpdate(0.0, 0.0, 0.0, time, isReset = true)))
             .estimatorAction!!.estimatorState!!
 }

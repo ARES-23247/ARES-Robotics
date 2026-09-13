@@ -34,6 +34,8 @@ The important dependency rule is that platform and season code depend inward on 
 ```
 
 See [Architecture](docs/architecture.md) for package ownership, the robot loop, and extension points.
+See [Drive facades](docs/drive-facades.md) for command limits, hold control, measured velocities,
+and binding path requests to the existing task lifecycle.
 
 ## Requirements
 

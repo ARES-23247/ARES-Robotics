@@ -35,7 +35,8 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
     private var estimator = createWorkspace(initialState)
     private val visionController = StoreVisionMeasurementProcessor()
 
-    fun prepare(state: RobotState, action: RobotAction): PreparedStoreAction {
+    /** Null means the original action needs no estimator middleware or preparation allocation. */
+    fun prepare(state: RobotState, action: RobotAction): PreparedStoreAction? {
         return when (action) {
             is RobotAction.DriveHardwareUpdate -> PreparedStoreAction(
                 publicAction = action,
@@ -60,7 +61,7 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
                     )
                 )
             }
-            else -> PreparedStoreAction(action)
+            else -> null
         }
     }
 

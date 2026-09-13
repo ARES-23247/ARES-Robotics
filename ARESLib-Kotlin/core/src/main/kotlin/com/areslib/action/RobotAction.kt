@@ -158,6 +158,8 @@ interface RobotAction {
      * @property targetAngularVelocity Desired rotational velocity in radians per second (CCW-positive).
      * @property isFieldCentric If true, X/Y are relative to the field; if false, relative to the robot chassis.
      * @property isXLock If true, locks X movement.
+     * @property fromHeadingHold Angular velocity is controller correction, not manual heading override.
+     * @property fromPositionHold Translation is controller correction, not manual position override.
      */
     data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
         var targetXVelocity: Double,
@@ -166,7 +168,9 @@ interface RobotAction {
         override var timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
         var isFieldCentric: Boolean = true,
         var fromHeadingHold: Boolean = false,
-        var isXLock: Boolean = false
+        var isXLock: Boolean = false,
+        /** Closed-loop position correction, not a driver's request to release the position target. */
+        var fromPositionHold: Boolean = false
     ) : RobotAction
 
     // Autonomous Events

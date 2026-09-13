@@ -153,7 +153,8 @@ public final class com/areslib/action/RobotAction$JoystickDriveIntent : com/ares
 	public fun <init> (DDDJZ)V
 	public fun <init> (DDDJZZ)V
 	public fun <init> (DDDJZZZ)V
-	public synthetic fun <init> (DDDJZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (DDDJZZZZ)V
+	public synthetic fun <init> (DDDJZZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()D
 	public final fun component2 ()D
 	public final fun component3 ()D
@@ -161,10 +162,12 @@ public final class com/areslib/action/RobotAction$JoystickDriveIntent : com/ares
 	public final fun component5 ()Z
 	public final fun component6 ()Z
 	public final fun component7 ()Z
-	public final fun copy (DDDJZZZ)Lcom/areslib/action/RobotAction$JoystickDriveIntent;
-	public static synthetic fun copy$default (Lcom/areslib/action/RobotAction$JoystickDriveIntent;DDDJZZZILjava/lang/Object;)Lcom/areslib/action/RobotAction$JoystickDriveIntent;
+	public final fun component8 ()Z
+	public final fun copy (DDDJZZZZ)Lcom/areslib/action/RobotAction$JoystickDriveIntent;
+	public static synthetic fun copy$default (Lcom/areslib/action/RobotAction$JoystickDriveIntent;DDDJZZZZILjava/lang/Object;)Lcom/areslib/action/RobotAction$JoystickDriveIntent;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFromHeadingHold ()Z
+	public final fun getFromPositionHold ()Z
 	public final fun getTargetAngularVelocity ()D
 	public final fun getTargetXVelocity ()D
 	public final fun getTargetYVelocity ()D
@@ -174,6 +177,7 @@ public final class com/areslib/action/RobotAction$JoystickDriveIntent : com/ares
 	public final fun isXLock ()Z
 	public final fun setFieldCentric (Z)V
 	public final fun setFromHeadingHold (Z)V
+	public final fun setFromPositionHold (Z)V
 	public final fun setTargetAngularVelocity (D)V
 	public final fun setTargetXVelocity (D)V
 	public final fun setTargetYVelocity (D)V
@@ -6396,6 +6400,7 @@ public abstract class com/areslib/subsystem/HolonomicDriveFacade {
 	public fun <init> (Lcom/areslib/Store;Lcom/areslib/control/tuning/PIDFCoefficients;)V
 	public fun <init> (Lcom/areslib/Store;Lcom/areslib/control/tuning/PIDFCoefficients;D)V
 	public synthetic fun <init> (Lcom/areslib/Store;Lcom/areslib/control/tuning/PIDFCoefficients;DILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun configurePathFollowing (Lcom/areslib/pathing/HolonomicPathFollower;Lkotlin/jvm/functions/Function1;)V
 	public final fun driveFieldRelativeNormalized (DDDZZD)V
 	public static synthetic fun driveFieldRelativeNormalized$default (Lcom/areslib/subsystem/HolonomicDriveFacade;DDDZZDILjava/lang/Object;)V
 	public final fun driveRobotRelativeNormalized (DDDZ)V
@@ -6420,6 +6425,7 @@ public abstract class com/areslib/subsystem/HolonomicDriveFacade {
 	protected final fun getStore ()Lcom/areslib/Store;
 	public final fun getXVelocity ()D
 	public final fun getYVelocity ()D
+	protected final fun resetHoldControllers ()V
 	public final fun setMaxAngularSpeedRps (D)V
 	public final fun setMaxSpeedMps (D)V
 }
@@ -6510,6 +6516,7 @@ public final class com/areslib/subsystem/SubsystemControlBuilder {
 
 public abstract class com/areslib/subsystem/SubsystemControllerBase {
 	public fun <init> (Lcom/areslib/Store;)V
+	protected final fun dispatchOnChange (DDLkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;)V
 	protected final fun dispatchOnChange (Ljava/lang/Object;Ljava/lang/Object;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;)V
 	protected final fun getStore ()Lcom/areslib/Store;
 }

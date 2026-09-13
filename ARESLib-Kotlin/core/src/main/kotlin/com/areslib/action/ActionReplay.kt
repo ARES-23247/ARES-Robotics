@@ -330,6 +330,10 @@ object ActionReplay {
         for (field in fields) {
             if (field.name == "timestampMs") continue // Validated once for every action above.
             val value = payload.get(field.name)
+            // Schema-1 logs predating position-hold provenance are ordinary driver commands.
+            // Only absence has a default; explicit null or a non-boolean remains malformed.
+            if (value == null && actionClass == RobotAction.JoystickDriveIntent::class.java &&
+                field.name == "fromPositionHold") continue
             if (value == null || value.isJsonNull) {
                 if (field.name in nullable) continue
                 throw ActionReplayException("Action ${actionClass.simpleName} requires ${field.name}")

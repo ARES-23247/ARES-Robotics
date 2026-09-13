@@ -125,7 +125,16 @@ object DriveReducer {
                 )
             }
             is RobotAction.SetDriveMode -> {
-                state.copy(driveMode = action.mode)
+                if (action.mode == DriveMode.X_BRAKE) state.copy(
+                    driveMode = action.mode,
+                    xVelocityMetersPerSecond = 0.0,
+                    yVelocityMetersPerSecond = 0.0,
+                    angularVelocityRadiansPerSecond = 0.0,
+                    headingLockTargetRadians = null,
+                    positionLockX = null,
+                    positionLockY = null,
+                    isXLock = true,
+                ) else state.copy(driveMode = action.mode)
             }
             is RobotAction.SetAlliance -> {
                 state.copy(alliance = action.alliance)
@@ -146,11 +155,12 @@ object DriveReducer {
                         isXLock = false
                     )
                 }
-                val hasLinearInput = kotlin.math.abs(action.targetXVelocity) > 0.05 || kotlin.math.abs(action.targetYVelocity) > 0.05
+                val hasLinearInput = !action.fromPositionHold &&
+                    (kotlin.math.abs(action.targetXVelocity) > 0.05 || kotlin.math.abs(action.targetYVelocity) > 0.05)
                 val hasAngularInput = !action.fromHeadingHold && kotlin.math.abs(action.targetAngularVelocity) > 0.05
                 
                 val currentMode = state.driveMode
-                val newMode = if (currentMode == DriveMode.X_BRAKE && (hasLinearInput || hasAngularInput)) {
+                var newMode = if (currentMode == DriveMode.X_BRAKE && (hasLinearInput || hasAngularInput)) {
                     DriveMode.TELEOP
                 } else {
                     currentMode
@@ -164,6 +174,12 @@ object DriveReducer {
 
                 val newPosLockX = if (hasLinearInput) null else state.positionLockX
                 val newPosLockY = if (hasLinearInput) null else state.positionLockY
+
+                if (newMode == DriveMode.POSITION_HOLD && (newPosLockX == null || newPosLockY == null)) {
+                    newMode = if (newTargetHeading != null) DriveMode.HEADING_HOLD else DriveMode.TELEOP
+                } else if (newMode == DriveMode.HEADING_HOLD && newTargetHeading == null) {
+                    newMode = DriveMode.TELEOP
+                }
 
                 state.copy(
                     xVelocityMetersPerSecond = action.targetXVelocity,
