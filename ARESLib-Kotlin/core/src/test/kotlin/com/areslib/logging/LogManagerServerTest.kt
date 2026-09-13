@@ -9,6 +9,8 @@ import java.net.HttpURLConnection
 import java.net.URLEncoder
 import java.net.URL
 import java.net.ServerSocket
+import java.net.InetSocketAddress
+import java.net.SocketAddress
 import java.net.Socket
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -22,18 +24,42 @@ import java.util.concurrent.ThreadPoolExecutor
 import fi.iki.elonen.NanoHTTPD
 
 class LogManagerServerTest {
+    private lateinit var previousSocketFactory: NanoHTTPD.ServerSocketFactory
+    private var ownsServer = false
+    private val port: Int get() = LogManagerServer.listeningPort.also { check(it > 0) }
 
     @BeforeEach
     fun setUp() {
+        assertFalse(LogManagerServer.isAlive, "Another fixture owns the in-process log server")
+        previousSocketFactory = LogManagerServer.serverSocketFactory
+        // Bind directly to port zero instead of reserving and releasing a port before startup.
+        // This keeps these tests isolated from simulators using production port 5002.
+        LogManagerServer.serverSocketFactory = NanoHTTPD.ServerSocketFactory {
+            object : ServerSocket() {
+                override fun bind(endpoint: SocketAddress?, backlog: Int) {
+                    super.bind(InetSocketAddress("127.0.0.1", 0), backlog)
+                }
+            }
+        }
+        ownsServer = true
         LogManagerServer.configureDeleteToken(null)
         LogManagerServer.startServer()
-        assertTrue(LogManagerServer.isAlive, "Log server could not bind test port 5002")
+        assertTrue(LogManagerServer.isAlive, "Log server could not bind its ephemeral loopback test port")
     }
 
     @AfterEach
     fun tearDown() {
-        LogManagerServer.configureDeleteToken(null)
-        LogManagerServer.stop()
+        if (!ownsServer) return
+        try {
+            LogManagerServer.configureDeleteToken(null)
+        } finally {
+            try {
+                LogManagerServer.stop()
+            } finally {
+                LogManagerServer.serverSocketFactory = previousSocketFactory
+                ownsServer = false
+            }
+        }
     }
 
     @Test
@@ -55,7 +81,7 @@ class LogManagerServerTest {
     private fun awaitGet(path: String): HttpURLConnection {
         var lastFailure: Exception? = null
         repeat(100) {
-            val connection = URL("http://127.0.0.1:5002$path").openConnection() as HttpURLConnection
+            val connection = URL("http://127.0.0.1:$port$path").openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.connectTimeout = 250
             connection.readTimeout = 1_000
@@ -115,7 +141,7 @@ class LogManagerServerTest {
             var listing = ""
             var listingPollsRemaining = 50
             while (!listing.contains(completed.name) && listingPollsRemaining > 0) {
-                val listConnection = URL("http://localhost:5002/api/logs").openConnection() as HttpURLConnection
+                val listConnection = URL("http://127.0.0.1:$port/api/logs").openConnection() as HttpURLConnection
                 assertEquals(200, listConnection.responseCode)
                 listing = listConnection.inputStream.bufferedReader().use { it.readText() }
                 listConnection.disconnect()
@@ -176,7 +202,7 @@ class LogManagerServerTest {
         val pool = LogServerWorkers::class.java.getDeclaredField("executor")
             .apply { isAccessible = true }.get(oldWorkers) as ThreadPoolExecutor
         try {
-            Socket("127.0.0.1", 5002).use {
+            Socket("127.0.0.1", port).use {
                 val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
                 while (pool.activeCount != 1 && System.nanoTime() - deadline < 0) Thread.sleep(5)
                 assertEquals(1, pool.activeCount)
@@ -198,14 +224,14 @@ class LogManagerServerTest {
 
     private fun downloadConnection(fileName: String): HttpURLConnection {
         val encodedName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.name())
-        return (URL("http://localhost:5002/api/download?file=$encodedName").openConnection() as HttpURLConnection).apply {
+        return (URL("http://127.0.0.1:$port/api/download?file=$encodedName").openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
         }
     }
 
     private fun deleteConnection(fileName: String, token: String? = null): HttpURLConnection {
         val encodedName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.name())
-        val connection = URL("http://localhost:5002/api/delete?file=$encodedName").openConnection() as HttpURLConnection
+        val connection = URL("http://127.0.0.1:$port/api/delete?file=$encodedName").openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.doOutput = true
         if (token != null) connection.setRequestProperty("Authorization", "Bearer $token")
