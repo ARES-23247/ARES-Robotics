@@ -93,10 +93,12 @@ class TuningManager(
             val nonceValue = telemetry.getNumber(topic.requestNonce, lastRequestNonce[index].toDouble())
             // NT4 carries numbers as doubles. Restrict nonces to the exactly representable integer
             // range so reconnect/replay ordering can never alias two distinct Long values.
-            val nonce = nonceValue.takeIf {
-                it.isFinite() && it % 1.0 == 0.0 && it in 0.0..MAX_SAFE_DOUBLE_INTEGER
-            }?.toLong()
-            if (nonce != null && nonce > lastRequestNonce[index]) {
+            // Keep rejection and conversion primitive: nullable takeIf/toLong boxes on a poll
+            // unless the JIT happens to eliminate both wrappers in its current call profile.
+            if (!nonceValue.isFinite() || nonceValue < 0.0 || nonceValue > MAX_SAFE_DOUBLE_INTEGER ||
+                nonceValue % 1.0 != 0.0) continue
+            val nonce = nonceValue.toLong()
+            if (nonce > lastRequestNonce[index]) {
                 lastRequestNonce[index] = nonce
                 val current = requireNotNull(runtime.value(declaration.uid))
                 val candidate = readValue(topic.requested, declaration.type)

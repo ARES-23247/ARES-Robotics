@@ -102,6 +102,13 @@ class TuningPollingAuditTest {
             wire.request(value.toDouble(), index.toDouble()); manager.update((index + 1L) * 500)
             assertEquals(value, runtime.int("control.count"))
         }
+        val largestNonce = 9_007_199_254_740_991.0
+        wire.request(4.0, largestNonce); manager.update(1_500)
+        assertEquals(4, runtime.int("control.count"))
+        for ((index, nonce) in listOf(largestNonce, largestNonce + 1.0, Double.NaN).withIndex()) {
+            wire.request(5.0, nonce); manager.update(2_000L + index * 500L)
+            assertEquals(4, runtime.int("control.count"))
+        }
         val doubleDeclaration = declaration().copy(type = TuningParameterType.DOUBLE, defaultValue = TuningValue(doubleValue = 0.0))
         val doubleRuntime = runtime(listOf(doubleDeclaration)); val doubleWire = Wire()
         val doubleManager = TuningManager(doubleRuntime, doubleWire, { TuningApplyContext(true, true) }, { _, _ -> true }, { true })
