@@ -156,14 +156,7 @@ class SummaryEngineService(
         }
         try {
             val j = driverAnalysisService.analyzeDriverJitter(session.sessionId)
-            if (j.peakFrequencyHz > 0.1) {
-                diagnostics.addAll(listOf(
-                    AnalysisDiagnostic(session.sessionId, "Diagnostics/Driver/RecommendedExponent", j.recommendedExponent),
-                    AnalysisDiagnostic(session.sessionId, "Diagnostics/Driver/RecommendedSlewRate", if (j.recommendedSlewRate == Double.MAX_VALUE) 999.0 else j.recommendedSlewRate),
-                    AnalysisDiagnostic(session.sessionId, "Diagnostics/Driver/PeakJitterFrequency", j.peakFrequencyHz),
-                    AnalysisDiagnostic(session.sessionId, "Diagnostics/Driver/JitterPresent", if (j.hasJitter) 1.0 else 0.0),
-                ))
-            }
+            diagnostics.addAll(recordedDriverDiagnostics(session.sessionId, j))
         } catch (failure: Exception) {
             if (failure is CancellationException) throw failure
             status("Driver", "analysis_failed")

@@ -109,7 +109,7 @@ class DriverAnalysisServiceTest {
         for (i in 0 until 128) {
             val t = (i * (1000.0 / sampleRate)).toLong()
             val seconds = i / sampleRate
-            val value = kotlin.math.sin(2.0 * kotlin.math.PI * 1.0 * seconds) +
+            val value = 0.7 * kotlin.math.sin(2.0 * kotlin.math.PI * 1.0 * seconds) +
                 0.1 * kotlin.math.sin(2.0 * kotlin.math.PI * freq * seconds)
             frames.add(TelemetryFrame(t, sessionId, gamepadX, value))
         }
@@ -118,8 +118,8 @@ class DriverAnalysisServiceTest {
         val result = service.analyzeDriverJitter(sessionId, gamepadX, "/Gamepad1/LeftY")
         assertTrue(result.hasJitter)
         assertEquals(10.0, result.peakFrequencyHz, 0.5)
-        assertEquals(1.6, result.recommendedExponent)
-        assertEquals(2.5, result.recommendedSlewRate)
+        kotlin.test.assertNull(result.recommendedExponent)
+        kotlin.test.assertNull(result.recommendedSlewRate)
 
         tempFile.delete()
         tempDb.delete()
@@ -148,7 +148,7 @@ class DriverAnalysisServiceTest {
         val report = service.analyzeDriverCoaching(sessionId)
 
         assertEquals(100, report.synchronizedSampleCount)
-        assertTrue(report.simultaneousTranslationRotationFraction > 0.50, "Should detect simultaneous translation and rotation")
+        assertTrue(kotlin.test.assertNotNull(report.simultaneousTranslationRotationFraction) > 0.50, "Should detect simultaneous translation and rotation")
         assertTrue(report.observations.isNotEmpty(), "Observations should be generated")
         assertEquals(DriverReviewConfidence.LIMITED, report.confidence)
 
@@ -205,8 +205,8 @@ class DriverAnalysisServiceTest {
         databaseService.insertTelemetryFrames(frames)
         val result = service.analyzeDriverJitter(sessionId, gamepadX, "/Gamepad1/LeftY")
         kotlin.test.assertFalse(result.hasJitter)
-        assertEquals(1.0, result.recommendedExponent)
-        assertEquals(Double.MAX_VALUE, result.recommendedSlewRate)
+        kotlin.test.assertNull(result.recommendedExponent)
+        kotlin.test.assertNull(result.recommendedSlewRate)
 
         databaseService.close()
         tempFile.delete()

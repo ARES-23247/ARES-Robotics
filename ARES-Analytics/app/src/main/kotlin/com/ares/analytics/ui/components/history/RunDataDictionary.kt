@@ -50,13 +50,7 @@ object RunDataDictionary {
             RowDefinition("Vision Latency (ms)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.1f ms", it.avgVisionLatencyMs) } ?: "N/A" }, { _, summary, _ -> summary?.avgVisionLatencyMs }, { it > 100.0 }),
             RowDefinition("Vision Acceptance (%)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.1f%%", it.visionAcceptanceRate * 100.0) } ?: "N/A" }, { _, summary, _ -> summary?.visionAcceptanceRate }, { it < 0.60 }),
 
-        ) + sysIdDiagnosticRows() + listOf(
-            // Driver Jitter
-            RowDefinition("Driver Rec. Exponent", "Driver Profiles", { _, _, diag -> diag["Diagnostics/Driver/RecommendedExponent"]?.let { String.format("%.2f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/Driver/RecommendedExponent"] }),
-            RowDefinition("Driver Rec. Slew Rate", "Driver Profiles", { _, _, diag -> diag["Diagnostics/Driver/RecommendedSlewRate"]?.let { if (it >= 999.0) "None" else String.format("%.1f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/Driver/RecommendedSlewRate"] }),
-            RowDefinition("Jitter Present", "Driver Profiles", { _, _, diag -> diag["Diagnostics/Driver/JitterPresent"]?.let { if (it > 0.5) "Yes" else "No" } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/Driver/JitterPresent"] }, { it > 0.5 }),
-            RowDefinition("Peak Jitter Freq (Hz)", "Driver Profiles", { _, _, diag -> diag["Diagnostics/Driver/PeakJitterFrequency"]?.let { String.format("%.1f Hz", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/Driver/PeakJitterFrequency"] })
-        )
+        ) + sysIdDiagnosticRows() + driverDiagnosticRows()
     }
 
     fun buildMotorCurrentRows(allMotorNames: List<String>): List<RowDefinition> {
