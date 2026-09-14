@@ -63,7 +63,8 @@ class SummaryEngineService(
         // Motor thermal estimation requires sequential state (temperature depends on previous temperature)
         // and cannot be vectorized into SQL without recursive CTEs.
         val maxMotorTemps = emptyMap<String, Double>()
-        val diagnosticTags = calculateAndSaveDiagnostics(session)
+        val health = SummaryHealthAggregator(databaseService::executeQueryWithParams).read(session.sessionId)
+        val diagnosticTags = calculateAndSaveDiagnostics(session, health, aggregates.metrics["battery"])
         val finalTags = (session.tags + detectedModes + diagnosticTags).distinct()
         val summary = SessionSummary(
             sessionId = session.sessionId,
@@ -99,7 +100,16 @@ class SummaryEngineService(
         summary
     }
 
-    private suspend fun calculateAndSaveDiagnostics(session: Session): List<String> {
+    private suspend fun calculateAndSaveDiagnostics(session: Session, health: Map<String, Double>, battery: Double?): List<String> {
+        val newTags = session.tags.toMutableList()
+        fun above(metric: String, threshold: Double) = (health["Diagnostics/System/$metric"] ?: 0.0) > threshold
+        if (above("RecordingGapsOver1s", 0.0)) newTags.add("RecordingGaps")
+        if (above("LoopSamplesOver40Ms", 5.0)) newTags.add("SlowLoopSamples")
+        if (battery != null && battery < 9.5) newTags.add("LowBattery")
+        if (above("PeakCANErrorCounter", 0.0) || above("CANBusOffIncrements", 0.0)) newTags.add("CANBusFault")
+        if ((health["Diagnostics/System/MaxCANBusUtilization"] ?: 0.0) >= 0.90) newTags.add("CANBusSaturated")
+        if (above("BrownoutGuardTripIncrements", 0.0)) newTags.add("BrownoutGuardActivity")
+        if (above("MotorFaultObserved", 0.0)) newTags.add("MotorFault")
         var resolvedTags = session.tags
         try {
             val allFrames = databaseService.getTelemetryForFilters(
@@ -110,64 +120,15 @@ class SummaryEngineService(
                     addAll(TelemetryMetricCatalog.DRIVE_ACCELERATION.keys)
                     add("Drive/Velocity_Omega")
                     addAll(SummaryLocalizationDiagnostics.inputKeys)
-                    addAll(TelemetryMetricCatalog.BATTERY_VOLTAGE.keys)
-                    addAll(TelemetryMetricCatalog.LOOP_TIME.keys)
                 },
-                prefixes = listOf("Diagnostics/%", "Hardware/Motors/%", "Vision/%", "Path/%"),
+                prefixes = listOf("Hardware/Motors/%", "Vision/%", "Path/%"),
                 maxFrames = MAX_DIAGNOSTIC_FRAMES,
                 maxFramesPerTopic = MAX_DIAGNOSTIC_FRAMES_PER_TOPIC,
             )
-            if (allFrames.isEmpty()) {
-                databaseService.replaceAnalysisDiagnostics(session.sessionId, emptyList())
-                return resolvedTags
-            }
-            val framesToInsert = mutableListOf<TelemetryFrame>()
-
-            // Loop Overruns and Comms Losses calculation
-            val loopTimes = allFrames.filter { it.key.lowercase().contains("loop") || it.key.lowercase().contains("period") }.map { it.value }
-            val loopOverruns = loopTimes.count { it > 40.0 }
-            val commsLosses = databaseService.countTimestampGaps(session.sessionId, 1_000L)
-            val minVoltage = allFrames.filter { it.key in TelemetryMetricCatalog.BATTERY_VOLTAGE.keys }
-                .map { it.value }
-                .minOrNull() ?: 12.0
-
-            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/System/LoopOverruns", loopOverruns.toDouble()))
-            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/System/CommsLosses", commsLosses.toDouble()))
-
-            // CANbus status, motor faults, and brownout calculations
-            val canFrames = allFrames.filter {
-                val key = it.key.removePrefix("/")
-                key.startsWith("Diagnostics/CAN/") || key.startsWith("Diagnostics/CANBus/")
-            }
-            val maxBusUtil = canFrames.filter { it.key.endsWith("BusUtilization") || it.key.endsWith("Utilization") }.maxOfOrNull { it.value } ?: 0.0
-            val totalErrorCount = canFrames.filter { it.key.endsWith("ErrorCount") }.maxOfOrNull { it.value } ?: 0.0
-            val totalBusOffs = canFrames.filter { it.key.endsWith("BusOffs") || it.key.endsWith("BusOffCount") }.maxOfOrNull { it.value } ?: 0.0
-            val maxSignalLatency = canFrames.filter { it.key.endsWith("SignalLatencyMs") }.maxOfOrNull { it.value } ?: 0.0
-            val brownoutCount = allFrames.filter { it.key == "Diagnostics/Power/BrownoutCount" }.maxOfOrNull { it.value } ?: 0.0
-            val motorFaultFrames = allFrames.filter {
-                val key = it.key.removePrefix("/")
-                key.startsWith("Diagnostics/Motor/") && key.endsWith("/Faults")
-            }
-            val hasMotorFaults = motorFaultFrames.any { it.value > 0.0 }
-
-            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/System/MaxCANBusUtilization", maxBusUtil))
-            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/System/TotalCANBusErrors", totalErrorCount))
-            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/System/CANBusOffs", totalBusOffs))
-            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/System/MaxCANBusLatencyMs", maxSignalLatency))
-            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/System/BrownoutCount", brownoutCount))
-            val newTags = session.tags.toMutableList()
-            if (commsLosses > 0) newTags.add("CommsLoss")
-            if (loopOverruns > 5) newTags.add("LoopOverruns")
-            if (minVoltage < 9.5 && minVoltage > 0.0) newTags.add("LowBattery")
-            if (totalErrorCount > 0.0 || totalBusOffs > 0.0) newTags.add("CANBusFault")
-            if (maxBusUtil >= 0.90) newTags.add("CANBusSaturated")
-            if (brownoutCount > 0.0) newTags.add("Brownout")
-            if (hasMotorFaults) newTags.add("MotorFault")
-            val uniqueTags = newTags.distinct()
-            resolvedTags = uniqueTags
-            if (uniqueTags != session.tags) {
-                databaseService.updateSessionTags(session.sessionId, uniqueTags)
-            }
+            val framesToInsert = health.map { (key, value) ->
+                TelemetryFrame(session.createdAt, session.sessionId, key, value)
+            }.toMutableList()
+            if (allFrames.isEmpty()) return persistDiagnostics(session, framesToInsert, newTags)
 
             // 1. Drivetrain SysId Characterization
             val voltages = allFrames.filter { it.key in TelemetryMetricCatalog.DRIVE_VOLTAGE.keys }
@@ -412,7 +373,7 @@ class SummaryEngineService(
                 framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/Driver/JitterPresent", if (j.hasJitter) 1.0 else 0.0))
             }
 
-            // 6–7. Recorded localization and path statistics; no covariance/root-cause diagnosis.
+            // 6â€“7. Recorded localization and path statistics; no covariance/root-cause diagnosis.
             val localization = SummaryLocalizationDiagnostics(allFrames, session.sessionId).calculate()
             for ((key, value) in localization) {
                 framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, key, value))
@@ -422,23 +383,7 @@ class SummaryEngineService(
                 newTags.add("PathDeviation")
             }
 
-            val finalUniqueTags = newTags.distinct()
-            resolvedTags = finalUniqueTags
-            if (finalUniqueTags != session.tags) {
-                databaseService.updateSessionTags(session.sessionId, finalUniqueTags)
-            }
-
-            databaseService.replaceAnalysisDiagnostics(
-                session.sessionId,
-                framesToInsert.map { frame ->
-                    AnalysisDiagnostic(
-                        sessionId = frame.sessionId,
-                        key = frame.key,
-                        value = frame.value,
-                        stringValue = frame.stringValue,
-                    )
-                },
-            )
+            resolvedTags = persistDiagnostics(session, framesToInsert, newTags)
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             e.printStackTrace()
@@ -446,10 +391,19 @@ class SummaryEngineService(
         return resolvedTags
     }
 
+    private suspend fun persistDiagnostics(session: Session, frames: List<TelemetryFrame>, tags: List<String>): List<String> {
+        val uniqueTags = tags.distinct()
+        databaseService.replaceAnalysisDiagnostics(session.sessionId, frames.map { frame ->
+            AnalysisDiagnostic(frame.sessionId, frame.key, frame.value, frame.stringValue)
+        })
+        if (uniqueTags != session.tags) databaseService.updateSessionTags(session.sessionId, uniqueTags)
+        return uniqueTags
+    }
+
     private companion object {
         /**
          * Secondary diagnostic algorithms operate on a deterministic, per-topic sample. Core
-         * summary values above remain exact SQL aggregates. These bounds prevent a long WPILOG
+         * summary and health values remain exact SQL aggregates. These bounds prevent a long WPILOG
          * from materializing millions of JVM objects while retaining endpoints and uniform
          * coverage for every ordinary topic.
          */
