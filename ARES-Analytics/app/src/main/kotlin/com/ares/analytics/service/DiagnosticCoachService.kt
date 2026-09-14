@@ -60,15 +60,11 @@ class DiagnosticCoachService(private val databaseService: DatabaseService) {
             listOf("Diagnostics/Power/BrownoutCount", "Robot/BrownoutCount", "Robot/BrownoutPowerScale")
         ).filter { it.value.isFinite() }.sortedBy { it.timestampUs }
 
-        val ekfFrames = databaseService.getTelemetryForKeyPatterns(
+        val localization = DiagnosticCoachLocalization(
+            databaseService.getTelemetryForKeyPatterns(sessionId, listOf("Diagnostics/EKF/%", "Diagnostics/Auto/%")),
+            databaseService.getAnalysisDiagnostics(sessionId),
             sessionId,
-            listOf("Diagnostics/EKF/%", "Vision/EKF_NIS")
-        ).filter { it.value.isFinite() }.sortedBy { it.timestampUs }
-
-        val autoFrames = databaseService.getTelemetryForKeyPatterns(
-            sessionId,
-            listOf("Diagnostics/Auto/%", "Path/CrossTrackError", "Drive/CrossTrackError")
-        ).filter { it.value.isFinite() }.sortedBy { it.timestampUs }
+        )
 
         val findings = buildList {
             batteryFrames.minByOrNull(TelemetryFrame::value)?.takeIf { it.value < BATTERY_REVIEW_VOLTS }?.let { frame ->
@@ -89,8 +85,8 @@ class DiagnosticCoachService(private val databaseService: DatabaseService) {
             sustainedCurrentFinding(currentFrames)?.let(::add)
             loopOverrunFinding(loopFrames)?.let(::add)
             brownoutFinding(brownoutFrames)?.let(::add)
-            ekfDiagnosticFinding(ekfFrames)?.let(::add)
-            autoTrackingFinding(autoFrames)?.let(::add)
+            localization.ekfFinding()?.let(::add)
+            localization.pathFinding()?.let(::add)
         }
         val missing = buildList {
             if (batteryFrames.isEmpty()) add("Battery voltage")
@@ -166,84 +162,6 @@ class DiagnosticCoachService(private val databaseService: DatabaseService) {
             verificationSteps = listOf("Correlate timestamp with motor current and battery voltage curves", "Perform battery load and internal resistance test in pit", "Verify CurrentBudgetManager configuration and slew rate limits"),
             topic = trigger.key
         )
-    }
-
-    private fun ekfDiagnosticFinding(frames: List<TelemetryFrame>): DiagnosticFinding? {
-        val avgNisFrame = frames.firstOrNull { it.key.endsWith("AvgNIS") }
-        val biasFrame = frames.firstOrNull { it.key.endsWith("ResidualBiasM") }
-        val outlierFrame = frames.firstOrNull { it.key.endsWith("NISOutlierRatio") }
-
-        if (avgNisFrame != null) {
-            val avgNis = avgNisFrame.value
-            val bias = biasFrame?.value ?: 0.0
-            val outlier = outlierFrame?.value ?: 0.0
-            when {
-                bias >= 0.04 -> {
-                    return DiagnosticFinding(
-                        id = "ekf-extrinsic-skew",
-                        title = "Camera Extrinsic or Odometry Calibration Skew Detected",
-                        severity = DiagnosticSeverity.REVIEW,
-                        timestampSeconds = avgNisFrame.timestampUs / 1_000_000.0,
-                        observation = "Systematic vision residual bias of ${"%.1f".format(bias * 100)} cm between camera tag detections and EKF pose.",
-                        thresholdContext = "ARES screens systematic residual offsets >= 4 cm as potential camera mounting angle or wheel scaling error.",
-                        possibleCauses = listOf("Camera mounting pitch/yaw misalignment", "Incorrect Limelight 3D transform constants", "Odometry track width or wheel radius scaling error"),
-                        verificationSteps = listOf("Run Camera Extrinsic Calibration Wizard in pit", "Verify Limelight robot-to-camera offset in hardware config", "Check wheel diameter and track width calibration"),
-                        topic = biasFrame?.key ?: avgNisFrame.key
-                    )
-                }
-                avgNis < 0.6 -> {
-                    return DiagnosticFinding(
-                        id = "ekf-vision-underweighted",
-                        title = "EKF Vision Measurement Noise (R) is Under-Weighted",
-                        severity = DiagnosticSeverity.INFORMATION,
-                        timestampSeconds = avgNisFrame.timestampUs / 1_000_000.0,
-                        observation = "Average Normalized Innovation Squared (NIS) is ${"%.2f".format(avgNis)} (target ~2.0).",
-                        thresholdContext = "NIS < 0.6 indicates the Kalman filter assumes the camera is much noisier than it actually is, under-utilizing vision.",
-                        possibleCauses = listOf("Vision measurement noise R set too high in PoseEstimator", "Process noise Q set too low"),
-                        verificationSteps = listOf("Decrease R_vision in PoseEstimator or ares_tuning.json by ~30-50%", "Observe NIS convergence towards 2.0 in practice runs"),
-                        topic = avgNisFrame.key
-                    )
-                }
-                avgNis > 4.5 || outlier > 0.10 -> {
-                    return DiagnosticFinding(
-                        id = "ekf-vision-jitter",
-                        title = "EKF Vision Jitter / Over-Confidence Detected",
-                        severity = DiagnosticSeverity.REVIEW,
-                        timestampSeconds = avgNisFrame.timestampUs / 1_000_000.0,
-                        observation = "Average NIS is ${"%.2f".format(avgNis)} with ${"%.1f".format(outlier * 100)}% 3-sigma outliers.",
-                        thresholdContext = "NIS > 4.5 indicates the Kalman filter is over-trusting noisy camera frames, leading to pose jitter.",
-                        possibleCauses = listOf("Vision measurement noise R set too low", "Loose or flickering AprilTag detection at high distance", "Mahalanobis outlier gate too loose"),
-                        verificationSteps = listOf("Increase R_vision in PoseEstimator to smooth out vision updates", "Tighten AprilTag max distance or ambiguity thresholds"),
-                        topic = avgNisFrame.key
-                    )
-                }
-                else -> return null
-            }
-        }
-        return null
-    }
-
-    private fun autoTrackingFinding(frames: List<TelemetryFrame>): DiagnosticFinding? {
-        val rmseFrame = frames.firstOrNull { it.key.endsWith("CrossTrackRMSE") }
-        val maxFrame = frames.firstOrNull { it.key.endsWith("MaxCrossTrackM") }
-        if (rmseFrame != null) {
-            val rmse = rmseFrame.value
-            val max = maxFrame?.value ?: 0.0
-            if (rmse > 0.06 || max > 0.15) {
-                return DiagnosticFinding(
-                    id = "auto-path-deviation",
-                    title = "Autonomous Path Tracking Deviation Exceeded Threshold",
-                    severity = if (rmse > 0.10 || max > 0.25) DiagnosticSeverity.URGENT else DiagnosticSeverity.REVIEW,
-                    timestampSeconds = rmseFrame.timestampUs / 1_000_000.0,
-                    observation = "Cross-track error RMSE was ${"%.1f".format(rmse * 100)} cm with peak deviation ${"%.1f".format(max * 100)} cm.",
-                    thresholdContext = "ARES screens autonomous tracking RMSE > 6 cm for potential feedforward mistuning or traction loss.",
-                    possibleCauses = listOf("Holonomic drive PID / feedforward (kV, kA) under-tuned", "Wheel slip or carpet friction variation", "Trajectory path parameterizer acceleration limit too high for robot physics"),
-                    verificationSteps = listOf("Run automated SysId characterization to refresh kV and kA gains", "Check HolonomicPathFollower proportional gains", "Verify wheel tread wear and drive motor current limits"),
-                    topic = rmseFrame.key
-                )
-            }
-        }
-        return null
     }
 
     companion object {

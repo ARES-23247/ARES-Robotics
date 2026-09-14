@@ -73,9 +73,7 @@ class SummaryEngineServiceTest {
             assertEquals(7.0, summary.motorCurrentAverages["fr"])
             assertEquals(0.90, summary.visionAcceptanceRate, 0.01)
             assertEquals(0.15, summary.avgCrossTrackError, 0.001)
-            assertEquals(3, summary.tags.size)
-            assertTrue(summary.tags.contains("battery-A"))
-            assertTrue(summary.tags.contains("AUTO"))
+            assertEquals(setOf("teleop", "battery-A", "AUTO", "PathDeviation"), summary.tags.toSet())
 
             // Verify summary was saved in DB
             val saved = databaseService.getSessionSummary(session.sessionId)
@@ -224,7 +222,7 @@ class SummaryEngineServiceTest {
             databaseService.insertTelemetryFrames(frames)
             val summary = summaryEngine.generateSummary(session)
 
-            assertTrue(summary.tags.contains("EKFOptimal"), "Expected EKFOptimal tag in summary.tags: ${summary.tags}")
+            assertTrue("EKFOptimal" !in summary.tags, "Recorded NIS alone cannot establish optimality")
 
             val rawFrameCount = databaseService.countTelemetryFrames(session.sessionId)
             val avgNisFrame = databaseService.getAnalysisDiagnostics(session.sessionId)

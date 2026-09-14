@@ -5689,7 +5689,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "190ce87e0e8a6b8e756a135bd7d718f2ff1b92bc3f3d0685eba893908c95128e",
+      "sha256": "c9097cba4095cb73b4a3df3c36b0893cfd18e26ad61a3cd4b0d33e1825fe8a25",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18479,13 +18479,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryEngineService.kt": {
-      "sha256": "b66a510878100d4e5a79a0c8a4b81f40caf6fd8025c42de68d02b44f63ebe952",
+      "sha256": "58c992d841a7c9fb6949d55410cc7d429d39c8995387ca916018c02886c025a4",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 241: Core generateSummary aggregation, model mapping, optional notebook callback and cancellation boundaries reviewed/fixed/tested. Five core SQL calls replaced by one selected-source aggregate snapshot; no invented 12V, corrected units, removed unused device parser and finite fallback helper. Existing diagnostic catch now propagates cancellation. Secondary sampled diagnostics/SysId/driver/EKF/thermal and tag algorithms, transactional persistence and missing-value schema remain pending; partial coverage retained.",
+      "scope": "Pass 242: Retains pass 241 core aggregation/callback review; now sampled EKF and path diagnostics delegated to a tested helper, canonical estimator/path/flag keys loaded and unsupported NIS/calibration tags no longer generated. Generic path tag replaces autonomous inference. Secondary health counters, SysId/traction/gravity, tag ownership/recomputation, sampling/truncation and transactional persistence remain pending; partial coverage retained.",
       "evidence": [
-        "docs/audits/summary-aggregation-math-audit.md",
-        "ARESLib-Kotlin/build/audit-pass241-verified-evidence/summary.json"
+        "docs/audits/localization-diagnostic-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
       ]
     },
     "docs/audits/advanced-analytics-math-audit.md": {
@@ -18519,13 +18519,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SummaryEngineServiceTest.kt": {
-      "sha256": "c970237b8b9c931f97db180be8e917c13de76d103d832783887d37438d715255",
+      "sha256": "1e063b0e842b075a949594e91014f9ced42a0925278273f4065a3a1a0a913423",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 241: Complete existing five-method integration suite read/revised/executed: scalar metrics/modes/persistence and callback, corrected no-data battery sentinel, finite JSON, battery sag and replace-only derived diagnostics. Every fixture now owns a directory and closes/deletes it in finally; redundant SysId construction removed. Retained secondary diagnostic assertions do not prove full algorithm correctness.",
+      "scope": "Pass 242: Retains pass 241 complete five-method integration review and fixture cleanup. Updated canonical path deviation tag expectation and removed unsupported NIS-optimality assertion; existing aggregate/persistence/replace-only diagnostic checks rerun. Does not prove unreviewed secondary algorithms.",
       "evidence": [
-        "docs/audits/summary-aggregation-math-audit.md",
-        "ARESLib-Kotlin/build/audit-pass241-verified-evidence/summary.json"
+        "docs/audits/localization-diagnostic-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
       ]
     },
     "docs/audits/summary-aggregation-math-audit.md": {
@@ -18536,6 +18536,66 @@
       "evidence": [
         "docs/audits/summary-aggregation-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass241-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryLocalizationDiagnostics.kt": {
+      "sha256": "87e4b2caf3b7c0c882cacfa572cbaa4de2123b6a7978182e3337e8b23d6216e9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 242: Complete new descriptive-statistics helper reviewed/tested: session/topic index, cached numeric series with ordered microsecond dedup-before-validity, explicit aliases, finite nonnegative NIS including zero, scaled means/RMS, complete single-family estimator/camera pairing, correct mean-vector versus mean-magnitude offsets, optional exact flags and sample counts. Packed simulator estimate is used without truth substitution. Existing bounded-sampling and missing event provenance limits are explicit.",
+      "evidence": [
+        "docs/audits/localization-diagnostic-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DiagnosticCoachService.kt": {
+      "sha256": "14268477a5be9496b1a4220e24bbd779eaea3abf46e0279a265592df939e47dc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 242: Localization/path integration now loads raw aggregate families once plus generated analysis, delegating exact-source latest-validity and evidence-limited findings to a reviewed helper. Battery/current/loop/brownout algorithms and general raw-query volume/cancellation remain outside this pass and partially reviewed.",
+      "evidence": [
+        "docs/audits/localization-diagnostic-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DiagnosticCoachLocalization.kt": {
+      "sha256": "557df67e3473fc28bdc3e918aece8ab446676a28db5ba6f1f221bd22a0e1808b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 242: Complete new helper reviewed/tested: exact canonical metric names, session identity, latest source time/order before validity, generated-family priority without stale raw filling, finite nonnegative quantities and units, neutral NIS/pose wording, independently usable RMS/peak, missing metadata and non-event display anchors. Storage generation/version and legacy absence ambiguity remain documented.",
+      "evidence": [
+        "docs/audits/localization-diagnostic-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SummaryLocalizationAuditTest.kt": {
+      "sha256": "86068659c28bed02aa0c5926204893c0ee4a3f19cab4212bf0d22efa8ea9541d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 242: Complete 30-method audit reviewed/executed. Eighteen preserved failing original baselines; independent geometry, symmetric offset, analytic RMS, tiny/maximum arithmetic, alias and numeric validity, microsecond/flag/pairing, source/session isolation, generated store priority and evidence-limited coach output. Pure helper cases plus owned DuckDB integration fixtures.",
+      "evidence": [
+        "docs/audits/localization-diagnostic-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DiagnosticCoachServiceTest.kt": {
+      "sha256": "7df0f9542c807c466d3458cc2fec9939cccafa2691defec2b801466dca0529fe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 242: Complete ten-method existing suite read and executed: battery/current/missing/loop/brownout/blank-session plus revised neutral legacy pose finding and path deviation. Fixtures now close before deleting an owned database directory. Existing health assertions preserve compatibility without proving their general algorithms.",
+      "evidence": [
+        "docs/audits/localization-diagnostic-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/localization-diagnostic-math-audit.md": {
+      "sha256": "d49d4feb5fc57e6179ac864c011a5d1c3a92ee98b4110f6500b4e70001c85ea3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 242: Records eighteen reproduced baseline failures, descriptive NIS and pose/path mathematics, primary NIST and local producer contracts, generated-store integration, evidence and immutable dependency identity, efficiency structure and explicit sampling/provenance/tag/HIL limits.",
+      "evidence": [
+        "docs/audits/localization-diagnostic-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
       ]
     }
   }

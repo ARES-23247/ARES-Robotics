@@ -2,7 +2,7 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.test.runTest
-import java.io.File
+import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -123,7 +123,7 @@ class DiagnosticCoachServiceTest {
     }
 
     @Test
-    fun ekfDiagnosticFindingDetectsCameraSkew() = runTest {
+    fun ekfDiagnosticFindingScreensLegacyPoseDisagreement() = runTest {
         withService { database, service ->
             database.insertTelemetryFrames(listOf(
                 TelemetryFrame(100, "run", "Diagnostics/EKF/AvgNIS", 2.2),
@@ -131,7 +131,7 @@ class DiagnosticCoachServiceTest {
                 TelemetryFrame(100, "run", "Diagnostics/EKF/NISOutlierRatio", 0.02)
             ))
             val result = service.analyze("run")
-            val finding = result.findings.firstOrNull { it.id == "ekf-extrinsic-skew" }
+            val finding = result.findings.firstOrNull { it.id == "ekf-pose-disagreement" }
             kotlin.test.assertNotNull(finding)
             assertEquals(DiagnosticSeverity.REVIEW, finding.severity)
             assertTrue(finding.observation.contains("5.5 cm"))
@@ -154,13 +154,13 @@ class DiagnosticCoachServiceTest {
     }
 
     private suspend fun withService(block: suspend (DatabaseService, DiagnosticCoachService) -> Unit) {
-        val file = File.createTempFile("diagnostic-coach", ".db").apply { deleteOnExit() }
-        val database = DatabaseService(file.absolutePath)
+        val directory = Files.createTempDirectory("diagnostic-coach").toFile()
+        val database = DatabaseService(directory.resolve("telemetry.duckdb").absolutePath)
         try {
             block(database, DiagnosticCoachService(database))
         } finally {
             database.close()
-            file.delete()
+            directory.deleteRecursively()
         }
     }
 }
