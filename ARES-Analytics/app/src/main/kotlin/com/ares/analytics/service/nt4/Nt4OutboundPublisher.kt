@@ -30,6 +30,9 @@ internal class Nt4OutboundPublisher(
     private val connectionCounter = AtomicLong()
     @Volatile private var connectionId = 0L
 
+    /** Socket generation, available before clock synchronization or publisher readiness. */
+    val connectionGeneration: Long get() = connectionId
+
     /** Ready connection identity; unlike a Boolean flow this detects a conflated reconnect. */
     val tuningConnectionId: Long?
         get() = connectionId.takeIf { session != null && serverTimeOffsetUs != null }

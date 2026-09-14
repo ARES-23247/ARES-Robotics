@@ -17,12 +17,16 @@ import com.areslib.control.assist.SysIdRoutine
 import com.ares.analytics.viewmodel.sysid.SysIdDataCollector
 import com.ares.analytics.viewmodel.sysid.SysIdRegressionSolver
 import com.ares.analytics.viewmodel.sysid.SysIdSignalGenerator
+import com.ares.analytics.viewmodel.sysid.CalibrationCommandTransport
+import com.ares.analytics.viewmodel.sysid.Nt4CalibrationCommandTransport
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -135,12 +139,13 @@ class SysIdViewModel(
     private val scope: CoroutineScope,
     tuningProposalInbox: TuningProposalInbox? = null,
     private val digitalTwin: AutoTuningDigitalTwin = AutoTuningDigitalTwin(),
+    calibrationTransport: CalibrationCommandTransport = Nt4CalibrationCommandTransport(nt4ClientService),
 ) {
     private val _state = MutableStateFlow(SysIdState())
     val state: StateFlow<SysIdState> = _state.asStateFlow()
 
     private val regressionSolver = SysIdRegressionSolver(_state)
-    private val signalGenerator = SysIdSignalGenerator(nt4ClientService, _state, scope, tuningProposalInbox = tuningProposalInbox)
+    private val signalGenerator = SysIdSignalGenerator(nt4ClientService, _state, scope, calibrationTransport, tuningProposalInbox)
     private val dataCollector = SysIdDataCollector(
         nt4ClientService,
         autoTunerService,
@@ -150,47 +155,58 @@ class SysIdViewModel(
         onRoutineCompleted = { signalGenerator.disarm("Routine complete") }
     )
 
+    private data class ControlIdentity(val connected: Boolean, val replay: Boolean, val epoch: Long, val connection: Long)
+    private var controlIdentity: ControlIdentity? = null
+    private val controlIdentityLock = Any()
+
+    /** Read current identity at use time: a queued collector event may describe an older target. */
+    private fun reconcileControlIdentity(): Boolean = synchronized(controlIdentityLock) {
+        val connected = nt4ClientService.isConnected.value
+        val replay = nt4ClientService.isReplayActive.value
+        val epoch = nt4ClientService.telemetryStore.currentTargetEpoch()
+        val connection = nt4ClientService.controlConnectionEpoch
+        val previous = controlIdentity
+        if (previous == null || previous.connected != connected || previous.replay != replay ||
+            previous.epoch != epoch || previous.connection != connection) {
+            val current = ControlIdentity(connected, replay, epoch, connection)
+            controlIdentity = current
+            signalGenerator.connectionLost()
+            dataCollector.clearBuffer()
+            _state.update { it.copy(isRobotConnected = current.connected,
+                armStatus = if (current.connected) "Live control context changed; fresh capabilities and calibration mode required"
+                    else "Disconnected; calibration lease revoked") }
+        }
+        connected && !replay
+    }
+
     init {
+        reconcileControlIdentity()
         dataCollector.startCollecting()
         scope.launch {
-            nt4ClientService.isConnected.collect { connected ->
-                _state.update {
-                    it.copy(
-                        isRobotConnected = connected,
-                        supportedMechanisms = if (connected) it.supportedMechanisms else emptySet(),
-                        capabilitiesKnown = if (connected) it.capabilitiesKnown else false,
-                    )
-                }
-                if (!connected) signalGenerator.connectionLost()
-            }
+            combine(nt4ClientService.isConnected, nt4ClientService.isReplayActive,
+                nt4ClientService.telemetryStore.targetEpochs) { _, _, _ -> Unit }
+                .collect { reconcileControlIdentity() }
         }
         scope.launch {
             nt4ClientService.telemetryFlow.collect { frame ->
                 when (frame.key) {
+                    "SysId/ModeEnabled", "SysId/Armed", "SysId/SupportedMechanisms", "SysId/Error" -> Unit
+                    else -> return@collect
+                }
+                if (!reconcileControlIdentity() || !nt4ClientService.telemetryStore.isCurrentNotifiedFrame(frame)) return@collect
+                when (frame.key) {
                     "SysId/ModeEnabled" -> {
-                        val enabled = frame.value != 0.0
+                        val enabled = frame.stringValue == null && frame.value == 1.0
                         _state.update { it.copy(calibrationModeEnabled = enabled) }
                         if (!enabled && _state.value.requiresNetworkArm) {
                             signalGenerator.disarm("FTC calibration mode is not enabled", sendStop = false)
                         }
                     }
                     "SysId/Armed" -> {
-                        val armed = frame.value != 0.0
-                        _state.update {
-                            it.copy(
-                                robotCalibrationArmed = armed,
-                                armPhase = when {
-                                    !it.requiresNetworkArm -> CalibrationArmPhase.NOT_REQUIRED
-                                    armed -> CalibrationArmPhase.ARMED
-                                    it.armPhase == CalibrationArmPhase.ARMED -> CalibrationArmPhase.DISARMED
-                                    else -> it.armPhase
-                                },
-                                armStatus = when {
-                                    armed -> "FTC robot acknowledged the fresh calibration lease"
-                                    it.armPhase == CalibrationArmPhase.ARMED -> "FTC robot disarmed calibration"
-                                    else -> it.armStatus
-                                }
-                            )
+                        try { signalGenerator.observeRobotArmed(frame) }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (failure: Exception) {
+                            _state.update { it.copy(errorMessage = "Calibration disarmed locally; STOP publication failed: ${failure.message}") }
                         }
                     }
                     "SysId/SupportedMechanisms" -> {
@@ -220,6 +236,7 @@ class SysIdViewModel(
 
     fun onIntent(intent: SysIdIntent) {
         scope.launch {
+            reconcileControlIdentity()
             when (intent) {
                 is SysIdIntent.LoadSession -> {
                     val sessionId = intent.sessionId
@@ -299,8 +316,8 @@ class SysIdViewModel(
                     signalGenerator.startRoutine(_state.value.selectedMechanism, intent.routine)
                 }
                 is SysIdIntent.StopRoutine -> {
+                    dataCollector.clearBuffer()
                     signalGenerator.stopRoutine()
-                    signalGenerator.disarm("Operator stopped SysId")
                 }
                 is SysIdIntent.LoadLocalLogFile -> {
                     _state.update { it.copy(isLoading = true, fileAnalysisError = null, localAnalysisResult = null) }
@@ -332,8 +349,8 @@ class SysIdViewModel(
                     signalGenerator.startCalibration(intent.calibrationType)
                 }
                 is SysIdIntent.StopCalibration -> {
+                    dataCollector.clearBuffer()
                     signalGenerator.stopCalibration()
-                    signalGenerator.disarm("Operator aborted calibration")
                 }
                 is SysIdIntent.SetLinearDriveDistance -> {
                     _state.update { it.copy(linearDriveActualDistanceMeters = intent.distance) }
@@ -355,7 +372,8 @@ class SysIdViewModel(
         current.isRobotConnected && current.capabilitiesKnown &&
             current.selectedMechanism in current.supportedMechanisms &&
             (!current.requiresNetworkArm ||
-                (current.armPhase == CalibrationArmPhase.ARMED && current.robotCalibrationArmed))
+                (current.calibrationModeEnabled && signalGenerator.hasActiveArmLease() &&
+                    current.armPhase == CalibrationArmPhase.ARMED && current.robotCalibrationArmed))
     }
 
     private fun liveMotionBlockReason(current: SysIdState): String = when {

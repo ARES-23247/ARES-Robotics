@@ -396,6 +396,7 @@ open class Nt4ClientService(
     fun connectionMetrics(): Nt4ConnectionMetrics = connectionLifecycle.metrics()
 
     val tuningConnectionId: Long? get() = outboundPublisher.tuningConnectionId
+    internal val controlConnectionEpoch: Long get() = outboundPublisher.connectionGeneration
 
     /** A successful enqueue is still experimental until the robot acknowledges this nonce. */
     suspend fun publishTuningRequest(
