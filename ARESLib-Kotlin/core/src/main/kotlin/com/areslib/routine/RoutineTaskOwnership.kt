@@ -168,6 +168,9 @@ internal class RoutineTaskOwnership(private val allowTerminalReuse: Boolean = fa
     /** Admission is already exclusive; observe queued descendant cancellation before starting work. */
     fun propagateQueuedTerminal(owner: Task): Boolean = propagateOwnedTerminal(owner, queued = true)
 
+    /** Control transitions must notice failed/cancelled descendants without running completion callbacks. */
+    fun propagateRuntimeTerminal(owner: Task): Boolean = propagateOwnedTerminal(owner)
+
     fun owns(task: Task): Boolean = released[task] == false
 
     private fun propagateOwnedTerminal(owner: Task, queued: Boolean = false): Boolean {
@@ -175,7 +178,9 @@ internal class RoutineTaskOwnership(private val allowTerminalReuse: Boolean = fa
         var failed = TaskStateMachine.getStatus(owner) == TaskStatus.FAILED
         for (task in nodes) {
             if (released[task] != false) continue
-            if (queued && task is CompiledRoutineTask) task.propagateQueuedTerminal()
+            if (task is CompiledRoutineTask) {
+                if (queued) task.propagateQueuedTerminal() else task.propagateRuntimeTerminal()
+            }
             when (TaskStateMachine.getStatus(task)) {
                 TaskStatus.FAILED -> failed = true
                 TaskStatus.CANCELLED -> cancelled = true
@@ -282,6 +287,7 @@ internal class CompiledRoutineTask(
     override val requiredResources: Long = delegate.requiredResources
     internal val hasOwnedTaskTree: Boolean get() = ownership.owns(delegate)
     internal fun propagateQueuedTerminal(): Boolean = ownership.propagateQueuedTerminal(this)
+    internal fun propagateRuntimeTerminal(): Boolean = ownership.propagateRuntimeTerminal(this)
     override fun pause(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = true, owner = this)
     override fun resume(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = false, owner = this)
     override fun releaseRuntimeState() {
