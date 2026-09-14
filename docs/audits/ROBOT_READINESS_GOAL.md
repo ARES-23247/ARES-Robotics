@@ -1,6 +1,8 @@
 # Bounded robot-readiness checkpoint
 
-Status: in progress, authorized in this existing task. This objective supersedes the open-ended
+Status: **paused at the user's request**. Resume only on explicit instruction in this existing task.
+See [the saved pause status](ROBOT_READINESS_STATUS.md) for completed evidence and remaining work.
+This objective supersedes the open-ended
 "audit every tracked file" plan. Preserve its useful fixes, reports, ledger, and local evidence;
 unfinished file counts are historical supporting information, not a work queue or exit criterion.
 No new task, sub-agent, automatic broad audit pass, push, merge, or external release is authorized.
