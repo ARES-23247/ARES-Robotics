@@ -48,8 +48,9 @@ class RobotReadinessTest(unittest.TestCase):
         robot.step(.02)
         self.assertFalse(robot.faulted)
 
-        # Small circle inside the existing tabletop field; no simulator-truth estimator override.
-        robot.drivetrain.reset_pose(.7, .4, 0)
+        # Field coordinates are centered. A .25m radius circle about (0, 0) stays inside it.
+        # Seed only the initial pose; subsequent estimates must come from simulated wheel encoders.
+        robot.drivetrain.reset_pose(0, -.25, 0)
         sensor_start = [0]
         output_end = [0]
         get_position = motors[0].get_position
@@ -68,10 +69,11 @@ class RobotReadinessTest(unittest.TestCase):
                 motor.advance(.02)
             robot.step(.02)
 
-        for _ in range(1000):
+        warmup, samples = 1000, 5000
+        for _ in range(warmup):
             cycle()
         durations, latency = [], []
-        for _ in range(5000):
+        for _ in range(samples):
             started = time.perf_counter_ns()
             cycle()
             durations.append(time.perf_counter_ns() - started)
@@ -80,6 +82,12 @@ class RobotReadinessTest(unittest.TestCase):
         self.assertFalse(robot.faulted)
         self.assertEqual(robot.STATE_TELEOP, robot.mode)
         self.assertTrue(all(m.effort > 0 for m in motors))
+        # Closed-form circle, independent of the odometry integrator and collision constraint.
+        # This also catches a fixture that accidentally measures repeated contact with the field edge.
+        angle = .8 * .02 * (warmup + samples)
+        self.assertAlmostEqual(.25 * math.sin(angle), robot.drivetrain.x, delta=1e-6)
+        self.assertAlmostEqual(-.25 * math.cos(angle), robot.drivetrain.y, delta=1e-6)
+        self.assertAlmostEqual(math.atan2(math.sin(angle), math.cos(angle)), robot.drivetrain.heading, delta=1e-6)
 
         # Separate tracing run: peak/retained Python memory, NOT total allocated bytes or Pico heap.
         gc.collect()
@@ -116,7 +124,8 @@ class RobotReadinessTest(unittest.TestCase):
             "clock": "time.perf_counter_ns", "nominalBudgetMs": 20,
             "boundary": "SimMotor advance, XrpRobot.step, generated starter subsystems, odometry, field constraint, motor outputs",
             "excludes": "Pico/MicroPython, physical IO, network transport and telemetry serialization",
-            "warmupCycles": 1000, "samples": 5000, "loop": stats(durations),
+            "warmupCycles": warmup, "samples": samples, "loop": stats(durations),
+            "referenceTrajectory": "x=.25*sin(.8*t), y=-.25*cos(.8*t), heading=.8*t; encoder estimate checked after 120s simulated time",
             "sensorToOutput": stats(latency), "executionOver20ms": sum(v > 20_000_000 for v in durations),
             "tracedSeparateCycles": 1000, "tracedRetainedBytes": retained, "tracedPeakBytes": peak,
             "totalAllocatedBytes": None, "pacedSamples": 100, "pacedPeriod": stats(periods),
