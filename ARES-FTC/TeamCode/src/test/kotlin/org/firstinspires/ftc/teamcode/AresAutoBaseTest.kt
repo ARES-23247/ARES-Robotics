@@ -291,6 +291,45 @@ class AresAutoBaseTest {
         }
     }
 
+    @Test
+    fun generatedRuntimeConstructionFailureBlocksStartAndStillClosesRobot() {
+        val (map, sink) = createMockHardwareMap()
+        var attempts = 0
+        val opMode = object : AresAutoBase() {
+            override val lockedAutonomousEntryId = "test-auto"
+            override fun createGeneratedRuntime(
+                robot: org.firstinspires.ftc.teamcode.opmodes.AresRobot,
+                entry: com.areslib.routine.AutonomousCatalogEntry?,
+                alliance: Alliance,
+            ): com.areslib.ftc.runtime.FtcGeneratedAutonomousRuntime {
+                attempts++
+                throw IllegalStateException("injected generated runtime failure")
+            }
+        }.apply {
+            hardwareMap = map
+            telemetry = sink
+            gamepad1 = Gamepad()
+            gamepad2 = Gamepad()
+        }
+        attachMockOpModeServices(opMode)
+        try {
+            opMode.init()
+            assertEquals(1, attempts)
+            assertEquals("injected generated runtime failure", opMode.configurationErrorForTest())
+            val base = requireNotNull(FtcBaseRobot.activeInstance)
+            opMode.start()
+            assertEquals("Blocked", base.telemetryManager.nt4.getString("ARES/Auto/Status", ""))
+            opMode.loop()
+            assertEquals(1, attempts)
+            assertEquals("Blocked", base.telemetryManager.nt4.getString("ARES/Auto/Status", ""))
+        } finally {
+            opMode.stop()
+            assertNull(FtcBaseRobot.activeInstance)
+            assertTrue(!PoseStorage.hasValidPose)
+        }
+        opMode.stop()
+    }
+
     private fun AresAutoBase.configurationErrorForTest(): String? {
         var type: Class<*>? = AresAutoBase::class.java
         var field: java.lang.reflect.Field? = null

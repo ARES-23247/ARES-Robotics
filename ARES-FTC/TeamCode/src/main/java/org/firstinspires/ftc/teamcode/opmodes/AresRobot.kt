@@ -4,6 +4,7 @@ import com.areslib.ftc.FtcMecanumRobot
 import com.areslib.hardware.HardwareRegistry
 import com.areslib.state.aprilTagPoseMap
 import com.areslib.subsystem.Subsystem
+import com.areslib.tuning.TypedTuningRuntime
 import com.qualcomm.robotcore.hardware.HardwareMap
 import org.firstinspires.ftc.robotcore.external.Telemetry
 import org.firstinspires.ftc.teamcode.config.AresRuntimePolicy
@@ -26,16 +27,46 @@ internal fun installGeneratedSubsystems(
     hardwareRegistry: HardwareRegistry,
     register: (Subsystem) -> Unit,
     createAll: (HardwareMap, HardwareRegistry) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
-): List<Subsystem> = createAll(hardwareMap, hardwareRegistry).also { subsystems ->
-    subsystems.forEach(register)
-}
+): List<Subsystem> = registerGeneratedSubsystems(createAll(hardwareMap, hardwareRegistry), register)
 
 /** Installs generated Redux coordinators after their generated subsystem dependencies. */
 internal fun installGeneratedSuperstructures(
     register: (Subsystem) -> Unit,
     createAll: () -> List<Subsystem> = GeneratedSuperstructureRegistry::createAll,
-): List<Subsystem> = createAll().also { superstructures ->
-    superstructures.forEach(register)
+): List<Subsystem> = registerGeneratedSubsystems(createAll(), register)
+
+/** Registration transfers ownership one object at a time; the caller owns accepted entries. */
+private fun registerGeneratedSubsystems(subsystems: List<Subsystem>, register: (Subsystem) -> Unit): List<Subsystem> {
+    var registered = 0
+    try {
+        while (registered < subsystems.size) {
+            register(subsystems[registered])
+            registered++
+        }
+        return subsystems
+    } catch (failure: Throwable) {
+        preserveInterrupt(failure)
+        // Factory-time rollback remains the generated registry's responsibility. Do not close
+        // accepted entries or close a repeated object twice if initialization rejects the list.
+        val released = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Subsystem, Boolean>())
+        for (index in 0 until registered) released.add(subsystems[index])
+        for (index in subsystems.lastIndex downTo registered) {
+            val subsystem = subsystems[index]
+            if (!released.add(subsystem)) continue
+            try { subsystem.close() }
+            catch (cleanup: Throwable) { retainSuppressed(failure, cleanup) }
+        }
+        throw failure
+    }
+}
+
+private fun preserveInterrupt(failure: Throwable) {
+    if (failure is InterruptedException || failure.cause is InterruptedException) Thread.currentThread().interrupt()
+}
+
+private fun retainSuppressed(primary: Throwable, failure: Throwable) {
+    preserveInterrupt(failure)
+    if (primary !== failure && primary.suppressed.none { it === failure }) primary.addSuppressed(failure)
 }
 
 /**
@@ -68,11 +99,10 @@ class AresRobot(
         limelightProxyEnabled = AresRuntimePolicy.options.limelightProxyEnabled,
     )
 
-    private val typedTuningRuntime = GeneratedAresTuningConfig.createRuntime()
-
-    private val driveController = AresDriveController(base)
-    private val superstructureController = AresSuperstructureController(base)
-    private val telemetryHelper = AresTelemetryHelper(base)
+    private val typedTuningRuntime: TypedTuningRuntime
+    private val driveController: AresDriveController
+    private val superstructureController: AresSuperstructureController
+    private val telemetryHelper: AresTelemetryHelper
     private var fatalSeasonFailure: Throwable? = null
     /** Latched frame failure; recovery requires constructing a new OpMode robot instance. */
     val fatalUpdateFailure: Throwable?
@@ -82,93 +112,99 @@ class AresRobot(
     var hasCanonicalFieldContract: Boolean = false
         private set
     init {
-        val tuningProjectRoot = if (com.areslib.ftc.FtcBaseRobot.isAndroid) {
-            java.nio.file.Paths.get("/sdcard/FIRST")
-        } else {
-            java.nio.file.Paths.get("").toAbsolutePath().normalize()
-        }
-        base.tuningManager = com.areslib.tuning.TuningManager(
-            runtime = typedTuningRuntime,
-            telemetry = base.telemetryManager.dataLoggingTelemetry,
-            contextProvider = {
-                com.areslib.tuning.TuningApplyContext(
-                    sessionArmed = base.isCalibrationModeArmed,
-                    // FTC tuning is armed after START; disabled-only edits fail closed until the
-                    // lifecycle exposes a trustworthy Driver Station disabled signal.
-                    robotDisabled = false,
-                    calibrationParameterUids = FTC_CALIBRATION_PARAMETER_UIDS,
-                )
-            },
-            onApplied = { parameterUid, _ ->
-                if (GeneratedAresFtcMecanumRuntimeConfig.supportsRuntimeParameter(parameterUid)) {
-                    base.store.dispatch(
-                        com.areslib.action.RobotAction.UpdateTuningState(
-                            GeneratedAresFtcMecanumRuntimeConfig.withRuntimeValues(
-                                base.store.state.tuning,
-                                typedTuningRuntime,
+        try {
+            typedTuningRuntime = GeneratedAresTuningConfig.createRuntime()
+            driveController = AresDriveController(base)
+            superstructureController = AresSuperstructureController(base)
+            telemetryHelper = AresTelemetryHelper(base)
+            val tuningProjectRoot = if (com.areslib.ftc.FtcBaseRobot.isAndroid) {
+                java.nio.file.Paths.get("/sdcard/FIRST")
+            } else {
+                java.nio.file.Paths.get("").toAbsolutePath().normalize()
+            }
+            base.tuningManager = com.areslib.tuning.TuningManager(
+                runtime = typedTuningRuntime,
+                telemetry = base.telemetryManager.dataLoggingTelemetry,
+                contextProvider = {
+                    com.areslib.tuning.TuningApplyContext(
+                        sessionArmed = base.isCalibrationModeArmed,
+                        // FTC tuning is armed after START; disabled-only edits fail closed until the
+                        // lifecycle exposes a trustworthy Driver Station disabled signal.
+                        robotDisabled = false,
+                        calibrationParameterUids = FTC_CALIBRATION_PARAMETER_UIDS,
+                    )
+                },
+                onApplied = { parameterUid, _ ->
+                    if (GeneratedAresFtcMecanumRuntimeConfig.supportsRuntimeParameter(parameterUid)) {
+                        base.store.dispatch(
+                            com.areslib.action.RobotAction.UpdateTuningState(
+                                GeneratedAresFtcMecanumRuntimeConfig.withRuntimeValues(
+                                    base.store.state.tuning,
+                                    typedTuningRuntime,
+                                )
                             )
                         )
-                    )
-                    true
-                } else {
-                    false
-                }
-            },
-            isConsumerSupported = GeneratedAresFtcMecanumRuntimeConfig::supportsRuntimeParameter,
-            localProjectRoot = tuningProjectRoot,
-            localOverlayFile = tuningProjectRoot.resolve(".ares/local/tuning/runtime.arestuning"),
-        )
-
-        // Field symmetry changes by season. Load the checked-in field contract before any
-        // autonomous target, waypoint, or costmap is resolved.
-        // The asset read stays outside the loader: a missing/failed asset open is an
-        // environment failure with the same fallback as an invalid document.
-        val fieldBytes = runCatching {
-            hardwareMap.appContext.assets.open("paths/field.json").use { it.readBytes() }
-        }.getOrNull()
-        val fieldContract = fieldBytes?.let(::loadFtcFieldContract)
-        if (fieldContract != null) {
-            com.areslib.state.RobotFieldManager.setActiveConfig(fieldContract.config)
-            // Auto and every TeleOp use the same checked-in field document. This assignment also
-            // replaces the shared generic 1-4 square layout selected before this facade is built.
-            com.areslib.math.estimation.PoseEstimator.activeTags = fieldContract.tags
-            hasCanonicalFieldContract = true
-        } else {
-            // Never continue vision localization against the generic/shared tag layout when the
-            // season contract is missing or invalid. Manual drive remains available without tags.
-            com.areslib.state.RobotFieldManager.setActiveConfig(
-                com.areslib.state.RobotFieldConfig(
-                    id = "unavailable-ftc-season-field",
-                    name = "Unavailable FTC season field",
-                    fieldType = com.areslib.state.FieldType.FTC,
-                    widthMeters = 3.6576,
-                    heightMeters = 3.6576,
-                    apriltags = emptyList(),
-                )
+                        true
+                    } else {
+                        false
+                    }
+                },
+                isConsumerSupported = GeneratedAresFtcMecanumRuntimeConfig::supportsRuntimeParameter,
+                localProjectRoot = tuningProjectRoot,
+                localOverlayFile = tuningProjectRoot.resolve(".ares/local/tuning/runtime.arestuning"),
             )
-            com.areslib.math.estimation.PoseEstimator.activeTags = emptyMap()
-            hasCanonicalFieldContract = false
-            addTelemetry("Field", "Canonical field unavailable; vision tags disabled: ${FtcFieldContractLoader.error}")
-        }
 
-        // NamedCommands is still a process-wide catalog. Clear the previous OpMode's optional
-        // commands before discovering this robot instance so missing devices cannot inherit them.
-        com.areslib.pathing.NamedCommands.clear()
+            // Field symmetry changes by season. Load the checked-in field contract before any
+            // autonomous target, waypoint, or costmap is resolved.
+            // The asset read stays outside the loader: a missing/failed asset open is an
+            // environment failure with the same fallback as an invalid document.
+            val fieldRead = runCatching {
+                hardwareMap.appContext.assets.open("paths/field.json").use { it.readBytes() }
+            }
+            val fieldContract = fieldRead.getOrNull()?.let(::loadFtcFieldContract)
+            if (fieldContract != null) {
+                com.areslib.state.RobotFieldManager.setActiveConfig(fieldContract.config)
+                // Auto and every TeleOp use the same checked-in field document. This assignment also
+                // replaces the shared generic 1-4 square layout selected before this facade is built.
+                com.areslib.math.estimation.PoseEstimator.activeTags = fieldContract.tags
+                hasCanonicalFieldContract = true
+            } else {
+                // Never continue vision localization against the generic/shared tag layout when the
+                // season contract is missing or invalid. Manual drive remains available without tags.
+                com.areslib.state.RobotFieldManager.setActiveConfig(
+                    com.areslib.state.RobotFieldConfig(
+                        id = "unavailable-ftc-season-field",
+                        name = "Unavailable FTC season field",
+                        fieldType = com.areslib.state.FieldType.FTC,
+                        widthMeters = 3.6576,
+                        heightMeters = 3.6576,
+                        apriltags = emptyList(),
+                    )
+                )
+                com.areslib.math.estimation.PoseEstimator.activeTags = emptyMap()
+                hasCanonicalFieldContract = false
+                val detail = fieldRead.exceptionOrNull()?.let { it.message ?: it::class.java.simpleName }
+                    ?: FtcFieldContractLoader.error
+                addTelemetry("Field", "Canonical field unavailable; vision tags disabled: $detail")
+            }
 
-        // GENERATED - DO NOT EDIT registry entries still use the normal subsystem lifecycle:
-        // readSensors -> immutable Redux state -> writeOutputs -> safe/close on every exit path.
-        try {
+            // NamedCommands is still a process-wide catalog. Clear the previous OpMode's optional
+            // commands before discovering this robot instance so missing devices cannot inherit them.
+            com.areslib.pathing.NamedCommands.clear()
+
+            // GENERATED - DO NOT EDIT registry entries still use the normal subsystem lifecycle:
+            // readSensors -> immutable Redux state -> writeOutputs -> safe/close on every exit path.
             installGeneratedSubsystems(hardwareMap, base.hardwareRegistry, base::registerSubsystem)
             installGeneratedSuperstructures(base::registerSubsystem)
+
+            FtcAutoCapabilities.registerDriveRecovery(base::recoverDriveOutputWithNeutral)
         } catch (failure: Throwable) {
-            // The facade constructor cannot return a partially initialized robot. The generated
-            // registry rolls back its own subsystem list; close the already-created shared robot
-            // services before propagating the required-device failure to the OpMode.
-            runCatching { base.close() }.exceptionOrNull()?.let(failure::addSuppressed)
+            preserveInterrupt(failure)
+            // Every season initializer after shared construction belongs to this transaction.
+            // Shared close owns neutralization, registered subsystems, hardware and services.
+            try { base.close() } catch (cleanup: Throwable) { retainSuppressed(failure, cleanup) }
             throw failure
         }
-
-        FtcAutoCapabilities.registerDriveRecovery(base::recoverDriveOutputWithNeutral)
     }
 
     /**
@@ -181,9 +217,8 @@ class AresRobot(
     /**
      * Executes one complete season and shared robot frame.
      *
-     * Normal sampling/output work preserves the library's zero-allocation hot-path design. Fault
-     * transitions and low-rate telemetry may allocate because they are outside the steady-state
-     * motor-control path.
+     * Season orchestration consumes cached inputs without per-frame collections. Shared runtime
+     * and telemetry retain their own budgets; fault transitions and low-rate display text may allocate.
      *
      * @param gamepad1 The primary gamepad telemetry state.
      * @param gamepad2 The secondary gamepad telemetry state.
@@ -193,12 +228,12 @@ class AresRobot(
         gamepad1: com.areslib.telemetry.GamepadState? = null,
         gamepad2: com.areslib.telemetry.GamepadState? = null
     ) {
+        check(!closed) { "AresRobot is closed" }
         // Check both latches before touching any actuator. A failed instance can only recover
         // through normal OpMode reconstruction.
         val priorFailure = fatalUpdateFailure
         if (priorFailure != null) {
-            runCatching { base.safeAll() }
-            runCatching { base.safeHardware() }
+            safeAfterFailure(priorFailure)
             throw priorFailure
         }
         try {
@@ -219,25 +254,52 @@ class AresRobot(
             telemetryHelper.updateTelemetry()
         } catch (t: Throwable) {
             fatalSeasonFailure = t
-            runCatching { base.safeAll() }
-            runCatching { base.safeHardware() }
+            preserveInterrupt(t)
+            safeAfterFailure(t)
             throw t
         }
     }
+    private fun safeAfterFailure(primary: Throwable) {
+        var subsystemFailure: Throwable? = null
+        var hardwareFailure: Throwable? = null
+        try { base.safeAll() } catch (failure: Throwable) { subsystemFailure = failure }
+        try { base.safeHardware() } catch (failure: Throwable) { hardwareFailure = failure }
+        subsystemFailure?.let { retainSuppressed(primary, it) }
+        hardwareFailure?.let { retainSuppressed(primary, it) }
+    }
+
+    private fun requireOperational() {
+        check(!closed) { "AresRobot is closed" }
+        fatalUpdateFailure?.let { throw it }
+    }
+
     /** Commands shaped, alliance-aware field-relative translation and CCW-positive rotation. */
-    fun driveFieldCentric(x: Double, y: Double, rotation: Double) = driveController.driveFieldCentric(x, y, rotation)
+    fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
+        requireOperational()
+        driveController.driveFieldCentric(x, y, rotation)
+    }
 
     /** Commands field-relative drive from a cached gamepad snapshot. */
-    fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true) = driveController.driveWithGamepad(driver, useHeadingLock)
+    fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true) {
+        requireOperational()
+        driveController.driveWithGamepad(driver, useHeadingLock)
+    }
 
     /** Resets localization to the configured origin for the current Redux alliance. */
-    fun resetPoseForAlliance() = driveController.resetPoseForAlliance()
+    fun resetPoseForAlliance() {
+        requireOperational()
+        driveController.resetPoseForAlliance()
+    }
 
     /** Toggles Redux alliance; the caller decides whether to reset pose. */
-    fun toggleAlliance() = superstructureController.toggleAlliance()
+    fun toggleAlliance() {
+        requireOperational()
+        superstructureController.toggleAlliance()
+    }
 
     /** Enables the shared calibration receiver only for a dedicated tuning OpMode. */
     fun enableCalibrationMode() {
+        requireOperational()
         base.isLiveTuningEnabled = true
         try {
             base.enableCalibrationMode()
@@ -256,7 +318,7 @@ class AresRobot(
         }
     }
 
-    /** Zeroes outputs, closes season subsystems, then always closes shared robot resources. */
+    /** Disarms calibration, then delegates once to the shared owner of hardware, subsystems and services. */
     fun close() {
         if (closed) return
         closed = true
@@ -266,13 +328,12 @@ class AresRobot(
                 action()
             } catch (failure: Throwable) {
                 val primary = firstFailure
+                preserveInterrupt(failure)
                 if (primary == null) firstFailure = failure
-                else if (primary !== failure) primary.addSuppressed(failure)
+                else retainSuppressed(primary, failure)
             }
         }
         attempt(::disableCalibrationMode)
-        attempt(base::safeAll)
-        attempt(base::closeSubsystems)
         attempt(base::close)
         firstFailure?.let { throw it }
     }
@@ -299,8 +360,8 @@ internal data class FtcFieldContract(
 /**
  * Decodes and validates the checked-in FTC season field document.
  *
- * Pure function of the asset bytes so the failure taxonomy (non-FTC geometry, missing or
- * duplicate AprilTags, non-finite tag fields) is unit-testable without an Android context.
+ * Validates asset bytes without an Android context and records the latest failure diagnostic.
+ * The failure taxonomy covers non-FTC geometry, missing or duplicate AprilTags, and non-finite tags.
  * On any validation failure the caller must install the empty fallback field and disable
  * vision tags — never continue against the shared generic layout.
  */

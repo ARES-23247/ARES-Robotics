@@ -5719,10 +5719,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e850d6d128fb82830958192ed1617d58c34722c1719b30f5c0614e9ea6a83bcc",
+      "sha256": "0f2a032a064b8c705fde9cc54a19b0daaa4d90c2c951b3ba108547340599fe9a",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -5823,7 +5823,8 @@
         "docs/audits/vision-recovery-quality-audit.md",
         "ARESLib-Kotlin/build/audit-pass210-verified-evidence/summary.json",
         "docs/audits/vision-selection-attribution-audit.md",
-        "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
+        "docs/audits/ftc-season-lifecycle-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -12899,10 +12900,12 @@
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/AresAutoDSL.kt": {
       "sha256": "de36d8fa12ed8530aa8ccd40ff89142d049c7a6611da48632ee65d8d478647a2",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full static read of season lifecycle delegation and generated project metadata. Hardware construction failures and generated-runtime initialization require dedicated integration/fault-injection tests.",
+      "scope": "Pass 257: Complete thin adapter runtime policy, generated entries/default/hash, season construction/base/update/close/fatal delegation, generated runtime factory arguments and field/footprint preflight. Prior missing construction-failure evidence is now covered by season constructor cleanup/propagation and generated-runtime failure blocking START with final close. Existing real catalog/alliance/transition/simulator integration retained; shared implementation review is separate.",
       "evidence": [
+        "docs/audits/ftc-season-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json",
         "docs/audits/ftc-capability-policy-audit.md",
         "ARESLib-Kotlin/build/audit-pass169-verified-evidence/summary.json"
       ]
@@ -19260,6 +19263,66 @@
       "evidence": [
         "docs/audits/field-subscriber-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass256-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt": {
+      "sha256": "42840e94c2a8f8c9676d1f3313bf5173eb70c02b1575de8eb17d61d7c22a4da0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 257: Complete season composition, tuning support/rollback, canonical FTC field projection and fallback, generated ownership transfer/rollback, cached frame ordering/power scale, terminal latches and command guards, calibration rollback, telemetry delegation, exception/interrupt preservation and shutdown ownership. 24 lifecycle regressions/positive cases, existing field/controller tests and full FTC/simulator validation. Physical timing and shared-library internals retain separate limits.",
+      "evidence": [
+        "docs/audits/ftc-season-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESAuto.kt": {
+      "sha256": "1efa50497ba74a19e998e518729353913f5280f62e2a6086bf078d54b826b655",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 257: Complete competition annotation and thin generated autonomous entry point. No season task duplication; simulator resolves the exact class, selects/runs/completes test-auto, and synchronizes unlocked alliance across INIT/START. Full FTC and simulator suites pass.",
+      "evidence": [
+        "docs/audits/ftc-season-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/TestAuto.kt": {
+      "sha256": "92b4e6c6bfbc75896e56928fa3ea7bff24c92a5b0f27fd14df0e8a0da3ae983f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 257: Complete RED/BLUE entry point annotations, enabled canonical test-auto catalog identity and locked alliance delegation. Real shared lifecycle tests initialize both locks and close; simulator confirms locked RED wins over external alliance changes. Full FTC/simulator suites pass.",
+      "evidence": [
+        "docs/audits/ftc-season-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcSeasonLifecycleAuditTest.kt": {
+      "sha256": "46f0ea9d3481b05ae2baa119a2c2f32fe80e14580ff056ed68e7f738e15742de",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 257: Complete 24-method lifecycle fixture: original 12 red-to-green methods, cached frame order/scales, shared and season terminal latches, healthy command arguments, calibration rollback, shutdown continuation/interrupt/self-suppression, generated identity/order/rollback ownership and real facade/autonomous construction. Mocked collaborators isolate failure boundaries; globals/constructors are restored and owned robots closed.",
+      "evidence": [
+        "docs/audits/ftc-season-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresAutoBaseTest.kt": {
+      "sha256": "29404abdf828d60dc5e3a5515a33916ad8290c477e05cafb8af497d8660ba5f9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 257: Complete six-method real shared-lifecycle integration suite and helpers: canonical field assets, SDK devices, runtime-policy inheritance, INIT/START/loop/stop, RED/BLUE locks, positive bounded deadlines, generated-runtime failure blocking and close/pose invalidation. Existing five methods retained; owned NT4 server closed and fixture limitations recorded.",
+      "evidence": [
+        "docs/audits/ftc-season-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-season-lifecycle-audit.md": {
+      "sha256": "5d798c18ce97bb9d5cc5e3daf56ba51874928f7eed1286f288d50ce96a722a75",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 257: Complete pass report reviewed against original failure XML, 33 focused results, 181 full FTC/simulator results, unchanged candidate hashes/source identities, explicit file closure scopes and hardware/timing/shared-library limitations.",
+      "evidence": [
+        "docs/audits/ftc-season-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json"
       ]
     }
   }
