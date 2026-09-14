@@ -105,6 +105,7 @@ class DatabaseService(
     private val sessionMetadataRepo: SessionMetadataRepository
     private val telemetryRepo: TelemetryRepository
     private val analysisTelemetryRepo: AnalysisTelemetryRepository
+    private val replayPoseRepo: ReplayPoseRepository
     private val robotActionRepo: RobotActionRepository
     private val runEvidenceRepo: RunEvidenceRepository
     private val backupExporter: DatabaseBackupExporter
@@ -165,6 +166,7 @@ class DatabaseService(
         sessionMetadataRepo = SessionMetadataRepository(transactionCoordinator)
         telemetryRepo = TelemetryRepository(transactionCoordinator)
         analysisTelemetryRepo = AnalysisTelemetryRepository(transactionCoordinator)
+        replayPoseRepo = ReplayPoseRepository(transactionCoordinator)
         robotActionRepo = RobotActionRepository(transactionCoordinator)
         runEvidenceRepo = RunEvidenceRepository(transactionCoordinator, sessionMetadataRepo)
         backupExporter = DatabaseBackupExporter(conn, dbMutex)
@@ -239,6 +241,10 @@ class DatabaseService(
     internal suspend fun getAnalysisTelemetry(
         sessionId: String, groups: List<AnalysisTelemetryGroup>, limits: AnalysisTelemetryLimits = AnalysisTelemetryLimits(),
     ): Map<String, AnalysisTelemetryInput> = analysisTelemetryRepo.read(sessionId, groups, limits)
+    internal suspend fun getReplayPoseTrace(
+        sessionId: String, startMs: Long, endMs: Long, maxPoints: Int,
+    ): List<ReplayPoseSample> = replayPoseRepo.read(sessionId, startMs, endMs, maxPoints)
+
     override suspend fun getTelemetrySeries(
         sessionId: String,
         key: String,

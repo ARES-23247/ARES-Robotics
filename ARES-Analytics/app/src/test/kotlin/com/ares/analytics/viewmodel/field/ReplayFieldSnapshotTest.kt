@@ -46,7 +46,7 @@ class ReplayFieldSnapshotTest {
     }
     @Test
     fun `packed simulator pose preserves truth ekf and odometry as distinct sources`() {
-        val values = (0..9).associate { index -> "ARES/SimulatorPoseFrame/$index" to (index + 0.25) }
+        val values = (0..9).associate { index -> "ARES/SimulatorPoseFrame/$index" to (if (index == 9) 9.0 else index + 0.25) }
         val state = ReplayFrame(1_000, values).toReplayPoseState()
 
         assertTrue(state.hasTruePoseData)
