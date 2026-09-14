@@ -223,7 +223,7 @@ object SuperstructureKotlinGenerator {
     }
 
     private fun healthFunction(ports: List<PortBinding>, basePackage: String): String = buildString {
-        appendLine("    override fun readHealthBits(port: Int, state: RobotState, nowMs: Long): Int {")
+        appendLine("    override fun readHealthBits(port: Int, state: RobotState, nowMs: Long, maximumAgeMs: Long): Int {")
         appendLine("        return when (port) {")
         ports.forEach { port ->
             val segment = port.subsystem.documentId.replace('-', '_')
@@ -237,8 +237,8 @@ object SuperstructureKotlinGenerator {
                 appendLine("                val snapshot = state.superstructure.subsystems[${port.subsystem.documentId.kotlinStringLiteral()}] as? $stateFqn ?: return 0")
             appendLine("                var bits = 0")
             appendLine("                if (snapshot.feedbackValid) bits = bits or SuperstructurePortHealthBits.VALID")
-            appendLine("                val ageMs = if (nowMs >= snapshot.feedbackTimestampMs) nowMs - snapshot.feedbackTimestampMs else Long.MAX_VALUE")
-            appendLine("                if (ageMs <= ${maxAgeMs}L) bits = bits or SuperstructurePortHealthBits.FRESH")
+            appendLine("                val ageMs = nowMs - snapshot.feedbackTimestampMs")
+            appendLine("                if (nowMs >= snapshot.feedbackTimestampMs && ageMs >= 0L && ageMs <= ${maxAgeMs}L && ageMs <= maximumAgeMs) bits = bits or SuperstructurePortHealthBits.FRESH")
             appendLine("                if (snapshot.configurationHealthy) bits = bits or SuperstructurePortHealthBits.CONFIGURED")
             appendLine("                if (snapshot.homed) bits = bits or SuperstructurePortHealthBits.HOMED")
             appendLine("                if (snapshot.calibrated) bits = bits or SuperstructurePortHealthBits.CALIBRATED")

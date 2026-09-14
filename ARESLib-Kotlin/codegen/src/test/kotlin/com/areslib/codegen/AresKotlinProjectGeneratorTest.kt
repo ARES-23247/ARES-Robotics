@@ -619,7 +619,7 @@ class AresKotlinProjectGeneratorTest {
 
         val withoutDrive = generate(catalog(actions = emptyList()), emptyList()).source
         assertTrue(withoutDrive.contains("val HAS_GENERATED_DRIVE_BINDINGS: Boolean = false"))
-        assertTrue(withoutDrive.contains("fun emitDriveCommand(registry: GeneratedAresProjectCapabilities)"))
+        assertTrue(withoutDrive.contains("fun emitDriveCommand(registry: GeneratedAresProjectCapabilities, driveAxisValues: DoubleArray)"))
 
         assertFailsWith<IllegalArgumentException> {
             AresKotlinProjectGenerator.generate(

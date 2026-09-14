@@ -4650,12 +4650,17 @@ public final class com/areslib/runtime/GeneratedProjectControlRuntime : com/ares
 	public final fun updateTasks ()V
 }
 
+public final class com/areslib/runtime/GeneratedProjectControls {
+	public fun <init> (Ljava/util/Map;Lkotlin/jvm/functions/Function0;)V
+	public final fun getControllerRuntimes ()Ljava/util/Map;
+	public final fun getEmitDriveCommand ()Lkotlin/jvm/functions/Function0;
+}
+
 public final class com/areslib/runtime/GeneratedProjectDefinition {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function4;Lkotlin/jvm/functions/Function1;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function4;)V
 	public final fun getContentSha256 ()Ljava/lang/String;
-	public final fun getCreateControllerRuntimes ()Lkotlin/jvm/functions/Function4;
+	public final fun getCreateControls ()Lkotlin/jvm/functions/Function4;
 	public final fun getDefaultControlSchemeId ()Ljava/lang/String;
-	public final fun getEmitDriveCommand ()Lkotlin/jvm/functions/Function1;
 	public final fun getHasGeneratedDriveBindings ()Z
 	public final fun getRoutines ()Ljava/util/Map;
 	public final fun getRuntimeBindings ()Lkotlin/jvm/functions/Function1;
@@ -6822,10 +6827,15 @@ public abstract interface class com/areslib/superstructure/SuperstructureRuntime
 	public abstract fun isRobotEnabled ()Z
 	public abstract fun portType (I)Lcom/areslib/subsystem/SubsystemValueType;
 	public abstract fun readBoolean (ILcom/areslib/state/RobotState;)Ljava/lang/Boolean;
-	public abstract fun readHealthBits (ILcom/areslib/state/RobotState;J)I
+	public abstract fun readHealthBits (ILcom/areslib/state/RobotState;JJ)I
+	public static synthetic fun readHealthBits$default (Lcom/areslib/superstructure/SuperstructureRuntimeBinding;ILcom/areslib/state/RobotState;JJILjava/lang/Object;)I
 	public abstract fun readNumeric (ILcom/areslib/state/RobotState;)D
 	public abstract fun readString (ILcom/areslib/state/RobotState;)Ljava/lang/String;
 	public abstract fun resolvePort (Ljava/lang/String;Ljava/lang/String;)I
+}
+
+public final class com/areslib/superstructure/SuperstructureRuntimeBinding$DefaultImpls {
+	public static synthetic fun readHealthBits$default (Lcom/areslib/superstructure/SuperstructureRuntimeBinding;ILcom/areslib/state/RobotState;JJILjava/lang/Object;)I
 }
 
 public final class com/areslib/superstructure/SuperstructureRuntimeState : com/areslib/state/SubsystemState {

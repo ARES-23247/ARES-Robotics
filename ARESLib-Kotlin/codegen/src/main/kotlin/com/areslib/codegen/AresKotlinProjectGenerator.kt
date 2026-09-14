@@ -26,7 +26,7 @@ import com.areslib.subsystem.subsystemTargetCapabilities
 import java.security.MessageDigest
 
 /** Generator format version embedded in generated project source. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 9
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 10
 
 /**
  * Emits deterministic Kotlin without reflection or runtime file discovery.
@@ -95,6 +95,7 @@ object AresKotlinProjectGenerator {
             append("import com.areslib.input.ControllerBindingRuntime\n")
             append("import com.areslib.runtime.GeneratedControlTaskSink\n")
             append("import com.areslib.runtime.GeneratedProjectDefinition\n")
+            append("import com.areslib.runtime.GeneratedProjectControls\n")
             if (request.controlSchemes.isNotEmpty()) {
                 append("import com.areslib.routine.RoutineStartPolicy\n")
                 append("import com.areslib.input.AnalogBinding\n")
@@ -190,8 +191,13 @@ object AresKotlinProjectGenerator {
             append("        hasGeneratedDriveBindings = HAS_GENERATED_DRIVE_BINDINGS,\n")
             append("        routines = routines,\n")
             append("        runtimeBindings = ::runtimeBindings,\n")
-            append("        createControllerRuntimes = ::createControllerRuntimes,\n")
-            append("        emitDriveCommand = ::emitDriveCommand,\n")
+            append("        createControls = { schemeId, registry, routineManager, taskSink ->\n")
+            append("            val driveAxisValues = DoubleArray(3)\n")
+            append("            GeneratedProjectControls(\n")
+            append("                controllerRuntimes = createControllerRuntimes(schemeId, registry, routineManager, taskSink, driveAxisValues),\n")
+            append("                emitDriveCommand = { emitDriveCommand(registry, driveAxisValues) },\n")
+            append("            )\n")
+            append("        },\n")
             append("    )\n")
             append("}\n")
         }
@@ -391,13 +397,13 @@ object AresKotlinProjectGenerator {
         val hasDriveBindings = schemes.any { scheme -> scheme.bindings.any { it.enabled && it.target.kind == ControlTargetKind.DRIVE } }
         append("    /** True when the active scheme binds at least one drivetrain axis. */\n")
         append("    val HAS_GENERATED_DRIVE_BINDINGS: Boolean = $hasDriveBindings\n")
-        append("    private val driveAxisValues = DoubleArray(3)\n\n")
+        append("\n")
         append("    /**\n")
         append("     * Publishes the latest drive-axis listener values as one combined command. Disconnects emit\n")
         append("     * zeros and the analog rearm policy holds that neutral until every axis passes through its\n")
         append("     * deadband, so a deflected stick cannot lurch the robot across a controller reconnect.\n")
         append("     */\n")
-        append("    fun emitDriveCommand(registry: ${request.registryInterfaceName}) {\n")
+        append("    private fun emitDriveCommand(registry: ${request.registryInterfaceName}, driveAxisValues: DoubleArray) {\n")
         append("        registry.onDriveCommand(driveAxisValues[0], driveAxisValues[1], driveAxisValues[2], HAS_GENERATED_DRIVE_BINDINGS)\n")
         append("    }\n\n")
         append("    /**\n")
@@ -406,11 +412,12 @@ object AresKotlinProjectGenerator {
         append("     * window, preventing a near-simultaneous chord from leaking a single-button action.\n")
         append("     */\n")
         append("    @Suppress(\"UNUSED_PARAMETER\")\n")
-        append("    fun createControllerRuntimes(\n")
+        append("    private fun createControllerRuntimes(\n")
         append("        schemeId: String?,\n")
         append("        registry: ${request.registryInterfaceName},\n")
         append("        routineManager: RoutineManager,\n")
         append("        taskSink: GeneratedControlTaskSink,\n")
+        append("        driveAxisValues: DoubleArray,\n")
         append("    ): Map<Int, ControllerBindingRuntime> {\n")
         if (schemes.isEmpty()) {
             append("        require(schemeId == null) { \"This project has no generated control scheme\" }\n")

@@ -80,6 +80,13 @@ on disable, stop, and every mode transition; they do not run during INIT or auto
 bindings that create discrete subsystem tasks must use on-change emission with a positive epsilon
 so ordinary joystick noise cannot flood a task queue.
 
+`GeneratedProjectDefinition` is reusable metadata. Its `createControls` factory creates a fresh
+`GeneratedProjectControls` for each host, pairing controller bindings with an emitter that owns
+the same drive-axis state. Hosts never share mutable drive values. Cancellation attempts every
+port, direct-task cleanup action, and routine even if an earlier callback fails; the first failure
+is then rethrown with later failures suppressed. Stable source metadata and active-port counts are
+cached at initialization for telemetry reads.
+
 ## Deterministic Kotlin generation
 
 `AresProjectCodegenCli` validates all canonical documents and writes a deterministic Kotlin source

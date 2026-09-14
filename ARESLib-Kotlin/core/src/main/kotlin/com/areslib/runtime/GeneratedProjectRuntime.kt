@@ -19,6 +19,16 @@ fun interface GeneratedControlTaskSink {
 }
 
 /**
+ * One host's generated controller bindings and drive emitter. The emitter captures the same
+ * host-owned drive state as the bindings; a definition must create a fresh instance for each host.
+ * All callbacks and mutable binding state are allocated during initialization, never per frame.
+ */
+class GeneratedProjectControls(
+    val controllerRuntimes: Map<Int, ControllerBindingRuntime>,
+    val emitDriveCommand: () -> Unit,
+)
+
+/**
  * Platform-neutral entry points emitted by the project compiler.
  *
  * Generated code supplies project-specific capability dispatch. League runtimes supply lifecycle,
@@ -31,13 +41,12 @@ class GeneratedProjectDefinition<C>(
     val hasGeneratedDriveBindings: Boolean,
     val routines: Map<String, RoutineDocument>,
     val runtimeBindings: (C) -> RoutineRuntimeBindings,
-    val createControllerRuntimes: (
+    val createControls: (
         schemeId: String?,
         registry: C,
         routineManager: RoutineManager,
         taskSink: GeneratedControlTaskSink,
-    ) -> Map<Int, ControllerBindingRuntime>,
-    val emitDriveCommand: (C) -> Unit,
+    ) -> GeneratedProjectControls,
 )
 
 /**
@@ -60,46 +69,37 @@ class GeneratedProjectControlRuntime<C>(
         dispatch = dispatch,
     ).also { manager -> manager.replaceDocuments(definition.routines.values) }
     private val controllerRuntimes: Array<ControllerBindingRuntime?>
+    private val controls: GeneratedProjectControls
+    val activeControllerPortCount: Int
 
     init {
         require(maximumControllerPorts > 0) { "maximumControllerPorts must be positive" }
         controllerRuntimes = arrayOfNulls(maximumControllerPorts)
-        val generated = definition.createControllerRuntimes(
+        controls = definition.createControls(
             definition.defaultControlSchemeId,
             capabilities,
             routineManager,
             this,
         )
-        for ((port, runtime) in generated) {
+        for ((port, runtime) in controls.controllerRuntimes) {
             require(port in controllerRuntimes.indices) {
                 "Generated controller port $port is outside 0..${controllerRuntimes.lastIndex}"
             }
             check(controllerRuntimes[port] == null) { "Generated controller port $port is duplicated" }
             controllerRuntimes[port] = runtime
         }
+        activeControllerPortCount = controls.controllerRuntimes.size
     }
 
     val hasGeneratedDriveBindings: Boolean
         get() = definition.hasGeneratedDriveBindings
 
-    val controlsSource: String
-        get() = definition.defaultControlSchemeId?.let { scheme ->
-            "generated:$scheme:${definition.contentSha256}"
-        } ?: "hand-authored-only"
+    val controlsSource: String = definition.defaultControlSchemeId?.let { scheme ->
+        "generated:$scheme:${definition.contentSha256}"
+    } ?: "hand-authored-only"
 
     val controllerPortCapacity: Int
         get() = controllerRuntimes.size
-
-    val activeControllerPortCount: Int
-        get() {
-            var count = 0
-            var port = 0
-            while (port < controllerRuntimes.size) {
-                if (controllerRuntimes[port] != null) count++
-                port++
-            }
-            return count
-        }
 
     fun hasControllerPort(port: Int): Boolean =
         port in controllerRuntimes.indices && controllerRuntimes[port] != null
@@ -113,7 +113,7 @@ class GeneratedProjectControlRuntime<C>(
     }
 
     /** Lets the league host decide whether generated drive output owns this frame. */
-    fun emitDriveCommand() = definition.emitDriveCommand(capabilities)
+    fun emitDriveCommand() = controls.emitDriveCommand()
 
     override fun submit(bindingId: String, task: Task) {
         require(bindingId.isNotBlank()) { "Generated binding ID must not be blank" }
@@ -138,15 +138,43 @@ class GeneratedProjectControlRuntime<C>(
         if (routineManager.activeCount > 0 || routineManager.queuedCount > 0) routineManager.update()
     }
 
-    /** Releases every generated binding and task; league lifecycle code decides when this occurs. */
+    /**
+     * Releases every generated binding and task, attempting all cleanup even when a callback fails.
+     * The first failure is rethrown with later failures suppressed after all owners are cancelled.
+     */
     fun cancelAll(reason: String) {
+        var firstFailure: Throwable? = null
+        fun recordFailure(failure: Throwable) {
+            val first = firstFailure
+            if (first == null) firstFailure = failure
+            else if (first !== failure) first.addSuppressed(failure)
+        }
         var port = 0
         while (port < controllerRuntimes.size) {
-            controllerRuntimes[port]?.cancel()
+            try {
+                controllerRuntimes[port]?.cancel()
+            } catch (failure: Throwable) {
+                recordFailure(failure)
+            }
             port++
         }
-        val actions = directTaskExecutor.cancelAll(stateProvider())
-        for (index in actions.indices) dispatch(actions[index])
-        routineManager.cancelAll(reason)
+        try {
+            val actions = directTaskExecutor.cancelAll(stateProvider())
+            for (index in actions.indices) {
+                try {
+                    dispatch(actions[index])
+                } catch (failure: Throwable) {
+                    recordFailure(failure)
+                }
+            }
+        } catch (failure: Throwable) {
+            recordFailure(failure)
+        }
+        try {
+            routineManager.cancelAll(reason)
+        } catch (failure: Throwable) {
+            recordFailure(failure)
+        }
+        firstFailure?.let { throw it }
     }
 }

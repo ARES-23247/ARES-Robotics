@@ -49,18 +49,18 @@ internal object SubsystemLifecycleRenderer {
             /** Robot-loop host. Hardware reads, Redux updates, and output writes remain separated. */
             class ${document.kotlinTypeName}Subsystem(private val io: ${document.kotlinTypeName}IO) : Subsystem, TypedTuningConsumer {
                 private val controller = ${document.kotlinTypeName}Controller(io)
+                private var closed = false
 
                 /** Copies the already-refreshed hardware snapshot into immutable Redux state. */
                 override fun readSensors(store: Store, timestampMs: Long) {
-                    val snapshotAgeMs = if (timestampMs >= io.feedbackTimestampMs) {
-                        timestampMs - io.feedbackTimestampMs
-                    } else {
-                        Long.MAX_VALUE
-                    }
+                    if (closed) return
+                    val feedbackTimestampMs = io.feedbackTimestampMs
+                    val snapshotAgeMs = timestampMs - feedbackTimestampMs
                     val updated = state(store.state).copy(
             $copies${if (copies.isBlank()) "" else ","}
-                        feedbackValid = io.feedbackValid && snapshotAgeMs <= ${feedbackTimeoutMs}L,
-                        feedbackTimestampMs = io.feedbackTimestampMs,
+                        feedbackValid = io.feedbackValid && timestampMs >= feedbackTimestampMs &&
+                            snapshotAgeMs >= 0L && snapshotAgeMs <= ${feedbackTimeoutMs}L,
+                        feedbackTimestampMs = feedbackTimestampMs,
                         configurationHealthy = io.configurationHealthy,
                         homed = io.homed,
                         homingFaultLatched = io.homingFaultLatched,
@@ -73,6 +73,7 @@ internal object SubsystemLifecycleRenderer {
 
                 /** Applies immutable state to IO through the safety-gated controller. */
                 override fun writeOutputs(state: RobotState, scale: Double) {
+                    if (closed) return
                     controller.update(state(state), scale, $interlockPermit)
                 }
 
@@ -86,9 +87,20 @@ internal object SubsystemLifecycleRenderer {
 
                 /** Resets controller history, commands neutral, and releases owned IO idempotently. */
                 override fun close() {
-                    controller.reset()
-                    io.safe()
-                    io.close()
+                    if (closed) return
+                    closed = true
+                    var firstFailure: Throwable? = null
+                    fun attempt(cleanup: () -> Unit) {
+                        try { cleanup() } catch (failure: Throwable) {
+                            val first = firstFailure
+                            if (first == null) firstFailure = failure
+                            else if (first !== failure) first.addSuppressed(failure)
+                        }
+                    }
+                    attempt { controller.reset() }
+                    attempt { io.safe() }
+                    attempt { io.close() }
+                    firstFailure?.let { throw it }
                 }
 
                 companion object {

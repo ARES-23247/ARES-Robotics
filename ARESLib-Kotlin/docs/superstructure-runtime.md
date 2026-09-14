@@ -15,7 +15,9 @@ For each robot-frame sensor phase, `SuperstructureRuntime`:
 5. Evaluates one pending action request, including guards, debounce, and deadline fallback.
 6. Evaluates ordinary automatic sensor/time transitions in ascending explicit priority.
 7. Resolves a complete target preset into preallocated primitive buffers.
-8. Preflights every generated target task before dispatching any target action.
+8. Preflights every generated target task before dispatching any target action. Each task receives
+   the projected named-subsystem state from earlier targets, so multiple fields of one subsystem
+   compose without overwriting each other. Target tasks emit `UpdateNamedSubsystemState` actions.
 9. Runs catalog-backed lifecycle tasks once per monotonic transition sequence, source exit before
    destination entry.
 10. Publishes one immutable runtime snapshot when observable state changed.
@@ -23,12 +25,17 @@ For each robot-frame sensor phase, `SuperstructureRuntime`:
 Automatic transitions leaving one state must use unique priorities. Lower numbers run first; the
 runtime never uses document list order or last-assignment-wins as an implicit policy.
 
+Target change detection compares exact typed values in preallocated buffers. The published target
+hash is diagnostic; collisions cannot suppress a changed command. Frame-clock rewinds restart
+state, request, and debounce duration windows. Ordered elapsed times saturate on overflow, and
+generated feedback leases reject future timestamps and overflowing ages.
+
 ## Typed cached ports
 
 Documents refer to immutable subsystem and field UIDs. Generated bindings resolve those UIDs once
 at construction into integer slots. The periodic evaluator reads primitive typed values and health
-bits from cached Redux state only. It does not use string lookup, reflection, generic value maps,
-or hardware getters in the hot path.
+bits from cached Redux state using stable generated subsystem keys. It does not use reflection,
+generic target-value maps, or hardware getters in the hot path.
 
 Health requirements are:
 
@@ -39,6 +46,11 @@ Health requirements are:
 
 Canonical units are descriptor units. Pass-through ports must have matching units. LUT input and
 output units must match their connected ports before generation.
+
+A guard's optional maximum age tightens the descriptor lease; it cannot extend that lease. An
+explicit age also applies to VALUE_ONLY guards. Finite LUT endpoints interpolate without overflowing
+intermediate ranges. STEP tables reproduce each control point exactly and hold its value until the
+next point.
 
 ## Faults and recovery
 
@@ -51,6 +63,11 @@ Lifecycle actions are parameterless project-catalog tasks. Missing or failed tas
 coordinator. They are suitable for bounded effects such as indicators or logging, not for physical
 clearance sequencing. Use transient postures with measured guards when one mechanism must stop and
 be verified before another moves.
+
+Failed lifecycle preparation releases every prepared task. Target metadata cleanup attempts every
+task even if an earlier release fails, and a cleanup failure selects the fault preset. Generated
+subsystem close attempts controller reset, neutral output, and IO close before reporting failures;
+later close calls are inert, and closed bridges cannot resume sensor or output work.
 
 ## Allocation boundary
 
