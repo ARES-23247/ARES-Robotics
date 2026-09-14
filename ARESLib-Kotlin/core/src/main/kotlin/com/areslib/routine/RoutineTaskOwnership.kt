@@ -83,11 +83,16 @@ internal class RoutineTaskOwnership : TaskRuntimeStateOwner {
             cleanupFailure = combineFailures(cleanupFailure, failure)
             throw failure
         } finally {
-            // An overriding metadata hook must not strand strong callback references/deadlines.
-            TaskTimeoutManager.reset(task)
-            TaskCallbacks.reset(task)
+            // releaseDirect clears callback/timeout state even when the custom hook throws.
             TaskRuntimeOwnership.releaseClaim(task, this)
         }
+    }
+
+    /** Undo an unsuccessful admission before lifecycle begins, preserving the caller's metadata. */
+    fun abandonClaims() {
+        for (task in nodes) TaskRuntimeOwnership.releaseClaim(task, this)
+        nodes.clear(); leaves.clear(); released.clear()
+        cleanupFailure = null
     }
 
     fun releaseAll() {
@@ -145,14 +150,19 @@ internal class RoutineTaskOwnership : TaskRuntimeStateOwner {
         return actions
     }
 
-    private fun propagateOwnedTerminal(owner: Task): Boolean {
+    /** Admission is already exclusive; observe queued descendant cancellation before starting work. */
+    fun propagateQueuedTerminal(owner: Task): Boolean = propagateOwnedTerminal(owner, queued = true)
+
+    private fun propagateOwnedTerminal(owner: Task, queued: Boolean = false): Boolean {
         var cancelled = TaskStateMachine.getStatus(owner) == TaskStatus.CANCELLED
         var failed = TaskStateMachine.getStatus(owner) == TaskStatus.FAILED
         for (task in nodes) {
             if (released[task] != false) continue
+            if (queued && task is CompiledRoutineTask) task.propagateQueuedTerminal()
             when (TaskStateMachine.getStatus(task)) {
                 TaskStatus.FAILED -> failed = true
                 TaskStatus.CANCELLED -> cancelled = true
+                TaskStatus.COMPLETED -> if (queued) failed = true
                 else -> Unit
             }
         }
@@ -253,6 +263,7 @@ internal class CompiledRoutineTask(
     override val name: String = delegate.name
     override val priority: Int = delegate.priority
     override val requiredResources: Long = delegate.requiredResources
+    internal fun propagateQueuedTerminal(): Boolean = ownership.propagateQueuedTerminal(this)
     override fun pause(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = true, owner = this)
     override fun resume(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = false, owner = this)
     override fun releaseRuntimeState() {

@@ -1,8 +1,10 @@
 package com.areslib.sequencer
 
 import com.areslib.action.RobotAction
+import com.areslib.routine.RoutineTaskOwnership
 import com.areslib.state.RobotState
 import java.util.ArrayDeque
+import java.util.IdentityHashMap
 
 /**
  * Synchronized task queue with nested last-in/first-out preemption.
@@ -13,11 +15,19 @@ import java.util.ArrayDeque
  * complete tasks, capped at 100 transitions to prevent a malformed queue from locking the loop.
  *
  * Preemption calls [Task.pause] without performing terminal cleanup and pauses the task's watchdog
- * until [Task.resume] is called. [clear] performs best-effort interrupted
- * cleanup, releases runtime registries, and suppresses task exceptions.
+ * until [Task.resume] is called. [cancelAll] performs best-effort interrupted cleanup and releases
+ * runtime registries. Each admission exclusively owns its fresh task tree until terminal cleanup.
+ * Failed admission preserves the caller's task metadata and does not pause existing work.
+ *
+ * Same-executor recursive update/preempt/cancel/suspend/resume is rejected before mutation. A
+ * lifecycle callback may append fresh work with [addTask], except during failure/cancellation or
+ * the executor's final metadata drain. These phases reject additions so they cannot replenish the queue.
  */
 class TaskExecutor {
     private val queue = ArrayDeque<Task>()
+    private val admissions = IdentityHashMap<Task, RoutineTaskOwnership>()
+    private var isOperating = false
+    private var isCleaningUp = false
     private var activeTask: Task? = null
     private var activeTaskStartTimeMs: Long = 0L
     private var isSuspended = false
@@ -27,11 +37,41 @@ class TaskExecutor {
     private val preemptedStack = ArrayDeque<Pair<Task, Long>>()
 
     /**
-     * Appends a task to the standard queue.
+     * Claims a fresh, unstarted task tree and appends it to the standard queue.
+     * Duplicate, running, terminal, and foreign-owned instances are rejected without metadata loss.
+     * Callers must not initialize or reset admitted tasks before the executor releases them.
      */
     @Synchronized
     fun addTask(task: Task) {
+        check(!isCleaningUp) { "Cannot enqueue tasks during executor cleanup" }
+        admit(task)
         queue.offer(task)
+    }
+
+    private fun admit(task: Task) {
+        val ownership = RoutineTaskOwnership()
+        try { ownership.acquire(task) }
+        catch (failure: Throwable) {
+            ownership.abandonClaims()
+            throw failure
+        }
+        admissions[task] = ownership
+    }
+
+    private fun canInitialize(task: Task): Boolean =
+        TaskStateMachine.getStatus(task) == TaskStatus.PENDING &&
+            !checkNotNull(admissions[task]).propagateQueuedTerminal(task)
+
+    private inline fun <T> operation(name: String, block: () -> T): T {
+        check(!isOperating) { "Cannot recursively call TaskExecutor.$name from a lifecycle callback" }
+        isOperating = true
+        try { return block() } finally { isOperating = false }
+    }
+
+    private inline fun <T> cleanup(block: () -> T): T {
+        val previous = isCleaningUp
+        isCleaningUp = true
+        try { return block() } finally { isCleaningUp = previous }
     }
 
     /**
@@ -40,7 +80,7 @@ class TaskExecutor {
      * by the suspended interval so waits and deadlines measure execution time, not wall time.
      */
     @Synchronized
-    fun suspend() {
+    fun suspend() = operation("suspend") {
         if (!isSuspended) {
             isSuspended = true
             suspendedAtMs = com.areslib.util.RobotClock.currentTimeMillis()
@@ -50,7 +90,7 @@ class TaskExecutor {
 
     /** Resumes execution of tasks. */
     @Synchronized
-    fun resume() {
+    fun resume() = operation("resume") {
         if (isSuspended) {
             isSuspended = false
             activeTask?.setTimeoutSuspended(false)
@@ -63,7 +103,8 @@ class TaskExecutor {
      * The currently active task is paused and pushed to the preemption stack, to be resumed later.
      */
     @Synchronized
-    fun preempt(task: Task, state: RobotState, currentTimestampMs: Long): List<RobotAction> {
+    fun preempt(task: Task, state: RobotState, currentTimestampMs: Long): List<RobotAction> = operation("preempt") {
+        admit(task) // Reject foreign/duplicate work before pausing the current task.
         var actions: MutableList<RobotAction>? = null
 
         val currentActive = activeTask
@@ -83,11 +124,15 @@ class TaskExecutor {
                     actions = addActions(actions, if (TaskStateMachine.getStatus(currentActive) == TaskStatus.CANCELLED)
                         handleTaskCancellation(currentActive, state) else handleTaskFailure(currentActive, state))
                     releaseMetadata(task) // Incoming work never initialized and must not survive this fault.
-                    return actions ?: emptyList()
+                    return@operation actions ?: emptyList()
                 }
             }
         }
         
+        if (!canInitialize(task)) {
+            actions = addActions(actions, rejectUnstarted(task, state))
+            return@operation actions ?: emptyList()
+        }
         if (isSuspended) suspendedAtMs = currentTimestampMs
         activeTask = task
         activeTaskStartTimeMs = currentTimestampMs
@@ -99,7 +144,7 @@ class TaskExecutor {
         } finally {
             if (isSuspended) activeTask?.setTimeoutSuspended(true)
         }
-        return actions ?: emptyList()
+        return@operation actions ?: emptyList()
     }
 
     /**
@@ -107,8 +152,8 @@ class TaskExecutor {
      * Returns a list of actions to dispatch to the Redux store.
      */
     @Synchronized
-    fun update(state: RobotState, currentTimestampMs: Long): List<RobotAction> {
-        if (isSuspended) return emptyList()
+    fun update(state: RobotState, currentTimestampMs: Long): List<RobotAction> = operation("update") {
+        if (isSuspended) return@operation emptyList()
         var actions: MutableList<RobotAction>? = null
 
         var task = activeTask
@@ -149,6 +194,10 @@ class TaskExecutor {
                     queue.isNotEmpty() -> {
                         // Dequeue the next task
                         val nextTask = queue.poll()
+                        if (!canInitialize(nextTask)) {
+                            actions = addActions(actions, rejectUnstarted(nextTask, state))
+                            break
+                        }
                         activeTask = nextTask
                         activeTaskStartTimeMs = currentTimestampMs
                         try {
@@ -215,7 +264,7 @@ class TaskExecutor {
                     }
                     activeTask = null
                     if (!releaseMetadata(task) || TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
-                        actions = addActions(actions, cancelAll(state))
+                        actions = addActions(actions, cancelAllInternal(state))
                         break
                     }
                     task = null // Continue loop to dequeue/resume instantly
@@ -242,7 +291,7 @@ class TaskExecutor {
             System.err.println("TaskExecutor: Loop transition threshold reached ($maxLoopCount). Aborting update to prevent lockup.")
         }
 
-        return actions ?: emptyList()
+        return@operation actions ?: emptyList()
     }
 
     private fun addActions(existing: MutableList<RobotAction>?, newActions: List<RobotAction>): MutableList<RobotAction>? {
@@ -252,7 +301,7 @@ class TaskExecutor {
         return list
     }
 
-    private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> {
+    private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> = cleanup {
         TaskStateMachine.markFailed(task)
         activeTask = null
         try {
@@ -270,12 +319,12 @@ class TaskExecutor {
             releaseMetadata(task)
         }
         val allCleanupActions = cleanupActions.toMutableList()
-        allCleanupActions.addAll(cancelAll(state))
-        return allCleanupActions
+        allCleanupActions.addAll(cancelAllInternal(state))
+        allCleanupActions
     }
 
     /** Performs interrupted cleanup without converting cancellation into completion or failure. */
-    private fun handleTaskCancellation(task: Task, state: RobotState): List<RobotAction> {
+    private fun handleTaskCancellation(task: Task, state: RobotState): List<RobotAction> = cleanup {
         activeTask = null
         val cleanupActions = try {
             task.end(state, interrupted = true)
@@ -286,20 +335,24 @@ class TaskExecutor {
             releaseMetadata(task)
         }
         val allCleanupActions = cleanupActions.toMutableList()
-        allCleanupActions.addAll(cancelAll(state))
-        return allCleanupActions
+        allCleanupActions.addAll(cancelAllInternal(state))
+        allCleanupActions
     }
 
     /**
      * Interrupts initialized tasks, clears the executor, and returns every safe-cleanup action.
      *
-     * Unlike [clear], this method makes cancellation output observable to its caller. Runtime
+     * This method makes cancellation output observable to its caller. Runtime
      * managers must dispatch the returned actions before publishing their cancelled lifecycle
      * event. Tasks that never initialized are released without calling `end`, because their
      * cleanup implementations may depend on initialization-only state.
      */
     @Synchronized
-    fun cancelAll(state: RobotState): List<RobotAction> {
+    fun cancelAll(state: RobotState): List<RobotAction> = operation("cancelAll") {
+        cancelAllInternal(state)
+    }
+
+    private fun cancelAllInternal(state: RobotState): List<RobotAction> = cleanup {
         val actions = mutableListOf<RobotAction>()
         val current = activeTask
         activeTask = null
@@ -316,16 +369,34 @@ class TaskExecutor {
         current?.let(::cancelStarted)
         while (preemptedStack.isNotEmpty()) cancelStarted(preemptedStack.pop().first)
         while (queue.isNotEmpty()) releaseMetadata(queue.removeFirst())
-        return actions
+        actions
     }
 
-    private fun releaseMetadata(task: Task): Boolean = try {
-        TaskRuntimeOwnership.release(task)
-        true
-    } catch (failure: Throwable) {
-        TaskStateMachine.markFailed(task)
-        reportFailure(task, "metadata release", failure)
-        false
+    private fun rejectUnstarted(task: Task, state: RobotState): List<RobotAction> = cleanup {
+        // External initialization after enqueue is invalid, but any running output still needs end.
+        if (TaskStateMachine.getStatus(task) == TaskStatus.RUNNING) {
+            return@cleanup handleTaskFailure(task, state)
+        }
+        if (TaskStateMachine.getStatus(task) != TaskStatus.CANCELLED) {
+            TaskStateMachine.markFailed(task)
+            try { TaskCallbacks.invokeFail(task) } catch (failure: Throwable) {
+                reportFailure(task, "queued task failure callback", failure)
+            }
+        }
+        releaseMetadata(task)
+        cancelAllInternal(state)
+    }
+
+    private fun releaseMetadata(task: Task): Boolean = cleanup {
+        try {
+            val ownership = admissions.remove(task)
+            if (ownership != null) ownership.releaseAll() else TaskRuntimeOwnership.release(task)
+            true
+        } catch (failure: Throwable) {
+            TaskStateMachine.markFailed(task)
+            reportFailure(task, "metadata release", failure)
+            false
+        }
     }
 
     private fun reportFailure(task: Task, phase: String, failure: Throwable) {
