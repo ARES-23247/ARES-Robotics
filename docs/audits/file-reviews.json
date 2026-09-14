@@ -5689,7 +5689,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e4d506cd10d7ea82933b966048455708fb014620fab8728b83d4cf7f2951123c",
+      "sha256": "d45545551d47775a45f480a281e265ce6f47913a2828021f00746ffc05e0010a",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18416,6 +18416,86 @@
       "evidence": [
         "docs/audits/camera-calibration-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AdvancedAnalyticsService.kt": {
+      "sha256": "e4246895a64a8d387384352c00a57e72605bf783439f0ea6afc4b548c1b2ea4b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 240: Read complete service and result models; corrected numeric correlation, exact vector families/times, elapsed-time command variation and heatmap speed, finite/ambiguous summaries, canonical electrical topics and honest evidence counts. One bounded prepared signal read per key, reused recent summaries, typed failures and propagated cancellation tested. Retains partial status for summary presence/default provenance, heuristic calibration, recording snapshot and repository scalability boundaries; no HIL/timing claim.",
+      "evidence": [
+        "docs/audits/advanced-analytics-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AdvancedAnalyticsSignals.kt": {
+      "sha256": "6b9506c64f581169be6171743be36b7cdfb231433b9cf6ac2c71b24595c4f4a2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 240: Complete new pure numeric preparation, one-to-one greedy nearest alignment and independently scaled online Pearson helpers reviewed/tested. Numeric/session/topic filtering, source microseconds and last sample order with invalid latest updates suppressing older numeric values, tiny/huge/signed/offset/constant cases, exact vectors, skew/ties/no reuse and 5000-pair linear access bound covered. Inputs to matching/correlation are prepared snapshots; no global optimal or atomic-capture claim.",
+      "evidence": [
+        "docs/audits/advanced-analytics-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AdvancedAnalyticsMathAuditTest.kt": {
+      "sha256": "3c18cbe6e030d06db4af0229bbe3cd7205fad3f04e525d35ea7c2a5f062cf51c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 240: Complete 30-method in-memory suite reviewed/executed: 17 preserved failing baseline methods plus 13 boundary/structural tests for numerical invariance, sample identity and time, accurate interval/evidence counts, canonical motor aliases, bounded cached reads, missing summary/telemetry, estimator priority and typed failures/cancellation. Does not instantiate databases for pure tests or claim real robot timing.",
+      "evidence": [
+        "docs/audits/advanced-analytics-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AdvancedAnalyticsServiceTest.kt": {
+      "sha256": "78a9ee0dae6c25ef259ec99e293d87a7cc1ffe87ae64b28271088897929bd951",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 240: Complete unchanged four-method real DuckDB suite read/executed: comparison and diagnostic integration, normalized gamepad versus physical drive-frame equivalence, recent and explicit baseline workspace identity isolation. Each fixture closes its owned database before deleting its directory.",
+      "evidence": [
+        "docs/audits/advanced-analytics-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ServiceContracts.kt": {
+      "sha256": "670bb0ef640783f329e9b1f376d1dca40d3699939c08b5164e4f94db61076dee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 240: Complete small declaration file read: covariant sealed service outcomes, suspend read-only analytics repository contract, injectable nanosecond clock and JVM monotonic clock delegation. Analytics fakes and real service tests exercise repository/outcome use; declaration/clock review requires no new mirrored unit test.",
+      "evidence": [
+        "docs/audits/advanced-analytics-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/AdvancedAnalyticsCard.kt": {
+      "sha256": "c63537aa8c9e77370ee40fbcf62b67a63edc61968fde77a5c42fd4095a9100b5",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 240: Read card and traced analysis outcome consumption; corrected sample/heuristic/evidence labels and widened heatmap integer spans/offsets. Compiled with full Studio suites. UI/export-dialog interactions, coroutine lifecycle and rendered layout remain unvalidated; partial coverage only.",
+      "evidence": [
+        "docs/audits/advanced-analytics-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryEngineService.kt": {
+      "sha256": "718bbda25086e92e890324c9d7f8d46f23627dcea1647c15114c72222f476d25",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Pass 240: Read only initial aggregate/p95/motor-current/battery-resistance queries and default conversions to trace summary provenance. Missing metrics collapse to zero or synthetic 12V and broad topic selectors require follow-up through schema/storage/consumers. No producer change or producer-specific test claimed.",
+      "evidence": [
+        "docs/audits/advanced-analytics-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/advanced-analytics-math-audit.md": {
+      "sha256": "bd4cd0766173b551bc2e208dcff5a86892a2cc0aa8d33f3d5df146493f640b08",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 240: Records confirmed numerical/sample/evidence/lifecycle findings, structural query/scan improvements, baseline and focused/full validation, immutable dependency evidence, conservative zero behavior and unresolved summary/UI/hardware limitations.",
+      "evidence": [
+        "docs/audits/advanced-analytics-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
       ]
     }
   }

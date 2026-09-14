@@ -208,7 +208,7 @@ private fun AnalyticsFailure(message: String, onRetry: () -> Unit) {
 private fun OverviewSection(report: AdvancedAnalyticsReport) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MetricTile("Driver", report.driverScore?.total?.let { "%.0f".format(it) } ?: "--", report.driverScore?.let(::scoreColor) ?: AresTextTertiary, Modifier.weight(1f))
+            MetricTile("Commands", report.driverScore?.total?.let { "%.0f".format(it) } ?: "--", report.driverScore?.let(::scoreColor) ?: AresTextTertiary, Modifier.weight(1f))
             MetricTile("Regressions", report.regressions.size.toString(), if (report.regressions.isEmpty()) AresGreen else AresAmber, Modifier.weight(1f))
             MetricTile("Path cells", report.pathHeatmap.size.toString(), AresCyan, Modifier.weight(1f))
             MetricTile("Actions", report.tuningSuggestions.size.toString(), AresCyan, Modifier.weight(1f))
@@ -240,10 +240,11 @@ private fun MetricTile(label: String, value: String, color: Color, modifier: Mod
 @Composable
 private fun DriverScoreBreakdown(score: DriverPerformanceScore) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        SectionTitle("Driver input quality · ${score.samples} samples")
+        SectionTitle("Command pattern · ${score.samples} retained samples")
         ScoreBar("Smoothness", score.smoothness)
-        ScoreBar("Decisiveness", score.decisiveness)
+        ScoreBar("Activity", score.decisiveness)
         ScoreBar("Consistency", score.consistency)
+        Text("Heuristic scores describe recorded commands, not driver skill.", color = AresTextTertiary, fontSize = 11.sp)
     }
 }
 
@@ -294,23 +295,23 @@ private fun HeatmapSection(cells: List<PathHeatmapCell>) {
     val border = AresBorder
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Occupancy by 0.5 m field cell", color = AresTextSecondary, fontSize = 11.sp)
-            Text("Peak $maxVisits visits", color = AresCyan, fontSize = 11.sp)
+            Text("Retained samples by 0.5 m cell", color = AresTextSecondary, fontSize = 11.sp)
+            Text("Peak $maxVisits samples", color = AresCyan, fontSize = 11.sp)
         }
         Canvas(Modifier.fillMaxWidth().weight(1f).padding(top = 8.dp)) {
-            val columns = maxX - minX + 1
-            val rows = maxY - minY + 1
-            val cellWidth = size.width / columns.coerceAtLeast(1)
-            val cellHeight = size.height / rows.coerceAtLeast(1)
+            val columns = maxX.toLong() - minX + 1L
+            val rows = maxY.toLong() - minY + 1L
+            val cellWidth = size.width / columns.toFloat()
+            val cellHeight = size.height / rows.toFloat()
             cells.forEach { cell ->
                 val intensity = (cell.visits.toFloat() / maxVisits).coerceIn(0f, 1f)
-                val left = (cell.xIndex - minX) * cellWidth
-                val top = (maxY - cell.yIndex) * cellHeight
+                val left = (cell.xIndex.toLong() - minX).toFloat() * cellWidth
+                val top = (maxY.toLong() - cell.yIndex).toFloat() * cellHeight
                 drawRect(cyan.copy(alpha = 0.12f + intensity * 0.78f), androidx.compose.ui.geometry.Offset(left, top), androidx.compose.ui.geometry.Size(cellWidth, cellHeight))
                 drawRect(border.copy(alpha = 0.35f), androidx.compose.ui.geometry.Offset(left, top), androidx.compose.ui.geometry.Size(cellWidth, cellHeight), style = Stroke(1f))
             }
         }
-        Text("Darker cells indicate more time spent in that area. Use this to spot congestion, hesitation, or route drift.", color = AresTextTertiary, fontSize = 11.sp, modifier = Modifier.padding(top = 8.dp))
+        Text("Brighter cells contain more retained pose samples. Sampling and downsampling affect counts; this is not a dwell-time map.", color = AresTextTertiary, fontSize = 11.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
 
@@ -318,14 +319,14 @@ private fun HeatmapSection(cells: List<PathHeatmapCell>) {
 private fun CorrelationSection(correlations: List<SignalCorrelation>) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (correlations.isEmpty()) {
-            EmptyRow("Not enough aligned motor, voltage, and velocity samples for reliable correlations.")
+            EmptyRow("No motor signal pairs with sufficient valid samples and nonzero variation.")
         } else correlations.forEach { correlation ->
             val strength = abs(correlation.coefficient)
             val color = when { strength >= 0.8 -> AresAmber; strength >= 0.6 -> AresCyan; else -> AresTextSecondary }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(AresSurface).padding(10.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("r = %.2f".format(correlation.coefficient), color = color, fontWeight = FontWeight.Bold)
-                    Text("n = ${correlation.samples}", color = AresTextTertiary, fontSize = 11.sp)
+                    Text("${correlation.samples} paired samples", color = AresTextTertiary, fontSize = 11.sp)
                 }
                 Text(shortTopic(correlation.leftTopic), color = AresTextPrimary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text("↔ ${shortTopic(correlation.rightTopic)}", color = AresTextSecondary, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -361,10 +362,10 @@ private fun SuggestionRow(suggestion: TuningSuggestion) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(AresSurface).padding(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(suggestion.parameter, color = AresCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-            Text("${(suggestion.confidence * 100).toInt()}% confidence", color = AresTextSecondary, fontSize = 11.sp)
+            Text("Evidence ${(suggestion.evidenceStrength * 100).toInt()}/100", color = AresTextSecondary, fontSize = 11.sp)
         }
         Text(suggestion.recommendation, color = AresTextPrimary, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
-        Text("${suggestion.rationale} · n=${suggestion.evidenceSamples}", color = AresTextTertiary, fontSize = 10.sp, modifier = Modifier.padding(top = 3.dp))
+        Text("${suggestion.rationale} · ${suggestion.evidenceLabel}", color = AresTextTertiary, fontSize = 10.sp, modifier = Modifier.padding(top = 3.dp))
     }
 }
 
