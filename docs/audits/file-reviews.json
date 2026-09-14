@@ -5725,10 +5725,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "56d9491bac5702c836ef1f440d5dc25eb230978dff6492667c06803993464643",
+      "sha256": "71d379d17c7598ff5791eff5e54a954ff65c7075126fcfd9e587a5ca302330e4",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -5839,7 +5839,8 @@
         "docs/audits/frc-starter-field-telemetry-audit.md",
         "docs/audits/frc-starter-drive-lease-audit.md",
         "docs/audits/frc-starter-runtime-lifecycle-audit.md",
-        "docs/audits/frc-starter-composition-ownership-audit.md"
+        "docs/audits/frc-starter-composition-ownership-audit.md",
+        "docs/audits/frc-starter-pose-controller-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -20116,6 +20117,46 @@
       "evidence": [
         "docs/audits/frc-starter-composition-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass266-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterPoseControllerAuditTest.kt": {
+      "sha256": "337ff2e0cbc8e66dafd9e8670307c7cafeadba14aae7b44e3ee5744ae4ae1ba9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass267: Entire20method fixture reviewed/run:14 original failures on unchanged pass266 source cover vector speed, immediately tightened/zero scale, repeated/rewound clock, duplicate/stale settling, raw NaN heading, invalid PID composition, NaN scale, pause neutral, output after timeout, reuse timeout and invalid target construction. Pause case expanded to assert resumed neutral ramp;6 additional methods cover fresh3-sample settling/reset, missing/future/stale/nonfinite feedback and fault latch, invalid acceleration/gains, short signed heading/huge finite angles,600 seeded variable-feedback vector/angular acceleration frames, and zero timestamp plus repeated-frame angular scale reduction. Restores prior RobotClock and resets task registries.20pass within157producttests, no native process/physical/whole-loop benchmark claim.",
+      "evidence": [
+        "docs/audits/frc-starter-pose-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass267-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterFrcAutonomousRuntimeTest.kt": {
+      "sha256": "355e59ac906577231982a0f925691b454a10d01ee1d901a952a93a07a615cf92",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass267: Entire existing8method fixture read and rerun unchanged: deterministic selector/default-do-nothing behavior, Studio/dashboard/default precedence, single alliance reflection round-trip with fixed field length, no-motion seed exception, ideal simulation reaching x/y/heading target and endingneutral throughTaskExecutor, stale feedback fail/neutral, generated typed speed and acceleration limits, and blocked-task timeoutneutral. Tests using mocked time restore system clock in finally; product suite is serial and new fixtures restore incoming mode.8pass among157; passing fixed catalog/field cases do not establish arbitrary fallback/field semantics or marker/match lifecycle correctness.",
+      "evidence": [
+        "docs/audits/frc-starter-pose-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass267-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-starter-pose-controller-audit.md": {
+      "sha256": "29a997112b5558dc90c3384d275c07c764fe74399a52cc3632ec455a19540c8c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass267: Entire pass267 report verified against14/14 unchanged-source baseline,157finalpasses preserving137previous cases,20new methods, exact scope of scalar snapshot bytecode evidence, unchangedlibrarytree/all410candidatehashes, guidance and429currentdoclinks. Explicitly rules out reachable unbounded angle hang, differentiates tighter speed envelope from normal acceleration, and leaves enclosing autonomous source partial for marker/selection/match paths.",
+      "evidence": [
+        "docs/audits/frc-starter-pose-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass267-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterFrcAutonomousRuntime.kt": {
+      "sha256": "177ad4e1a1222457b1cf5c69e9b5acf040af1c0257905e1c9869d38ae2751888",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Pass267: Entire source read; StarterFrcDriveToPoseTask controller region fully reviewed/fixed and exercised: scalar finite feedback before wrapping, PID validity composition, vector speed and immediate tighter envelopes, real positive elapsed integration with repeated-frame hold and rewindfault, distinct fresh settling, invalid raw target/config rejection, terminal outputguard, neutralpause/reset ramp, preserved configured timeout on reuse, primitive snapshot fields/cached target heading and shared bounded wrap. Original14controllercases allfailed;20finalnewmethods plus8existingauto tests pass in157suite preserving137. No reachable infinite wrap loop found because old operands already normalized. Remaining selector fallback safety, capability scalar/vector drive mapping, field transform contract, marker childfailure/progress/lifecycle, and full match stop/cancellation/clock paths need further focused validation, so source remains partial.",
+      "evidence": [
+        "docs/audits/frc-starter-pose-controller-audit.md",
+        "ARESLib-Kotlin/build/audit-pass267-verified-evidence/summary.json"
       ]
     }
   }

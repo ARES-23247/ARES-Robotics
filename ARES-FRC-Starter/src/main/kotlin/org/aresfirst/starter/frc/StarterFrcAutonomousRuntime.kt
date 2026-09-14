@@ -2,6 +2,7 @@ package org.aresfirst.starter.frc
 
 import com.areslib.action.RobotAction
 import com.areslib.control.feedback.PIDController
+import com.areslib.math.wrapAngle
 import com.areslib.math.coordinate.AllianceMirroring
 import com.areslib.math.coordinate.CoordinateTransformers
 import com.areslib.math.coordinate.FieldOrigin
@@ -204,20 +205,41 @@ internal class StarterFrcDriveToPoseTask(
     private val xController = PIDController(0.0, 0.0, 0.0)
     private val yController = PIDController(0.0, 0.0, 0.0)
     private val headingController = PIDController(0.0, 0.0, 0.0)
+    private val targetHeading = wrapAngle(target.heading.rawRadians)
+    private var configuredTimeoutMs = MAX_DRIVE_DURATION_MS
     private var settledSamples = 0
+    private var lastSettledObservationMs = -1L
+    private var lastObservedTimestampMs = -1L
     private var lastControllerTimestampMs = -1L
     private var previousXVelocity = 0.0
     private var previousYVelocity = 0.0
     private var previousAngularVelocity = 0.0
 
     init {
-        withTimeout(MAX_DRIVE_DURATION_MS)
+        require(target.x.isFinite() && target.y.isFinite() && target.heading.rawRadians.isFinite()) {
+            "FRC drive target must contain finite coordinates and heading"
+        }
         headingController.enableContinuousInput(-PI, PI)
     }
 
+    override fun withTimeout(ms: Long): Task {
+        super.withTimeout(ms)
+        configuredTimeoutMs = ms
+        return this
+    }
+
     override fun initialize(state: RobotState): List<RobotAction> {
+        // Terminal cleanup removes registry deadlines. Reapply the configured duration on reuse.
+        super.withTimeout(configuredTimeoutMs)
         super.initialize(state)
+        resetControlHistory()
+        return emptyList()
+    }
+
+    private fun resetControlHistory() {
         settledSamples = 0
+        lastSettledObservationMs = -1L
+        lastObservedTimestampMs = -1L
         lastControllerTimestampMs = -1L
         previousXVelocity = 0.0
         previousYVelocity = 0.0
@@ -225,13 +247,15 @@ internal class StarterFrcDriveToPoseTask(
         xController.reset()
         yController.reset()
         headingController.reset()
-        return emptyList()
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        val pose = state.drive.poseEstimator.estimatedPose
-        val positionReady = hypot(target.x - pose.x, target.y - pose.y) <= POSITION_TOLERANCE_METERS
-        val headingReady = abs(wrapRadians(target.heading.radians - pose.heading.radians)) <= HEADING_TOLERANCE_RADIANS
+        if (!usable(state, RobotClock.currentTimeMillis(), elapsedMs)) return false
+        val pose = state.drive.poseEstimator
+        if (pose.lastObservationTimestampMs == lastSettledObservationMs) return false
+        lastSettledObservationMs = pose.lastObservationTimestampMs
+        val positionReady = hypot(target.x - pose.estimatedPoseX, target.y - pose.estimatedPoseY) <= POSITION_TOLERANCE_METERS
+        val headingReady = abs(wrapAngle(targetHeading - wrapAngle(pose.estimatedPoseHeading))) <= HEADING_TOLERANCE_RADIANS
         settledSamples = if (positionReady && headingReady) settledSamples + 1 else 0
         return settledSamples >= REQUIRED_SETTLED_SAMPLES
     }
@@ -239,14 +263,8 @@ internal class StarterFrcDriveToPoseTask(
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         super.execute(state, elapsedMs)
         val now = RobotClock.currentTimeMillis()
-        val observation = state.drive.poseEstimator.lastObservationTimestampMs
-        if (!state.drive.measuredMotionValid || observation < 0L || now < observation ||
-            now - observation > GeneratedAresDrivebaseConfig.STALE_FEEDBACK_TIMEOUT_MS
-        ) {
-            TaskStateMachine.markFailed(this)
-            return neutralResult
-        }
-        val pose = state.drive.poseEstimator.estimatedPose
+        if (!usable(state, now, elapsedMs)) return neutralAt(now)
+        val pose = state.drive.poseEstimator
         // The generated typed profile is the experiment boundary. Presets remain conservative
         // envelopes within that reviewed global scale, so a live-safe change affects real behavior.
         val tunedScale = state.tuning.drive.pathVelocityScale.coerceIn(0.0, 1.0)
@@ -254,10 +272,15 @@ internal class StarterFrcDriveToPoseTask(
             preset.speedScale * tunedScale
         val maximumAngular = GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND *
             preset.speedScale * tunedScale
-        val dtSeconds = if (lastControllerTimestampMs < 0L || now <= lastControllerTimestampMs) {
+        // A repeated clock sample cannot integrate PID state or grow the acceleration ramp.
+        if (now == lastControllerTimestampMs) {
+            return limitedCommand(previousXVelocity, previousYVelocity, previousAngularVelocity,
+                maximumLinear, maximumAngular, now)
+        }
+        val dtSeconds = if (lastControllerTimestampMs < 0L) {
             NOMINAL_DT_SECONDS
         } else {
-            ((now - lastControllerTimestampMs) / 1000.0).coerceIn(MIN_DT_SECONDS, MAX_DT_SECONDS)
+            ((now - lastControllerTimestampMs) / 1000.0).coerceAtMost(MAX_DT_SECONDS)
         }
         lastControllerTimestampMs = now
         val translationGains = state.tuning.drive.pathTranslationGains
@@ -275,9 +298,19 @@ internal class StarterFrcDriveToPoseTask(
         headingController.d = rotationGains.kD
         headingController.setOutputLimits(-maximumAngular, maximumAngular)
 
-        val requestedX = xController.calculate(pose.x, target.x, dtSeconds)
-        val requestedY = yController.calculate(pose.y, target.y, dtSeconds)
-        val requestedOmega = headingController.calculate(pose.heading.radians, target.heading.radians, dtSeconds)
+        var requestedX = xController.calculate(pose.estimatedPoseX, target.x, dtSeconds)
+        var requestedY = yController.calculate(pose.estimatedPoseY, target.y, dtSeconds)
+        val requestedOmega = headingController.calculate(wrapAngle(pose.estimatedPoseHeading), targetHeading, dtSeconds)
+        if (!xController.lastCalculationValid || !yController.lastCalculationValid || !headingController.lastCalculationValid) {
+            TaskStateMachine.markFailed(this)
+            return neutralAt(now)
+        }
+        val requestedMagnitude = hypot(requestedX, requestedY)
+        if (requestedMagnitude > maximumLinear) {
+            val scale = maximumLinear / requestedMagnitude
+            requestedX *= scale
+            requestedY *= scale
+        }
         val accelerationLimit = state.tuning.drive.pathAccelerationLimit.coerceIn(0.05, 20.0)
         val translationDeltaLimit = accelerationLimit * dtSeconds
         val deltaX = requestedX - previousXVelocity
@@ -290,10 +323,20 @@ internal class StarterFrcDriveToPoseTask(
             (GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND /
                 GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND.coerceAtLeast(0.01))
         val angularDeltaLimit = angularAccelerationLimit * dtSeconds
-        command.targetXVelocity = previousXVelocity + deltaX * translationScale
-        command.targetYVelocity = previousYVelocity + deltaY * translationScale
-        command.targetAngularVelocity = previousAngularVelocity +
-            (requestedOmega - previousAngularVelocity).coerceIn(-angularDeltaLimit, angularDeltaLimit)
+        return limitedCommand(previousXVelocity + deltaX * translationScale,
+            previousYVelocity + deltaY * translationScale,
+            previousAngularVelocity + (requestedOmega - previousAngularVelocity).coerceIn(-angularDeltaLimit, angularDeltaLimit),
+            maximumLinear, maximumAngular, now)
+    }
+
+    /** Tightening a safety envelope wins over the normal acceleration ramp, including scale zero. */
+    private fun limitedCommand(x: Double, y: Double, omega: Double, maximumLinear: Double, maximumAngular: Double,
+        now: Long): List<RobotAction> {
+        val magnitude = hypot(x, y)
+        val scale = if (magnitude > maximumLinear) maximumLinear / magnitude else 1.0
+        command.targetXVelocity = x * scale
+        command.targetYVelocity = y * scale
+        command.targetAngularVelocity = omega.coerceIn(-maximumAngular, maximumAngular)
         previousXVelocity = command.targetXVelocity
         previousYVelocity = command.targetYVelocity
         previousAngularVelocity = command.targetAngularVelocity
@@ -301,21 +344,46 @@ internal class StarterFrcDriveToPoseTask(
         return commandResult
     }
 
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        super.end(state, interrupted)
-        neutral.timestampMs = RobotClock.currentTimeMillis()
+    /** Validate the raw snapshot before wrapping angles can hide invalid input. */
+    private fun usable(state: RobotState, now: Long, elapsedMs: Long): Boolean {
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return false
+        val pose = state.drive.poseEstimator
+        val observation = pose.lastObservationTimestampMs
+        val tuning = state.tuning.drive
+        val translation = tuning.pathTranslationGains
+        val rotation = tuning.pathRotationGains
+        if (elapsedMs < 0L || elapsedMs > configuredTimeoutMs ||
+            !state.drive.measuredMotionValid || observation < 0L || now < observation ||
+            now - observation > GeneratedAresDrivebaseConfig.STALE_FEEDBACK_TIMEOUT_MS ||
+            observation < lastObservedTimestampMs || now < lastControllerTimestampMs ||
+            !pose.estimatedPoseX.isFinite() || !pose.estimatedPoseY.isFinite() || !pose.estimatedPoseHeading.isFinite() ||
+            !tuning.pathVelocityScale.isFinite() || !tuning.pathAccelerationLimit.isFinite() || tuning.pathAccelerationLimit <= 0.0 ||
+            !translation.kP.isFinite() || !translation.kI.isFinite() || !translation.kD.isFinite() ||
+            !rotation.kP.isFinite() || !rotation.kI.isFinite() || !rotation.kD.isFinite()) {
+            TaskStateMachine.markFailed(this)
+            return false
+        }
+        lastObservedTimestampMs = observation
+        return true
+    }
+
+    private fun neutralAt(now: Long): List<RobotAction> {
+        neutral.timestampMs = now
         return neutralResult
     }
 
+    override fun pause(state: RobotState): List<RobotAction> {
+        resetControlHistory()
+        return neutralAt(RobotClock.currentTimeMillis())
+    }
+
+    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
+        super.end(state, interrupted)
+        return neutralAt(RobotClock.currentTimeMillis())
+    }
+
     override fun releaseRuntimeState() {
-        settledSamples = 0
-        lastControllerTimestampMs = -1L
-        previousXVelocity = 0.0
-        previousYVelocity = 0.0
-        previousAngularVelocity = 0.0
-        xController.reset()
-        yController.reset()
-        headingController.reset()
+        resetControlHistory()
         super.releaseRuntimeState()
     }
 
@@ -325,7 +393,6 @@ internal class StarterFrcDriveToPoseTask(
         const val REQUIRED_SETTLED_SAMPLES = 3
         const val MAX_DRIVE_DURATION_MS = 10_000L
         const val NOMINAL_DT_SECONDS = 0.02
-        const val MIN_DT_SECONDS = 0.001
         const val MAX_DT_SECONDS = 0.05
     }
 }
@@ -525,11 +592,4 @@ internal class StarterFrcAutonomousRuntime(
             }.getOrDefault(fallback)
         }
     }
-}
-
-private fun wrapRadians(value: Double): Double {
-    var wrapped = value
-    while (wrapped > PI) wrapped -= 2.0 * PI
-    while (wrapped < -PI) wrapped += 2.0 * PI
-    return wrapped
 }
