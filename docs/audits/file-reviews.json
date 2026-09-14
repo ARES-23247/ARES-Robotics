@@ -5699,7 +5699,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "55332c110ef4f60d9f4217bf47f24477b16a544fb363187b7a871c51b52111f2",
+      "sha256": "41ffe97fbb7163ad56474e4d2ec77dcad28050adb26dcfe81637b5f05630722d",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -11703,11 +11703,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DriverAnalysisService.kt": {
-      "sha256": "4cfa7344dea016a1e38897415506ebd11efde172b0cf9a90ddbe0628b3880dda",
-      "review": "partial",
+      "sha256": "f0127cc7d9865ccc47ce79ed837f9b742f5af8d7032be50c3cfb60f4fbb1a3d3",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 247: Driver jitter/coaching now use one bounded latest-source statement per analysis and delegate numerical interpretation to reviewed helper. Nullable unavailable tuning/rate fields and per-axis/temporal coverage contract integrated with consumers. Prior profile CRUD checks retained. Constructor/profile persistence failure consistency and multi-instance concurrency remain partial.",
+      "scope": "Pass 248: Prior recorded jitter/coaching numerical and coverage review retained. Remaining profile boundary now delegates to bounded canonical-file shared store; saves/deletes execute on IO, check cancellation before commit and publish only successful transactions. Constructor synchronously loads; cached reads do not watch external edits. Reviewed registry/caller ownership and unchanged immutable result models. Native writes already started can commit after caller cancellation; no cross-process writer serialization claim.",
       "evidence": [
+        "docs/audits/driver-profile-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass248-verified-evidence/summary.json",
         "docs/audits/recorded-driver-analysis-audit.md",
         "ARESLib-Kotlin/build/audit-pass247-verified-evidence/summary.json",
         "docs/audits/studio-driver-jitter-sampling-audit.md",
@@ -18864,6 +18866,36 @@
       "evidence": [
         "docs/audits/recorded-driver-analysis-audit.md",
         "ARESLib-Kotlin/build/audit-pass247-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DriverProfileStore.kt": {
+      "sha256": "d4facf2e93e8e206cf0835a630f607501e823a7f8a51db8ef3bb0e6b2b39b7df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 248: Complete process-local persistence helper reviewed: weak per-canonical-file shared registry/lock, immutable volatile snapshots, strict bounded UTF8/JSON parsing, unique valid names and finite positive gains/nonnegative spectrum, 1MiB/256-profile limits, initial malformed-content backup before recovery, IO/budget failure preservation, atomic replacement through existing helper, failed mutation consistency, completed external edit incorporation and no-op write suppression. Synchronous initialization and external-process writer limitation documented.",
+      "evidence": [
+        "docs/audits/driver-profile-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass248-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DriverProfilePersistenceAuditTest.kt": {
+      "sha256": "b8c2bd3f79149daac2ec47d8a075573dab7de74eae7b17fd05449557699662ea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 248: Complete 23-method file reviewed/executed with seven preserved failing baseline cases. Tests failed save/delete, IO-vs-corrupt distinction, invalid metadata/duplicate identities, cross-instance lost updates/deletion resurrection, exact-byte backup/replacement failures, malformed UTF8, file/list/value budgets, immutable reader snapshots/canonical aliases, 40 concurrent saves, no-op write count, valid/invalid external edits, empty/MAX-value round trips and pre-replacement cancellation consistency. All persistence paths are owned temporary fixtures; unrelated database/solver are mocked.",
+      "evidence": [
+        "docs/audits/driver-profile-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass248-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/driver-profile-persistence-audit.md": {
+      "sha256": "e7a6f9d2f31bedd46b6118e8fea150b6a78b0f7e947c25a0e9def26a09c35353",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 248: Documents seven reproduced persistence defects, canonical process-local commit and immutable snapshot contract, atomic/corruption recovery ordering, validation/budget bounds, no-op efficiency and cancellation/native-IO limits; actual baseline/focused/full validation, source identity, candidate hashes and scoped file accounting.",
+      "evidence": [
+        "docs/audits/driver-profile-persistence-audit.md",
+        "ARESLib-Kotlin/build/audit-pass248-verified-evidence/summary.json"
       ]
     }
   }
