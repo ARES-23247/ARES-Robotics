@@ -2,6 +2,7 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.CalculatedSummary
 import com.ares.analytics.shared.models.TransientClassification
+import com.ares.analytics.service.db.AnalysisTelemetryGroup
 import org.apache.commons.math3.transform.DftNormalization
 import org.apache.commons.math3.transform.FastFourierTransformer
 import org.apache.commons.math3.transform.TransformType
@@ -56,11 +57,15 @@ class SysIdService(private val databaseService: DatabaseService) {
         velocityKey: String,
         accelerationKey: String
     ): CalculatedSummary {
-        // Fetch each channel server-side (key-filtered) instead of loading the whole
-        // session three times and filtering in memory (AUDIT H13).
-        val voltages = databaseService.getTelemetryForKey(sessionId, voltageKey)
-        val velocities = databaseService.getTelemetryForKey(sessionId, velocityKey)
-        val accelerations = databaseService.getTelemetryForKey(sessionId, accelerationKey)
+        // All three channels share one bounded source snapshot. Never fit a truncated prefix.
+        val input = databaseService.getAnalysisTelemetry(sessionId, listOf(
+            AnalysisTelemetryGroup("SysId", listOf(voltageKey, velocityKey, accelerationKey)),
+        )).getValue("SysId")
+        check(input.complete) { "SysId input unavailable: ${input.status} (${input.sourceRows} source rows)" }
+        val sources = input.frames.groupBy { it.key }
+        val voltages = sources[voltageKey.trimStart('/')].orEmpty()
+        val velocities = sources[velocityKey.trimStart('/')].orEmpty()
+        val accelerations = sources[accelerationKey.trimStart('/')].orEmpty()
 
         if (voltages.isEmpty() || velocities.isEmpty() || accelerations.isEmpty()) {
             return CalculatedSummary()

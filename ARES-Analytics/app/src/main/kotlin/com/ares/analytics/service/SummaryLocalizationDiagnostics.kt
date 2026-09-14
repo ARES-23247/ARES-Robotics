@@ -5,7 +5,7 @@ import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.sqrt
 
-/** Descriptive statistics of the bounded diagnostic sample, not independent camera events. */
+/** Descriptive statistics of supplied source observations, not independent camera events. */
 internal class SummaryLocalizationDiagnostics(frames: List<TelemetryFrame>, private val sessionId: String) {
     private val topics = frames.filter { it.sessionId == sessionId }.groupBy { it.key.trimStart('/') }
     private val numeric = mutableMapOf<String, List<TelemetryFrame>>()
@@ -80,8 +80,8 @@ internal class SummaryLocalizationDiagnostics(frames: List<TelemetryFrame>, priv
             listOf("ARES/EstimatedPose/0", "ARES/EstimatedPose/1"),
             listOf("Drive/Pose_X", "Drive/Pose_Y"),
         )
-        val inputKeys: List<String> = (NIS_KEYS + PATH_KEYS + ESTIMATOR_PAIRS.flatten() +
-            listOf("Vision/Pose_X", "Vision/Pose_Y", "Vision/HasTarget", "Path/Active"))
-            .flatMap { listOf(it, "/$it") }
+        val ekfInputKeys = NIS_KEYS + ESTIMATOR_PAIRS.flatten() + listOf("Vision/Pose_X", "Vision/Pose_Y", "Vision/HasTarget")
+        val pathInputKeys = PATH_KEYS + "Path/Active"
+        val inputKeys: List<String> = (ekfInputKeys + pathInputKeys).flatMap { listOf(it, "/$it") }
     }
 }

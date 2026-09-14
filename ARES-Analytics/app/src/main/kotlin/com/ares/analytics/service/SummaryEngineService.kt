@@ -4,7 +4,7 @@ import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.models.AnalysisDiagnostic
-import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.service.db.AnalysisTelemetryGroup
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -107,75 +107,74 @@ class SummaryEngineService(
         if ((health["Diagnostics/System/MaxCANBusUtilization"] ?: 0.0) >= 0.90) newTags.add("CANBusSaturated")
         if (above("BrownoutGuardTripIncrements", 0.0)) newTags.add("BrownoutGuardActivity")
         if (above("MotorFaultObserved", 0.0)) newTags.add("MotorFault")
-        var resolvedTags = session.tags
-        try {
-            val allFrames = databaseService.getTelemetryForFilters(
-                sessionId = session.sessionId,
-                keys = buildList {
-                    addAll(TelemetryMetricCatalog.DRIVE_VOLTAGE.keys)
-                    addAll(TelemetryMetricCatalog.DRIVE_VELOCITY.keys)
-                    addAll(TelemetryMetricCatalog.DRIVE_ACCELERATION.keys)
-                    addAll(SummarySysIdDiagnostics.extraInputKeys)
-                    addAll(SummaryLocalizationDiagnostics.inputKeys)
-                },
-                prefixes = listOf("Hardware/Motors/%", "Vision/%", "Path/%"),
-                maxFrames = MAX_DIAGNOSTIC_FRAMES,
-                maxFramesPerTopic = MAX_DIAGNOSTIC_FRAMES_PER_TOPIC,
-            )
-            val framesToInsert = health.map { (key, value) ->
-                TelemetryFrame(session.createdAt, session.sessionId, key, value)
-            }.toMutableList()
-            if (allFrames.isEmpty()) return persistDiagnostics(session, framesToInsert, newTags)
-
-            // Recorded voltage/speed fits share validated source-time alignment.
-            for (diagnostic in SummarySysIdDiagnostics(allFrames, session.sessionId, sysIdService::analyzeRawData).calculate()) {
-                framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, diagnostic.key, diagnostic.value, diagnostic.stringValue))
+        val diagnostics = health.map { (key, value) -> AnalysisDiagnostic(session.sessionId, key, value) }.toMutableList()
+        fun status(family: String, value: String) {
+            diagnostics.add(AnalysisDiagnostic(session.sessionId, "Diagnostics/$family/InputStatus", 0.0, value))
+        }
+        val groups = listOf(
+            AnalysisTelemetryGroup("SysId", buildList {
+                addAll(TelemetryMetricCatalog.DRIVE_VOLTAGE.keys)
+                addAll(TelemetryMetricCatalog.DRIVE_VELOCITY.keys)
+                addAll(TelemetryMetricCatalog.DRIVE_ACCELERATION.keys)
+                addAll(SummarySysIdDiagnostics.extraInputKeys)
+            }, listOf(SummarySysIdDiagnostics.motorTopicPattern)),
+            AnalysisTelemetryGroup("EKF", SummaryLocalizationDiagnostics.ekfInputKeys),
+            AnalysisTelemetryGroup("Auto", SummaryLocalizationDiagnostics.pathInputKeys),
+        )
+        val inputs = try {
+            databaseService.getAnalysisTelemetry(session.sessionId, groups)
+        } catch (failure: Exception) {
+            if (failure is CancellationException) throw failure
+            // Input failure must not resurrect old fits or discard independently computed health.
+            for (group in groups) status(group.id, "read_failed")
+            emptyMap()
+        }
+        for ((family, input) in inputs) {
+            diagnostics.add(AnalysisDiagnostic(session.sessionId, "Diagnostics/$family/InputSourceRows", input.sourceRows.toDouble()))
+            if (!input.complete) {
+                status(family, input.status)
+                continue
             }
-
-            // 5. Driver Jitter Analysis
+            try {
+                // Assemble each family before adding anything, so a failed fit cannot leave a
+                // partially generated family mixed with its unavailable marker.
+                val calculated = if (family == "SysId") {
+                    SummarySysIdDiagnostics(input.frames, session.sessionId, sysIdService::analyzeRawData).calculate()
+                } else {
+                    SummaryLocalizationDiagnostics(input.frames, session.sessionId).calculate().map { (key, value) ->
+                        AnalysisDiagnostic(session.sessionId, key, value)
+                    }
+                }
+                diagnostics.addAll(calculated)
+                status(family, input.status)
+                if (calculated.any { (it.key == "Diagnostics/Auto/CrossTrackRMSE" && it.value > 0.06) ||
+                        (it.key == "Diagnostics/Auto/MaxCrossTrackM" && it.value > 0.15) }) newTags.add("PathDeviation")
+            } catch (failure: Exception) {
+                if (failure is CancellationException) throw failure
+                status(family, "analysis_failed")
+            }
+        }
+        try {
             val j = driverAnalysisService.analyzeDriverJitter(session.sessionId)
             if (j.peakFrequencyHz > 0.1) {
-                framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/Driver/RecommendedExponent", j.recommendedExponent))
-                framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/Driver/RecommendedSlewRate", if (j.recommendedSlewRate == Double.MAX_VALUE) 999.0 else j.recommendedSlewRate))
-                framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/Driver/PeakJitterFrequency", j.peakFrequencyHz))
-                framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/Driver/JitterPresent", if (j.hasJitter) 1.0 else 0.0))
+                diagnostics.addAll(listOf(
+                    AnalysisDiagnostic(session.sessionId, "Diagnostics/Driver/RecommendedExponent", j.recommendedExponent),
+                    AnalysisDiagnostic(session.sessionId, "Diagnostics/Driver/RecommendedSlewRate", if (j.recommendedSlewRate == Double.MAX_VALUE) 999.0 else j.recommendedSlewRate),
+                    AnalysisDiagnostic(session.sessionId, "Diagnostics/Driver/PeakJitterFrequency", j.peakFrequencyHz),
+                    AnalysisDiagnostic(session.sessionId, "Diagnostics/Driver/JitterPresent", if (j.hasJitter) 1.0 else 0.0),
+                ))
             }
-
-            // 6â€“7. Recorded localization and path statistics; no covariance/root-cause diagnosis.
-            val localization = SummaryLocalizationDiagnostics(allFrames, session.sessionId).calculate()
-            for ((key, value) in localization) {
-                framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, key, value))
-            }
-            if ((localization["Diagnostics/Auto/CrossTrackRMSE"] ?: 0.0) > 0.06 ||
-                (localization["Diagnostics/Auto/MaxCrossTrackM"] ?: 0.0) > 0.15) {
-                newTags.add("PathDeviation")
-            }
-
-            resolvedTags = persistDiagnostics(session, framesToInsert, newTags)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            e.printStackTrace()
+        } catch (failure: Exception) {
+            if (failure is CancellationException) throw failure
+            status("Driver", "analysis_failed")
         }
-        return resolvedTags
+        return persistDiagnostics(session, diagnostics, newTags)
     }
 
-    private suspend fun persistDiagnostics(session: Session, frames: List<TelemetryFrame>, tags: List<String>): List<String> {
+    private suspend fun persistDiagnostics(session: Session, diagnostics: List<AnalysisDiagnostic>, tags: List<String>): List<String> {
         val uniqueTags = tags.distinct()
-        databaseService.replaceAnalysisDiagnostics(session.sessionId, frames.map { frame ->
-            AnalysisDiagnostic(frame.sessionId, frame.key, frame.value, frame.stringValue)
-        })
+        databaseService.replaceAnalysisDiagnostics(session.sessionId, diagnostics)
         if (uniqueTags != session.tags) databaseService.updateSessionTags(session.sessionId, uniqueTags)
         return uniqueTags
-    }
-
-    private companion object {
-        /**
-         * Secondary diagnostic algorithms operate on a deterministic, per-topic sample. Core
-         * summary and health values remain exact SQL aggregates. These bounds prevent a long WPILOG
-         * from materializing millions of JVM objects while retaining endpoints and uniform
-         * coverage for every ordinary topic.
-         */
-        const val MAX_DIAGNOSTIC_FRAMES = 100_000
-        const val MAX_DIAGNOSTIC_FRAMES_PER_TOPIC = 2_048
     }
 }

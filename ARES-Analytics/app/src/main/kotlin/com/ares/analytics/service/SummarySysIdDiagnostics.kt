@@ -52,6 +52,7 @@ internal class SummarySysIdDiagnostics(
 
     companion object {
         val extraInputKeys = listOf("Drive/AngularVoltage", "Drive/Velocity_Omega", "Drive/AngularAcceleration")
-        private val MOTOR_TOPIC = Regex("^Hardware/Motors/([^/]+)/(AppliedVoltage|Voltage|Velocity|VelocityRps|VelocityRpm|Acceleration|AccelerationRps|AccelerationRpm)$")
+        val motorTopicPattern = "^Hardware/Motors/([^/]+)/(AppliedVoltage|Voltage|Velocity|VelocityRps|VelocityRpm|Acceleration|AccelerationRps|AccelerationRpm)$"
+        private val MOTOR_TOPIC = Regex(motorTopicPattern)
     }
 }

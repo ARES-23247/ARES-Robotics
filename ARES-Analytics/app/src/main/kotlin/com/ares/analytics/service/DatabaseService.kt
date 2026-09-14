@@ -104,6 +104,7 @@ class DatabaseService(
     private val transactionCoordinator: DatabaseTransactionCoordinator
     private val sessionMetadataRepo: SessionMetadataRepository
     private val telemetryRepo: TelemetryRepository
+    private val analysisTelemetryRepo: AnalysisTelemetryRepository
     private val robotActionRepo: RobotActionRepository
     private val runEvidenceRepo: RunEvidenceRepository
     private val backupExporter: DatabaseBackupExporter
@@ -163,6 +164,7 @@ class DatabaseService(
         )
         sessionMetadataRepo = SessionMetadataRepository(transactionCoordinator)
         telemetryRepo = TelemetryRepository(transactionCoordinator)
+        analysisTelemetryRepo = AnalysisTelemetryRepository(transactionCoordinator)
         robotActionRepo = RobotActionRepository(transactionCoordinator)
         runEvidenceRepo = RunEvidenceRepository(transactionCoordinator, sessionMetadataRepo)
         backupExporter = DatabaseBackupExporter(conn, dbMutex)
@@ -234,6 +236,9 @@ class DatabaseService(
     suspend fun getTelemetryRangeBatched(sessionId: String, startMs: Long, endMs: Long, limit: Long, offset: Long): List<TelemetryFrame> = telemetryRepo.getTelemetryRangeBatched(sessionId, startMs, endMs, limit, offset)
     suspend fun countTelemetryFrames(sessionId: String): Long = telemetryRepo.countTelemetryFrames(sessionId)
     suspend fun getTelemetryForKey(sessionId: String, key: String): List<TelemetryFrame> = telemetryRepo.getTelemetryForKey(sessionId, key)
+    internal suspend fun getAnalysisTelemetry(
+        sessionId: String, groups: List<AnalysisTelemetryGroup>, limits: AnalysisTelemetryLimits = AnalysisTelemetryLimits(),
+    ): Map<String, AnalysisTelemetryInput> = analysisTelemetryRepo.read(sessionId, groups, limits)
     override suspend fun getTelemetrySeries(
         sessionId: String,
         key: String,

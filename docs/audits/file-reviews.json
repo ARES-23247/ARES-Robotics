@@ -1180,11 +1180,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SysIdService.kt": {
-      "sha256": "640b010f0f0b105cefd6161e8bef1c2abc6992cacd2da5d164fdb9556ae54b8d",
+      "sha256": "306cb66572256a3645b94fa1e0025146da97fd6881f0ae79e44bc24219a8b9ae",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 245: Explicit-channel API delegates to shared recorded-source alignment, preserving required acceleration, source-microsecond nearest matching and existing solver output. Latest invalid/textual samples now remain barriers. Regression/SVD/FFT behavior is unchanged and rerun; existing full-channel loading and non-cooperative computation remain limits. Earlier scoped coverage retained: Full service review from pass 17 retained; pass 18 delegates input normalization to the shared owned snapshot and exposes an internal prepared-analysis path. Analytic regression/FFT/alignment tests pass after integration. Rank/numeric behavior is unchanged; caller sampling and transient-heuristic limitations remain explicit.",
+      "scope": "Pass 246: Prior full service math/SVD/FFT/prepared-input review retained. Explicit motor API now reads three channels in one bounded statement snapshot, groups normalized keys, preserves required acceleration and latest invalid barriers, and throws on unavailable complete input. Known-coefficient and one-query evidence verified. Synchronous solver cooperation and transient/physical-experiment interpretation remain explicit limits.",
       "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json",
         "docs/audits/summary-sysid-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json",
         "docs/audits/autotuner-input-audit.md",
@@ -1707,11 +1709,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt": {
-      "sha256": "d208099e6d54e1026174bf28152ed4049e6487b833573f2626e7205a1787570c",
+      "sha256": "41d1ae207b7d9604ce045119bca13f04afbb1d259804a426212fde154d98e30f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 244: Added internal selected-session parameterized query routing for coaching; live buffer and recording isolation verified. Unrelated facade/lifecycle behavior remains partial. Earlier scoped coverage retained: Selected-session facade and alert identity lookup reviewed; reader delegation and paired metadata mutations exercised by integration tests. Alert policy predicate remains unchanged. The broader facade, constructor, backup/import, integration event and shutdown behavior remain open. Pass 25 removes the obsolete console statement-cache disposal call inside existing locked close; writer-local resources now close in their own operation. Rest of facade remains partial.",
+      "scope": "Pass 246: Cached typed analysis repository shares existing coordinator and selected-session routing. One-query complete-input facade tested for recordings and live buffer. Prior scoped selected-session facade, alert identity, metadata and close-disposal coverage retained through earlier evidence. Constructor, general facade/lifecycle, backup/import, integration events and remaining shutdown behavior remain partial.",
       "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json",
         "docs/audits/pit-coaching-health-audit.md",
         "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
         "docs/audits/telemetry-density-metadata-audit.md",
@@ -5695,7 +5699,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3bf1faa3f6468938cba78ee51a74871ec6f590b45e491b02b96cfe3e701ff8da",
+      "sha256": "e666077659215bc4907a3065b20fa2dd282a9571c939becd396c97755f0684d2",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18485,11 +18489,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryEngineService.kt": {
-      "sha256": "e011e002cf20c86397468fe3184173d4ea54e241d4a847ba7b862b3485331040",
+      "sha256": "ebf0260365b1a335e777916087feef1a199d8fe5a2f53121f77f8b1b87fdcf6b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 245: Retains reviewed core/health/localization computations; replaces duplicated drivetrain/motor/angular input assembly and unsupported gravity/traction inference with reviewed recorded-fit helper. Explicit angular input keys, native units and provenance integrate with generated persistence. Per-topic sampled loading, driver recommendations, generated-tag ownership and multi-operation persistence remain partial.",
+      "scope": "Pass 246: Core/health aggregation and validated SysId/localization helpers retained. New one-statement complete latest-source loader with independent SysId/EKF/path budgets replaces lossy per-topic sampling and global truncation. Relevant-only selection, explicit empty/limit/failure status, stale generated result removal, family failure isolation and cancellation propagation tested. Eliminates temporary TelemetryFrame conversion before diagnostic persistence. Driver recommendations, generated-tag ownership and multi-operation persistence remain partial.",
       "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json",
         "docs/audits/summary-sysid-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
       ]
@@ -18545,11 +18551,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryLocalizationDiagnostics.kt": {
-      "sha256": "87e4b2caf3b7c0c882cacfa572cbaa4de2123b6a7978182e3337e8b23d6216e9",
+      "sha256": "491e8e5ba88b2320e6670c517a46b3a613b9517184412c869c18f7fa4b6b9f0d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 242: Complete new descriptive-statistics helper reviewed/tested: session/topic index, cached numeric series with ordered microsecond dedup-before-validity, explicit aliases, finite nonnegative NIS including zero, scaled means/RMS, complete single-family estimator/camera pairing, correct mean-vector versus mean-magnitude offsets, optional exact flags and sample counts. Packed simulator estimate is used without truth substitution. Existing bounded-sampling and missing event provenance limits are explicit.",
+      "scope": "Pass 246: Prior complete helper math/validity review retained: finite latest-source series, source-family priority, exact pose/flag timing, scaled means/RMS, nonnegative NIS and sample counts. Separates EKF/path input key contracts for independent complete source-group loading. Regression statistics unchanged and rerun; statement completeness is not independent camera-event or recording-epoch provenance.",
       "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json",
         "docs/audits/localization-diagnostic-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
       ]
@@ -18709,11 +18717,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummarySysIdDiagnostics.kt": {
-      "sha256": "665ded53c86eed0ccc67ce49c7f0497821627374efcf93651150c3fa29678f6c",
+      "sha256": "0c755181ea43e653d070b98a8b8ffda17eb95f44a6a2c77ff544d8080f030b9c",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 245: Complete helper reviewed/tested within supplied-frame contract: exact source/device keys and presence priority, recorded applied voltage only, native velocity/acceleration suffix pairing, explicit signed angular voltage, finite fit/quality gates, row counts/source/model metadata and finite inverse kA. No unsupported kG, traction or wheel-name polarity inference. Input sampling outside the helper remains a known caller limitation.",
+      "scope": "Pass 246: Prior complete supplied-frame fit/source/unit/provenance review retained. Shares exact motor-topic pattern with database selection, avoiding broad hardware matches and preserving case/device identity. Caller now supplies complete bounded latest observations; no inferred voltage, gravity, traction, angular polarity or hardware tuning approval.",
       "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json",
         "docs/audits/summary-sysid-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
       ]
@@ -18756,6 +18766,46 @@
       "evidence": [
         "docs/audits/summary-sysid-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/AnalysisTelemetryRepository.kt": {
+      "sha256": "88ebff2a211cb30a741b88292042e1fc014f698cd788cf7908177af6feb125ec",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 246: Complete typed repository and request/limit/input contracts reviewed/tested. Prepared session/key/pattern/limit binding; one coordinator read and statement snapshot; latest sampleOrder per topic/source microsecond before caps; overlapping-rule deduplication; complete group or explicit metadata only; independent row/topic/projected-byte budgets; constant text invalidity marker; Unicode key storage bound; microsecond ordering; live/persistent isolation. Bounded transfer is not fixed query time or exact JVM heap size; JDBC in-flight cancellation remains deferred.",
+      "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AnalysisTelemetryAuditTest.kt": {
+      "sha256": "27e8bed33091f1b15a4269ba2e049066cfba0c31f7ddd95d11e39b9b8571490b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 246: Complete 13-method integration regression file reviewed/executed: nine preserved failing baselines, 3001-observation count/peak/fit tests, latest-invalid and derivative barriers, 104000 irrelevant records, solver/driver/read failure isolation, 100002-row group rejection with smaller-family retention, explicit API refusal, stale raw fallback suppression and propagated fit cancellation. Owned DuckDB fixtures close and remove temporary directories.",
+      "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AnalysisTelemetryRepositoryAuditTest.kt": {
+      "sha256": "4da518f14745507be9cffa9409aa50ed4adb379456fa29bbc4e0aaf9079b1076",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 246: Complete 12-method typed repository/API regression file reviewed/executed. One-query multi-group ordering, source-update dedup before caps, overlapping rules, text payload rejection, exact row/topic/byte boundaries and whole-group availability, Unicode/oversized keys, motor case/topic shape, bound hostile-looking values, live isolation, invalid configurations, and one-query real known-coefficient SysId fit.",
+      "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/analysis-telemetry-input-audit.md": {
+      "sha256": "6f9ad0955d2fb5f3d86e6b4181a87c9a97e2688d207b50163f5a897a402a0005",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 246: Documents nine reproduced baseline failures, complete bounded statement snapshot and invalidity contract, query-count reduction, typed resource caps and status provenance, failure/cancellation/persistence handling, actual focused/full/policy/candidate/source identity and explicit remaining driver/transactionality/hardware limitations.",
+      "evidence": [
+        "docs/audits/analysis-telemetry-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json"
       ]
     }
   }
