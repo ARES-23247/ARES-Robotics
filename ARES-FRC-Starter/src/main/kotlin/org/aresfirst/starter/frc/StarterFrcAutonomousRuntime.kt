@@ -10,11 +10,12 @@ import com.areslib.math.coordinate.FieldSymmetry
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.routine.AutonomousCatalogEntry
+import com.areslib.routine.AutonomousCatalogResolution
+import com.areslib.routine.AutonomousCatalogResolver
 import com.areslib.routine.RoutineAlliance
 import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineRequestResult
-import com.areslib.routine.RoutineStartPolicy
 import com.areslib.sequencer.ParallelDeadlineGroup
 import com.areslib.sequencer.ParallelTaskGroup
 import com.areslib.sequencer.SequentialTaskGroup
@@ -37,38 +38,18 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.hypot
 
-internal data class StarterAutonomousSelection(
-    val entry: AutonomousCatalogEntry,
-    val requestedId: String,
-    val usedFallback: Boolean,
-)
+internal typealias StarterAutonomousSelection = AutonomousCatalogResolution
 
-/** Deterministic generated-catalog selector with an always-safe fallback. */
+/** Shares enabled-entry ordering and configured fallback policy with the other league hosts. */
 internal class StarterFrcAutonomousSelector(
     entries: List<AutonomousCatalogEntry>,
     defaultEntryId: String?,
 ) {
-    private val enabledEntries = entries.filter(AutonomousCatalogEntry::enabled)
-        .sortedWith(compareBy<AutonomousCatalogEntry> { it.sortOrder }.thenBy { it.entryId })
-    private val entriesById = enabledEntries.associateBy(AutonomousCatalogEntry::entryId)
-    private val fallback = defaultEntryId?.let(entriesById::get)
-        ?: entriesById[SAFE_FALLBACK_ENTRY_ID]
-        ?: enabledEntries.firstOrNull()
+    private val resolver = AutonomousCatalogResolver(entries, defaultEntryId)
 
-    val availableEntryIds: List<String> = enabledEntries.map(AutonomousCatalogEntry::entryId)
+    val availableEntryIds: List<String> get() = resolver.availableEntryIds
 
-    fun resolve(requestedId: String): StarterAutonomousSelection {
-        val normalized = requestedId.trim()
-        val requested = entriesById[normalized]
-        val selected = requested ?: checkNotNull(fallback) {
-            "Generated autonomous catalog has no enabled fail-safe entry"
-        }
-        return StarterAutonomousSelection(selected, normalized, requested == null)
-    }
-
-    private companion object {
-        const val SAFE_FALLBACK_ENTRY_ID = "do-nothing"
-    }
+    fun resolve(requestedId: String): StarterAutonomousSelection = resolver.resolve(requestedId)
 }
 
 /** Platform-neutral transform shared by starter pose seeding and every generated drive target. */
@@ -387,62 +368,158 @@ internal class StarterFrcDriveToPoseTask(
         super.releaseRuntimeState()
     }
 
-    private companion object {
+    companion object {
         const val POSITION_TOLERANCE_METERS = 0.05
-        val HEADING_TOLERANCE_RADIANS = Math.toRadians(2.0)
-        const val REQUIRED_SETTLED_SAMPLES = 3
-        const val MAX_DRIVE_DURATION_MS = 10_000L
-        const val NOMINAL_DT_SECONDS = 0.02
-        const val MAX_DT_SECONDS = 0.05
+        private val HEADING_TOLERANCE_RADIANS = Math.toRadians(2.0)
+        private const val REQUIRED_SETTLED_SAMPLES = 3
+        private const val MAX_DRIVE_DURATION_MS = 10_000L
+        private const val NOMINAL_DT_SECONDS = 0.02
+        private const val MAX_DT_SECONDS = 0.05
     }
 }
 
-/** Starts one generated action when drive progress crosses its declarative marker. */
-private class StarterFrcDriveMarkerTask(
+/** Starts one generated action at translation progress; the accepted position tolerance is the endpoint. */
+internal class StarterFrcDriveMarkerTask(
     private val target: Pose2d,
     private val progress: Double,
     private val action: Task,
 ) : Task {
     override val name: String = "FRC drive marker ${action.name} at ${(progress * 100.0).toInt()}%"
     override val requiredResources: Long = action.requiredResources
-    private val executor = TaskExecutor()
+    private var executor = TaskExecutor()
     private var startDistance = 0.0
     private var triggered = false
+    private var childReleased = false
+    private var ended = false
+    private var lastProgressObservationMs = -1L
+    private var configuredTimeoutMs = -1L
+
+    init {
+        require(progress.isFinite() && progress in 0.0..1.0) { "Marker progress must be in [0, 1]" }
+        require(target.x.isFinite() && target.y.isFinite() && target.heading.rawRadians.isFinite()) {
+            "Marker target must be finite"
+        }
+    }
 
     override fun initialize(state: RobotState): List<RobotAction> {
+        check(executor.size == 0) { "Cannot reinitialize a marker with an active action" }
+        if (configuredTimeoutMs >= 0L) super.withTimeout(configuredTimeoutMs)
         super.initialize(state)
-        val pose = state.drive.poseEstimator.estimatedPose
-        startDistance = hypot(target.x - pose.x, target.y - pose.y)
+        executor.resume()
         triggered = false
+        childReleased = false
+        ended = false
+        lastProgressObservationMs = -1L
+        startDistance = remainingDistance(state)
         return emptyList()
     }
 
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean = triggered && executor.size == 0
+    override fun withTimeout(ms: Long): Task {
+        super.withTimeout(ms)
+        configuredTimeoutMs = ms
+        return this
+    }
+
+    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        propagateChildStatus()
+        return !ended && TaskStateMachine.getStatus(this) == TaskStatus.RUNNING && triggered &&
+            executor.size == 0 && TaskStateMachine.getStatus(action) == TaskStatus.COMPLETED
+    }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         super.execute(state, elapsedMs)
+        if (ended || TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) {
+            return if (executor.size > 0) executor.cancelAll(state) else emptyList()
+        }
         if (!triggered) {
-            val pose = state.drive.poseEstimator.estimatedPose
-            val remaining = hypot(target.x - pose.x, target.y - pose.y)
-            val completed = if (startDistance <= 1e-9) 1.0 else (1.0 - remaining / startDistance).coerceIn(0.0, 1.0)
+            val remaining = remainingDistance(state)
+            if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return emptyList()
+            val completed = if (remaining <= StarterFrcDriveToPoseTask.POSITION_TOLERANCE_METERS || startDistance <= 1e-9) {
+                1.0
+            } else (1.0 - remaining / startDistance).coerceIn(0.0, 1.0)
             if (completed >= progress) {
                 executor.addTask(action)
                 triggered = true
             }
         }
-        return if (triggered) executor.update(state, RobotClock.currentTimeMillis()) else emptyList()
+        if (!triggered) return emptyList()
+        val actions = executor.update(state, RobotClock.currentTimeMillis())
+        propagateChildStatus()
+        return actions
+    }
+
+    private fun remainingDistance(state: RobotState): Double {
+        val pose = state.drive.poseEstimator
+        val now = RobotClock.currentTimeMillis()
+        val observation = pose.lastObservationTimestampMs
+        val remaining = hypot(target.x - pose.estimatedPoseX, target.y - pose.estimatedPoseY)
+        if (!state.drive.measuredMotionValid || observation < 0L || observation > now ||
+            now - observation > GeneratedAresDrivebaseConfig.STALE_FEEDBACK_TIMEOUT_MS ||
+            observation < lastProgressObservationMs || !remaining.isFinite() || !pose.estimatedPoseHeading.isFinite()) {
+            TaskStateMachine.markFailed(this)
+        } else lastProgressObservationMs = observation
+        return remaining
+    }
+
+    private fun propagateChildStatus() {
+        if (!triggered || TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return
+        when (TaskStateMachine.getStatus(action)) {
+            TaskStatus.FAILED -> TaskStateMachine.markFailed(this)
+            TaskStatus.CANCELLED -> TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+            else -> Unit
+        }
+    }
+
+    override fun pause(state: RobotState): List<RobotAction> {
+        if (!triggered || executor.size == 0 || ended) return emptyList()
+        try { return action.pause(state) } finally { executor.suspend() }
+    }
+
+    override fun resume(state: RobotState): List<RobotAction> {
+        if (!triggered || executor.size == 0 || ended) return emptyList()
+        executor.resume()
+        return action.resume(state)
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        val cleanup = if (interrupted && executor.size > 0) executor.cancelAll(state) else emptyList()
-        super.end(state, interrupted)
+        if (ended) return emptyList()
+        propagateChildStatus()
+        ended = true
+        if (!interrupted && (!triggered || executor.size > 0 || TaskStateMachine.getStatus(action) != TaskStatus.COMPLETED)) {
+            TaskStateMachine.markFailed(this)
+        }
+        var cleanup: List<RobotAction> = emptyList()
+        var failure: Throwable? = null
+        try {
+            if (executor.size > 0) {
+                cleanup = executor.cancelAll(state)
+            } else if (!triggered && !childReleased) {
+                childReleased = true
+                action.releaseRuntimeState()
+            }
+        } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { super.end(state, interrupted) }
+        catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        failure?.let { throw it }
         return cleanup
     }
 
     override fun releaseRuntimeState() {
-        startDistance = 0.0
-        triggered = false
-        super.releaseRuntimeState()
+        try {
+            // Like Task.cancel(), metadata release alone cannot dispatch hardware cleanup actions.
+            if (!childReleased && (!triggered || executor.size > 0)) {
+                childReleased = true
+                if (triggered) action.cancel() else action.releaseRuntimeState()
+            }
+        } finally {
+            if (executor.size > 0) executor = TaskExecutor()
+            startDistance = 0.0
+            triggered = false
+            childReleased = true
+            ended = true
+            lastProgressObservationMs = -1L
+            super.releaseRuntimeState()
+        }
     }
 }
 
@@ -501,7 +578,7 @@ internal class StarterFrcAutonomousRuntime(
             }
             startedAtMs = now
             finished = false
-            publishStatus(if (selection.usedFallback) "Running safe fallback" else "Running")
+            publishStatus(if (selection.usedFallback) "Running fallback" else "Running")
         } catch (failure: Throwable) {
             fail("Autonomous preflight failed: ${failure.message ?: failure::class.java.simpleName}")
         }
