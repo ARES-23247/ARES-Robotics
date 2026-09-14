@@ -5723,10 +5723,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "d58c8cfaf931e717f70fa54b2e22bca161c6415484cc074123016d041027a23e",
+      "sha256": "fd103605bb063dd3f9cd0af0f020fb3aa2739e60320f6868d77345c8b8ee2c7d",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -5829,7 +5829,8 @@
         "docs/audits/vision-selection-attribution-audit.md",
         "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
         "docs/audits/ftc-season-lifecycle-audit.md",
-        "docs/audits/ftc-shared-safety-audit.md"
+        "docs/audits/ftc-shared-safety-audit.md",
+        "docs/audits/ftc-descriptor-units-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -19384,6 +19385,196 @@
       "evidence": [
         "docs/audits/ftc-shared-safety-audit.md",
         "ARESLib-Kotlin/build/audit-pass258-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/project.json": {
+      "sha256": "6a47741840a4f64e7952b0df1c0a8b6aa9c0ccf5bdb653a2e27d709d75092f3e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 259: Identity/league/schema, coordinates, dimensions, authoring model and runtime options reviewed against generation and FTC consumers. Physical footprint conflicts with declared drivetrain wheel envelope; measured length/wheelbase requested and unresolved.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/drivetrains/gobilda-mecanum.aresdrivetrain": {
+      "sha256": "29e4e2bd1743ea9d4644a6cb44396f954832afa6f8263dfc12ef7765e1f85f11",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 259: Entire descriptor reviewed: components/topology/roles/names/current/mounting, geometry, localization, safety, simulation, 34 typed parameters, units/bounds/defaults/apply policies and profile ownership. Fixed normalized-12V feedforward units and static bound. Source/kinematics units and full FTC tests pass; physical footprint/wheelbase discrepancy remains unresolved.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/tuning/team23247.ftc.season2026.gobilda.profile.competition.arestuning": {
+      "sha256": "04cba934a0b98b10d4b88204c6c79db428a5c8e99b168a19a62af510f755f026",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire canonical profile reviewed: identity, authority, exact coverage/uniqueness of 34 declarations, types/bounds/default parity, generated initial state, gain units and modeled limits. Existing numeric gains preserved; calibration is not physically attested. Generation and full FTC suites passed.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/controllers/ftc-driver.arescontroller": {
+      "sha256": "626aa1113aff80baf69655d595edc10344840cc4d06a745bc9ca14b61ea4d48b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire controller profile reviewed: schema/identity/matcher, all 20 unique controls/aliases/anchors and FTC mappings. Every numeric index checked against real FtcInputFrameAdapter constants; SDK sign convention and scheme references traced. Full FTC project verification/tests passed; no new physical HID claim.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/controls/driver.arescontrols": {
+      "sha256": "56d0a40f34ae4c81bc533c3c0fa93a0061f1f5315d8a2ef76f0d57b66d710655",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire scheme reviewed: controller identity/port, three axes/signs/ranges/deadband/exponent, continual samples, rearm, guarded recovery action/chord/debounce/cooldown/priority. Full runtime sink traced for single shaping and alliance mirroring. Generated project validation and full FTC suites passed.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/action-catalog.json": {
+      "sha256": "ac16dc0493580ad8b77b9500178b00b7322b0f95d6e8eb9053733f417c2baa0c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire catalog reviewed: schema/project/revision, neutral recovery action name/resources/context/no arguments and condition list. Traced runtime guarded action; generated capability augmentation supplies lighting routine actions. Full compiler and FTC tests passed.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/autonomous-catalog.json": {
+      "sha256": "80c1e287b9deb976afb9861eedfa9538372384b11fea1f7a1be8328da783f678",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire catalog reviewed: schema/project, unique entries/default/routine resolution, starting poses, authored alliance/mirror policy/order/enabled state and descriptions. Generated preflight and simulator Light Practice completion passed; no physical path execution claim.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/routines/test-auto.aresroutine": {
+      "sha256": "205c2a9d2f80a5485d16e392ed1a2ce9a47d0839734c2c720b02e094e4f9b134",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire action/wait sequence reviewed: IDs, generated lighting capabilities, named values, wait durations, empty control-flow lists, sequential resource behavior and completion. Existing real simulator lifecycle test observes both final colors and Prism 615 timer state; full FTC suites pass.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/routines/test-path.aresroutine": {
+      "sha256": "a6b0bf5ac5b4463b272b0e118b97998a422c2ea16048485345ba47e5015cded4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire short path reviewed: schema/identity, half-meter +X pose/radians, supported safe preset, absent parallel actions/markers, empty child control flow. Generated compile/preflight passed and full FTC tests passed. No claim of physical path or footprint accuracy.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/subsystems/indicator-lights.aressubsystem": {
+      "sha256": "08b6a90b091a671effbcbb841dd85227649e672af95c032f4be11e2577873a97",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire schema-11 document reviewed: independent optional device identities/PWM map/placement, normalized named target defaults/bounds, disjoint DIRECT outputs/safe-off, empty tuning, generated ownership/mock/test, documentation and resource identity. Full generated tests plus Light Practice simulator completion pass; no physical light observation.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/subsystems/prism.aressubsystem": {
+      "sha256": "48671276532719d4210062bc15acb6f652c13c179d6a1877f581cad7c486af54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire schema-11 document reviewed: optional driver identity/map/placement, integer pulse-width bounds/default, DIRECT output and 1055 safe preset mapped to local Prism API, generated mock/test/ownership/resources/docs. Full generated tests and simulator 615 timer state pass; vendor/device physical response unobserved.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/.ares/subsystems/README.md": {
+      "sha256": "2de1065f7819409deacf916130da20797881ce5fff43dd5029c305caa7a0921e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire guide reviewed: canonical extension/naming/ordering/physical units, descriptor ownership, reviewed generation, local offline-only scope and current preview/verification tasks. Local capability guide link and live 421-document link verification passed.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC-Starter/.ares/drivetrains/starter-mecanum.aresdrivetrain": {
+      "sha256": "9b0c80f6bb0706240674cc2d2120d7d8c8c608e06f118bcb899c68f714948c4b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire generic descriptor reviewed: virtual/four-motor/IMU topology, mounting and geometry, canonical simulation/neutral/current/freshness/fault policies and all runtime tuning declarations. Corrected normalized feedforward metadata/static bound/kV baseline; generated geometry-speed regression and full starter tests/build pass. No physical calibration/deployment attestation.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC-Starter/.ares/tuning/simulation.arestuning": {
+      "sha256": "c372541dfae43f98c36844fd7301f808a573a10d89dab2e9250c14af5abf097d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Entire generic profile reviewed: canonical project/drivebase identity, typed simulation defaults, closed-loop/all-zero optional native PIDF and safe trajectory bounds. Corrected kV to 1 nominal-duty per m/s for declared 1 m/s geometry; full starter verification/tests/build pass. Values remain uncalibrated.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/drivebase/FtcMecanumRuntimeParameters.kt": {
+      "sha256": "cbd5e3109a27c2b061ae470bc69d533e9556250c8d5ea91180e30fcd676e23a4",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Pass 259: Read entire file and traced changed FTC normalized feedforward declarations against controller/generator/default-template model; corrected units/static bound and kV=1 baseline. Production/test compilation passes. Studio execution is pending the existing release/archive approval gate; unrelated topology reconciliation/validation branches are not claimed exhaustively tested here.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/drivebase/FtcFeedforwardUnitsTest.kt": {
+      "sha256": "e484b1532ff7802b95810f28da47633d1735ce5615826eb4f159a298643ffd7f",
+      "review": "reviewed",
+      "validation": "pending",
+      "scope": "Pass 259: Complete focused test review: real defaultDrivebase-to-canonical path, speed/gain consistency and all nominal-duty units/static limit. Test compilation passes; execution remains pending Studio release alignment.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/config/FtcFeedforwardUnitsTest.kt": {
+      "sha256": "9a2a6742ae1885cc06f3e32c00625b6aec93a35d17836a5ab953dcb0564f88ef",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: All three tests reviewed/executed: generated live metadata units/static bounds; independent 4.428 nominal volt expectation through real controller at 12V/9V after acceleration settling; geometry/normalized speed/angular consistency. Original units failure observed, full FTC suite passes, fixture owns no global clock/robot/server state.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcStarterFeedforwardUnitsTest.kt": {
+      "sha256": "6f514761cb73e5244339107abde1b8156a57df88739406a3198a05bd56ae3982",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Both tests reviewed/executed: generated runtime gain compared to declared linear/angular model; generated tuning metadata nominal units/static bound. Both failed before fix and pass in complete starter suite; fixture owns no external resources.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-descriptor-units-audit.md": {
+      "sha256": "fe005abcecf3ff69a97f2338feb273d0fdf15896defbb3a0a3dde83157583c42",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 259: Complete report checked against original 3/5 failures, final 200 passing tests, generated-project/APK success, compiled-only Studio test, 410 immutable candidate hashes, 12-document cross-check, physical question and unmodified release/archive approval gate. Markdown links pass; overall pass remains pending.",
+      "evidence": [
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
       ]
     }
   }

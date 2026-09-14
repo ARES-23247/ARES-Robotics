@@ -186,9 +186,9 @@
       "key": "drive.feedforwardKa",
       "componentUid": "ftc.drivebase",
       "displayName": "Drive acceleration feedforward",
-      "description": "Voltage per meter per second squared.",
+      "description": "Fraction of 12 V per m/s^2; divide voltage-based characterization gains by 12.",
       "type": "DOUBLE",
-      "unit": "V/(m/s^2)",
+      "unit": "normalized/(m/s^2)",
       "minimum": 0.0,
       "maximum": 20.0,
       "defaultValue": {
@@ -202,11 +202,11 @@
       "key": "drive.feedforwardKs",
       "componentUid": "ftc.drivebase",
       "displayName": "Drive static feedforward",
-      "description": "Voltage needed to overcome drivetrain static friction.",
+      "description": "Static effort as a fraction of 12 V (0.05 means 0.6 V); divide voltage-based characterization gains by 12.",
       "type": "DOUBLE",
-      "unit": "V",
+      "unit": "normalized",
       "minimum": 0.0,
-      "maximum": 12.0,
+      "maximum": 1.0,
       "defaultValue": {
         "doubleValue": 0.05
       },
@@ -218,9 +218,9 @@
       "key": "drive.feedforwardKv",
       "componentUid": "ftc.drivebase",
       "displayName": "Drive velocity feedforward",
-      "description": "Voltage per meter per second used for wheel output and the modeled maximum speed.",
+      "description": "Fraction of 12 V per m/s; modeled maximum wheel speed is 1/kV. Divide voltage-based characterization gains by 12.",
       "type": "DOUBLE",
-      "unit": "V/(m/s)",
+      "unit": "normalized/(m/s)",
       "minimum": 1.0E-6,
       "maximum": 20.0,
       "defaultValue": {
