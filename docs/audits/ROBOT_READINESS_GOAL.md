@@ -1,7 +1,8 @@
 # Bounded robot-readiness checkpoint
 
-Status: **paused at the user's request**. Resume only on explicit instruction in this existing task.
-See [the saved pause status](ROBOT_READINESS_STATUS.md) for completed evidence and remaining work.
+Status: **complete for the selected local/desktop checkpoint**, 2026-09-14. Stop here; do not start
+another audit pass. See the [readiness report](ROBOT_READINESS_REPORT.md) and
+[current status](ROBOT_READINESS_STATUS.md) for evidence, release limits and the hardware checkpoint.
 This objective supersedes the open-ended
 "audit every tracked file" plan. Preserve its useful fixes, reports, ledger, and local evidence;
 unfinished file counts are historical supporting information, not a work queue or exit criterion.

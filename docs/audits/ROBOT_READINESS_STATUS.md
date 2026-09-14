@@ -1,4 +1,28 @@
-# Robot-readiness checkpoint — paused
+# Robot-readiness checkpoint status
+
+**Completed for the selected local/desktop scope, 2026-09-14.** Read the
+[readiness report](ROBOT_READINESS_REPORT.md) and [final evidence](checkpoints/robot-readiness.json).
+The saved bounded goal is complete; no further audit will start automatically.
+
+The interrupted library check was resumed successfully: 3,036 tests, 13 APIs and the source-size
+gate pass. Candidate `19.0.1-rc.6d49e143e3a9` is published only to the local validation repository;
+716 FTC/FRC consumer tests, generated verification and FTC APK assembly pass. Studio test sources
+compile, but ordinary tests remain blocked by the existing distribution-version alignment gate.
+XRP verification passes 121 tests, reusable MicroPython 130, and CI routing 28.
+
+Library source remains `1cef6f04`, tree `6d49e143e3a919569c5b3d933b8a8200adeb9a36`.
+The final XRP fixture correction is `ad11a35f`: center the free-motion circle and verify its analytic
+trajectory. Earlier boundary-contact timing remains preserved below as a different workload.
+All owned builds are terminal. Work is local; hardware, rendered Studio and release approval remain
+outside the observed evidence. The historical file ledger and pass-277 fixes are preserved.
+
+The app's old objective remains paused because its available API cannot edit that objective.
+It was not falsely marked complete. Only the replacement tracked bounded goal is complete.
+
+## Historical pause record
+
+The following is the preserved pause snapshot, superseded by the completion above and the final
+report. Its pending steps and timing observations describe the state at pause, not current work.
 
 Paused on 2026-09-14 at the user's request. The bounded objective in
 [ROBOT_READINESS_GOAL.md](ROBOT_READINESS_GOAL.md) replaces the old file-count goal. Do not resume
