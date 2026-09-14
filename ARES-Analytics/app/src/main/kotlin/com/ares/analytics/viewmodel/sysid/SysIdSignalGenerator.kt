@@ -237,16 +237,6 @@ class SysIdSignalGenerator(
             calibrationTransport.publishString(ENABLE_TOKEN_PUBUID, "")
         }
     }
-    suspend fun applyToRobotCode(recommendedExponent: Double, recommendedSlewRate: Double) {
-        val slewVal = if (recommendedSlewRate == Double.MAX_VALUE) 999.0 else recommendedSlewRate
-        val accepted = tuningProposalInbox?.submit(ExternalTuningProposal(
-            source = "Driver analysis",
-            summary = "Review driver response recommendations before any live test or profile promotion.",
-            values = mapOf(TuningParameterKeys.DRIVER_DEADBAND_EXPONENT to recommendedExponent, TuningParameterKeys.DRIVER_SLEW_RATE_LIMIT to slewVal)
-        )) == true
-        _state.update { it.copy(exportStatus = if (accepted) "Queued recommendations for the Tuning proposal board." else "Tuning inbox unavailable, full, or proposal invalid. Review pending proposals and retry; no robot or source value changed.") }
-    }
-
     suspend fun startRoutine(mechanism: SysIdMechanism, routine: SysIdRoutine) {
         requireMotionAuthorization(mechanism)
         val attempt = beginMotion()

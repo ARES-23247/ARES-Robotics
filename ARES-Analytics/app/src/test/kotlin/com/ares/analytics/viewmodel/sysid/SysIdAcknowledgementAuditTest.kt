@@ -36,8 +36,7 @@ class SysIdAcknowledgementAuditTest {
         val tuner = Mockito.mock(AutoTunerService::class.java).also {
             Mockito.`when`(it.applyState).thenReturn(MutableStateFlow(TuningApplyState()))
         }
-        val vm = SysIdViewModel(Mockito.mock(DatabaseService::class.java), Mockito.mock(SysIdService::class.java),
-            Mockito.mock(DriverAnalysisService::class.java), tuner, client, scope.backgroundScope,
+        val vm = SysIdViewModel(tuner, client, scope.backgroundScope,
             calibrationTransport = transport)
         suspend fun frame(key: String, value: Double = 0.0, text: String? = null) {
             store.accept(TelemetryFrame(1, "live-telemetry", key, value, text))

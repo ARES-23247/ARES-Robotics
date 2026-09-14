@@ -1097,11 +1097,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdDataCollector.kt": {
-      "sha256": "b7c3c24243d8fe15d5c6fadf6f795f1e4a88d511cd8bfb13f763ae7d52d20a17",
+      "sha256": "f6ba7a922e12a831d68df18e835f71a69e9e4657b9508fc3f25e96a6eadc6d30",
       "review": "partial",
       "validation": "passed",
-      "scope": "Passes 15-17 complete bounded collector, snapshot, stop and background-result checks; pass 18 only updates the shared parser import. Geometric dispatch and request/acknowledgement provenance over lossy transport remain open.",
+      "scope": "Pass 250: Prior bounded collection and background-result review retained. Removes unused strict-parser forwarding method after removal of dormant file intent; canonical parser remains tested. Geometric dispatch and request/acknowledgement provenance remain open.",
       "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/autotuner-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
@@ -1118,11 +1120,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLogImportAuditTest.kt": {
-      "sha256": "112dce863bf93b47e2b78b7d4155a358bded604e2df1c3a267dfedea44796776",
+      "sha256": "262ae0f5a635bce709e1fb42f0b4823cb9d50db389d6c1e426646e715994ba31",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full prior 21-method parser suite retained, with an import change for the shared service parser. All 21 methods pass in focused integration validation; no timing, unit or malformed-input assertions removed.",
+      "scope": "Pass 250: All 20 canonical strict parser methods read and executed; timestamp units, missing versus invalid data, derivative overflow, duplicate handling and scalar/flattened aliases retained. Removes only the retired collector forwarding API test and its unrelated real database fixture.",
       "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/autotuner-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
@@ -1207,11 +1211,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SysIdViewModel.kt": {
-      "sha256": "24804e5876e798ba37b3a0a738f0f1936e6f47ea0c470ac686f0689874d1894f",
+      "sha256": "0af1c1885e2a6d2bd9de1f3c63c2ba61075bc4f9227c3cf58563f1132547a961",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 249: Active control observations now validate exact typed booleans, current notified frame, replay, connected state and target/socket identity; context changes revoke lease/mode/capabilities and invalidate collected work. Unrelated frames skip authority work and unchanged identity allocates no snapshot. Arm acknowledgement delegated to owned lease. STOP failure cannot kill observer; operator stops avoid duplicate STOP and clear old collection. Controlled FTC/FRC and conflated-reconnect/clock-ready tests. Preview, dormant historical/file intents, other intent/proposal lifecycle and broader thread ownership remain partial.",
+      "scope": "Pass 250: Prior control authority and collection review retained. Delegates teaching preview to separately owned cancellable job; valid routine/calibration starts cancel preview. Removes production-uncalled history/file/source-edit intents, state and dependencies after source ownership trace. Remaining configuration/proposal lifecycle, coroutine threading and completion races remain open.",
       "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/sysid-control-authority-audit.md",
         "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json",
         "docs/audits/sysid-analysis-audit.md",
@@ -1440,11 +1446,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSignalGenerator.kt": {
-      "sha256": "63b68efc3efd6b75e95dc8ce59802db3bec1a765dd70cffdfb6a4e54aecbeb23",
+      "sha256": "acad71a60349cf500a106360d21f98a4b49f951652d2fc5d921170a0670eb350",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 249: Dedicated arm/lease/control review: current local attempt and ready connection/target guard after each suspending publish; exact fresh-frame armed observation cannot create a lease; early response reconciled after establishment. Replay/mode/current-lease checks gate motion. Disarm neutralizes local state before IO, handles publisher rejection; old arm or motion success/failure cannot revive after stop/context change. Renewal errors clear authority. Existing proposed tuning behavior retained. Boolean protocol cannot identify echoed token; remaining calibration/proposal branches, in-flight wire cancellation, configuration races and broader threading remain partial.",
+      "scope": "Pass 250: Prior arm/lease/motion review retained. Removes only dormant applyToRobotCode proposal branch; reviewed live proposal/calibration flows unchanged. Configuration races, calibration/proposal lifecycle and in-flight wire ownership remain open.",
       "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/sysid-control-authority-audit.md",
         "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json",
         "docs/audits/tuning-proposal-delivery-audit.md",
@@ -2508,11 +2516,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertEngineCompositeTest.kt": {
-      "sha256": "a90eab2406e02feceee923fe46c270a11a08a5c13e54ab07081ee51f53dd1e9c",
+      "sha256": "52699340b22d063fd059dd736615eb723df1475b27b92bf2be17ffd7622fd9e8",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 30 preserves actual replay/store publication and adds teardown for owned engine, NT4 terminal API, database and temporary files. Broader fixture setup/cleanup failures, timing and composite-domain coverage remain open.",
+      "scope": "Pass 250: Both existing alert scenarios retained and executed with explicit owned TelemetryStore injection instead of dormant replay wrapper. Prior resource review retained; setup/cleanup failure and wall-clock timing robustness remain open.",
       "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass30-studio.log",
@@ -5703,7 +5713,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "4798a78714654747f52bb8153b22409538778775e91f3a0e138a647395cee910",
+      "sha256": "12dc7746a061c532c410914cb2c48983eaee9ce6e548aa8f7cc9d46c56208700",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -17933,11 +17943,13 @@
       "sha256": "3aca6ac36b60e9b1a7a9493266629f00a1a785d07452ef4707a4e56521cda6be"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt": {
-      "sha256": "599353a7063376a581ca982acc2874e70734d0bb1f339f4abb58f87430c77bb9",
+      "sha256": "11cefab994cb9bedbd53c1d08ef88f791fd05f9dbef83dc9aa5a5cfd7b68a888",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 249: Prior tuning API/recording review retained. Adds only internal raw socket-generation accessor, separate from clock-ready tuning identity, for current control observations. Getter delegates to existing outbound attach counter. General client lifecycle and telemetry remain partial.",
+      "scope": "Pass 250: Prior reviewed boundaries retained. Removes dormant emitReplayFrame API after tracing current dashboard snapshot replay and all call sites. Existing fixture injection moves directly to owned TelemetryStore. General telemetry ingress/source and client lifecycle remain partial.",
       "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/sysid-control-authority-audit.md",
         "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json",
         "docs/audits/tuning-live-request-acknowledgement-audit.md",
@@ -18917,11 +18929,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdAcknowledgementAuditTest.kt": {
-      "sha256": "79c4105f979bb2312c4dd2c1a898e142c126b1bb32d995285651113e1cd74131",
+      "sha256": "7c77d446a4a6186c9b41be6c1ba80a34c512598215063a6a801a4fd166380014",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 249: Complete 31-method regression file reviewed/executed: preserved 13-failure original baseline and additional late START baseline, exact boolean/source/replay boundaries, target and socket changes, active lease/mode gating, suspended arm/disarm/start races, normal FTC/FRC, retained/early acknowledgements, rejected/throwing writes and renewal, continued collector after STOP error, geometric stop completion, single STOP count and unrelated-frame identity-work count. Mock transports/database/solver and test-owned scheduler/TelemetryStore; no physical IO.",
+      "scope": "Pass 250: Preserves all 31 previously reviewed authority/lease/motion regression methods, updating only construction after removal of three unused SysId dependencies. All methods pass; no control assertions removed.",
       "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/sysid-control-authority-audit.md",
         "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json"
       ]
@@ -18934,6 +18948,66 @@
       "evidence": [
         "docs/audits/sysid-control-authority-audit.md",
         "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/TuningScreen.kt": {
+      "sha256": "407dc11e7cd83bc73339438141c48ed4cd9220661a991e2ded10343119e465a2",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 250: Only teaching-preview button binding reviewed: disabled during live collection/analysis or an existing preview, with busy label. Compiled against new SysIdState; broader tuning controls, layouts and rendered interaction remain open.",
+      "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/WorkspaceViewModelGraph.kt": {
+      "sha256": "2af74004d02cae57edddb6a02249632f22e09f54f6f74887a3e958c6977e69e9",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 250: Only SysId construction dependency ownership reviewed. Removes three unused constructor dependencies, including eager access to driver-analysis service for dormant history intents. Broader view-model construction and workspace disposal remain open.",
+      "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSimulationPreview.kt": {
+      "sha256": "3f8065f09265f5d17780db645bba38d0a74538cfc455f4ef1c28f3bce0ad4409",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 250: Complete new helper reviewed and tested: preview-only state ownership, pure analysis, duplicate coalescing, selected-mechanism generation, queued cancellation, stale completion rejection, failure/retry and owner cancellation. Blocks busy live work; same selection preserves pending work. Owner-scope contract; synchronous in-flight math is not forcibly interrupted.",
+      "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldTopicSubscriberTest.kt": {
+      "sha256": "25421f3d2bb6f90eb27e1bf7ae737eacd28f76167b7abd9cc4a7f4bd98199923",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 250: All ten existing methods read and executed: atomic pose, fragment precedence, manual replay gate, alliance, game-piece count/identity and topic filtering. Only replay fixture injection changed to owned store. Real database setup, asynchronous stop/close and fixture failure cleanup need separate work; current dashboard snapshot replay is covered by its dedicated suites.",
+      "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSimulationPreviewAuditTest.kt": {
+      "sha256": "977726acc6a4ca7d3f50d3ab394eb648725cf6b371857fe97b0a770c2ce1be54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 250: Complete 16-method test file reviewed and executed: six reproduced baseline failures plus busy-state, owner cancellation, retry, same selection, mid-computation selection, live control exclusivity and real teaching-analysis provenance. Controlled dispatcher and real pure math; mock database/transport, no network or physical output.",
+      "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/sysid-preview-isolation-audit.md": {
+      "sha256": "f17ef66ec07a61e3e1d0dc14a2cf23bee335a107c38a4dc70679c49e6833315d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 250: Documents six reproduced failures, preview/job/state ownership, pure teaching analysis, retirement of unused APIs with current consumer trace, preserved parser tests, focused/full validation, exact source/file accounting and explicit runtime/UI/hardware limits.",
+      "evidence": [
+        "docs/audits/sysid-preview-isolation-audit.md",
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
       ]
     }
   }

@@ -324,14 +324,6 @@ open class Nt4ClientService(
     )
     val consoleFlow: SharedFlow<ConsoleMessage> = _consoleFlow.asSharedFlow()
 
-    /**
-     * Injects a replay frame into the telemetry flow so dashboard widgets consume
-     * replay data identically to live data. Called by the replay integration layer.
-     */
-    suspend fun emitReplayFrame(frame: TelemetryFrame) {
-        telemetryStore.accept(frame)
-    }
-
     /** Accepts normalized telemetry from a non-NT4 platform transport such as the XRP link. */
     suspend fun acceptExternalLiveTelemetry(key: String, value: Double, stringValue: String? = null) {
         require(value.isFinite()) { "External live telemetry must be finite" }

@@ -1,6 +1,5 @@
 package com.ares.analytics.viewmodel.sysid
 
-import com.ares.analytics.service.SysIdLogParser
 import com.ares.analytics.service.AlignedDataRow
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.AutoTunerService
@@ -188,5 +187,4 @@ class SysIdDataCollector(
     }
 
     private fun motorSample(row: DoubleArray) = AlignedDataRow(row[0].toLong(), row[1], row[3], row[4])
-    fun parseLogFile(fileContent: String): List<AlignedDataRow> = SysIdLogParser.parse(fileContent)
 }

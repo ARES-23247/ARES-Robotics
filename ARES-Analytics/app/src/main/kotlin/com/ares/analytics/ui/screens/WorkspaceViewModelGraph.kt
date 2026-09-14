@@ -160,9 +160,6 @@ internal fun rememberWorkspaceViewModelGraph(
     }
     val sysId = remember(config.id) {
         SysIdViewModel(
-            services.databaseService,
-            services.sysIdService,
-            services.driverAnalysisService,
             services.autoTunerService,
             services.nt4ClientService,
             workspaceScope,

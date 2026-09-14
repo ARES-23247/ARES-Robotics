@@ -291,8 +291,8 @@ fun TuningScreen(
                             )
                             OutlinedButton(
                                 onClick = { sysIdViewModel.onIntent(SysIdIntent.RunSimulationPreview) },
-                                enabled = !sysIdState.isRoutineRunning,
-                            ) { Text("Run hardware-free SysId lesson") }
+                                enabled = !sysIdState.isRoutineRunning && !sysIdState.isLoading && !sysIdState.isSimulationRunning,
+                            ) { Text(if (sysIdState.isSimulationRunning) "Running lesson…" else "Run hardware-free SysId lesson") }
                             Text(
                                 sysIdState.simulationMessage,
                                 color = if (simulation?.recoveredWithinTolerance == true && simulation.closedLoop?.stable == true) AresGreen else AresAmber,

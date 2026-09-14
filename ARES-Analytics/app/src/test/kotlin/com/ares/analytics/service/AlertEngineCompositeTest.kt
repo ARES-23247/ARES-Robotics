@@ -42,10 +42,10 @@ class AlertEngineCompositeTest {
             val velFrame = TelemetryFrame(100L, "live", "Hardware/Motors/fl/Velocity", 0.0)
             val curFrame = TelemetryFrame(100L, "live", "Hardware/Motors/fl/CurrentAmps", 10.0)
 
-            mockNt4Service.emitReplayFrame(pwrFrame)
-            mockNt4Service.emitReplayFrame(velFrame)
+            mockNt4Service.telemetryStore.accept(pwrFrame)
+            mockNt4Service.telemetryStore.accept(velFrame)
             repeat(3) {
-                mockNt4Service.emitReplayFrame(curFrame)
+                mockNt4Service.telemetryStore.accept(curFrame)
             }
 
             val activeAlerts = kotlinx.coroutines.withTimeout(3000) {
@@ -62,7 +62,7 @@ class AlertEngineCompositeTest {
 
     @Test
     fun `ratio based canonical CAN utilization triggers alert`() = runBlocking {
-        mockNt4Service.emitReplayFrame(
+        mockNt4Service.telemetryStore.accept(
             TelemetryFrame(100L, "can-session", "Diagnostics/CANBus/CAN2/Utilization", 0.91)
         )
 

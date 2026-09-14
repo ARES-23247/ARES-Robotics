@@ -132,7 +132,7 @@ class FieldTopicSubscriberTest {
             runCurrent()
             val replayValues = doubleArrayOf(1.0, 2.0, -0.2, 1.1, 2.1, -0.19, 0.9, 1.9, -0.21, 7.0)
             replayValues.forEachIndexed { index, value ->
-                nt4.emitReplayFrame(
+                nt4.telemetryStore.accept(
                     com.ares.analytics.shared.models.TelemetryFrame(
                         timestampMs = 1000L,
                         sessionId = "replay",

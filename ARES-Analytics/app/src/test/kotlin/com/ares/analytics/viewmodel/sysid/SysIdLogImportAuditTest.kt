@@ -2,35 +2,11 @@ package com.ares.analytics.viewmodel.sysid
 
 import com.ares.analytics.service.SysIdLogParser
 
-import com.ares.analytics.service.*
-import com.ares.analytics.viewmodel.SysIdState
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.runTest
-import java.io.File
+import com.ares.analytics.service.AlignedDataRow
 import kotlin.test.*
 
 class SysIdLogImportAuditTest {
     private fun parse(content: String) = SysIdLogParser.parse(content)
-
-    private fun parseViaCollector(content: String): List<AlignedDataRow> {
-        var result = emptyList<AlignedDataRow>()
-        runTest {
-            val file = File.createTempFile("sysid-import-audit", ".duckdb")
-            val database = DatabaseService(file.absolutePath)
-            val nt4 = Nt4ClientService(database)
-            try {
-                val state = MutableStateFlow(SysIdState())
-                val service = SysIdService(database)
-                result = SysIdDataCollector(nt4, AutoTunerService(nt4, service), state,
-                    backgroundScope, SysIdRegressionSolver(state)).parseLogFile(content)
-            } finally {
-                nt4.stop()
-                database.close()
-                file.delete()
-            }
-        }
-        return result
-    }
 
     @Test fun `malformed flattened values cannot shift voltage velocity or acceleration columns`() {
         assertTrue(parse("""{"SysId/Data":[0,6,"bad",2,3,4]}""").isEmpty())
@@ -109,11 +85,6 @@ class SysIdLogImportAuditTest {
         """.trimIndent())
         assertEquals(listOf(0L,20L), rows.map { it.timestampMs })
         assertTrue(parse(" \n\t").isEmpty())
-    }
-
-    @Test fun `collector public import entry point uses the strict parser`() {
-        val content = "time,voltage,velocity,acceleration\n0,6,1,0\n20,6,3,0"
-        assertEquals(parse(content), parseViaCollector(content))
     }
 
     @Test fun `quoted commas and escaped quotes cannot shift numeric columns`() {
