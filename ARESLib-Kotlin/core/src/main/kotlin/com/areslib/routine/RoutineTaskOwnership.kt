@@ -32,9 +32,8 @@ fun ownRoutineTaskTree(task: Task): Task {
 }
 
 /** One compilation owns all created nodes, including dormant branches and future sequence steps. */
-internal class RoutineTaskOwnership(private val allowCompleted: Boolean = false) : TaskRuntimeStateOwner {
+internal class RoutineTaskOwnership(private val allowTerminalReuse: Boolean = false) : TaskRuntimeStateOwner {
     private val released = IdentityHashMap<Task, Boolean>()
-    private var completedAtAdmission: IdentityHashMap<Task, Boolean>? = null
     private val nodes = ArrayList<Task>()
     private val leaves = ArrayList<Task>()
     private var cleanupFailure: Throwable? = null
@@ -46,17 +45,23 @@ internal class RoutineTaskOwnership(private val allowCompleted: Boolean = false)
         }
         val status = TaskStateMachine.getStatus(task)
         check(status == TaskStatus.PENDING ||
-            (allowCompleted && status == TaskStatus.COMPLETED && task !is RoutineTaskWrapper)) {
-            "Task must be unstarted; only completed raw tasks can be resubmitted without reset"
+            (allowTerminalReuse && status != TaskStatus.RUNNING && task !is RoutineTaskWrapper)) {
+            "Task must be unstarted or an explicitly resubmitted terminal raw task"
         }
         TaskRuntimeOwnership.acquire(task, this)
         released[task] = false
         nodes.add(task)
-        if (status == TaskStatus.COMPLETED) {
-            val completed = completedAtAdmission ?: IdentityHashMap<Task, Boolean>().also { completedAtAdmission = it }
-            completed[task] = true
-        }
         return task
+    }
+
+    /** A successful explicit resubmission starts a new queued invocation, preserving configured metadata. */
+    fun prepareQueuedInvocation() {
+        check(allowTerminalReuse)
+        for (task in nodes) {
+            val status = TaskStateMachine.getStatus(task)
+            check(status != TaskStatus.RUNNING) { "Task started outside the executor during admission" }
+            if (status != TaskStatus.PENDING) TaskStateMachine.transitionTo(task, TaskStatus.PENDING)
+        }
     }
 
     fun <T : Task> internalNode(task: T): T = if (released.containsKey(task)) task else register(task)
@@ -102,7 +107,6 @@ internal class RoutineTaskOwnership(private val allowCompleted: Boolean = false)
     fun abandonClaims() {
         for (task in nodes) TaskRuntimeOwnership.releaseClaim(task, this)
         nodes.clear(); leaves.clear(); released.clear()
-        completedAtAdmission = null
         cleanupFailure = null
     }
 
@@ -115,7 +119,6 @@ internal class RoutineTaskOwnership(private val allowCompleted: Boolean = false)
             failure = cleanupFailure
         } finally {
             nodes.clear(); leaves.clear(); released.clear()
-            completedAtAdmission = null
             cleanupFailure = null
         }
         failure?.let { throw it }
@@ -165,12 +168,6 @@ internal class RoutineTaskOwnership(private val allowCompleted: Boolean = false)
     /** Admission is already exclusive; observe queued descendant cancellation before starting work. */
     fun propagateQueuedTerminal(owner: Task): Boolean = propagateOwnedTerminal(owner, queued = true)
 
-    fun permitsInitialStatus(task: Task): Boolean = when (TaskStateMachine.getStatus(task)) {
-        TaskStatus.PENDING -> true
-        TaskStatus.COMPLETED -> completedAtAdmission?.containsKey(task) == true
-        else -> false
-    }
-
     fun owns(task: Task): Boolean = released[task] == false
 
     private fun propagateOwnedTerminal(owner: Task, queued: Boolean = false): Boolean {
@@ -182,7 +179,7 @@ internal class RoutineTaskOwnership(private val allowCompleted: Boolean = false)
             when (TaskStateMachine.getStatus(task)) {
                 TaskStatus.FAILED -> failed = true
                 TaskStatus.CANCELLED -> cancelled = true
-                TaskStatus.COMPLETED -> if (queued && completedAtAdmission?.containsKey(task) != true) failed = true
+                TaskStatus.COMPLETED -> if (queued) failed = true
                 else -> Unit
             }
         }

@@ -43,14 +43,14 @@ class StarterMarkerLifecycleAuditTest {
             poseEstimator = PoseEstimatorSnapshot(estimatedPoseX = x, lastObservationTimestampMs = time)))
     }
 
-    private inline fun withMarker(progress: Double = 0.5, target: Double = 10.0,
+    private inline fun withMarker(progress: Double = 0.5, target: Double = 10.0, initialize: Boolean = true,
         block: (StarterFrcDriveMarkerTask, Action) -> Unit) {
         val wasMocked = RobotClock.isMocked
         val old = RobotClock.currentTimeMillis()
         RobotClock.useMockTime(1000L)
         val action = Action()
         val marker = StarterFrcDriveMarkerTask(Pose2d(target, 0.0), progress, action)
-        try { marker.initialize(feedback(0.0)); block(marker, action) } finally {
+        try { if (initialize) marker.initialize(feedback(0.0)); block(marker, action) } finally {
             try { marker.end(feedback(0.0), interrupted = true) } finally {
                 marker.reset(); action.reset()
                 if (wasMocked) RobotClock.useMockTime(old) else RobotClock.useSystemTime()
@@ -159,7 +159,7 @@ class StarterMarkerLifecycleAuditTest {
         assertTrue(marker.isCompleted(feedback(0.0), 0L))
     }
 
-    @Test fun `failed marker fails the deadline group and prevents arrival work`() = withMarker(0.0) { marker, action ->
+    @Test fun `failed marker fails the deadline group and prevents arrival work`() = withMarker(0.0, initialize = false) { marker, action ->
         action.fail = true
         val arrival = Action()
         val drive = StarterFrcDriveToPoseTask(Pose2d(10.0, 0.0), StarterFrcMotionPreset.SAFE)
@@ -178,7 +178,7 @@ class StarterMarkerLifecycleAuditTest {
         } finally { executor.cancelAll(store.state); parent.reset(); group.reset(); drive.reset(); arrival.reset() }
     }
 
-    @Test fun `endpoint marker starts before a real drive deadline completes inside tolerance`() = withMarker(1.0, 1.0) { marker, action ->
+    @Test fun `endpoint marker starts before a real drive deadline completes inside tolerance`() = withMarker(1.0, 1.0, initialize = false) { marker, action ->
         action.completes = true
         val drive = StarterFrcDriveToPoseTask(Pose2d(1.0, 0.0), StarterFrcMotionPreset.SAFE)
         val group = ParallelDeadlineGroup(drive, listOf(marker))

@@ -37,8 +37,10 @@ class TaskExecutor {
     private val preemptedStack = ArrayDeque<Pair<Task, Long>>()
 
     /**
-     * Claims an idle task tree and appends it to the standard queue. Completed raw tasks may be
-     * resubmitted; completed compiled invocations must be rebuilt. Failed/cancelled tasks need reset.
+     * Claims an idle task tree and appends it to the standard queue. Terminal raw tasks may be
+     * explicitly resubmitted; released compiled invocations must be rebuilt. Successful admission
+     * marks reused nodes PENDING while preserving newly configured callbacks/timeouts. A subsequent
+     * failure or cancellation while queued prevents initialization.
      * Duplicate, running, and foreign-owned instances are rejected without metadata loss.
      * Callers must not initialize or reset admitted tasks before the executor releases them.
      */
@@ -50,8 +52,8 @@ class TaskExecutor {
     }
 
     private fun admit(task: Task) {
-        val ownership = RoutineTaskOwnership(allowCompleted = true)
-        try { ownership.acquire(task) }
+        val ownership = RoutineTaskOwnership(allowTerminalReuse = true)
+        try { ownership.acquire(task); ownership.prepareQueuedInvocation() }
         catch (failure: Throwable) {
             ownership.abandonClaims()
             throw failure
@@ -61,7 +63,7 @@ class TaskExecutor {
 
     private fun canInitialize(task: Task): Boolean {
         val ownership = checkNotNull(admissions[task])
-        return ownership.permitsInitialStatus(task) && !ownership.propagateQueuedTerminal(task)
+        return TaskStateMachine.getStatus(task) == TaskStatus.PENDING && !ownership.propagateQueuedTerminal(task)
     }
 
     private inline fun <T> operation(name: String, block: () -> T): T {

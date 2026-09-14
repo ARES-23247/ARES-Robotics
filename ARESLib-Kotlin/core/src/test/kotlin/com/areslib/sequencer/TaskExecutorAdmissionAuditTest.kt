@@ -325,4 +325,30 @@ class TaskExecutorAdmissionAuditTest {
             } finally { executor.cancelAll(state); root.reset(); leaf.reset() }
         }
     }
+
+    @Test fun `terminal raw resubmission is explicit and a later queued cancellation still wins`() = clock {
+        for (terminal in listOf(TaskStatus.CANCELLED, TaskStatus.FAILED)) {
+            val task = Probe("restart")
+            val executor = TaskExecutor()
+            var callbacks = 0
+            try {
+                executor.addTask(task); executor.update(state, 1000L)
+                if (terminal == TaskStatus.CANCELLED) executor.cancelAll(state)
+                else { TaskStateMachine.markFailed(task); executor.update(state, 1000L) }
+                assertEquals(terminal, TaskStateMachine.getStatus(task))
+                executor.addTask(task)
+                assertEquals(TaskStatus.PENDING, TaskStateMachine.getStatus(task))
+                task.cancel()
+                executor.update(state, 1000L)
+                assertEquals(1, task.starts); assertEquals(1, task.ends)
+                assertEquals(0, executor.size)
+                task.done = true
+                task.onComplete { callbacks++ }
+                executor.addTask(task); executor.update(state, 1000L)
+                assertEquals(2, task.starts); assertEquals(2, task.ends)
+                assertEquals(1, callbacks)
+                assertEquals(TaskStatus.COMPLETED, TaskStateMachine.getStatus(task))
+            } finally { executor.cancelAll(state); task.reset() }
+        }
+    }
 }
