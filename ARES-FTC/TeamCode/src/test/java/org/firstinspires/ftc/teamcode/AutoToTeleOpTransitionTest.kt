@@ -16,17 +16,13 @@ import org.mockito.Mockito.*
 /** Exercises the real shared lifecycle used by the season TeleOp adapter. */
 class AutoToTeleOpTransitionTest {
     @org.junit.Before fun fixedClock() = com.areslib.util.RobotClock.useMockTime(1000L)
-    private val originalPose = PoseStorage.currentPose
-    private val originalAlliance = PoseStorage.alliance
-    private val originalValid = PoseStorage.hasValidPose
+    private val originalSnapshot = PoseStorage.snapshot
     private val originalTags = com.areslib.math.estimation.PoseEstimator.activeTags
     private val originalMode = com.areslib.telemetry.RobotStatusTracker.activeOpMode
 
     @After fun restoreGlobals() {
         com.areslib.util.RobotClock.useSystemTime()
-        PoseStorage.currentPose = originalPose
-        PoseStorage.alliance = originalAlliance
-        PoseStorage.hasValidPose = originalValid
+        originalSnapshot?.let { PoseStorage.save(it.pose, it.alliance) } ?: PoseStorage.clear()
         com.areslib.math.estimation.PoseEstimator.activeTags = originalTags
         com.areslib.telemetry.RobotStatusTracker.activeOpMode = originalMode
     }
@@ -47,9 +43,7 @@ class AutoToTeleOpTransitionTest {
     @Test fun `valid auto pose and alliance are restored at start not init`() {
         val base = mock(FtcMecanumRobot::class.java, RETURNS_DEEP_STUBS)
         val pose = Pose2d(1.25, -0.85, Rotation2d(Math.PI / 4))
-        PoseStorage.currentPose = pose
-        PoseStorage.alliance = Alliance.BLUE
-        PoseStorage.hasValidPose = true
+        PoseStorage.save(pose, Alliance.BLUE)
         val mode = Harness(base)
         mode.init()
         verifyNoInteractions(base)
@@ -61,29 +55,42 @@ class AutoToTeleOpTransitionTest {
 
     @Test fun `invalid storage ignores stale blue alliance and pose`() {
         val base = mock(FtcMecanumRobot::class.java, RETURNS_DEEP_STUBS)
-        PoseStorage.currentPose = Pose2d(7.0, -8.0, Rotation2d(2.0))
-        PoseStorage.alliance = Alliance.BLUE
-        PoseStorage.hasValidPose = false
+        val stalePose = Pose2d(7.0, -8.0, Rotation2d(2.0))
+        PoseStorage.save(stalePose, Alliance.BLUE)
+        PoseStorage.clear()
         val mode = Harness(base)
         mode.init()
         mode.start()
         val order = inOrder(base.store, base)
         order.verify(base.store).dispatch(RobotAction.SetAlliance(Alliance.RED))
         order.verify(base).resetPoseForAlliance()
-        verify(base, never()).resetPose(PoseStorage.currentPose)
+        verify(base, never()).resetPose(stalePose)
     }
 
     @Test fun `start uses latest pose storage rather than an init snapshot`() {
         val base = mock(FtcMecanumRobot::class.java, RETURNS_DEEP_STUBS)
-        PoseStorage.hasValidPose = false
+        PoseStorage.clear()
         val mode = Harness(base)
         mode.init()
         val pose = Pose2d(-1.0, 0.5, Rotation2d(-0.4))
-        PoseStorage.currentPose = pose
-        PoseStorage.alliance = Alliance.RED
-        PoseStorage.hasValidPose = true
+        PoseStorage.save(pose, Alliance.RED)
         mode.start()
         verify(base.store).dispatch(RobotAction.SetAlliance(Alliance.RED))
+        verify(base).resetPose(pose)
+    }
+
+    @Test fun `alliance observer cannot replace the pose being restored`() {
+        val base = mock(FtcMecanumRobot::class.java, RETURNS_DEEP_STUBS)
+        val store = base.store
+        val pose = Pose2d(1.25, -0.85, Rotation2d(Math.PI / 4))
+        PoseStorage.save(pose, Alliance.BLUE)
+        doAnswer {
+            PoseStorage.clear()
+            null
+        }.`when`(store).dispatch(RobotAction.SetAlliance(Alliance.BLUE))
+        val mode = Harness(base)
+        mode.init()
+        mode.start()
         verify(base).resetPose(pose)
     }
 
@@ -94,7 +101,7 @@ class AutoToTeleOpTransitionTest {
         mode.gamepad1 = mock(com.qualcomm.robotcore.hardware.Gamepad::class.java)
         mode.gamepad2 = mock(com.qualcomm.robotcore.hardware.Gamepad::class.java)
         mode.telemetry = mock(org.firstinspires.ftc.robotcore.external.Telemetry::class.java)
-        PoseStorage.hasValidPose = false
+        PoseStorage.clear()
         mode.init()
         mode.init_loop()
         verify(robot, never()).enableCalibrationMode()
@@ -110,7 +117,7 @@ class AutoToTeleOpTransitionTest {
         mode.gamepad1 = mock(com.qualcomm.robotcore.hardware.Gamepad::class.java)
         mode.gamepad2 = mock(com.qualcomm.robotcore.hardware.Gamepad::class.java)
         mode.telemetry = mock(org.firstinspires.ftc.robotcore.external.Telemetry::class.java)
-        PoseStorage.hasValidPose = false
+        PoseStorage.clear()
         mode.init()
         mode.init_loop()
         mode.start()

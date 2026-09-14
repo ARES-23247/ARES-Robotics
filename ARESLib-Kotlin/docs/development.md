@@ -56,6 +56,20 @@ failures and preserve distinct diagnostics and interruption. Mecanum safety disa
 and neutralizes its drive, then traverses the remaining hardware registry once. Callers must
 stop the owning control loop before closing resources.
 
+### Autonomous pose handoff
+
+`PoseStorage.save(pose, alliance)` publishes a single immutable snapshot and returns whether
+all position coordinates and the raw heading are finite. Invalid input clears any older
+handoff. `PoseStorage.clear()` invalidates the entire handoff without allocating a new pose.
+Read `val saved = PoseStorage.snapshot` once before dispatching actions or invoking callbacks;
+use that retained snapshot for both alliance selection and pose restoration. A callback can
+clear or replace the global handoff while the retained snapshot remains consistent.
+
+This replaces the separate `currentPose`, `alliance`, and `hasValidPose` properties in ARESLib 18.
+Migrate writers to `save` and readers to the nullable `snapshot`; validity is `snapshot != null`.
+Storage is process-local and has no automatic expiry or robot-identity check. The owning mode
+lifecycle must clear failed/aborted runs; restarting the Robot Controller loses the handoff.
+
 ## Test strategy
 
 Use the smallest focused suite while iterating, then run the affected modules:

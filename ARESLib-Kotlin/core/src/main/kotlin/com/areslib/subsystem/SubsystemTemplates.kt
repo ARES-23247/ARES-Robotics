@@ -82,18 +82,18 @@ object SubsystemTemplates {
         SubsystemImplementationKind.DECLARATIVE_GENERATED -> copy(
             generateMockIo = true,
             generateTest = true,
-            implementation = SubsystemImplementationDocument(
+            implementation = implementation.copy(
                 kind = kind,
                 ownership = SubsystemSourceOwnership.GENERATED_DO_NOT_EDIT,
-                simulation = SubsystemSimulationDocument(SubsystemSimulationSupport.GENERATED_MOCK),
+                simulation = implementation.simulation.copy(support = SubsystemSimulationSupport.GENERATED_MOCK),
             ),
         )
         SubsystemImplementationKind.GENERATED_STARTER -> copy(
-            implementation = SubsystemImplementationDocument(
+            implementation = implementation.copy(
                 kind = kind,
                 ownership = SubsystemSourceOwnership.GENERATED_STARTER,
-                simulation = SubsystemSimulationDocument(
-                    if (generateMockIo) SubsystemSimulationSupport.GENERATED_MOCK else SubsystemSimulationSupport.UNAVAILABLE,
+                simulation = implementation.simulation.copy(
+                    support = if (generateMockIo) SubsystemSimulationSupport.GENERATED_MOCK else SubsystemSimulationSupport.UNAVAILABLE,
                 ),
             ),
         )

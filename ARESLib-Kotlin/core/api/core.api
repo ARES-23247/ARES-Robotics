@@ -7365,12 +7365,13 @@ public final class com/areslib/tuning/TypedTuningRuntime {
 public final class com/areslib/util/PoseStorage {
 	public static final field INSTANCE Lcom/areslib/util/PoseStorage;
 	public static final fun clear ()V
-	public static final fun getAlliance ()Lcom/areslib/state/Alliance;
-	public static final fun getCurrentPose ()Lcom/areslib/math/geometry/Pose2d;
-	public static final fun getHasValidPose ()Z
-	public static final fun setAlliance (Lcom/areslib/state/Alliance;)V
-	public static final fun setCurrentPose (Lcom/areslib/math/geometry/Pose2d;)V
-	public static final fun setHasValidPose (Z)V
+	public static final fun getSnapshot ()Lcom/areslib/util/PoseStorage$Snapshot;
+	public static final fun save (Lcom/areslib/math/geometry/Pose2d;Lcom/areslib/state/Alliance;)Z
+}
+
+public final class com/areslib/util/PoseStorage$Snapshot {
+	public final fun getAlliance ()Lcom/areslib/state/Alliance;
+	public final fun getPose ()Lcom/areslib/math/geometry/Pose2d;
 }
 
 public final class com/areslib/util/RobotClock {

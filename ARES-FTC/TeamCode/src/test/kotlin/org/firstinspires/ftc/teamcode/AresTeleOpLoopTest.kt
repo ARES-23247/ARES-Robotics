@@ -18,14 +18,14 @@ import org.mockito.Mockito.*
 class AresTeleOpLoopTest {
     private val oldTags = PoseEstimator.activeTags
     private val oldMode = RobotStatusTracker.activeOpMode
-    private val oldValid = PoseStorage.hasValidPose
+    private val oldSnapshot = PoseStorage.snapshot
 
-    @Before fun setupClock() { RobotClock.useMockTime(1000L); PoseStorage.hasValidPose = false }
+    @Before fun setupClock() { RobotClock.useMockTime(1000L); PoseStorage.clear() }
     @After fun restore() {
         RobotClock.useSystemTime()
         PoseEstimator.activeTags = oldTags
         RobotStatusTracker.activeOpMode = oldMode
-        PoseStorage.hasValidPose = oldValid
+        oldSnapshot?.let { PoseStorage.save(it.pose, it.alliance) } ?: PoseStorage.clear()
     }
 
     private class Fixture(val mode: AresTeleOpBase, val robot: AresRobot, val runtime: FtcGeneratedProjectRuntime)

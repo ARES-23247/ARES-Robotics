@@ -9,6 +9,36 @@ import org.junit.Test
 class ConfigurableGamePieceInteractionModelTest {
 
     @Test
+    fun descriptorBindingSurvivesStartupResetBeforeRobotOutputsRegister() {
+        val base = com.areslib.subsystem.SubsystemTemplates.create(
+            com.areslib.subsystem.SubsystemTemplate.INTAKE_CONVEYOR,
+            "registry-audit-intake", "RegistryAuditIntake", com.areslib.subsystem.SubsystemPlatform.FTC,
+        )
+        val document = base.copy(implementation = base.implementation.copy(
+            simulation = base.implementation.simulation.copy(interaction = base.implementation.simulation.interaction.copy(
+                role = com.areslib.subsystem.SimInteractionRole.INTAKE_COLLECTOR,
+            )),
+        ))
+        val model = ConfigurableGamePieceInteractionModel.fromSubsystems(listOf(document))
+        com.areslib.simulation.SimAppliedOutputRegistry.register(document.uid, "motor").publish(2.0)
+        com.areslib.simulation.SimAppliedOutputRegistry.reset()
+        System.gc() // The model itself must keep its bound signal alive through startup.
+        val world = World<Body>()
+        val robot = Body()
+        val piece = Body().apply {
+            addFixture(Geometry.createCircle(0.05))
+            translate(model.intakeRangeMeters, 0.0)
+        }
+        world.addBody(piece)
+        val pieces = mutableListOf(piece)
+        assertEquals(0, model.update(world, robot, pieces, false, false, false, 0, 0.0, 0.0, 0.0))
+        com.areslib.simulation.SimAppliedOutputRegistry.register(document.uid, "motor").publish(2.0)
+        assertEquals(1, model.update(world, robot, pieces, false, false, false, 0, 0.0, 0.0, 0.0))
+        assertEquals(0, pieces.size)
+        com.areslib.simulation.SimAppliedOutputRegistry.reset()
+    }
+
+    @Test
     fun testIntakeCollectsPieceWithinRangeAndRespectsMaxCapacity() {
         val world = World<Body>()
         val robot = Body()

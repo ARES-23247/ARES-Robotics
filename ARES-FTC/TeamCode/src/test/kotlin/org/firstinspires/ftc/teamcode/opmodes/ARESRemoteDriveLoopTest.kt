@@ -16,7 +16,7 @@ import org.junit.Test
 import org.mockito.Mockito.*
 
 class ARESRemoteDriveLoopTest {
-    private val oldValid = PoseStorage.hasValidPose
+    private val oldSnapshot = PoseStorage.snapshot
     private val oldTags = PoseEstimator.activeTags
     private val oldMode = RobotStatusTracker.activeOpMode
     private val instanceField = NT4Server::class.java.getDeclaredField("serverInstance").apply { isAccessible = true }
@@ -57,7 +57,7 @@ class ARESRemoteDriveLoopTest {
             isAccessible = true
             set(mode, mock(FtcGeneratedProjectRuntime::class.java))
         }
-        PoseStorage.hasValidPose = false
+        PoseStorage.clear()
         mode.init()
         mode.start()
     }
@@ -68,7 +68,7 @@ class ARESRemoteDriveLoopTest {
             NT4Server.resetSharedState()
         }
         RobotClock.useSystemTime()
-        PoseStorage.hasValidPose = oldValid
+        oldSnapshot?.let { PoseStorage.save(it.pose, it.alliance) } ?: PoseStorage.clear()
         PoseEstimator.activeTags = oldTags
         RobotStatusTracker.activeOpMode = oldMode
     }

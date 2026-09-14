@@ -39,7 +39,7 @@ class AresAutoBaseTest {
     @Before
     fun setUp() {
         RobotStatusTracker.isEnabled = false
-        PoseStorage.hasValidPose = false
+        PoseStorage.clear()
     }
 
     @After
@@ -325,7 +325,7 @@ class AresAutoBaseTest {
         } finally {
             opMode.stop()
             assertNull(FtcBaseRobot.activeInstance)
-            assertTrue(!PoseStorage.hasValidPose)
+            assertTrue(PoseStorage.snapshot == null)
         }
         opMode.stop()
     }

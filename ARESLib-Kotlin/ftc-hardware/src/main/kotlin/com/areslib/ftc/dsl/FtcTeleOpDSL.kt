@@ -205,11 +205,11 @@ abstract class FtcTeleOpBase<R> : OpMode() {
 
     private fun restoreStartingPose(baseRobot: FtcBaseRobot?) {
         if (baseRobot == null) return
-        val hasValidStoredPose = PoseStorage.hasValidPose
-        val restoredAlliance = allianceForTeleOpRestore(hasValidStoredPose, PoseStorage.alliance)
+        val savedPose = PoseStorage.snapshot
+        val restoredAlliance = allianceForTeleOpRestore(savedPose)
         baseRobot.store.dispatch(com.areslib.action.RobotAction.SetAlliance(restoredAlliance))
-        if (hasValidStoredPose) {
-            baseRobot.resetPose(PoseStorage.currentPose)
+        if (savedPose != null) {
+            baseRobot.resetPose(savedPose.pose)
         } else {
             baseRobot.resetPoseForAlliance()
         }
@@ -242,6 +242,5 @@ abstract class FtcTeleOpBase<R> : OpMode() {
 
 /** Invalid pose storage must not leak an alliance retained by an older autonomous run. */
 internal fun allianceForTeleOpRestore(
-    hasValidStoredPose: Boolean,
-    storedAlliance: com.areslib.state.Alliance
-): com.areslib.state.Alliance = if (hasValidStoredPose) storedAlliance else com.areslib.state.Alliance.RED
+    savedPose: PoseStorage.Snapshot?,
+): com.areslib.state.Alliance = savedPose?.alliance ?: com.areslib.state.Alliance.RED

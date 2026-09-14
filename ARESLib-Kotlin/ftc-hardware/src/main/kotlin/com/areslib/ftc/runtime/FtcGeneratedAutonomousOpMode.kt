@@ -346,11 +346,9 @@ abstract class FtcGeneratedAutonomousOpMode<R : Any> : OpMode(), AresFtcRuntimeO
         if (finalPose != null && cleanupFailure == null &&
             shouldPersistFtcAutoPose(started, successfulCompletion, poseIsUsable, configurationError)
         ) {
-            PoseStorage.currentPose = finalPose
-            PoseStorage.alliance = selector.alliance
-            PoseStorage.hasValidPose = true
+            PoseStorage.save(finalPose, selector.alliance)
         } else {
-            PoseStorage.hasValidPose = false
+            PoseStorage.clear()
         }
         if (cleanupFailure != null) {
             runCatching {
@@ -419,7 +417,7 @@ abstract class FtcGeneratedAutonomousOpMode<R : Any> : OpMode(), AresFtcRuntimeO
             configurationError = "Autonomous stop failed: ${finishFailure.message ?: finishFailure::class.java.simpleName}"
             "Aborted: $configurationError"
         }
-        if (!successfulCompletion) PoseStorage.hasValidPose = false
+        if (!successfulCompletion) PoseStorage.clear()
         telemetry.addData("Auto", reportedStatus)
         val networkStatus = when {
                 successfulCompletion && finishFailure == null -> "Complete"

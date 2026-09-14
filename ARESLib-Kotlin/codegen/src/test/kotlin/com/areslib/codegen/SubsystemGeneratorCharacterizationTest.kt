@@ -16,16 +16,16 @@ import java.security.MessageDigest
  * simulator adapters, generated verification, and registry plumbing.
  */
 class SubsystemGeneratorCharacterizationTest {
-    // The linkage mock now neutralizes, invalidates and latches before propagating a
-    // failed plant step. LinkageMockFailureAuditTest executes that generated boundary.
+    // Template ownership now preserves intake interaction metadata. Only the generated registry
+    // document fingerprint changes; SubsystemTemplateOwnershipAuditTest covers the retained values.
     @Test
     fun `all supported FTC templates retain their deterministic artifact manifest`() {
-        assertEquals("52a39c6c226100051f4074c48dc3611a456ec4ee3309fc288f09bb1c94b581d2", manifestDigest(SubsystemPlatform.FTC))
+        assertEquals("47c4bdd2fcc499238d333742d201b6812e2810b31ce526088cc6fbaf4d69a5b1", manifestDigest(SubsystemPlatform.FTC))
     }
 
     @Test
     fun `all supported FRC templates retain their deterministic artifact manifest`() {
-        assertEquals("b89e268d816521c1b799279c55baaa6fd17ad84f1f2b5e888a2a6e898880d0b1", manifestDigest(SubsystemPlatform.FRC))
+        assertEquals("ba0b2a74eb6a3fa2c046fbe19b23b004560cc279222893c943b8f4011f8ed996", manifestDigest(SubsystemPlatform.FRC))
     }
 
     private fun manifestDigest(platform: SubsystemPlatform): String {

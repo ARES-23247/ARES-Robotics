@@ -71,7 +71,7 @@ ARES uses CCW-positive radians with zero on +X. Check the Pinpoint heading-direc
 
 ### Pose jumps at Auto-to-TeleOp transition
 
-Autonomous saves the final pose and alliance through `PoseStorage`; the main TeleOp restores them when `hasValidPose` is true. Confirm autonomous reached its normal persistence path and that the Robot Controller was not restarted between OpModes. A new process cannot retain in-memory pose.
+Autonomous saves the final pose and alliance with `PoseStorage.save(pose, alliance)`; the main TeleOp reads one non-null `PoseStorage.snapshot` at START and restores both values from it. Invalid numeric input clears the handoff. Confirm autonomous reached its normal persistence path and that the Robot Controller was not restarted between OpModes. A new process cannot retain in-memory pose.
 
 ## Autonomous
 
