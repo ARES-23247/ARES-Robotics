@@ -2,6 +2,8 @@ package com.ares.analytics.viewmodel.field
 
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.SimulatorPoseFrameSnapshot
+import com.ares.analytics.service.GamePieceTelemetry
+import com.ares.analytics.service.GamePieceFrameSnapshot
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.viewmodel.FieldViewerState
 import com.ares.analytics.viewmodel.LivePoseState
@@ -27,94 +29,52 @@ internal fun isFieldViewerTopic(key: String): Boolean = when (key) {
         key.startsWith("ARES/GamePieces/")
 }
 
-/** Stages one atomic typed game-piece frame and commits only at its final sequence element. */
+/** Strict ordered fallback for flattened replay/scalar frames; each frame needs its own complete header. */
 internal class GamePieceFrameAccumulator {
     private var values = DoubleArray(0)
-    private var count = -1
-    var hasSeenFrame: Boolean = false
+    private var nextIndex = 0
+    @Volatile var hasSeenFrame: Boolean = false
         private set
 
-    fun reset() {
-        values = DoubleArray(0)
-        count = -1
+    @Synchronized fun reset() {
+        nextIndex = 0
         hasSeenFrame = false
     }
 
-    fun accept(key: String, value: Double): Map<Int, GamePiece>? {
-        val index = key.removePrefix(PREFIX).toIntOrNull() ?: return null
+    @Synchronized fun accept(key: String, value: Double): Map<Int, GamePiece>? {
+        if (!key.startsWith(GamePieceTelemetry.PREFIX)) return null
         hasSeenFrame = true
-        when (index) {
-            0 -> {
-                if (value != VERSION) reset()
-                return null
-            }
-            1 -> {
-                val nextCount = value.toInt()
-                if (!value.isFinite() || nextCount < 0 || nextCount > MAX_PIECES || nextCount.toDouble() != value) {
-                    reset()
-                    return null
-                }
-                count = nextCount
-                val required = HEADER_WIDTH + count * RECORD_WIDTH + SEQUENCE_WIDTH
-                if (values.size != required) values = DoubleArray(required)
-                values[0] = VERSION
-                values[1] = value
-                return null
-            }
+        val index = key.removePrefix(GamePieceTelemetry.PREFIX).toIntOrNull()
+        if (index == 0) {
+            nextIndex = if (value == GamePieceTelemetry.VERSION) 1 else 0
+            return null
         }
-        if (count < 0 || index !in values.indices) return null
+        if (index == null || index != nextIndex || nextIndex == 0 || !value.isFinite()) {
+            nextIndex = 0
+            return null
+        }
+        if (index == 1) {
+            val count = GamePieceTelemetry.count(value)
+            if (count == null) { nextIndex = 0; return null }
+            val size = GamePieceTelemetry.requiredSize(count)
+            if (values.size != size) values = DoubleArray(size)
+            values[0] = GamePieceTelemetry.VERSION
+            values[1] = value
+            nextIndex = 2
+            return null
+        }
         values[index] = value
-        if (index != values.lastIndex) return null
-
-        val decoded = linkedMapOf<Int, GamePiece>()
-        for (recordIndex in 0 until count) {
-            val base = HEADER_WIDTH + recordIndex * RECORD_WIDTH
-            val instanceKey = values[base + 0].toLong()
-            val typeKey = values[base + 1].toLong()
-            val shape = if (values[base + 7].toInt() == SHAPE_BOX) "box" else "circle"
-            var mapKey = (instanceKey xor (instanceKey ushr 32)).toInt()
-            while (mapKey in decoded) mapKey++
-            decoded[mapKey] = GamePiece(
-                id = "sim-$instanceKey",
-                name = "Simulated ${shape.replaceFirstChar(Char::uppercase)}",
-                x = values[base + 2],
-                y = values[base + 3],
-                type = "Simulated ${shape.replaceFirstChar(Char::uppercase)}",
-                typeId = "sim-type-$typeKey",
-                rotationRadians = values[base + 4],
-                widthMeters = values[base + 5].takeIf { it.isFinite() && it > 0.0 },
-                heightMeters = values[base + 6].takeIf { it.isFinite() && it > 0.0 },
-                simulationShape = shape,
-                colorRgb = values[base + 8].toInt().coerceIn(0, 0xFFFFFF),
-            )
+        if (index == values.lastIndex) {
+            nextIndex = 0
+            return GamePieceTelemetry.decodeScalars(values)?.pieces
         }
-        return decoded
+        nextIndex++
+        return null
     }
 
     companion object {
-        /** Decode a complete replay snapshot through the same record mapping as live telemetry. */
-        fun decodeSnapshot(frame: Map<String, Double>): Map<Int, GamePiece>? {
-            if (frame["${PREFIX}0"] != VERSION) return null
-            val countValue = frame["${PREFIX}1"] ?: return null
-            if (!countValue.isFinite() || countValue < 0.0 || countValue > MAX_PIECES ||
-                countValue != countValue.toInt().toDouble()) return null
-            val size = HEADER_WIDTH + countValue.toInt() * RECORD_WIDTH + SEQUENCE_WIDTH
-            if ((0 until size).any { frame["$PREFIX$it"]?.isFinite() != true }) return null
-            val accumulator = GamePieceFrameAccumulator()
-            var result: Map<Int, GamePiece>? = null
-            for (index in 0 until size) {
-                result = accumulator.accept("$PREFIX$index", frame.getValue("$PREFIX$index"))
-            }
-            return result
-        }
-
-        private const val PREFIX = "ARES/GamePiecesFrame/"
-        private const val VERSION = 2.0
-        private const val HEADER_WIDTH = 2
-        private const val RECORD_WIDTH = 9
-        private const val SEQUENCE_WIDTH = 1
-        private const val SHAPE_BOX = 1
-        private const val MAX_PIECES = 10_000
+        fun decodeSnapshot(frame: Map<String, Double>, strings: Map<String, String> = emptyMap()): Map<Int, GamePiece>? =
+            GamePieceTelemetry.decodeSnapshot(frame, strings)
     }
 }
 
@@ -290,6 +250,11 @@ class FieldTopicSubscriber(
     private val poseAccumulator = FieldPoseFrameAccumulator()
     private val gamePieceAccumulator = GamePieceFrameAccumulator()
 
+    private fun currentGamePieceFrame(): GamePieceFrameSnapshot? =
+        nt4ClientService.gamePieceFrame.value?.takeIf {
+            !nt4ClientService.isReplayActive.value && it.targetEpoch == nt4ClientService.telemetryStore.currentTargetEpoch()
+        }
+
     init {
         scope.launch {
             nt4ClientService.isConnected.collect { connected ->
@@ -318,6 +283,8 @@ class FieldTopicSubscriber(
         scope.launch {
             nt4ClientService.isReplayActive.collect {
                 poseAccumulator.reset()
+                gamePieceAccumulator.reset()
+                livePoseFlow.update { state -> state.copy(liveGamePieces = currentGamePieceFrame()?.pieces.orEmpty()) }
             }
         }
 
@@ -330,6 +297,27 @@ class FieldTopicSubscriber(
                     poseAccumulator.accept(frame)
                     livePoseFlow.update(poseAccumulator::snapshot)
                 }
+            }
+        }
+
+        // Preserve the complete parent independently of scalar telemetry overflow and delivery order.
+        scope.launch(processingDispatcher) {
+            nt4ClientService.gamePieceFrame.collect { frame ->
+                if (frame == null) {
+                    gamePieceAccumulator.reset()
+                    if (!nt4ClientService.isReplayActive.value) {
+                        livePoseFlow.update { it.copy(liveGamePieces = emptyMap()) }
+                    }
+                } else if (frame === currentGamePieceFrame()) {
+                    livePoseFlow.update { it.copy(liveGamePieces = frame.pieces) }
+                }
+            }
+        }
+
+        scope.launch(processingDispatcher) {
+            nt4ClientService.telemetryStore.targetEpochs.collect {
+                gamePieceAccumulator.reset()
+                livePoseFlow.update { it.copy(liveGamePieces = currentGamePieceFrame()?.pieces.orEmpty()) }
             }
         }
 
@@ -359,6 +347,12 @@ class FieldTopicSubscriber(
                         livePoseFlow.update(poseAccumulator::snapshot)
                     }
                     return@collect
+                }
+
+                if (key.startsWith("ARES/GamePiecesFrame/") || key.startsWith("ARES/GamePieces/")) {
+                    // Replay renders immutable ReplayFrame snapshots, not queued live publications.
+                    if (nt4ClientService.isReplayActive.value || !nt4ClientService.telemetryStore.isCurrentNotifiedFrame(frame) || currentGamePieceFrame() != null ||
+                        frame.stringValue != null || !value.isFinite()) return@collect
                 }
 
                 if (key.startsWith("ARES/GamePiecesFrame/")) {

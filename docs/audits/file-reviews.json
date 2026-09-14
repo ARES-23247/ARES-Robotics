@@ -5717,7 +5717,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "11fc3af586bf85c30647b198334e2fc7647d2fdffa53e5194f734a8172e6a2e8",
+      "sha256": "c20e17257458fda63df21ea8adf88176a24170af173b8647c59cf5f331c38b11",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -12179,21 +12179,25 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/ReplayFieldSnapshot.kt": {
-      "sha256": "bf2221b4c521daa1012e6a3f4cbfd1de676052504bc18de299497e6251d398f1",
+      "sha256": "06232b680043f56f7458e480f41b5487b88597a58fb904a6c8134aac74e299e5",
       "review": "partial",
       "validation": "passed",
-      "scope": "Full source read; fix typed game-piece replay omission, stale legacy count and invented missing coordinates. Validated typed visual/identity reconstruction, empty/incomplete authority, legacy count/coordinate rules. Remaining pose finiteness, vision cases, mixed sample timing and trace join/downsampling review open.",
+      "scope": "Pass 252: Prior game-piece reconstruction retained. Shared strict v2 decoder now validates metadata; typed and legacy game-piece reconstruction reject text-backed numeric placeholders. Remaining pose finiteness, vision, source timing and trace join/downsampling remain partial; no completeness credit for those paths.",
       "evidence": [
+        "docs/audits/game-piece-frame-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass252-verified-evidence/summary.json",
         "docs/audits/studio-replay-game-piece-audit.md",
         "ARESLib-Kotlin/build/audit-pass151-verified-evidence/"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldTopicSubscriber.kt": {
-      "sha256": "aec1465d03ee9b22275d743d36f29a6a184cc2a768cd8d0be25fb8e8092d20b9",
+      "sha256": "69c0309905b491cc920484e82d126150eb3b961be739d84ec385e0415ee2d6b7",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed typed GamePieceFrameAccumulator record mapping and added complete-snapshot entry point using shared constants with bounded count/presence/finiteness checks. Full app including live subscriber tests passes. Remaining live staging/reconnect/completeness, pose accumulation and broader subscriber behavior open.",
+      "scope": "Pass 252: Prior typed record mapping retained; complete strict scalar staging review adds fresh version/count, contiguous completeness, no previous-slot reuse and no duplicate sequence commit, synchronized reset/staging. Live game-piece layer consumes complete current target parent despite scalar overflow, rejects old notified publications and stays empty during replay; target/replay resets drop game-piece staging. Broader pose/vision/legacy update validation, source age and concurrent event ordering remain partial.",
       "evidence": [
+        "docs/audits/game-piece-frame-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass252-verified-evidence/summary.json",
         "docs/audits/studio-replay-game-piece-audit.md",
         "ARESLib-Kotlin/build/audit-pass151-verified-evidence/"
       ]
@@ -17947,11 +17951,13 @@
       "sha256": "3aca6ac36b60e9b1a7a9493266629f00a1a785d07452ef4707a4e56521cda6be"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt": {
-      "sha256": "5dfabf672bfbad4d514024331e27aa23300819549a93cd357909a39901765784",
+      "sha256": "7edab38d83e052cdf2a6a8bff80f4cb6e0966656bdcec5bd739c82845e4fd04a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 251: Prior source boundaries retained. Terminal disposal now cancels/joins the owned service lifetime in noncancellable cleanup, including failed flush and canceled caller; ordinary stop remains reusable. Failed persistence returns false and preserves explicitly retryable frames. Private-lifetime regressions and actual local NT4 transport validate this boundary. Wider ingestion, console persistence, concurrent control admission and connection lifecycle remain partial.",
+      "scope": "Pass 252: Prior reviewed boundaries retained. Adds current-target complete game-piece StateFlow before scalar fan-out and clears it on target reset. Shared strict packed decoding, invalid payload owns empty layer, replay check before/after decoding, captured target epoch checked before publication. Recording/scalar transport preserved. Wider source admission/connection/recording lifecycle remains partial.",
       "evidence": [
+        "docs/audits/game-piece-frame-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass252-verified-evidence/summary.json",
         "docs/audits/nt4-disposal-test-fixtures-audit.md",
         "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json",
         "docs/audits/sysid-preview-isolation-audit.md",
@@ -19056,6 +19062,36 @@
       "evidence": [
         "docs/audits/nt4-disposal-test-fixtures-audit.md",
         "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GamePieceTelemetry.kt": {
+      "sha256": "bc41abff7e64b1bccebc4e216b76f450ee71421fc7a15452311d2e6a9b6ac9a1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 252: Complete shared v2 decoder and immutable snapshot reviewed/tested against simulator producer layout: exact bounded count/length, finite coordinates and radians, positive dimensions, exact positive 53-bit identities and nonnegative sequence, circle/box and RGB validation, all supported numeric array carriers, rejected text/structured values, replay text-backed placeholders, ownership isolation. Live cap4096/replay cap10000 pieces retained. Checked size arithmetic and ordinal map slots remove collision-probing loop while preserving all records including repeated fallback identity strings.",
+      "evidence": [
+        "docs/audits/game-piece-frame-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass252-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/GamePieceFrameAuditTest.kt": {
+      "sha256": "8f4763daee5d62b446cb6956b863a653af8a34b151ff9b3deefc380e5b962651",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 252: Complete 27-method file reviewed/executed. All12 failure-baseline methods retained; positive valid/empty/reset/recovery cases, boxed/JSON/float carriers, rejected structured/text data, allocation/exact-integer boundaries, colliding/shared IDs, no mutable-array aliasing, real NT4 ingest with held field dispatcher and5000-frame overflow, trailing payload rejection, target reset/replay isolation and same rendered-state retention. Mock DB, owned scopes/client cleanup; no actual hardware.",
+      "evidence": [
+        "docs/audits/game-piece-frame-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass252-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/game-piece-frame-integrity-audit.md": {
+      "sha256": "e7e1d5ace4d900819f29974e2418a65a0c130c7eedbec0af5cd9af87626cedab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 252: Documents12 reproduced decoder/delivery failures, producer layout trace, atomic parent and strict shared decoding, bounded staging, metadata/map collision efficiency, exact source/candidate/test/file evidence and remaining pose/trace/runtime/hardware limits.",
+      "evidence": [
+        "docs/audits/game-piece-frame-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass252-verified-evidence/summary.json"
       ]
     }
   }

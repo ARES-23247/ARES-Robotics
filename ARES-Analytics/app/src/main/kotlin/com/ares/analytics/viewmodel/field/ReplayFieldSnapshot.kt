@@ -22,7 +22,7 @@ internal fun ReplayFrame.toReplayPoseState(): LivePoseState {
         }
     }.toMap()
     val lighting = robotLightingTelemetry(frameValues)
-    val gamePieces = replayGamePieces(values)
+    val gamePieces = replayGamePieces(values, stringValues)
 
     return LivePoseState(
         trueX = when {
@@ -61,13 +61,13 @@ internal fun ReplayFrame.toReplayPoseState(): LivePoseState {
     )
 }
 
-private fun replayGamePieces(values: Map<String, Double>): Map<Int, GamePiece> {
+private fun replayGamePieces(values: Map<String, Double>, strings: Map<String, String>): Map<Int, GamePiece> {
     // A typed frame owns this layer even when empty or incomplete; stale legacy arrays must not win.
     if (values.keys.any { it.startsWith("ARES/GamePiecesFrame/") }) {
-        return GamePieceFrameAccumulator.decodeSnapshot(values).orEmpty()
+        return GamePieceFrameAccumulator.decodeSnapshot(values, strings).orEmpty()
     }
     val count = values["ARES/GamePieces/Count"]?.let {
-        if (!it.isFinite() || it < 0.0 || it > Int.MAX_VALUE || it != it.toInt().toDouble()) return emptyMap()
+        if ("ARES/GamePieces/Count" in strings || !it.isFinite() || it < 0.0 || it > Int.MAX_VALUE || it != it.toInt().toDouble()) return emptyMap()
         it.toInt()
     }
     return values.keys.asSequence()
@@ -77,8 +77,11 @@ private fun replayGamePieces(values: Map<String, Double>): Map<Int, GamePiece> {
         .filter { count == null || it < count }
         .distinct()
         .mapNotNull { index ->
-            val x = values["ARES/GamePieces/${index * 7}"]?.takeIf(Double::isFinite) ?: return@mapNotNull null
-            val y = values["ARES/GamePieces/${index * 7 + 1}"]?.takeIf(Double::isFinite) ?: return@mapNotNull null
+            val xKey = "ARES/GamePieces/${index * 7}"
+            val yKey = "ARES/GamePieces/${index * 7 + 1}"
+            if (xKey in strings || yKey in strings) return@mapNotNull null
+            val x = values[xKey]?.takeIf(Double::isFinite) ?: return@mapNotNull null
+            val y = values[yKey]?.takeIf(Double::isFinite) ?: return@mapNotNull null
             index to GamePiece(id = index.toString(), name = "Piece $index", x = x, y = y, type = "Game piece")
         }.toMap()
 }

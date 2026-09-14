@@ -288,6 +288,8 @@ open class Nt4ClientService(
     private val _simulatorPoseFrame = MutableStateFlow<SimulatorPoseFrameSnapshot?>(null)
     /** Latest packed simulator pose, kept atomic and independent of the lossy telemetry fan-out. */
     val simulatorPoseFrame: StateFlow<SimulatorPoseFrameSnapshot?> = _simulatorPoseFrame.asStateFlow()
+    private val _gamePieceFrame = MutableStateFlow<GamePieceFrameSnapshot?>(null)
+    internal val gamePieceFrame: StateFlow<GamePieceFrameSnapshot?> = _gamePieceFrame.asStateFlow()
     private val _driveInputAcknowledgement = MutableStateFlow<DriveInputAcknowledgement?>(null)
     /** Packed receiver feedback bypasses general telemetry fan-out to avoid a 50 Hz UI storm. */
     val driveInputAcknowledgement: StateFlow<DriveInputAcknowledgement?> =
@@ -489,6 +491,7 @@ open class Nt4ClientService(
         val nextTargetEpoch = telemetryStore.clear()
         uiTelemetryFanout.reset(nextTargetEpoch)
         _simulatorPoseFrame.value = null
+        _gamePieceFrame.value = null
         _driveInputAcknowledgement.value = null
         _mecanumMotorFrame.value = null
         _robotLighting.value = RobotLightingTelemetryState()
@@ -633,6 +636,16 @@ open class Nt4ClientService(
             decodeSimulatorPoseFrame(valueElement, timestampMs, timestampUs)?.let { frame ->
                 logSimulatorPoseDivergence(frame)
                 _simulatorPoseFrame.value = frame
+            }
+        }
+
+        if (normalizedName == GamePieceTelemetry.TOPIC && !isReplayActive.value) {
+            val targetEpoch = telemetryStore.currentTargetEpoch()
+            val decoded = GamePieceTelemetry.decodePacked(valueElement)
+            if (targetEpoch == telemetryStore.currentTargetEpoch() && !isReplayActive.value) {
+                _gamePieceFrame.value = GamePieceFrameSnapshot(
+                    decoded?.pieces.orEmpty(), decoded?.sequence, timestampUs, targetEpoch,
+                )
             }
         }
 
