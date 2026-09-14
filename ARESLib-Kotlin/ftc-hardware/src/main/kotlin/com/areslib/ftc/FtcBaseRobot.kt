@@ -24,6 +24,8 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.ftc.core.FtcHardwareInitializer
 import com.areslib.ftc.core.FtcOpModeLifecycleController
 import com.areslib.hardware.HardwareRegistry
+import com.areslib.ftc.core.preserveFtcInterrupt
+import com.areslib.ftc.core.retainFtcFailure
 
 /**
  * Abstract foundational base class for all FTC robots in ARESLib-Kotlin.
@@ -201,6 +203,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
     private var hasUpdateTimestamp = false
+    private var reportedFatalSafetyFailure = false
     private val closed = java.util.concurrent.atomic.AtomicBoolean(false)
     private var hasReadSensorsThisFrame = false
     private var sensorReadDurationNanos = 0L
@@ -429,7 +432,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
         check(!closed.get()) { "Robot is closed" }
         fatalUpdateFailure?.let { failure ->
-            runCatching { safeHardware() }
+            safeAfterFatalFailure(failure)
             throw failure
         }
         try {
@@ -481,21 +484,33 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             profiler.recordAndPublishLoopDiagnostics(telemetryManager, t0, t1, t2, t3, t4)
             lifecycleController.sleepRemaining(timestamp, isAndroid)
         } catch (e: Throwable) {
-            if (e is InterruptedException || e.cause is InterruptedException) {
-                Thread.currentThread().interrupt()
-            }
+            preserveFtcInterrupt(e)
             fatalUpdateFailure = e
-            System.err.println("FtcBaseRobot: Exception in update loop: ${e.message}")
-            e.printStackTrace()
+            // Neutral must precede potentially blocking or failing diagnostic sinks.
+            safeAfterFatalFailure(e)
             try {
-                safeHardware()
-            } catch (safetyFailure: Throwable) {
-                e.addSuppressed(safetyFailure)
+                System.err.println("FtcBaseRobot: Exception in update loop: ${e.message}")
+                e.printStackTrace()
+            } catch (diagnosticFailure: Throwable) {
+                retainFtcFailure(e, diagnosticFailure)
             }
             try {
                 telemetryManager.dataLoggingTelemetry.putString("Robot/Error", "FATAL CRASH: ${e.message}")
-            } catch (_: Throwable) {}
+            } catch (diagnosticFailure: Throwable) { retainFtcFailure(e, diagnosticFailure) }
             throw e
+        }
+    }
+
+    private fun safeAfterFatalFailure(primary: Throwable) {
+        try { safeHardware() }
+        catch (failure: Throwable) {
+            preserveFtcInterrupt(failure)
+            // INIT may continue retrying a latched fault. Keep its first safety diagnostic
+            // without retaining a newly allocated Throwable on every subsequent frame.
+            if (!reportedFatalSafetyFailure) {
+                reportedFatalSafetyFailure = true
+                retainFtcFailure(primary, failure)
+            }
         }
     }
 
@@ -588,10 +603,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             try {
                 action()
             } catch (failure: Throwable) {
-                if (firstFailure == null) firstFailure = failure
-                else if (firstFailure !== failure && firstFailure.suppressed.none { it === failure }) {
-                    firstFailure.addSuppressed(failure)
-                }
+                firstFailure = retainFtcFailure(firstFailure, failure)
             }
         }
         firstFailure?.let { throw it }

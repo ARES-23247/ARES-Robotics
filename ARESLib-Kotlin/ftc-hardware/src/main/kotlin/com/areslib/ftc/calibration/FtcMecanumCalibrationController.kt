@@ -5,6 +5,7 @@ import com.areslib.control.assist.SysIdMechanism
 import com.areslib.control.assist.SysIdRoutine
 import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import com.areslib.ftc.drivetrain.PinpointIO
+import com.areslib.ftc.core.retainFtcFailure
 import com.areslib.ftc.telemetry.FtcTelemetryManager
 import com.areslib.ftc.vision.FtcVisionTracker
 import com.areslib.Store
@@ -131,7 +132,7 @@ class FtcMecanumCalibrationController {
         try {
             stopAndNeutral(mecanumIO)
         } catch (failure: Throwable) {
-            firstFailure = failure
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         try {
             telemetryManager.nt4.putBoolean("SysId/ModeEnabled", false)
@@ -142,7 +143,7 @@ class FtcMecanumCalibrationController {
             telemetryManager.nt4.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
             telemetryManager.nt4.update()
         } catch (failure: Throwable) {
-            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         firstFailure?.let { throw it }
     }
@@ -644,17 +645,17 @@ class FtcMecanumCalibrationController {
         try {
             sysIdManager.stop()
         } catch (failure: Throwable) {
-            firstFailure = failure
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         try {
             flywheelSysIdAdapter?.stop()
         } catch (failure: Throwable) {
-            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         try {
             mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
         } catch (failure: Throwable) {
-            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         firstFailure?.let { throw it }
     }

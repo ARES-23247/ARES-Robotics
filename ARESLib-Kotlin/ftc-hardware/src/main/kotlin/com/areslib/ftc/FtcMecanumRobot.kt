@@ -6,6 +6,7 @@ import com.areslib.control.drivetrain.VisionAlignController
 import com.areslib.control.tuning.PIDFCoefficients
 import com.areslib.control.tuning.SimpleFeedforwardCoeffs
 import com.areslib.ftc.calibration.FtcMecanumCalibrationController
+import com.areslib.ftc.core.retainFtcFailure
 import com.areslib.ftc.drivetrain.MecanumFallbackOdometry
 import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import com.areslib.ftc.drivetrain.MecanumKinematicsController
@@ -395,18 +396,12 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      */
     override fun safeHardware() {
         var firstFailure: Throwable? = null
-        val safetySteps = arrayOf<() -> Unit>(
-            { calibrationController.disableMode(telemetryManager, mecanumIO) },
-            { hardwareRegistry.safeAll() },
-            { stopAll() }
-        )
-        for (step in safetySteps) {
-            try {
-                step()
-            } catch (failure: Throwable) {
-                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
-            }
-        }
+        try { calibrationController.disableMode(telemetryManager, mecanumIO) }
+        catch (failure: Throwable) { firstFailure = retainFtcFailure(firstFailure, failure) }
+        // disableMode owns drivetrain/calibration neutralization; the registry owns all other
+        // registered devices. stopAll delegates to this same traversal, so call it only once.
+        try { stopAll() }
+        catch (failure: Throwable) { firstFailure = retainFtcFailure(firstFailure, failure) }
         firstFailure?.let { throw it }
     }
 
@@ -506,8 +501,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
         var firstFailure: Throwable? = null
         fun attempt(action: () -> Unit) {
             try { action() } catch (failure: Throwable) {
-                if (firstFailure == null) firstFailure = failure
-                else if (firstFailure !== failure) firstFailure!!.addSuppressed(failure)
+                firstFailure = retainFtcFailure(firstFailure, failure)
             }
         }
         // Neutralize and release hardware before waiting on any filesystem operation.

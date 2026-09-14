@@ -2,7 +2,7 @@
 
 ## Before changing code
 
-1. Identify the owning module and all three consumer repositories.
+1. Identify the owning module and every affected consumer product, including starters and Studio.
 2. Read [Math and coordinate contracts](math-and-coordinate-contracts.md) for geometry, estimator, vision, or path changes.
 3. Read [Telemetry and logging](telemetry-and-logging.md) for any topic, networking, replay, or file-format change.
 4. Inspect the working tree and preserve unrelated changes.
@@ -18,7 +18,9 @@ val timestampMs = RobotClock.currentTimeMillis()
 val startNanos = RobotClock.nanoTime()
 ```
 
-Tests and simulation switch the clock to mock time with `useMockTime`/`setMockTimeMs`, then restore system time with `useSystemTime`. Direct calls to `System.currentTimeMillis()` or `System.nanoTime()` make simulation, replay, timeouts, and logs disagree.
+Tests and simulation switch the clock to mock time with `useMockTime`, then restore system time
+with `useSystemTime`. Direct calls to `System.currentTimeMillis()` or `System.nanoTime()` make
+simulation, replay, timeouts, and logs disagree.
 
 ### Allocation-aware hot paths
 
@@ -32,10 +34,10 @@ Treat robot loops, hardware refresh, estimator updates/replay, trajectory sampli
 - Measure allocation and loop-time changes on the target controller; desktop tests alone cannot
   predict Android ART or RoboRIO pause behavior.
 
-The goal is bounded loop latency, not universal zero allocation. Small, readable allocations are
-acceptable outside timing-critical sensor, estimator, and actuator paths—and inside them when
-measurement shows they do not create harmful pause or throughput behavior. Do not introduce object
-pools or mutable aliasing solely to satisfy an unmeasured zero-GC claim.
+Keep required steady-state sensor, estimator, and actuator paths allocation-free. Small, readable
+allocations are acceptable during initialization and outside timing-critical paths. Measure the
+actual allocation and timing boundary; do not claim an entire robot is allocation-free from a
+narrow desktop test or introduce unsafe mutable aliasing to satisfy that claim.
 
 ### Cached hardware reads
 
@@ -44,6 +46,15 @@ Read each motor, encoder, voltage sensor, IMU, analog input, and servo position 
 ### Safe failure behavior
 
 Controllers and math utilities should reject non-finite input and unsafe time deltas. Robot-facing failures should default to stopped/limited outputs, stale sensors should fail closed, and latched faults should require an intentional recovery condition. Exceptions leaving an autonomous or mode lifecycle must stop all mechanisms.
+
+The shared FTC frame latches its original fault and attempts hardware safety before writing
+diagnostics. A failed diagnostic sink cannot replace that fault or prevent neutralization.
+Repeated calls retry safety without rerunning control; the first safety failure is retained
+once, so repeated INIT failures cannot grow the retained exception graph every frame. Later
+retry interrupts still restore the caller's interrupt flag. Cleanup attempts continue after
+failures and preserve distinct diagnostics and interruption. Mecanum safety disarms calibration
+and neutralizes its drive, then traverses the remaining hardware registry once. Callers must
+stop the owning control loop before closing resources.
 
 ## Test strategy
 
@@ -68,16 +79,20 @@ The suite includes unit and regression coverage for reducers, controllers, pathi
 After a cross-repository library change:
 
 ```powershell
-.\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=8.0.0-rc.<commit>"
+.\gradlew.bat test apiCheck publishReleaseValidation --no-parallel "-ParesVersion=<next-final>-rc.<source-tree>"
 ```
 
-Then build and test each affected sibling with `-ParesRepository=<ARESLib-Kotlin>/build/release-repository`. Normal builds resolve the pinned release from the ARES GitHub Maven repository, with Maven Central as an optional secondary channel; `-ParesUseSiblingLib=true` is the explicit source-substitution escape hatch.
+First update the canonical version and source-tree identity. Then build and test each affected
+consumer with that exact candidate version and an absolute `-ParesRepository=file:///.../build/release-repository`
+URI. Normal builds resolve the pinned release through Maven Central and the ARES GitHub Maven
+repository; `-ParesUseSiblingLib=true` explicitly enables sibling source substitution.
 
 ## Common failures
 
 ### `Unsupported class file` or wrong Java version
 
-Run `java -version` and `./gradlew --version`; the Gradle JVM should be JDK 17. IDE settings and `JAVA_HOME` can point at different installations.
+Run `java -version` and `./gradlew --version`; inspect the Gradle JVM and the configured JDK 17
+library compilation toolchain. IDE settings and `JAVA_HOME` can point at different installations.
 
 ### FRC tests fail while loading JNI
 
@@ -104,7 +119,9 @@ Inspect `lastRejectionReason`, timestamps, tag count, ambiguity, standard deviat
 
 ### Tests leave ports occupied
 
-NT4 uses `5810`, the log manager uses `5002`, and the robot web server defaults to `8082`. Stop the prior process cleanly before rerunning network tests. Avoid running multiple port-owning integration suites in parallel.
+NT4 uses `5810` and the log manager uses `5002`; check each HTTP service's configured port. Stop only
+your own prior process cleanly before rerunning network tests; preserve other tasks' processes.
+Avoid running multiple integration suites in parallel when they own the same ports.
 
 ## Documentation hygiene
 
