@@ -161,7 +161,8 @@ class IndicatorTaskTimingTest {
         org.junit.jupiter.api.Assumptions.assumeTrue(bean != null && bean.isThreadAllocatedMemorySupported)
         requireNotNull(bean).isThreadAllocatedMemoryEnabled = true
         val task = blink(); task.initialize(state)
-        repeat(5000) { task.execute(state, 0) }
+        // Finish warm-up before measuring the unchanged steady phase; keep the batch/limit below fixed.
+        repeat(20_000) { task.execute(state, 0) }
         val id = Thread.currentThread().id
         val before = bean.getThreadAllocatedBytes(id)
         repeat(10_000) { task.execute(state, 0) }

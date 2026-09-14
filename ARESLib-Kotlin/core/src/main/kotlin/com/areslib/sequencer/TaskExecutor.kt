@@ -16,7 +16,7 @@ import java.util.IdentityHashMap
  *
  * Preemption calls [Task.pause] without performing terminal cleanup and pauses the task's watchdog
  * until [Task.resume] is called. [cancelAll] performs best-effort interrupted cleanup and releases
- * runtime registries. Each admission exclusively owns its fresh task tree until terminal cleanup.
+ * runtime registries. Each admission exclusively owns its task tree until terminal cleanup.
  * Failed admission preserves the caller's task metadata and does not pause existing work.
  *
  * Same-executor recursive update/preempt/cancel/suspend/resume is rejected before mutation. A
@@ -37,8 +37,9 @@ class TaskExecutor {
     private val preemptedStack = ArrayDeque<Pair<Task, Long>>()
 
     /**
-     * Claims a fresh, unstarted task tree and appends it to the standard queue.
-     * Duplicate, running, terminal, and foreign-owned instances are rejected without metadata loss.
+     * Claims an idle task tree and appends it to the standard queue. Completed raw tasks may be
+     * resubmitted; completed compiled invocations must be rebuilt. Failed/cancelled tasks need reset.
+     * Duplicate, running, and foreign-owned instances are rejected without metadata loss.
      * Callers must not initialize or reset admitted tasks before the executor releases them.
      */
     @Synchronized
@@ -49,7 +50,7 @@ class TaskExecutor {
     }
 
     private fun admit(task: Task) {
-        val ownership = RoutineTaskOwnership()
+        val ownership = RoutineTaskOwnership(allowCompleted = true)
         try { ownership.acquire(task) }
         catch (failure: Throwable) {
             ownership.abandonClaims()
@@ -58,9 +59,10 @@ class TaskExecutor {
         admissions[task] = ownership
     }
 
-    private fun canInitialize(task: Task): Boolean =
-        TaskStateMachine.getStatus(task) == TaskStatus.PENDING &&
-            !checkNotNull(admissions[task]).propagateQueuedTerminal(task)
+    private fun canInitialize(task: Task): Boolean {
+        val ownership = checkNotNull(admissions[task])
+        return ownership.permitsInitialStatus(task) && !ownership.propagateQueuedTerminal(task)
+    }
 
     private inline fun <T> operation(name: String, block: () -> T): T {
         check(!isOperating) { "Cannot recursively call TaskExecutor.$name from a lifecycle callback" }

@@ -286,4 +286,43 @@ class TaskExecutorAdmissionAuditTest {
             assertTrue(allocated <= 256L, "Warm updates allocated $allocated bytes")
         } finally { executor.cancelAll(state); task.reset() }
     }
+
+    @Test fun `completed raw groups can be resubmitted without resetting newly configured callbacks`() = clock {
+        val first = Probe("first").also { it.done = true }
+        val last = Probe("last").also { it.done = true }
+        val group = ParallelTaskGroup(listOf(first, last))
+        val executor = TaskExecutor()
+        var callbacks = 0
+        try {
+            repeat(2) { invocation ->
+                first.onComplete { callbacks++ }; last.onComplete { callbacks++ }
+                executor.addTask(group); executor.update(state, 1000L)
+                assertEquals(TaskStatus.COMPLETED, TaskStateMachine.getStatus(group))
+                assertEquals(0, executor.size)
+                assertEquals(invocation + 1, first.starts); assertEquals(invocation + 1, last.starts)
+                assertEquals(invocation + 1, first.releases); assertEquals(invocation + 1, last.releases)
+            }
+            assertEquals(4, callbacks)
+        } finally { executor.cancelAll(state); group.reset(); first.reset(); last.reset() }
+    }
+
+    @Test fun `released compiled wrappers cannot disguise missing ownership by resetting their status`() = clock {
+        for (execute in listOf(false, true)) {
+            val leaf = Probe("leaf").also { it.done = true }
+            val root = ownRoutineTaskTree(leaf)
+            val executor = TaskExecutor()
+            var callbacks = 0
+            try {
+                if (execute) { executor.addTask(root); executor.update(state, 1000L) }
+                else root.releaseRuntimeState()
+                root.reset()
+                leaf.onComplete { callbacks++ }
+                assertThrows(IllegalStateException::class.java) { executor.addTask(root) }
+                assertThrows(IllegalStateException::class.java) { ownRoutineTaskTree(root) }
+                assertEquals(0, executor.size)
+                TaskCallbacks.invokeComplete(leaf)
+                assertEquals(1, callbacks)
+            } finally { executor.cancelAll(state); root.reset(); leaf.reset() }
+        }
+    }
 }

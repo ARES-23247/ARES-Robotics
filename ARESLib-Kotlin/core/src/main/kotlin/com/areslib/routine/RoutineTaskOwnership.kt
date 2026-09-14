@@ -32,20 +32,30 @@ fun ownRoutineTaskTree(task: Task): Task {
 }
 
 /** One compilation owns all created nodes, including dormant branches and future sequence steps. */
-internal class RoutineTaskOwnership : TaskRuntimeStateOwner {
+internal class RoutineTaskOwnership(private val allowCompleted: Boolean = false) : TaskRuntimeStateOwner {
     private val released = IdentityHashMap<Task, Boolean>()
+    private var completedAtAdmission: IdentityHashMap<Task, Boolean>? = null
     private val nodes = ArrayList<Task>()
     private val leaves = ArrayList<Task>()
     private var cleanupFailure: Throwable? = null
 
     fun <T : Task> register(task: T): T {
         check(!released.containsKey(task)) { "Routine task factories must return fresh task instances" }
-        check(TaskStateMachine.getStatus(task) == TaskStatus.PENDING) {
-            "Routine task factories must return unstarted task instances"
+        check(task !is CompiledRoutineTask || task.hasOwnedTaskTree) {
+            "Compiled invocation has released its task tree; compile a new invocation"
+        }
+        val status = TaskStateMachine.getStatus(task)
+        check(status == TaskStatus.PENDING ||
+            (allowCompleted && status == TaskStatus.COMPLETED && task !is RoutineTaskWrapper)) {
+            "Task must be unstarted; only completed raw tasks can be resubmitted without reset"
         }
         TaskRuntimeOwnership.acquire(task, this)
         released[task] = false
         nodes.add(task)
+        if (status == TaskStatus.COMPLETED) {
+            val completed = completedAtAdmission ?: IdentityHashMap<Task, Boolean>().also { completedAtAdmission = it }
+            completed[task] = true
+        }
         return task
     }
 
@@ -92,6 +102,7 @@ internal class RoutineTaskOwnership : TaskRuntimeStateOwner {
     fun abandonClaims() {
         for (task in nodes) TaskRuntimeOwnership.releaseClaim(task, this)
         nodes.clear(); leaves.clear(); released.clear()
+        completedAtAdmission = null
         cleanupFailure = null
     }
 
@@ -104,6 +115,7 @@ internal class RoutineTaskOwnership : TaskRuntimeStateOwner {
             failure = cleanupFailure
         } finally {
             nodes.clear(); leaves.clear(); released.clear()
+            completedAtAdmission = null
             cleanupFailure = null
         }
         failure?.let { throw it }
@@ -153,6 +165,14 @@ internal class RoutineTaskOwnership : TaskRuntimeStateOwner {
     /** Admission is already exclusive; observe queued descendant cancellation before starting work. */
     fun propagateQueuedTerminal(owner: Task): Boolean = propagateOwnedTerminal(owner, queued = true)
 
+    fun permitsInitialStatus(task: Task): Boolean = when (TaskStateMachine.getStatus(task)) {
+        TaskStatus.PENDING -> true
+        TaskStatus.COMPLETED -> completedAtAdmission?.containsKey(task) == true
+        else -> false
+    }
+
+    fun owns(task: Task): Boolean = released[task] == false
+
     private fun propagateOwnedTerminal(owner: Task, queued: Boolean = false): Boolean {
         var cancelled = TaskStateMachine.getStatus(owner) == TaskStatus.CANCELLED
         var failed = TaskStateMachine.getStatus(owner) == TaskStatus.FAILED
@@ -162,7 +182,7 @@ internal class RoutineTaskOwnership : TaskRuntimeStateOwner {
             when (TaskStateMachine.getStatus(task)) {
                 TaskStatus.FAILED -> failed = true
                 TaskStatus.CANCELLED -> cancelled = true
-                TaskStatus.COMPLETED -> if (queued) failed = true
+                TaskStatus.COMPLETED -> if (queued && completedAtAdmission?.containsKey(task) != true) failed = true
                 else -> Unit
             }
         }
@@ -263,6 +283,7 @@ internal class CompiledRoutineTask(
     override val name: String = delegate.name
     override val priority: Int = delegate.priority
     override val requiredResources: Long = delegate.requiredResources
+    internal val hasOwnedTaskTree: Boolean get() = ownership.owns(delegate)
     internal fun propagateQueuedTerminal(): Boolean = ownership.propagateQueuedTerminal(this)
     override fun pause(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = true, owner = this)
     override fun resume(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = false, owner = this)
