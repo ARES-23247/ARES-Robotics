@@ -34,7 +34,7 @@ object SubsystemKotlinGenerator {
         require(document.platform == target.platform) {
             "Subsystem '${document.documentId}' targets ${document.platform}, not ${target.platform}"
         }
-        require(target.basePackage.matches(Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*"))) {
+        require(target.basePackage.isKotlinPackageName()) {
             "Invalid subsystem base package '${target.basePackage}'"
         }
 

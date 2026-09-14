@@ -26,8 +26,8 @@ object SuperstructureKotlinGenerator {
         actionKeys: Set<String>,
         parameterlessActionKeys: Set<String> = actionKeys,
     ): GeneratedSuperstructureFile {
-        require(packageName.isKotlinPackage()) { "Invalid superstructure package '$packageName'" }
-        require(subsystemRegistryFqn.isKotlinFqn()) { "Invalid subsystem registry '$subsystemRegistryFqn'" }
+        require(packageName.isKotlinPackageName()) { "Invalid superstructure package '$packageName'" }
+        require(subsystemRegistryFqn.isKotlinQualifiedName()) { "Invalid subsystem registry '$subsystemRegistryFqn'" }
         val errors = validateSuperstructureProject(document, subsystems, actionKeys, parameterlessActionKeys)
             .filter { it.severity == SuperstructureIssueSeverity.ERROR }
         require(errors.isEmpty()) { errors.joinToString("; ") { "${it.path}: ${it.message}" } }
@@ -126,6 +126,7 @@ object SuperstructureKotlinGenerator {
         documents: List<SuperstructureDocument>,
         packageName: String,
     ): GeneratedSuperstructureFile {
+        require(packageName.isKotlinPackageName()) { "Invalid superstructure package '$packageName'" }
         val owners = documents.flatMap { document ->
             document.transitions.filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
                 .mapNotNull { edge -> edge.actionKey?.let { it to document } }
@@ -295,8 +296,3 @@ private data class PortBinding(
     val field: SubsystemStateFieldDocument,
     val index: Int = -1,
 )
-
-private fun String.isKotlinPackage(): Boolean =
-    matches(Regex("[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*"))
-
-private fun String.isKotlinFqn(): Boolean = isKotlinPackage() && contains('.')

@@ -25,8 +25,8 @@ import com.areslib.subsystem.SubsystemTargetCapability
 import com.areslib.subsystem.subsystemTargetCapabilities
 import java.security.MessageDigest
 
-/** Generator format version embedded in every emitted Kotlin source file. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 8
+/** Generator format version embedded in generated project source. */
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 9
 
 /**
  * Emits deterministic Kotlin without reflection or runtime file discovery.

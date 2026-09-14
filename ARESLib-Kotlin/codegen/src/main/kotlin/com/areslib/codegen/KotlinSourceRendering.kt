@@ -6,7 +6,7 @@ package com.areslib.codegen
  * Keeping these rules in one place prevents otherwise-identical generators from disagreeing about
  * string-template escaping, negative zero, control characters, or generated type-name casing.
  */
-internal fun String.kotlinPascalCase(): String = split(Regex("[^A-Za-z0-9]+"))
+internal fun String.kotlinPascalCase(): String = split(KOTLIN_WORD_SEPARATOR)
     .filter(String::isNotEmpty)
     .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
 
@@ -44,7 +44,14 @@ internal fun Double.kotlinDoubleLiteral(): String {
 }
 
 internal fun String.isKotlinIdentifier(): Boolean =
-    matches(Regex("[A-Za-z_][A-Za-z0-9_]*")) && this !in KOTLIN_KEYWORDS
+    matches(KOTLIN_IDENTIFIER) && any { it != '_' } && this !in KOTLIN_KEYWORDS
+
+internal fun String.isKotlinPackageName(): Boolean = split('.').all { it.isKotlinIdentifier() }
+
+internal fun String.isKotlinQualifiedName(): Boolean = contains('.') && isKotlinPackageName()
+
+private val KOTLIN_WORD_SEPARATOR = Regex("[^A-Za-z0-9]+")
+private val KOTLIN_IDENTIFIER = Regex("[A-Za-z_][A-Za-z0-9_]*")
 
 internal val KOTLIN_KEYWORDS = setOf(
     "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",

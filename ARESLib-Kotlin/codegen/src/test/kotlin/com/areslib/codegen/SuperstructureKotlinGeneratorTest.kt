@@ -24,6 +24,24 @@ import java.nio.file.Files
 
 class SuperstructureKotlinGeneratorTest {
     @Test
+    fun `standalone bindings and registries reject invalid Kotlin names`() {
+        val fixture = fixture()
+        for (name in listOf("org.when", "org.__", "org..example", "org.example; bad")) {
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                SuperstructureKotlinGenerator.generate(fixture.document, name,
+                    "org.example.GeneratedSubsystemRegistry", listOf(fixture.subsystem), fixture.actionKeys)
+            }
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                SuperstructureKotlinGenerator.generate(fixture.document, "org.example", "$name.Registry",
+                    listOf(fixture.subsystem), fixture.actionKeys)
+            }
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                SuperstructureKotlinGenerator.generateRegistry(listOf(fixture.document), name)
+            }
+        }
+    }
+
+    @Test
     fun `generator emits typed runtime binding and parameterless action routing`() {
         val fixture = fixture()
         val generated = SuperstructureKotlinGenerator.generate(

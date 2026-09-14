@@ -11,6 +11,9 @@ import com.areslib.subsystem.SubsystemSchema
 /** Renders only the generated subsystem composition/action/interlock registry. */
 internal object SubsystemRegistryRenderer {
     fun render(documents: List<SubsystemDocument>, target: SubsystemKotlinCodegenTarget): String {
+        require(target.basePackage.isKotlinPackageName()) {
+            "Invalid subsystem base package '${target.basePackage}'"
+        }
         val projectIssues = SubsystemSchema.validateAll(documents)
         require(projectIssues.isEmpty()) {
             projectIssues.joinToString("; ") { "${it.path}: ${it.message}" }

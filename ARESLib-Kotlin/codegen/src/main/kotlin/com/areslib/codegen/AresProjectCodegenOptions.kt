@@ -54,11 +54,21 @@ internal data class AresProjectCodegenOptions(
                 require(values.put(key, args[index + 1]) == null) { "Option '$key' was supplied twice" }
                 index += 2
             }
+            require(!checkOnly || !applySubsystemStarters) { "--check cannot apply subsystem starters" }
+            require(!previewSubsystemStarters || !applySubsystemStarters) { "Choose either starter preview or application" }
             val project = Path.of(requireNotNull(values["--project"]) { "--project is required" })
             val output = Path.of(requireNotNull(values["--output"]) { "--output is required" })
             val packageName = requireNotNull(values["--package"]) { "--package is required" }
             val objectName = values["--object"] ?: "GeneratedAresProject"
             val registryName = values["--registry"] ?: "GeneratedAresProjectCapabilities"
+            for (option in listOf("--package", "--subsystems-package", "--drivebase-package", "--superstructure-package")) {
+                values[option]?.let { name ->
+                    require(name.isKotlinPackageName()) { "Invalid Kotlin package '$name' for $option" }
+                }
+            }
+            require(objectName.isKotlinIdentifier() && registryName.isKotlinIdentifier() && objectName != registryName) {
+                "Generated object and registry must have valid, distinct Kotlin names"
+            }
             val platform = values["--platform"]?.let { raw ->
                 runCatching { ControllerInputPlatform.valueOf(raw.uppercase()) }
                     .getOrElse { throw IllegalArgumentException("Unknown input platform '$raw'") }

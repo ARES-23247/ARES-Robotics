@@ -670,6 +670,32 @@ class AresKotlinProjectGeneratorTest {
         }
     }
 
+    @Test
+    fun `content hash distinguishes generated subsystem dispatch from hand authored dispatch`() {
+        val descriptor = action("subsystem.arm.set.power", listOf(numberParameter("value", required = true)))
+        val request = KotlinProjectCodegenRequest(
+            packageName = "org.example.generated",
+            catalog = catalog(actions = listOf(descriptor)),
+            routines = emptyList(),
+            subsystemRegistryFqn = "org.example.GeneratedSubsystemRegistry",
+        )
+        val manual = AresKotlinProjectGenerator.generate(request)
+        val generated = AresKotlinProjectGenerator.generate(request.copy(subsystemActions = listOf(
+            SubsystemTargetCapability("arm", "power", SubsystemValueType.DOUBLE, descriptor = descriptor),
+        )))
+        assertNotEquals(manual.source, generated.source)
+        assertNotEquals(manual.contentHash, generated.contentHash)
+
+        val other = descriptor.copy(key = "subsystem.arm.set.position")
+        val targets = listOf(
+            SubsystemTargetCapability("arm", "power", SubsystemValueType.DOUBLE, descriptor = descriptor),
+            SubsystemTargetCapability("arm", "position", SubsystemValueType.DOUBLE, descriptor = other),
+        )
+        val both = request.copy(catalog = catalog(actions = listOf(descriptor, other)), subsystemActions = targets)
+        val reversed = both.copy(subsystemActions = targets.reversed())
+        assertEquals(AresKotlinProjectGenerator.generate(both), AresKotlinProjectGenerator.generate(reversed))
+    }
+
     private fun generate(
         catalog: CapabilityCatalogDocument,
         routines: Collection<RoutineDocument>

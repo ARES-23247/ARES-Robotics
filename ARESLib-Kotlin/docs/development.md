@@ -70,6 +70,26 @@ Migrate writers to `save` and readers to the nullable `snapshot`; validity is `s
 Storage is process-local and has no automatic expiry or robot-identity check. The owning mode
 lifecycle must clear failed/aborted runs; restarting the Robot Controller loses the handoff.
 
+## Generated source ownership
+
+Code generation protects existing user-owned and unknown Kotlin source. Disposable source-set
+replacement requires both manifest membership and the generated ownership header; obsolete files
+converted to user ownership are retained and reported as conflicts. Each source set checks its
+destinations and ownership before deleting or replacing files. Writes remain atomic per file where
+the filesystem supports atomic moves; generation is not a whole-project rollback transaction.
+
+Output paths must remain within their selected root after both normalization and resolution of
+existing symlink or junction parents. Duplicate destinations, file/directory conflicts, and invalid
+Kotlin package or declaration names are rejected. Editable starter replacement still requires its
+current reviewed confirmation token. `--check` cannot be combined with
+`--apply-subsystem-starters`, and preview and application are separate modes.
+Custom verification-manifest destinations also protect unrelated files; replacement recognizes
+the existing canonical manifest and its embedded digest, including harmless trailing whitespace.
+
+Generator format 9 includes generated subsystem dispatch ownership in the project content hash.
+Generated verification JSON uses the shared Kotlin literal escaping, including Unicode characters
+that cross the embedded-string chunk boundary.
+
 ## Test strategy
 
 Use the smallest focused suite while iterating, then run the affected modules:

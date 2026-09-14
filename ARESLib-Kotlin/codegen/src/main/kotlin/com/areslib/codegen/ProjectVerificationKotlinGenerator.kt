@@ -33,6 +33,7 @@ object ProjectGeneratedTestNames {
 /** Emits deterministic project-level contract tests from canonical GUI-owned documents. */
 internal object ProjectVerificationKotlinGenerator {
     fun generate(request: ProjectVerificationCodegenRequest): GeneratedProjectVerificationFile {
+        require(request.packageName.isKotlinPackageName()) { "Invalid project verification package '${request.packageName}'" }
         require(request.platform == ControllerInputPlatform.FTC || request.platform == ControllerInputPlatform.FRC) {
             "Project verification generation requires FTC or FRC"
         }
@@ -73,7 +74,8 @@ internal object ProjectVerificationKotlinGenerator {
             import com.areslib.superstructure.SuperstructureDocumentCodec
             import com.areslib.superstructure.SuperstructureIssueSeverity
             import com.areslib.superstructure.validateSuperstructureProject
-            $testImport
+            ${testImport.substringBefore('\n')}
+            ${testImport.substringAfter('\n')}
 
             class GeneratedAresProjectContractTest {
                 @Test
@@ -180,23 +182,7 @@ internal object ProjectVerificationKotlinGenerator {
     private fun renderValue(value: String): String {
         val chunks = value.chunked(8_000).ifEmpty { listOf("") }
         return chunks.joinToString(prefix = "buildString { ", postfix = " }", separator = "; ") { chunk ->
-            "append(${kotlinString(chunk)})"
+            "append(${chunk.kotlinStringLiteral()})"
         }
-    }
-
-    private fun kotlinString(value: String): String = buildString {
-        append('"')
-        value.forEach { char ->
-            when (char) {
-                '\\' -> append("\\\\")
-                '"' -> append("\\\"")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                '$' -> append("\\${'$'}")
-                else -> if (char.code < 0x20) append("\\u%04x".format(char.code)) else append(char)
-            }
-        }
-        append('"')
     }
 }
