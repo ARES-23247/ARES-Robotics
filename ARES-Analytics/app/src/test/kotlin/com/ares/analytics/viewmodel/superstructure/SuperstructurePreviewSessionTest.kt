@@ -56,6 +56,45 @@ class SuperstructurePreviewSessionTest {
         assertEquals(PreviewPortCondition.STALE, faulted.ports.single { it.reference.fieldUid == measurement.uid }.condition)
     }
 
+    @Test
+    fun `authored guard age is inclusive and rejects older otherwise fresh feedback`() {
+        fun requestAt(ageMs: Long): SuperstructurePreviewSnapshot {
+            val session = SuperstructurePreviewSession(documentWithGuardAge(10L), listOf(subsystem))
+            session.setNumeric(measurementReference, 1.0)
+            session.tick(ageMs)
+            return session.request("machine.activate")
+        }
+
+        assertEquals("ACTIVE", requestAt(10L).currentStateId)
+        val tooOld = requestAt(11L)
+        assertEquals("IDLE", tooOld.currentStateId)
+        assertFalse(tooOld.isFaulted)
+    }
+
+    @Test
+    fun `authored guard age cannot extend the subsystem feedback lease`() {
+        val timedSubsystem = subsystem.copy(
+            hardware = subsystem.hardware.map { hardware ->
+                hardware.copy(measurements = hardware.measurements.map { it.copy(maxAgeMs = 50L) })
+            },
+            safety = subsystem.safety.copy(feedbackTimeoutMs = 50L),
+        )
+        val session = SuperstructurePreviewSession(documentWithGuardAge(100L), listOf(timedSubsystem))
+        session.setNumeric(measurementReference, 1.0)
+        session.tick(51L)
+
+        assertEquals("IDLE", session.request("machine.activate").currentStateId)
+    }
+
+    private fun documentWithGuardAge(maximumAgeMs: Long): SuperstructureDocument = document().let { document ->
+        document.copy(
+            healthFallbacks = emptyList(),
+            transitions = document.transitions.map { edge ->
+                edge.copy(guards = edge.guards.map { it.copy(maxStalenessMs = maximumAgeMs) })
+            },
+        )
+    }
+
     private fun document() = SuperstructureDocument(
         superstructureId = "main-machine",
         initialStateId = "IDLE",

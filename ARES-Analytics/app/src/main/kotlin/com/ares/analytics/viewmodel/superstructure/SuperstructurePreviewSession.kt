@@ -210,10 +210,13 @@ class SuperstructurePreviewSession(
         override fun readNumeric(port: Int, state: RobotState): Double = ports.getOrNull(port)?.numericValue ?: Double.NaN
         override fun readBoolean(port: Int, state: RobotState): Boolean? = ports.getOrNull(port)?.booleanValue
         override fun readString(port: Int, state: RobotState): String? = ports.getOrNull(port)?.stringValue
-        override fun readHealthBits(port: Int, state: RobotState, nowMs: Long): Int = ports.getOrNull(port)?.let(::healthBits) ?: 0
+        override fun readHealthBits(port: Int, state: RobotState, nowMs: Long, maximumAgeMs: Long): Int =
+            ports.getOrNull(port)?.let { healthBits(it, nowMs, maximumAgeMs) } ?: 0
 
-        fun healthBits(port: Port): Int {
-            val fresh = nowMs >= port.sampleTimestampMs && nowMs - port.sampleTimestampMs <= port.maxAgeMs
+        fun healthBits(port: Port, sampleNowMs: Long = nowMs, maximumAgeMs: Long = Long.MAX_VALUE): Int {
+            val ageMs = sampleNowMs - port.sampleTimestampMs
+            val fresh = sampleNowMs >= port.sampleTimestampMs && ageMs >= 0L &&
+                ageMs <= port.maxAgeMs && ageMs <= maximumAgeMs
             return if (fresh) port.baseHealthBits or SuperstructurePortHealthBits.FRESH else port.baseHealthBits
         }
 
