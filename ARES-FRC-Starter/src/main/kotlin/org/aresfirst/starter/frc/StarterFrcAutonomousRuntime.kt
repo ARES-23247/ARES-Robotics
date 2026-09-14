@@ -4,9 +4,7 @@ import com.areslib.action.RobotAction
 import com.areslib.control.feedback.PIDController
 import com.areslib.math.wrapAngle
 import com.areslib.math.coordinate.AllianceMirroring
-import com.areslib.math.coordinate.CoordinateTransformers
 import com.areslib.math.coordinate.FieldOrigin
-import com.areslib.math.coordinate.FieldSymmetry
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.routine.AutonomousCatalogEntry
@@ -24,7 +22,12 @@ import com.areslib.sequencer.TaskExecutor
 import com.areslib.sequencer.TaskResources
 import com.areslib.sequencer.TaskStateMachine
 import com.areslib.sequencer.TaskStatus
+import com.areslib.sequencer.TaskCallbacks
+import com.areslib.sequencer.TaskTimeoutManager
 import com.areslib.state.Alliance
+import com.areslib.state.FieldType
+import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldManager
 import com.areslib.state.RobotState
 import com.areslib.state.RoutineExecutionStatus
 import com.areslib.util.RobotClock
@@ -57,7 +60,16 @@ internal fun transformStarterFrcPose(
     pose: RoutinePose,
     entry: AutonomousCatalogEntry,
     activeAlliance: Alliance,
+    field: RobotFieldConfig = RobotFieldManager.activeConfig,
 ): Pose2d {
+    require(pose.xMeters.isFinite() && pose.yMeters.isFinite() && pose.headingRadians.isFinite()) {
+        "FRC autonomous pose must contain finite coordinates and raw heading"
+    }
+    require(field.fieldType == FieldType.FRC &&
+        (field.widthMeters == 0.0 || field.widthMeters.isFinite() && field.widthMeters > 0.0) &&
+        (field.heightMeters == 0.0 || field.heightMeters.isFinite() && field.heightMeters > 0.0)) {
+        "FRC autonomous transforms require a valid FRC field"
+    }
     val authoredAlliance = when (entry.authoredAlliance) {
         RoutineAlliance.RED -> Alliance.RED
         RoutineAlliance.BLUE -> Alliance.BLUE
@@ -67,9 +79,9 @@ internal fun transformStarterFrcPose(
     return AllianceMirroring.mirror(
         pose = base,
         alliance = Alliance.RED,
-        symmetry = FieldSymmetry.MIRRORED,
-        fieldLength = CoordinateTransformers.FRC_FIELD_LENGTH,
-        fieldWidth = CoordinateTransformers.FRC_FIELD_WIDTH,
+        symmetry = field.allianceSymmetry,
+        fieldLength = field.resolvedWidthMeters,
+        fieldWidth = field.resolvedHeightMeters,
         fieldOrigin = FieldOrigin.CORNER,
     )
 }
@@ -90,68 +102,91 @@ internal fun resolveStarterFrcAutonomousRequest(
 internal class StarterGeneratedCapabilities(
     private val robot: StarterRobotRuntime,
     private val drivePermitted: Boolean,
+    private val actionFactory: ((String) -> Task?)? = null,
 ) : GeneratedAresProjectCapabilities {
     private var autonomousEntry: AutonomousCatalogEntry? = null
     private var autonomousAlliance: Alliance = Alliance.BLUE
+    private var autonomousField: RobotFieldConfig? = null
+    private val driveCommand = RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0, isFieldCentric = true)
+    private val actionBindings by lazy { GeneratedAresProject.runtimeBindings(this) }
 
     fun configureAutonomous(entry: AutonomousCatalogEntry, alliance: Alliance) {
         autonomousEntry = entry
         autonomousAlliance = alliance
+        autonomousField = RobotFieldManager.activeConfig
     }
 
     fun clearAutonomous() {
         autonomousEntry = null
+        autonomousField = null
     }
 
     fun transform(pose: RoutinePose): Pose2d = transformStarterFrcPose(
         pose,
         checkNotNull(autonomousEntry) { "Autonomous entry was not configured" },
         autonomousAlliance,
+        checkNotNull(autonomousField) { "Autonomous field was not configured" },
     )
 
     override fun onDriveCommand(vx: Double, vy: Double, omega: Double, active: Boolean) {
-        val permitted = drivePermitted && active
-        robot.store.dispatch(
-            RobotAction.JoystickDriveIntent(
-                targetXVelocity = if (permitted && vx.isFinite()) vx.coerceIn(-1.0, 1.0) *
-                    GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND else 0.0,
-                targetYVelocity = if (permitted && vy.isFinite()) vy.coerceIn(-1.0, 1.0) *
-                    GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND else 0.0,
-                targetAngularVelocity = if (permitted && omega.isFinite()) omega.coerceIn(-1.0, 1.0) *
-                    GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND else 0.0,
-                isFieldCentric = true,
-            )
-        )
+        val permitted = drivePermitted && active && vx.isFinite() && vy.isFinite() && omega.isFinite()
+        val x = if (permitted) vx.coerceIn(-1.0, 1.0) else 0.0
+        val y = if (permitted) vy.coerceIn(-1.0, 1.0) else 0.0
+        val scale = GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND / hypot(x, y).coerceAtLeast(1.0)
+        driveCommand.targetXVelocity = x * scale
+        driveCommand.targetYVelocity = y * scale
+        driveCommand.targetAngularVelocity = if (permitted) omega.coerceIn(-1.0, 1.0) *
+            GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND else 0.0
+        driveCommand.timestampMs = RobotClock.currentTimeMillis()
+        robot.store.dispatch(driveCommand)
     }
 
     override fun createDriveTask(step: RoutineDriveStep): Task {
+        check(drivePermitted) { "FRC drive tasks require a permitted simulation or reviewed physical adapter" }
         val target = transform(step.target)
         val preset = StarterFrcMotionPreset.fromKey(step.motionPresetKey)
-        val drive = StarterFrcDriveToPoseTask(target, preset)
-        val markerTasks = step.markers.map { marker ->
-            StarterFrcDriveMarkerTask(
-                target = target,
-                progress = marker.progress,
-                action = requireGeneratedAction(marker.actionKey),
-            )
+        val created = ArrayList<Task>()
+        val cleanupOwners = java.util.IdentityHashMap<Task, Boolean>()
+        fun <T : Task> own(task: T): T {
+            check(TaskStateMachine.getStatus(task) == TaskStatus.PENDING) { "Action factories must return unstarted tasks" }
+            check(!cleanupOwners.containsKey(task)) { "Action factories must return distinct task instances" }
+            cleanupOwners[task] = true
+            created += task
+            return task
         }
-        val duringTasks = step.duringActionKeys.map(::requireGeneratedAction)
-        val companions = markerTasks + duringTasks
-        val driveWithCompanions: Task = if (companions.isEmpty()) {
-            drive
-        } else {
-            ParallelDeadlineGroup(drive, companions)
-        }
-        val arrivals = step.arrivalActionKeys.map(::requireGeneratedAction)
-        return when (arrivals.size) {
-            0 -> driveWithCompanions
-            1 -> SequentialTaskGroup(listOf(driveWithCompanions, arrivals.single()))
-            else -> SequentialTaskGroup(listOf(driveWithCompanions, ParallelTaskGroup(arrivals)))
+        try {
+            val drive = own(StarterFrcDriveToPoseTask(target, preset))
+            val markerTasks = step.markers.map { marker ->
+                val action = own(requireGeneratedAction(marker.actionKey))
+                own(StarterFrcDriveMarkerTask(target, marker.progress, action)).also {
+                    cleanupOwners[action] = false // The marker owns its private child metadata.
+                }
+            }
+            val duringTasks = step.duringActionKeys.map { own(requireGeneratedAction(it)) }
+            val companions = markerTasks + duringTasks
+            val driveWithCompanions: Task = if (companions.isEmpty()) drive else own(ParallelDeadlineGroup(drive, companions))
+            val arrivals = step.arrivalActionKeys.map { own(requireGeneratedAction(it)) }
+            return when (arrivals.size) {
+                0 -> driveWithCompanions
+                1 -> own(SequentialTaskGroup(listOf(driveWithCompanions, arrivals.single())))
+                else -> own(SequentialTaskGroup(listOf(driveWithCompanions, own(ParallelTaskGroup(arrivals)))))
+            }
+        } catch (failure: Throwable) {
+            retainStarterFailure(null, failure)
+            for (index in created.indices.reversed()) {
+                val task = created[index]
+                try {
+                    if (cleanupOwners[task] == true) releaseStarterTaskMetadata(task)
+                } catch (cleanup: Throwable) { retainStarterFailure(failure, cleanup) }
+                finally { TaskTimeoutManager.reset(task); TaskCallbacks.reset(task) }
+            }
+            throw failure
         }
     }
 
     private fun requireGeneratedAction(key: String): Task = requireNotNull(
-        GeneratedAresProject.runtimeBindings(this).createActionTask(key, emptyMap())
+        if (actionFactory != null) actionFactory.invoke(key)
+        else actionBindings.createActionTask(key, emptyMap())
     ) { "Generated drive action '$key' is unavailable" }
 }
 
@@ -495,7 +530,7 @@ internal class StarterFrcDriveMarkerTask(
                 cleanup = executor.cancelAll(state)
             } else if (!triggered && !childReleased) {
                 childReleased = true
-                action.releaseRuntimeState()
+                releaseStarterTaskMetadata(action)
             }
         } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
         try { super.end(state, interrupted) }
@@ -509,7 +544,7 @@ internal class StarterFrcDriveMarkerTask(
             // Like Task.cancel(), metadata release alone cannot dispatch hardware cleanup actions.
             if (!childReleased && (!triggered || executor.size > 0)) {
                 childReleased = true
-                if (triggered) action.cancel() else action.releaseRuntimeState()
+                releaseStarterTaskMetadata(action, cancelled = triggered)
             }
         } finally {
             if (executor.size > 0) executor = TaskExecutor()
@@ -533,6 +568,7 @@ internal class StarterFrcAutonomousRuntime(
     entries: List<AutonomousCatalogEntry> = GeneratedAresProject.autonomousEntries,
     defaultEntryId: String? = GeneratedAresProject.DEFAULT_AUTONOMOUS_ENTRY_ID,
     private val selectionProvider: () -> String = ::dashboardSelection,
+    private val cancelGenerated: (String) -> Unit = generatedControls::cancelAll,
 ) {
     private val selector = StarterFrcAutonomousSelector(entries, defaultEntryId)
     private var activeExecutionId: Long? = null
@@ -609,11 +645,7 @@ internal class StarterFrcAutonomousRuntime(
             }
             when (terminal.status) {
                 RoutineExecutionStatus.COMPLETED -> {
-                    finished = true
-                    activeExecutionId = null
-                    capabilities.clearAutonomous()
-                    robot.safeHardware()
-                    publishStatus("Complete")
+                    stop("Autonomous complete", status = "Complete")
                 }
                 RoutineExecutionStatus.FAILED -> fail(terminal.message ?: "Autonomous task failed")
                 RoutineExecutionStatus.CANCELLED -> fail(terminal.message ?: "Autonomous was cancelled")
@@ -626,13 +658,17 @@ internal class StarterFrcAutonomousRuntime(
     }
 
     fun stop(reason: String, status: String = "Stopped") {
-        generatedControls.cancelAll(reason)
         activeExecutionId = null
         startedAtMs = -1L
         finished = true
         capabilities.clearAutonomous()
-        robot.safeHardware()
-        publishStatus(status)
+        var failure: Throwable? = null
+        try { cancelGenerated(reason) } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { capabilities.onDriveCommand(0.0, 0.0, 0.0, active = false) }
+        catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { robot.safeHardware() } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { publishStatus(status) } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        failure?.let { throw it }
     }
 
     private fun fail(message: String) {
