@@ -5725,10 +5725,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "0eb807261555f2a8a73d55a18572c7fe20686647bddd0dfe672544f8d4c3905f",
+      "sha256": "50c85c1aa7354ba74c33d4b66e062f36aaf0f6ef4fdec1fb1aab25644f1f0eaf",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -5836,7 +5836,8 @@
         "docs/audits/ftc-field-resources-audit.md",
         "docs/audits/field-polygon-validation-audit.md",
         "docs/audits/frc-starter-simulation-math-audit.md",
-        "docs/audits/frc-starter-field-telemetry-audit.md"
+        "docs/audits/frc-starter-field-telemetry-audit.md",
+        "docs/audits/frc-starter-drive-lease-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -19904,11 +19905,13 @@
       ]
     },
     "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/FrcStudioSimulationBridge.kt": {
-      "sha256": "516d667f448ee054a12c0320202ea3bda79c3f166b9936ef4209ac6f550fa069",
-      "review": "partial",
-      "validation": "pending",
-      "scope": "Pass 263: Field queue now invokes callback within revision transaction, publishes error and continues on ordinary apply failure; native test proves expired lease still disables simulation after that failure. Native teardown releases all bridge publishers, clears cached controls and stops fallback sampling; prepare/field polling reject post-close. Existing seven-method fixture and eight added field/bridge methods pass. Full source read, but no-poll lease expiry, receiver-time arithmetic, queued frame age, control modes and broader drive/session lifecycle need an adversarial pass.",
+      "sha256": "ddefa2c71c805fedd27c30f2e90244fbd85636ac36e1a332cb9461305b557f81",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass264: Entire remaining serialized bridge orchestration reviewed after extracting frame and field helpers: native topic ownership/queue limits, local transport clock used only for message age, receiver milliseconds from RobotClock kept separate from controller nanoTime, independent sampling freshness and simulated TeleOp disable, no redundant cached command, explicit mode/field-centric/DS gates, autonomous mode independent of drive lease, fallback preparation and non-owned port routing, queued field transaction/error/retry/receipt flow, atomic drive acknowledgement, terminal idempotent close releasing all owned handles while preserving sharedinstance. Six new native lease/mode/fallback methods, eight prior field/native methods and seven prior bridge methods pass. Completes prior partial drive/time scope; constructor fault injection, arbitrary native backend failures, full TimedRobot startup, external NT server and physical hardware are not claimed. Shared callback/teardown guarantees covered in pass263.",
       "evidence": [
+        "docs/audits/frc-starter-drive-lease-audit.md",
+        "ARESLib-Kotlin/build/audit-pass264-verified-evidence/summary.json",
         "docs/audits/frc-starter-field-telemetry-audit.md",
         "ARESLib-Kotlin/build/audit-pass263-verified-evidence/summary.json",
         "docs/audits/frc-starter-simulation-math-audit.md",
@@ -20005,6 +20008,46 @@
       "evidence": [
         "docs/audits/frc-starter-field-telemetry-audit.md",
         "ARESLib-Kotlin/build/audit-pass263-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/FrcStudioDriveFrames.kt": {
+      "sha256": "4952b74edc7311b5be3e931e9d043c95f533d04de9f2b67e17e481d337334ef1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass264: Entire extracted receiver/projection helper reviewed: shared v2 wire/status/ack constants; exact primitive metadata parsing and finite axis limits; accepted session/sequence/client-time ordering; neutral recovery before motion after session change, malformed/out-of-order input, expiry or rewind; expiry before renewal even without intervening polls; inclusive500ms signed RobotClock intervals; native local transport-age conversion with conservative ceiling and impossible/expired/underflow rejection; immutable accepted snapshots; diagnostic history and saturating age/count; finite controller scaling/clamping and input clearing. Fourteen new direct methods, six native bridge methods and seven prior bridge fixture methods pass in the94-test suite.196 timestamp pairs match independent BigInteger arithmetic. Retained polling/projection/ack warmup50000 then measured50000 iterations:0allocatedbytes,5139000ns. Native queue/new snapshot allocations excluded; no physical/hard-real-time claim.",
+      "evidence": [
+        "docs/audits/frc-starter-drive-lease-audit.md",
+        "ARESLib-Kotlin/build/audit-pass264-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterDriveLeaseAuditTest.kt": {
+      "sha256": "8c4a5804e472f72ff0481bebc224b7bb2a06e2ef1f561d9d1bc94f2bf4d0386f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass264: All fourteen methods reviewed/run: five numerical/lease baseline failures, inclusive expiry/read identity and single expiry count, thirty-eight malformed payload variants with disarm/recovery, seven actuating flags, legal exact axis limits and immutable source-array ownership, duplicate/regressed identity acknowledgements and buffer bounds,196 exact integer-reference timestamp pairs, transport impossible/old/sub-ms/boundary/underflow cases, maximum safe wire metadata and reflection-injected lifetime counter saturation, projection clamp/clear/invalid-limits, and supported-JVM allocation probe. Baseline9 direct methods had5failures; final14pass. Thread allocation enable restored; probe does not include accepted-snapshot/nativequeue creation.",
+      "evidence": [
+        "docs/audits/frc-starter-drive-lease-audit.md",
+        "ARESLib-Kotlin/build/audit-pass264-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterBridgeLeaseAuditTest.kt": {
+      "sha256": "47fea5840a05fe5e2a39996dfa86c01de35fe2ce7a950609ef1ff15e2696cee1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass264: All six methods reviewed/run through isolated native NT/HAL: expired sampling despite stopped update with differing clock origins, fresh queued motion requiring neutral after missed expiry, old queued neutral+motion rejection, partially aged queue retaining only unspent lease, autonomous/disabled/TeleOp mode transitions and fallback-port ownership, required flags and DS enable. Restores prior RobotClock mock/system state and DS state, closes native instances/bridges. Original two methods both failed before fixes. Corrected two queue baseline methods use explicit positive transport timestamps and failed against restored original queue loop; initial uptime-dependent fixture superseded. All6pass in full94-test suite.",
+      "evidence": [
+        "docs/audits/frc-starter-drive-lease-audit.md",
+        "ARESLib-Kotlin/build/audit-pass264-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-starter-drive-lease-audit.md": {
+      "sha256": "caf105f01662173d4d850dca96fbf6d6742b31fb7a0e1d475808ef1e1ce71e93",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass264: Entire pass264 report checked against initial11-test7-failure baseline, corrected queue2-test2-failure baseline, final94pass preserving74prior invocations,196 independent exact arithmetic cases, actual zero-byte retained-command allocation probe, unchanged library source tree/all410candidatehashes and guidance/documentation verification. Native timing/source-version and remaining composition/runtime, constructor fault, Studio/archive approval and physical limits explicit.",
+      "evidence": [
+        "docs/audits/frc-starter-drive-lease-audit.md",
+        "ARESLib-Kotlin/build/audit-pass264-verified-evidence/summary.json"
       ]
     }
   }

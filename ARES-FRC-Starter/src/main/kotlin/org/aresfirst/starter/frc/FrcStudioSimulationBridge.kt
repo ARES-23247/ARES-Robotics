@@ -6,6 +6,7 @@ import com.areslib.frc.runtime.WpilibFrcControllerPortSampler
 import com.areslib.util.RobotClock
 import edu.wpi.first.networktables.DoubleArrayPublisher
 import edu.wpi.first.networktables.DoubleArraySubscriber
+import edu.wpi.first.networktables.NetworkTablesJNI
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.networktables.PubSubOption
 import edu.wpi.first.networktables.StringPublisher
@@ -14,20 +15,6 @@ import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import org.aresfirst.starter.frc.generated.drivebase.GeneratedAresDrivebaseConfig
 import java.util.UUID
-import kotlin.math.abs
-
-/** One fresh, validated ARES Studio control frame for the FRC desktop simulator. */
-internal data class FrcStudioDriveCommand(
-    val vxMetersPerSecond: Double,
-    val vyMetersPerSecond: Double,
-    val omegaRadiansPerSecond: Double,
-    val isTeleopMode: Boolean,
-    val isFieldCentric: Boolean,
-    val buttonA: Boolean,
-    val buttonB: Boolean,
-    val buttonX: Boolean,
-    val receivedAtMs: Long,
-)
 
 internal enum class FrcStudioRequestedMode { DISABLED, TELEOP, AUTONOMOUS }
 
@@ -37,207 +24,6 @@ internal fun decodeFrcStudioRequestedMode(command: String?): FrcStudioRequestedM
         FrcStudioSimulationBridge.DRIVER_STATION_ENABLE_AUTONOMOUS -> FrcStudioRequestedMode.AUTONOMOUS
         else -> FrcStudioRequestedMode.DISABLED
     }
-
-/**
- * Fail-closed receiver for the shared ARES Studio v2 drive frame.
- *
- * Receiver time, not the sender clock or a retained NetworkTables value, owns the 500 ms lease.
- * Every new session must begin neutral. Invalid, stale, and out-of-order frames disconnect the
- * generated controller boundary and require another neutral handshake before motion can resume.
- */
-internal class FrcStudioDriveFrameGate {
-    private var activeSession = Long.MIN_VALUE
-    private var lastSequence = Long.MIN_VALUE
-    private var lastClientTime = Long.MIN_VALUE
-    private var armed = false
-    private var current: FrcStudioDriveCommand? = null
-    private var status = ReceiverStatus.WAITING_FOR_FRAME
-    private var lastAcceptedSession = Long.MIN_VALUE
-    private var lastAcceptedSequence = Long.MIN_VALUE
-    private var lastAcceptedAtMs = Long.MIN_VALUE
-    private var rejectedFrameCount = 0L
-
-    fun accept(raw: DoubleArray, nowMs: Long): Boolean {
-        if (raw.size != FRAME_VALUE_COUNT || raw[VERSION_INDEX] != FRAME_VERSION) {
-            return reject(ReceiverStatus.INVALID_FRAME)
-        }
-        val session = protocolInteger(raw[SESSION_INDEX], requirePositive = true)
-            ?: return reject(ReceiverStatus.INVALID_FRAME)
-        val sequence = protocolInteger(raw[SEQUENCE_INDEX])
-            ?: return reject(ReceiverStatus.INVALID_FRAME)
-        val clientTime = protocolInteger(raw[CLIENT_TIME_INDEX])
-            ?: return reject(ReceiverStatus.INVALID_FRAME)
-        val flags = protocolInteger(raw[FLAGS_INDEX])
-            ?: return reject(ReceiverStatus.INVALID_FRAME)
-        val vx = raw[VX_INDEX]
-        val vy = raw[VY_INDEX]
-        val omega = raw[OMEGA_INDEX]
-        if (
-            flags and KNOWN_FLAGS_MASK.inv() != 0L ||
-            !validAxis(vx, MAX_TRANSLATION_MPS) ||
-            !validAxis(vy, MAX_TRANSLATION_MPS) ||
-            !validAxis(omega, MAX_OMEGA_RPS)
-        ) return reject(ReceiverStatus.INVALID_FRAME)
-
-        if (session != activeSession) {
-            activeSession = session
-            lastSequence = Long.MIN_VALUE
-            lastClientTime = Long.MIN_VALUE
-            armed = false
-        }
-        if (sequence <= lastSequence || clientTime < lastClientTime) {
-            return reject(ReceiverStatus.OUT_OF_ORDER)
-        }
-        if (!armed && !isNeutral(vx, vy, omega, flags)) {
-            return reject(ReceiverStatus.WAITING_FOR_NEUTRAL)
-        }
-
-        lastSequence = sequence
-        lastClientTime = clientTime
-        lastAcceptedSession = session
-        lastAcceptedSequence = sequence
-        lastAcceptedAtMs = nowMs
-        armed = true
-        current = FrcStudioDriveCommand(
-            vxMetersPerSecond = vx,
-            vyMetersPerSecond = vy,
-            omegaRadiansPerSecond = omega,
-            isTeleopMode = flags has FLAG_TELEOP,
-            isFieldCentric = flags has FLAG_FIELD_CENTRIC,
-            buttonA = flags has FLAG_BUTTON_A,
-            buttonB = flags has FLAG_BUTTON_B,
-            buttonX = flags has FLAG_BUTTON_X,
-            receivedAtMs = nowMs,
-        )
-        status = if (isNeutral(vx, vy, omega, flags)) {
-            ReceiverStatus.ARMED_NEUTRAL
-        } else {
-            ReceiverStatus.ACTIVE
-        }
-        return true
-    }
-
-    fun current(nowMs: Long): FrcStudioDriveCommand? {
-        val snapshot = current ?: return null
-        if (nowMs - snapshot.receivedAtMs in 0..LEASE_TIMEOUT_MS) return snapshot
-        reject(ReceiverStatus.EXPIRED)
-        return null
-    }
-
-    fun receiverReady(nowMs: Long): Boolean {
-        current(nowMs) ?: return false
-        return status == ReceiverStatus.ARMED_NEUTRAL || status == ReceiverStatus.ACTIVE
-    }
-
-    /** Copies the same nine-value acknowledgement contract used by the FTC simulator. */
-    fun copyAcknowledgement(destination: DoubleArray, nowMs: Long): Int {
-        require(destination.size >= ACK_VALUE_COUNT) {
-            "FRC drive acknowledgement requires at least $ACK_VALUE_COUNT values"
-        }
-        val applied = current(nowMs)
-        val ageMs = if (lastAcceptedAtMs == Long.MIN_VALUE) -1L else (nowMs - lastAcceptedAtMs).coerceAtLeast(0L)
-        destination[0] = ACK_VERSION
-        destination[1] = status.code.toDouble()
-        destination[2] = protocolValue(lastAcceptedSession)
-        destination[3] = protocolValue(lastAcceptedSequence)
-        destination[4] = ageMs.toDouble()
-        destination[5] = applied?.vxMetersPerSecond ?: 0.0
-        destination[6] = applied?.vyMetersPerSecond ?: 0.0
-        destination[7] = applied?.omegaRadiansPerSecond ?: 0.0
-        destination[8] = rejectedFrameCount.toDouble()
-        return ACK_VALUE_COUNT
-    }
-
-    internal fun statusCode(): Int = status.code
-
-    private fun reject(nextStatus: ReceiverStatus): Boolean {
-        armed = false
-        current = null
-        status = nextStatus
-        rejectedFrameCount++
-        return false
-    }
-
-    private fun isNeutral(vx: Double, vy: Double, omega: Double, flags: Long): Boolean =
-        vx == 0.0 && vy == 0.0 && omega == 0.0 && flags and ACTUATING_FLAGS == 0L
-
-    private fun validAxis(value: Double, maximum: Double): Boolean = value.isFinite() && abs(value) <= maximum
-
-    private fun protocolInteger(value: Double, requirePositive: Boolean = false): Long? {
-        val minimum = if (requirePositive) 1.0 else 0.0
-        if (!value.isFinite() || value < minimum || value > MAX_SAFE_INTEGER) return null
-        return value.toLong().takeIf { it.toDouble() == value }
-    }
-
-    private fun protocolValue(value: Long): Double = if (value == Long.MIN_VALUE) -1.0 else value.toDouble()
-
-    private infix fun Long.has(flag: Long): Boolean = this and flag != 0L
-
-    private enum class ReceiverStatus(val code: Int) {
-        WAITING_FOR_FRAME(0),
-        WAITING_FOR_NEUTRAL(1),
-        ARMED_NEUTRAL(2),
-        ACTIVE(3),
-        EXPIRED(4),
-        INVALID_FRAME(5),
-        OUT_OF_ORDER(6),
-    }
-
-    companion object {
-        const val LEASE_TIMEOUT_MS = 500L
-        const val ACK_VALUE_COUNT = 9
-        private const val FRAME_VALUE_COUNT = 8
-        private const val FRAME_VERSION = 2.0
-        private const val ACK_VERSION = 1.0
-        private const val MAX_SAFE_INTEGER = 9_007_199_254_740_991.0
-        private const val MAX_TRANSLATION_MPS = 8.0
-        private const val MAX_OMEGA_RPS = 4.0 * Math.PI
-        private const val VERSION_INDEX = 0
-        private const val SESSION_INDEX = 1
-        private const val SEQUENCE_INDEX = 2
-        private const val CLIENT_TIME_INDEX = 3
-        private const val VX_INDEX = 4
-        private const val VY_INDEX = 5
-        private const val OMEGA_INDEX = 6
-        private const val FLAGS_INDEX = 7
-        private const val FLAG_INTAKE = 1L shl 0
-        private const val FLAG_FLYWHEEL = 1L shl 1
-        private const val FLAG_TRANSFER = 1L shl 2
-        private const val FLAG_TELEOP = 1L shl 3
-        private const val FLAG_FIELD_CENTRIC = 1L shl 4
-        private const val FLAG_BUTTON_A = 1L shl 6
-        private const val FLAG_BUTTON_B = 1L shl 7
-        private const val FLAG_BUTTON_X = 1L shl 8
-        private const val FLAG_POSE_RESET = 1L shl 9
-        private const val KNOWN_FLAGS_MASK = (1L shl 10) - 1L
-        private const val ACTUATING_FLAGS = FLAG_INTAKE or FLAG_FLYWHEEL or FLAG_TRANSFER or
-            FLAG_BUTTON_A or FLAG_BUTTON_B or FLAG_BUTTON_X or FLAG_POSE_RESET
-    }
-}
-
-/** Maps canonical field commands back through the generated Xbox controller boundary. */
-internal fun FrcStudioDriveCommand.copyIntoControllerFrame(
-    frame: InputFrame,
-    nowNanos: Long,
-    maximumTranslationMps: Double,
-    maximumAngularRps: Double,
-) {
-    require(maximumTranslationMps.isFinite() && maximumTranslationMps > 0.0)
-    require(maximumAngularRps.isFinite() && maximumAngularRps > 0.0)
-    frame.beginSample(
-        connected = true,
-        reportedAxisCount = 6,
-        reportedButtonCount = 124,
-        sampleTimeNanos = nowNanos,
-    )
-    // The checked-in controller profile inverts Xbox left-Y, left-X, and right-X exactly once.
-    frame.setAxis(1, (-vxMetersPerSecond / maximumTranslationMps).coerceIn(-1.0, 1.0))
-    frame.setAxis(0, (-vyMetersPerSecond / maximumTranslationMps).coerceIn(-1.0, 1.0))
-    frame.setAxis(4, (-omegaRadiansPerSecond / maximumAngularRps).coerceIn(-1.0, 1.0))
-    frame.setButton(0, buttonA)
-    frame.setButton(1, buttonB)
-    frame.setButton(2, buttonX)
-}
 
 /**
  * Simulation-only ARES Studio bridge for the generic FRC starter.
@@ -252,6 +38,7 @@ internal class FrcStudioSimulationBridge(
     private val gate: FrcStudioDriveFrameGate = FrcStudioDriveFrameGate(),
     private val fieldGate: FrcStudioFieldGate = FrcStudioFieldGate(),
     private val onFieldApplied: (StarterFieldContract) -> Unit = {},
+    private val transportTimeMicros: () -> Long = NetworkTablesJNI::now,
 ) : FrcControllerPortSampler, AutoCloseable {
     private val driveSubscriber: DoubleArraySubscriber = instance
         .getDoubleArrayTopic(DRIVE_FRAME_TOPIC)
@@ -279,7 +66,6 @@ internal class FrcStudioSimulationBridge(
     private var fieldReceiptSequence = 0L
     private val acknowledgement = DoubleArray(FrcStudioDriveFrameGate.ACK_VALUE_COUNT)
     private var studioControlRequested = false
-    private var latestCommand: FrcStudioDriveCommand? = null
     private var closed = false
 
     override fun prepare(port: Int) {
@@ -296,7 +82,12 @@ internal class FrcStudioSimulationBridge(
             fallbackSampler.sampleInto(port, frame, nowNanos)
             return
         }
-        val command = latestCommand
+        // InputFrame timestamps use a different clock origin. Recheck the millisecond lease
+        // through RobotClock instead of refreshing old intent with a new sample timestamp.
+        val command = gate.current(RobotClock.currentTimeMillis())
+        if (command == null && DriverStation.isTeleopEnabled()) {
+            applyDriverStationState(enabled = false, autonomous = false)
+        }
         if (
             command == null ||
             !command.isTeleopMode ||
@@ -318,8 +109,12 @@ internal class FrcStudioSimulationBridge(
     fun update(nowMs: Long = RobotClock.currentTimeMillis()) {
         check(!closed) { "FRC Studio simulation bridge is closed" }
         updateFieldDocuments()
-        for (update in driveSubscriber.readQueue()) gate.accept(update.value, nowMs)
-        latestCommand = gate.current(nowMs)
+        val queuedDriveFrames = driveSubscriber.readQueue()
+        if (queuedDriveFrames.isNotEmpty()) {
+            val transportNow = transportTimeMicros()
+            for (update in queuedDriveFrames) gate.acceptQueued(update.value, update.timestamp, transportNow, nowMs)
+        }
+        val latestCommand = gate.current(nowMs)
 
         val requestedMode = decodeFrcStudioRequestedMode(commandSubscriber.get())
         studioControlRequested = requestedMode == FrcStudioRequestedMode.TELEOP
@@ -367,7 +162,6 @@ internal class FrcStudioSimulationBridge(
     override fun close() {
         if (closed) return
         closed = true
-        latestCommand = null
         studioControlRequested = false
         closeStarterResources(listOf(
             AutoCloseable { applyDriverStationState(enabled = false, autonomous = false) },
