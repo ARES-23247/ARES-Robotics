@@ -5719,7 +5719,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e4db817a45dfff8f2a606daba8a5984a57eebd06af36ea1592dc37a4b920b4ed",
+      "sha256": "e850d6d128fb82830958192ed1617d58c34722c1719b30f5c0614e9ea6a83bcc",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -12197,11 +12197,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldTopicSubscriber.kt": {
-      "sha256": "1353a9d99d77967e3bc7fe0096078068eb221e80e5693bed3dad666dbe7d0274",
-      "review": "partial",
+      "sha256": "1dfd1ccf2427763a36b30b65788bad712bb5486816be5dc64833425688a6d427",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 255: Prior pose/typed/vision reviews retained. Replaces legacy inline map copying with bounded accumulator, consumes complete legacy/count and vision parents with current identity/epoch/mode checks, preserves v2 priority, clears/reinitializes staging on target/mode and rejects parent-owned scalar prefixes. Remaining raw typed-fallback invalid-first-header ownership and broader collector initialization/lifecycle ordering remain separate review candidates.",
+      "scope": "Pass 256: Complete file review: shared fixed topic selection, bounded ordered raw typed decoder and retained complete raw observation; source takeover on invalid first typed prefix; one serialized current-state reconciliation path for all callbacks; 17 shared latest-notified scalar observers, initial/reset hydration and replay duplicate filtering; same-source pose/vision assembly; current parent identity/epoch, mode masking and cached scalar/parent rejection after observed disconnect; parent priority, lighting memoization, state reuse and owner cancellation. 27 lifecycle tests plus existing pose/game/vision integration suites. Complete NT4 parents are preferred; raw dynamic fragments require complete ordered delivery, and latched scalars do not prove freshness or recover every lost upstream transition. This is full file review, not hardware or every possible producer interleaving.",
       "evidence": [
+        "docs/audits/field-subscriber-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass256-verified-evidence/summary.json",
         "docs/audits/field-array-delivery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass255-verified-evidence/summary.json",
         "docs/audits/live-pose-vision-integrity-audit.md",
@@ -17963,11 +17965,13 @@
       "sha256": "3aca6ac36b60e9b1a7a9493266629f00a1a785d07452ef4707a4e56521cda6be"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt": {
-      "sha256": "ba002b4ace84ef9431ffbb89d0dd02774e541f20d050bc9c6cf62bca06181233",
+      "sha256": "ea4e2320912bfbb4c4b4e30fe22d9d939ad6426d8a6738ad2e870b22e5b21342",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 255: Prior boundaries retained. Adds complete legacy/count and canonical/alias vision parent snapshots, bounded decoder admission, rejected-prefix ownership and target reset serialization for field arrays. Count/length metadata remains recorded during replay while live publication is suppressed. Shared recordIncomingFrame removes duplicate scalar/array queue code and keeps session/source/UI/receipt-time semantics; new length records share parent receipt timestamp. Other recording/connection/admission/source-time policies and arbitrary callbacks remain partial.",
+      "scope": "Pass 256: Prior reviewed boundaries retained. Exposes the field-state owner visionTargetFrame as an internal read-only StateFlow; preserves existing serialized reset and recording pathways. No other transport/session/admission logic changed. Broader recording, connection and source/receipt-time boundaries remain partial.",
       "evidence": [
+        "docs/audits/field-subscriber-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass256-verified-evidence/summary.json",
         "docs/audits/field-array-delivery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass255-verified-evidence/summary.json",
         "docs/audits/live-pose-vision-integrity-audit.md",
@@ -19153,11 +19157,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/VisionPoseAccumulator.kt": {
-      "sha256": "f56bf571bd9d812e5119b9b76e75289998aa5ad70f0b504b1535afc714bd5552",
+      "sha256": "7e893324be30a2044d54f3e30770eeb8457cdc175c9938c61ebe6810b16e155f",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 255: Prior full scalar/triple review retained. Adds complete parent acceptance, independent masked staging before same-time target flag, parent ownership over scalar arrays, target-start timestamp admission, clearing parent data and masking arrays while no target. Existing bounded scalar fallback, family/time checks, resets and state reuse rerun. Full parent length now arrives separately from raw scalars.",
+      "scope": "Pass 256: Prior full scalar/triple/parent review retained. Consumes retained target-loss generation without losing same-time parent-before-flag support; resets prior target coordinates after conflated loss; scalar coordinates older than target start are rejected. Cached current coordinates are reoffered by subscriber with existing visible-frame identity admission. Nullability, raw compatibility, bounds, masking, reset and state reuse verified by old and new focused tests. Source timestamps are producer inputs; no universal clock/freshness guarantee.",
       "evidence": [
+        "docs/audits/field-subscriber-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass256-verified-evidence/summary.json",
         "docs/audits/field-array-delivery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass255-verified-evidence/summary.json",
         "docs/audits/live-pose-vision-integrity-audit.md",
@@ -19195,11 +19201,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/FieldArrayTelemetry.kt": {
-      "sha256": "c9c3f592b810e4a92d62a0e062fd47ab4f2a72470dca16fbb94e1c7280289685",
+      "sha256": "9f512bef1acf6e7fc9dae2f6a5ff51c8d0edd84990ee46dd767af518e58e33bd",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 255: Complete bounded owned decoders/snapshots reviewed/tested: numeric array carriers, finite active values,4096-element cap, exact3/7 record widths, count-aware unused legacy capacity, generic planar pieces, validated recorded Length metadata including empty/rejected states, complete active-record replay, bounded no-Length backward compatibility and source-family priority. Counts max10000 and width arithmetic bounded. No quaternion orientation inferred for planar legacy display. Includes extracted FieldArrayTelemetryState: serialized selected-target reset and bounded whole-parent/count handling, canonical ownership, live suppression during replay and returned recording length updates. Non-field topics bypass the monitor. Integration regressions exercise this state through the real NT4 service.",
+      "scope": "Pass 256: Prior complete bounded array/count/replay decoder and serialized parent-state review retained. New vision target snapshot retains lossGeneration, selected-target identity and source time; false/invalid flags advance loss generation; same-target replay-active ingress suppresses live status publication; selected-target reset clears status/generation. Real ingress tests cover queue overflow, topic eviction, loss/reacquisition conflation, invalid flags and replay/reset. Other array/recording contracts and all prior 32 field-array tests rerun.",
       "evidence": [
+        "docs/audits/field-subscriber-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass256-verified-evidence/summary.json",
         "docs/audits/field-array-delivery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass255-verified-evidence/summary.json"
       ]
@@ -19232,6 +19240,26 @@
       "evidence": [
         "docs/audits/field-array-delivery-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass255-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldSubscriberLifecycleAuditTest.kt": {
+      "sha256": "0358ed108235311ee1938b9bcda8e9c335b80411da1e3bd71007927222ee5176",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 256: Complete27-method fixture reviewed/executed: eight original regressions, three further scalar cache failures,16 recovery/priority/lifecycle/cache/lighting positives. Real client ingress and store visibility, controlled connection state, held FIFO/LIFO owner/processing dispatchers,5000-frame and5000-topic pressure, raw typed recovery, source resets, replay suppression/cache restore, disconnect/fresh scalar assembly, bounded observer reuse and unchanged state identity. Every owned collector/client is cancelled and joined; actual DuckDB and loopback regressions are covered in existing affected suites.",
+      "evidence": [
+        "docs/audits/field-subscriber-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass256-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/field-subscriber-lifecycle-audit.md": {
+      "sha256": "c07d8531339af65c36078961df4c391c1530626d06af75b8e07f42b421a0d1a5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 256: Reports original8 failing methods and3 additional scalar cache failures, full subscriber closure, retained target generations,17 cached scalar subscriptions, exact focused/full/candidate/policy/ledger evidence, and explicit dynamic-fragment/source-clock/producer-transaction/rendered-UI/hardware limits.",
+      "evidence": [
+        "docs/audits/field-subscriber-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass256-verified-evidence/summary.json"
       ]
     }
   }

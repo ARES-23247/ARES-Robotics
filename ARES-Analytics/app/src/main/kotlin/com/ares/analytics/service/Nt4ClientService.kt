@@ -295,6 +295,7 @@ open class Nt4ClientService(
     val simulatorPoseFrame: StateFlow<SimulatorPoseFrameSnapshot?> = _simulatorPoseFrame.asStateFlow()
     private val fieldArrays = FieldArrayTelemetryState(telemetryStore, isReplayActive, ::coerceTelemetryValue)
     internal val visionPoseArrayFrame: StateFlow<VisionPoseArraySnapshot?> = fieldArrays.visionPoseArrayFrame
+    internal val visionTargetFrame: StateFlow<VisionTargetSnapshot?> = fieldArrays.visionTargetFrame
     internal val hasReceivedVisionPoseArray: Boolean get() = fieldArrays.hasReceivedVisionPoseArray
     internal val legacyGamePieceFrame: StateFlow<LegacyGamePieceSnapshot?> = fieldArrays.legacyGamePieceFrame
     private val _gamePieceFrame = MutableStateFlow<GamePieceFrameSnapshot?>(null)

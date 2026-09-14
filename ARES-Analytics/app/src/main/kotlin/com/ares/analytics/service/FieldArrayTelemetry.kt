@@ -12,6 +12,11 @@ internal data class VisionPoseArraySnapshot(
     val poses: Map<Int, Double>, val timestampUs: Long, val targetEpoch: Long,
 )
 
+/** Loss generation survives conflated false/true flags and bounded raw telemetry queues. */
+internal data class VisionTargetSnapshot(
+    val hasTarget: Boolean, val lossGeneration: Long, val timestampUs: Long, val targetEpoch: Long,
+)
+
 internal data class LegacyGamePieceSnapshot(
     val pieces: Map<Int, GamePiece>, val countLimit: Int?, val hasParent: Boolean,
     val timestampUs: Long, val targetEpoch: Long,
@@ -160,10 +165,15 @@ internal class FieldArrayTelemetryState(
     @Volatile private var hasCanonicalVisionPoseArray = false
     private val _legacyGamePieceFrame = MutableStateFlow<LegacyGamePieceSnapshot?>(null)
     internal val legacyGamePieceFrame: StateFlow<LegacyGamePieceSnapshot?> = _legacyGamePieceFrame.asStateFlow()
+    private val _visionTargetFrame = MutableStateFlow<VisionTargetSnapshot?>(null)
+    val visionTargetFrame: StateFlow<VisionTargetSnapshot?> = _visionTargetFrame.asStateFlow()
+    private var visionLossGeneration = 0L
     private var legacyRecordedCount: Int? = null
     private var legacyRecordedLength: Int? = null
 
     fun reset() = synchronized(lock) {
+        visionLossGeneration = 0L
+        _visionTargetFrame.value = null
         hasReceivedVisionPoseArray = false
         hasCanonicalVisionPoseArray = false
         legacyRecordedCount = null
@@ -223,6 +233,13 @@ internal class FieldArrayTelemetryState(
                     }
                 } else if (normalizedName == "Vision/HasTarget") {
                     val (value, text) = coerceTelemetryValue(valueElement)
+                    val hasTarget = text == null && value == 1.0
+                    if (!hasTarget) visionLossGeneration++
+                    if (!replayActive.value && fieldArrayEpoch == telemetryStore.currentTargetEpoch()) {
+                        _visionTargetFrame.value = VisionTargetSnapshot(
+                            hasTarget, visionLossGeneration, timestampUs, fieldArrayEpoch,
+                        )
+                    }
                     if (text != null || value != 1.0) {
                         if (hasReceivedVisionPoseArray) {
                             lengthTopic = (if (hasCanonicalVisionPoseArray) VisionPoseArrayTelemetry.TOPIC

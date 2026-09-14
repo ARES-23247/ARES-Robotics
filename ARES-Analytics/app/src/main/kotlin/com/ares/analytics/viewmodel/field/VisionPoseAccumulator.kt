@@ -1,11 +1,13 @@
 package com.ares.analytics.viewmodel.field
 
 import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.service.VisionTargetSnapshot
 import com.ares.analytics.service.VisionPoseArraySnapshot
 import com.ares.analytics.viewmodel.LivePoseState
 
 /** Latched scalar vision and complete same-source-time array triples, owned by one consumer. */
 internal class VisionPoseAccumulator {
+    private var targetLossGeneration: Long? = null
     private var hasTarget = false
     private var targetSinceUs = Long.MIN_VALUE
     private var parentOwned = false
@@ -17,12 +19,20 @@ internal class VisionPoseAccumulator {
     private var poses: Map<Int, Double> = emptyMap()
 
     @Synchronized fun reset() {
+        targetLossGeneration = null
         hasTarget = false
         targetSinceUs = Long.MIN_VALUE
         parentOwned = false
         scalar.fill(Double.NaN)
         array = null; times = null; canonical = false
         publishedTime = Long.MIN_VALUE; poses = emptyMap()
+    }
+
+    @Synchronized fun accept(frame: VisionTargetSnapshot) {
+        if (targetLossGeneration != null && targetLossGeneration != frame.lossGeneration) reset()
+        accept(TelemetryFrame(frame.timestampUs / 1000, "live", "Vision/HasTarget",
+            if (frame.hasTarget) 1.0 else 0.0, timestampUs = frame.timestampUs))
+        targetLossGeneration = frame.lossGeneration
     }
 
     @Synchronized fun accept(frame: VisionPoseArraySnapshot) {
@@ -52,7 +62,7 @@ internal class VisionPoseAccumulator {
             }
             return true
         }
-        if (!hasTarget) return false
+        if (!hasTarget || frame.timestampUs < targetSinceUs) return false
         when (key) {
             "Vision/Pose_X" -> { scalar[0] = value; return true }
             "Vision/Pose_Y" -> { scalar[1] = value; return true }
