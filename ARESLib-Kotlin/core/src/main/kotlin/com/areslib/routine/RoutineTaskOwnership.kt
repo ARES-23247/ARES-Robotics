@@ -5,6 +5,32 @@ import com.areslib.sequencer.*
 import com.areslib.state.RobotState
 import java.util.IdentityHashMap
 
+/**
+ * Claims a fresh, unstarted task tree for composition inside an action/drive factory.
+ *
+ * The returned task forwards execution and pause/resume while owning metadata for every built-in
+ * group descendant, including tasks that never start. Custom tasks still own their private children.
+ * Keep the returned owner in the factory's cleanup scope until the enclosing tree is returned to
+ * [RoutineCompiler]; release it if later construction fails. Acquisition rejects tasks already
+ * claimed by another owner without releasing that owner's metadata, and cleans fresh descendants
+ * of a rejected tree. This does not initialize tasks or perform hardware work.
+ *
+ * Metadata release propagates cleanup errors after attempting all acquired nodes and clearing their
+ * callback/timeout registries. Like [Task.cancel], it cannot dispatch hardware-neutral actions;
+ * active tasks must end through their executor. All use is confined to the owning robot thread.
+ */
+fun ownRoutineTaskTree(task: Task): Task {
+    val ownership = RoutineTaskOwnership()
+    try {
+        ownership.acquire(task)
+        return CompiledRoutineTask(task, ownership, propagateMetadataFailure = true)
+    } catch (failure: Throwable) {
+        combineFailures(null, failure)
+        try { ownership.releaseAll() } catch (cleanup: Throwable) { combineFailures(failure, cleanup) }
+        throw failure
+    }
+}
+
 /** One compilation owns all created nodes, including dormant branches and future sequence steps. */
 internal class RoutineTaskOwnership {
     private val released = IdentityHashMap<Task, Boolean>()
@@ -35,7 +61,16 @@ internal class RoutineTaskOwnership {
             is ParallelDeadlineGroup -> task.tasks
             else -> null
         }
-        if (children == null) leaves.add(task) else children.forEach { acquire(it) }
+        if (children == null) {
+            leaves.add(task)
+        } else {
+            var failure: Throwable? = null
+            for (child in children) {
+                try { acquire(child) } catch (caught: Throwable) { failure = combineFailures(failure, caught) }
+            }
+            // A foreign/running child is untouched, but must not strand later fresh siblings.
+            failure?.let { throw it }
+        }
         return task
     }
 
@@ -174,12 +209,22 @@ internal abstract class RoutineTaskWrapper(protected val ownership: RoutineTaskO
 /** Public compilation result delegates lifecycle to its tree and owns every node's final cleanup. */
 internal class CompiledRoutineTask(
     override val delegate: Task,
-    ownership: RoutineTaskOwnership
+    ownership: RoutineTaskOwnership,
+    private val propagateMetadataFailure: Boolean = false,
 ) : RoutineTaskWrapper(ownership) {
     override val name: String = delegate.name
+    override val priority: Int = delegate.priority
     override val requiredResources: Long = delegate.requiredResources
     override fun pause(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = true)
     override fun resume(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = false)
+    override fun releaseRuntimeState() {
+        if (!propagateMetadataFailure) {
+            super.releaseRuntimeState()
+            return
+        }
+        try { releaseOwnedMetadata() }
+        finally { TaskTimeoutManager.reset(this); TaskCallbacks.reset(this) }
+    }
     override fun releaseOwnedMetadata() {
         var failure: Throwable? = null
         try { super.releaseOwnedMetadata() } catch (caught: Throwable) { failure = caught }
@@ -189,6 +234,7 @@ internal class CompiledRoutineTask(
 }
 
 private fun combineFailures(first: Throwable?, next: Throwable): Throwable {
+    if (next is InterruptedException) Thread.currentThread().interrupt()
     if (first == null) return next
     if (first !== next && first.suppressed.none { it === next }) first.addSuppressed(next)
     return first

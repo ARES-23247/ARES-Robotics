@@ -14,6 +14,7 @@ import com.areslib.routine.RoutineAlliance
 import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineRequestResult
+import com.areslib.routine.ownRoutineTaskTree
 import com.areslib.sequencer.ParallelDeadlineGroup
 import com.areslib.sequencer.ParallelTaskGroup
 import com.areslib.sequencer.SequentialTaskGroup
@@ -184,10 +185,10 @@ internal class StarterGeneratedCapabilities(
         }
     }
 
-    private fun requireGeneratedAction(key: String): Task = requireNotNull(
+    private fun requireGeneratedAction(key: String): Task = ownRoutineTaskTree(requireNotNull(
         if (actionFactory != null) actionFactory.invoke(key)
         else actionBindings.createActionTask(key, emptyMap())
-    ) { "Generated drive action '$key' is unavailable" }
+    ) { "Generated drive action '$key' is unavailable" })
 }
 
 internal enum class StarterFrcMotionPreset(val speedScale: Double) {
