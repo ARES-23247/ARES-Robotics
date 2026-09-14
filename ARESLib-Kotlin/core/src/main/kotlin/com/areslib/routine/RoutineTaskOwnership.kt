@@ -32,7 +32,7 @@ fun ownRoutineTaskTree(task: Task): Task {
 }
 
 /** One compilation owns all created nodes, including dormant branches and future sequence steps. */
-internal class RoutineTaskOwnership {
+internal class RoutineTaskOwnership : TaskRuntimeStateOwner {
     private val released = IdentityHashMap<Task, Boolean>()
     private val nodes = ArrayList<Task>()
     private val leaves = ArrayList<Task>()
@@ -43,7 +43,7 @@ internal class RoutineTaskOwnership {
         check(TaskStateMachine.getStatus(task) == TaskStatus.PENDING) {
             "Routine task factories must return unstarted task instances"
         }
-        RoutineTaskClaims.acquire(task)
+        TaskRuntimeOwnership.acquire(task, this)
         released[task] = false
         nodes.add(task)
         return task
@@ -74,11 +74,11 @@ internal class RoutineTaskOwnership {
         return task
     }
 
-    fun release(task: Task) {
+    override fun release(task: Task) {
         if (released[task] != false) return
         released[task] = true
         try {
-            task.releaseRuntimeState()
+            TaskRuntimeOwnership.releaseDirect(task)
         } catch (failure: Throwable) {
             cleanupFailure = combineFailures(cleanupFailure, failure)
             throw failure
@@ -86,7 +86,7 @@ internal class RoutineTaskOwnership {
             // An overriding metadata hook must not strand strong callback references/deadlines.
             TaskTimeoutManager.reset(task)
             TaskCallbacks.reset(task)
-            RoutineTaskClaims.release(task)
+            TaskRuntimeOwnership.releaseClaim(task, this)
         }
     }
 
@@ -105,7 +105,7 @@ internal class RoutineTaskOwnership {
     }
 
     /** Pause/resume is infrequent; steady update never scans the compiled tree. */
-    fun suspend(state: RobotState, paused: Boolean): List<RobotAction> {
+    fun suspend(state: RobotState, paused: Boolean, owner: Task): List<RobotAction> {
         for (index in nodes.indices) {
             val task = nodes[index]
             if (released[task] == false) {
@@ -113,15 +113,52 @@ internal class RoutineTaskOwnership {
             }
         }
         val actions = ArrayList<RobotAction>()
+        // A late terminal child/group must be noticed before any sibling can reactivate.
+        if (!paused && propagateOwnedTerminal(owner)) {
+            throw TaskTransitionAbort(actions, null, TaskStateMachine.getStatus(owner))
+        }
+        var failure: Throwable? = null
         for (index in leaves.indices) {
             val task = leaves[index]
             val status = TaskStateMachine.getStatus(task)
-            if (released[task] == false && (status == TaskStatus.RUNNING || status == TaskStatus.FAILED)) {
-                task.setTimeoutSuspended(paused)
-                actions.addAll(if (paused) task.pause(state) else task.resume(state))
+            if (released[task] == false && status == TaskStatus.RUNNING) {
+                try {
+                    task.setTimeoutSuspended(paused)
+                    actions.addAll(if (paused) task.pause(state) else task.resume(state))
+                } catch (caught: Throwable) {
+                    if (caught is TaskTransitionAbort) {
+                        actions.addAll(caught.actions)
+                        if (caught.terminalStatus == TaskStatus.CANCELLED && TaskStateMachine.getStatus(task) != TaskStatus.FAILED)
+                            TaskStateMachine.transitionTo(task, TaskStatus.CANCELLED)
+                        else TaskStateMachine.markFailed(task)
+                    } else TaskStateMachine.markFailed(task)
+                    failure = combineFailures(failure, caught)
+                }
+                // Pausing still neutralizes other leaves; failed/cancelled resume stops activation.
+                if (!paused && TaskStateMachine.getStatus(task) != TaskStatus.RUNNING) break
             }
         }
+        if (propagateOwnedTerminal(owner)) {
+            // Private wrappers may simply forward pause/resume, so status alone cannot reach the executor.
+            throw TaskTransitionAbort(actions, failure, TaskStateMachine.getStatus(owner))
+        }
         return actions
+    }
+
+    private fun propagateOwnedTerminal(owner: Task): Boolean {
+        var cancelled = TaskStateMachine.getStatus(owner) == TaskStatus.CANCELLED
+        var failed = TaskStateMachine.getStatus(owner) == TaskStatus.FAILED
+        for (task in nodes) {
+            if (released[task] != false) continue
+            when (TaskStateMachine.getStatus(task)) {
+                TaskStatus.FAILED -> failed = true
+                TaskStatus.CANCELLED -> cancelled = true
+                else -> Unit
+            }
+        }
+        if (failed) TaskStateMachine.markFailed(owner)
+        else if (cancelled) TaskStateMachine.transitionTo(owner, TaskStatus.CANCELLED)
+        return failed || cancelled
     }
 }
 
@@ -162,6 +199,7 @@ internal abstract class RoutineTaskWrapper(protected val ownership: RoutineTaskO
             val terminal = propagateTerminal(child)
             if (TaskStateMachine.getStatus(child) == TaskStatus.FAILED) {
                 try { TaskCallbacks.invokeFail(child) } catch (caught: Throwable) {
+                    retainTaskInterruption(caught)
                     // Preserve physical cleanup even when a diagnostic callback fails.
                     System.err.println("Routine task failure callback failed: ${caught.message}")
                 }
@@ -215,8 +253,8 @@ internal class CompiledRoutineTask(
     override val name: String = delegate.name
     override val priority: Int = delegate.priority
     override val requiredResources: Long = delegate.requiredResources
-    override fun pause(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = true)
-    override fun resume(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = false)
+    override fun pause(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = true, owner = this)
+    override fun resume(state: RobotState): List<RobotAction> = ownership.suspend(state, paused = false, owner = this)
     override fun releaseRuntimeState() {
         if (!propagateMetadataFailure) {
             super.releaseRuntimeState()
@@ -238,14 +276,4 @@ private fun combineFailures(first: Throwable?, next: Throwable): Throwable {
     if (first == null) return next
     if (first !== next && first.suppressed.none { it === next }) first.addSuppressed(next)
     return first
-}
-
-/** A weak identity claim prevents two unstarted compilations from sharing a factory task. */
-private object RoutineTaskClaims {
-    private val claimed = WeakIdentityMap<Task, Boolean>()
-    @Synchronized fun acquire(task: Task) {
-        check(claimed[task] != true) { "Routine task already belongs to another compiled invocation" }
-        claimed[task] = true
-    }
-    @Synchronized fun release(task: Task) { claimed.remove(task) }
 }

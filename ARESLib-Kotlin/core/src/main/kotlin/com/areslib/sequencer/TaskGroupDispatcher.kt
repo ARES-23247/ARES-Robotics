@@ -84,14 +84,8 @@ class SequentialTaskGroup(tasks: List<Task>) : Task {
             actions.addAll(pendingActions)
             pendingActions.clear()
         }
-        if (interrupted && currentIndex < tasks.size && !handledTasks.contains(tasks[currentIndex])) {
-            val current = tasks[currentIndex]
-            try {
-                actions.addAll(current.end(state, interrupted = true))
-            } finally {
-                handledTasks.add(current)
-                current.releaseRuntimeState()
-            }
+        if (interrupted && currentIndex < tasks.size) {
+            endInterruptedChild(this, tasks[currentIndex], state, handledTasks, actions)
         }
         super.end(state, interrupted)
         return actions
@@ -169,16 +163,7 @@ class ParallelTaskGroup(tasks: List<Task>) : Task {
         if (interrupted) {
             for (i in 0 until tasks.size) {
                 val task = tasks[i]
-                if (!handledTasks.contains(task)) {
-                    try {
-                        actions.addAll(task.end(state, interrupted = true))
-                    } catch (failure: Throwable) {
-                        System.err.println("TaskGroup: Exception ending task ${task.name}: ${failure.message}")
-                    } finally {
-                        handledTasks.add(task)
-                        task.releaseRuntimeState()
-                    }
-                }
+                endInterruptedChild(this, task, state, handledTasks, actions)
             }
         }
         super.end(state, interrupted)
@@ -269,16 +254,7 @@ class ParallelRaceGroup(tasks: List<Task>) : Task {
         }
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!handledTasks.contains(task)) {
-                try {
-                    actions.addAll(task.end(state, interrupted = true))
-                } catch (failure: Throwable) {
-                    System.err.println("ParallelRaceGroup: failed to stop ${task.name}: ${failure.message}")
-                } finally {
-                    handledTasks.add(task)
-                    task.releaseRuntimeState()
-                }
-            }
+            endInterruptedChild(this, task, state, handledTasks, actions)
         }
         super.end(state, interrupted)
         return actions
@@ -363,20 +339,44 @@ class ParallelDeadlineGroup(
         }
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!handledTasks.contains(task)) {
-                try {
-                    actions.addAll(task.end(state, interrupted = true))
-                } catch (failure: Throwable) {
-                    System.err.println("ParallelDeadlineGroup: failed to stop ${task.name}: ${failure.message}")
-                } finally {
-                    handledTasks.add(task)
-                    task.releaseRuntimeState()
-                }
-            }
+            endInterruptedChild(this, task, state, handledTasks, actions)
         }
         super.end(state, interrupted)
         return actions
     }
+}
+
+private fun endInterruptedChild(
+    parent: Task,
+    child: Task,
+    state: RobotState,
+    handledTasks: MutableSet<Task>,
+    actions: MutableList<RobotAction>,
+) {
+    if (!handledTasks.add(child)) return
+    try {
+        // A failed group initialization may leave later children entirely unstarted.
+        if (TaskStateMachine.getStatus(child) != TaskStatus.PENDING) {
+            actions.addAll(child.end(state, interrupted = true))
+        }
+    } catch (failure: Throwable) {
+        reportChildFailure(parent, child, "end", failure)
+    } finally {
+        releaseChildMetadata(parent, child)
+    }
+}
+
+private fun releaseChildMetadata(parent: Task, child: Task) {
+    try { TaskRuntimeOwnership.release(child) }
+    catch (failure: Throwable) { reportChildFailure(parent, child, "metadata release", failure) }
+}
+
+private fun reportChildFailure(parent: Task, child: Task, phase: String, failure: Throwable) {
+    retainTaskInterruption(failure)
+    TaskStateMachine.markFailed(parent)
+    TaskStateMachine.markFailed(child)
+    val label = try { child.name } catch (_: Throwable) { child.javaClass.name }
+    System.err.println("TaskGroup: $phase failed for $label: $failure")
 }
 
 /** Normal completion must still run interrupted cleanup if end rejects success or throws. */
@@ -391,13 +391,14 @@ private fun completeChild(
         try {
             actions.addAll(child.end(state, interrupted = false))
         } catch (failure: Throwable) {
+            retainTaskInterruption(failure)
             TaskStateMachine.markFailed(child)
             handleChildTerminalStatus(parent, child, state, handledTasks, actions)
             throw failure
         }
         return !handleChildTerminalStatus(parent, child, state, handledTasks, actions)
     } finally {
-        if (handledTasks.add(child)) child.releaseRuntimeState()
+        if (handledTasks.add(child)) releaseChildMetadata(parent, child)
     }
 }
 
@@ -420,34 +421,22 @@ private fun handleChildTerminalStatus(
 ): Boolean {
     return when (TaskStateMachine.getStatus(child)) {
         TaskStatus.FAILED -> {
-            if (handledTasks.add(child)) {
+            if (!handledTasks.contains(child)) {
                 try {
                     TaskCallbacks.invokeFail(child)
                 } catch (failure: Throwable) {
-                    System.err.println("TaskGroup: Exception in failure callback for ${child.name}: ${failure.message}")
+                    reportChildFailure(parent, child, "failure callback", failure)
                 }
-                try {
-                    actions.addAll(child.end(state, interrupted = true))
-                } catch (failure: Throwable) {
-                    System.err.println("TaskGroup: Exception cleaning failed child ${child.name}: ${failure.message}")
-                } finally {
-                    child.releaseRuntimeState()
-                }
+                endInterruptedChild(parent, child, state, handledTasks, actions)
             }
             TaskStateMachine.markFailed(parent)
             true
         }
         TaskStatus.CANCELLED -> {
-            if (handledTasks.add(child)) {
-                try {
-                    actions.addAll(child.end(state, interrupted = true))
-                } catch (failure: Throwable) {
-                    System.err.println("TaskGroup: Exception cleaning cancelled child ${child.name}: ${failure.message}")
-                } finally {
-                    child.releaseRuntimeState()
-                }
+            endInterruptedChild(parent, child, state, handledTasks, actions)
+            if (TaskStateMachine.getStatus(parent) != TaskStatus.FAILED) {
+                TaskStateMachine.transitionTo(parent, TaskStatus.CANCELLED)
             }
-            TaskStateMachine.transitionTo(parent, TaskStatus.CANCELLED)
             true
         }
         else -> false
