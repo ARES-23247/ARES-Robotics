@@ -38,6 +38,17 @@ class ClassifyCiPathsTest(unittest.TestCase):
         result = MODULE.classify_paths(["ARESLib-Kotlin/core/src/main/kotlin/Clock.kt"])
         self.assertTrue(all(result.values()))
 
+    def test_readiness_runtime_schema_generator_and_regressions_keep_consumer_integration(self):
+        for path in (
+            "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/runtime/GeneratedProjectRuntime.kt",
+            "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDocument.kt",
+            "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemLifecycleRenderer.kt",
+            "ARESLib-Kotlin/codegen/src/test/resources/readiness/ScoringRobot.kt.txt",
+            "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/RobotReadinessMathTest.kt",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(all(MODULE.classify_paths([path]).values()))
+
     def test_xrp_change_covers_python_and_studio_template_consumer(self):
         result = MODULE.classify_paths(["ARES-XRP-Starter/tools/ares_project.py"])
         self.assertTrue(result["xrp_starter"])

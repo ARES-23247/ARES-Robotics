@@ -1,5 +1,9 @@
 # Paused audit: restart checkpoint
 
+**Historical checkpoint.** The user subsequently replaced the open-ended audit with the bounded
+[robot-readiness goal](ROBOT_READINESS_GOAL.md). Preserve the evidence below, but follow the new
+goal's scope and stopping conditions instead of this document's former restart/file-batch procedure.
+
 The user requested a pause after finishing and recording pass 277. **Do not start further audit
 work until the user explicitly resumes it.** The monorepo-wide goal remains unfinished. The
 application goal status was also verified as **paused** before the checkpoint commit.

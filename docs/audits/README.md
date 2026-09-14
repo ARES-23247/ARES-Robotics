@@ -1,11 +1,12 @@
 # Monorepo audit coverage
 
-**Paused at the user's request after pass 277.** Do not begin another audit batch until the
-user explicitly resumes it. The [restart checkpoint](RESUME.md) records the saved work,
-validation, open issues, and restart procedure; [pass 277](generated-runtime-lifecycle-math-audit.md)
-records the latest findings. The full-coverage objective is unfinished, not completed or blocked.
+**The open-ended file audit has been superseded by a bounded
+[robot-readiness checkpoint](ROBOT_READINESS_GOAL.md).** Follow that saved objective and its scenario,
+performance, and safety exit criteria. The [paused checkpoint](RESUME.md),
+[pass 277](generated-runtime-lifecycle-math-audit.md), and ledger preserve the useful prior work.
+Do not resume an automatic audit of every remaining file.
 
-The audit goal is to account for every tracked file, review its owned behavior, and
+The former audit goal was to account for every tracked file, review its owned behavior, and
 complete appropriate validation. The inventory started at 2,349 tracked files on
 `e6640f5a`; additions are included after staging. No repository-wide coverage claim is made.
 
@@ -74,9 +75,9 @@ review stays partial. Later edits to any bound value make the self-record stale 
 ledger input; JSON writes use atomic replacement so an interrupted write does not expose partial JSON.
 This is not a crash-durability or concurrent-editor transaction guarantee. Run against a stable checkout.
 
-## Execution method when the goal resumes
+## Historical audit method
 
-The full-coverage objective remains unchanged. Prioritize live robot control, estimation,
+The following records the earlier file-audit method, not the current completion criteria. Prioritize live robot control, estimation,
 hardware safety, loop timing, and confirmed cross-product contract disagreements, then finish
 the remaining tooling, application, configuration, documentation and resource review.
 
@@ -98,16 +99,15 @@ the remaining tooling, application, configuration, documentation and resource re
 - Revisit earlier conclusions when independent evidence contradicts them. A passing round trip
   does not establish agreement with a physical coordinate frame or another product's contract.
 
-## Selecting files within a batch
+## Historical file selection and retained concerns
 
-Use the current inventory's `pending`, `partial`, and `stale` entries as the work queue. Follow each
+The inventory's `pending`, `partial`, and `stale` entries retain review history. Follow each
 record's linked reports for findings, source/candidate identity, validation commands and remaining
 limits. Historical reports describe their recorded checkpoints, not necessarily today's remaining
 work. The ledger and fresh content hashes replace a second, quickly outdated pass-by-pass status list.
 
-Continue through all library modules, robot/starter products, Studio modules, generators,
-build/release/CI tooling, configuration, documentation, and resources. Map Kover reports to source
-files and identify uncovered behavior. A passing suite never closes an unreviewed file, and full
+The original scope included all library modules, robot/starter products, Studio modules, generators,
+build/release/CI tooling, configuration, documentation, and resources. A passing suite never closes an unreviewed file, and full
 source review never substitutes for feasible execution or hardware evidence.
 
 Open validation concerns include the timing-sensitive `TelemetryUpdateE2ETest` failure recorded
@@ -115,6 +115,6 @@ in pass 3, the first-parent PID readiness timeout in pass 19 (`ProjectBuildServi
 unproven after passing reruns), the pass 20 replay-scrub performance-baseline failure (105.8996 ms
 against 100 ms; cause unproven), Studio opt-in tests, and physical loop/jitter/electrical validation.
 Consult the associated reports before treating a later pass as a resolution of those concerns.
-Completion requires every file to have a defensible disposition and all feasible checks to have
-completed. The current pause does not change those requirements. Changes remain local; no push,
-merge, or release is part of this goal.
+The bounded readiness goal supersedes the former all-files completion requirement. Preserve this
+ledger as evidence without treating its remaining count as an instruction to expand scope.
+Changes remain local; no push, merge, or release is part of the checkpoint.

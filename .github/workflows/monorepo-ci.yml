@@ -74,6 +74,18 @@ jobs:
           -ParesVersion=${{ steps.identity.outputs.version }}
           --no-parallel --no-daemon --console=plain
 
+      - name: Retain robot-readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: robot-readiness-evidence
+          path: |
+            ARESLib-Kotlin/codegen/build/reports/robot-readiness/*.json
+            ARESLib-Kotlin/codegen/build/test-results/test/TEST-*Readiness*.xml
+            ARESLib-Kotlin/core/build/test-results/test/TEST-*Readiness*.xml
+          if-no-files-found: warn
+          retention-days: 14
+
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
@@ -258,6 +270,14 @@ jobs:
       - name: Test the reusable MicroPython runtime
         working-directory: ARESLib-Kotlin/ares-micro
         run: python -m unittest discover -s tests -v
+      - name: Retain XRP host readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: xrp-host-readiness-evidence
+          path: ARES-XRP-Starter/build/reports/robot-readiness/*.json
+          if-no-files-found: warn
+          retention-days: 14
 
   analytics:
     name: Studio, gateway, and analytics

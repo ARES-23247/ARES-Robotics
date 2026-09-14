@@ -1,0 +1,293 @@
+package readiness
+
+import com.areslib.Store
+import com.areslib.action.RobotAction
+import com.areslib.kinematics.MecanumKinematics
+import com.areslib.math.estimation.PoseEstimatorState
+import com.areslib.math.estimation.PoseEstimator
+import com.areslib.pathing.CommandKey
+import com.areslib.pathing.NamedCommands
+import com.areslib.runtime.GeneratedProjectControlRuntime
+import com.areslib.sequencer.Task
+import com.areslib.state.RobotState
+import com.areslib.subsystem.GeneratedSubsystemRegistrySupport
+import com.areslib.subsystem.Subsystem
+import com.areslib.superstructure.SuperstructureRuntime
+import com.areslib.telemetry.RobotStatusTracker
+import com.areslib.util.RobotClock
+import com.sun.management.ThreadMXBean
+import java.lang.management.ManagementFactory
+import java.util.concurrent.Callable
+import java.util.concurrent.locks.LockSupport
+import readiness.subsystems.flywheel.*
+import readiness.subsystems.intake.*
+import readiness.machine.*
+import readiness.project.*
+import kotlin.math.abs
+
+/** Test host follows refresh -> Redux -> tasks/superstructure -> outputs. No physical IO or network. */
+class ScoringRobot : Callable<String> {
+    override fun call(): String {
+        val previousEnabled = RobotStatusTracker.isEnabled
+        val previousMocked = RobotClock.isMocked
+        val previousTime = RobotClock.currentTimeMillis()
+        try {
+            scenarios()
+            return profile()
+        } finally {
+            NamedCommands.clear()
+            RobotStatusTracker.isEnabled = previousEnabled
+            if (previousMocked) RobotClock.useMockTime(previousTime) else RobotClock.useSystemTime()
+        }
+    }
+
+    private fun scenarios() {
+        Robot().use { robot ->
+            robot.frame(refresh = false)
+            robot.neutral("startup without feedback")
+            RobotStatusTracker.isEnabled = true
+            robot.frame(refresh = false)
+            check(robot.stateId() == "FAULT") { "Missing feedback must enter the declared fault posture" }
+            robot.neutral("enabled without feedback")
+            robot.recover()
+            robot.action("machine.run")
+            robot.frame()
+            robot.running()
+            check(FlywheelSubsystem.state(robot.store.state).target == 300.0)
+            check(IntakeSubsystem.state(robot.store.state).target == 4.0)
+
+            RobotStatusTracker.isEnabled = false
+            robot.frame()
+            robot.neutral("disable with latched targets")
+            RobotStatusTracker.isEnabled = true
+            robot.frame()
+            robot.neutral("enable requires a new command after forced safe state")
+            robot.action("machine.run"); robot.frame(); robot.running()
+
+            robot.intake.failNextRefresh = true
+            robot.frame()
+            check(robot.stateId() == "FAULT")
+            robot.neutral("one failed input snapshot stops the scoring group")
+            robot.recover(); robot.action("machine.run"); robot.frame(); robot.running()
+            robot.now += 260L
+            robot.frame(refresh = false)
+            check(robot.stateId() == "FAULT")
+            robot.neutral("stale cached feedback")
+            robot.recover()
+
+            robot.runtime.requestRoutine("score")
+            repeat(4) { robot.frame() }
+            robot.running()
+            check(robot.runtime.routineManager.activeCount > 0)
+            robot.runtime.cancelAll("autonomous cancelled")
+            RobotStatusTracker.isEnabled = false
+            robot.frame()
+            robot.neutral("autonomous cancellation and host disable")
+            RobotStatusTracker.isEnabled = true
+            repeat(120) { robot.frame() }
+            robot.neutral("cancelled wait/action cannot restart mechanisms")
+            check(robot.runtime.routineManager.activeCount == 0 && robot.runtime.routineManager.queuedCount == 0)
+
+            robot.rejectSecondPreparation = true
+            robot.throwFirstRelease = true
+            val before = robot.firstReleases
+            robot.action("machine.run"); robot.frame()
+            check(robot.stateId() == "FAULT") { "Partial preparation must fault the generated machine" }
+            check(robot.firstReleases == before + 1) { "Prepared child ownership must release exactly once" }
+            robot.neutral("preparation failure plus cleanup exception")
+        }
+
+        Robot().use { robot ->
+            RobotStatusTracker.isEnabled = true
+            robot.frame(); robot.action("machine.run"); robot.frame(); robot.running()
+            robot.throwIntakeSafe = true
+            val acquired = mutableListOf<Subsystem>()
+            GeneratedSubsystemRegistrySupport.install(acquired, "flywheel", true) { robot.flywheelSubsystem }
+            GeneratedSubsystemRegistrySupport.install(acquired, "intake", true) { robot.intakeSubsystem }
+            val failure = runCatching {
+                GeneratedSubsystemRegistrySupport.install(acquired, "missing-required", true) { error("Required device unavailable") }
+            }.exceptionOrNull()
+            check(failure != null && failure.suppressed.isNotEmpty())
+            check(acquired.isEmpty())
+            check(robot.flywheel.closed && robot.intake.closed) { "Rollback must close both generated IO owners" }
+            robot.neutral("rollback continues after one neutral callback throws")
+            robot.throwIntakeSafe = false
+            val calls = robot.intake.safeCalls + robot.flywheel.safeCalls
+            robot.flywheelSubsystem.readSensors(robot.store, robot.now)
+            robot.intakeSubsystem.writeOutputs(robot.store.state, 1.0)
+            robot.intakeSubsystem.close(); robot.flywheelSubsystem.close()
+            check(calls == robot.intake.safeCalls + robot.flywheel.safeCalls) { "Closed generated lifecycle must stay inert" }
+        }
+    }
+
+    private fun profile(): String = Robot().use { robot ->
+        RobotStatusTracker.isEnabled = true
+        robot.frame(); robot.action("machine.run"); robot.frame(); robot.running()
+        repeat(3_000) { robot.frame() }
+        val samples = 10_000
+        val durations = LongArray(samples)
+        val latency = LongArray(samples)
+        val bean = ManagementFactory.getThreadMXBean() as ThreadMXBean
+        check(bean.isThreadAllocatedMemorySupported)
+        val allocationWasEnabled = bean.isThreadAllocatedMemoryEnabled
+        bean.isThreadAllocatedMemoryEnabled = true
+        var allocated = 0L
+        val collectors = ManagementFactory.getGarbageCollectorMXBeans()
+        val collectionsBefore = collectors.sumOf { it.collectionCount.coerceAtLeast(0) }
+        val collectionMsBefore = collectors.sumOf { it.collectionTime.coerceAtLeast(0) }
+        try {
+            repeat(samples) { index ->
+                // Mock-clock mode publication allocates; keep test scheduling outside the measured boundary.
+                robot.advanceClock()
+                val before = bean.getThreadAllocatedBytes(Thread.currentThread().id)
+                val start = System.nanoTime()
+                robot.loop(refresh = true)
+                val end = System.nanoTime()
+                allocated += bean.getThreadAllocatedBytes(Thread.currentThread().id) - before
+                durations[index] = end - start
+                latency[index] = robot.outputNanos - robot.sampleNanos
+            }
+        } finally { bean.isThreadAllocatedMemoryEnabled = allocationWasEnabled }
+        val collections = collectors.sumOf { it.collectionCount.coerceAtLeast(0) } - collectionsBefore
+        val collectionMs = collectors.sumOf { it.collectionTime.coerceAtLeast(0) } - collectionMsBefore
+        // Observe desktop scheduling separately from the unpaced execution-cost distribution.
+        val pacedCount = 200
+        val periodNs = 20_000_000L
+        val lateness = LongArray(pacedCount)
+        val periods = LongArray(pacedCount - 1)
+        var previous = 0L
+        var scheduled = System.nanoTime()
+        repeat(pacedCount) { index ->
+            while (true) {
+                val remaining = scheduled - System.nanoTime()
+                if (remaining <= 0L) break
+                LockSupport.parkNanos(remaining)
+            }
+            val start = System.nanoTime()
+            lateness[index] = (start - scheduled).coerceAtLeast(0L)
+            if (index > 0) periods[index - 1] = start - previous
+            previous = start
+            robot.frame()
+            scheduled += periodNs
+        }
+        robot.running()
+        """{
+          "platform": "PLATFORM_NAME", "environment": "desktop JVM simulated IO",
+          "os": "${System.getProperty("os.name")}", "architecture": "${System.getProperty("os.arch")}",
+          "javaVersion": "${System.getProperty("java.version")}", "clock": "System.nanoTime",
+          "boundary": "cached simulated sensor refresh, generated Redux/tasks/superstructure, mecanum+EKF workload, generated controller output",
+          "excludes": "physical bus/controller, network transport, calibrated plant physics and mock-clock publication",
+          "warmupCycles": 3000, "samples": $samples, "nominalBudgetMs": 20.0,
+          "loop": ${stats(durations)}, "sensorToOutput": ${stats(latency)},
+          "executionOver10ms": ${durations.count { it > 10_000_000L }},
+          "executionOver20ms": ${durations.count { it > periodNs }},
+          "allocatedBytes": $allocated, "allocatedBytesPerCycle": ${allocated.toDouble() / samples},
+          "observedJvmGcCollectionsDuringUnpacedSamples": $collections, "observedJvmGcCollectionMs": $collectionMs,
+          "pacedSamples": $pacedCount, "pacedPeriod": ${stats(periods)},
+          "pacedIntervalsOver20ms": ${periods.count { it > periodNs }},
+          "schedulerLateness": ${stats(lateness)}, "scheduledStartsMissedByWholePeriod": ${lateness.count { it >= periodNs }},
+          "sensorToOutputBudget": "must fit within one loop budget; physical acquisition latency is unmeasured",
+          "scenarioChecks": "passed"
+        }""".trimIndent()
+    }
+
+    private fun stats(values: LongArray): String {
+        val sorted = values.sortedArray()
+        fun percentile(fraction: Double) = sorted[kotlin.math.ceil(fraction * sorted.size).toInt().coerceIn(1, sorted.size) - 1] / 1e6
+        return """{"p50Ms":${percentile(0.5)},"p95Ms":${percentile(0.95)},"p99Ms":${percentile(0.99)},"maxMs":${sorted.last() / 1e6}}"""
+    }
+
+    private class Robot : AutoCloseable {
+        val store = Store()
+        val flywheel = MockFlywheelIO()
+        val intake = MockIntakeIO()
+        var throwIntakeSafe = false
+        private val intakeBoundary = object : IntakeIO by intake {
+            override fun safe() { intake.safe(); if (throwIntakeSafe) error("Injected neutral callback failure") }
+        }
+        val flywheelSubsystem = FlywheelSubsystem(flywheel)
+        val intakeSubsystem = IntakeSubsystem(intakeBoundary)
+        val machine = createScoringSuperstructure()
+        val runtime = GeneratedProjectControlRuntime(GeneratedAresProject.runtimeDefinition, { store.state }, store::dispatch,
+            object : GeneratedAresProjectCapabilities {}, 2)
+        private val wheels = DoubleArray(4)
+        private val kinematics = MecanumKinematics(0.4, 0.4)
+        private val estimate = PoseEstimatorState()
+        var now = 1_000L
+        var sampleNanos = 0L
+        var outputNanos = 0L
+        var rejectSecondPreparation = false
+        var throwFirstRelease = false
+        var firstReleases = 0
+
+        init {
+            RobotStatusTracker.isEnabled = false
+            RobotClock.useMockTime(now)
+            NamedCommands.register(CommandKey("prepare.first"), "Prepared child") { firstTask() }
+            NamedCommands.register(CommandKey("prepare.second"), "Later preparation") {
+                if (rejectSecondPreparation) error("Second preparation failed")
+                object : Task {
+                    override val name = "Second preparation"
+                    override fun isCompleted(state: RobotState, elapsedMs: Long) = true
+                }
+            }
+        }
+
+        private fun firstTask(): Task = object : Task {
+            override val name = "First preparation"
+            override fun isCompleted(state: RobotState, elapsedMs: Long) = true
+            override fun releaseRuntimeState() {
+                super.releaseRuntimeState(); firstReleases++
+                if (throwFirstRelease) error("Prepared child cleanup failed")
+            }
+        }
+
+        fun advanceClock() { now += 20L; RobotClock.useMockTime(now) }
+        fun frame(refresh: Boolean = true) { advanceClock(); loop(refresh) }
+        fun loop(refresh: Boolean) {
+            sampleNanos = System.nanoTime()
+            if (refresh) {
+                // Bounded synthetic sensors under simultaneous mechanism load, not calibrated physics.
+                flywheel.velocity += (flywheel.motorCommand * 30.0 - flywheel.velocity) * 0.05
+                flywheel.currentAmps = abs(flywheel.motorCommand) * 0.4
+                intake.currentAmps = abs(intake.motorCommand) * 0.4
+                flywheel.refresh(); intake.refresh()
+            }
+            flywheelSubsystem.readSensors(store, now)
+            intakeSubsystem.readSensors(store, now)
+            runtime.updateTasks()
+            machine.readSensors(store, now)
+            kinematics.toWheelSpeeds(1.5, 0.2, 0.4, wheels)
+            PoseEstimator.addOdometryObservationDirect(estimate, now, 0.03, 0.004, 0.008, dtSeconds = 0.02)
+            val scale = if (RobotStatusTracker.isEnabled) 1.0 else 0.0
+            flywheelSubsystem.writeOutputs(store.state, scale)
+            intakeSubsystem.writeOutputs(store.state, scale)
+            outputNanos = System.nanoTime()
+        }
+
+        fun stateId() = SuperstructureRuntime.state(store.state, "scoring", "STOW").currentStateId
+        fun action(key: String) {
+            val task = requireNotNull(createScoringSuperstructureAction(key))
+            for (action in task.initialize(store.state)) store.dispatch(action)
+            task.end(store.state, false); task.releaseRuntimeState()
+        }
+        fun recover() { frame(); action("machine.recover"); frame(); check(stateId() == "STOW") }
+        fun running() {
+            check(stateId() == "RUN") { "Expected RUN: ${SuperstructureRuntime.state(store.state, "scoring", "STOW")}" }
+            check(flywheel.motorCommand > 0.0 && intake.motorCommand > 0.0) { "Both mechanisms must receive output" }
+            check(flywheel.motorCommand <= 12.0 && intake.motorCommand <= 12.0)
+        }
+        fun neutral(reason: String) {
+            check(flywheel.motorCommand == 0.0 && intake.motorCommand == 0.0) { "$reason: flywheel=${flywheel.motorCommand}, intake=${intake.motorCommand}" }
+        }
+        override fun close() {
+            throwFirstRelease = false; throwIntakeSafe = false
+            RobotStatusTracker.isEnabled = false
+            try { runtime.cancelAll("fixture shutdown") } finally {
+                try { machine.close() } finally {
+                    try { intakeSubsystem.close() } finally { flywheelSubsystem.close() }
+                }
+            }
+        }
+    }
+}
