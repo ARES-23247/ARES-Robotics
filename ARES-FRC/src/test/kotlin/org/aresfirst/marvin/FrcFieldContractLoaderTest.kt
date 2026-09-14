@@ -12,7 +12,7 @@ class FrcFieldContractLoaderTest {
         """{"schemaVersion":2,"id":"boundary","name":"Boundary","fieldType":"frc","widthMeters":16.54175,"heightMeters":8.21055,"apriltags":[$tags]}"""
 
     @ParameterizedTest
-    @ValueSource(strings = ["malformed", "negative-width", "duplicate-tag", "invalid-tag", "nonfinite", "future-schema"])
+    @ValueSource(strings = ["malformed", "negative-width", "duplicate-tag", "invalid-tag", "nonfinite", "future-schema", "crossed-polygon"])
     fun `invalid documents clear prior success and later valid loads clear diagnostics`(case: String) {
         val valid = field()
         assertNotNull(loadFrcFieldContract(valid.toByteArray()))
@@ -23,6 +23,7 @@ class FrcFieldContractLoaderTest {
             "invalid-tag" -> field("""{"id":0}""")
             "nonfinite" -> valid.replace("1.4", "1e999")
             "future-schema" -> valid.replace("\"schemaVersion\":2", "\"schemaVersion\":999")
+            "crossed-polygon" -> valid.dropLast(1) + """, "obstacles":[{"id":"crossed","shape":"polygon","points":[{"x":0,"y":0},{"x":2,"y":2},{"x":0,"y":2},{"x":2,"y":0}]}]}"""
             else -> error(case)
         }
         assertNull(loadFrcFieldContract(invalid.toByteArray()), case)

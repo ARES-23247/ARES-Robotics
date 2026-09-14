@@ -7,6 +7,15 @@ import org.junit.jupiter.api.Test
 
 class StarterFieldContractTest {
     @Test
+    fun `crossed obstacle is rejected before publishing a usable field contract`() {
+        val invalid = """{"schemaVersion":2,"fieldType":"frc","obstacles":[{"id":"crossed","shape":"polygon","points":[{"x":0,"y":0},{"x":2,"y":2},{"x":0,"y":2},{"x":2,"y":0}]}]}"""
+        assertNull(loadStarterFieldContract(invalid.toByteArray()))
+        assertEquals("Field contains an invalid obstacle", StarterFieldContractLoader.error)
+        assertNotNull(loadStarterFieldContract("""{"schemaVersion":2,"fieldType":"frc"}""".toByteArray()))
+        assertNull(StarterFieldContractLoader.error)
+    }
+
+    @Test
     fun `starter accepts an empty season map and a full WPILib pose`() {
         val empty = loadStarterFieldContract(
             """{"schemaVersion":2,"id":"choose-season","name":"Choose season","fieldType":"frc","widthMeters":16.5,"heightMeters":8.2,"apriltags":[]}""".toByteArray()

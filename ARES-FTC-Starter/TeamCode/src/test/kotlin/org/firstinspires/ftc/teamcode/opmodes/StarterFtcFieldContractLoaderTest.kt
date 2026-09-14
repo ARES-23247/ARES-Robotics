@@ -9,6 +9,15 @@ import org.junit.Test
 
 class StarterFtcFieldContractLoaderTest {
     @Test
+    fun `crossed obstacle is rejected even in a simulation first project`() {
+        val invalid = """{"schemaVersion":2,"fieldType":"ftc","obstacles":[{"id":"crossed","shape":"polygon","points":[{"x":0,"y":0},{"x":2,"y":2},{"x":0,"y":2},{"x":2,"y":0}]}]}"""
+        assertNull(loadStarterFtcFieldContract(invalid.toByteArray()))
+        assertEquals("Field contains an invalid obstacle", StarterFtcFieldContractLoader.error)
+        assertNotNull(loadStarterFtcFieldContract("""{"schemaVersion":2,"fieldType":"ftc"}""".toByteArray()))
+        assertNull(StarterFtcFieldContractLoader.error)
+    }
+
+    @Test
     fun `empty canonical FTC field is a valid simulation-first contract`() {
         val field = loadStarterFtcFieldContract(
             """{
