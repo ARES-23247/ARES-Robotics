@@ -16,16 +16,16 @@ import java.security.MessageDigest
  * simulator adapters, generated verification, and registry plumbing.
  */
 class SubsystemGeneratorCharacterizationTest {
-    // Template ownership now preserves intake interaction metadata. Only the generated registry
-    // document fingerprint changes; SubsystemTemplateOwnershipAuditTest covers the retained values.
+    // Lifecycle bridges now enforce timestamp ordering, close every owner after failures, and
+    // reject post-close work. GeneratedSubsystemLifecycleAuditTest executes those behaviors.
     @Test
     fun `all supported FTC templates retain their deterministic artifact manifest`() {
-        assertEquals("47c4bdd2fcc499238d333742d201b6812e2810b31ce526088cc6fbaf4d69a5b1", manifestDigest(SubsystemPlatform.FTC))
+        assertEquals("f636b8b2092b24b82a63e7b5564f3a2b6891b417dd62cfdb1ebdeae865d3bd84", manifestDigest(SubsystemPlatform.FTC))
     }
 
     @Test
     fun `all supported FRC templates retain their deterministic artifact manifest`() {
-        assertEquals("ba0b2a74eb6a3fa2c046fbe19b23b004560cc279222893c943b8f4011f8ed996", manifestDigest(SubsystemPlatform.FRC))
+        assertEquals("0f9546f95352df6a05758ee296ca59aebffe71dcbfa45ac6a3343223edd5606e", manifestDigest(SubsystemPlatform.FRC))
     }
 
     private fun manifestDigest(platform: SubsystemPlatform): String {
