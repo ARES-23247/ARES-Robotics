@@ -2504,11 +2504,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertEngineServiceTest.kt": {
-      "sha256": "53f222f7695a1d5fa47318126735e762974a5dff0bbc3d9e1e901bdebab3280c",
-      "review": "partial",
+      "sha256": "372d300161ee64333929684e6d1cb9be7afb2d121484c56b140adc754a027bac",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 30 replaces synthetic untagged flow with actual store publication and adds available NT4 terminal/database cleanup, including finally for the older scalar fixture. Existing sleep-based assertions and broader failure-path fixture ownership remain open.",
+      "scope": "Pass 251: Entire six-method file reviewed/executed. Preserves all five original XRP/scalar/loop/session cases and assertions; deterministic scheduler replaces fixed sleeps. Adds two-spike negative evidence, exact resolution timing, persistence/triage assertions and a test-body failure cleanup regression. Removes redundant real DB/network subclass and physical audio setup.",
       "evidence": [
+        "docs/audits/nt4-disposal-test-fixtures-audit.md",
+        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json",
         "docs/audits/alert-source-publication-audit.md",
         "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass30-studio.log",
@@ -2516,11 +2518,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertEngineCompositeTest.kt": {
-      "sha256": "52699340b22d063fd059dd736615eb723df1475b27b92bf2be17ffd7622fd9e8",
-      "review": "partial",
+      "sha256": "c7b14272484440782b035cc376ef637143a6a4431aee84f59625072ca9ca8d7a",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 250: Both existing alert scenarios retained and executed with explicit owned TelemetryStore injection instead of dormant replay wrapper. Prior resource review retained; setup/cleanup failure and wall-clock timing robustness remain open.",
+      "scope": "Pass 251: Entire two-method fixture reviewed and executed with real publication/rule/persistence worker, controlled test scheduler and fake database/audio. Retains motor stall and canonical CAN-ratio cases; adds missing-current negative evidence and saved-record assertions. Eliminates actual DB/NT4 construction, repeated identical current samples, wall-clock waits and fragile setup/cleanup.",
       "evidence": [
+        "docs/audits/nt4-disposal-test-fixtures-audit.md",
+        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json",
         "docs/audits/sysid-preview-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/alert-source-publication-audit.md",
@@ -5713,7 +5717,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "12dc7746a061c532c410914cb2c48983eaee9ce6e548aa8f7cc9d46c56208700",
+      "sha256": "11fc3af586bf85c30647b198334e2fc7647d2fdffa53e5194f734a8172e6a2e8",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -17943,11 +17947,13 @@
       "sha256": "3aca6ac36b60e9b1a7a9493266629f00a1a785d07452ef4707a4e56521cda6be"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt": {
-      "sha256": "11cefab994cb9bedbd53c1d08ef88f791fd05f9dbef83dc9aa5a5cfd7b68a888",
+      "sha256": "5dfabf672bfbad4d514024331e27aa23300819549a93cd357909a39901765784",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 250: Prior reviewed boundaries retained. Removes dormant emitReplayFrame API after tracing current dashboard snapshot replay and all call sites. Existing fixture injection moves directly to owned TelemetryStore. General telemetry ingress/source and client lifecycle remain partial.",
+      "scope": "Pass 251: Prior source boundaries retained. Terminal disposal now cancels/joins the owned service lifetime in noncancellable cleanup, including failed flush and canceled caller; ordinary stop remains reusable. Failed persistence returns false and preserves explicitly retryable frames. Private-lifetime regressions and actual local NT4 transport validate this boundary. Wider ingestion, console persistence, concurrent control admission and connection lifecycle remain partial.",
       "evidence": [
+        "docs/audits/nt4-disposal-test-fixtures-audit.md",
+        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json",
         "docs/audits/sysid-preview-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/sysid-control-authority-audit.md",
@@ -18981,11 +18987,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldTopicSubscriberTest.kt": {
-      "sha256": "25421f3d2bb6f90eb27e1bf7ae737eacd28f76167b7abd9cc4a7f4bd98199923",
-      "review": "partial",
+      "sha256": "82e6a85815c149b798cad7ca819a4052bb608d602e3f89ec47d4b540d96d3b74",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 250: All ten existing methods read and executed: atomic pose, fragment precedence, manual replay gate, alliance, game-piece count/identity and topic filtering. Only replay fixture injection changed to owned store. Real database setup, asynchronous stop/close and fixture failure cleanup need separate work; current dashboard snapshot replay is covered by its dedicated suites.",
+      "scope": "Pass 251: All ten methods reviewed/executed with original atomic pose, fragment precedence, manual replay gate, alliance, game-piece and filtering assertions retained. Seven integration cases use real NT4 decoding with fake unrelated storage and explicitly joined test-owner and terminal-client lifetimes. No shared temp DB files or success-only cleanup remains; production field reducer coverage is separate.",
       "evidence": [
+        "docs/audits/nt4-disposal-test-fixtures-audit.md",
+        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json",
         "docs/audits/sysid-preview-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
       ]
@@ -19008,6 +19016,46 @@
       "evidence": [
         "docs/audits/sysid-preview-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AppSimE2EPipelineTest.kt": {
+      "sha256": "9d4bf7cdee4349395a82cf8158a1f4883fa9907c6f30e590f73e594ed1c2698d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 251: Entire local NT4 integration test reviewed/executed: actual server/client decoding and field subscriber, dynamic loopback port, bounded observed readiness, INIT/START and complete neutral/nonzero drive-frame server readback. Existing EKF/motor assertions retained. Replaces unnecessary real DB and history sampler, owns/cancels subscriber scope and terminal client, and always stops server/reset registry. Test JVM singleton is serialized; no UI, physics or hardware claim.",
+      "evidence": [
+        "docs/audits/nt4-disposal-test-fixtures-audit.md",
+        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AlertEngineTestFixture.kt": {
+      "sha256": "baa23585049352863bf08cb2db13a780cbc355a68108f385edd90b3bbad08fbd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 251: Complete helper reviewed: actual store/engine/persistence with recording database mock, silent audio and shared controlled dispatcher. Optional bounded test rules/default creation in owned temp directory; setup and test failures enter cleanup, accepted alert writes drain, workers finish, exact files removed. Exercised by eight alert scenarios including injected body failure; no disk-database assertion is claimed.",
+      "evidence": [
+        "docs/audits/nt4-disposal-test-fixtures-audit.md",
+        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4DisposalAuditTest.kt": {
+      "sha256": "abd420c2492d508f0da6dba21a5cfd44f117d70ca50f65bb68dbea44218d304b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 251: Complete six-method regression file reviewed/executed. Four failure baseline plus reusable-stop positive case retained; normal/failed/canceled/repeated terminal lifetime, retained retry data/manual recovery, blocked later start and held-worker cleanup joining. Observes actual private owner without public test API; baseline failures forcibly release workers. Mock database, no physical device.",
+      "evidence": [
+        "docs/audits/nt4-disposal-test-fixtures-audit.md",
+        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/nt4-disposal-test-fixtures-audit.md": {
+      "sha256": "85ddcbac3dbbfb362a89ed48995523c34e222e5582efcdbd10bef515b934499b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 251: Documents four reproduced terminal-lifetime failures, preserved reusable stop and retry data, complete existing fixture reviews, real local NT4 readback, removal of 15 irrelevant database setups and fixed waits, full/focused/source/hash/file evidence and explicit untested hardware/broader-runtime scope.",
+      "evidence": [
+        "docs/audits/nt4-disposal-test-fixtures-audit.md",
+        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json"
       ]
     }
   }

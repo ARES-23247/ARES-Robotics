@@ -1,32 +1,26 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.viewmodel.FieldViewerState
-import com.ares.analytics.viewmodel.field.FieldPoseBufferManager
+import com.ares.analytics.viewmodel.LivePoseState
 import com.ares.analytics.viewmodel.field.FieldTopicSubscriber
 import com.areslib.networktables.NT4Instance
 import com.areslib.networktables.NT4Server
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.runBlocking
-import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-import java.io.File
+import kotlinx.coroutines.flow.first
+import org.mockito.Mockito.mock
+import kotlin.test.*
 
+/** Local NT4 transport and field-consumer integration; no robot, OpMode or physics engine runs. */
 class AppSimE2EPipelineTest {
+    private suspend fun awaitCondition(condition: () -> Boolean) = withTimeout(5_000) {
+        while (!condition()) delay(10)
+    }
 
-    @Test
-    fun testUnifiedAppToSimE2EPipeline() {
-        runBlocking {
-            println("=== E2E PIPELINE: Starting NT4Server on 127.0.0.1:5818... ===")
-
-            val server = NT4Instance.defaultInstance.startServer("127.0.0.1", 5818)
-            assertNotNull(server)
-
+    @Test fun testUnifiedAppToSimE2EPipeline() = runBlocking {
+        val server = NT4Instance.defaultInstance.startServer("127.0.0.1", 0)
+        try {
+            awaitCondition { server.port > 0 }
             NT4Server.publishTopic("ARES/EstimatedPose/0", 1.25)
             NT4Server.publishTopic("ARES/EstimatedPose/1", 0.75)
             NT4Server.publishTopic("ARES/EstimatedPose/2", 0.50)
@@ -34,70 +28,53 @@ class AppSimE2EPipelineTest {
             NT4Server.publishTopic("Drive/Pose_Y", 0.75)
             NT4Server.publishTopic("Drive/Pose_Heading", 0.50)
             NT4Server.publishTopic("Hardware/Motors/fl/Power", 0.85)
-            NT4Server.publishTopic("ARES/DriverStation/TeleOpList", "[\"com.areslib.ftc.hardware.AresHardwareTestOpMode\"]")
+            val opMode = "com.areslib.ftc.hardware.AresHardwareTestOpMode"
+            NT4Server.publishTopic("ARES/DriverStation/TeleOpList", "[\"$opMode\"]")
 
-            val tempDb = File.createTempFile("ares_test_e2e_", ".duckdb")
-            tempDb.deleteOnExit()
-            val dbService = DatabaseService(tempDb.absolutePath)
-            val clientService = Nt4ClientService(dbService)
+            val client = Nt4ClientService(mock(DatabaseService::class.java))
+            try {
+                val owner = SupervisorJob()
+                val scope = CoroutineScope(Dispatchers.Default + owner)
+                try {
+                    val livePose = MutableStateFlow(LivePoseState())
+                    FieldTopicSubscriber(client, scope, MutableStateFlow(FieldViewerState()), livePose)
+                    client.start("127.0.0.1", "23247", "2026", "sim-robot", port = server.port)
+                    withTimeout(5_000) { client.isConnected.first { it } }
+                    awaitCondition { client.tuningConnectionId != null }
 
-            val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-            val stateFlow = MutableStateFlow(FieldViewerState())
-            val livePoseFlow = MutableStateFlow(com.ares.analytics.viewmodel.LivePoseState())
-            val topicSubscriber = FieldTopicSubscriber(clientService, scope, stateFlow, livePoseFlow)
-            val bufferManager = FieldPoseBufferManager(scope, stateFlow, livePoseFlow)
+                    client.publishString("ARES/DriverStation/SelectedOpMode", opMode)
+                    client.publishString("ARES/DriverStation/Command", "INIT")
+                    awaitCondition { NT4Server.getString("ARES/DriverStation/Command", "") == "INIT" }
+                    assertEquals(opMode, NT4Server.getString("ARES/DriverStation/SelectedOpMode", ""))
+                    client.publishString("ARES/DriverStation/Command", "START")
+                    awaitCondition { NT4Server.getString("ARES/DriverStation/Command", "") == "START" }
 
-            clientService.start("127.0.0.1", "23247", "2026", "sim-robot", port = 5818)
+                    val flags = ((1 shl 3) or (1 shl 4) or (1 shl 5)).toDouble()
+                    val neutral = doubleArrayOf(2.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, flags)
+                    assertTrue(client.publishDriveFrame(neutral))
+                    awaitCondition { NT4Server.getDoubleArray("ARES/Input/driveFrame", doubleArrayOf()).contentEquals(neutral) }
+                    val drive = doubleArrayOf(2.0, 1.0, 1.0, 2.0, 1.5, 0.0, 0.0, flags)
+                    assertTrue(client.publishDriveFrame(drive))
+                    awaitCondition { NT4Server.getDoubleArray("ARES/Input/driveFrame", doubleArrayOf()).contentEquals(drive) }
 
-            var waitMs = 0
-            while (!clientService.isConnected.value && waitMs < 5000) {
-                delay(100)
-                waitMs += 100
-            }
-            assertTrue(clientService.isConnected.value, "Nt4ClientService should connect to NT4Server on port 5818")
-            println("[E2E Pipeline] Client connected successfully! (took ${waitMs}ms)")
-
-            delay(500)
-
-            clientService.publishString("ARES/DriverStation/SelectedOpMode", "com.areslib.ftc.hardware.AresHardwareTestOpMode")
-            clientService.publishString("ARES/DriverStation/Command", "INIT")
-            delay(200)
-
-            clientService.publishString("ARES/DriverStation/Command", "START")
-            delay(200)
-
-            println("[E2E Pipeline] Injecting joystick drive input (vx = 1.5 m/s)...")
-            val controlFlags = (1 shl 3) or (1 shl 4) or (1 shl 5)
-            var neutralSent = false
-            repeat(100) {
-                if (!neutralSent) {
-                    neutralSent = clientService.publishDriveFrame(
-                        doubleArrayOf(2.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, controlFlags.toDouble())
-                    )
-                    if (!neutralSent) delay(20)
+                    val pose = withTimeout(5_000) {
+                        livePose.first { it.ekfX == 1.25 && it.ekfY == 0.75 && it.ekfHeading == 0.50 }
+                    }
+                    awaitCondition { client.latestValues["Hardware/Motors/fl/Power"]?.value == 0.85 }
+                    assertEquals(1.25, pose.ekfX ?: 0.0, 1e-3)
+                    assertEquals(0.75, pose.ekfY ?: 0.0, 1e-3)
+                    assertEquals(0.50, pose.ekfHeading ?: 0.0, 1e-3)
+                    assertEquals(0.85, client.latestValues["Hardware/Motors/fl/Power"]?.value ?: 0.0, 1e-3)
+                } finally {
+                    withContext(NonCancellable) { owner.cancelAndJoin() }
                 }
+            } finally {
+                withContext(NonCancellable) { assertTrue(client.disposeAndJoin()) }
             }
-            assertTrue(neutralSent, "clock sync must complete before the neutral handshake is accepted")
-            assertTrue(clientService.publishDriveFrame(
-                doubleArrayOf(2.0, 1.0, 1.0, 2.0, 1.5, 0.0, 0.0, controlFlags.toDouble())
-            ))
-
-            delay(300)
-
-            val currentState = livePoseFlow.value
-            val flPower = clientService.latestValues["Hardware/Motors/fl/Power"]?.value ?: 0.0
-
-            println("[E2E Pipeline] Current State Pose: ekfX=${currentState.ekfX}, ekfY=${currentState.ekfY}, FL Power: $flPower")
-
-            assertEquals(1.25, currentState.ekfX ?: 0.0, 1e-3)
-            assertEquals(0.75, currentState.ekfY ?: 0.0, 1e-3)
-            assertEquals(0.50, currentState.ekfHeading ?: 0.0, 1e-3)
-            assertEquals(0.85, flPower, 1e-3)
-
-            println("=== E2E PIPELINE TEST PASSED 100% ===")
-            clientService.stop()
+        } finally {
+            // Only this test's server is stopped; no fixed port or external process is owned here.
             server.stop()
-            tempDb.delete()
+            NT4Server.resetSharedState()
         }
     }
 }

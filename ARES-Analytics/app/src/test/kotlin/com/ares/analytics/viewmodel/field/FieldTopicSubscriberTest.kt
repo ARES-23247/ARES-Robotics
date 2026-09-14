@@ -7,14 +7,13 @@ import com.ares.analytics.viewmodel.FieldViewerState
 import com.ares.analytics.viewmodel.FieldViewerIntent
 import com.ares.analytics.viewmodel.FieldViewerViewModel
 import com.ares.analytics.viewmodel.LivePoseState
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.*
+import kotlinx.coroutines.test.TestScope
+import org.mockito.Mockito.mock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -22,6 +21,19 @@ import kotlin.test.assertTrue
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class FieldTopicSubscriberTest {
+    private suspend fun TestScope.withClient(block: suspend (Nt4ClientService, CoroutineScope) -> Unit) {
+        val client = Nt4ClientService(mock(DatabaseService::class.java))
+        val owner = SupervisorJob(backgroundScope.coroutineContext[Job])
+        val scope = CoroutineScope(backgroundScope.coroutineContext + owner)
+        try { block(client, scope) }
+        finally {
+            withContext(NonCancellable) {
+                try { owner.cancelAndJoin() }
+                finally { assertTrue(client.disposeAndJoin(), "fixture must finish its NT4 service") }
+            }
+        }
+    }
+
     @Test
     fun `packed simulator pose commits once at its sequence marker`() {
         val accumulator = FieldPoseFrameAccumulator()
@@ -72,13 +84,10 @@ class FieldTopicSubscriberTest {
 
     @Test
     fun `field subscriber consumes packed parent as one immutable pose`() = runTest {
-        val databaseFile = File.createTempFile("field-atomic-pose", ".duckdb")
-        val database = DatabaseService(databaseFile.absolutePath)
-        val nt4 = Nt4ClientService(database)
-        try {
+        withClient { nt4, owner ->
             val state = MutableStateFlow(FieldViewerState())
             val livePose = MutableStateFlow(LivePoseState())
-            FieldTopicSubscriber(nt4, backgroundScope, state, livePose, UnconfinedTestDispatcher(testScheduler))
+            FieldTopicSubscriber(nt4, owner, state, livePose, UnconfinedTestDispatcher(testScheduler))
             runCurrent()
 
             nt4.handleIncomingText(
@@ -98,22 +107,15 @@ class FieldTopicSubscriberTest {
             assertEquals(2.01, livePose.value.ekfY)
             assertEquals(1.0, livePose.value.odomX)
             assertEquals(2.0, livePose.value.odomY)
-        } finally {
-            nt4.stop()
-            database.close()
-            databaseFile.delete()
         }
     }
 
     @Test
     fun `simulator rewind owns field pose until returning to realtime`() = runTest {
-        val databaseFile = File.createTempFile("field-simulator-rewind", ".duckdb")
-        val database = DatabaseService(databaseFile.absolutePath)
-        val nt4 = Nt4ClientService(database)
-        try {
+        withClient { nt4, owner ->
             val state = MutableStateFlow(FieldViewerState())
             val livePose = MutableStateFlow(LivePoseState())
-            FieldTopicSubscriber(nt4, backgroundScope, state, livePose, UnconfinedTestDispatcher(testScheduler))
+            FieldTopicSubscriber(nt4, owner, state, livePose, UnconfinedTestDispatcher(testScheduler))
             runCurrent()
 
             nt4.handleIncomingText(
@@ -166,10 +168,6 @@ class FieldTopicSubscriberTest {
             runCurrent()
             assertEquals(9.0, livePose.value.trueX)
             assertEquals(9.1, livePose.value.ekfX)
-        } finally {
-            nt4.stop()
-            database.closeAndJoin()
-            databaseFile.delete()
         }
     }
 
@@ -184,52 +182,35 @@ class FieldTopicSubscriberTest {
 
     @Test
     fun `alliance toggle updates the atomic frame selection`() = runTest {
-        val databaseFile = File.createTempFile("field-alliance-toggle", ".duckdb")
-        val database = DatabaseService(databaseFile.absolutePath)
-        val nt4 = Nt4ClientService(database)
-        try {
-            val viewModel = FieldViewerViewModel(nt4, backgroundScope)
+        withClient { nt4, owner ->
+            val viewModel = FieldViewerViewModel(nt4, owner)
             viewModel.onIntent(FieldViewerIntent.ToggleAlliance)
             runCurrent()
 
             assertFalse(nt4.selectedRedAlliance.value)
             assertFalse(viewModel.state.value.isRedAlliance)
-        } finally {
-            nt4.stop()
-            database.close()
-            databaseFile.delete()
         }
     }
 
     @Test
     fun `recreated field view inherits the dashboard alliance selection`() = runTest {
-        val databaseFile = File.createTempFile("field-alliance-lifecycle", ".duckdb")
-        val database = DatabaseService(databaseFile.absolutePath)
-        val nt4 = Nt4ClientService(database)
-        try {
+        withClient { nt4, owner ->
             nt4.selectRedAlliance(false)
 
-            val firstView = FieldViewerViewModel(nt4, backgroundScope)
-            val recreatedView = FieldViewerViewModel(nt4, backgroundScope)
+            val firstView = FieldViewerViewModel(nt4, owner)
+            val recreatedView = FieldViewerViewModel(nt4, owner)
 
             assertFalse(firstView.state.value.isRedAlliance)
             assertFalse(recreatedView.state.value.isRedAlliance)
-        } finally {
-            nt4.stop()
-            database.close()
-            databaseFile.delete()
         }
     }
 
     @Test
     fun `game piece count removes stale array entries`() = runTest {
-        val databaseFile = File.createTempFile("field-topic-subscriber", ".duckdb")
-        val database = DatabaseService(databaseFile.absolutePath)
-        val nt4 = Nt4ClientService(database)
-        try {
+        withClient { nt4, owner ->
             val state = MutableStateFlow(FieldViewerState())
             val livePose = MutableStateFlow(LivePoseState())
-            FieldTopicSubscriber(nt4, backgroundScope, state, livePose, UnconfinedTestDispatcher(testScheduler))
+            FieldTopicSubscriber(nt4, owner, state, livePose, UnconfinedTestDispatcher(testScheduler))
             runCurrent()
 
             nt4.handleIncomingText(
@@ -259,22 +240,15 @@ class FieldTopicSubscriberTest {
             )
             runCurrent()
             assertTrue(livePose.value.liveGamePieces.isEmpty())
-        } finally {
-            nt4.stop()
-            database.close()
-            databaseFile.delete()
         }
     }
 
     @Test
     fun `atomic game-piece frame preserves stable identity type and visuals`() = runTest {
-        val databaseFile = File.createTempFile("field-game-piece-frame", ".duckdb")
-        val database = DatabaseService(databaseFile.absolutePath)
-        val nt4 = Nt4ClientService(database)
-        try {
+        withClient { nt4, owner ->
             val state = MutableStateFlow(FieldViewerState())
             val livePose = MutableStateFlow(LivePoseState())
-            FieldTopicSubscriber(nt4, backgroundScope, state, livePose, UnconfinedTestDispatcher(testScheduler))
+            FieldTopicSubscriber(nt4, owner, state, livePose, UnconfinedTestDispatcher(testScheduler))
             runCurrent()
 
             nt4.handleIncomingText(
@@ -296,22 +270,15 @@ class FieldTopicSubscriberTest {
             assertEquals(0.10, piece.heightMeters)
             assertEquals("box", piece.simulationShape)
             assertEquals(0x00FF00, piece.colorRgb)
-        } finally {
-            nt4.stop()
-            database.closeAndJoin()
-            databaseFile.delete()
         }
     }
 
     @Test
     fun `simulator estimate alias cannot be overwritten by duplicate robot pose topics`() = runTest {
-        val databaseFile = File.createTempFile("field-pose-source-priority", ".duckdb")
-        val database = DatabaseService(databaseFile.absolutePath)
-        val nt4 = Nt4ClientService(database)
-        try {
+        withClient { nt4, owner ->
             val state = MutableStateFlow(FieldViewerState())
             val livePose = MutableStateFlow(LivePoseState())
-            FieldTopicSubscriber(nt4, backgroundScope, state, livePose, UnconfinedTestDispatcher(testScheduler))
+            FieldTopicSubscriber(nt4, owner, state, livePose, UnconfinedTestDispatcher(testScheduler))
             runCurrent()
 
             nt4.handleIncomingText(
@@ -343,10 +310,6 @@ class FieldTopicSubscriberTest {
             assertTrue(livePose.value.hasTruePoseData)
             assertEquals(4.0, livePose.value.trueX)
             assertEquals(3.8, livePose.value.ekfX)
-        } finally {
-            nt4.stop()
-            database.close()
-            databaseFile.delete()
         }
     }
 }

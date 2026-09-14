@@ -535,10 +535,18 @@ open class Nt4ClientService(
     /**
      * Terminal desktop-shutdown boundary. Unlike [stop], this permanently rejects later starts
      * from Compose effects that may observe simulator/process state while the window is closing.
+     * Always joins the owned telemetry workers, including on cancellation or failed persistence.
+     * A failed flush retains its retry data for an explicit later persistence attempt.
      */
     suspend fun disposeAndJoin(): Boolean {
         disposed.set(true)
-        return stop()
+        try {
+            return stop()
+        } finally {
+            withContext(NonCancellable) {
+                serviceScope.coroutineContext[Job]?.cancelAndJoin()
+            }
+        }
     }
 
     suspend fun publishFrame(frame: TelemetryFrame) {
