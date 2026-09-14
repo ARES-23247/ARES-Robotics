@@ -7,6 +7,7 @@ import com.ares.analytics.shared.models.AnalysisDiagnostic
 import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
 import com.ares.analytics.service.AlignedDataRow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
@@ -15,19 +16,20 @@ import kotlin.math.sign
 import kotlin.math.sqrt
 
 /**
- * High-performance analytics service computing statistical KPI summaries from logged match telemetry sessions.
+ * Computes statistical summaries from logged match telemetry sessions.
  *
  * Utilizes vectorized DuckDB SQL aggregation queries (`PERCENTILE_CONT`, `MIN`, `MAX`, `AVG`) to extract match performance metrics
- * without pulling raw time-series frame arrays into JVM memory space.
+ * without pulling raw time-series frame arrays into JVM memory space. Missing scalar metrics retain
+ * the legacy zero sentinel, which must not be interpreted as measured zero.
  *
  * ### Computed Mathematical Metrics & Physical Units:
  * - **Minimum Battery Voltage**: $\min(V_{\text{batt}})$ in Volts ($V$)
- * - **Internal Battery Resistance**: $R_{\text{batt}} = \frac{\Delta V}{\Delta I}$ in Ohms ($\Omega$)
- * - **Maximum EKF Position Drift**: $\max(\text{error}_{\text{pose}})$ in Meters ($m$)
+ * - **Apparent Battery Resistance**: $R = -\Delta V / \Delta I$ for qualifying paired intervals, in Ohms ($\Omega$).
+ * - **Maximum EKF Position Drift**: maximum norm of odometry minus the EKF estimate, in Meters ($m$).
  * - **Average & P95 Control Loop Timing**: $t_{\text{loop}}$ and $P_{95}(t_{\text{loop}})$ in Milliseconds ($ms$)
- * - **Vision Acceptance Rate & Latency**: Vision pose acceptance percentage (%) and optical processing latency ($ms$)
+ * - **Vision Acceptance Rate & Latency**: Vision measurement acceptance fraction (0 to 1) and optical processing latency ($ms$)
  * - **Average Cross-Track Error**: $\bar{e}_{\text{ct}} = \frac{1}{N} \sum |e_{\text{ct}}|$ in Meters ($m$)
- * - **Motor Currents & Thermal Extremes**: Per-motor stator current averages ($A$) and maximum motor temperatures ($^\circ\text{C}$)
+ * - **Motor Currents**: Per-motor current averages ($A$). Thermal estimates are currently unavailable.
  *
  * ### Thread Safety & Performance Guarantees:
  * Executes SQL aggregate calculations on `Dispatchers.Default`. Stores summary metrics in the DuckDB `session_summaries` table.
@@ -48,99 +50,17 @@ class SummaryEngineService(
 ) {
 
     suspend fun generateSummary(session: Session): SessionSummary = withContext(Dispatchers.Default) {
-        // Use SQL aggregations instead of pulling all frames into Kotlin
-        val aggregateResult = databaseService.executeQueryWithParams(
-            """
-            SELECT
-                MIN(CASE WHEN LOWER(key) LIKE '%battery%' AND LOWER(key) LIKE '%voltage%' AND value > 1.0 THEN value END) AS min_battery_voltage,
-                MAX(CASE WHEN LOWER(key) LIKE '%drift%' OR LOWER(key) LIKE '%poseerror%' THEN ABS(value) END) AS max_ekf_drift,
-                AVG(CASE WHEN LOWER(key) LIKE '%looptime%' OR LOWER(key) LIKE '%loop_time%' THEN value END) AS avg_loop_time,
-                AVG(CASE WHEN LOWER(key) LIKE '%vision%' AND (LOWER(key) LIKE '%acceptance%' OR LOWER(key) LIKE '%accepted%') THEN value END) AS vision_acceptance_rate,
-                AVG(CASE WHEN LOWER(key) LIKE '%crosstrack%' OR LOWER(key) LIKE '%cross_track%' OR LOWER(key) LIKE '%xte%' THEN ABS(value) END) AS avg_cross_track,
-                AVG(CASE WHEN LOWER(key) LIKE '%vision%' AND LOWER(key) LIKE '%latency%' THEN value END) AS avg_vision_latency
-            FROM telemetry_frames WHERE session_id = ?
-            """.trimIndent(),
-            listOf(session.sessionId)
-        )
-        val aggRow = aggregateResult.rows.firstOrNull()
-        val minBattery = aggRow?.getOrNull(0).finiteDoubleOr(12.0)
-        val maxDrift = aggRow?.getOrNull(1).finiteDoubleOr(0.0)
-        val avgLoop = aggRow?.getOrNull(2).finiteDoubleOr(0.0)
-        val visionRate = aggRow?.getOrNull(3).finiteDoubleOr(0.0)
-        val avgCrossTrack = aggRow?.getOrNull(4).finiteDoubleOr(0.0)
-        val avgVisionLat = aggRow?.getOrNull(5).finiteDoubleOr(0.0)
-
-        // P95 loop time via ordered-set aggregate (DuckDB supports PERCENTILE_CONT)
-        val p95Result = databaseService.executeQueryWithParams(
-            """
-            SELECT PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY value) AS p95_loop_time
-            FROM telemetry_frames
-            WHERE session_id = ? AND (LOWER(key) LIKE '%looptime%' OR LOWER(key) LIKE '%loop_time%')
-            """.trimIndent(),
-            listOf(session.sessionId)
-        )
-        val p95Loop = p95Result.rows.firstOrNull()?.getOrNull(0).finiteDoubleOr(0.0)
-
-        // Motor current averages grouped by device name extracted from key
-        val motorResult = databaseService.executeQueryWithParams(
-            """
-            SELECT
-                CASE
-                    WHEN LOWER(SPLIT_PART(key, '/', -1)) IN ('current', 'currentamps', 'amps')
-                        THEN SPLIT_PART(key, '/', -2)
-                    ELSE REGEXP_REPLACE(REGEXP_REPLACE(SPLIT_PART(key, '/', -1), '(?i)current', ''), '(?i)amps', '')
-                END AS motor_name,
-                AVG(value) AS avg_current
-            FROM telemetry_frames
-            WHERE session_id = ? AND LOWER(key) LIKE '%current%' AND LOWER(key) NOT LIKE '%battery%'
-            GROUP BY motor_name
-            HAVING motor_name IS NOT NULL AND motor_name != ''
-            """.trimIndent(),
-            listOf(session.sessionId)
-        )
-        val motorCurrentAverages = motorResult.rows.associate { row ->
-            (row.getOrNull(0) ?: "Motor") to row.getOrNull(1).finiteDoubleOr(0.0)
-        }
-
-        // Battery resistance estimation using LAG() window function
-        val batteryResult = databaseService.executeQueryWithParams(
-            """
-            WITH Batt AS (
-                SELECT
-                    timestamp_ms,
-                    MAX(CASE WHEN LOWER(key) LIKE '%voltage%' THEN value END) as v,
-                    MAX(CASE WHEN LOWER(key) LIKE '%current%' THEN value END) as i
-                FROM telemetry_frames
-                WHERE session_id = ? AND LOWER(key) LIKE '%battery%'
-                GROUP BY timestamp_ms
-            ),
-            Deltas AS (
-                SELECT
-                    v - LAG(v) OVER(ORDER BY timestamp_ms) as dv,
-                    i - LAG(i) OVER(ORDER BY timestamp_ms) as di
-                FROM Batt
-                WHERE v IS NOT NULL AND i IS NOT NULL
-            )
-            SELECT AVG(ABS(dv/NULLIF(di, 0)))
-            FROM Deltas
-            WHERE ABS(di) > 0.5 AND dv * di < 0
-            """.trimIndent(),
-            listOf(session.sessionId)
-        )
-        val avgResistance = batteryResult.rows.firstOrNull()?.getOrNull(0).finiteDoubleOr(0.0)
-
-        // Detect OpModes from string_value column
-        val opModeResult = databaseService.executeQueryWithParams(
-            """
-            SELECT DISTINCT string_value
-            FROM telemetry_frames
-            WHERE session_id = ?
-              AND LOWER(SPLIT_PART(key, '/', -1)) = 'opmode'
-              AND string_value IS NOT NULL
-            """.trimIndent(),
-            listOf(session.sessionId)
-        )
-        val detectedModes = opModeResult.rows.mapNotNull { it.getOrNull(0)?.takeIf { v -> v != "NULL" } }.toSet()
+        val aggregates = SummaryMetricAggregator(databaseService::executeQueryWithParams).read(session.sessionId)
+        val minBattery = aggregates["battery"]
+        val maxDrift = aggregates["drift"]
+        val avgLoop = aggregates["loop"]
+        val p95Loop = aggregates["loop_p95"]
+        val visionRate = aggregates["acceptance"]
+        val avgCrossTrack = aggregates["cross_track"]
+        val avgVisionLat = aggregates["latency"]
+        val avgResistance = aggregates["resistance"]
+        val motorCurrentAverages = aggregates.motorCurrents
+        val detectedModes = aggregates.opModes
 
         // Motor thermal estimation requires sequential state (temperature depends on previous temperature)
         // and cannot be vectorized into SQL without recursive CTEs.
@@ -173,16 +93,13 @@ class SummaryEngineService(
         try {
             onSummaryPersisted(summary, databaseService.getAlerts(summary.sessionId))
         } catch (failure: Exception) {
+            if (failure is CancellationException) throw failure
             // Notebook drafting is additive. A local or remote integration failure must never
             // turn a successfully persisted robot analysis into a failed log import.
             System.err.println("[SummaryEngineService] Engineering notebook draft failed: ${failure.message}")
         }
         summary
     }
-
-    /** DuckDB deliberately preserves IEEE NaN/Infinity; persisted summaries and JSON do not. */
-    private fun String?.finiteDoubleOr(fallback: Double): Double =
-        this?.toDoubleOrNull()?.takeIf(Double::isFinite) ?: fallback
 
     private suspend fun calculateAndSaveDiagnostics(session: Session): List<String> {
         var resolvedTags = session.tags
@@ -581,27 +498,10 @@ class SummaryEngineService(
                 },
             )
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             e.printStackTrace()
         }
         return resolvedTags
-    }
-
-    private fun cleanKeyToDeviceName(key: String): String {
-        // e.g. "/Drive/MotorFL/Current" -> "MotorFL"
-        // e.g. "Drive/Motors/FrontLeftCurrent" -> "FrontLeft"
-        val parts = key.split("/")
-        if (parts.size >= 2) {
-            val last = parts.last()
-            if (last.lowercase() == "current" || last.lowercase() == "amps") {
-                return parts[parts.size - 2]
-            }
-        }
-        val lastPart = parts.last()
-        return lastPart
-            .replace("current", "", ignoreCase = true)
-            .replace("amps", "", ignoreCase = true)
-            .replace("/", "")
-            .ifEmpty { "Motor" }
     }
 
     private companion object {

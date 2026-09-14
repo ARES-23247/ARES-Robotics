@@ -5689,7 +5689,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "d45545551d47775a45f480a281e265ce6f47913a2828021f00746ffc05e0010a",
+      "sha256": "190ce87e0e8a6b8e756a135bd7d718f2ff1b92bc3f3d0685eba893908c95128e",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18479,13 +18479,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryEngineService.kt": {
-      "sha256": "718bbda25086e92e890324c9d7f8d46f23627dcea1647c15114c72222f476d25",
+      "sha256": "b66a510878100d4e5a79a0c8a4b81f40caf6fd8025c42de68d02b44f63ebe952",
       "review": "partial",
-      "validation": "not-applicable",
-      "scope": "Pass 240: Read only initial aggregate/p95/motor-current/battery-resistance queries and default conversions to trace summary provenance. Missing metrics collapse to zero or synthetic 12V and broad topic selectors require follow-up through schema/storage/consumers. No producer change or producer-specific test claimed.",
+      "validation": "passed",
+      "scope": "Pass 241: Core generateSummary aggregation, model mapping, optional notebook callback and cancellation boundaries reviewed/fixed/tested. Five core SQL calls replaced by one selected-source aggregate snapshot; no invented 12V, corrected units, removed unused device parser and finite fallback helper. Existing diagnostic catch now propagates cancellation. Secondary sampled diagnostics/SysId/driver/EKF/thermal and tag algorithms, transactional persistence and missing-value schema remain pending; partial coverage retained.",
       "evidence": [
-        "docs/audits/advanced-analytics-math-audit.md",
-        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+        "docs/audits/summary-aggregation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass241-verified-evidence/summary.json"
       ]
     },
     "docs/audits/advanced-analytics-math-audit.md": {
@@ -18496,6 +18496,46 @@
       "evidence": [
         "docs/audits/advanced-analytics-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryMetricAggregator.kt": {
+      "sha256": "97961ccc68ac28e04fe4e607d3e5f711251788f3e45f1764d814fe9fa724a6f4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 241: Complete new helper and SQL reviewed/tested: explicit physical aliases/priority, last ordered source-microsecond dedup before validity, exact vector/counter/battery pairs, activity flags, scaled mean/p95/norm, counter resets and explicit-rate fallback, bounded aggregate rows/cells and parameterized session isolation. Fourteen failing original baselines; 24-method audit covers finite extremes, malformed/unknown data and all-sample one-query evidence on 12001 rows. Formula/model and legacy absence limits documented; no timing/HIL claim.",
+      "evidence": [
+        "docs/audits/summary-aggregation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass241-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SummaryAggregationAuditTest.kt": {
+      "sha256": "9d2250884db39a7fbfc9fb62843a375dab635f4528e0c4c56095764f9b28297f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 241: Complete new 24-method audit reviewed/executed with owned DuckDB fixtures and pure malformed-result cases. Fourteen preserved failing baselines; independent 3-4-5 geometry, counter-increment ratio, battery slope/time checks, analytic mean/p95, canonical aliases, validity/source-time/activity/reset boundaries, one-query 12001-row proof, input-session isolation and output limits. Fixtures close before owned directory cleanup.",
+      "evidence": [
+        "docs/audits/summary-aggregation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass241-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SummaryEngineServiceTest.kt": {
+      "sha256": "c970237b8b9c931f97db180be8e917c13de76d103d832783887d37438d715255",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 241: Complete existing five-method integration suite read/revised/executed: scalar metrics/modes/persistence and callback, corrected no-data battery sentinel, finite JSON, battery sag and replace-only derived diagnostics. Every fixture now owns a directory and closes/deletes it in finally; redundant SysId construction removed. Retained secondary diagnostic assertions do not prove full algorithm correctness.",
+      "evidence": [
+        "docs/audits/summary-aggregation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass241-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/summary-aggregation-math-audit.md": {
+      "sha256": "943c7b67346be429b35aeb9d66438f36ff5892f53d91da11c73a8a3c73d27453",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 241: Records fourteen reproduced baseline failures, physical signal/metric semantics, all-sample SQL aggregation and bounded output, tests and immutable dependency evidence, plus legacy absence/schema, sampled diagnostic, recording snapshot and hardware limits.",
+      "evidence": [
+        "docs/audits/summary-aggregation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass241-verified-evidence/summary.json"
       ]
     }
   }
