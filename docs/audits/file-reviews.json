@@ -5723,10 +5723,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "fd103605bb063dd3f9cd0af0f020fb3aa2739e60320f6868d77345c8b8ee2c7d",
+      "sha256": "1773d8f4f4beb1261db06c4eb057a7343354177c94bb0cdd90e30e9fcdb62e7c",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -5830,7 +5830,8 @@
         "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
         "docs/audits/ftc-season-lifecycle-audit.md",
         "docs/audits/ftc-shared-safety-audit.md",
-        "docs/audits/ftc-descriptor-units-audit.md"
+        "docs/audits/ftc-descriptor-units-audit.md",
+        "docs/audits/ftc-field-resources-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -6716,11 +6717,13 @@
       ]
     },
     "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcFieldAssetContractTest.kt": {
-      "sha256": "c4df484132e87ca89162c1cd858b4d5cc009e0a6c7cb3545ef8f477ed48fad52",
+      "sha256": "2229f0a7308cfaea57e02851940d5b9679281985d6c577e4df9b79a6b16e0e67",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full three-method fixture read: canonical two-tag asset projection and absence of retired parallel files, SDK Gson malformed/exact-ID/string rejection, valid optional dimensions and extreme quaternion preservation. Existing matrix constants remain explicit asset-contract evidence, not physical calibration. Initial consumer failure reproduced unavailable Strictness class; corrected final candidate passes on SDK runtime.",
+      "scope": "Pass 260: Complete four-method fixture review. Preserved SDK Gson input/optional dimensions/quaternion coverage; added canonical polygon nonadjacent-edge regression, replaced repeated matrix constants with complete independent Euler expansion, added mm/m size, XYZ and homogeneous-row checks plus retired image-config absence. Original polygon test fails; all four and full FTC pass. No physical calibration claim.",
       "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json",
         "docs/audits/apriltag-interchange-audit.md",
         "ARESLib-Kotlin/build/audit-pass70-final-focus-v2.log",
         "ARESLib-Kotlin/build/audit-pass70-library.log",
@@ -7556,12 +7559,14 @@
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotFieldValidation.kt": {
       "sha256": "932e172793139bbf740833f46f8a02449da362002a09c99e139b1c5860f03bd8",
       "review": "partial",
-      "validation": "passed",
-      "scope": "Full validator read. Dimension, field type, tag requirement/metadata/family/duplicate/finite checks and placement references traced with core and FTC/FRC consumer tests. Obstacle/type/waypoint validation reviewed statically; dedicated adversarial coverage for every shape/physics combination remains open. Core coverage 102/118 lines; line coverage does not establish every predicate combination.",
+      "validation": "pending",
+      "scope": "Full validator read. Dimension, field type, tag requirement/metadata/family/duplicate/finite checks and placement references traced with core and FTC/FRC consumer tests. Obstacle/type/waypoint validation reviewed statically; dedicated adversarial coverage for every shape/physics combination remains open. Core coverage 102/118 lines; line coverage does not establish every predicate combination. Pass 260: Identified concrete open polygon gap: size and finite vertices do not exclude crossing nonadjacent edges. Original season field passes shared loading but fails explicit crossing regression. Season data repaired; shared input validation regression/fix and dependency-ordered candidate validation remain required.",
       "evidence": [
         "docs/audits/vision-noise-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/ValidatedRobotFieldLoader.kt": {
@@ -9785,13 +9790,15 @@
       ]
     },
     "docs/agents/WORKSPACE_GUIDE.md": {
-      "sha256": "0fddffe76d3d6556b3f8bd615095acc29640ca9f4325849a55489265bf2e8cf6",
+      "sha256": "a873b5242c3680ac43de3d586620f45b1deb7b3b3a92d16ab130af704fc3ba3e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Desktop launch/cleanup section reviewed and corrected for all-ARES-JVM killExisting scope, process ownership, multi-window ambiguity, isolated skipKill launches, owned PID exit and consistent dependency mode. Other engineering-guide sections remain outside this pass.",
+      "scope": "Desktop launch/cleanup section reviewed and corrected for all-ARES-JVM killExisting scope, process ownership, multi-window ambiguity, isolated skipKill launches, owned PID exit and consistent dependency mode. Other engineering-guide sections remain outside this pass. Pass 260: FTC section corrects retired snapshot ownership to canonical typed profiles and local runtime overlays. Staged guidance verification and all 422 current-doc links pass; remaining guide sections retain prior partial scope.",
       "evidence": [
         "docs/audits/shared-guidance-audit.md",
-        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json",
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
       ]
     },
     "docs/audits/shared-guidance-audit.md": {
@@ -13903,11 +13910,13 @@
       ]
     },
     "ARES-FTC/.gitignore": {
-      "sha256": "e0b8d693ea5ff30b060d68e986fcbd1302a1102bde2c08ca7f33b6dad01342e9",
+      "sha256": "3ea11a13da3f8b583d8eba3ff5608dd42055dd628e01a7b683a3a0618ef79ebb",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "scope": "Pass 260: Existing complete ignore review preserved. Added exact TeamCode legacy summary/tuning and TeamCode/simulator NT persistence paths after removing obsolete tracked copies. Live Git check-ignore confirms all four ignored and canonical competition profile visible; no broad resource ignores added.",
       "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json",
         "docs/audits/git-and-wrapper-configuration-audit.md",
         "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
       ]
@@ -19575,6 +19584,106 @@
       "evidence": [
         "docs/audits/ftc-descriptor-units-audit.md",
         "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/assets/paths/field.json": {
+      "sha256": "34aaee633bcfc728753511c98b8cf733bc4678315d22157a40e216532f14b313",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Entire authored field reviewed: dimensions/coordinate/alliance contract, obstacles/physics/outlines, two tags/units, movable type/24 placements, waypoint and image settings. Both polygons had crossing edges; preserved all coordinates/properties and swapped corner order, revision126. New crossing test fails before and passes after; full FTC suite and exact APK asset check pass. Authored practice geometry is not physical/official-field attestation.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/assets/paths/apriltags.fmap": {
+      "sha256": "b0ad732eff5bfa53e929e8dad50850508ce394a4f45dda8d9556216f62d9f136",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Entire two-tag fmap reviewed: IDs/family/size/unique flags and complete homogeneous transforms. Independent canonical Euler RzRyRx expansion agrees within stored precision; meter translations, mm size and bottom rows pass. Unchanged bytes verified in APK. No physical camera/map calibration claim.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/assets/field_image.png": {
+      "sha256": "73543691bf221758c1dea00fc140407c27e3e0cc8f546db837b22f2c4a28cbae",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Entire PNG visually inspected, all chunk CRCs verified, 1080x1080 square raster valid; full-crop 270-degree metadata lives in canonical field. Exact image bytes verified in APK. Visual resource only; no image editing, physical survey or Studio-window claim.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/AndroidManifest.xml": {
+      "sha256": "98746b00d8660ca234a3814e481611c14099b9c9a48202b7abff2159d03d529d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Entire TeamCode manifest reviewed: empty application contribution with Android namespace, no override/additional permissions/activities. XML parsing and merged application presence checked; debug APK build passes. Upstream manifest/runtime security not audited through this empty contribution.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/res/values/strings.xml": {
+      "sha256": "e2058058058823dde53ec6ec3d9aed090f45f27a84698eac649af57289df8222",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Complete empty Android resources document reviewed/parsed; adds no string overrides. Full Android packaging passes.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/res/xml/teamwebcamcalibrations.xml": {
+      "sha256": "1f2d330173fa38abe7289cc6094fef6396d89097c39cf88e8ecb6df643b08fb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Entire SDK calibration-example resource read. Active Calibrations element has no entries; every sample camera/intrinsic set is commented out and provides no physical calibration evidence. XML parsing and APK build pass; legacy commentary not treated as executed code or current tooling recommendation.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/res/raw/readme.md": {
+      "sha256": "b3284e413aa57b33ea86b60101d75d2981293a65b5d10b90a2592afc46d2187b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Entire one-line raw-resource guide read: sound-file destination matches Android raw resources. Full APK packaging passes; no active code or math.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/readme.md": {
+      "sha256": "48940bcedc11fab4f9ec10ca35237f2016486feb0b990a268588e01891d60cca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Entire package/workflow guide reviewed against actual source dirs, generated ownership, OpMode lifecycle, offline state/IO flow, coordinate conventions and current Gradle command location. Corrected stale package roles and preferred declarative extension flow. Local doc links and full FTC build/tests pass.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/FtcFieldContractLoaderTest.kt": {
+      "sha256": "ab2889b5289ff36afb0be4cd0f8edd7e8c9341dc1ad7e9b20287b15fbecc9be0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: All four test methods/fixture read and run: valid field/tag Euler-radians, required FTC type, duplicate/nonfinite tags, undecodable bytes and current error taxonomy. Loader resets error before each attempt; tests own no robot/thread/hardware resources. Full FTC suite passes.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/ftc-field-resources-audit.md": {
+      "sha256": "ae8a748425e4a98899771648f792623246c4fcaebc5c0f11ef0be010777f5ec7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 260: Complete pass260 report reviewed against 1/4 original regression failure, 185 passing tests, exact unchanged point sets except ordering/revision, five retired file hashes, PNG/XML/APK checks, 422 current-doc link verification and unchanged candidate. Explicit shared validator, physical and archive approval limitations remain open.",
+      "evidence": [
+        "docs/audits/ftc-field-resources-audit.md",
+        "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
       ]
     }
   }

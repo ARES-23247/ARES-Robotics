@@ -87,6 +87,10 @@ TeamCode/zulip.properties
 *.jsonl
 **/logs/
 simulator/ares_run_summary.json
+/TeamCode/ares_run_summary.json
+/TeamCode/ares_tuning.json
+/TeamCode/networktables.json
+/simulator/networktables.json
 
 # Local ARES editor undo/revision snapshots. Canonical routines and catalogs remain tracked.
 .ares/history/
