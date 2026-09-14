@@ -5725,10 +5725,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "9ae735fce8f062205e53aa1bcef9b7d29c7671868709f3740951ad6cf6b259d8",
+      "sha256": "9f9aa666ed630c1a639dfbb8c4370bcc216ece336e3a4183ff81a8b869ba448c",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -5834,7 +5834,8 @@
         "docs/audits/ftc-shared-safety-audit.md",
         "docs/audits/ftc-descriptor-units-audit.md",
         "docs/audits/ftc-field-resources-audit.md",
-        "docs/audits/field-polygon-validation-audit.md"
+        "docs/audits/field-polygon-validation-audit.md",
+        "docs/audits/frc-starter-simulation-math-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -19708,11 +19709,13 @@
       ]
     },
     "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterFieldContractTest.kt": {
-      "sha256": "5abfa5a980fbdd22dbe1be0c4d8b1a4c98353cae29e6abe8e2de32909126fffe",
+      "sha256": "4e576a7dfdd077d86c7f7f3d7e5d2a434a168ff4bc703812a41e29ce64d744e8",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 261: Complete three-method fixture review/run: simulation-first empty FRC map and complete WPILib pose, wrong league/invalid geometry, new crossed-outline rejection followed by valid-load diagnostic recovery. All 35 starter tests and descriptor checks passed. No physical robot/vision claim.",
+      "scope": "Pass 262: Entire four-method fixture reviewed/run. Previous test populated six pose components but only asserted X/yaw; now verifies all six. Added malformed-text and invalid-UTF8 error recovery, retaining crossed polygon, wrong league, empty season layout and default-dimension checks. All pass through real decoder/validator/WPILib layout. This clarifies the narrower assertion evidence in pass261.",
       "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json",
         "docs/audits/field-polygon-validation-audit.md",
         "ARESLib-Kotlin/build/audit-pass261-verified-evidence/summary.json"
       ]
@@ -19745,6 +19748,176 @@
       "evidence": [
         "docs/audits/field-polygon-validation-audit.md",
         "ARESLib-Kotlin/build/audit-pass261-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterDriveSimulation.kt": {
+      "sha256": "1e437e01a28c7c213ac75c0a819ec26dfd96841292886600c1fe163a557cdc6f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Entire chassis model reviewed: finite initialization, bounded angle normalization, exact free constant-twist endpoint with small-angle curvature, finite atomic pose update, actual mean motion observations, no freshness for invalid/zero intervals, reusable action, 50 ms integration cap, transactional local field replacement, rotated footprint clamp/reset, swept axis/rotation collision response. Seventeen numerical/sweep baseline failures fixed; all 59 starter tests pass. Ideal educational model; conservative contact envelopes and explicit reset may be needed after field replacement overlaps the existing pose. No physical contact/current/slip parity or full robot lifecycle claim.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterDriveCollision.kt": {
+      "sha256": "9492182983aac7aaa609747af59fa757bc1dedc9156bde1f60a8ce46576c7312",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Entire helper reviewed: canonical field validation at setup, copied blocking geometry, cached shapes/trigonometry, circle radius convention, obstacle-local rectangle slabs, polygon containment and segment clearance, directed rotation projection extrema including both directions and multi-turn arcs, numerical ambiguity fails closed. Query storage does not grow with distance/angle. Shape sweeps, concavity and 175 sampled-corner reference configurations pass; warmed 50000-frame probe reports zero allocated bytes. Conservative envelopes intentionally may reject exact-contact-free poses; not a rigid-body solver.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterDriveNumericsAuditTest.kt": {
+      "sha256": "db21a2bb47c4f47e8117f52599d076acc3c61596d6300711973baa6a4027e7b2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: All twelve methods reviewed/run: ten original failures including invalid construction/time, finite-turn integration and frame splitting, collision-observation consistency, overflow protection, local field transaction and rotated clamping, tiny curvature/action reuse; added bounded huge-angle execution and transactional oriented reset. Uses independent WPILib twist exponential and interval displacement observations. No hardware/NT lifecycle owned.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterDriveSweepAuditTest.kt": {
+      "sha256": "677084c8b7fc3cc767e92c215c3a271bb39bda50a00ad871014d4990d0d4ac26",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Entire ten-invocation fixture reviewed/run: four shape/orientation sweeps, intermediate field/obstacle rotation contacts, nonblocking geometry, actual concave opening, invalid raw field transaction and 175 corner-sampled rotation configurations. Initial nine-case version had seven failures. Sampling corroborates analytic interval behavior and is not presented as proof for arbitrary geometry.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterDriveLoopAllocationTest.kt": {
+      "sha256": "9b3b0eb27884a49972d0d64d9ce40f54cb49364a3ee109667bd4a9d2a47754f6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Complete allocation fixture reviewed/run. HotSpot-compatible thread byte accounting is enabled/restored, unsupported JVMs explicitly skip, setup/warmup outside measurement, 50000 measured steps reuse input/action and traverse three obstacle types. Final local result: zero bytes, 48447400 ns; fixed-bookkeeping allowance 1024 bytes. This passed without a skip; desktop mean only, no hard timing guarantee or physical validation.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterDriveSimulationTest.kt": {
+      "sha256": "99ef527966e7cda61084b1cda152952a48ea90db2efa2e792460fc358347cd99",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: All five original methods read and run: field-relative ideal motion, physical-adapter output predicate, deterministic wall slide, full-field footprint clamp, and generated subsystem physical/simulation selection. No native robot process resources are created by this fixture. All tests preserved and pass in the expanded 59-test suite.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterFieldContract.kt": {
+      "sha256": "b739c7ff269cc986c99ea79008569598a414ebd2408363eebbed9c40e74c1b70",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Entire canonical field loader reviewed: decode and layout construction errors, explicit FRC validation with season-optional tags, diagnostic reset, sorted tag IDs, meter XYZ and degree-to-radian roll/pitch/yaw WPILib projection, resolved defaults, unavailable placeholder field. Four-method fixture now checks all six pose components and malformed/invalid-byte recovery as well as existing field/league/polygon cases. Full starter suite passes; no physical AprilTag calibration or concurrent caller guarantees.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/Main.kt": {
+      "sha256": "0fff730f12d28634ed3d2ee011d8fe8ef4548031aa4c71cf6c69bc56821c4beb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Complete minimal entry point review and compiled bytecode inspection: @JvmStatic exposes public static main(String[]), Supplier constructs AresStarterRobot, RobotBase.startRobot owns runtime startup. Build main-class configuration matches. Compile/linkage validated; no application/window or physical robot startup executed. No independent math/control behavior lives here.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/extensions/TeamRobotExtensions.kt": {
+      "sha256": "1fa79e72e2070655fe929ccb693edb44e6c12fb7ed6348e897c45249f0618e1a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Entire USER-OWNED extension anchor read. Empty Kotlin object supplies the stable team package and registration guidance; compiled bytecode contains only ordinary singleton construction. No active robot logic or physical capability is installed. Source ownership and generated-output conventions preserved.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterRepositoryArchitectureTest.kt": {
+      "sha256": "5d5ef8a58d0df90a3e0200da954c9b5220fd7589f93f53ed0a24dc72725f41bb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Complete two-method source-policy fixture reviewed/run. Correct root working directory, generated shared runtime/build dependency ownership, absence of mavenLocal/retired generated scheduler/tracked generated source, and no FTC imports in starter main sources. These are textual architecture guards, not runtime integration or safety evidence. All pass.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterFrcTelemetryTest.kt": {
+      "sha256": "b2e95c1b50ab900fb9769010e529287e966c446a1dbd82c94e35fd69fe35b82b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Entire one-method fixture reviewed/run: leading transport slash and already-canonical topic normalization. Both assertions pass. This fixture does not exercise NetworkTables entry creation/round trips/close; telemetry adapter remains partial rather than claiming transport coverage.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/AGENTS.md": {
+      "sha256": "ffa6ed532ec84930dc071d84a67eee77a4cb2ba8b470cdb756e1b041126b03f8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Entire product guide read against root ownership and current starter build/runtime: generic template identity, canonical generated ownership, explicit physical-adapter gate, no ambient local/sibling dependencies, RobotClock/Redux/neutral conventions, no season vendor-generated drivetrain source. Shared guidance verifier passed and full starter checks support reviewed current contracts. Guidance does not itself establish physical safety or universal zero-allocation behavior.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/deploy/paths/field.json": {
+      "sha256": "65feb4599b09916cfbe42d474f4b0bd62f2bf7a9b8e11d0d922695376cb54815",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Entire placeholder resource reviewed and parsed: schema2 FRC identity, deliberate season-import-required label, empty tags and finite positive dimensions. Width/height exactly match canonical project dimensions; loader accepts empty simulation fields, and physical hardware stays unconfigured. Resource validation only, not official-season geometry or physical tag attestation.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-starter-simulation-math-audit.md": {
+      "sha256": "86687d420ed3fa120e6df78c262591792676601b4a9f08fad74cfb46a2ad0c5d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 262: Complete pass262 report checked against ten initial numerical failures, seven sweep failures, 59 passing final tests preserving all prior cases, 175 rotation reference configurations, final allocation measurement, compiled entry-point evidence, unchanged library tree and all 410 candidate hashes. Explicit conservative-model, partial integration/telemetry, archive approval and hardware limits retained.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/AresStarterRobot.kt": {
+      "sha256": "c63f99b93b9ea7e0c3ae41030476eb03aaa989fadf21f5760a4d546f4d35ae11",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Pass 262: Reviewed startup/control dispatch, simulationPeriodic and generated registration entry regions while tracing the chassis consumer. Numerical helper tests pass; no running TimedRobot instance was launched. The rest of composition/runtime ownership remains unreviewed, and field-apply callback failure/publication ordering needs an integration audit.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/FrcStudioSimulationBridge.kt": {
+      "sha256": "9a2534b90923f1ccaae0f8375309ef7d4402fd47096df7d08381564e9f60baa2",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Pass 262: Read the field-document update/acknowledgement region and callback interface while tracing simulation configuration. Gate.accept precedes onFieldApplied and receipt publication; investigate failure/revision ownership in a dedicated integration test. Drive lease/mode and complete close lifecycle not reviewed in this pass.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterFrcTelemetry.kt": {
+      "sha256": "b6da3d061cacd8e55d2f6938be82f6a7fd0d30b23b9411223d823fca6f7780e3",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Pass 262: Entire small adapter read for topic normalization, cached native entries, process-owned NetworkTableInstance, optional DataLog startup, local flush and entry close/clear. Only the normalization fixture executes this area. Native NT round trips, cache identity, post-close behavior, exception handling and lifecycle tests remain required.",
+      "evidence": [
+        "docs/audits/frc-starter-simulation-math-audit.md",
+        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json"
       ]
     }
   }

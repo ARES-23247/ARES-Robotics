@@ -28,6 +28,10 @@ class StarterFieldContractTest {
         )
         val pose = populated!!.aprilTagLayout.getTagPose(3).orElseThrow()
         assertEquals(1.0, pose.x, 1e-9)
+        assertEquals(2.0, pose.y, 1e-9)
+        assertEquals(1.3, pose.z, 1e-9)
+        assertEquals(Math.toRadians(5.0), pose.rotation.x, 1e-9)
+        assertEquals(Math.toRadians(10.0), pose.rotation.y, 1e-9)
         assertEquals(Math.toRadians(90.0), pose.rotation.z, 1e-9)
 
         val defaultDimensions = loadStarterFieldContract(
@@ -44,5 +48,15 @@ class StarterFieldContractTest {
         )
         assertNull(result)
         assertEquals("Canonical season field must declare FRC geometry", StarterFieldContractLoader.error)
+    }
+
+    @Test
+    fun `undecodable documents expose a diagnostic and later valid input clears it`() {
+        for (invalid in listOf("not-json".toByteArray(), byteArrayOf(0xC3.toByte()))) {
+            assertNull(loadStarterFieldContract(invalid))
+            assertNotNull(StarterFieldContractLoader.error)
+            assertNotNull(loadStarterFieldContract("""{"schemaVersion":2,"fieldType":"frc"}""".toByteArray()))
+            assertNull(StarterFieldContractLoader.error)
+        }
     }
 }

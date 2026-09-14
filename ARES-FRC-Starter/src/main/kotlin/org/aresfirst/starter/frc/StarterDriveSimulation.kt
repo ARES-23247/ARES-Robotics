@@ -1,16 +1,12 @@
 package org.aresfirst.starter.frc
 
 import com.areslib.action.RobotAction
+import com.areslib.math.wrapAngle
 import com.areslib.state.FieldType
 import com.areslib.state.RobotFieldConfig
-import com.areslib.state.RobotFieldObstacle
 import com.areslib.state.RobotState
-import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.hypot
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.sin
 
 /**
@@ -24,19 +20,26 @@ class StarterDriveSimulation(
     startY: Double = 1.0,
     startHeadingRadians: Double = 0.0,
 ) {
+    init {
+        require(startX.isFinite() && startY.isFinite() && startHeadingRadians.isFinite()) {
+            "FRC simulator pose must contain finite values"
+        }
+    }
+
     var xMeters: Double = startX
         private set
     var yMeters: Double = startY
         private set
-    var headingRadians: Double = startHeadingRadians
+    var headingRadians: Double = wrapAngle(startHeadingRadians)
         private set
 
     private var fieldConfig: RobotFieldConfig? = null
+    private var collision: StarterDriveCollision? = null
 
     private val poseUpdate = RobotAction.PoseUpdate(
         xMeters = startX,
         yMeters = startY,
-        headingRadians = startHeadingRadians,
+        headingRadians = headingRadians,
         timestampMs = 0L,
         isExternalEstimate = true,
         applyControlHubGyroCorrection = false,
@@ -45,9 +48,24 @@ class StarterDriveSimulation(
     /** Installs the same canonical field revision used by Studio and robot vision. */
     fun configureField(config: RobotFieldConfig) {
         require(config.fieldType == FieldType.FRC) { "FRC simulation requires an FRC field document" }
+        val nextCollision = StarterDriveCollision(config, ROBOT_HALF_LENGTH_METERS, ROBOT_HALF_WIDTH_METERS)
+        val c = abs(cos(headingRadians))
+        val s = abs(sin(headingRadians))
+        val xExtent = c * ROBOT_HALF_LENGTH_METERS + s * ROBOT_HALF_WIDTH_METERS
+        val yExtent = s * ROBOT_HALF_LENGTH_METERS + c * ROBOT_HALF_WIDTH_METERS
+        val width = config.resolvedWidthMeters
+        val height = config.resolvedHeightMeters
+        require(width.isFinite() && height.isFinite() && width >= 2.0 * xExtent && height >= 2.0 * yExtent) {
+            "FRC simulation field must fit the full bumper footprint"
+        }
+        // Compute the whole replacement before committing it; a failed configuration retains
+        // the previous field and pose instead of leaving an unusable field installed.
+        val nextX = xMeters.coerceIn(xExtent, width - xExtent)
+        val nextY = yMeters.coerceIn(yExtent, height - yExtent)
         fieldConfig = config
-        xMeters = xMeters.coerceIn(ROBOT_HALF_LENGTH_METERS, config.resolvedWidthMeters - ROBOT_HALF_LENGTH_METERS)
-        yMeters = yMeters.coerceIn(ROBOT_HALF_WIDTH_METERS, config.resolvedHeightMeters - ROBOT_HALF_WIDTH_METERS)
+        collision = nextCollision
+        xMeters = nextX
+        yMeters = nextY
     }
 
     /** Seeds the ideal chassis from the selected autonomous entry before the first enabled tick. */
@@ -55,134 +73,98 @@ class StarterDriveSimulation(
         require(xMeters.isFinite() && yMeters.isFinite() && headingRadians.isFinite()) {
             "FRC simulator pose must contain finite values"
         }
+        val heading = wrapAngle(headingRadians)
         val field = fieldConfig
         if (field != null) {
+            val c = abs(cos(heading))
+            val s = abs(sin(heading))
+            val xExtent = c * ROBOT_HALF_LENGTH_METERS + s * ROBOT_HALF_WIDTH_METERS
+            val yExtent = s * ROBOT_HALF_LENGTH_METERS + c * ROBOT_HALF_WIDTH_METERS
             require(
-                xMeters in ROBOT_HALF_LENGTH_METERS..(field.resolvedWidthMeters - ROBOT_HALF_LENGTH_METERS) &&
-                    yMeters in ROBOT_HALF_WIDTH_METERS..(field.resolvedHeightMeters - ROBOT_HALF_WIDTH_METERS)
+                xMeters in xExtent..(field.resolvedWidthMeters - xExtent) &&
+                    yMeters in yExtent..(field.resolvedHeightMeters - yExtent)
             ) { "FRC autonomous start pose leaves the configured field" }
-            require(isPoseFree(xMeters, yMeters, headingRadians)) {
+            require(collision?.isPoseFree(xMeters, yMeters, heading) != false) {
                 "FRC autonomous start pose overlaps a blocking obstacle"
             }
         }
         this.xMeters = xMeters
         this.yMeters = yMeters
-        this.headingRadians = wrapRadians(headingRadians)
+        this.headingRadians = heading
     }
 
-    /** Advances one bounded frame and returns a caller-reused pose action. */
+    /**
+     * Integrates a constant drive twist over a bounded frame and reuses the pose action.
+     * Reported translation is the actual mean field velocity over the accepted interval,
+     * including collision rejection. A nonpositive/invalid interval is not a fresh motion sample.
+     */
     fun step(state: RobotState, dtSeconds: Double, timestampMs: Long): RobotAction.PoseUpdate {
         val dt = if (dtSeconds.isFinite()) dtSeconds.coerceIn(0.0, 0.05) else 0.0
         val drive = state.drive
         val commandedVx = drive.xVelocityMetersPerSecond.takeIf(Double::isFinite) ?: 0.0
         val commandedVy = drive.yVelocityMetersPerSecond.takeIf(Double::isFinite) ?: 0.0
         val omega = drive.angularVelocityRadiansPerSecond.takeIf(Double::isFinite) ?: 0.0
-        val fieldVx: Double
-        val fieldVy: Double
+        val previousX = xMeters
+        val previousY = yMeters
+        val deltaHeading = omega * dt
+        val deltaX: Double
+        val deltaY: Double
         if (drive.isFieldCentric) {
-            fieldVx = commandedVx
-            fieldVy = commandedVy
+            deltaX = commandedVx * dt
+            deltaY = commandedVy * dt
         } else {
+            // SE(2) exponential for body-frame velocity while the chassis turns. The small-angle
+            // series retains curvature that would be lost to cancellation in 1 - cos(theta).
+            val sinc: Double
+            val cosc: Double
+            if (abs(deltaHeading) < 1e-6) {
+                val squared = deltaHeading * deltaHeading
+                sinc = 1.0 - squared / 6.0
+                cosc = deltaHeading * (0.5 - squared / 24.0)
+            } else {
+                sinc = sin(deltaHeading) / deltaHeading
+                val halfSine = sin(deltaHeading / 2.0)
+                cosc = 2.0 * halfSine * halfSine / deltaHeading
+            }
+            val forward = commandedVx * dt
+            val strafe = commandedVy * dt
+            val bodyX = forward * sinc - strafe * cosc
+            val bodyY = forward * cosc + strafe * sinc
             val c = cos(headingRadians)
             val s = sin(headingRadians)
-            fieldVx = commandedVx * c - commandedVy * s
-            fieldVy = commandedVx * s + commandedVy * c
+            deltaX = bodyX * c - bodyY * s
+            deltaY = bodyX * s + bodyY * c
         }
-        val proposedX = xMeters + fieldVx * dt
-        val proposedY = yMeters + fieldVy * dt
-        // Resolve one axis at a time so a novice sees the chassis slide along a wall instead of
-        // tunnelling through it or becoming numerically stuck at a diagonal collision.
-        if (isPoseFree(proposedX, yMeters, headingRadians)) xMeters = proposedX
-        if (isPoseFree(xMeters, proposedY, headingRadians)) yMeters = proposedY
-        headingRadians = wrapRadians(headingRadians + omega * dt)
+        val proposedX = xMeters + deltaX
+        val proposedY = yMeters + deltaY
+        // Discrete educational contact response: sweep X, then Y, then the rotation arc. Free
+        // motion has the exact constant-twist endpoint; contact uses conservative envelopes,
+        // not a continuous rigid-body solver for the original curved center trajectory.
+        val currentCollision = collision
+        if (proposedX.isFinite() && proposedY.isFinite()) {
+            if (currentCollision?.isTranslationFree(xMeters, yMeters, proposedX, yMeters, headingRadians) != false) xMeters = proposedX
+            if (currentCollision?.isTranslationFree(xMeters, yMeters, xMeters, proposedY, headingRadians) != false) yMeters = proposedY
+        }
+        val rotationAccepted = currentCollision?.isRotationFree(xMeters, yMeters, headingRadians, deltaHeading) != false
+        if (rotationAccepted) headingRadians = wrapAngle(headingRadians + deltaHeading)
         poseUpdate.xMeters = xMeters
         poseUpdate.yMeters = yMeters
         poseUpdate.headingRadians = headingRadians
         poseUpdate.timestampMs = timestampMs
-        poseUpdate.xVelocityMetersPerSecond = fieldVx
-        poseUpdate.yVelocityMetersPerSecond = fieldVy
-        poseUpdate.angularVelocityRadiansPerSecond = omega
-        poseUpdate.motionMeasurementsValid = true
+        val measuredVx = if (dt > 0.0) (xMeters - previousX) / dt else 0.0
+        val measuredVy = if (dt > 0.0) (yMeters - previousY) / dt else 0.0
+        val measurementsValid = dt > 0.0 && measuredVx.isFinite() && measuredVy.isFinite()
+        poseUpdate.xVelocityMetersPerSecond = if (measurementsValid) measuredVx else 0.0
+        poseUpdate.yVelocityMetersPerSecond = if (measurementsValid) measuredVy else 0.0
+        poseUpdate.angularVelocityRadiansPerSecond = if (measurementsValid && rotationAccepted) omega else 0.0
+        poseUpdate.motionMeasurementsValid = measurementsValid
         poseUpdate.imuMeasurementsValid = true
         return poseUpdate
-    }
-
-    private fun isPoseFree(x: Double, y: Double, heading: Double): Boolean {
-        val field = fieldConfig ?: return true
-        val xExtent = abs(cos(heading)) * ROBOT_HALF_LENGTH_METERS + abs(sin(heading)) * ROBOT_HALF_WIDTH_METERS
-        val yExtent = abs(sin(heading)) * ROBOT_HALF_LENGTH_METERS + abs(cos(heading)) * ROBOT_HALF_WIDTH_METERS
-        if (x - xExtent < 0.0 || x + xExtent > field.resolvedWidthMeters) return false
-        if (y - yExtent < 0.0 || y + yExtent > field.resolvedHeightMeters) return false
-        for (index in field.obstacles.indices) {
-            val obstacle = field.obstacles[index]
-            if (obstacle.isBlocking && overlapsObstacle(x, y, heading, obstacle)) return false
-        }
-        return true
-    }
-
-    private fun overlapsObstacle(x: Double, y: Double, heading: Double, obstacle: RobotFieldObstacle): Boolean =
-        when (obstacle.shape.lowercase()) {
-            "circle" -> hypot(x - obstacle.x, y - obstacle.y) <= obstacle.width + ROBOT_BOUNDING_RADIUS_METERS
-            "polygon" -> overlapsPolygon(x, y, obstacle)
-            else -> overlapsRectangle(x, y, heading, obstacle)
-        }
-
-    private fun overlapsRectangle(x: Double, y: Double, heading: Double, obstacle: RobotFieldObstacle): Boolean {
-        val obstacleHeading = Math.toRadians(obstacle.rotation)
-        val c = cos(obstacleHeading)
-        val s = sin(obstacleHeading)
-        val dx = x - obstacle.x
-        val dy = y - obstacle.y
-        val localX = dx * c + dy * s
-        val localY = -dx * s + dy * c
-        val relativeHeading = heading - obstacleHeading
-        val robotExtentX = abs(cos(relativeHeading)) * ROBOT_HALF_LENGTH_METERS +
-            abs(sin(relativeHeading)) * ROBOT_HALF_WIDTH_METERS
-        val robotExtentY = abs(sin(relativeHeading)) * ROBOT_HALF_LENGTH_METERS +
-            abs(cos(relativeHeading)) * ROBOT_HALF_WIDTH_METERS
-        return abs(localX) <= obstacle.width / 2.0 + robotExtentX &&
-            abs(localY) <= obstacle.height / 2.0 + robotExtentY
-    }
-
-    private fun overlapsPolygon(x: Double, y: Double, obstacle: RobotFieldObstacle): Boolean {
-        val points = obstacle.points
-        if (points.size < 3) return false
-        var inside = false
-        var previous = points.lastIndex
-        for (current in points.indices) {
-            val a = points[current]
-            val b = points[previous]
-            if ((a.y > y) != (b.y > y)) {
-                val crossingX = (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x
-                if (x < crossingX) inside = !inside
-            }
-            if (distanceToSegment(x, y, a.x, a.y, b.x, b.y) <= ROBOT_BOUNDING_RADIUS_METERS) return true
-            previous = current
-        }
-        return inside
-    }
-
-    private fun distanceToSegment(px: Double, py: Double, ax: Double, ay: Double, bx: Double, by: Double): Double {
-        val dx = bx - ax
-        val dy = by - ay
-        val lengthSquared = dx * dx + dy * dy
-        if (lengthSquared <= 1e-12) return hypot(px - ax, py - ay)
-        val t = ((px - ax) * dx + (py - ay) * dy) / lengthSquared
-        val clamped = max(0.0, min(1.0, t))
-        return hypot(px - (ax + clamped * dx), py - (ay + clamped * dy))
-    }
-
-    private fun wrapRadians(value: Double): Double {
-        var result = value
-        while (result > PI) result -= 2.0 * PI
-        while (result < -PI) result += 2.0 * PI
-        return result
     }
 
     private companion object {
         /** The generic starter's documented 0.75 m × 0.65 m bumper footprint. */
         const val ROBOT_HALF_LENGTH_METERS = 0.375
         const val ROBOT_HALF_WIDTH_METERS = 0.325
-        val ROBOT_BOUNDING_RADIUS_METERS = hypot(ROBOT_HALF_LENGTH_METERS, ROBOT_HALF_WIDTH_METERS)
     }
 }
