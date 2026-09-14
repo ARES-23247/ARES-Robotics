@@ -5725,10 +5725,10 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "50c85c1aa7354ba74c33d4b66e062f36aaf0f6ef4fdec1fb1aab25644f1f0eaf",
+      "sha256": "2ea88df78c4a7370546a4888bfecf4a403e86432788fce880c3ed4960bf47764",
       "review": "reviewed",
       "validation": "not-applicable",
-      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open.",
+      "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial.",
       "evidence": [
         "docs/audits/coverage-ci-tooling-audit.md",
         "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
@@ -5837,7 +5837,8 @@
         "docs/audits/field-polygon-validation-audit.md",
         "docs/audits/frc-starter-simulation-math-audit.md",
         "docs/audits/frc-starter-field-telemetry-audit.md",
-        "docs/audits/frc-starter-drive-lease-audit.md"
+        "docs/audits/frc-starter-drive-lease-audit.md",
+        "docs/audits/frc-starter-runtime-lifecycle-audit.md"
       ]
     },
     "docs/audits/coverage-ci-tooling-audit.md": {
@@ -19893,11 +19894,13 @@
       ]
     },
     "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/AresStarterRobot.kt": {
-      "sha256": "ebd421173fee5171a81dcd1b39de432da200aa1056e9884ba55cf4e1f0a83ec4",
+      "sha256": "e9ee258eab969fd5a7aa8b750d8e1b5239078b7bce87e81194aadf9da5f76652",
       "review": "partial",
       "validation": "pending",
-      "scope": "Pass 263: Field-load startup and Studio callback now use the tested local-before-global installation helper. Full file read while tracing generated registration, runtime updates and teardown, but fault handling, repeated close failures, metadata/control dispatch and physical lifecycle still need dedicated behavioral tests. No TimedRobot process launched. Retains pass262 numerical integration evidence without claiming complete composition-root coverage.",
+      "scope": "Pass265: Runtime host update, neutral, close, initialization and tuning registration regions reviewed and fixed: exceptions trigger every neutral attempt and latch instance, closed operations reject, identity duplicates blocked, failed setup remains owned, callback collections initialized before TuningManager metadata, all fallible generated/binding/Redux/publisher/manager initialization inside telemetry cleanup, manager closed with hardware/telemetry, measured loop timing no longer invents20ms or clips50ms.19 new lifecycle methods plus4 prior guided tuning methods pass in113-test suite. Default simulation-only tuning arm and hardware output scales preserved. Entire source read, but outer AresStarterRobot startup/mode/close, generated batch registration ownership, live tuning callback exceptions, builtin UID conflicts, and complete tuning mapping need next focused validation; remains partial. No full TimedRobot or physical execution.",
       "evidence": [
+        "docs/audits/frc-starter-runtime-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass265-verified-evidence/summary.json",
         "docs/audits/frc-starter-field-telemetry-audit.md",
         "ARESLib-Kotlin/build/audit-pass263-verified-evidence/summary.json",
         "docs/audits/frc-starter-simulation-math-audit.md",
@@ -19941,11 +19944,13 @@
       ]
     },
     "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterResourceCleanup.kt": {
-      "sha256": "8c732015ea5e29d9f73206fe29c10a073b54c05f6140d58aad303e5acfda345b",
+      "sha256": "44ce8cf4fcab4621c38b90d838647933f0c05405e44b4e7f00f5a31ebba038d7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 263: Entire teardown helper reviewed and executed through native bridge and telemetry owners plus focused fault injection: every resource attempted, first Throwable identity rethrown, repeated/self-suppression avoided, later distinct failure retained, direct InterruptedException sets interrupt flag. One dedicated five-resource fixture and three-entry telemetry fault fixture pass; native successful release verified separately. No claim about wrapped interruption or arbitrary broken iterable implementations. Allocations occur in teardown rather than periodic control.",
+      "scope": "Pass265: Entire helper reviewed after extracting retainStarterFailure for allocation-free normal neutral loops and shared teardown semantics: first Throwable identity retained, unique additional identities suppressed, direct interruption preserved, every resource attempted. Existing helper/native-owner tests and new runtime neutral/close interruption and repeated-suppression tests pass in113-test suite. No arbitrary wrapped-interruption guarantee. Original runtime repeated-identical-close-exception test passed; no skipped-resource defect is claimed for that case.",
       "evidence": [
+        "docs/audits/frc-starter-runtime-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass265-verified-evidence/summary.json",
         "docs/audits/frc-starter-field-telemetry-audit.md",
         "ARESLib-Kotlin/build/audit-pass263-verified-evidence/summary.json"
       ]
@@ -20048,6 +20053,36 @@
       "evidence": [
         "docs/audits/frc-starter-drive-lease-audit.md",
         "ARESLib-Kotlin/build/audit-pass264-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterRuntimeLifecycleAuditTest.kt": {
+      "sha256": "18e255ba453676a5c3cd9aa05063736f26d0f7d6aefa9334bb336a9286534c45",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass265: All nineteen methods reviewed/run with fake subsystem/raw owners, in-memory copied-array telemetry and native HAL simulation where needed. Covers sensor/output/refresh/telemetry failure neutralization and latch, observable neutral failures, complete repeated-failure close, post-close update/tuning/topology guards, identity duplicates, failed canonical consumer setup, first/zero/signed-wrap/long-loop timing, additional declaration callback initialization, initial-publication and missing-binding cleanup, direct interruption/unique failure retention, disabled one-read-per-owner loops, and unique-versus-ambiguous live tuning consumers. Restores RobotClock/DS/interrupt state; closes owned runtime. Initial12tests11fail, constructor2tests2fail with typed-runtime seam, early-binding1test1fail; final19pass within113producttests. Corrected topic literal was not reached in failing-constructor baseline. Test doubles do not prove a physical actuator stopped or realistic whole-loop allocation.",
+      "evidence": [
+        "docs/audits/frc-starter-runtime-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass265-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterFrcGuidedTuningTest.kt": {
+      "sha256": "a67edae7213d789d4ded97cbbb6183e43412ee0152030f0dbf1b4b788c6c8a1a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass265: Entire existing four-method fixture read and rerun unchanged: explicit empty SysId support at construction, generated canonical velocity scale and consumer support, valid armed simulation request committed to Redux with matching value/result/nonce acknowledgement, unarmed physical-style context rejection preserving canonical value. In-memory telemetry copies arrays; successful test paths close runtime. No native robot loop or physical tuning performed, no overlay writer configured. All4pass in113-test suite.",
+      "evidence": [
+        "docs/audits/frc-starter-runtime-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass265-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/frc-starter-runtime-lifecycle-audit.md": {
+      "sha256": "746c52f4619c83ba907debc6bc88a670c62fc1f25feb0b2fa9a1b272112b6740",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass265: Entire pass265 report checked against original12-test11-failure baseline, constructor2-test2-failure baseline and later early-binding1-test1-failure baseline,113 final passes preserving94prior invocations, actual250ms/4Hz diagnostic assertions, shared failure/disabled-loop/tuning tests, unchanged library tree/all410candidate hashes and guidance427currentdoc verification. Explicitly rules out suspected repeated-identical-close skip, keeps outer composition/batch/live tuning error coverage partial, and documents latched-instance recovery, best-effort registry/physical and Studio/archive limits.",
+      "evidence": [
+        "docs/audits/frc-starter-runtime-lifecycle-audit.md",
+        "ARESLib-Kotlin/build/audit-pass265-verified-evidence/summary.json"
       ]
     }
   }

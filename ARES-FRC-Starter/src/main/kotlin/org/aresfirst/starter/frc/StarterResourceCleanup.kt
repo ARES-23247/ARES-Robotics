@@ -7,11 +7,16 @@ internal fun closeStarterResources(resources: Iterable<AutoCloseable>) {
         try {
             resource.close()
         } catch (failure: Throwable) {
-            if (failure is InterruptedException) Thread.currentThread().interrupt()
-            val primary = first
-            if (primary == null) first = failure
-            else if (primary !== failure && primary.suppressed.none { it === failure }) primary.addSuppressed(failure)
+            first = retainStarterFailure(first, failure)
         }
     }
     first?.let { throw it }
+}
+
+/** Keep first failure identity, unique later failures, and direct interruption across cleanup owners. */
+internal fun retainStarterFailure(primary: Throwable?, failure: Throwable): Throwable {
+    if (failure is InterruptedException) Thread.currentThread().interrupt()
+    if (primary == null) return failure
+    if (primary !== failure && primary.suppressed.none { it === failure }) primary.addSuppressed(failure)
+    return primary
 }

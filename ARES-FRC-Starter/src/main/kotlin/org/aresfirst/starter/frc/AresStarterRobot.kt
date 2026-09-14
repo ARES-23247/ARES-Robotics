@@ -213,75 +213,110 @@ internal fun installGeneratedSuperstructures(
     createAll: () -> List<Subsystem> = GeneratedSuperstructureRegistry::createAll,
 ): List<Subsystem> = createAll().also { created -> created.forEach(register) }
 
-/** Minimal vendor-neutral Redux/subsystem host used by the generic starter. */
+/** Minimal vendor-neutral Redux/subsystem host used by the generic starter.
+ * A failed update, registration or neutral output latches this instance until it is replaced.
+ */
 internal class StarterRobotRuntime(
     val telemetry: ITelemetry = StarterFrcTelemetry(),
     private val tuningContextProvider: () -> TuningApplyContext = {
         TuningApplyContext(
-            // Studio may mutate the generic starter only inside the local WPILib simulator.
-            // A real robot remains fail-closed until a deliberate operator-arming workflow exists.
             sessionArmed = RobotBase.isSimulation(),
             robotDisabled = DriverStation.isDisabled(),
         )
     },
+    tuningRuntime: TypedTuningRuntime? = null,
 ) {
     val hardwareRegistry = HardwareRegistry()
-    private val tuningRuntime = GeneratedAresTuningConfig.createRuntime()
-    private val tuningUids = StarterFrcRuntimeTuningUids.from(tuningRuntime)
-    val store = Store(
-        initialState = RobotState(
-            tuning = withStarterRuntimeTuning(TuningState(), tuningRuntime, tuningUids),
-        ),
-    )
-    private val publisher = ARESNetworkStatePublisher(telemetry)
-    private val tuningManager = TuningManager(
-        runtime = tuningRuntime,
-        telemetry = telemetry,
-        contextProvider = tuningContextProvider,
-        onApplied = ::applyTuningToConsumer,
-        isConsumerSupported = ::supportsRuntimeParameter,
-    )
+    private val tuningRuntime: TypedTuningRuntime
+    private val tuningUids: StarterFrcRuntimeTuningUids
+    val store: Store
+    private val publisher: ARESNetworkStatePublisher
+    // TuningManager publishes consumer support during construction; initialize its callback state first.
     private val subsystems = ArrayList<Subsystem>()
     private var lastUpdateMs = 0L
+    private var hasUpdateTimestamp = false
     private var closed = false
+    private var fault: Throwable? = null
+    private val tuningManager: TuningManager
 
     init {
-        // Explicit empty support is distinct from a legacy runtime that never published capability
-        // metadata. Studio can therefore fail closed immediately without waiting for a periodic tick.
-        telemetry.putString("SysId/SupportedMechanisms", "")
-    }
-
-    fun registerSubsystem(subsystem: Subsystem) {
-        check(!closed) { "Cannot register a subsystem after the robot runtime closes" }
-        subsystems += subsystem
-        if (subsystem is TypedTuningConsumer) {
-            applyCanonicalValues(subsystem)
-            tuningManager.publishMetadataAndValues()
+        var manager: TuningManager? = null
+        try {
+            this.tuningRuntime = tuningRuntime ?: GeneratedAresTuningConfig.createRuntime()
+            tuningUids = StarterFrcRuntimeTuningUids.from(this.tuningRuntime)
+            store = Store(initialState = RobotState(
+                tuning = withStarterRuntimeTuning(TuningState(), this.tuningRuntime, tuningUids),
+            ))
+            publisher = ARESNetworkStatePublisher(telemetry)
+            manager = TuningManager(
+                runtime = this.tuningRuntime,
+                telemetry = telemetry,
+                contextProvider = tuningContextProvider,
+                onApplied = ::applyTuningToConsumer,
+                isConsumerSupported = ::supportsRuntimeParameter,
+            )
+            // Explicit empty support lets Studio fail closed before the first periodic tick.
+            telemetry.putString("SysId/SupportedMechanisms", "")
+            tuningManager = manager
+        } catch (failure: Throwable) {
+            retainStarterFailure(null, failure)
+            try {
+                closeStarterResources(listOf(
+                    AutoCloseable { hardwareRegistry.closeAll() },
+                    AutoCloseable { manager?.close() },
+                    AutoCloseable { telemetry.close() },
+                ))
+            } catch (cleanup: Throwable) {
+                retainStarterFailure(failure, cleanup)
+            }
+            throw failure
         }
     }
 
+    /** Ownership transfers after the open/identity checks, including when canonical setup fails. */
+    fun registerSubsystem(subsystem: Subsystem) {
+        ensureRunning()
+        require(subsystems.none { it === subsystem }) { "Subsystem instance is already registered" }
+        subsystems += subsystem
+        try {
+            if (subsystem is TypedTuningConsumer) {
+                applyCanonicalValues(subsystem)
+                tuningManager.publishMetadataAndValues()
+            }
+        } catch (failure: Throwable) { fail(failure) }
+    }
+
     fun publishHardwareTopology(robotId: String) {
-        publisher.publishTopology(hardwareRegistry.getTopologyJson(robotId))
+        ensureRunning()
+        try { publisher.publishTopology(hardwareRegistry.getTopologyJson(robotId)) }
+        catch (failure: Throwable) { fail(failure) }
     }
 
     fun update() {
-        val now = RobotClock.currentTimeMillis()
-        val dt = if (lastUpdateMs == 0L) 0.02 else ((now - lastUpdateMs) / 1000.0).coerceIn(0.0, 0.05)
-        lastUpdateMs = now
-        hardwareRegistry.refreshAll()
-        for (index in subsystems.indices) subsystems[index].readSensors(store, now)
-        val outputScale = if (DriverStation.isEnabled()) 1.0 else 0.0
-        for (index in subsystems.indices) subsystems[index].writeOutputs(store.state, outputScale)
-        tuningManager.update(now)
-        publisher.publish(store.state, dtSeconds = dt, flush = false)
-        telemetry.putBoolean("ARES/Starter/PhysicalHardwareReady", false)
-        telemetry.putString("SysId/SupportedMechanisms", "")
-        telemetry.update()
+        ensureRunning()
+        try {
+            val now = RobotClock.currentTimeMillis()
+            val elapsed = now - lastUpdateMs
+            // This is measured loop telemetry, not a physics integration interval. Never clip stalls.
+            val dt = if (hasUpdateTimestamp && now >= lastUpdateMs && elapsed > 0L) elapsed / 1000.0 else Double.NaN
+            lastUpdateMs = now
+            hasUpdateTimestamp = true
+            hardwareRegistry.refreshAll()
+            for (index in subsystems.indices) subsystems[index].readSensors(store, now)
+            val outputScale = if (DriverStation.isEnabled()) 1.0 else 0.0
+            for (index in subsystems.indices) subsystems[index].writeOutputs(store.state, outputScale)
+            tuningManager.update(now)
+            publisher.publish(store.state, dtSeconds = dt, flush = false)
+            telemetry.putBoolean("ARES/Starter/PhysicalHardwareReady", false)
+            telemetry.putString("SysId/SupportedMechanisms", "")
+            telemetry.update()
+        } catch (failure: Throwable) { fail(failure) }
     }
 
     /** Test seam for proving transport acknowledgement without starting a WPILib robot loop. */
     internal fun updateTuningForTest(timestampMs: Long) {
-        tuningManager.update(timestampMs)
+        ensureRunning()
+        try { tuningManager.update(timestampMs) } catch (failure: Throwable) { fail(failure) }
     }
 
     private fun applyTuningToConsumer(parameterUid: String, value: TuningValue): Boolean {
@@ -324,29 +359,57 @@ internal class StarterRobotRuntime(
         }
     }
 
-    fun safeHardware() {
-        for (index in subsystems.indices) {
-            runCatching { subsystems[index].writeOutputs(store.state, 0.0) }
+    private fun ensureRunning() {
+        check(!closed) { "FRC starter runtime is closed" }
+        fault?.let { failure ->
+            neutralize(failure)
+            throw failure
         }
-        hardwareRegistry.safeAll()
+    }
+
+    private fun fail(failure: Throwable): Nothing {
+        val primary = retainStarterFailure(fault, failure)
+        fault = primary
+        neutralize(primary)
+        throw primary
+    }
+
+    /** Best effort neutral of every mechanism and raw device, retaining observable failures. */
+    private fun neutralize(initialFailure: Throwable? = null): Throwable? {
+        var failure = initialFailure
+        for (index in subsystems.indices) {
+            try { subsystems[index].writeOutputs(store.state, 0.0) }
+            catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        }
+        try { hardwareRegistry.safeAll() }
+        catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        return failure
+    }
+
+    fun safeHardware() {
+        if (closed) return
+        neutralize()?.let { failure ->
+            val primary = retainStarterFailure(fault, failure)
+            fault = primary
+            throw primary
+        }
     }
 
     fun close() {
         if (closed) return
         closed = true
-        var failure: Throwable? = null
-        fun attempt(block: () -> Unit) {
-            try {
-                block()
-            } catch (error: Throwable) {
-                val prior = failure
-                if (prior == null) failure = error else prior.addSuppressed(error)
-            }
+        var failure = neutralize()
+        for (index in subsystems.indices.reversed()) {
+            try { subsystems[index].close() }
+            catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
         }
-        attempt(::safeHardware)
-        for (index in subsystems.indices.reversed()) attempt(subsystems[index]::close)
-        attempt { hardwareRegistry.closeAll() }
-        attempt(telemetry::close)
+        subsystems.clear()
+        try { hardwareRegistry.closeAll() }
+        catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { tuningManager.close() }
+        catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { telemetry.close() }
+        catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
         failure?.let { throw it }
     }
 }
