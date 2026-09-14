@@ -43,6 +43,7 @@ data class SimulatorPoseFrameSnapshot(
     val sequence: Long,
     val timestampMs: Long,
     val timestampUs: Long,
+    val targetEpoch: Long = 0L,
 )
 
 /** Latest fail-closed simulator receiver state for the desktop-owned drive-frame lease. */
@@ -191,6 +192,7 @@ internal fun decodeSimulatorPoseFrame(
     value: Any?,
     timestampMs: Long,
     timestampUs: Long,
+    targetEpoch: Long = 0L,
 ): SimulatorPoseFrameSnapshot? {
     val size = when (value) {
         is JsonArray -> value.size
@@ -212,7 +214,7 @@ internal fun decodeSimulatorPoseFrame(
             else -> null
         }
         return when (element) {
-            is JsonPrimitive -> element.doubleOrNull
+            is JsonPrimitive -> element.takeUnless { it.isString }?.doubleOrNull
             is Number -> element.toDouble()
             else -> null
         }?.takeIf(Double::isFinite)
@@ -229,7 +231,7 @@ internal fun decodeSimulatorPoseFrame(
     val odomHeading = numberAt(8) ?: return null
     val sequenceValue = numberAt(9) ?: return null
     val sequence = sequenceValue.toLong()
-    if (sequence < 0L || sequence.toDouble() != sequenceValue) return null
+    if (sequence !in 0L..9_007_199_254_740_991L || sequence.toDouble() != sequenceValue) return null
 
     return SimulatorPoseFrameSnapshot(
         trueX = trueX,
@@ -244,6 +246,7 @@ internal fun decodeSimulatorPoseFrame(
         sequence = sequence,
         timestampMs = timestampMs,
         timestampUs = timestampUs,
+        targetEpoch = targetEpoch,
     )
 }
 
@@ -285,6 +288,8 @@ open class Nt4ClientService(
     open val telemetryFlow: SharedFlow<TelemetryFrame> = telemetryStore.updates
     /** UI-rate latest values; raw logging and analysis continue to use [telemetryFlow]. */
     open val uiTelemetryFlow: SharedFlow<TelemetryFrame> = uiTelemetryFanout.updates
+    @Volatile internal var hasReceivedSimulatorPoseFrame = false
+        private set
     private val _simulatorPoseFrame = MutableStateFlow<SimulatorPoseFrameSnapshot?>(null)
     /** Latest packed simulator pose, kept atomic and independent of the lossy telemetry fan-out. */
     val simulatorPoseFrame: StateFlow<SimulatorPoseFrameSnapshot?> = _simulatorPoseFrame.asStateFlow()
@@ -487,6 +492,7 @@ open class Nt4ClientService(
         liveTimelineEpochUs + (System.nanoTime() - liveTimelineMonotonicOriginNs) / 1_000L
 
     internal fun clearLiveTargetState() {
+        hasReceivedSimulatorPoseFrame = false
         inboundRouter.clear()
         val nextTargetEpoch = telemetryStore.clear()
         uiTelemetryFanout.reset(nextTargetEpoch)
@@ -633,9 +639,16 @@ open class Nt4ClientService(
         inboundRouter.markDiscovered(normalizedName, ntTopic.type)
 
         if (normalizedName == SIMULATOR_POSE_FRAME_TOPIC && !isReplayActive.value) {
-            decodeSimulatorPoseFrame(valueElement, timestampMs, timestampUs)?.let { frame ->
-                logSimulatorPoseDivergence(frame)
-                _simulatorPoseFrame.value = frame
+            val targetEpoch = telemetryStore.currentTargetEpoch()
+            val frame = decodeSimulatorPoseFrame(valueElement, timestampMs, timestampUs, targetEpoch)
+            if (targetEpoch == telemetryStore.currentTargetEpoch() && !isReplayActive.value) {
+                // Even a rejected parent owns this source: its valid-looking scalar prefix must
+                // never be reconstructed as an accepted frame. Retain only the last valid parent.
+                hasReceivedSimulatorPoseFrame = true
+                if (frame != null) {
+                    logSimulatorPoseDivergence(frame)
+                    _simulatorPoseFrame.value = frame
+                }
             }
         }
 

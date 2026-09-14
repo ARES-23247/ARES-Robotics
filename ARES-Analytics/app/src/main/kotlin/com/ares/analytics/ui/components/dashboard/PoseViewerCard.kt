@@ -13,12 +13,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayFrame
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.ui.components.core.CardHeader
 import com.ares.analytics.ui.components.core.GlassCard
 import com.ares.analytics.ui.components.core.MetricValueBadge
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.LivePoseState
 import com.ares.analytics.viewmodel.field.FieldPoseFrameAccumulator
+import com.ares.analytics.viewmodel.field.VisionPoseAccumulator
+import com.ares.analytics.viewmodel.field.currentFieldPoseFrame
+import com.ares.analytics.viewmodel.field.isCurrentFieldUpdate
 import com.ares.analytics.viewmodel.field.isFieldPoseTopic
 import com.ares.analytics.viewmodel.field.toReplayPoseState
 import kotlinx.coroutines.delay
@@ -31,15 +35,12 @@ fun PoseViewerCard(
     modifier: Modifier = Modifier
 ) {
     val poseAccumulator = remember(nt4ClientService) { FieldPoseFrameAccumulator() }
+    val visionAccumulator = remember(nt4ClientService) { VisionPoseAccumulator() }
     var pose by remember(nt4ClientService) { mutableStateOf(LivePoseState()) }
-    var visionX by remember(nt4ClientService) { mutableStateOf<Double?>(null) }
-    var visionY by remember(nt4ClientService) { mutableStateOf<Double?>(null) }
-    var visionHeading by remember(nt4ClientService) { mutableStateOf<Double?>(null) }
-    var visionHasTarget by remember(nt4ClientService) { mutableStateOf<Boolean?>(null) }
     var connected by remember(nt4ClientService) { mutableStateOf(nt4ClientService.isConnected.value) }
     var replayActive by remember(nt4ClientService) { mutableStateOf(nt4ClientService.isReplayActive.value) }
     var lastUpdateMs by remember(nt4ClientService) { mutableStateOf<Long?>(null) }
-    var nowMs by remember { mutableStateOf(System.currentTimeMillis()) }
+    var nowMs by remember { mutableStateOf((System.nanoTime() / 1_000_000L)) }
 
     LaunchedEffect(nt4ClientService) {
         launch {
@@ -47,11 +48,8 @@ fun PoseViewerCard(
                 connected = isConnected
                 if (!isConnected) {
                     poseAccumulator.reset()
+                    visionAccumulator.reset()
                     pose = LivePoseState()
-                    visionX = null
-                    visionY = null
-                    visionHeading = null
-                    visionHasTarget = null
                     lastUpdateMs = null
                 }
             }
@@ -60,55 +58,59 @@ fun PoseViewerCard(
             nt4ClientService.isReplayActive.collect { isActive ->
                 replayActive = isActive
                 poseAccumulator.reset()
+                visionAccumulator.reset()
                 pose = LivePoseState(isConnected = connected)
-                visionX = null
-                visionY = null
-                visionHeading = null
-                visionHasTarget = null
                 lastUpdateMs = null
             }
         }
         launch {
             nt4ClientService.simulatorPoseFrame.collect { frame ->
-                if (frame != null && connected && !replayActive) {
-                    poseAccumulator.accept(frame)
+                if (frame == null) {
+                    poseAccumulator.reset()
                     pose = poseAccumulator.snapshot(pose)
-                    lastUpdateMs = System.currentTimeMillis()
+                    lastUpdateMs = null
+                } else if (connected && frame === nt4ClientService.currentFieldPoseFrame() && poseAccumulator.accept(frame)) {
+                    pose = poseAccumulator.snapshot(pose)
+                    lastUpdateMs = (System.nanoTime() / 1_000_000L)
                 }
+            }
+        }
+        val initialTargetEpoch = nt4ClientService.telemetryStore.currentTargetEpoch()
+        launch {
+            var observedEpoch = initialTargetEpoch
+            nt4ClientService.telemetryStore.targetEpochs.collect { epoch ->
+                if (epoch == observedEpoch) return@collect
+                observedEpoch = epoch
+                poseAccumulator.reset()
+                visionAccumulator.reset()
+                pose = LivePoseState(isConnected = connected)
+                lastUpdateMs = null
             }
         }
         launch {
             nt4ClientService.uiTelemetryFlow.collect { frame ->
-                when {
-                    isFieldPoseTopic(frame.key) -> {
-                        if (poseAccumulator.accept(frame.key, frame.value)) {
-                            pose = poseAccumulator.snapshot(pose)
-                        }
+                if (!isPoseViewerTelemetryTopic(frame.key) || !nt4ClientService.isCurrentFieldUpdate(frame)) return@collect
+                var accepted = false
+                if (isFieldPoseTopic(frame.key)) {
+                    accepted = poseAccumulator.accept(frame.key, if (frame.stringValue == null) frame.value else Double.NaN)
+                    if (accepted) {
+                        pose = poseAccumulator.snapshot(pose)
                     }
-                    frame.key == "Vision/HasTarget" -> {
-                        visionHasTarget = frame.value > 0.5
-                        if (visionHasTarget == false) {
-                            visionX = null
-                            visionY = null
-                            visionHeading = null
-                        }
-                    }
-                    frame.key == "Vision/Pose_X" && visionHasTarget != false -> visionX = frame.value
-                    frame.key == "Vision/Pose_Y" && visionHasTarget != false -> visionY = frame.value
-                    frame.key == "Vision/Pose_Heading" && visionHasTarget != false -> visionHeading = frame.value
+                } else if (visionAccumulator.accept(frame)) {
+                    accepted = true
+                    pose = visionAccumulator.snapshot(pose)
                 }
-
-                // Refresh on every received sample, even when a stationary robot repeatedly
-                // publishes the same numeric value and Compose suppresses equal state writes.
-                if (isPoseViewerTelemetryTopic(frame.key)) {
-                    lastUpdateMs = System.currentTimeMillis()
+                // This badge measures accepted telemetry activity across the displayed sources.
+                if (accepted && isValidPoseStatusValue(frame) &&
+                    (pose.hasTruePoseData || pose.ekfX != null || pose.odomX != null || pose.visionX != null)) {
+                    lastUpdateMs = (System.nanoTime() / 1_000_000L)
                 }
             }
         }
     }
     LaunchedEffect(Unit) {
         while (true) {
-            nowMs = System.currentTimeMillis()
+            nowMs = (System.nanoTime() / 1_000_000L)
             delay(250)
         }
     }
@@ -116,9 +118,9 @@ fun PoseViewerCard(
     val displayedPose = remember(currentFrame?.sequence, pose) {
         currentFrame?.toReplayPoseState() ?: pose
     }
-    val displayedVisionX = if (currentFrame != null) displayedPose.visionX else visionX
-    val displayedVisionY = if (currentFrame != null) displayedPose.visionY else visionY
-    val displayedVisionHeading = if (currentFrame != null) displayedPose.visionHeading else visionHeading
+    val displayedVisionX = if (currentFrame != null) displayedPose.visionX else pose.visionX
+    val displayedVisionY = if (currentFrame != null) displayedPose.visionY else pose.visionY
+    val displayedVisionHeading = if (currentFrame != null) displayedPose.visionHeading else pose.visionHeading
     val elapsed = lastUpdateMs?.let { nowMs - it }
     val (statusText, statusColor) = when {
         currentFrame != null -> "Replay" to AresCyan
@@ -183,6 +185,10 @@ private val POSE_STATUS_TOPICS = setOf(
 
 internal fun isPoseViewerTelemetryTopic(key: String): Boolean =
     key in POSE_STATUS_TOPICS || key.startsWith("ARES/SimulatorPoseFrame/")
+
+internal fun isValidPoseStatusValue(frame: TelemetryFrame): Boolean =
+    frame.stringValue == null && frame.value.isFinite() &&
+        (frame.key != "Vision/HasTarget" || frame.value == 0.0 || frame.value == 1.0)
 
 @Composable
 private fun PoseRow(

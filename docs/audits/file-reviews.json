@@ -5719,7 +5719,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "ea9e35d4d91574177474506f72cba1ff340734073be724eb62759fd067a70901",
+      "sha256": "5e7952b859e5d6a1d69d4bb2c099937697ad9b3567940c4a54fd040d0d5c0c1c",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -12195,11 +12195,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldTopicSubscriber.kt": {
-      "sha256": "69c0309905b491cc920484e82d126150eb3b961be739d84ec385e0415ee2d6b7",
+      "sha256": "e511ea789d6fd715dafe6ed744ef13b203bdb16b1b7025965080787ee1a59e35",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 252: Prior typed record mapping retained; complete strict scalar staging review adds fresh version/count, contiguous completeness, no previous-slot reuse and no duplicate sequence commit, synchronized reset/staging. Live game-piece layer consumes complete current target parent despite scalar overflow, rejects old notified publications and stays empty during replay; target/replay resets drop game-piece staging. Broader pose/vision/legacy update validation, source age and concurrent event ordering remain partial.",
+      "scope": "Pass 254: Prior game-piece boundaries retained; extracted validated pose accumulator, added shared vision reducer, current-notified/replay/parent admission, pose/vision clearing on target/mode changes and current-epoch parent checks. Tests reproduce and fix queued replay data and stale rendered target data. Legacy game-piece coordinate/count/attribute handling and broader concurrent lifecycle/source-age behavior remain partial.",
       "evidence": [
+        "docs/audits/live-pose-vision-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass254-verified-evidence/summary.json",
         "docs/audits/game-piece-frame-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass252-verified-evidence/summary.json",
         "docs/audits/studio-replay-game-piece-audit.md",
@@ -17957,11 +17959,13 @@
       "sha256": "3aca6ac36b60e9b1a7a9493266629f00a1a785d07452ef4707a4e56521cda6be"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt": {
-      "sha256": "7edab38d83e052cdf2a6a8bff80f4cb6e0966656bdcec5bd739c82845e4fd04a",
+      "sha256": "b125505026336e892e6532ec2379c6edab0a0a18d8e5d7fe1c70a5ebfd366312",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 252: Prior reviewed boundaries retained. Adds current-target complete game-piece StateFlow before scalar fan-out and clears it on target reset. Shared strict packed decoding, invalid payload owns empty layer, replay check before/after decoding, captured target epoch checked before publication. Recording/scalar transport preserved. Wider source admission/connection/recording lifecycle remains partial.",
+      "scope": "Pass 254: Prior scopes retained. Simulator pose decoder now rejects JSON numeric strings and sequences above2^53-1; parent records carry target epoch, checked before and after decode. Receipt ownership suppresses scalar reconstruction even for invalid parent payloads; resets release ownership and published parent. Other decoders, ingress/session/connection/recording semantics and arbitrary concurrent target transitions remain partial.",
       "evidence": [
+        "docs/audits/live-pose-vision-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass254-verified-evidence/summary.json",
         "docs/audits/game-piece-frame-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass252-verified-evidence/summary.json",
         "docs/audits/nt4-disposal-test-fixtures-audit.md",
@@ -18999,11 +19003,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldTopicSubscriberTest.kt": {
-      "sha256": "82e6a85815c149b798cad7ca819a4052bb608d602e3f89ec47d4b540d96d3b74",
+      "sha256": "c34fa884029fb1272a4ac8123b644305587f6d0616a18b7d692d32048f389c57",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 251: All ten methods reviewed/executed with original atomic pose, fragment precedence, manual replay gate, alliance, game-piece and filtering assertions retained. Seven integration cases use real NT4 decoding with fake unrelated storage and explicitly joined test-owner and terminal-client lifetimes. No shared temp DB files or success-only cleanup remains; production field reducer coverage is separate.",
+      "scope": "Pass 254: All10 original methods retained/executed, with real service/mock persistence and owned joined scopes. Rewind test now uses actual immutable ReplayFrame projection instead of retired injected raw-bus replay; preserves truth/estimate/odometry, live traffic isolation and return-to-live assertions. Existing packed parent, scalar ownership, topic filtering, alliance and game-piece assertions preserved.",
       "evidence": [
+        "docs/audits/live-pose-vision-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass254-verified-evidence/summary.json",
         "docs/audits/nt4-disposal-test-fixtures-audit.md",
         "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json",
         "docs/audits/sysid-preview-isolation-audit.md",
@@ -19128,6 +19134,56 @@
       "evidence": [
         "docs/audits/replay-pose-trace-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass253-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldPoseFrameAccumulator.kt": {
+      "sha256": "7a3e2eef3766386176d81ac1b842490a482f983ee547d7129e622878aa0ab76f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 254: Complete extracted/reworked accumulator and current-field guards: separate latched finite source groups; contiguous fresh packed staging, exact53-bit sequence and duplicate marker rejection; valid atomic parent ownership; reset removes stale rendered pose fields; retains last valid packed sample during malformed staging; stable-state object reuse. Current parent identity/target epoch/replay and last-notified guards shared with field and pose-card consumers. Direct and integrated tests cover all methods and recovery. Per-source latched freshness and arbitrary external transition ordering are not claimed.",
+      "evidence": [
+        "docs/audits/live-pose-vision-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass254-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/VisionPoseAccumulator.kt": {
+      "sha256": "187df0f8f504ef6fdf9c2ba7c323f515703028e128a453f14f1322c2d7cbdc82",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 254: Complete shared vision reduction reviewed/executed: finite numeric boolean target, full scalar groups, bounded4096-slot lazy buffers, one array-family ownership, same-microsecond complete triples, older sample rejection, new sample map cleanup, invalid point removal, reset/loss and state reuse. Original parent length is unavailable in this scalar interface; zero-length parent delivery and atomic whole-array publication remain transport boundaries.",
+      "evidence": [
+        "docs/audits/live-pose-vision-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass254-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/PoseViewerCard.kt": {
+      "sha256": "e8fa97a2c3f56d0ab4e67e24820d0b970693b3819c296cbf0e5d6f4a4d40fdba",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 254: Reviewed changed data path plus rendered scalar/unit formatting: shared pose/vision staging and admission, target/mode clearing, current atomic parent checks, immutable replay projection, monotonic activity age and tested numeric/boolean freshness predicate. Removed duplicate vision state/reduction. Compose collector scheduling, per-source freshness and native rendered lifecycle remain partial; no window validation claimed.",
+      "evidence": [
+        "docs/audits/live-pose-vision-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass254-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/LivePoseIntegrityAuditTest.kt": {
+      "sha256": "661f49f6e9100f82d11734f159a79db4af9b5473a34794e417c486ed648355e5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 254: Complete31-method file reviewed/executed:18 actual baseline failures retained plus13 positives/bounds/admission/status cases. Pure packed/scalar completeness, finite/exact metadata, source ownership, reset/recovery and state identity; numeric carriers and ownership; full finite vision triples, timestamp/family/index limits, loss/reset and old sample rejection; actual NT4 ingest including invalid parent scalar prefix, held dispatcher mode/target transitions, current frame identity and typed activity guard. Joined scopes/client cleanup; no physical hardware or rendered UI.",
+      "evidence": [
+        "docs/audits/live-pose-vision-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass254-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/live-pose-vision-integrity-audit.md": {
+      "sha256": "5ec1d0ca6046031899586545458d30c14833779ee440a5788e6c44ec60de467b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 254: Documents18 confirmed original failures, shared live pose/vision corrections, atomic parent ownership, state allocation reduction, exact focused/full/candidate/coverage evidence, retained rewind assertions and explicit native UI/transport/source-age/hardware limitations.",
+      "evidence": [
+        "docs/audits/live-pose-vision-integrity-audit.md",
+        "ARESLib-Kotlin/build/audit-pass254-verified-evidence/summary.json"
       ]
     }
   }

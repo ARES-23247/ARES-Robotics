@@ -133,21 +133,14 @@ class FieldTopicSubscriberTest {
             nt4.isReplayActive.value = true
             runCurrent()
             val replayValues = doubleArrayOf(1.0, 2.0, -0.2, 1.1, 2.1, -0.19, 0.9, 1.9, -0.21, 7.0)
-            replayValues.forEachIndexed { index, value ->
-                nt4.telemetryStore.accept(
-                    com.ares.analytics.shared.models.TelemetryFrame(
-                        timestampMs = 1000L,
-                        sessionId = "replay",
-                        key = "ARES/SimulatorPoseFrame/$index",
-                        value = value
-                    )
-                )
-            }
-            runCurrent()
-            assertEquals(1.0, livePose.value.trueX)
-            assertEquals(2.0, livePose.value.trueY)
-            assertEquals(1.1, livePose.value.ekfX)
-            assertEquals(0.9, livePose.value.odomX)
+            val replay = com.ares.analytics.service.ReplayFrame(1000L,
+                replayValues.mapIndexed { index, value -> "ARES/SimulatorPoseFrame/$index" to value }.toMap())
+            val displayedReplay = replay.toReplayPoseState()
+            assertFalse(livePose.value.hasTruePoseData)
+            assertEquals(1.0, displayedReplay.trueX)
+            assertEquals(2.0, displayedReplay.trueY)
+            assertEquals(1.1, displayedReplay.ekfX)
+            assertEquals(0.9, displayedReplay.odomX)
 
             // Fresh network traffic continues to be persisted while rewinding, but it must not
             // seize the displayed field pose from replay.
@@ -156,8 +149,9 @@ class FieldTopicSubscriberTest {
                 "team", "season", "robot"
             )
             runCurrent()
-            assertEquals(1.0, livePose.value.trueX)
-            assertEquals(1.1, livePose.value.ekfX)
+            assertFalse(livePose.value.hasTruePoseData)
+            assertEquals(1.0, replay.toReplayPoseState().trueX)
+            assertEquals(1.1, replay.toReplayPoseState().ekfX)
 
             nt4.isReplayActive.value = false
             runCurrent()
