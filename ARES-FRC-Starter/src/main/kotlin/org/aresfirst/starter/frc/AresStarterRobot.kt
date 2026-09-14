@@ -52,8 +52,7 @@ class AresStarterRobot : TimedRobot() {
         val fieldPath = Filesystem.getDeployDirectory().toPath().resolve("paths/field.json")
         val field = runCatching { loadStarterFieldContract(fieldPath.readBytes()) }.getOrNull()
         if (field != null) {
-            RobotFieldManager.setActiveConfig(field.config)
-            simulation.configureField(field.config)
+            applyStarterSimulationField(simulation, field)
         } else {
             RobotFieldManager.setActiveConfig(unavailableFrcField())
             DriverStation.reportError(
@@ -83,8 +82,7 @@ class AresStarterRobot : TimedRobot() {
         studioSimulationBridge = if (RobotBase.isSimulation()) {
             FrcStudioSimulationBridge(
                 onFieldApplied = { updatedField ->
-                    RobotFieldManager.setActiveConfig(updatedField.config)
-                    simulation.configureField(updatedField.config)
+                    applyStarterSimulationField(simulation, updatedField)
                 }
             )
         } else null

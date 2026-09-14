@@ -2,7 +2,7 @@ package org.aresfirst.starter.frc
 
 import com.areslib.telemetry.ITelemetry
 import com.areslib.telemetry.TelemetryTopicNormalizer
-import edu.wpi.first.networktables.NetworkTableEntry
+import edu.wpi.first.networktables.GenericEntry
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.wpilibj.DataLogManager
 
@@ -16,8 +16,11 @@ import edu.wpi.first.wpilibj.DataLogManager
 internal class StarterFrcTelemetry(
     private val instance: NetworkTableInstance = NetworkTableInstance.getDefault(),
     startDataLog: Boolean = true,
+    private val createEntry: (String) -> GenericEntry = { instance.getTopic(it).getGenericEntry() },
 ) : ITelemetry {
-    private val entries = HashMap<String, NetworkTableEntry>()
+    // Generic entries are individually owned. NetworkTableEntry.close() is intentionally a no-op.
+    private val entries = HashMap<String, GenericEntry>()
+    private var closed = false
 
     init {
         if (startDataLog) {
@@ -52,17 +55,20 @@ internal class StarterFrcTelemetry(
         entry(key).getString(defaultValue)
 
     override fun update() {
+        check(!closed) { "FRC starter telemetry is closed" }
         instance.flushLocal()
     }
 
     override fun close() {
-        entries.values.forEach(NetworkTableEntry::close)
-        entries.clear()
+        if (closed) return
+        closed = true
+        try { closeStarterResources(entries.values) } finally { entries.clear() }
     }
 
-    private fun entry(key: String): NetworkTableEntry {
+    private fun entry(key: String): GenericEntry {
+        check(!closed) { "FRC starter telemetry is closed" }
         val canonical = canonicalStarterFrcTelemetryTopic(key)
-        return entries.getOrPut(canonical) { instance.getEntry(canonical) }
+        return entries.getOrPut(canonical) { createEntry(canonical) }
     }
 }
 

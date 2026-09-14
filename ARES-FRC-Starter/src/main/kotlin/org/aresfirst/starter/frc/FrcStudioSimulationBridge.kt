@@ -13,7 +13,6 @@ import edu.wpi.first.networktables.StringSubscriber
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import org.aresfirst.starter.frc.generated.drivebase.GeneratedAresDrivebaseConfig
-import java.security.MessageDigest
 import java.util.UUID
 import kotlin.math.abs
 
@@ -240,91 +239,6 @@ internal fun FrcStudioDriveCommand.copyIntoControllerFrame(
     frame.setButton(2, buttonX)
 }
 
-/** A validated field update plus the exact payload digest Studio expects in its receipt. */
-internal data class FrcStudioFieldApplication(
-    val contract: StarterFieldContract,
-    val sha256: String,
-    val changed: Boolean,
-)
-
-internal fun encodeFrcStudioFieldReceipt(
-    application: FrcStudioFieldApplication,
-    simulatorSession: String,
-    sequence: Long,
-): String {
-    require(simulatorSession.isNotBlank()) { "simulator field receipt session must not be blank" }
-    require(sequence > 0L) { "simulator field receipt sequence must be positive" }
-    val config = application.contract.config
-    return buildString(320) {
-        append("{\"session\":\"")
-        append(simulatorSession.replace("\\", "\\\\").replace("\"", "\\\""))
-        append("\",\"sequence\":")
-        append(sequence)
-        append(",\"configId\":\"")
-        append(config.id.replace("\\", "\\\\").replace("\"", "\\\""))
-        append("\",\"revision\":")
-        append(config.revision)
-        append(",\"sha256\":\"")
-        append(application.sha256)
-        append("\",\"obstacleCount\":")
-        append(config.obstacles.size)
-        append(",\"elementCount\":")
-        append(config.elements.size)
-        append(",\"aprilTagCount\":")
-        append(config.apriltags.size)
-        append('}')
-    }
-}
-
-/**
- * Deterministic revision gate for canonical FRC field documents received from Studio.
- *
- * Re-sending the exact active revision is accepted so a reconnected UI can obtain a fresh
- * receipt without resetting physics. Reusing one revision for different bytes or sending an
- * older revision for the same field ID fails closed.
- */
-internal class FrcStudioFieldGate(
-    private val loader: (ByteArray) -> StarterFieldContract? = ::loadStarterFieldContract,
-) {
-    private var activeConfigId = ""
-    private var activeRevision = Long.MIN_VALUE
-    private var activeSha256 = ""
-
-    var rejectionReason: String? = null
-        private set
-
-    fun accept(payload: String): FrcStudioFieldApplication? {
-        rejectionReason = null
-        if (payload.isBlank()) return reject("Canonical field payload is empty")
-        val contract = loader(payload.toByteArray(Charsets.UTF_8))
-            ?: return reject(StarterFieldContractLoader.error ?: "Canonical FRC field is invalid")
-        val config = contract.config
-        val digest = sha256(payload)
-        if (config.id == activeConfigId) {
-            if (config.revision < activeRevision) {
-                return reject("Ignored stale field revision ${config.revision}; active revision is $activeRevision")
-            }
-            if (config.revision == activeRevision && digest != activeSha256) {
-                return reject("Field revision ${config.revision} was reused with different content")
-            }
-        }
-        val changed = config.id != activeConfigId || config.revision != activeRevision || digest != activeSha256
-        activeConfigId = config.id
-        activeRevision = config.revision
-        activeSha256 = digest
-        return FrcStudioFieldApplication(contract, digest, changed)
-    }
-
-    private fun reject(reason: String): FrcStudioFieldApplication? {
-        rejectionReason = reason
-        return null
-    }
-
-    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8))
-        .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
-}
-
 /**
  * Simulation-only ARES Studio bridge for the generic FRC starter.
  *
@@ -368,9 +282,16 @@ internal class FrcStudioSimulationBridge(
     private var latestCommand: FrcStudioDriveCommand? = null
     private var closed = false
 
-    override fun prepare(port: Int) = fallbackSampler.prepare(port)
+    override fun prepare(port: Int) {
+        check(!closed) { "FRC Studio simulation bridge is closed" }
+        fallbackSampler.prepare(port)
+    }
 
     override fun sampleInto(port: Int, frame: InputFrame, nowNanos: Long) {
+        if (closed) {
+            frame.beginSample(connected = false, sampleTimeNanos = nowNanos)
+            return
+        }
         if (!studioControlRequested || port != 0) {
             fallbackSampler.sampleInto(port, frame, nowNanos)
             return
@@ -426,14 +347,14 @@ internal class FrcStudioSimulationBridge(
 
     /** Applies queued canonical field documents independently of Driver Station state. */
     internal fun updateFieldDocuments() {
+        check(!closed) { "FRC Studio simulation bridge is closed" }
         for (update in fieldSubscriber.readQueue()) {
-            val application = fieldGate.accept(update.value)
+            val application = fieldGate.accept(update.value, onFieldApplied)
             if (application == null) {
                 fieldErrorPublisher.set(fieldGate.rejectionReason ?: "Canonical FRC field was rejected")
                 networkTables.flush()
                 continue
             }
-            if (application.changed) onFieldApplied(application.contract)
             fieldErrorPublisher.set("")
             fieldReceiptSequence++
             fieldReceiptPublisher.set(
@@ -446,15 +367,14 @@ internal class FrcStudioSimulationBridge(
     override fun close() {
         if (closed) return
         closed = true
-        applyDriverStationState(enabled = false, autonomous = false)
-        statePublisher.set(DRIVER_STATION_DISABLED)
-        driveSubscriber.close()
-        commandSubscriber.close()
-        fieldSubscriber.close()
-        acknowledgementPublisher.close()
-        statePublisher.close()
-        fieldReceiptPublisher.close()
-        fieldErrorPublisher.close()
+        latestCommand = null
+        studioControlRequested = false
+        closeStarterResources(listOf(
+            AutoCloseable { applyDriverStationState(enabled = false, autonomous = false) },
+            AutoCloseable { statePublisher.set(DRIVER_STATION_DISABLED) },
+            driveSubscriber, commandSubscriber, fieldSubscriber, acknowledgementPublisher,
+            statePublisher, fieldReceiptPublisher, fieldErrorPublisher,
+        ))
     }
 
     private fun applyDriverStationState(enabled: Boolean, autonomous: Boolean) {
