@@ -1,11 +1,14 @@
 package com.ares.analytics.viewmodel.field
 
 import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.service.VisionPoseArraySnapshot
 import com.ares.analytics.viewmodel.LivePoseState
 
 /** Latched scalar vision and complete same-source-time array triples, owned by one consumer. */
 internal class VisionPoseAccumulator {
     private var hasTarget = false
+    private var targetSinceUs = Long.MIN_VALUE
+    private var parentOwned = false
     private val scalar = DoubleArray(3) { Double.NaN }
     private var array: DoubleArray? = null
     private var times: LongArray? = null
@@ -15,16 +18,38 @@ internal class VisionPoseAccumulator {
 
     @Synchronized fun reset() {
         hasTarget = false
+        targetSinceUs = Long.MIN_VALUE
+        parentOwned = false
         scalar.fill(Double.NaN)
         array = null; times = null; canonical = false
         publishedTime = Long.MIN_VALUE; poses = emptyMap()
+    }
+
+    @Synchronized fun accept(frame: VisionPoseArraySnapshot) {
+        parentOwned = true
+        if (frame.timestampUs < targetSinceUs || frame.timestampUs < publishedTime) return
+        array = null; times = null
+        poses = frame.poses
+        publishedTime = frame.timestampUs
+    }
+
+    @Synchronized fun clearParent() {
+        poses = emptyMap()
+        array = null; times = null
+        publishedTime = Long.MIN_VALUE
     }
 
     @Synchronized fun accept(frame: TelemetryFrame): Boolean {
         val key = frame.key
         val value = if (frame.stringValue == null && frame.value.isFinite()) frame.value else Double.NaN
         if (key == "Vision/HasTarget") {
-            if (value != 1.0) reset() else hasTarget = true
+            if (value != 1.0) reset() else {
+                if (!hasTarget) {
+                    targetSinceUs = frame.timestampUs
+                    if (publishedTime < targetSinceUs) clearParent()
+                }
+                hasTarget = true
+            }
             return true
         }
         if (!hasTarget) return false
@@ -33,6 +58,7 @@ internal class VisionPoseAccumulator {
             "Vision/Pose_Y" -> { scalar[1] = value; return true }
             "Vision/Pose_Heading" -> { scalar[2] = value; return true }
         }
+        if (parentOwned || frame.timestampUs < targetSinceUs) return false
         val isCanonical = key.startsWith("Vision/PoseArray/")
         val prefix = if (isCanonical) "Vision/PoseArray/" else "AdvantageScope/VisionPose/"
         if (!key.startsWith(prefix) || (!isCanonical && canonical)) return false
@@ -64,12 +90,13 @@ internal class VisionPoseAccumulator {
 
     @Synchronized fun snapshot(current: LivePoseState): LivePoseState {
         val complete = hasTarget && scalar.all(Double::isFinite)
+        val visiblePoses = if (hasTarget) poses else emptyMap()
         val x = scalar[0].takeIf { complete }
         val y = scalar[1].takeIf { complete }
         val heading = scalar[2].takeIf { complete }
         if (current.visionHasTarget == hasTarget && current.visionX == x && current.visionY == y &&
-            current.visionHeading == heading && current.visionPoses == poses) return current
+            current.visionHeading == heading && current.visionPoses == visiblePoses) return current
         return current.copy(visionHasTarget = hasTarget, visionX = x, visionY = y,
-            visionHeading = heading, visionPoses = poses)
+            visionHeading = heading, visionPoses = visiblePoses)
     }
 }

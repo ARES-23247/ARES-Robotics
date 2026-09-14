@@ -3,6 +3,8 @@ package com.ares.analytics.viewmodel.field
 import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.robotLightingTelemetry
+import com.ares.analytics.service.LegacyGamePieceTelemetry
+import com.ares.analytics.service.VisionPoseArrayTelemetry
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.ui.components.pathplanner.Waypoint
 import com.ares.analytics.viewmodel.LivePoseState
@@ -33,24 +35,7 @@ internal fun ReplayFrame.toReplayPoseState(): LivePoseState {
         ?: pose("Drive/Odom_X", "Drive/Odom_Y", "Drive/Odom_Heading")
     val visionHasTarget = number("Vision/HasTarget") == 1.0
     val vision = if (visionHasTarget) pose("Vision/Pose_X", "Vision/Pose_Y", "Vision/Pose_Heading") else null
-    val visionPoses = if (visionHasTarget) {
-        // A single array source owns every triple. Bound indexes to NT4's accepted array size;
-        // downstream rendering visits indices up to maxIndex, so arbitrary sparse keys are unsafe.
-        val prefix = if (values.keys.any { it.startsWith("Vision/PoseArray/") }) {
-            "Vision/PoseArray/"
-        } else "AdvantageScope/VisionPose/"
-        val indices = values.keys.asSequence().filter { it.startsWith(prefix) }
-            .mapNotNull { it.removePrefix(prefix).toIntOrNull()?.takeIf { i -> i in 0..4095 && i % 3 == 0 } }
-        buildMap {
-            for (index in indices) {
-                if (index + 2 > 4095) continue
-                val observation = pose("$prefix$index", "$prefix${index + 1}", "$prefix${index + 2}") ?: continue
-                put(index, observation.x)
-                put(index + 1, observation.y)
-                put(index + 2, observation.headingRad)
-            }
-        }
-    } else emptyMap()
+    val visionPoses = if (visionHasTarget) VisionPoseArrayTelemetry.decodeSnapshot(values, stringValues) else emptyMap()
     val lighting = robotLightingTelemetry(if (stringValues.isEmpty()) values else values.filterKeys { it !in stringValues })
 
     return LivePoseState(
@@ -76,24 +61,7 @@ private fun replayGamePieces(values: Map<String, Double>, strings: Map<String, S
     if (values.keys.any { it.startsWith("ARES/GamePiecesFrame/") }) {
         return GamePieceFrameAccumulator.decodeSnapshot(values, strings).orEmpty()
     }
-    val count = values["ARES/GamePieces/Count"]?.let {
-        if ("ARES/GamePieces/Count" in strings || !it.isFinite() || it < 0.0 || it > Int.MAX_VALUE || it != it.toInt().toDouble()) return emptyMap()
-        it.toInt()
-    }
-    return values.keys.asSequence()
-        .filter { it.startsWith("ARES/GamePieces/") }
-        .mapNotNull { it.removePrefix("ARES/GamePieces/").toIntOrNull()?.takeIf { index -> index >= 0 } }
-        .map { it / 7 }
-        .filter { count == null || it < count }
-        .distinct()
-        .mapNotNull { index ->
-            val xKey = "ARES/GamePieces/${index * 7}"
-            val yKey = "ARES/GamePieces/${index * 7 + 1}"
-            if (xKey in strings || yKey in strings) return@mapNotNull null
-            val x = values[xKey]?.takeIf(Double::isFinite) ?: return@mapNotNull null
-            val y = values[yKey]?.takeIf(Double::isFinite) ?: return@mapNotNull null
-            index to GamePiece(id = index.toString(), name = "Piece $index", x = x, y = y, type = "Game piece")
-        }.toMap()
+    return LegacyGamePieceTelemetry.decodeSnapshot(values, strings)
 }
 
 /** Loads complete recorded poses before bounded sampling, ending at the replay playhead. */

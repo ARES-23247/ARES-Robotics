@@ -3,6 +3,8 @@ package com.ares.analytics.viewmodel.field
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.GamePieceTelemetry
 import com.ares.analytics.service.GamePieceFrameSnapshot
+import com.ares.analytics.service.LegacyGamePieceSnapshot
+import com.ares.analytics.service.VisionPoseArraySnapshot
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.viewmodel.FieldViewerState
 import com.ares.analytics.viewmodel.LivePoseState
@@ -96,9 +98,20 @@ class FieldTopicSubscriber(
     private val poseAccumulator = FieldPoseFrameAccumulator()
     private val visionAccumulator = VisionPoseAccumulator()
     private val gamePieceAccumulator = GamePieceFrameAccumulator()
+    private val legacyAccumulator = LegacyGamePieceAccumulator()
 
     private fun currentGamePieceFrame(): GamePieceFrameSnapshot? =
         nt4ClientService.gamePieceFrame.value?.takeIf {
+            !nt4ClientService.isReplayActive.value && it.targetEpoch == nt4ClientService.telemetryStore.currentTargetEpoch()
+        }
+
+    private fun currentLegacyFrame(): LegacyGamePieceSnapshot? =
+        nt4ClientService.legacyGamePieceFrame.value?.takeIf {
+            !nt4ClientService.isReplayActive.value && it.targetEpoch == nt4ClientService.telemetryStore.currentTargetEpoch()
+        }
+
+    private fun currentVisionFrame(): VisionPoseArraySnapshot? =
+        nt4ClientService.visionPoseArrayFrame.value?.takeIf {
             !nt4ClientService.isReplayActive.value && it.targetEpoch == nt4ClientService.telemetryStore.currentTargetEpoch()
         }
 
@@ -109,6 +122,7 @@ class FieldTopicSubscriber(
                     poseAccumulator.reset()
                     visionAccumulator.reset()
                     gamePieceAccumulator.reset()
+                    legacyAccumulator.reset()
                 }
                 livePoseFlow.update { currentState ->
                     val current = if (connected) currentState else visionAccumulator.snapshot(poseAccumulator.snapshot(currentState))
@@ -133,9 +147,10 @@ class FieldTopicSubscriber(
                 poseAccumulator.reset()
                 visionAccumulator.reset()
                 gamePieceAccumulator.reset()
+                legacyAccumulator.reset()
                 livePoseFlow.update { state ->
                     visionAccumulator.snapshot(poseAccumulator.snapshot(state))
-                        .copy(liveGamePieces = currentGamePieceFrame()?.pieces.orEmpty())
+                        .copy(liveGamePieces = currentGamePieceFrame()?.pieces ?: legacyAccumulator.snapshot())
                 }
             }
         }
@@ -159,12 +174,36 @@ class FieldTopicSubscriber(
             nt4ClientService.gamePieceFrame.collect { frame ->
                 if (frame == null) {
                     gamePieceAccumulator.reset()
+                    legacyAccumulator.reset()
                     if (!nt4ClientService.isReplayActive.value) {
-                        livePoseFlow.update { it.copy(liveGamePieces = emptyMap()) }
+                        currentLegacyFrame()?.let(legacyAccumulator::accept)
+                        livePoseFlow.update { it.copy(liveGamePieces = legacyAccumulator.snapshot()) }
                     }
                 } else if (frame === currentGamePieceFrame()) {
                     livePoseFlow.update { it.copy(liveGamePieces = frame.pieces) }
                 }
+            }
+        }
+
+        scope.launch(processingDispatcher) {
+            nt4ClientService.legacyGamePieceFrame.collect { frame ->
+                if (frame == null) {
+                    legacyAccumulator.reset()
+                } else if (frame === currentLegacyFrame()) {
+                    legacyAccumulator.accept(frame)
+                } else return@collect
+                if (currentGamePieceFrame() == null && !gamePieceAccumulator.hasSeenFrame) {
+                    livePoseFlow.update { it.copy(liveGamePieces = legacyAccumulator.snapshot()) }
+                }
+            }
+        }
+
+        scope.launch(processingDispatcher) {
+            nt4ClientService.visionPoseArrayFrame.collect { frame ->
+                if (frame == null) visionAccumulator.clearParent()
+                else if (frame === currentVisionFrame()) visionAccumulator.accept(frame)
+                else return@collect
+                livePoseFlow.update(visionAccumulator::snapshot)
             }
         }
 
@@ -177,10 +216,13 @@ class FieldTopicSubscriber(
                 poseAccumulator.reset()
                 visionAccumulator.reset()
                 gamePieceAccumulator.reset()
+                legacyAccumulator.reset()
                 nt4ClientService.currentFieldPoseFrame()?.let(poseAccumulator::accept)
+                currentLegacyFrame()?.let(legacyAccumulator::accept)
+                currentVisionFrame()?.let(visionAccumulator::accept)
                 livePoseFlow.update {
                     visionAccumulator.snapshot(poseAccumulator.snapshot(it))
-                        .copy(liveGamePieces = currentGamePieceFrame()?.pieces.orEmpty())
+                        .copy(liveGamePieces = currentGamePieceFrame()?.pieces ?: legacyAccumulator.snapshot())
                 }
             }
         }
@@ -214,59 +256,27 @@ class FieldTopicSubscriber(
                 }
 
                 if (key.startsWith("Vision/") || key.startsWith("AdvantageScope/VisionPose/")) {
+                    if (nt4ClientService.hasReceivedVisionPoseArray &&
+                        (key.startsWith("Vision/PoseArray/") || key.startsWith("AdvantageScope/VisionPose/"))) return@collect
                     if (visionAccumulator.accept(frame)) livePoseFlow.update(visionAccumulator::snapshot)
                     return@collect
                 }
 
-                if (key.startsWith("ARES/GamePiecesFrame/") || key.startsWith("ARES/GamePieces/")) {
-                    // Replay renders immutable ReplayFrame snapshots, not queued live publications.
-                    if (currentGamePieceFrame() != null ||
-                        frame.stringValue != null || !value.isFinite()) return@collect
-                }
-
+                if (currentGamePieceFrame() != null) return@collect
                 if (key.startsWith("ARES/GamePiecesFrame/")) {
+                    if (frame.stringValue != null || !value.isFinite()) return@collect
                     gamePieceAccumulator.accept(key, value)?.let { pieces ->
                         livePoseFlow.update { current -> current.copy(liveGamePieces = pieces) }
                     }
                     return@collect
                 }
 
-                livePoseFlow.update { current ->
-                    var next = current
-
-                    if (!gamePieceAccumulator.hasSeenFrame && key == "ARES/GamePieces/Count") {
-                        val count = value.toInt().coerceAtLeast(0)
-                        val retained = next.liveGamePieces.filterKeys { it in 0 until count }
-                        if (retained.size != next.liveGamePieces.size) {
-                            next = next.copy(liveGamePieces = retained)
-                        }
-                    } else if (!gamePieceAccumulator.hasSeenFrame && key.startsWith("ARES/GamePieces/")) {
-                        val arrayIdx = key.substringAfterLast("/").toIntOrNull()
-                        if (arrayIdx != null) {
-                            val pieceIdx = arrayIdx / 7
-                            val attributeIdx = arrayIdx % 7
-                            val currentPiece = next.liveGamePieces[pieceIdx] ?: GamePiece(
-                                id = pieceIdx.toString(),
-                                name = "Piece $pieceIdx",
-                                x = 0.0,
-                                y = 0.0,
-                                type = "Decode (Ball)"
-                            )
-                            val updatedPiece = when (attributeIdx) {
-                                0 -> currentPiece.copy(x = value)
-                                1 -> currentPiece.copy(y = value)
-                                else -> currentPiece
-                            }
-
-                            val newPieces = next.liveGamePieces.toMutableMap()
-                            newPieces[pieceIdx] = updatedPiece
-                            next = next.copy(liveGamePieces = newPieces)
-                        }
+                if (!gamePieceAccumulator.hasSeenFrame) {
+                    if (key != "ARES/GamePieces/Count" && currentLegacyFrame()?.hasParent == true) return@collect
+                    legacyAccumulator.accept(frame)?.let { pieces ->
+                        livePoseFlow.update { it.copy(liveGamePieces = pieces) }
                     }
-
-                    next
                 }
-
             }
         }
     }

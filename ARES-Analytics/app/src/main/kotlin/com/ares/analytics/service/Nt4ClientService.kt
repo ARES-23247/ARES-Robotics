@@ -293,6 +293,10 @@ open class Nt4ClientService(
     private val _simulatorPoseFrame = MutableStateFlow<SimulatorPoseFrameSnapshot?>(null)
     /** Latest packed simulator pose, kept atomic and independent of the lossy telemetry fan-out. */
     val simulatorPoseFrame: StateFlow<SimulatorPoseFrameSnapshot?> = _simulatorPoseFrame.asStateFlow()
+    private val fieldArrays = FieldArrayTelemetryState(telemetryStore, isReplayActive, ::coerceTelemetryValue)
+    internal val visionPoseArrayFrame: StateFlow<VisionPoseArraySnapshot?> = fieldArrays.visionPoseArrayFrame
+    internal val hasReceivedVisionPoseArray: Boolean get() = fieldArrays.hasReceivedVisionPoseArray
+    internal val legacyGamePieceFrame: StateFlow<LegacyGamePieceSnapshot?> = fieldArrays.legacyGamePieceFrame
     private val _gamePieceFrame = MutableStateFlow<GamePieceFrameSnapshot?>(null)
     internal val gamePieceFrame: StateFlow<GamePieceFrameSnapshot?> = _gamePieceFrame.asStateFlow()
     private val _driveInputAcknowledgement = MutableStateFlow<DriveInputAcknowledgement?>(null)
@@ -491,13 +495,14 @@ open class Nt4ClientService(
     private fun liveReceiptTimestampUs(): Long =
         liveTimelineEpochUs + (System.nanoTime() - liveTimelineMonotonicOriginNs) / 1_000L
 
-    internal fun clearLiveTargetState() {
+    internal fun clearLiveTargetState() = synchronized(fieldArrays.lock) {
         hasReceivedSimulatorPoseFrame = false
         inboundRouter.clear()
         val nextTargetEpoch = telemetryStore.clear()
         uiTelemetryFanout.reset(nextTargetEpoch)
         _simulatorPoseFrame.value = null
         _gamePieceFrame.value = null
+        fieldArrays.reset()
         _driveInputAcknowledgement.value = null
         _mecanumMotorFrame.value = null
         _robotLighting.value = RobotLightingTelemetryState()
@@ -638,6 +643,8 @@ open class Nt4ClientService(
 
         inboundRouter.markDiscovered(normalizedName, ntTopic.type)
 
+        val lengthUpdate = fieldArrays.accept(normalizedName, valueElement, timestampUs)
+
         if (normalizedName == SIMULATOR_POSE_FRAME_TOPIC && !isReplayActive.value) {
             val targetEpoch = telemetryStore.currentTargetEpoch()
             val frame = decodeSimulatorPoseFrame(valueElement, timestampMs, timestampUs, targetEpoch)
@@ -735,6 +742,11 @@ open class Nt4ClientService(
         }
 
         val liveReceiptUs = liveReceiptTimestampUs()
+        suspend fun recordLength() {
+            lengthUpdate?.let {
+                recordIncomingFrame(it.topic, it.length.toDouble(), null, timestampMs, timestampUs, liveReceiptUs)
+            }
+        }
 
         if (valueElement is JsonArray || valueElement is List<*> || valueElement is DoubleArray || valueElement is FloatArray || valueElement is Array<*>) {
             val size = when (valueElement) {
@@ -747,6 +759,7 @@ open class Nt4ClientService(
             }
             if (size > MAX_INCOMING_ARRAY_ELEMENTS) {
                 println("[Nt4ClientService] Rejected oversized array topic $normalizedName ($size elements)")
+                recordLength()
                 return
             }
 
@@ -766,41 +779,28 @@ open class Nt4ClientService(
                 val (doubleValue, stringValue) = coerceTelemetryValue(element)
                 sb.setLength(baseLen)
                 val frameKey = sb.append(idx).toString()
-                val frame = sessionMutex.withLock {
-                    val sessionId = _currentSession.value?.sessionId ?: LIVE_SESSION_ID
-                    TelemetryFrame(
-                        timestampMs = timestampMs,
-                        sessionId = sessionId,
-                        key = frameKey,
-                        value = doubleValue,
-                        stringValue = stringValue,
-                        timestampUs = timestampUs
-                    ).also { sourceFrame ->
-                        pendingFrames.send(
-                            if (sessionId == LIVE_SESSION_ID) {
-                                sourceFrame.copy(
-                                    timestampMs = liveReceiptUs / 1_000L,
-                                    timestampUs = liveReceiptUs
-                                )
-                            } else {
-                                sourceFrame
-                            }
-                        )
-                    }
-                }
-                telemetryStore.accept(frame, notifyConsumers = !isReplayActive.value)
+                recordIncomingFrame(frameKey, doubleValue, stringValue, timestampMs, timestampUs, liveReceiptUs)
             }
+            recordLength()
             return
         }
 
         // Extract double value and string value
         val (doubleValue, stringValue) = coerceTelemetryValue(valueElement)
+        recordIncomingFrame(normalizedName, doubleValue, stringValue, timestampMs, timestampUs, liveReceiptUs)
+        recordLength()
+    }
+
+    private suspend fun recordIncomingFrame(
+        key: String, doubleValue: Double, stringValue: String?,
+        timestampMs: Long, timestampUs: Long, liveReceiptUs: Long,
+    ) {
         val frame = sessionMutex.withLock {
             val sessionId = _currentSession.value?.sessionId ?: LIVE_SESSION_ID
             TelemetryFrame(
                 timestampMs = timestampMs,
                 sessionId = sessionId,
-                key = normalizedName,
+                key = key,
                 value = doubleValue,
                 stringValue = stringValue,
                 timestampUs = timestampUs
