@@ -18,6 +18,7 @@ class SequentialTaskGroup(tasks: List<Task>) : Task {
         for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
     }
     private var currentIndex = 0
+    private var initializedThrough = -1
     private var currentTaskStartTimeMs = 0L
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
@@ -26,10 +27,12 @@ class SequentialTaskGroup(tasks: List<Task>) : Task {
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         currentIndex = 0
+        initializedThrough = -1
         currentTaskStartTimeMs = 0L
         pendingActions.clear()
         handledTasks.clear()
         if (tasks.isEmpty()) return emptyList()
+        initializedThrough = 0
         return tasks[0].initialize(state)
     }
 
@@ -52,6 +55,7 @@ class SequentialTaskGroup(tasks: List<Task>) : Task {
                 currentIndex++
                 currentTaskStartTimeMs = elapsedMs
                 if (currentIndex < tasks.size) {
+                    initializedThrough = currentIndex
                     pendingActions.addAll(tasks[currentIndex].initialize(state))
                 }
             } else {
@@ -85,7 +89,7 @@ class SequentialTaskGroup(tasks: List<Task>) : Task {
             pendingActions.clear()
         }
         if (interrupted && currentIndex < tasks.size) {
-            endInterruptedChild(this, tasks[currentIndex], state, handledTasks, actions)
+            endInterruptedChild(this, tasks[currentIndex], state, handledTasks, actions, currentIndex <= initializedThrough)
         }
         super.end(state, interrupted)
         return actions
@@ -107,12 +111,14 @@ class ParallelTaskGroup(tasks: List<Task>) : Task {
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
     private val handledTasks = identityTaskSet()
+    private var initializedCount = 0
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         pendingActions.clear()
         handledTasks.clear()
-        return tasks.flatMap { it.initialize(state) }
+        initializedCount = 0
+        return tasks.flatMap { initializedCount++; it.initialize(state) }
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
@@ -163,7 +169,7 @@ class ParallelTaskGroup(tasks: List<Task>) : Task {
         if (interrupted) {
             for (i in 0 until tasks.size) {
                 val task = tasks[i]
-                endInterruptedChild(this, task, state, handledTasks, actions)
+                endInterruptedChild(this, task, state, handledTasks, actions, i < initializedCount)
             }
         }
         super.end(state, interrupted)
@@ -191,13 +197,15 @@ class ParallelRaceGroup(tasks: List<Task>) : Task {
     private val actionsList = mutableListOf<RobotAction>()
     private var isCompleted = false
     private val handledTasks = identityTaskSet()
+    private var initializedCount = 0
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         pendingActions.clear()
         isCompleted = false
         handledTasks.clear()
-        return tasks.flatMap { it.initialize(state) }
+        initializedCount = 0
+        return tasks.flatMap { initializedCount++; it.initialize(state) }
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
@@ -254,7 +262,7 @@ class ParallelRaceGroup(tasks: List<Task>) : Task {
         }
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            endInterruptedChild(this, task, state, handledTasks, actions)
+            endInterruptedChild(this, task, state, handledTasks, actions, i < initializedCount)
         }
         super.end(state, interrupted)
         return actions
@@ -282,12 +290,14 @@ class ParallelDeadlineGroup(
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
     private val handledTasks = identityTaskSet()
+    private var initializedCount = 0
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         pendingActions.clear()
         handledTasks.clear()
-        return tasks.flatMap { it.initialize(state) }
+        initializedCount = 0
+        return tasks.flatMap { initializedCount++; it.initialize(state) }
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
@@ -339,7 +349,7 @@ class ParallelDeadlineGroup(
         }
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            endInterruptedChild(this, task, state, handledTasks, actions)
+            endInterruptedChild(this, task, state, handledTasks, actions, i < initializedCount)
         }
         super.end(state, interrupted)
         return actions
@@ -352,11 +362,12 @@ private fun endInterruptedChild(
     state: RobotState,
     handledTasks: MutableSet<Task>,
     actions: MutableList<RobotAction>,
+    initialized: Boolean = true,
 ) {
     if (!handledTasks.add(child)) return
     try {
-        // A failed group initialization may leave later children entirely unstarted.
-        if (TaskStateMachine.getStatus(child) != TaskStatus.PENDING) {
+        // Track the call itself: a task can throw before publishing default lifecycle metadata.
+        if (initialized) {
             actions.addAll(child.end(state, interrupted = true))
         }
     } catch (failure: Throwable) {

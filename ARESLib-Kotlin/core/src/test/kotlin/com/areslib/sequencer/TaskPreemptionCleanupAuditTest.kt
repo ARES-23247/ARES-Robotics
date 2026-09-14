@@ -12,6 +12,7 @@ class TaskPreemptionCleanupAuditTest {
         var starts = 0; var pauses = 0; var resumes = 0; var ends = 0; var releases = 0
         var done = false
         var initializeFailure: Throwable? = null
+        var failBeforeInitializeMetadata = false
         var pauseFailure: Throwable? = null
         var resumeFailure: Throwable? = null
         var endFailure: Throwable? = null
@@ -19,7 +20,9 @@ class TaskPreemptionCleanupAuditTest {
         val pauseNeutral = RobotAction.SetIndicatorLight(name, 0.0, 1000L)
         val endNeutral = RobotAction.SetIndicatorLight(name, 0.0, 1000L)
         override fun initialize(state: RobotState): List<RobotAction> {
-            starts++; val actions = super.initialize(state); initializeFailure?.let { throw it }; return actions
+            starts++
+            if (failBeforeInitializeMetadata) initializeFailure?.let { throw it }
+            val actions = super.initialize(state); initializeFailure?.let { throw it }; return actions
         }
         override fun isCompleted(state: RobotState, elapsedMs: Long) = done
         override fun pause(state: RobotState): List<RobotAction> { pauses++; pauseFailure?.let { throw it }; return listOf(pauseNeutral) }
@@ -193,20 +196,25 @@ class TaskPreemptionCleanupAuditTest {
     }
 
     @Test fun `group initialization failure ends initialized children but only releases dormant metadata`() = withClock {
-        val first = Probe("first")
-        val broken = Probe("broken").also { it.initializeFailure = AssertionError("initialization failed") }
-        val dormant = Probe("dormant")
-        val root = compile(ParallelTaskGroup(listOf(first, broken, dormant)))
-        val executor = TaskExecutor().also { it.addTask(root) }
-        try {
-            val actions = assertDoesNotThrow<List<RobotAction>> { executor.update(RobotState(), 1000L) }
-            assertEquals(1, first.ends); assertEquals(1, broken.ends)
-            assertEquals(0, dormant.starts); assertEquals(0, dormant.ends)
-            assertEquals(1, dormant.releases)
-            assertTrue(actions.any { it === first.endNeutral })
-            assertTrue(actions.any { it === broken.endNeutral })
-            assertEquals(0, executor.size)
-        } finally { cleanup(executor, root, first, broken, dormant) }
+        for (beforeMetadata in listOf(false, true)) {
+            val first = Probe("first")
+            val broken = Probe("broken").also {
+                it.initializeFailure = AssertionError("initialization failed")
+                it.failBeforeInitializeMetadata = beforeMetadata
+            }
+            val dormant = Probe("dormant")
+            val root = compile(ParallelTaskGroup(listOf(first, broken, dormant)))
+            val executor = TaskExecutor().also { it.addTask(root) }
+            try {
+                val actions = assertDoesNotThrow<List<RobotAction>> { executor.update(RobotState(), 1000L) }
+                assertEquals(1, first.ends); assertEquals(1, broken.ends)
+                assertEquals(0, dormant.starts); assertEquals(0, dormant.ends)
+                assertEquals(1, dormant.releases)
+                assertTrue(actions.any { it === first.endNeutral })
+                assertTrue(actions.any { it === broken.endNeutral })
+                assertEquals(0, executor.size)
+            } finally { cleanup(executor, root, first, broken, dormant) }
+        }
     }
 
     @Test fun `normal task metadata failure preserves end actions and prevents queued work from starting`() = withClock {
