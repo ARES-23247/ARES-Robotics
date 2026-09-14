@@ -16,8 +16,10 @@ class HardwareRegistryPublicationPollingAuditTest {
     @Test
     fun `heartbeat remains distinguishable at the double integer precision boundary`() {
         val registry = HardwareRegistry()
-        val sequence = HardwareRegistry::class.java.getDeclaredField("telemetryPublishSequence")
-            .apply { isAccessible = true }.get(registry) as AtomicLong
+        val publisher = HardwareRegistry::class.java.getDeclaredField("telemetryPublisher")
+            .apply { isAccessible = true }.get(registry)
+        val sequence = HardwareTelemetryPublisher::class.java.getDeclaredField("telemetryPublishSequence")
+            .apply { isAccessible = true }.get(publisher) as AtomicLong
         val sink = RecordingTelemetry()
         registry.registerTelemetryDevice("Subsystems/arm", object : LoggableDevice {})
         try {

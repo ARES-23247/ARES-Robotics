@@ -2,7 +2,6 @@ package com.areslib.logging
 
 import java.io.BufferedWriter
 import java.io.File
-import java.io.FilterOutputStream
 import java.io.IOException
 import java.io.OutputStream
 import java.io.OutputStreamWriter
@@ -22,8 +21,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
-import java.util.zip.Deflater
-import java.util.zip.GZIPOutputStream
 
 /** Point-in-time operational metrics for one asynchronous telemetry logger. */
 internal data class ARESDataLoggerMetrics(
@@ -531,9 +528,9 @@ class ARESDataLogger private constructor(
                     StandardOpenOption.WRITE
                 )
                 lock = channel.lock()
-                val byteCounter = CountingOutputStream(Channels.newOutputStream(channel))
+                val byteCounter = CountingLogOutputStream(Channels.newOutputStream(channel))
                 val output: OutputStream = if (policy.compress) {
-                    FastGzipOutputStream(byteCounter)
+                    FastLogGzipOutputStream(byteCounter, WRITER_BUFFER_BYTES)
                 } else {
                     byteCounter
                 }
@@ -623,32 +620,11 @@ class ARESDataLogger private constructor(
         val active: File,
         val completed: File,
         val writer: BufferedWriter,
-        val byteCounter: CountingOutputStream,
+        val byteCounter: CountingLogOutputStream,
         val channel: FileChannel,
         val lock: FileLock,
         val startedAtMs: Long
     )
 
-    private class CountingOutputStream(output: OutputStream) : FilterOutputStream(output) {
-        @Volatile
-        var count: Long = 0L
-            private set
 
-        override fun write(value: Int) {
-            out.write(value)
-            count++
-        }
-
-        override fun write(bytes: ByteArray, offset: Int, length: Int) {
-            out.write(bytes, offset, length)
-            count += length.toLong()
-        }
-    }
-
-    private class FastGzipOutputStream(output: OutputStream) :
-        GZIPOutputStream(output, WRITER_BUFFER_BYTES, true) {
-        init {
-            def.setLevel(Deflater.BEST_SPEED)
-        }
-    }
 }

@@ -130,11 +130,15 @@ apiValidation {
 }
 
 val largeProductionKotlinBaseline = file("config/maintainability/large-production-kotlin-baseline.txt")
+val productionKotlinSources = fileTree(rootDir) {
+    include("**/src/main/**/*.kt")
+    exclude("**/build/**", "**/.gradle/**", "**/.kotlin/**", "**/.git/**")
+}
 val verifyAresLibSourceFileSizes = tasks.register("verifyAresLibSourceFileSizes") {
     group = "verification"
     description = "Prevents ARESLib monoliths from growing and new production Kotlin files from exceeding 500 lines."
     inputs.file(largeProductionKotlinBaseline)
-    inputs.files(fileTree(rootDir) { include("*/src/main/**/*.kt") })
+    inputs.files(productionKotlinSources)
 
     doLast {
         val allowed = largeProductionKotlinBaseline.readLines()
@@ -145,12 +149,7 @@ val verifyAresLibSourceFileSizes = tasks.register("verifyAresLibSourceFileSizes"
                 require(separator > 0) { "Invalid maintainability baseline entry: $line" }
                 line.substring(0, separator) to line.substring(separator + 1).toInt()
             }
-        val violations = rootDir.walkTopDown()
-            .filter { source ->
-                source.isFile && source.extension == "kt" &&
-                    source.invariantSeparatorsPath.contains("/src/main/") &&
-                    !source.invariantSeparatorsPath.contains("/build/")
-            }
+        val violations = productionKotlinSources.files.asSequence()
             .mapNotNull { source ->
                 val relative = source.relativeTo(rootDir).invariantSeparatorsPath
                 val lineCount = source.useLines { lines -> lines.count() }
@@ -176,8 +175,11 @@ val verifyAresLibSourceFileSizes = tasks.register("verifyAresLibSourceFileSizes"
     }
 }
 
-tasks.matching { it.name == "apiCheck" }.configureEach {
-    dependsOn(verifyAresLibSourceFileSizes)
+allprojects {
+    // The validator exposes subproject API tasks; root-only matching silently leaves them unguarded.
+    tasks.matching { it.name == "apiCheck" }.configureEach {
+        dependsOn(verifyAresLibSourceFileSizes)
+    }
 }
 
 tasks.register("validateAresVersion") {

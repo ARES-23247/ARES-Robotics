@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.Collections
 import java.util.IdentityHashMap
-import java.util.concurrent.atomic.AtomicLong
 import com.areslib.hardware.actuator.*
 
 /**
@@ -29,10 +28,7 @@ class HardwareRegistry {
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
     // Rebuilt only during registration. Loop readers retain one stable, identity-deduplicated snapshot.
     @Volatile private var lifecycleDevices = emptyArray<SubsystemIO>()
-    private class TelemetryEntry(val device: LoggableDevice, val prefix: String, val heartbeatTopic: String)
-    // Written under the registration monitor; each publish pass retains one coherent array.
-    private val telemetryEntries = ArrayList<TelemetryEntry>()
-    @Volatile private var telemetrySnapshot = emptyArray<TelemetryEntry>()
+    private val telemetryPublisher = HardwareTelemetryPublisher()
     private val deviceIndices = ConcurrentHashMap<String, Int>()
     private val closeables = CopyOnWriteArrayList<AutoCloseable>()
     // Registration owns metadata. A null cache is rebuilt lazily under the same monitor;
@@ -52,7 +48,6 @@ class HardwareRegistry {
     private val pollingEntriesByIdentity = IdentityHashMap<SyncPolledDevice, PollingEntry>()
     @Volatile private var syncPolledDevices = emptyArray<PollingEntry>()
     @Volatile private var roundRobinDevices = emptyArray<PollingEntry>()
-    private val telemetryPublishSequence = AtomicLong(0L)
     
     @Volatile private var pollingGeneration = 0L
     private var pollingThread: Thread? = null
@@ -204,19 +199,14 @@ class HardwareRegistry {
             node.copy(metadata = Collections.unmodifiableMap(LinkedHashMap(node.metadata)))
         }
         val prior = devices.put(name, device)
-        val heartbeatTopic = if (telemetryPrefix.startsWith("Subsystems/")) {
-            "$telemetryPrefix/TelemetryHeartbeat"
-        } else {
-            ""
-        }
         val existingIndex = deviceIndices[name]
         if (existingIndex == null) {
             deviceIndices[name] = devicesList.size
             devicesList.add(device)
-            telemetryEntries.add(TelemetryEntry(device, telemetryPrefix, heartbeatTopic))
+            telemetryPublisher.stage(null, device, telemetryPrefix)
         } else {
             devicesList[existingIndex] = device
-            telemetryEntries[existingIndex] = TelemetryEntry(device, telemetryPrefix, heartbeatTopic)
+            telemetryPublisher.stage(existingIndex, device, telemetryPrefix)
         }
 
         val shortName = if (name.startsWith("Motors/")) name.substring("Motors/".length) else name
@@ -257,7 +247,7 @@ class HardwareRegistry {
             }
         }
         lifecycleDevices = lifecycle.toTypedArray()
-        telemetrySnapshot = telemetryEntries.toTypedArray()
+        telemetryPublisher.commitRegistration()
         val previousTopology = topologyNodes[name]
         // Bare re-registration of the same object keeps its address. A new object has no
         // known address until explicitly supplied; never describe it using retired metadata.
@@ -329,7 +319,7 @@ class HardwareRegistry {
     fun registerDevice(name: String, device: LoggableDevice, canBus: String, canId: Int, busPosition: Int? = null) {
         registerDevice(name, "Hardware/$name", device, TopologyNode(
             id = name,
-            type = getDeviceNodeType(name),
+            type = HardwareTopologyTypes.forName(name),
             displayName = name.substringAfterLast('/'),
             canId = canId,
             canBus = canBus,
@@ -365,18 +355,6 @@ class HardwareRegistry {
         return HardwareTopologyCodec.encode(buildTopology(robotId))
     }
 
-    private fun getDeviceNodeType(name: String): TopologyNodeType {
-        val lower = name.lowercase()
-        return when {
-            lower.contains("imu") || lower.contains("gyro") -> TopologyNodeType.IMU
-            lower.contains("camera") || lower.contains("vision") -> TopologyNodeType.CAMERA
-            lower.contains("pinpoint") || lower.contains("odometry") -> TopologyNodeType.ODOMETRY_COMPUTER
-            lower.contains("color") -> TopologyNodeType.COLOR_SENSOR
-            lower.contains("distance") -> TopologyNodeType.DISTANCE_SENSOR
-            lower.contains("beam") -> TopologyNodeType.BEAM_BREAK
-            else -> TopologyNodeType.ANALOG_SENSOR
-        }
-    }
 
     // ────────────────────────────────────────────────────────────────────────────
     // Lifecycle & Batch Reads
@@ -482,15 +460,14 @@ class HardwareRegistry {
         devices.clear()
         devicesList.clear()
         lifecycleDevices = emptyArray()
-        telemetryEntries.clear()
-        telemetrySnapshot = emptyArray()
+        telemetryPublisher.clearRegistrations()
         deviceIndices.clear()
         topologyNodes.clear()
         topologySnapshot = emptyList()
         cachedMotorsWithNames.clear()
         cachedMotorsList.clear()
         cachedCurrentSourcesList.clear()
-        telemetryPublishSequence.set(0L)
+        telemetryPublisher.resetSequence()
         firstFailure?.let { throw it }
     }
 
@@ -514,27 +491,5 @@ class HardwareRegistry {
      * the next pass. Each device and its successful heartbeat are isolated from later producers.
      * Heartbeats use exactly representable positive integers, wrapping to one before precision loss.
      */
-    fun publishAll(telemetry: ITelemetry) {
-        val snapshot = telemetrySnapshot
-        val publishSequence = nextTelemetrySequence()
-        for (i in snapshot.indices) {
-            val entry = snapshot[i]
-            try {
-                entry.device.logTelemetry(telemetry, entry.prefix)
-                if (entry.heartbeatTopic.isNotEmpty()) {
-                    telemetry.putNumber(entry.heartbeatTopic, publishSequence)
-                }
-            } catch (_: Throwable) {
-                // Diagnostics are best effort; a failed producer must not hide healthy successors.
-            }
-        }
-    }
-
-    private fun nextTelemetrySequence(): Double {
-        while (true) {
-            val current = telemetryPublishSequence.get()
-            val next = if (current >= 0L && current < 9_007_199_254_740_991L) current + 1L else 1L
-            if (telemetryPublishSequence.compareAndSet(current, next)) return next.toDouble()
-        }
-    }
+    fun publishAll(telemetry: ITelemetry) = telemetryPublisher.publishAll(telemetry)
 }

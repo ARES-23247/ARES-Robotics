@@ -153,7 +153,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     companion object {
-        private const val IMU_MAX_SAMPLE_AGE_MS = 100L
         /**
          * Evaluates whether the current runtime environment is an Android OS target (Control Hub / Driver Station).
          */
@@ -214,7 +213,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     /** Cached independent Control Hub IMU sample used by drivetrain fallback odometry. */
     protected val cachedImuInputs = ImuInputs()
-    private val imuSampleBuffer = ImuInputs()
+    private val imuCache = FtcImuCache(store, cachedImuInputs)
 
     /** First fatal loop failure. A robot instance remains inhibited after this is set. */
     @Volatile
@@ -248,7 +247,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         updateHardwareInputs()
-        refreshCachedImu()
+        imuCache.refresh(imuIO)
         val s2 = com.areslib.util.RobotClock.nanoTime()
 
         val pinpoint = pinpointIO
@@ -358,54 +357,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         heldFallbackHeadingOffset = com.areslib.math.wrapAngle(
             pose.heading.radians - rawImuHeadingRadians
         )
-    }
-
-    private fun refreshCachedImu() {
-        val imu = imuIO
-        if (imu == null) {
-            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
-            cachedImuInputs.pitchRadians = 0.0
-            cachedImuInputs.rollRadians = 0.0
-            cachedImuInputs.yawVelocityRadPerSec = 0.0
-            cachedImuInputs.pitchVelocityRadPerSec = 0.0
-            cachedImuInputs.rollVelocityRadPerSec = 0.0
-            cachedImuInputs.timestampMs = 0L
-            return
-        }
-
-        try {
-            imu.updateInputs(imuSampleBuffer)
-            // A new asynchronous sample can arrive after the frame timestamp was captured.
-            // Validate against the time of consumption, not the earlier frame boundary.
-            val sampleAgeMs = com.areslib.util.RobotClock.currentTimeMillis() - imuSampleBuffer.timestampMs
-            val valid = imuSampleBuffer.timestampMs > 0L && sampleAgeMs in 0..IMU_MAX_SAMPLE_AGE_MS &&
-                imuSampleBuffer.headingRadians.isFinite() && imuSampleBuffer.pitchRadians.isFinite() &&
-                imuSampleBuffer.rollRadians.isFinite() && imuSampleBuffer.yawVelocityRadPerSec.isFinite() &&
-                imuSampleBuffer.pitchVelocityRadPerSec.isFinite() && imuSampleBuffer.rollVelocityRadPerSec.isFinite()
-            if (!valid) {
-                invalidateCachedImu()
-                return
-            }
-            cachedImuInputs.headingRadians = imuSampleBuffer.headingRadians
-            cachedImuInputs.pitchRadians = imuSampleBuffer.pitchRadians
-            cachedImuInputs.rollRadians = imuSampleBuffer.rollRadians
-            cachedImuInputs.yawVelocityRadPerSec = imuSampleBuffer.yawVelocityRadPerSec
-            cachedImuInputs.pitchVelocityRadPerSec = imuSampleBuffer.pitchVelocityRadPerSec
-            cachedImuInputs.rollVelocityRadPerSec = imuSampleBuffer.rollVelocityRadPerSec
-            cachedImuInputs.timestampMs = imuSampleBuffer.timestampMs
-        } catch (_: Throwable) {
-            invalidateCachedImu()
-        }
-    }
-
-    private fun invalidateCachedImu() {
-            cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
-            cachedImuInputs.pitchRadians = 0.0
-            cachedImuInputs.rollRadians = 0.0
-            cachedImuInputs.yawVelocityRadPerSec = 0.0
-            cachedImuInputs.pitchVelocityRadPerSec = 0.0
-            cachedImuInputs.rollVelocityRadPerSec = 0.0
-            cachedImuInputs.timestampMs = 0L
     }
 
     private fun reseedOdometrySources(pose: Pose2d) {

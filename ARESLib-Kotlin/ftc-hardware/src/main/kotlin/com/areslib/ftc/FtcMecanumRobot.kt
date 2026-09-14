@@ -20,7 +20,6 @@ import com.areslib.state.RobotState
 import com.areslib.state.TuningState
 import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.MecanumDriveFacade
-import com.areslib.telemetry.logDriveMotor
 import com.areslib.tuning.TuningManager
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
@@ -286,7 +285,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /** Shared follower used by native ARES auto compilation and online pathfinding. */
     val pathFollower get() = trajectoryFollower.pathfindFollower
-    private var lastLocalTelemetryUpdateMs = 0L
+    private val driveTelemetry = FtcMecanumTelemetry()
 
     init {
         val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
@@ -361,30 +360,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param timestamp System clock timestamp in milliseconds ($ms$).
      */
     override fun publishRobotTelemetry(timestamp: Long) {
-        if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
-            telemetryManager.customDriverStationText["Motor Powers"] = String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
-                mecanumIO.flIO.power * mecanumIO.flIO.powerScale, mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
-                mecanumIO.rlIO.power * mecanumIO.rlIO.powerScale, mecanumIO.rrIO.power * mecanumIO.rrIO.powerScale
-            )
-            telemetryManager.customDriverStationText["Current Draw"] = if (powerManager.floodgate != null) {
-                String.format("%.1f A (Physical)", powerManager.floodgate.current)
-            } else {
-                String.format("%.1f A (Estimated)", powerManager.currentAmps)
-            }
-            telemetryManager.customDriverStationText["Drive Output Safety"] = if (isDriveOutputFaultLatched) {
-                "FAULT LATCHED — release controls and run Recover drive after a fault"
-            } else {
-                "Ready — motor outputs permitted"
-            }
-            lastLocalTelemetryUpdateMs = timestamp
-        }
-
-        telemetryManager.dataLoggingTelemetry.putBoolean("Drive/OutputFaultLatched", isDriveOutputFaultLatched)
-
-        telemetryManager.dataLoggingTelemetry.logDriveMotor("fl", mecanumIO.flIO)
-        telemetryManager.dataLoggingTelemetry.logDriveMotor("fr", mecanumIO.frIO)
-        telemetryManager.dataLoggingTelemetry.logDriveMotor("rl", mecanumIO.rlIO)
-        telemetryManager.dataLoggingTelemetry.logDriveMotor("rr", mecanumIO.rrIO)
+        driveTelemetry.publish(timestamp, telemetryManager, powerManager, mecanumIO)
 
         calibrationController.publishRobotTelemetry(
             timestamp, store, telemetryManager, mecanumIO, visionTracker, ticksPerMeter, 2000.0
