@@ -1,6 +1,11 @@
 # Monorepo audit coverage
 
-The active audit goal is to account for every tracked file, review its owned behavior, and
+**Paused at the user's request after pass 277.** Do not begin another audit batch until the
+user explicitly resumes it. The [restart checkpoint](RESUME.md) records the saved work,
+validation, open issues, and restart procedure; [pass 277](generated-runtime-lifecycle-math-audit.md)
+records the latest findings. The full-coverage objective is unfinished, not completed or blocked.
+
+The audit goal is to account for every tracked file, review its owned behavior, and
 complete appropriate validation. The inventory started at 2,349 tracked files on
 `e6640f5a`; additions are included after staging. No repository-wide coverage claim is made.
 
@@ -69,13 +74,13 @@ review stays partial. Later edits to any bound value make the self-record stale 
 ledger input; JSON writes use atomic replacement so an interrupted write does not expose partial JSON.
 This is not a crash-durability or concurrent-editor transaction guarantee. Run against a stable checkout.
 
-## Execution method for the active goal
+## Execution method when the goal resumes
 
 The full-coverage objective remains unchanged. Prioritize live robot control, estimation,
 hardware safety, loop timing, and confirmed cross-product contract disagreements, then finish
 the remaining tooling, application, configuration, documentation and resource review.
 
-- Review coherent batches of related files and resolve their connected findings together.
+- Review coherent batches of 20-40 related files and resolve their connected findings together.
   Use the inventory to avoid repeating completed reviews unless changed code, a dependency
   change or contradictory evidence justifies reopening them.
 - Reproduce confirmed defects with focused regression tests and independent reference cases.
@@ -110,5 +115,6 @@ in pass 3, the first-parent PID readiness timeout in pass 19 (`ProjectBuildServi
 unproven after passing reruns), the pass 20 replay-scrub performance-baseline failure (105.8996 ms
 against 100 ms; cause unproven), Studio opt-in tests, and physical loop/jitter/electrical validation.
 Consult the associated reports before treating a later pass as a resolution of those concerns.
-The goal remains active until every file has a defensible disposition and all feasible checks have
-completed. Changes remain local; no push, merge, or release is part of this goal.
+Completion requires every file to have a defensible disposition and all feasible checks to have
+completed. The current pause does not change those requirements. Changes remain local; no push,
+merge, or release is part of this goal.
