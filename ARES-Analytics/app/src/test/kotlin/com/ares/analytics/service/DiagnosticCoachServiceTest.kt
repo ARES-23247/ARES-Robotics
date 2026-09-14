@@ -64,19 +64,20 @@ class DiagnosticCoachServiceTest {
     }
 
     @Test
-    fun brownoutGuardScreenDetectsThrottlingAndEvents() = runTest {
+    fun brownoutGuardScreenReportsRecordedCounterIncrements() = runTest {
         withService { database, service ->
             database.insertTelemetryFrames(listOf(
                 TelemetryFrame(100, "run", "Robot/BatteryVoltage", 11.0),
                 TelemetryFrame(100, "run", "Hardware/Motors/arm/CurrentAmps", 15.0),
                 TelemetryFrame(100, "run", "Robot/LoopTimeMs", 20.0),
+                TelemetryFrame(100, "run", "Diagnostics/Power/BrownoutCount", 0.0),
                 TelemetryFrame(150, "run", "Diagnostics/Power/BrownoutCount", 2.0)
             ))
             val result = service.analyze("run")
             val brownoutFinding = result.findings.firstOrNull { it.id == "brownout-guard-tripped" }
             kotlin.test.assertNotNull(brownoutFinding)
-            assertEquals(DiagnosticSeverity.URGENT, brownoutFinding.severity)
-            assertTrue(brownoutFinding.observation.contains("2 brownout event"))
+            assertEquals(DiagnosticSeverity.REVIEW, brownoutFinding.severity)
+            assertTrue(brownoutFinding.observation.contains("2 guard counter increment"))
         }
     }
 
@@ -92,7 +93,7 @@ class DiagnosticCoachServiceTest {
             val result = service.analyze("run")
             val brownoutFinding = result.findings.firstOrNull { it.id == "brownout-guard-tripped" }
             kotlin.test.assertNotNull(brownoutFinding)
-            assertEquals(DiagnosticSeverity.URGENT, brownoutFinding.severity)
+            assertEquals(DiagnosticSeverity.REVIEW, brownoutFinding.severity)
             assertTrue(brownoutFinding.observation.contains("75%"))
         }
     }

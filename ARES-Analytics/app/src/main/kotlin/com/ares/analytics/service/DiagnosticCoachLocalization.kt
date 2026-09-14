@@ -6,13 +6,13 @@ import com.ares.analytics.shared.models.TelemetryFrame
 /** Aggregate timestamps are display anchors, not the time of a diagnosed robot event. */
 internal class DiagnosticCoachLocalization(
     frames: List<TelemetryFrame>, generated: List<AnalysisDiagnostic>, sessionId: String,
+    generatedFamilies: Set<String> = generated.filter { it.sessionId == sessionId }
+        .map { it.key.trimStart('/').substringBeforeLast('/') }.toSet(),
 ) {
     private val metrics = buildMap<String, TelemetryFrame> {
-        val generatedFamilies = generated.filter { it.sessionId == sessionId }
-            .map { it.key.trimStart('/').substringBeforeLast('/') }.toSet()
         for (frame in frames) {
             val key = frame.key.trimStart('/')
-            if (frame.sessionId != sessionId || key !in KEYS || key.substringBeforeLast('/') in generatedFamilies) continue
+            if (frame.sessionId != sessionId || key !in inputKeys || key.substringBeforeLast('/') in generatedFamilies) continue
             val previous = get(key)
             if (previous == null || frame.timestampUs > previous.timestampUs ||
                 (frame.timestampUs == previous.timestampUs && frame.sampleOrder >= previous.sampleOrder)) put(key, frame)
@@ -20,7 +20,7 @@ internal class DiagnosticCoachLocalization(
         // Prefer the current analysis result, including invalid values that supersede old data.
         for (metric in generated) {
             val key = metric.key.trimStart('/')
-            if (metric.sessionId == sessionId && key in KEYS) {
+            if (metric.sessionId == sessionId && key in inputKeys) {
                 put(key, TelemetryFrame(0, sessionId, key, metric.value, metric.stringValue))
             }
         }
@@ -90,6 +90,6 @@ internal class DiagnosticCoachLocalization(
     companion object {
         private const val AGGREGATE_NOTICE = "Summary values describe recorded samples; the displayed time is a summary anchor (zero when unavailable), not an event time."
         private val POSE_KEYS = listOf("Diagnostics/EKF/PoseDisagreementMeanM", "Diagnostics/EKF/PoseDisagreementBiasM", "Diagnostics/EKF/ResidualBiasM")
-        private val KEYS = (POSE_KEYS + listOf("Diagnostics/EKF/AvgNIS", "Diagnostics/Auto/CrossTrackRMSE", "Diagnostics/Auto/MaxCrossTrackM")).toSet()
+        val inputKeys = (POSE_KEYS + listOf("Diagnostics/EKF/AvgNIS", "Diagnostics/Auto/CrossTrackRMSE", "Diagnostics/Auto/MaxCrossTrackM")).toSet()
     }
 }

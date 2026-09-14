@@ -24,6 +24,10 @@ internal class DatabaseTransactionCoordinator(
     private val metrics: DatabaseMetrics,
 ) {
     val readOnlyQueries = ReadOnlyQueryRepository(readConnection, readMutex, metrics)
+    private val ephemeralQueries = ReadOnlyQueryRepository(ephemeralReadConnection, readMutex, metrics)
+
+    fun telemetryQueriesFor(sessionId: String): ReadOnlyQueryRepository =
+        if (sessionId == LIVE_TELEMETRY_SESSION_ID) ephemeralQueries else readOnlyQueries
 
     fun readConnectionFor(sessionId: String): Connection =
         if (sessionId == LIVE_TELEMETRY_SESSION_ID) ephemeralReadConnection else readConnection

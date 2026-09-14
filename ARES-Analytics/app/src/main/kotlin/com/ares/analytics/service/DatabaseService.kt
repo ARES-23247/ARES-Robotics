@@ -195,6 +195,8 @@ class DatabaseService(
     ): QueryResult = transactionCoordinator.readOnlyQueries.executeRaw(AiSqlQueryGuard.validate(sql), rowLimit)
     suspend fun executeQueryWithParams(sql: String, params: List<Any>): QueryResult =
         transactionCoordinator.readOnlyQueries.executeWithParams(sql, params)
+    internal suspend fun executeTelemetryQueryWithParams(sessionId: String, sql: String, params: List<Any>): QueryResult =
+        transactionCoordinator.telemetryQueriesFor(sessionId).executeWithParams(sql, params)
     suspend fun insertSession(session: Session) = sessionMetadataRepo.insertSession(session)
     internal suspend fun insertImportSession(session: Session) = sessionMetadataRepo.insertImportSession(session)
     suspend fun getSession(sessionId: String): Session? = sessionMetadataRepo.getSession(sessionId)

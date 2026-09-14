@@ -1705,11 +1705,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt": {
-      "sha256": "c04cacc46b8830f3057d9fba91078b783c3d8de13633226429caa54ff4aecde6",
+      "sha256": "d208099e6d54e1026174bf28152ed4049e6487b833573f2626e7205a1787570c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Selected-session facade and alert identity lookup reviewed; reader delegation and paired metadata mutations exercised by integration tests. Alert policy predicate remains unchanged. The broader facade, constructor, backup/import, integration event and shutdown behavior remain open. Pass 25 removes the obsolete console statement-cache disposal call inside existing locked close; writer-local resources now close in their own operation. Rest of facade remains partial.",
+      "scope": "Pass 244: Added internal selected-session parameterized query routing for coaching; live buffer and recording isolation verified. Unrelated facade/lifecycle behavior remains partial. Earlier scoped coverage retained: Selected-session facade and alert identity lookup reviewed; reader delegation and paired metadata mutations exercised by integration tests. Alert policy predicate remains unchanged. The broader facade, constructor, backup/import, integration event and shutdown behavior remain open. Pass 25 removes the obsolete console statement-cache disposal call inside existing locked close; writer-local resources now close in their own operation. Rest of facade remains partial.",
       "evidence": [
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
         "docs/audits/telemetry-density-metadata-audit.md",
         "ARESLib-Kotlin/build/audit-pass23-density-before.log",
         "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
@@ -1927,11 +1929,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DatabaseTransactionCoordinator.kt": {
-      "sha256": "1cdfe98d25ec91b0b135859b9617e5da360de44d178d879fca74aade6ded66b6",
+      "sha256": "8f44add27012f0bc3fcc59c403393adbfc800cdf0772b31a9bb3de4a6b3652e8",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Entire coordinator: exact connection routing, independent mutexes, read timing, attempted-operation metrics, cancellation/failure lock release and checkpoint coordination. Eight dedicated tests and full Studio gate passed; clocks remain monotonic by contract.",
+      "scope": "Pass 244: Whole coordinator inspected; cached persistent/live read query facades preserve existing mutex, metrics, IO and connection ownership. Live-vs-recorded isolation exercised through coaching. Earlier scoped coverage retained: Entire coordinator: exact connection routing, independent mutexes, read timing, attempted-operation metrics, cancellation/failure lock release and checkpoint coordination. Eight dedicated tests and full Studio gate passed; clocks remain monotonic by contract.",
       "evidence": [
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
         "docs/audits/database-coordinator-transactions-audit.md",
         "ARESLib-Kotlin/build/audit-pass25-studio.log"
       ]
@@ -5689,7 +5693,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "b3130d544e9072fd1f631adb06e62b18075152f6cc56b9470c83ace6d6efe53c",
+      "sha256": "b34c94465dcd462185e2261667c88d0fe4d030ba6799a84f7c335bea777f0bd1",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18549,21 +18553,23 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DiagnosticCoachService.kt": {
-      "sha256": "14268477a5be9496b1a4220e24bbd779eaea3abf46e0279a265592df939e47dc",
-      "review": "partial",
+      "sha256": "106cebf93fd128f5729230a3cb5b70479bb9e8d5bcbab5d67a8f68d87c4f434f",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 242: Localization/path integration now loads raw aggregate families once plus generated analysis, delegating exact-source latest-validity and evidence-limited findings to a reviewed helper. Battery/current/loop/brownout algorithms and general raw-query volume/cancellation remain outside this pass and partially reviewed.",
+      "scope": "Pass 244: Complete service/model/threshold integration reviewed. Raw health algorithms now use bounded SQL evidence and pure finding helper; raw live-store routing, generated persistent-store routing, absent and invalid evidence, query failure propagation and prior localization behavior checked. Queries remain separate snapshots and JDBC work is not instantly preemptible; no hardware/real-time claim.",
       "evidence": [
-        "docs/audits/localization-diagnostic-math-audit.md",
-        "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DiagnosticCoachLocalization.kt": {
-      "sha256": "557df67e3473fc28bdc3e918aece8ab446676a28db5ba6f1f221bd22a0e1808b",
+      "sha256": "947d44fe797b2f2eedc910bac0a4f7eb8d24a90f4347e0ddd14ce970fdb7948b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 242: Complete new helper reviewed/tested: exact canonical metric names, session identity, latest source time/order before validity, generated-family priority without stale raw filling, finite nonnegative quantities and units, neutral NIS/pose wording, independently usable RMS/peak, missing metadata and non-event display anchors. Storage generation/version and legacy absence ambiguity remain documented.",
+      "scope": "Pass 244: Six recognized input keys shared with bounded readers; explicit generated family presence suppresses old raw metrics even for unknown-only/invalid generated families. Finite generated model contract preserved. Thirty localization tests and coaching integration validate inherited algorithms. Earlier scoped coverage retained: Pass 242: Complete new helper reviewed/tested: exact canonical metric names, session identity, latest source time/order before validity, generated-family priority without stale raw filling, finite nonnegative quantities and units, neutral NIS/pose wording, independently usable RMS/peak, missing metadata and non-event display anchors. Storage generation/version and legacy absence ambiguity remain documented.",
       "evidence": [
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
         "docs/audits/localization-diagnostic-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
       ]
@@ -18579,11 +18585,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DiagnosticCoachServiceTest.kt": {
-      "sha256": "7df0f9542c807c466d3458cc2fec9939cccafa2691defec2b801466dca0529fe",
+      "sha256": "3c7fd865a5d5c215e99fb2718b8a161aec987732fba843f0a8f3240e8e470c57",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 242: Complete ten-method existing suite read and executed: battery/current/missing/loop/brownout/blank-session plus revised neutral legacy pose finding and path deviation. Fixtures now close before deleting an owned database directory. Existing health assertions preserve compatibility without proving their general algorithms.",
+      "scope": "Pass 244: Ten integration methods reviewed and passed, including revised guard increment baseline and review severity expectations; inherited battery/current/loop/localization checks and owned fixture cleanup retained. Earlier scoped coverage retained: Pass 242: Complete ten-method existing suite read and executed: battery/current/missing/loop/brownout/blank-session plus revised neutral legacy pose finding and path deviation. Fixtures now close before deleting an owned database directory. Existing health assertions preserve compatibility without proving their general algorithms.",
       "evidence": [
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
         "docs/audits/localization-diagnostic-math-audit.md",
         "ARESLib-Kotlin/build/audit-pass242-verified-evidence/summary.json"
       ]
@@ -18646,6 +18654,46 @@
       "evidence": [
         "docs/audits/health-summary-counter-audit.md",
         "ARESLib-Kotlin/build/audit-pass243-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DiagnosticCoachSnapshot.kt": {
+      "sha256": "a1fcf2596d1f2418bcfe4be8b0ff5d75efb94f77bfe6403f7eb59e02443662dd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 244: Complete new two-query reader reviewed/tested: exact topic/device aliases and priority, latest ordered microsecond values before validation, invalid adjacency breaks, current span boundaries/interval peak/earliest per motor, valid counter increments, latest localization and generated family provenance. SQL row/cell bounds and strict parsing reject overflow, truncation, duplicate/malformed evidence; session values bound; HUGEINT differences and finite/count limits. Database buffering remains recording-size dependent.",
+      "evidence": [
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DiagnosticCoachHealth.kt": {
+      "sha256": "b7cab62f3b6931e6f34e5bc50e4ddba58c3f19dad56f59e3e6dc03816d84712c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 244: Complete new pure screening formatter reviewed/tested: valid recorded battery and loop extrema, every qualifying motor interval with count/peak and sample uncertainty, guard increments/scale meaning and severity, exact positive-vs-zero percentages, stable identifiers and missing signals. Generic thresholds are not diagnoses or configured mechanism limits.",
+      "evidence": [
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DiagnosticCoachHealthAuditTest.kt": {
+      "sha256": "fba3e9cbb25b0877ce3084cdf6874c10f419d08dd37d03d49eaebb411413ce00",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 244: Complete 36-method audit reviewed/executed with owned DuckDB fixtures, live and persistent stores, 18 preserved failing cases among 19 baselines, microsecond continuity and duration boundaries, source validity/aliases/latest updates, counter resets/invalid chains, tiny scale display, generated family precedence, SQL injection-shaped session values, malformed/truncated evidence, row cap and oversized labels. 12002 raw and 2001 derived rows return four rows across two queries; no timing benchmark.",
+      "evidence": [
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/pit-coaching-health-audit.md": {
+      "sha256": "46f5bbccf0ffea2813b27195af599720a673069d3a7d174e8e6bd97373f363be",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 244: Records confirmed coaching health defects, source-traced guard semantics, bounded SQL selection and live routing, baseline/focused/full evidence and unchanged candidate identity, plus sampling/provenance/transaction/hardware limits and remaining independent boundaries.",
+      "evidence": [
+        "docs/audits/pit-coaching-health-audit.md",
+        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json"
       ]
     }
   }
