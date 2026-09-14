@@ -6,12 +6,9 @@ import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.shared.models.AnalysisDiagnostic
 import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.TelemetryMetricCatalog
-import com.ares.analytics.service.AlignedDataRow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.math.abs
-import kotlin.math.sign
 
 /**
  * Computes statistical summaries from logged match telemetry sessions.
@@ -118,7 +115,7 @@ class SummaryEngineService(
                     addAll(TelemetryMetricCatalog.DRIVE_VOLTAGE.keys)
                     addAll(TelemetryMetricCatalog.DRIVE_VELOCITY.keys)
                     addAll(TelemetryMetricCatalog.DRIVE_ACCELERATION.keys)
-                    add("Drive/Velocity_Omega")
+                    addAll(SummarySysIdDiagnostics.extraInputKeys)
                     addAll(SummaryLocalizationDiagnostics.inputKeys)
                 },
                 prefixes = listOf("Hardware/Motors/%", "Vision/%", "Path/%"),
@@ -130,238 +127,9 @@ class SummaryEngineService(
             }.toMutableList()
             if (allFrames.isEmpty()) return persistDiagnostics(session, framesToInsert, newTags)
 
-            // 1. Drivetrain SysId Characterization
-            val voltages = allFrames.filter { it.key in TelemetryMetricCatalog.DRIVE_VOLTAGE.keys }
-            val velocities = allFrames.filter { it.key in TelemetryMetricCatalog.DRIVE_VELOCITY.keys }
-            val accelerations = allFrames.filter { it.key in TelemetryMetricCatalog.DRIVE_ACCELERATION.keys }
-
-            if (voltages.isNotEmpty() && velocities.isNotEmpty()) {
-                val alignedData = mutableListOf<AlignedDataRow>()
-                val timeMap = voltages.associateBy { it.timestampMs }
-                val directionChanges = mutableListOf<Long>()
-                var lastSign = 0.0
-                val sortedVelocities = velocities.sortedBy { it.timestampMs }
-                for (v in sortedVelocities) {
-                    val currentSign = sign(v.value)
-                    if (currentSign != 0.0 && currentSign != lastSign) {
-                        directionChanges.add(v.timestampMs)
-                        lastSign = currentSign
-                    }
-                }
-                val sortedAccels = accelerations.sortedBy { it.timestampMs }
-                var accelIdx = 0
-
-                for (v in sortedVelocities) {
-                    val t = v.timestampMs
-                    val isNearDirectionChange = directionChanges.any { abs(it - t) <= 50 }
-                    if (isNearDirectionChange) continue
-                    val volt = timeMap[t]?.value ?: continue
-                    val accel = if (sortedAccels.isNotEmpty()) {
-                        while (accelIdx < sortedAccels.size - 1 &&
-                            abs(sortedAccels[accelIdx + 1].timestampMs - t) <= abs(sortedAccels[accelIdx].timestampMs - t)
-                        ) {
-                            accelIdx++
-                        }
-                        sortedAccels[accelIdx].value
-                    } else 0.0
-
-                    alignedData.add(AlignedDataRow(t, volt, v.value, accel))
-                }
-                val finalAlignedData = if (alignedData.isNotEmpty() && alignedData.all { it.accel == 0.0 }) {
-                    val approxRows = mutableListOf<AlignedDataRow>()
-                    val sorted = alignedData.sortedBy { it.timestampMs }
-                    for (i in 0 until sorted.size) {
-                        val current = sorted[i]
-                        val accel = if (i == 0) 0.0 else {
-                            val prev = sorted[i - 1]
-                            val dt = (current.timestampMs - prev.timestampMs) / 1000.0
-                            if (dt > 1e-4) (current.velocity - prev.velocity) / dt else 0.0
-                        }
-                        approxRows.add(current.copy(accel = accel))
-                    }
-                    approxRows
-                } else {
-                    alignedData
-                }
-
-                if (finalAlignedData.size >= 10) {
-                    val summary = sysIdService.analyzeRawData(finalAlignedData)
-                    if (summary.rSquared > 0.1) {
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/kS", summary.kS))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/kV", summary.kV))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/kA", summary.kA))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/R2", summary.rSquared))
-
-                        if (summary.kA > 1e-6) {
-                            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/ADRC_b0", 1.0 / summary.kA))
-                        }
-                    }
-                }
-            }
-
-            // 2. Individual Subsystem & Motor SysId Characterization
-            val motorVoltages = mutableMapOf<String, MutableMap<Long, Double>>()
-            val motorVelocities = mutableMapOf<String, MutableMap<Long, Double>>()
-
-            for (frame in allFrames) {
-                val cleanKey = frame.key.removePrefix("/")
-                if (cleanKey.startsWith("Hardware/Motors/")) {
-                    val parts = cleanKey.split("/")
-                    if (parts.size >= 4) {
-                        val motorName = parts[2]
-                        val metric = parts[3].lowercase()
-                        val t = frame.timestampMs
-                        when {
-                            metric.contains("volt") || metric.contains("power") -> {
-                                val voltVal = if (metric.contains("power") && abs(frame.value) <= 1.0) frame.value * 12.0 else frame.value
-                                motorVoltages.getOrPut(motorName) { mutableMapOf() }[t] = voltVal
-                            }
-                            metric.contains("vel") || metric.contains("speed") -> {
-                                motorVelocities.getOrPut(motorName) { mutableMapOf() }[t] = frame.value
-                            }
-                        }
-                    }
-                }
-            }
-
-            for ((motorName, velocitiesMap) in motorVelocities) {
-                val voltagesMap = motorVoltages[motorName] ?: continue
-                if (velocitiesMap.size < 10 || voltagesMap.size < 10) continue
-                val alignedRows = mutableListOf<AlignedDataRow>()
-                val sortedTimes = velocitiesMap.keys.sorted()
-                var lastTime = 0L
-                var lastVel = 0.0
-
-                for (t in sortedTimes) {
-                    val vel = velocitiesMap[t] ?: continue
-                    val volt = voltagesMap[t] ?: continue
-                    val accel = if (lastTime == 0L) 0.0 else {
-                        val dt = (t - lastTime) / 1000.0
-                        if (dt > 1e-4) (vel - lastVel) / dt else 0.0
-                    }
-
-                    alignedRows.add(AlignedDataRow(t, volt, vel, accel))
-                    lastTime = t
-                    lastVel = vel
-                }
-
-                if (alignedRows.size >= 10) {
-                    val summary = sysIdService.analyzeRawData(alignedRows)
-                    if (summary.rSquared > 0.5) {
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Motors/$motorName/kS", summary.kS))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Motors/$motorName/kV", summary.kV))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Motors/$motorName/kA", summary.kA))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Motors/$motorName/R2", summary.rSquared))
-
-                        if (summary.kA > 1e-6) {
-                            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Motors/$motorName/ADRC_b0", 1.0 / summary.kA))
-                        }
-                    }
-
-                    // Estimate kG (Gravity Feedforward) for vertical elevators/arms (non-drivetrain)
-                    val isDrivetrain = motorName.lowercase() in listOf("fl", "fr", "rl", "rr", "bl", "br", "frontleft", "frontright", "rearleft", "rearright")
-                    if (!isDrivetrain) {
-                        val holdingVoltages = alignedRows.filter { row ->
-                            val absV = if (row.velocity < 0.0) -row.velocity else row.velocity
-                            val absA = if (row.accel < 0.0) -row.accel else row.accel
-                            absV < 0.05 && absA < 0.1
-                        }.map { it.voltage }
-                        if (holdingVoltages.size >= 10) {
-                            val kgEstimate = holdingVoltages.average()
-                            val absKg = if (kgEstimate < 0.0) -kgEstimate else kgEstimate
-                            if (absKg > 0.1) {
-                                framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Motors/$motorName/kG", kgEstimate))
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 3. Drivetrain Angular Characterization
-            val flVolts = motorVoltages["fl"] ?: motorVoltages["FL"] ?: motorVoltages["frontleft"]
-            val rlVolts = motorVoltages["rl"] ?: motorVoltages["RL"] ?: motorVoltages["bl"] ?: motorVoltages["BL"] ?: motorVoltages["rearleft"]
-            val frVolts = motorVoltages["fr"] ?: motorVoltages["FR"] ?: motorVoltages["frontright"]
-            val rrVolts = motorVoltages["rr"] ?: motorVoltages["RR"] ?: motorVoltages["br"] ?: motorVoltages["BR"] ?: motorVoltages["rearright"]
-            val leftSideVolts = mutableMapOf<Long, Double>()
-            val rightSideVolts = mutableMapOf<Long, Double>()
-
-            if (flVolts != null) {
-                for ((t, v) in flVolts) leftSideVolts[t] = (leftSideVolts[t] ?: 0.0) + v * 0.5
-            }
-            if (rlVolts != null) {
-                for ((t, v) in rlVolts) leftSideVolts[t] = (leftSideVolts[t] ?: 0.0) + v * 0.5
-            }
-            if (frVolts != null) {
-                for ((t, v) in frVolts) rightSideVolts[t] = (rightSideVolts[t] ?: 0.0) + v * 0.5
-            }
-            if (rrVolts != null) {
-                for ((t, v) in rrVolts) rightSideVolts[t] = (rightSideVolts[t] ?: 0.0) + v * 0.5
-            }
-            val angularVoltages = mutableMapOf<Long, Double>()
-            for (t in leftSideVolts.keys) {
-                val lv = leftSideVolts[t] ?: continue
-                val rv = rightSideVolts[t] ?: continue
-                angularVoltages[t] = lv - rv
-            }
-            val omegas = allFrames.filter { it.key == "Drive/Velocity_Omega" || it.key == "/Drive/Velocity_Omega" }
-            if (angularVoltages.isNotEmpty() && omegas.isNotEmpty()) {
-                val alignedAngData = mutableListOf<AlignedDataRow>()
-                val sortedOmegas = omegas.sortedBy { it.timestampMs }
-                var lastTime = 0L
-                var lastOmega = 0.0
-
-                for (o in sortedOmegas) {
-                    val t = o.timestampMs
-                    val volt = angularVoltages[t] ?: continue
-                    val accel = if (lastTime == 0L) 0.0 else {
-                        val dt = (t - lastTime) / 1000.0
-                        if (dt > 1e-4) (o.value - lastOmega) / dt else 0.0
-                    }
-
-                    alignedAngData.add(AlignedDataRow(t, volt, o.value, accel))
-                    lastTime = t
-                    lastOmega = o.value
-                }
-
-                if (alignedAngData.size >= 10) {
-                    val angSummary = sysIdService.analyzeRawData(alignedAngData)
-                    if (angSummary.rSquared > 0.1) {
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Angular/kS", angSummary.kS))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Angular/kV", angSummary.kV))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Angular/kA", angSummary.kA))
-                        framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Angular/R2", angSummary.rSquared))
-                        if (angSummary.kA > 1e-6) {
-                            framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/SysId/Angular/ADRC_b0", 1.0 / angSummary.kA))
-                        }
-                    }
-                }
-            }
-
-            // 4. Wheel Slippage / Traction Loss Calculation
-            val ekfVels = allFrames.filter { it.key == "Drive/Velocity" || it.key == "/Drive/Velocity" }
-            if (ekfVels.isNotEmpty() && motorVelocities.isNotEmpty()) {
-                val slippages = mutableListOf<Double>()
-                for (ev in ekfVels) {
-                    val t = ev.timestampMs
-                    val ekfV = abs(ev.value)
-                    var wheelSum = 0.0
-                    var wheelCount = 0
-                    for (motorName in listOf("fl", "fr", "rl", "rr", "bl", "br")) {
-                        val mVel = motorVelocities[motorName]?.get(t) ?: continue
-                        wheelSum += abs(mVel)
-                        wheelCount++
-                    }
-
-                    if (wheelCount > 0) {
-                        val avgWheelV = wheelSum / wheelCount
-                        val diff = abs(avgWheelV - ekfV)
-                        val denominator = maxOf(ekfV, 0.1)
-                        slippages.add(diff / denominator)
-                    }
-                }
-                if (slippages.isNotEmpty()) {
-                    framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, "Diagnostics/Drive/TractionLoss", slippages.average()))
-                }
+            // Recorded voltage/speed fits share validated source-time alignment.
+            for (diagnostic in SummarySysIdDiagnostics(allFrames, session.sessionId, sysIdService::analyzeRawData).calculate()) {
+                framesToInsert.add(TelemetryFrame(session.createdAt, session.sessionId, diagnostic.key, diagnostic.value, diagnostic.stringValue))
             }
 
             // 5. Driver Jitter Analysis

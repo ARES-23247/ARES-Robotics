@@ -1180,11 +1180,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SysIdService.kt": {
-      "sha256": "f6909e107ab9cb91d5742932920d7f0f22e6364e9c57ed6b975f5596c5f7d176",
+      "sha256": "640b010f0f0b105cefd6161e8bef1c2abc6992cacd2da5d164fdb9556ae54b8d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full service review from pass 17 retained; pass 18 delegates input normalization to the shared owned snapshot and exposes an internal prepared-analysis path. Analytic regression/FFT/alignment tests pass after integration. Rank/numeric behavior is unchanged; caller sampling and transient-heuristic limitations remain explicit.",
+      "scope": "Pass 245: Explicit-channel API delegates to shared recorded-source alignment, preserving required acceleration, source-microsecond nearest matching and existing solver output. Latest invalid/textual samples now remain barriers. Regression/SVD/FFT behavior is unchanged and rerun; existing full-channel loading and non-cooperative computation remain limits. Earlier scoped coverage retained: Full service review from pass 17 retained; pass 18 delegates input normalization to the shared owned snapshot and exposes an internal prepared-analysis path. Analytic regression/FFT/alignment tests pass after integration. Rank/numeric behavior is unchanged; caller sampling and transient-heuristic limitations remain explicit.",
       "evidence": [
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json",
         "docs/audits/autotuner-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
@@ -5693,7 +5695,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "b34c94465dcd462185e2261667c88d0fe4d030ba6799a84f7c335bea777f0bd1",
+      "sha256": "3bf1faa3f6468938cba78ee51a74871ec6f590b45e491b02b96cfe3e701ff8da",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained.",
@@ -18483,13 +18485,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryEngineService.kt": {
-      "sha256": "70b7673997be0ee419c4b20bafd7166c76764a303ee8db08b6e4b21d5c468b3c",
+      "sha256": "e011e002cf20c86397468fe3184173d4ea54e241d4a847ba7b862b3485331040",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 243: Retains pass 241 core aggregation/cancellation and pass 242 localization review. Health now uses exact recorded SQL aggregates, validated core battery and observation-accurate tags. Removed health JVM scans and unused loop/battery/Diagnostics sample loading; empty secondary samples still persist health; common final helper removes duplicate tag write. SysId units/polarity/traction/gravity, secondary sample provenance, generated-tag ownership and recording-wide transactionality remain partial.",
+      "scope": "Pass 245: Retains reviewed core/health/localization computations; replaces duplicated drivetrain/motor/angular input assembly and unsupported gravity/traction inference with reviewed recorded-fit helper. Explicit angular input keys, native units and provenance integrate with generated persistence. Per-topic sampled loading, driver recommendations, generated-tag ownership and multi-operation persistence remain partial.",
       "evidence": [
-        "docs/audits/health-summary-counter-audit.md",
-        "ARESLib-Kotlin/build/audit-pass243-verified-evidence/summary.json"
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
       ]
     },
     "docs/audits/advanced-analytics-math-audit.md": {
@@ -18617,13 +18619,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/history/RunDataDictionary.kt": {
-      "sha256": "e7ca72bc3e54d2a5e2c2fa6fa20729b56ae55819a90cf80691f7a407467f15af",
+      "sha256": "da8db5214ed5817ee9838423bf05d5afbcfba6c99af28bbb9a70ce64430c4088",
       "review": "partial",
       "validation": "passed",
-      "scope": "Pass 243: Derived health rows now delegate to a reviewed helper using correct observation/counter-increment labels. Other core summary sentinels, motor aliases/current/SysId rows and their numeric/formatting behavior remain outside this pass; partial coverage.",
+      "scope": "Pass 245: SysId rows delegate to reviewed native-unit/provenance helper, retired traction/physical-gravity/ADRC rows removed, unused ambiguous SysId motor alias getter deleted. Health helper integration retained. Core summary sentinels, current aliases, driver recommendations and remaining numeric/formatting behavior stay partial.",
       "evidence": [
-        "docs/audits/health-summary-counter-audit.md",
-        "ARESLib-Kotlin/build/audit-pass243-verified-evidence/summary.json"
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/history/RunHealthRows.kt": {
@@ -18694,6 +18696,66 @@
       "evidence": [
         "docs/audits/pit-coaching-health-audit.md",
         "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RecordedSysIdInputs.kt": {
+      "sha256": "0d96fc51f944df5ce5159535071fc86e04d7f2fb483acddf43d67545f9f70c17",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 245: Complete helper reviewed/tested: one source/session per channel, ordered same-time update precedence before validity, invalid nearest barriers, inclusive 50 ms alignment/reversal/derivative limits, no initial invented acceleration, explicit zero retention, gap/invalid derivative breaks, finite microsecond derivatives and caller immutability. Monotonic matching and reversal cursors are linear after sorting; 20000-sample alternating sequence and known-coefficient integration pass.",
+      "evidence": [
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummarySysIdDiagnostics.kt": {
+      "sha256": "665ded53c86eed0ccc67ce49c7f0497821627374efcf93651150c3fa29678f6c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 245: Complete helper reviewed/tested within supplied-frame contract: exact source/device keys and presence priority, recorded applied voltage only, native velocity/acceleration suffix pairing, explicit signed angular voltage, finite fit/quality gates, row counts/source/model metadata and finite inverse kA. No unsupported kG, traction or wheel-name polarity inference. Input sampling outside the helper remains a known caller limitation.",
+      "evidence": [
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/history/RunSysIdRows.kt": {
+      "sha256": "2e8d5612ce3f66f3b5a483b2671718b06ba88f8ceaedfc9eb7ff456b206a0f9c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 245: Complete row/discovery helper reviewed/tested: native speed/acceleration units, exact device identity and topic shapes, positive integral fit-count evidence, finite signed gains, valid R-squared/inverse constraints, locale-stable formatting, no legacy fit revival without FitSamples and no automatic tuning interpretation. Data-model tests only; no rendered-window claim.",
+      "evidence": [
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/RunHistoryScreen.kt": {
+      "sha256": "497c21f39a06696fc686c5773c0586374c42af312f50d262d4675f69aa98521f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Pass 245: Scoped SysId row integration reviewed: exact motor discovery replaces name canonicalization, row memoization depends on both current and SysId identities, SysId rows use actual recorded device names. The rest of the large screen, current-row identity, loading/concurrency, export and interaction behavior remain pending independent review.",
+      "evidence": [
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SummarySysIdInputAuditTest.kt": {
+      "sha256": "c2417f12ac56d845add006879538fc60fafd5e0304e1e9f7920e7555cded8c7a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 245: Complete 40-method regression file reviewed/executed. Seventeen preserved failing baselines through public summary/row APIs; fixture solver captures actual input rows, plus real end-to-end known-coefficient regression and explicit API validity tests. Microsecond boundaries, invalid updates, units/alias/polarity/provenance, derivative gaps, numerical overflow, exact motor names, display validity and large reversal sequence are covered. Owned DuckDB fixtures close and delete their temporary directories.",
+      "evidence": [
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
+      ]
+    },
+    "docs/audits/summary-sysid-input-audit.md": {
+      "sha256": "953aa5effb9e7b192b67ec9f5b63218dbd08b4fdc891bf1991334e351536b393",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 245: Documents 17 confirmed failing baseline cases, producer-traced native units and applied-voltage meaning, shared timestamp/derivative algorithms, retired unsupported physical estimates, explicit angular contract, provenance/display integration, actual validation and unchanged candidate/source identity. Sampling and broader summary/history/hardware limits remain explicit.",
+      "evidence": [
+        "docs/audits/summary-sysid-input-audit.md",
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
       ]
     }
   }

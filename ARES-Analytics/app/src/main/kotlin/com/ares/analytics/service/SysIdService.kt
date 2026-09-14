@@ -66,62 +66,7 @@ class SysIdService(private val databaseService: DatabaseService) {
             return CalculatedSummary()
         }
 
-        // Align independently sampled channels by bounded nearest-neighbor matching.
-        val alignedData = mutableListOf<AlignedDataRow>()
-
-        // Identify direction change timestamps (sign of velocity changes)
-        val directionChanges = mutableListOf<Long>()
-        var lastSign = 0.0
-        val sortedVelocities = velocities.filter { it.value.isFinite() }.sortedBy { it.timestampUs }
-        for (v in sortedVelocities) {
-            val currentSign = sign(v.value)
-            if (currentSign != 0.0 && lastSign != 0.0 && currentSign != lastSign) {
-                directionChanges.add(v.timestampUs)
-            }
-            if (currentSign != 0.0) lastSign = currentSign
-        }
-        val sortedVoltages = voltages.filter { it.value.isFinite() }.sortedBy { it.timestampUs }
-        val sortedAccels = accelerations.filter { it.value.isFinite() }.sortedBy { it.timestampUs }
-        if (sortedVelocities.isEmpty() || sortedVoltages.isEmpty() || sortedAccels.isEmpty()) return CalculatedSummary()
-        var voltageIdx = 0
-        var accelIdx = 0
-        var directionChangeIdx = 0
-
-        for (v in sortedVelocities) {
-            val t = v.timestampUs
-
-            // Apply direction change cleansing: skip data points within ±50ms of a sign change
-            while (directionChangeIdx < directionChanges.size - 1 &&
-                directionChanges[directionChangeIdx + 1] <= t
-            ) {
-                directionChangeIdx++
-            }
-            val isNearDirectionChange =
-                (directionChangeIdx < directionChanges.size && abs(directionChanges[directionChangeIdx] - t) <= 50_000) ||
-                    (directionChangeIdx + 1 < directionChanges.size &&
-                        abs(directionChanges[directionChangeIdx + 1] - t) <= 50_000)
-            if (isNearDirectionChange) continue
-            while (voltageIdx < sortedVoltages.size - 1 &&
-                abs(sortedVoltages[voltageIdx + 1].timestampUs - t) <= abs(sortedVoltages[voltageIdx].timestampUs - t)
-            ) {
-                voltageIdx++
-            }
-            val voltageFrame = sortedVoltages[voltageIdx]
-            if (abs(voltageFrame.timestampUs - t) > MAX_ALIGNMENT_DELTA_US) continue
-
-            // Move accelIdx forward to find nearest neighbor in O(N + M)
-            while (accelIdx < sortedAccels.size - 1 &&
-                abs(sortedAccels[accelIdx + 1].timestampUs - t) <= abs(sortedAccels[accelIdx].timestampUs - t)
-            ) {
-                accelIdx++
-            }
-            val accelFrame = sortedAccels[accelIdx]
-            if (abs(accelFrame.timestampUs - t) > MAX_ALIGNMENT_DELTA_US) continue
-
-            alignedData.add(AlignedDataRow(v.timestampMs, voltageFrame.value, v.value, accelFrame.value))
-        }
-
-        return analyzeRawData(alignedData)
+        return analyzeRawData(RecordedSysIdInputs.align(voltages, velocities, accelerations))
     }
 
     fun analyzeRawData(alignedData: List<AlignedDataRow>): CalculatedSummary =
@@ -320,7 +265,6 @@ class SysIdService(private val databaseService: DatabaseService) {
     private fun emptyDoubleArray() = DoubleArray(0)
 
     private companion object {
-        const val MAX_ALIGNMENT_DELTA_US = 50_000L
         const val MIN_SYSID_VELOCITY = 1e-4
         const val MAX_FFT_SAMPLES = 1 shl 20
     }

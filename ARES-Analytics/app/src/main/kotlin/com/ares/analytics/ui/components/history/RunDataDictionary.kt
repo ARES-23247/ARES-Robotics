@@ -1,6 +1,5 @@
 package com.ares.analytics.ui.components.history
 
-import com.ares.analytics.shared.models.Session
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.ui.screens.RowDefinition
 
@@ -14,21 +13,6 @@ object RunDataDictionary {
             "rf" -> "fr"
             else -> name
         }
-    }
-
-    fun getDiagnosticValue(diag: Map<String, Double>, canonicalMotor: String, param: String): Double? {
-        val namesToCheck = when (canonicalMotor) {
-            "rl" -> listOf("rl", "bl")
-            "rr" -> listOf("rr", "br")
-            "fl" -> listOf("fl", "lf")
-            "fr" -> listOf("fr", "rf")
-            else -> listOf(canonicalMotor)
-        }
-        for (name in namesToCheck) {
-            val value = diag["Diagnostics/SysId/Motors/$name/$param"]
-            if (value != null) return value
-        }
-        return null
     }
 
     fun getMotorCurrentAverage(summary: SessionSummary?, canonicalMotor: String): Double? {
@@ -59,7 +43,6 @@ object RunDataDictionary {
             RowDefinition("Battery Resistance (Î©)", "System Health", { _, summary, _ -> summary?.let { String.format("%.3f Î©", it.avgBatteryResistance) } ?: "N/A" }, { _, summary, _ -> summary?.avgBatteryResistance }, { it > 0.15 }),
             RowDefinition("Avg Loop Time (ms)", "System Health", { _, summary, _ -> summary?.let { String.format("%.2f ms", it.avgLoopTimeMs) } ?: "N/A" }, { _, summary, _ -> summary?.avgLoopTimeMs }, { it > 15.0 }),
             RowDefinition("P95 Loop Time (ms)", "System Health", { _, summary, _ -> summary?.let { String.format("%.2f ms", it.p95LoopTimeMs) } ?: "N/A" }, { _, summary, _ -> summary?.p95LoopTimeMs }, { it > 25.0 }),
-            RowDefinition("Traction Loss (%)", "System Health", { _, _, diag -> diag["Diagnostics/Drive/TractionLoss"]?.let { String.format("%.1f%%", it * 100.0) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/Drive/TractionLoss"] }, { it > 0.20 }),
         ) + healthDiagnosticRows() + listOf(
             // Vision
             RowDefinition("Max EKF Drift (m)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.3fm", it.maxEkfDrift) } ?: "N/A" }, { _, summary, _ -> summary?.maxEkfDrift }, { it > 0.10 }),
@@ -67,20 +50,7 @@ object RunDataDictionary {
             RowDefinition("Vision Latency (ms)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.1f ms", it.avgVisionLatencyMs) } ?: "N/A" }, { _, summary, _ -> summary?.avgVisionLatencyMs }, { it > 100.0 }),
             RowDefinition("Vision Acceptance (%)", "Vision & Localization", { _, summary, _ -> summary?.let { String.format("%.1f%%", it.visionAcceptanceRate * 100.0) } ?: "N/A" }, { _, summary, _ -> summary?.visionAcceptanceRate }, { it < 0.60 }),
 
-            // Linear SysId
-            RowDefinition("Linear kS (V)", "Drivetrain SysId (Linear)", { _, _, diag -> diag["Diagnostics/SysId/kS"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/kS"] }),
-            RowDefinition("Linear kV (V/m/s)", "Drivetrain SysId (Linear)", { _, _, diag -> diag["Diagnostics/SysId/kV"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/kV"] }),
-            RowDefinition("Linear kA (V/m/sÂ²)", "Drivetrain SysId (Linear)", { _, _, diag -> diag["Diagnostics/SysId/kA"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/kA"] }),
-            RowDefinition("Linear RÂ²", "Drivetrain SysId (Linear)", { _, _, diag -> diag["Diagnostics/SysId/R2"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/R2"] }, { it < 0.70 }),
-            RowDefinition("Linear ADRC b0", "Drivetrain SysId (Linear)", { _, _, diag -> diag["Diagnostics/SysId/ADRC_b0"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/ADRC_b0"] }),
-
-            // Angular SysId
-            RowDefinition("Angular kS (V)", "Drivetrain SysId (Angular)", { _, _, diag -> diag["Diagnostics/SysId/Angular/kS"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/Angular/kS"] }),
-            RowDefinition("Angular kV (V/rad/s)", "Drivetrain SysId (Angular)", { _, _, diag -> diag["Diagnostics/SysId/Angular/kV"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/Angular/kV"] }),
-            RowDefinition("Angular kA (V/rad/sÂ²)", "Drivetrain SysId (Angular)", { _, _, diag -> diag["Diagnostics/SysId/Angular/kA"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/Angular/kA"] }),
-            RowDefinition("Angular RÂ²", "Drivetrain SysId (Angular)", { _, _, diag -> diag["Diagnostics/SysId/Angular/R2"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/Angular/R2"] }, { it < 0.70 }),
-            RowDefinition("Angular ADRC b0", "Drivetrain SysId (Angular)", { _, _, diag -> diag["Diagnostics/SysId/Angular/ADRC_b0"]?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/SysId/Angular/ADRC_b0"] }),
-
+        ) + sysIdDiagnosticRows() + listOf(
             // Driver Jitter
             RowDefinition("Driver Rec. Exponent", "Driver Profiles", { _, _, diag -> diag["Diagnostics/Driver/RecommendedExponent"]?.let { String.format("%.2f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/Driver/RecommendedExponent"] }),
             RowDefinition("Driver Rec. Slew Rate", "Driver Profiles", { _, _, diag -> diag["Diagnostics/Driver/RecommendedSlewRate"]?.let { if (it >= 999.0) "None" else String.format("%.1f", it) } ?: "N/A" }, { _, _, diag -> diag["Diagnostics/Driver/RecommendedSlewRate"] }),
@@ -104,15 +74,5 @@ object RunDataDictionary {
         }
     }
 
-    fun buildMotorSysIdRows(allMotorNames: List<String>): List<RowDefinition> {
-        return allMotorNames.flatMap { motor ->
-            listOf(
-                RowDefinition("Motor [$motor] kS", "Subsystem Motors ($motor)", { _, _, diag -> getDiagnosticValue(diag, motor, "kS")?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> getDiagnosticValue(diag, motor, "kS") }),
-                RowDefinition("Motor [$motor] kV", "Subsystem Motors ($motor)", { _, _, diag -> getDiagnosticValue(diag, motor, "kV")?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> getDiagnosticValue(diag, motor, "kV") }),
-                RowDefinition("Motor [$motor] kA", "Subsystem Motors ($motor)", { _, _, diag -> getDiagnosticValue(diag, motor, "kA")?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> getDiagnosticValue(diag, motor, "kA") }),
-                RowDefinition("Motor [$motor] kG (Gravity)", "Subsystem Motors ($motor)", { _, _, diag -> getDiagnosticValue(diag, motor, "kG")?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> getDiagnosticValue(diag, motor, "kG") }),
-                RowDefinition("Motor [$motor] ADRC b0", "Subsystem Motors ($motor)", { _, _, diag -> getDiagnosticValue(diag, motor, "ADRC_b0")?.let { String.format("%.3f", it) } ?: "N/A" }, { _, _, diag -> getDiagnosticValue(diag, motor, "ADRC_b0") })
-            )
-        }
-    }
+    fun buildMotorSysIdRows(allMotorNames: List<String>): List<RowDefinition> = motorSysIdRows(allMotorNames)
 }
