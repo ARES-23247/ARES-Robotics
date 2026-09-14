@@ -34,21 +34,39 @@ internal fun physicalOutputsPermitted(isReal: Boolean, adapterInstalled: Boolean
     !isReal || adapterInstalled
 
 /** Generic, simulation-first FRC composition root generated projects can extend without hand code. */
-class AresStarterRobot : TimedRobot() {
+class AresStarterRobot internal constructor(
+    private val runtimeFactory: () -> StarterRobotRuntime,
+) : TimedRobot() {
+    constructor() : this({ StarterRobotRuntime() })
     private lateinit var robot: StarterRobotRuntime
     private lateinit var generatedControls: FrcGeneratedProjectControlsRuntime<GeneratedAresProjectCapabilities>
     private lateinit var generatedCapabilities: StarterGeneratedCapabilities
     private lateinit var autonomousRuntime: StarterFrcAutonomousRuntime
     private var studioSimulationBridge: FrcStudioSimulationBridge? = null
     private val simulation = StarterDriveSimulation()
-    private var lastSimulationSeconds = 0.0
+    private var lastSimulationMs = 0L
+    private var hasSimulationTimestamp = false
+    private val neutralDrive = RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0, isFieldCentric = true)
     private var lastAlliance: Alliance? = null
+    private var initializationStarted = false
+    private var initialized = false
     private var closed = false
 
     /** Physical output stays blocked until a reviewed adapter is generated for the selected hardware. */
     private val physicalAdapterInstalled = false
 
     override fun robotInit() {
+        check(!closed && !initializationStarted) { "FRC starter robot cannot initialize twice or after close" }
+        initializationStarted = true
+        try {
+            initialize()
+            initialized = true
+        } catch (failure: Throwable) {
+            closeAfterFailure(failure)
+        }
+    }
+
+    private fun initialize() {
         val fieldPath = Filesystem.getDeployDirectory().toPath().resolve("paths/field.json")
         val field = runCatching { loadStarterFieldContract(fieldPath.readBytes()) }.getOrNull()
         if (field != null) {
@@ -62,18 +80,13 @@ class AresStarterRobot : TimedRobot() {
             )
         }
 
-        robot = StarterRobotRuntime()
-        try {
-            installGeneratedSubsystems(
-                usePhysicalAdapters = physicalOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled),
-                hardwareRegistry = robot.hardwareRegistry,
-                register = robot::registerSubsystem,
-            )
-            installGeneratedSuperstructures(robot::registerSubsystem)
-        } catch (failure: Throwable) {
-            runCatching { robot.close() }.exceptionOrNull()?.let(failure::addSuppressed)
-            throw failure
-        }
+        robot = runtimeFactory()
+        installGeneratedSubsystems(
+            usePhysicalAdapters = physicalOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled),
+            hardwareRegistry = robot.hardwareRegistry,
+            register = robot::registerSubsystems,
+        )
+        installGeneratedSuperstructures(robot::registerSubsystems)
 
         generatedCapabilities = StarterGeneratedCapabilities(
             robot = robot,
@@ -120,16 +133,18 @@ class AresStarterRobot : TimedRobot() {
         }
     }
 
-    override fun robotPeriodic() {
+    override fun robotPeriodic() = runRobotCallback {
         applyAlliance()
+        if (DriverStation.isDisabled()) clearDriveIntent()
         robot.update()
     }
 
-    override fun teleopInit() {
+    override fun teleopInit() = runRobotCallback {
+        clearDriveIntent()
         autonomousRuntime.stop("Teleop initialized")
     }
 
-    override fun teleopPeriodic() {
+    override fun teleopPeriodic() = runRobotCallback {
         if (physicalOutputsPermitted(RobotBase.isReal(), physicalAdapterInstalled)) {
             generatedControls.update()
         } else {
@@ -137,37 +152,65 @@ class AresStarterRobot : TimedRobot() {
         }
     }
 
-    override fun autonomousInit() {
+    override fun autonomousInit() = runRobotCallback {
+        clearDriveIntent()
         autonomousRuntime.autonomousInit()
     }
 
-    override fun autonomousPeriodic() {
+    override fun autonomousPeriodic() = runRobotCallback {
         autonomousRuntime.autonomousPeriodic()
     }
 
-    override fun disabledInit() {
+    override fun disabledInit() = runRobotCallback {
+        clearDriveIntent()
         autonomousRuntime.stop("Robot disabled")
     }
 
-    override fun testInit() {
+    override fun testInit() = runRobotCallback {
+        clearDriveIntent()
         autonomousRuntime.stop("Test initialized")
     }
 
-    override fun simulationInit() {
-        lastSimulationSeconds = RobotClock.currentTimeMillis() / 1000.0
+    override fun simulationInit() = runRobotCallback {
+        lastSimulationMs = RobotClock.currentTimeMillis()
+        hasSimulationTimestamp = true
     }
 
-    override fun simulationPeriodic() {
+    override fun simulationPeriodic() = runRobotCallback {
         studioSimulationBridge?.update()
+        // Bridge lease/mode changes take effect in this tick, before the next mode callback.
+        if (DriverStation.isDisabled()) clearDriveIntent()
         val nowMs = RobotClock.currentTimeMillis()
-        val nowSeconds = nowMs / 1000.0
-        val dt = (nowSeconds - lastSimulationSeconds).coerceIn(0.0, 0.05)
-        lastSimulationSeconds = nowSeconds
+        val elapsedMs = nowMs - lastSimulationMs
+        val dt = if (hasSimulationTimestamp && nowMs >= lastSimulationMs && elapsedMs > 0L) {
+            elapsedMs.coerceAtMost(50L) / 1000.0
+        } else 0.0
+        lastSimulationMs = nowMs
+        hasSimulationTimestamp = true
         robot.store.dispatch(simulation.step(robot.store.state, dt, nowMs))
         robot.telemetry.putNumber("ARES/TruePose/0", simulation.xMeters)
         robot.telemetry.putNumber("ARES/TruePose/1", simulation.yMeters)
         robot.telemetry.putNumber("ARES/TruePose/2", simulation.headingRadians)
         robot.telemetry.putBoolean("ARES/Starter/PhysicalHardwareReady", physicalAdapterInstalled)
+    }
+
+    private fun clearDriveIntent() {
+        val drive = robot.store.state.drive
+        if (drive.xVelocityMetersPerSecond == 0.0 && drive.yVelocityMetersPerSecond == 0.0 &&
+            drive.angularVelocityRadiansPerSecond == 0.0) return
+        neutralDrive.timestampMs = RobotClock.currentTimeMillis()
+        robot.store.dispatch(neutralDrive)
+    }
+
+    private inline fun runRobotCallback(block: () -> Unit) {
+        check(initialized && !closed) { "FRC starter robot is not running" }
+        try { block() } catch (failure: Throwable) { closeAfterFailure(failure) }
+    }
+
+    private fun closeAfterFailure(failure: Throwable): Nothing {
+        retainStarterFailure(null, failure)
+        try { close() } catch (cleanup: Throwable) { retainStarterFailure(failure, cleanup) }
+        throw failure
     }
 
     private fun applyAlliance() {
@@ -188,12 +231,12 @@ class AresStarterRobot : TimedRobot() {
             try {
                 block()
             } catch (error: Throwable) {
-                val prior = failure
-                if (prior == null) failure = error else prior.addSuppressed(error)
+                failure = retainStarterFailure(failure, error)
             }
         }
         if (::autonomousRuntime.isInitialized) attempt { autonomousRuntime.stop("Robot closing") }
         else if (::generatedControls.isInitialized) attempt { generatedControls.cancelAll("Robot closing") }
+        if (::robot.isInitialized) attempt { clearDriveIntent() }
         studioSimulationBridge?.let { bridge -> attempt(bridge::close) }
         if (::robot.isInitialized) attempt { robot.close() }
         attempt { super.close() }
@@ -204,14 +247,14 @@ class AresStarterRobot : TimedRobot() {
 internal fun installGeneratedSubsystems(
     usePhysicalAdapters: Boolean,
     hardwareRegistry: HardwareRegistry,
-    register: (Subsystem) -> Unit,
+    register: (List<Subsystem>) -> Unit,
     createAll: (Boolean, HardwareRegistry) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
-): List<Subsystem> = createAll(usePhysicalAdapters, hardwareRegistry).also { created -> created.forEach(register) }
+): List<Subsystem> = createAll(usePhysicalAdapters, hardwareRegistry).also(register)
 
 internal fun installGeneratedSuperstructures(
-    register: (Subsystem) -> Unit,
+    register: (List<Subsystem>) -> Unit,
     createAll: () -> List<Subsystem> = GeneratedSuperstructureRegistry::createAll,
-): List<Subsystem> = createAll().also { created -> created.forEach(register) }
+): List<Subsystem> = createAll().also(register)
 
 /** Minimal vendor-neutral Redux/subsystem host used by the generic starter.
  * A failed update, registration or neutral output latches this instance until it is replaced.
@@ -286,6 +329,35 @@ internal class StarterRobotRuntime(
         } catch (failure: Throwable) { fail(failure) }
     }
 
+    /** Consumes every new batch member, even if registration fails before its ownership transfers. */
+    fun registerSubsystems(created: List<Subsystem>) {
+        try {
+            ensureRunning()
+            for (index in created.indices) registerSubsystem(created[index])
+        } catch (failure: Throwable) {
+            retainStarterFailure(null, failure)
+            if (!closed) {
+                fault = retainStarterFailure(fault, failure)
+                neutralize(fault)
+            }
+            val unowned = ArrayList<Subsystem>()
+            val seen = java.util.IdentityHashMap<Subsystem, Boolean>()
+            for (subsystem in created) {
+                if (subsystems.none { it === subsystem } && seen.put(subsystem, true) == null) unowned += subsystem
+            }
+            // Neutral every untransferred owner before attempting any close. The prefix stays ours.
+            for (subsystem in unowned) {
+                try { subsystem.writeOutputs(store.state, 0.0) }
+                catch (cleanup: Throwable) { retainStarterFailure(failure, cleanup) }
+            }
+            for (index in unowned.indices.reversed()) {
+                try { unowned[index].close() }
+                catch (cleanup: Throwable) { retainStarterFailure(failure, cleanup) }
+            }
+            throw failure
+        }
+    }
+
     fun publishHardwareTopology(robotId: String) {
         ensureRunning()
         try { publisher.publishTopology(hardwareRegistry.getTopologyJson(robotId)) }
@@ -320,7 +392,8 @@ internal class StarterRobotRuntime(
     }
 
     private fun applyTuningToConsumer(parameterUid: String, value: TuningValue): Boolean {
-        if (tuningUids.supports(parameterUid)) {
+        val owner = tuningConsumerIndex(parameterUid)
+        if (owner == -1) {
             store.dispatch(
                 RobotAction.UpdateTuningState(
                     withStarterRuntimeTuning(store.state.tuning, tuningRuntime, tuningUids),
@@ -328,25 +401,22 @@ internal class StarterRobotRuntime(
             )
             return true
         }
-        var matchIndex = -1
+        if (owner < 0) return false
+        return (subsystems[owner] as TypedTuningConsumer).applyTuningParameter(parameterUid, value)
+    }
+
+    private fun supportsRuntimeParameter(parameterUid: String): Boolean = tuningConsumerIndex(parameterUid) != -2
+
+    /** -1 is the builtin Redux consumer; -2 means missing or ambiguous ownership. */
+    private fun tuningConsumerIndex(parameterUid: String): Int {
+        var owner = if (tuningUids.supports(parameterUid)) -1 else -2
         for (index in subsystems.indices) {
             val consumer = subsystems[index] as? TypedTuningConsumer ?: continue
             if (!consumer.supportsTuningParameter(parameterUid)) continue
-            if (matchIndex >= 0) return false
-            matchIndex = index
+            if (owner != -2) return -2
+            owner = index
         }
-        if (matchIndex < 0) return false
-        return (subsystems[matchIndex] as TypedTuningConsumer).applyTuningParameter(parameterUid, value)
-    }
-
-    private fun supportsRuntimeParameter(parameterUid: String): Boolean {
-        if (tuningUids.supports(parameterUid)) return true
-        var matches = 0
-        for (index in subsystems.indices) {
-            val consumer = subsystems[index] as? TypedTuningConsumer ?: continue
-            if (consumer.supportsTuningParameter(parameterUid)) matches += 1
-        }
-        return matches == 1
+        return owner
     }
 
     private fun applyCanonicalValues(consumer: TypedTuningConsumer) {
