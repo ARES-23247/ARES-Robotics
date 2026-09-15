@@ -3,6 +3,7 @@ package com.ares.analytics.viewmodel.field
 import com.ares.analytics.ui.components.pathplanner.Waypoint
 import com.ares.analytics.viewmodel.FieldViewerState
 import com.ares.analytics.viewmodel.LivePoseState
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -14,30 +15,34 @@ import kotlinx.coroutines.launch
 class FieldPoseBufferManager(
     private val scope: CoroutineScope,
     private val stateFlow: MutableStateFlow<FieldViewerState>,
-    private val livePoseFlow: MutableStateFlow<LivePoseState>
+    private val livePoseFlow: MutableStateFlow<LivePoseState>,
+    samplingDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private val poseBuffer = ArrayDeque<Waypoint>(MAX_TRACE_SAMPLES)
 
     init {
         // Trace sampling must not fall behind a busy Compose render or dashboard layout pass.
-        scope.launch(Dispatchers.Default) {
+        scope.launch(samplingDispatcher) {
             while (true) {
                 delay(50)
-                val currentLiveState = livePoseFlow.value
-                // Use simulator TruePose if available, otherwise fall back to EKF data from real robot
-                val x = if (currentLiveState.hasTruePoseData) currentLiveState.trueX else (currentLiveState.ekfX ?: currentLiveState.trueX)
-                val y = if (currentLiveState.hasTruePoseData) currentLiveState.trueY else (currentLiveState.ekfY ?: currentLiveState.trueY)
-                val heading = if (currentLiveState.hasTruePoseData) currentLiveState.trueHeading else (currentLiveState.ekfHeading ?: currentLiveState.trueHeading)
-
-                val lastWp = poseBuffer.lastOrNull()
-                val moved = lastWp == null ||
-                    kotlin.math.abs(lastWp.x - x) > MIN_TRANSLATION_METERS ||
-                    kotlin.math.abs(lastWp.y - y) > MIN_TRANSLATION_METERS
-                when {
-                    moved -> appendPose(Waypoint(x, y, heading))
-                    lastWp.headingRad != heading -> replaceLastPose(Waypoint(x, y, heading))
-                }
+                samplePose()
             }
+        }
+    }
+
+    @Synchronized
+    private fun samplePose() {
+        val current = livePoseFlow.value
+        if (!current.isConnected) return
+        val x = if (current.hasTruePoseData) current.trueX else current.ekfX ?: return
+        val y = if (current.hasTruePoseData) current.trueY else current.ekfY ?: return
+        val heading = if (current.hasTruePoseData) current.trueHeading else current.ekfHeading ?: return
+        if (!x.isFinite() || !y.isFinite() || !heading.isFinite()) return
+        val last = poseBuffer.lastOrNull()
+        val moved = last == null || kotlin.math.hypot(last.x - x, last.y - y) > MIN_TRANSLATION_METERS
+        when {
+            moved -> appendPose(Waypoint(x, y, heading))
+            last.headingRad != heading -> replaceLastPose(Waypoint(x, y, heading))
         }
     }
 
@@ -58,6 +63,7 @@ class FieldPoseBufferManager(
         stateFlow.update { it.copy(poseHistory = snapshot) }
     }
 
+    @Synchronized
     fun clearTrace() {
         poseBuffer.clear()
         stateFlow.update { it.copy(poseHistory = emptyList()) }

@@ -5,14 +5,15 @@ import kotlin.math.roundToInt
 import com.areslib.pathing.planner.PlannerState
 
 /**
- * A state-of-the-art any-angle global pathfinder implementing the **Theta\*** path planning algorithm.
+ * Any-angle grid pathfinder implementing the **Theta\*** path planning algorithm.
  *
  * Traditional A* restricts paths to grid lines, generating jagged, artificial zigzag patterns.
  * Theta* bypasses these restrictions by performing a high-speed Bresenham line-of-sight check during
  * neighbor expansion. If a direct line-of-sight exists between a candidate node's parent and a neighbor,
  * the path skips the candidate, linking the neighbor directly to the parent.
  *
- * This results in mathematically optimal, straight, grid-snap-free global paths around costmap obstacles.
+ * Parent shortcuts reduce grid-constrained turns; this heuristic search does not promise a globally
+ * shortest continuous path. Both shortcuts and neighboring edges honor inflated obstacle corners.
  *
  * ### Physical Units & Guarantees:
  * - **Coordinates:** Field-relative meters ($m$)
@@ -42,20 +43,25 @@ object ThetaStarPlanner {
             return emptyList()
         }
 
-        val startX = ((start.x - costmap.origin.x) / costmap.resolutionMeters).roundToInt()
-        val startY = ((start.y - costmap.origin.y) / costmap.resolutionMeters).roundToInt()
-        val endX = ((end.x - costmap.origin.x) / costmap.resolutionMeters).roundToInt()
-        val endY = ((end.y - costmap.origin.y) / costmap.resolutionMeters).roundToInt()
-
-        // Handle simple start == end edge case
-        if (startX == endX && startY == endY) {
-            return listOf(start, end)
-        }
+        val startGridX = (start.x - costmap.origin.x) / costmap.resolutionMeters
+        val startGridY = (start.y - costmap.origin.y) / costmap.resolutionMeters
+        val endGridX = (end.x - costmap.origin.x) / costmap.resolutionMeters
+        val endGridY = (end.y - costmap.origin.y) / costmap.resolutionMeters
+        if (!startGridX.isFinite() || !startGridY.isFinite() ||
+            !endGridX.isFinite() || !endGridY.isFinite()) return emptyList()
+        val startX = startGridX.roundToInt()
+        val startY = startGridY.roundToInt()
+        val endX = endGridX.roundToInt()
+        val endY = endGridY.roundToInt()
 
         // Out of bounds check
         if (startX !in 0 until costmap.widthCells || startY !in 0 until costmap.heightCells) return emptyList()
         if (endX !in 0 until costmap.widthCells || endY !in 0 until costmap.heightCells) return emptyList()
-        if (!costmap.isCellTraversable(endX, endY)) return emptyList()
+        if (!endpointTraversable(costmap, startGridX, startGridY, startX, startY) ||
+            !endpointTraversable(costmap, endGridX, endGridY, endX, endY)) return emptyList()
+
+        // The same-cell shortcut must not bypass endpoint validity.
+        if (startX == endX && startY == endY) return listOf(start, end)
 
         val capacity = costmap.widthCells * costmap.heightCells
         val state = statePool.poll() ?: PlannerState(10000)
@@ -101,6 +107,11 @@ object ThetaStarPlanner {
     
                         // Ensure cell is bounds and traversable
                         if (!costmap.isCellTraversable(nx, ny)) continue
+                        // The fallback A* edge must obey the same corner rule as the Theta*
+                        // shortcut. Checking only the destination permits diagonal collisions.
+                        if (dx != 0 && dy != 0 &&
+                            (!costmap.isCellTraversable(currX + dx, currY) ||
+                                !costmap.isCellTraversable(currX, currY + dy))) continue
     
                         val nKey = ny * costmap.widthCells + nx
                         if (state.isClosed(nKey)) continue
@@ -114,6 +125,18 @@ object ThetaStarPlanner {
         } finally {
             statePool.offer(state)
         }
+    }
+
+    /** Match closed-cell collision semantics, including points shared by two or four cells. */
+    private fun endpointTraversable(costmap: Costmap, x: Double, y: Double, cellX: Int, cellY: Int): Boolean {
+        val minX = if (x <= cellX - 0.5) cellX - 1 else cellX
+        val maxX = if (x >= cellX + 0.5) cellX + 1 else cellX
+        val minY = if (y <= cellY - 0.5) cellY - 1 else cellY
+        val maxY = if (y >= cellY + 0.5) cellY + 1 else cellY
+        for (cy in minY..maxY) for (cx in minX..maxX) {
+            if (!costmap.isCellTraversable(cx, cy)) return false
+        }
+        return true
     }
 
     private fun updateVertex(
@@ -228,14 +251,21 @@ object ThetaStarPlanner {
             state.pathPool[opp * 2 + 1] = tempY
         }
 
-        // Snap start and end points perfectly to their true exact physical starting coordinates
-        if (pathSize > 0) {
-            state.pathPool[0] = start.x
-            state.pathPool[1] = start.y
-            state.pathPool[(pathSize - 1) * 2] = end.x
-            state.pathPool[(pathSize - 1) * 2 + 1] = end.y
+        // Keep the segments whose cell-center geometry was checked during search. Moving their
+        // endpoints can cut an obstacle corner. Each added connector lies in one convex free cell.
+        val startOffset = if (state.pathPool[0] == start.x && state.pathPool[1] == start.y) 0 else 1
+        val last = (pathSize - 1) * 2
+        val endOffset = if (state.pathPool[last] == end.x && state.pathPool[last + 1] == end.y) 0 else 1
+        val resultSize = pathSize + startOffset + endOffset
+        return List(resultSize) { i ->
+            when {
+                startOffset == 1 && i == 0 -> start
+                endOffset == 1 && i == resultSize - 1 -> end
+                else -> {
+                    val index = (i - startOffset) * 2
+                    Translation2d(state.pathPool[index], state.pathPool[index + 1])
+                }
+            }
         }
-
-        return List(pathSize) { i -> Translation2d(state.pathPool[i * 2], state.pathPool[i * 2 + 1]) }
     }
 }

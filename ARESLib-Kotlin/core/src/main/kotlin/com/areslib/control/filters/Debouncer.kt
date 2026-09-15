@@ -25,12 +25,18 @@ class Debouncer(
     private val risingTimeMs: Long,
     private val fallingTimeMs: Long = risingTimeMs
 ) {
+    init {
+        require(risingTimeMs >= 0L && fallingTimeMs >= 0L) { "Debounce durations must be non-negative" }
+    }
+
     private var lastStateChangeTimeMs: Long = RobotClock.currentTimeMillis()
+    private var lastSampleTimeMs: Long = lastStateChangeTimeMs
     private var outputState: Boolean = false
     private var baselineState: Boolean = false
 
     /**
      * Calculates the debounced boolean output state given the current raw input boolean reading.
+     * A replay clock rewind restarts the pending dwell while retaining the last output.
      *
      * @param input Raw boolean signal reading from switch or digital sensor.
      * @return Debounced boolean output state ($y(t)$).
@@ -38,17 +44,23 @@ class Debouncer(
     fun calculate(input: Boolean): Boolean {
         val currentTimeMs = RobotClock.currentTimeMillis()
 
-        if (input != baselineState) {
+        if (input != baselineState || currentTimeMs < lastSampleTimeMs) {
             baselineState = input
             lastStateChangeTimeMs = currentTimeMs
         }
+        lastSampleTimeMs = currentTimeMs
+
+        // After rewind handling, ordered timestamps with a negative subtraction have exceeded
+        // Long.MAX_VALUE elapsed milliseconds. Every representable dwell has then completed.
+        val difference = currentTimeMs - lastStateChangeTimeMs
+        val elapsed = if (difference < 0L) Long.MAX_VALUE else difference
 
         if (input) {
-            if (currentTimeMs - lastStateChangeTimeMs >= risingTimeMs) {
+            if (elapsed >= risingTimeMs) {
                 outputState = true
             }
         } else {
-            if (currentTimeMs - lastStateChangeTimeMs >= fallingTimeMs) {
+            if (elapsed >= fallingTimeMs) {
                 outputState = false
             }
         }

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertThrows
 
 class ARESRobotSafetyBoundaryTest {
 
@@ -17,14 +18,20 @@ class ARESRobotSafetyBoundaryTest {
         val encoderPositions = doubleArrayOf(0.1, -0.2, 0.3, -0.4)
         var latencyMs = 0.0
         var encoderValid = true
+        var encoderReads = 0
+        var refreshCalls = 0
+        var failReads = false
+        var incompleteRead = false
 
-        override fun refresh() = Unit
+        override fun refresh() { refreshCalls++ }
         override fun read(): DriveState = DriveState()
         override fun write(driveState: DriveState, powerScale: Double) = Unit
         override fun getCurrents(out: DoubleArray) = out.fill(Double.NaN)
         override val currentMeasurementsValid: Boolean = false
         override fun getEncoderPositions(out: DoubleArray) {
-            encoderPositions.copyInto(out)
+            encoderReads++
+            check(!failReads) { "Synthetic encoder read failure" }
+            if (incompleteRead) out[0] = encoderPositions[0] else encoderPositions.copyInto(out)
         }
         override val encoderPositionsValid: Boolean
             get() = encoderValid
@@ -85,19 +92,99 @@ class ARESRobotSafetyBoundaryTest {
     }
 
     @Test
+    fun `calibration freshness includes sensor latency and cache residence`() {
+        val io = FakeSwerveIO().apply { latencyMs = 90.25 }
+        val cache = SwerveOffsetCalibrationSampleCache()
+        val output = DoubleArray(5) { 42.0 }
+        cache.record(io, 1_000L)
+        assertTrue(cache.copyFresh(1_009L, output))
+        assertEquals(42.0, output[4])
+        output.fill(42.0)
+        assertFalse(cache.copyFresh(1_010L, output))
+        assertTrue(output.all { it == 42.0 }, "Rejected copies must leave caller storage unchanged")
+    }
+
+    @Test
+    fun `calibration cache rejects clock rewind even when subtraction wraps positive`() {
+        val cache = SwerveOffsetCalibrationSampleCache()
+        cache.record(FakeSwerveIO(), Long.MAX_VALUE - 5L)
+        assertFalse(cache.copyFresh(Long.MIN_VALUE + 5L, DoubleArray(4)))
+    }
+
+    @Test
+    fun `calibration freshness keeps the exact combined boundary and replaces old latency`() {
+        val io = FakeSwerveIO().apply { latencyMs = 90.0 }
+        val cache = SwerveOffsetCalibrationSampleCache()
+        val output = DoubleArray(4)
+        cache.record(io, 1_000L)
+        assertTrue(cache.copyFresh(1_010L, output))
+        assertFalse(cache.copyFresh(1_011L, output))
+        io.latencyMs = 0.0
+        cache.record(io, 2_000L)
+        assertTrue(cache.copyFresh(2_100L, output))
+        assertFalse(cache.copyFresh(1_999L, output))
+        cache.record(io, -1L)
+        assertFalse(cache.copyFresh(Long.MAX_VALUE, output), "Overflowed positive elapsed time must reject")
+    }
+
+    @Test
+    fun `calibration owns its snapshot and invalid acquisition revokes it`() {
+        val io = FakeSwerveIO()
+        val cache = SwerveOffsetCalibrationSampleCache()
+        val output = DoubleArray(4)
+        cache.record(io, 1_000L)
+        io.encoderPositions.fill(0.9)
+        assertTrue(cache.copyFresh(1_000L, output))
+        assertEquals(0.1, output[0])
+        output.fill(0.8)
+        assertTrue(cache.copyFresh(1_000L, output))
+        assertEquals(0.1, output[0])
+        for (latency in listOf(Double.NaN, Double.POSITIVE_INFINITY, -0.1, 100.1)) {
+            io.latencyMs = 0.0
+            cache.record(io, 2_000L)
+            assertTrue(cache.copyFresh(2_000L, output))
+            io.latencyMs = latency
+            cache.record(io, 2_000L)
+            assertFalse(cache.copyFresh(2_000L, output))
+        }
+    }
+
+    @Test
+    fun `calibration copies use only owned storage and failed reads revoke the sample`() {
+        val io = FakeSwerveIO()
+        val cache = SwerveOffsetCalibrationSampleCache()
+        val output = DoubleArray(4)
+        assertFalse(cache.copyFresh(0L, output))
+        cache.record(io, 1_000L)
+        repeat(5) { assertTrue(cache.copyFresh(1_000L, output)) }
+        assertEquals(1, io.encoderReads)
+        assertEquals(0, io.refreshCalls)
+        assertThrows(IllegalArgumentException::class.java) { cache.copyFresh(1_000L, DoubleArray(3)) }
+        io.failReads = true
+        cache.record(io, 1_001L)
+        assertFalse(cache.copyFresh(1_001L, output))
+        io.failReads = false
+        cache.record(io, 1_002L)
+        assertTrue(cache.copyFresh(1_002L, output))
+        io.incompleteRead = true
+        cache.record(io, 1_003L)
+        assertFalse(cache.copyFresh(1_003L, output))
+    }
+
+    @Test
     fun `mechanism configuration health fails closed on any reporting adapter`() {
-        assertTrue(mechanismsConfigured(ConfigurationStatus(true)))
-        assertFalse(mechanismsConfigured(ConfigurationStatus(true), ConfigurationStatus(false)))
+        assertTrue(mechanismsConfigured(arrayOf(ConfigurationStatus(true))))
+        assertFalse(mechanismsConfigured(arrayOf(ConfigurationStatus(true), ConfigurationStatus(false))))
         val resettable = ConfigurationStatus(true)
-        assertTrue(mechanismsConfigured(resettable))
+        assertTrue(mechanismsConfigured(arrayOf(resettable)))
         resettable.valid = false
-        assertFalse(mechanismsConfigured(resettable), "a post-startup reset must invalidate live health")
+        assertFalse(mechanismsConfigured(arrayOf(resettable)), "a post-startup reset must invalidate live health")
     }
 
     @Test
     fun `relative position mechanism health fails closed until every device is homed`() {
-        assertTrue(mechanismsHomed(HomingStatus(true)))
-        assertFalse(mechanismsHomed(HomingStatus(true), HomingStatus(false)))
+        assertTrue(mechanismsHomed(arrayOf(HomingStatus(true))))
+        assertFalse(mechanismsHomed(arrayOf(HomingStatus(true), HomingStatus(false))))
         assertFalse(mechanismSafetyHealthy(true, false, null))
         assertFalse(mechanismSafetyHealthy(false, true, null))
         assertFalse(mechanismSafetyHealthy(true, true, IllegalStateException("update failed")))

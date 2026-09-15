@@ -17,7 +17,12 @@ import kotlin.math.*
  */
 data class Translation3d(var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
     /** Euclidean length (norm) of the 3D translation vector in meters ($m$). $\|v\| = \sqrt{x^2 + y^2 + z^2}$. */
-    val norm: Double get() = sqrt(x * x + y * y + z * z)
+    val norm: Double get() {
+        val squared = x * x + y * y + z * z
+        if (squared >= java.lang.Double.MIN_NORMAL && squared.isFinite()) return sqrt(squared)
+        // Preserve NaN even alongside infinity; hypot alone prioritizes infinity.
+        return if (x.isNaN() || y.isNaN() || z.isNaN()) Double.NaN else hypot(hypot(x, y), z)
+    }
 
     /** Vector addition $(x_1 + x_2, y_1 + y_2, z_1 + z_2)$. */
     operator fun plus(other: Translation3d) = Translation3d(x + other.x, y + other.y, z + other.z)
@@ -27,7 +32,8 @@ data class Translation3d(var x: Double = 0.0, var y: Double = 0.0, var z: Double
 }
 
 /**
- * Unit Quaternion $\mathbf{q} = (w, x, y, z) = w + x\mathbf{i} + y\mathbf{j} + z\mathbf{k}$ for 3D orientation representation.
+ * Mutable quaternion $\mathbf{q} = (w, x, y, z) = w + x\mathbf{i} + y\mathbf{j} + z\mathbf{k}$.
+ * Rotation operations require unit length; construction and mutation do not enforce it.
  *
  * Avoids gimbal lock singularities when processing Limelight/AprilTag 3D camera transforms.
  *
@@ -50,14 +56,26 @@ data class Translation3d(var x: Double = 0.0, var y: Double = 0.0, var z: Double
  */
 data class Quaternion(var w: Double = 1.0, var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
     /**
-     * Normalizes this quaternion to unit length $\|q\| = 1$.
+     * Returns a fresh unit quaternion without mutating this value. Scaling before squaring
+     * preserves every finite nonzero quaternion, including subnormal components.
      *
-     * @return Normalized unit [Quaternion] (returns default identity $(1,0,0,0)$ on NaN/zero norm).
+     * @return Normalized unit [Quaternion]; zero or nonfinite input retains the legacy identity
+     * fallback. That fallback is not evidence of a valid measured orientation.
      */
     fun normalize(): Quaternion {
-        val norm = sqrt(w * w + x * x + y * y + z * z)
-        if (norm.isNaN() || norm.isInfinite() || norm == 0.0) return Quaternion()
-        return Quaternion(w / norm, x / norm, y / norm, z / norm)
+        val squared = w * w + x * x + y * y + z * z
+        if (squared >= java.lang.Double.MIN_NORMAL && squared.isFinite()) {
+            val norm = sqrt(squared)
+            return Quaternion(w / norm, x / norm, y / norm, z / norm)
+        }
+        val scale = max(max(abs(w), abs(x)), max(abs(y), abs(z)))
+        if (!scale.isFinite() || scale == 0.0) return Quaternion()
+        val sw = w / scale
+        val sx = x / scale
+        val sy = y / scale
+        val sz = z / scale
+        val norm = sqrt(sw * sw + sx * sx + sy * sy + sz * sz)
+        return Quaternion(sw / norm, sx / norm, sy / norm, sz / norm)
     }
 
     /** Hamilton product multiplication. */
@@ -82,7 +100,11 @@ data class Quaternion(var w: Double = 1.0, var x: Double = 0.0, var y: Double = 
 }
 
 /**
- * 3D Rotational Orientation parameterized by a unit [Quaternion] or intrinsic Euler angles (roll, pitch, yaw).
+ * Mutable 3D orientation with a unit [Quaternion]. Euler construction uses
+ * Rz(yaw) Ry(pitch) Rx(roll): fixed-axis X/Y/Z, equivalently intrinsic Z/Y/X.
+ * Direct quaternion assignment must preserve unit length. Euler getters choose roll zero
+ * at pitch singularities; roll and yaw are not individually identifiable there.
+ * Components are borrowed mutable storage; use [Pose3d.deepCopy] when retaining a pose.
  *
  * ### Mathematical Formulation:
  * Euler (roll $\phi$, pitch $\theta$, yaw $\psi$) to Quaternion conversion:
@@ -111,17 +133,7 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
      * @param yaw Rotation about Z-axis in radians ($rad$), CCW-positive.
      */
     fun setEulerAngles(roll: Double, pitch: Double, yaw: Double) {
-        val cr = cos(roll * 0.5)
-        val sr = sin(roll * 0.5)
-        val cp = cos(pitch * 0.5)
-        val sp = sin(pitch * 0.5)
-        val cy = cos(yaw * 0.5)
-        val sy = sin(yaw * 0.5)
-
-        q.w = cr * cp * cy + sr * sp * sy
-        q.x = sr * cp * cy - cr * sp * sy
-        q.y = cr * sp * cy + sr * cp * sy
-        q.z = cr * cp * sy - sr * sp * cy
+        setEulerQuaternion(q, roll, pitch, yaw)
     }
 
     /** Composes two 3D rotations via quaternion product. */
@@ -139,31 +151,20 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
     }
 
     /** Extract Euler roll angle in radians ($rad$). */
-    val x: Double get() {
-        val sinr_cosp = 2.0 * (q.w * q.x + q.y * q.z)
-        val cosr_cosp = 1.0 - 2.0 * (q.x * q.x + q.y * q.y)
-        return atan2(sinr_cosp, cosr_cosp)
-    }
+    val x: Double get() = quaternionRoll(q.w, q.x, q.y, q.z)
 
     /** Extract Euler pitch angle in radians ($rad$). */
-    val y: Double get() {
-        val sinp = 2.0 * (q.w * q.y - q.z * q.x)
-        return if (abs(sinp) >= 1.0) {
-            (PI / 2).withSign(sinp)
-        } else {
-            asin(sinp)
-        }
-    }
+    val y: Double get() = quaternionPitch(q.w, q.x, q.y, q.z)
 
     /** Extract Euler yaw angle in radians ($rad$), CCW-positive. */
-    val z: Double get() {
-        val siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
-        val cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        return atan2(siny_cosp, cosy_cosp)
-    }
+    val z: Double get() = quaternionYaw(q.w, q.x, q.y, q.z)
 
     companion object {
         private fun fromEulerAngles(roll: Double, pitch: Double, yaw: Double): Quaternion {
+            return Quaternion().also { setEulerQuaternion(it, roll, pitch, yaw) }
+        }
+
+        private fun setEulerQuaternion(q: Quaternion, roll: Double, pitch: Double, yaw: Double) {
             val cr = cos(roll * 0.5)
             val sr = sin(roll * 0.5)
             val cp = cos(pitch * 0.5)
@@ -171,12 +172,10 @@ data class Rotation3d(var q: Quaternion = Quaternion()) {
             val cy = cos(yaw * 0.5)
             val sy = sin(yaw * 0.5)
 
-            val w = cr * cp * cy + sr * sp * sy
-            val x = sr * cp * cy - cr * sp * sy
-            val y = cr * sp * cy + sr * cp * sy
-            val z = cr * cp * sy - sr * sp * cy
-
-            return Quaternion(w, x, y, z)
+            q.w = cr * cp * cy + sr * sp * sy
+            q.x = sr * cp * cy - cr * sp * sy
+            q.y = cr * sp * cy + sr * cp * sy
+            q.z = cr * cp * sy - sr * sp * cy
         }
     }
 }
@@ -208,6 +207,8 @@ data class Pose3d(
      * Projects this 3D pose onto the 2D ground plane $(x, y, \text{yaw})$.
      *
      * @return Equivalent planar [Pose2d] in meters ($m$) and radians ($rad$).
+     * This projection does not validate feedback: callers must check the 3D observation
+     * before use. [Rotation2d] retains its legacy nonfinite-heading fallback.
      */
     fun toPose2d(): Pose2d {
         return Pose2d(x, y, Rotation2d(rotation.z))
@@ -222,6 +223,9 @@ fun Pose3d.deepCopy(): Pose3d = Pose3d(
 
 /**
  * 3D Rigid Body Transformation matrix wrapper $(\mathbf{T}, \mathbf{R})$.
+ * Constructors borrow mutable components. Transform operations return independently owned
+ * results and allocate; they are not in-place, zero-allocation sensor workspaces. Rotations
+ * must be unit quaternions, and scalar overflow propagates as in ordinary vector arithmetic.
  *
  * @property translation Relative 3D translation vector.
  * @property rotation Relative 3D rotation.
@@ -237,9 +241,8 @@ data class Transform3d(
      */
     fun inverse(): Transform3d {
         val invRot = rotation.inverse()
-        val p = Quaternion(0.0, translation.x, translation.y, translation.z)
-        val invP = invRot.q * p * invRot.q.inverse()
-        return Transform3d(Translation3d(-invP.x, -invP.y, -invP.z), invRot)
+        val invTrans = rotateTranslation(invRot.q, -translation.x, -translation.y, -translation.z)
+        return Transform3d(invTrans, invRot)
     }
 }
 
@@ -250,13 +253,10 @@ data class Transform3d(
  * @return Transformed [Pose3d].
  */
 fun Pose3d.transformBy(other: Transform3d): Pose3d {
-    val p = Quaternion(0.0, other.translation.x, other.translation.y, other.translation.z)
-    val rotatedTrans = rotation.q * p * rotation.q.inverse()
-    val newTrans = Translation3d(
-        translation.x + rotatedTrans.x,
-        translation.y + rotatedTrans.y,
-        translation.z + rotatedTrans.z
-    )
+    val newTrans = rotateTranslation(rotation.q, other.translation.x, other.translation.y, other.translation.z)
+    newTrans.x += translation.x
+    newTrans.y += translation.y
+    newTrans.z += translation.z
     return Pose3d(newTrans, rotation * other.rotation)
 }
 
@@ -268,16 +268,39 @@ fun Pose3d.transformBy(other: Transform3d): Pose3d {
  */
 fun Pose3d.relativeTo(other: Pose3d): Transform3d {
     val invRot = other.rotation.inverse()
-    val transDiff = Translation3d(
+    val rotatedTrans = rotateTranslation(invRot.q,
         translation.x - other.translation.x,
         translation.y - other.translation.y,
         translation.z - other.translation.z
     )
-    val p = Quaternion(0.0, transDiff.x, transDiff.y, transDiff.z)
-    val rotatedTrans = invRot.q * p * invRot.q.inverse()
-    
     return Transform3d(
-        Translation3d(rotatedTrans.x, rotatedTrans.y, rotatedTrans.z),
+        rotatedTrans,
         invRot * rotation
+    )
+}
+
+// Scalar Hamilton sandwich q * (0, x, y, z) * conjugate(q). Only the owned vector
+// result allocates: no pure-vector quaternion, products, or conjugate temporaries.
+// Like the public Hamilton product, arithmetic overflow/nonfinite inputs propagate.
+private fun rotateTranslation(q: Quaternion, x: Double, y: Double, z: Double): Translation3d {
+    val scale = max(abs(x), max(abs(y), abs(z)))
+    if (scale.isFinite() && (scale > Double.MAX_VALUE / 4.0 || scale > 0.0 && scale < java.lang.Double.MIN_NORMAL * 4.0)) {
+        // A unit quaternion can rotate a finite vector even when sandwich intermediates
+        // overflow or underflow. Normalize only these extremes; recursion is exactly one
+        // level because the largest normalized component is one. Reuse the owned result.
+        val rotated = rotateTranslation(q, x / scale, y / scale, z / scale)
+        rotated.x *= scale
+        rotated.y *= scale
+        rotated.z *= scale
+        return rotated
+    }
+    val aw = -q.x * x - q.y * y - q.z * z
+    val ax = q.w * x + q.y * z - q.z * y
+    val ay = q.w * y - q.x * z + q.z * x
+    val az = q.w * z + q.x * y - q.y * x
+    return Translation3d(
+        -aw * q.x + ax * q.w - ay * q.z + az * q.y,
+        -aw * q.y + ax * q.z + ay * q.w - az * q.x,
+        -aw * q.z - ax * q.y + ay * q.x + az * q.w,
     )
 }

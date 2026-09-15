@@ -1,5 +1,9 @@
 package com.ares.analytics.service
 
+import com.ares.analytics.shared.TelemetryMetricCatalog
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.ares.analytics.shared.models.SessionSummary
 import com.ares.analytics.shared.models.TelemetryFrame
 import kotlin.math.abs
@@ -59,7 +63,8 @@ data class PathHeatmapCell(
     val xIndex: Int,
     val yIndex: Int,
     val visits: Int,
-    val averageSpeedMetersPerSecond: Double
+    /** Distance/time of observed segments ending in this cell; null when no interval exists. */
+    val averageSpeedMetersPerSecond: Double?
 )
 
 enum class InsightSeverity { INFO, WARNING, CRITICAL }
@@ -76,104 +81,80 @@ data class TuningSuggestion(
     val recommendation: String,
     val confidence: Double,
     val rationale: String,
-    val evidenceSamples: Int
-)
+    val evidenceSamples: Int,
+    val evidenceUnit: String = "aligned samples",
+) {
+    /** Legacy confidence is a bounded support heuristic, never a statistical probability. */
+    val evidenceStrength: Double get() = confidence
+    val evidenceLabel: String get() = "$evidenceSamples $evidenceUnit"
+}
 
 /**
  * Produces a bounded, evidence-carrying analysis report for one recorded session. Every raw
  * signal query is viewport/downsample limited so report generation remains stable for long logs.
  */
 class AdvancedAnalyticsService(private val databaseService: TelemetryAnalyticsRepository) {
-    suspend fun analyzeAgainstRecent(
-        sessionId: String,
-        baselineCount: Int = 3
-    ): OperationResult<AdvancedAnalyticsReport> {
-        val current = databaseService.getSessionSummary(sessionId)
-        val baselineIds = if (current == null) emptyList() else databaseService.getAllSessionSummaries()
-            .asSequence()
-            .filter { it.sessionId != sessionId }
-            // Comparing another team, season, or robot can manufacture a persuasive but invalid
-            // regression. A guided review is allowed to say that no compatible baseline exists.
-            .filter {
-                it.teamId == current.teamId &&
-                    it.seasonId == current.seasonId &&
-                    it.robotId == current.robotId
-            }
-            .sortedByDescending { it.createdAt }
-            .take(baselineCount.coerceAtLeast(0))
-            .map { it.sessionId }
-            .toList()
-        return analyzeSafely(sessionId, baselineIds)
-    }
+    suspend fun analyzeAgainstRecent(sessionId: String, baselineCount: Int = 3): OperationResult<AdvancedAnalyticsReport> =
+        safely(sessionId) { readReport(sessionId, emptyList(), baselineCount.coerceAtLeast(0), true) }
 
-    suspend fun analyzeSafely(
-        sessionId: String,
-        baselineSessionIds: List<String> = emptyList()
-    ): OperationResult<AdvancedAnalyticsReport> = try {
-        if (databaseService.getSessionTimestampRange(sessionId) == null) {
-            OperationResult.Unavailable("NO_TELEMETRY", "Session $sessionId has no telemetry frames")
-        } else {
-            OperationResult.Success(analyze(sessionId, baselineSessionIds))
-        }
+    suspend fun analyzeSafely(sessionId: String, baselineSessionIds: List<String> = emptyList()): OperationResult<AdvancedAnalyticsReport> =
+        safely(sessionId) { readReport(sessionId, baselineSessionIds, null, true) }
+
+    suspend fun analyze(sessionId: String, baselineSessionIds: List<String> = emptyList()): AdvancedAnalyticsReport =
+        requireNotNull(readReport(sessionId, baselineSessionIds, null, false))
+
+    private suspend fun safely(sessionId: String, read: suspend () -> AdvancedAnalyticsReport?): OperationResult<AdvancedAnalyticsReport> = try {
+        read()?.let { OperationResult.Success(it) }
+            ?: OperationResult.Unavailable("NO_TELEMETRY", "Session $sessionId has no telemetry frames")
     } catch (error: Exception) {
+        if (error is CancellationException) throw error
         OperationResult.Failure("ANALYTICS_FAILED", error.message ?: "Analytics failed", error)
     }
 
-    suspend fun analyze(sessionId: String, baselineSessionIds: List<String> = emptyList()): AdvancedAnalyticsReport {
+    private suspend fun readReport(
+        sessionId: String,
+        baselineSessionIds: List<String>,
+        recentCount: Int?,
+        requireTelemetry: Boolean,
+    ): AdvancedAnalyticsReport? = withContext(Dispatchers.Default) {
         val range = databaseService.getSessionTimestampRange(sessionId)
+        if (range == null && requireTelemetry) return@withContext null
         val summary = databaseService.getSessionSummary(sessionId)
-        val baselines = baselineSessionIds.distinct()
-            .filter { it != sessionId }
-            .mapNotNull { databaseService.getSessionSummary(it) }
-            .filter { baseline ->
-                summary != null &&
-                    baseline.teamId == summary.teamId &&
-                    baseline.seasonId == summary.seasonId &&
-                    baseline.robotId == summary.robotId
-            }
-
-        val comparison = summary?.let { compareSummaries(it, baselines) }
-        val regressions = comparison?.metrics.orEmpty()
-            .mapNotNull(::detectRegression)
-            .sortedByDescending { it.percentRegression }
-
-        if (range == null) {
-            return AdvancedAnalyticsReport(
-                sessionId, comparison, regressions, emptyList(), null, emptyList(),
-                listOf(DiagnosticInsight(InsightSeverity.WARNING, "data", "No telemetry frames were recorded.", "Session range is empty")),
-                emptyList()
-            )
+        fun compatible(other: SessionSummary): Boolean = summary != null && other.sessionId != sessionId &&
+            other.teamId == summary.teamId && other.seasonId == summary.seasonId && other.robotId == summary.robotId
+        val baselines = when {
+            summary == null || recentCount == 0 -> emptyList()
+            recentCount != null -> databaseService.getAllSessionSummaries().asSequence()
+                .filter(::compatible).distinctBy { it.sessionId }.sortedByDescending { it.createdAt }.take(recentCount).toList()
+            else -> baselineSessionIds.distinct().filter { it != sessionId }
+                .mapNotNull { databaseService.getSessionSummary(it) }.filter(::compatible)
         }
-
-        val keys = databaseService.getDistinctTelemetryKeys(sessionId)
+        val comparison = summary?.let { compareSummaries(it, baselines) }
+        val regressions = comparison?.metrics.orEmpty().mapNotNull(::detectRegression).sortedByDescending { it.percentRegression }
+        if (range == null) return@withContext AdvancedAnalyticsReport(
+            sessionId, comparison, regressions, emptyList(), null, emptyList(),
+            listOf(DiagnosticInsight(InsightSeverity.WARNING, "data", "No telemetry frames were recorded.", "Session range is empty")), emptyList()
+        )
+        val keys = databaseService.getDistinctTelemetryKeys(sessionId).distinct().sorted()
         val seriesCache = HashMap<String, List<TelemetryFrame>>()
         suspend fun series(key: String): List<TelemetryFrame> = seriesCache.getOrPutSuspend(key) {
-            databaseService.getTelemetrySeries(sessionId, key, range.first, range.second, MAX_SIGNAL_POINTS)
+            val frames = databaseService.getTelemetrySeries(sessionId, key, range.first, range.second, MAX_SIGNAL_POINTS)
+            require(frames.size <= MAX_SIGNAL_POINTS) { "Analytics signal query exceeded its point limit" }
+            numericAnalyticsSeries(frames, sessionId, key)
         }
-
         val correlations = buildCorrelations(keys, ::series)
-        val driverScore = buildDriverScore(keys, ::series)
+        val driver = buildDriverScore(keys, ::series)
         val heatmap = buildPathHeatmap(keys, ::series)
-        val diagnostics = buildDiagnostics(summary, regressions, correlations, driverScore)
-        val suggestions = buildTuningSuggestions(summary, driverScore, correlations, baselines.size)
-
-        return AdvancedAnalyticsReport(
-            sessionId = sessionId,
-            comparison = comparison,
-            regressions = regressions,
-            correlations = correlations,
-            driverScore = driverScore,
-            pathHeatmap = heatmap,
-            diagnostics = diagnostics,
-            tuningSuggestions = suggestions
-        )
+        AdvancedAnalyticsReport(sessionId, comparison, regressions, correlations, driver, heatmap,
+            buildDiagnostics(summary, regressions, correlations, driver),
+            buildTuningSuggestions(summary, driver, correlations))
     }
 
     fun renderDiagnosticMarkdown(report: AdvancedAnalyticsReport): String = buildString {
         appendLine("# ARES analytics report: ${report.sessionId}")
         appendLine()
         report.driverScore?.let {
-            appendLine("Driver score: ${format(it.total)}/100 (${it.samples} samples)")
+            appendLine("Command-pattern score: ${format(it.total)}/100 (${it.samples} retained samples; heuristic, not driver skill)")
             appendLine()
         }
         appendLine("## Diagnostics")
@@ -187,7 +168,7 @@ class AdvancedAnalyticsService(private val databaseService: TelemetryAnalyticsRe
         appendLine("## Tuning suggestions")
         if (report.tuningSuggestions.isEmpty()) appendLine("No tuning changes recommended.")
         report.tuningSuggestions.forEach {
-            appendLine("- ${it.parameter}: ${it.recommendation} (confidence ${format(it.confidence * 100)}%, n=${it.evidenceSamples})")
+            appendLine("- ${it.parameter}: ${it.recommendation} (evidence score ${format(it.evidenceStrength * 100)}/100; ${it.evidenceLabel})")
         }
     }
 
@@ -205,19 +186,25 @@ class AdvancedAnalyticsService(private val databaseService: TelemetryAnalyticsRe
             MetricDefinition("run duration", "s", if (current.durationMs > 0) current.durationMs / 1000.0 else Double.NaN, true) { if (it.durationMs > 0) it.durationMs / 1000.0 else Double.NaN }
         )
         val metrics = definitions.mapNotNull { definition ->
-            val values = baselines.map(definition.extract).filter { it.isFinite() && it != 0.0 }
-            if (!definition.current.isFinite() || values.isEmpty()) return@mapNotNull null
-            val baseline = values.average()
+            // Legacy summaries use zero for both missing and genuine zero-valued metrics.
+            // Without presence metadata, neither side may treat an ambiguous zero as improvement.
+            fun valid(value: Double) = value.isFinite() && value > 0.0 && (definition.unit != "fraction" || value <= 1.0)
+            val values = baselines.map(definition.extract).filter(::valid)
+            if (!valid(definition.current) || values.isEmpty()) return@mapNotNull null
+            val largest = values.max()
+            val baseline = (values.sumOf { it / largest } / values.size).coerceIn(0.0, 1.0) * largest
+            val percent = ((definition.current - baseline) / baseline) * 100.0
+            if (!baseline.isFinite() || !percent.isFinite()) return@mapNotNull null
             MetricComparison(
                 metric = definition.name,
                 unit = definition.unit,
                 current = definition.current,
                 baselineAverage = baseline,
-                percentChange = ((definition.current - baseline) / abs(baseline)) * 100.0,
+                percentChange = percent,
                 lowerIsBetter = definition.lowerIsBetter
             )
         }
-        return SessionComparison(baselines.map { it.sessionId }, metrics)
+        return if (metrics.isEmpty()) null else SessionComparison(baselines.map { it.sessionId }, metrics)
     }
 
     private fun detectRegression(metric: MetricComparison): RegressionSignal? {
@@ -237,13 +224,17 @@ class AdvancedAnalyticsService(private val databaseService: TelemetryAnalyticsRe
         series: suspend (String) -> List<TelemetryFrame>
     ): List<SignalCorrelation> {
         val results = mutableListOf<SignalCorrelation>()
-        val voltageKey = keys.firstOrNull { it.contains("BatteryVoltage", true) }
-            ?: keys.firstOrNull { it.endsWith("/Voltage", true) }
-        val currentKeys = keys.filter { it.endsWith("/CurrentAmps", true) || it.endsWith("/Current", true) }.take(MAX_MOTORS)
+        val voltageKey = findKey(keys, *TelemetryMetricCatalog.BATTERY_VOLTAGE.keys.toTypedArray())
+        val currentKeys = keys.filter {
+            MOTOR_CURRENT_TOPIC.matches(it.trimStart('/')) || DRIVE_CURRENT_TOPIC.matches(it.trimStart('/'))
+        }.take(MAX_MOTORS)
         for (currentKey in currentKeys) {
             val current = series(currentKey)
-            val base = currentKey.substringBeforeLast('/')
-            val velocityKey = keys.firstOrNull { it.equals("$base/Velocity", true) }
+            val normalized = currentKey.trimStart('/')
+            val velocityTopic = if (DRIVE_CURRENT_TOPIC.matches(normalized))
+                "Drive/MotorVelocity_${normalized.substringAfter('_')}"
+            else "${normalized.substringBeforeLast('/')}/Velocity"
+            val velocityKey = findKey(keys, velocityTopic)
             if (velocityKey != null) correlation(currentKey, current, velocityKey, series(velocityKey))?.let(results::add)
             if (voltageKey != null) correlation(currentKey, current, voltageKey, series(voltageKey))?.let(results::add)
         }
@@ -252,58 +243,75 @@ class AdvancedAnalyticsService(private val databaseService: TelemetryAnalyticsRe
 
     private suspend fun buildDriverScore(
         keys: List<String>,
-        series: suspend (String) -> List<TelemetryFrame>
+        series: suspend (String) -> List<TelemetryFrame>,
     ): DriverPerformanceScore? {
         val input = driverInputSource(keys) ?: return null
-        val paired = align(series(input.xKey), series(input.yKey))
-        if (paired.size < MIN_CORRELATION_SAMPLES) return null
-        val magnitudes = paired.map {
-            hypot(it.first / input.fullScale, it.second / input.fullScale).coerceIn(0.0, 1.5)
+        val paired = alignAnalyticsSeries(series(input.xKey), series(input.yKey)).filter {
+            abs(it.first.value) <= input.fullScale && abs(it.second.value) <= input.fullScale
         }
-        val deltas = magnitudes.zipWithNext { left, right -> abs(right - left) }
-        val smoothness = score100(1.0 - deltas.average().coerceIn(0.0, 1.0))
-        val active = magnitudes.filter { it >= DRIVER_DEADBAND }
-        val decisiveness = score100(active.size.toDouble() / magnitudes.size)
-        val mean = magnitudes.average()
-        val variance = magnitudes.sumOf { (it - mean) * (it - mean) } / magnitudes.size
-        val consistency = score100(1.0 - sqrt(variance).coerceIn(0.0, 1.0))
-        return DriverPerformanceScore(
-            total = smoothness * 0.45 + decisiveness * 0.20 + consistency * 0.35,
-            smoothness = smoothness,
-            decisiveness = decisiveness,
-            consistency = consistency,
-            samples = paired.size
-        )
+        if (paired.size < MIN_CORRELATION_SAMPLES) return null
+        var totalVariation = 0.0; var observedSeconds = 0.0; var intervals = 0
+        var active = 0; var mean = 0.0; var squaredDeviations = 0.0
+        var previousX = 0.0; var previousY = 0.0; var previousTime = 0L
+        paired.forEachIndexed { index, point ->
+            val x = point.first.value / input.fullScale; val y = point.second.value / input.fullScale
+            val magnitude = hypot(x, y)
+            if (magnitude >= DRIVER_DEADBAND) active++
+            val delta = magnitude - mean
+            mean += delta / (index + 1); squaredDeviations += delta * (magnitude - mean)
+            val time = point.first.timestampUs
+            val elapsed = time - previousTime
+            if (index > 0 && elapsed in 1L..MAX_DRIVER_INTERVAL_US) {
+                totalVariation += hypot(x - previousX, y - previousY)
+                observedSeconds += elapsed / 1_000_000.0
+                intervals++
+            }
+            previousX = x; previousY = y; previousTime = time
+        }
+        if (intervals < MIN_CORRELATION_SAMPLES - 1) return null
+        // Average vector variation rate at a fixed 50ms reference, rather than changes per recorded sample.
+        val smoothness = score100(1.0 - (totalVariation / observedSeconds * 0.05).coerceIn(0.0, 1.0))
+        val activity = score100(active.toDouble() / paired.size)
+        val consistency = score100(1.0 - sqrt((squaredDeviations / paired.size).coerceAtLeast(0.0)).coerceIn(0.0, 1.0))
+        return DriverPerformanceScore(smoothness * 0.45 + activity * 0.20 + consistency * 0.35,
+            smoothness, activity, consistency, paired.size)
     }
 
     private suspend fun buildPathHeatmap(
         keys: List<String>,
-        series: suspend (String) -> List<TelemetryFrame>
+        series: suspend (String) -> List<TelemetryFrame>,
     ): List<PathHeatmapCell> {
-        val xKey = findKey(keys, "Drive/Pose_X", "ARES/EstimatedPose/0") ?: return emptyList()
-        val yKey = findKey(keys, "Drive/Pose_Y", "ARES/EstimatedPose/1") ?: return emptyList()
-        val paired = alignFrames(series(xKey), series(yKey))
-        if (paired.isEmpty()) return emptyList()
-        data class Accumulator(var visits: Int = 0, var speedTotal: Double = 0.0)
+        val pair = listOf("ARES/SimulatorPoseFrame/3" to "ARES/SimulatorPoseFrame/4",
+            "ARES/EstimatedPose/0" to "ARES/EstimatedPose/1", "Drive/Pose_X" to "Drive/Pose_Y")
+            .firstNotNullOfOrNull { (x, y) ->
+                val actualX = findKey(keys, x); val actualY = findKey(keys, y)
+                if (actualX != null && actualY != null) actualX to actualY else null
+            } ?: return emptyList()
+        val paired = alignAnalyticsSeries(series(pair.first), series(pair.second))
+        data class Accumulator(var visits: Int = 0, var distance: Double = 0.0, var seconds: Double = 0.0)
         val cells = HashMap<Pair<Int, Int>, Accumulator>()
         var previous: Pair<TelemetryFrame, TelemetryFrame>? = null
-        paired.forEach { point ->
-            val cell = floor(point.first.value / HEATMAP_CELL_METERS).toInt() to
-                floor(point.second.value / HEATMAP_CELL_METERS).toInt()
-            val accumulator = cells.getOrPut(cell) { Accumulator() }
+        for (point in paired) {
+            val xCell = floor(point.first.value / HEATMAP_CELL_METERS)
+            val yCell = floor(point.second.value / HEATMAP_CELL_METERS)
+            if (xCell !in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble() || yCell !in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble()) {
+                previous = null
+                continue
+            }
+            val accumulator = cells.getOrPut(xCell.toInt() to yCell.toInt()) { Accumulator() }
             accumulator.visits++
             previous?.let { prior ->
-                val dt = (point.first.timestampMs - prior.first.timestampMs) / 1_000.0
-                if (dt > 0.0) accumulator.speedTotal += hypot(
-                    point.first.value - prior.first.value,
-                    point.second.value - prior.second.value
-                ) / dt
+                val dt = (point.first.timestampUs - prior.first.timestampUs) / 1_000_000.0
+                if (dt > 0.0) {
+                    accumulator.distance += hypot(point.first.value - prior.first.value, point.second.value - prior.second.value)
+                    accumulator.seconds += dt
+                }
             }
             previous = point
         }
-        return cells.map { (cell, accumulator) ->
-            PathHeatmapCell(cell.first, cell.second, accumulator.visits, accumulator.speedTotal / accumulator.visits)
-        }.sortedByDescending { it.visits }
+        return cells.map { (cell, accumulator) -> PathHeatmapCell(cell.first, cell.second, accumulator.visits,
+            if (accumulator.seconds > 0.0) accumulator.distance / accumulator.seconds else null)
+        }.sortedWith(compareByDescending<PathHeatmapCell> { it.visits }.thenBy { it.xIndex }.thenBy { it.yIndex })
     }
 
     private fun buildDiagnostics(
@@ -315,13 +323,13 @@ class AdvancedAnalyticsService(private val databaseService: TelemetryAnalyticsRe
         if (summary != null && summary.minBatteryVoltage in 0.1..BATTERY_WARNING_VOLTS) add(
             DiagnosticInsight(InsightSeverity.WARNING, "power", "Battery sagged below the competition margin.", "minimum ${format(summary.minBatteryVoltage)} V")
         )
-        if (summary != null && summary.p95LoopTimeMs > LOOP_WARNING_MS) add(
+        if (summary != null && summary.p95LoopTimeMs.isFinite() && summary.p95LoopTimeMs > LOOP_WARNING_MS) add(
             DiagnosticInsight(InsightSeverity.CRITICAL, "control loop", "p95 loop time exceeds the real-time budget.", "p95 ${format(summary.p95LoopTimeMs)} ms")
         )
-        if (summary != null && summary.avgBatteryResistance > BATTERY_RESISTANCE_WARNING_OHMS) add(
+        if (summary != null && summary.avgBatteryResistance.isFinite() && summary.avgBatteryResistance > BATTERY_RESISTANCE_WARNING_OHMS) add(
             DiagnosticInsight(InsightSeverity.WARNING, "battery health", "Average internal resistance is elevated.", "resistance ${format(summary.avgBatteryResistance)} ohm")
         )
-        if (summary != null && summary.avgVisionLatencyMs > VISION_LATENCY_WARNING_MS) add(
+        if (summary != null && summary.avgVisionLatencyMs.isFinite() && summary.avgVisionLatencyMs > VISION_LATENCY_WARNING_MS) add(
             DiagnosticInsight(InsightSeverity.WARNING, "vision pipeline", "Camera processing latency is elevated.", "latency ${format(summary.avgVisionLatencyMs)} ms")
         )
         correlations.filter { it.leftTopic.contains("Current", true) && it.rightTopic.contains("Voltage", true) && it.coefficient < -0.65 }
@@ -340,75 +348,43 @@ class AdvancedAnalyticsService(private val databaseService: TelemetryAnalyticsRe
         summary: SessionSummary?,
         driver: DriverPerformanceScore?,
         correlations: List<SignalCorrelation>,
-        baselineCount: Int
     ): List<TuningSuggestion> = buildList {
-        if (summary != null && summary.avgCrossTrackError > CROSS_TRACK_WARNING_METERS) add(
-            suggestion("path follower", "Review translation feedback gains and acceleration constraints.", summary.avgCrossTrackError, baselineCount, "average cross-track error ${format(summary.avgCrossTrackError)} m")
+        if (summary != null && summary.avgCrossTrackError.isFinite() && summary.avgCrossTrackError > CROSS_TRACK_WARNING_METERS) add(
+            suggestion("path follower", "Review translation feedback gains and acceleration constraints.", "average cross-track error ${format(summary.avgCrossTrackError)} m")
         )
-        if (summary != null && summary.maxEkfDrift > EKF_WARNING_METERS) add(
-            suggestion("pose estimator", "Recalibrate odometry scale and vision covariance before increasing controller gains.", summary.maxEkfDrift, baselineCount, "maximum EKF drift ${format(summary.maxEkfDrift)} m")
+        if (summary != null && summary.maxEkfDrift.isFinite() && summary.maxEkfDrift > EKF_WARNING_METERS) add(
+            suggestion("pose estimator", "Recalibrate odometry scale and vision covariance before increasing controller gains.", "maximum EKF drift ${format(summary.maxEkfDrift)} m")
         )
-        if (summary != null && summary.avgBatteryResistance > BATTERY_RESISTANCE_WARNING_OHMS) add(
-            suggestion("battery maintenance", "Inspect terminal connections and cycle battery pack.", summary.avgBatteryResistance, baselineCount, "resistance ${format(summary.avgBatteryResistance)} ohm")
+        if (summary != null && summary.avgBatteryResistance.isFinite() && summary.avgBatteryResistance > BATTERY_RESISTANCE_WARNING_OHMS) add(
+            suggestion("battery maintenance", "Inspect terminal connections and cycle battery pack.", "resistance ${format(summary.avgBatteryResistance)} ohm")
         )
         if (driver != null && driver.smoothness < 60.0) add(
-            TuningSuggestion("driver shaping", "Increase center deadband exponent or reduce slew rate.", confidence(driver.samples, baselineCount), "input smoothness ${format(driver.smoothness)}/100", driver.samples)
+            TuningSuggestion("driver shaping", "Review input shaping and slew-rate limits.", evidenceStrength(driver.samples), "input smoothness ${format(driver.smoothness)}/100", driver.samples)
         )
         val electrical = correlations.firstOrNull { it.rightTopic.contains("Voltage", true) && it.coefficient < -0.65 }
         if (electrical != null) add(
-            TuningSuggestion("current limits", "Inspect mechanical load and reduce acceleration/current limits for the implicated motor.", confidence(electrical.samples, baselineCount), "current/voltage correlation r=${format(electrical.coefficient)}", electrical.samples)
+            TuningSuggestion("current limits", "Inspect mechanical load and acceleration/current limits for the implicated motor.", evidenceStrength(electrical.samples), "current/voltage correlation r=${format(electrical.coefficient)}; association does not establish cause", electrical.samples)
         )
     }.sortedByDescending { it.confidence }
 
-    private fun suggestion(parameter: String, recommendation: String, evidenceValue: Double, baselines: Int, rationale: String) =
-        TuningSuggestion(parameter, recommendation, confidence((evidenceValue * 1_000).toInt(), baselines), rationale, (evidenceValue * 1_000).toInt())
+    private fun suggestion(parameter: String, recommendation: String, rationale: String) =
+        TuningSuggestion(parameter, recommendation, 0.35,
+            "$rationale; raw sample count is unavailable in the session summary", 1, "summary statistic")
 
-    private fun confidence(samples: Int, baselineCount: Int): Double =
-        (0.35 + (samples.coerceAtMost(500) / 500.0) * 0.45 + baselineCount.coerceAtMost(4) * 0.05).coerceIn(0.0, 0.95)
+    private fun evidenceStrength(samples: Int): Double =
+        0.35 + (samples.coerceIn(0, 500) / 500.0) * 0.45
 
     private fun correlation(
-        leftKey: String,
-        left: List<TelemetryFrame>,
-        rightKey: String,
-        right: List<TelemetryFrame>
+        leftKey: String, left: List<TelemetryFrame>, rightKey: String, right: List<TelemetryFrame>,
     ): SignalCorrelation? {
-        val samples = align(left, right)
+        val samples = alignAnalyticsSeries(left, right, MAX_ALIGNMENT_GAP_US)
         if (samples.size < MIN_CORRELATION_SAMPLES) return null
-        val leftMean = samples.sumOf { it.first } / samples.size
-        val rightMean = samples.sumOf { it.second } / samples.size
-        var covariance = 0.0
-        var leftVariance = 0.0
-        var rightVariance = 0.0
-        samples.forEach { (x, y) ->
-            val dx = x - leftMean
-            val dy = y - rightMean
-            covariance += dx * dy
-            leftVariance += dx * dx
-            rightVariance += dy * dy
-        }
-        val denominator = sqrt(leftVariance * rightVariance)
-        if (denominator <= 1e-12) return null
-        return SignalCorrelation(leftKey, rightKey, (covariance / denominator).coerceIn(-1.0, 1.0), samples.size)
-    }
-
-    private fun align(left: List<TelemetryFrame>, right: List<TelemetryFrame>): List<Pair<Double, Double>> =
-        alignFrames(left, right).map { it.first.value to it.second.value }
-
-    private fun alignFrames(left: List<TelemetryFrame>, right: List<TelemetryFrame>): List<Pair<TelemetryFrame, TelemetryFrame>> {
-        if (left.isEmpty() || right.isEmpty()) return emptyList()
-        val result = ArrayList<Pair<TelemetryFrame, TelemetryFrame>>(minOf(left.size, right.size))
-        var rightIndex = 0
-        for (leftFrame in left) {
-            while (rightIndex + 1 < right.size && right[rightIndex + 1].timestampMs <= leftFrame.timestampMs) rightIndex++
-            val candidates = listOfNotNull(right.getOrNull(rightIndex), right.getOrNull(rightIndex + 1))
-            val match = candidates.minByOrNull { abs(it.timestampMs - leftFrame.timestampMs) } ?: continue
-            if (abs(match.timestampMs - leftFrame.timestampMs) <= MAX_ALIGNMENT_GAP_MS) result.add(leftFrame to match)
-        }
-        return result
+        val coefficient = analyticsCorrelation(samples) ?: return null
+        return SignalCorrelation(leftKey, rightKey, coefficient, samples.size)
     }
 
     private fun findKey(keys: List<String>, vararg candidates: String): String? =
-        candidates.firstNotNullOfOrNull { candidate -> keys.firstOrNull { it.equals(candidate, ignoreCase = true) } }
+        candidates.firstNotNullOfOrNull { candidate -> keys.firstOrNull { it.trimStart('/').equals(candidate, ignoreCase = true) } }
 
     private fun driverInputSource(keys: List<String>): DriverInputSource? = listOf(
         DriverInputSource("Gamepad1/LeftStickX", "Gamepad1/LeftStickY", 1.0),
@@ -442,10 +418,13 @@ class AdvancedAnalyticsService(private val databaseService: TelemetryAnalyticsRe
     )
 
     private companion object {
+        val MOTOR_CURRENT_TOPIC = Regex("^Hardware/Motors/[^/]+/(CurrentAmps|Current)$", RegexOption.IGNORE_CASE)
+        val DRIVE_CURRENT_TOPIC = Regex("^Drive/MotorCurrent_[^/]+$", RegexOption.IGNORE_CASE)
         const val MAX_SIGNAL_POINTS = 5_000
         const val MAX_MOTORS = 16
         const val MIN_CORRELATION_SAMPLES = 10
-        const val MAX_ALIGNMENT_GAP_MS = 100L
+        const val MAX_ALIGNMENT_GAP_US = 100_000L
+        const val MAX_DRIVER_INTERVAL_US = 250_000L
         const val REGRESSION_WARNING_PERCENT = 10.0
         const val REGRESSION_CRITICAL_PERCENT = 25.0
         const val DRIVER_DEADBAND = 0.08

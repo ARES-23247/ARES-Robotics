@@ -33,11 +33,15 @@ interface MotorIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
 
     /**
      * Sets the motor output in absolute volts, automatically compensating for battery sag.
+     * Finite requests saturate to normalized duty [-1, 1]. Invalid requests or battery
+     * feedback neutralize; this does not replace the adapter's enable/freshness checks.
      * @param volts The target voltage (e.g., up to 12.0V).
      * @param batteryVolts The current measured battery voltage (e.g., from the voltage sensor).
      */
     fun setVoltage(volts: Double, batteryVolts: Double) {
-        this.power = if (batteryVolts > 0.1) volts / batteryVolts else 0.0
+        this.power = if (volts.isFinite() && batteryVolts.isFinite() && batteryVolts > 0.1) {
+            (volts / batteryVolts).coerceIn(-1.0, 1.0)
+        } else 0.0
     }
 
     /**

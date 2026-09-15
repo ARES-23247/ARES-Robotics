@@ -1,5 +1,9 @@
 package com.areslib.sequencer
 
+import java.util.ArrayDeque
+import java.util.Collections
+import java.util.IdentityHashMap
+
 /**
  * Stable primitive resource bits used to prevent conflicting autonomous tasks from running in
  * parallel. Generated subsystems use bits 16..47; season code may reserve bits 48..62.
@@ -44,7 +48,7 @@ object TaskResources {
         appendName(names, mask, SUPERSTRUCTURE_SHARED, "superstructure-shared")
         val knownMask = (1L shl 11) - 1L
         val customMask = mask and knownMask.inv()
-        if (customMask != 0L) names += "custom(0x${customMask.toString(16)})"
+        if (customMask != 0L) names += "custom(0x${java.lang.Long.toUnsignedString(customMask, 16)})"
         return names.joinToString()
     }
 
@@ -53,24 +57,39 @@ object TaskResources {
     }
 }
 
-/** Construction-time resource validation. No validation work runs in the robot tick loop. */
-internal object TaskResourceValidator {
-    fun union(tasks: List<Task>): Long {
-        var resources = TaskResources.NONE
-        for (i in 0 until tasks.size) resources = resources or tasks[i].requiredResources
-        return resources
-    }
+/** Owned random-access membership and its construction-time resource union. */
+internal class TaskGroupMembers(val tasks: List<Task>, val requiredResources: Long)
 
-    fun requireNoParallelConflicts(groupName: String, tasks: List<Task>) {
+/** Construction-time resource and identity validation. Group updates do not repeat this traversal. */
+internal object TaskResourceValidator {
+    fun snapshot(groupName: String, tasks: List<Task>, parallel: Boolean): TaskGroupMembers {
+        val owned = Collections.unmodifiableList(ArrayList(tasks))
         var claimed = TaskResources.NONE
-        for (i in 0 until tasks.size) {
-            val task = tasks[i]
-            val overlap = claimed and task.requiredResources
-            require(overlap == TaskResources.NONE) {
+        for (task in owned) {
+            // The declared mask must remain stable for this task's lifetime. Read it once so
+            // validation and the group's advertised mask use the same construction snapshot.
+            val resources = task.requiredResources
+            val overlap = claimed and resources
+            require(!parallel || overlap == TaskResources.NONE) {
                 "$groupName contains conflicting task '${task.name}' for resources: " +
                     TaskResources.describe(overlap)
             }
-            claimed = claimed or task.requiredResources
+            claimed = claimed or resources
         }
+        val seen = Collections.newSetFromMap(IdentityHashMap<Task, Boolean>())
+        val pending = ArrayDeque<Task>(owned)
+        while (pending.isNotEmpty()) {
+            val task = pending.removeLast()
+            require(seen.add(task)) { "$groupName repeats task instance '${task.name}' in its task tree" }
+            // Built-in groups expose only their already-owned snapshots. Arbitrary custom tasks
+            // remain responsible for their own internal children and ownership contracts.
+            when (task) {
+                is SequentialTaskGroup -> pending.addAll(task.tasks)
+                is ParallelTaskGroup -> pending.addAll(task.tasks)
+                is ParallelRaceGroup -> pending.addAll(task.tasks)
+                is ParallelDeadlineGroup -> pending.addAll(task.tasks)
+            }
+        }
+        return TaskGroupMembers(owned, claimed)
     }
 }

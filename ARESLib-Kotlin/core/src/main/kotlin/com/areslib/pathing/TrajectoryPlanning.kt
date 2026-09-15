@@ -5,7 +5,6 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Translation2d
 import com.areslib.math.wrapAngle
 import kotlin.math.abs
-import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
@@ -61,125 +60,6 @@ data class ModuleForceFeedforward(
     val forceYNewtons: Double
 )
 
-/** One time-parameterized, field-relative trajectory sample. */
-data class TimedTrajectoryState(
-    val timeSeconds: Double,
-    val pose: Pose2d,
-    val velocityXMps: Double,
-    val velocityYMps: Double,
-    val angularVelocityRps: Double,
-    val accelerationXMps2: Double,
-    val accelerationYMps2: Double,
-    val angularAccelerationRps2: Double,
-    val distanceMeters: Double,
-    val curvature: Double,
-    val pathTangentRadians: Double,
-    val moduleFeedforwards: List<ModuleForceFeedforward> = emptyList()
-)
-
-/** Time-based marker independent of any external editor's file format. */
-data class TimedTrajectoryEvent(
-    val command: CommandKey,
-    val timeSeconds: Double
-)
-
-/**
- * Canonical ARES trajectory consumed by robot followers.
- *
- * Geometry editors and importers produce requests; providers produce this representation. A
- * trajectory records its actual engine so logs and analysis never confuse an optimized profile
- * with the kinematic fallback.
- */
-data class TimedTrajectory(
-    val states: List<TimedTrajectoryState>,
-    val events: List<TimedTrajectoryEvent> = emptyList(),
-    val engine: TrajectoryEngine
-) {
-    init {
-        require(states.isNotEmpty()) { "A trajectory must contain at least one state" }
-        require(states.first().timeSeconds == 0.0) { "A trajectory must start at t=0" }
-        states.forEachIndexed { index, state ->
-            require(state.isFinite()) { "Trajectory state $index contains a non-finite value" }
-            if (index > 0) {
-                require(state.timeSeconds > states[index - 1].timeSeconds) {
-                    "Trajectory times must be strictly increasing"
-                }
-                require(state.distanceMeters >= states[index - 1].distanceMeters) {
-                    "Trajectory distance must be non-decreasing"
-                }
-            }
-        }
-        events.forEach { event ->
-            require(event.timeSeconds.isFinite() && event.timeSeconds in 0.0..durationSeconds) {
-                "Event '${event.command}' lies outside the trajectory duration"
-            }
-        }
-    }
-
-    val durationSeconds: Double
-        get() = states.last().timeSeconds
-
-    /** Adapts the canonical time trajectory to the current distance-based follower. */
-    fun toPath(): Path {
-        val points = states.map { state ->
-            val speed = hypot(state.velocityXMps, state.velocityYMps)
-            PathPoint(
-                pose = state.pose,
-                velocityMps = speed,
-                distanceMeters = state.distanceMeters,
-                curvature = state.curvature,
-                tangentRadians = state.pathTangentRadians
-            )
-        }
-        val pathEvents = events.map { event ->
-            PathEvent(event.command.value, sample(event.timeSeconds).distanceMeters)
-        }
-        return Path(points, pathEvents)
-    }
-
-    /** Samples this immutable trajectory at [timeSeconds] with wrapped heading interpolation. */
-    fun sample(timeSeconds: Double): TimedTrajectoryState {
-        require(timeSeconds.isFinite()) { "Sample time must be finite" }
-        if (timeSeconds <= 0.0) return states.first()
-        if (timeSeconds >= durationSeconds) return states.last()
-
-        var low = 0
-        var high = states.lastIndex
-        while (low + 1 < high) {
-            val middle = (low + high) ushr 1
-            if (states[middle].timeSeconds <= timeSeconds) low = middle else high = middle
-        }
-        val before = states[low]
-        val after = states[high]
-        val fraction = (timeSeconds - before.timeSeconds) / (after.timeSeconds - before.timeSeconds)
-        val heading = before.pose.heading.radians +
-            wrapAngle(after.pose.heading.radians - before.pose.heading.radians) * fraction
-        return TimedTrajectoryState(
-            timeSeconds = timeSeconds,
-            pose = Pose2d(
-                lerp(before.pose.x, after.pose.x, fraction),
-                lerp(before.pose.y, after.pose.y, fraction),
-                Rotation2d(heading)
-            ),
-            velocityXMps = lerp(before.velocityXMps, after.velocityXMps, fraction),
-            velocityYMps = lerp(before.velocityYMps, after.velocityYMps, fraction),
-            angularVelocityRps = lerp(before.angularVelocityRps, after.angularVelocityRps, fraction),
-            accelerationXMps2 = lerp(before.accelerationXMps2, after.accelerationXMps2, fraction),
-            accelerationYMps2 = lerp(before.accelerationYMps2, after.accelerationYMps2, fraction),
-            angularAccelerationRps2 = lerp(
-                before.angularAccelerationRps2,
-                after.angularAccelerationRps2,
-                fraction
-            ),
-            distanceMeters = lerp(before.distanceMeters, after.distanceMeters, fraction),
-            curvature = lerp(before.curvature, after.curvature, fraction),
-            pathTangentRadians = before.pathTangentRadians +
-                wrapAngle(after.pathTangentRadians - before.pathTangentRadians) * fraction,
-            moduleFeedforwards = if (fraction < 0.5) before.moduleFeedforwards else after.moduleFeedforwards
-        )
-    }
-}
-
 enum class TrajectoryDiagnosticSeverity {
     INFO,
     WARNING,
@@ -215,7 +95,11 @@ interface TrajectoryProvider {
  * replanning. All other automatic requests use the deterministic jerk-limited provider.
  */
 class TrajectoryPlanner(providers: List<TrajectoryProvider>) {
-    private val providersByEngine = providers.associateBy { it.engine }
+    private val providersByEngine = buildMap {
+        for (provider in providers) {
+            require(put(provider.engine, provider) == null) { "Duplicate trajectory provider for ${provider.engine}" }
+        }
+    }
 
     fun generate(request: TrajectoryRequest): TrajectoryGenerationResult {
         val validation = validateTrajectoryRequest(request)
@@ -225,7 +109,8 @@ class TrajectoryPlanner(providers: List<TrajectoryProvider>) {
 
         val requestedEngine = request.preferredEngine ?: automaticEngine(request)
         val requestedProvider = providersByEngine[requestedEngine]
-        if (request.preferredEngine != null && requestedProvider?.supports(request) != true) {
+        val requestedSupported = requestedProvider?.supports(request) == true
+        if (request.preferredEngine != null && !requestedSupported) {
             return TrajectoryGenerationResult(
                 null,
                 validation + TrajectoryDiagnostic(
@@ -237,8 +122,10 @@ class TrajectoryPlanner(providers: List<TrajectoryProvider>) {
         }
 
         val provider = when {
-            requestedProvider?.supports(request) == true -> requestedProvider
-            else -> providersByEngine[TrajectoryEngine.JERK_LIMITED]?.takeIf { it.supports(request) }
+            requestedSupported -> requestedProvider
+            requestedEngine != TrajectoryEngine.JERK_LIMITED ->
+                providersByEngine[TrajectoryEngine.JERK_LIMITED]?.takeIf { it.supports(request) }
+            else -> null
         } ?: return TrajectoryGenerationResult(
             null,
             validation + TrajectoryDiagnostic(
@@ -284,11 +171,15 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
             return TrajectoryGenerationResult(null, validation)
         }
 
-        val distinctWaypoints = request.waypoints.filterIndexed { index, pose ->
-            index == 0 || hypot(
-                pose.x - request.waypoints[index - 1].x,
-                pose.y - request.waypoints[index - 1].y
-            ) > 1e-9
+        val distinctWaypoints = ArrayList<Pose2d>(request.waypoints.size)
+        for (pose in request.waypoints) {
+            val previous = distinctWaypoints.lastOrNull()
+            if (previous == null || hypot(pose.x - previous.x, pose.y - previous.y) > 0.0) {
+                distinctWaypoints.add(pose)
+            } else if (wrapAngle(pose.heading.radians - previous.heading.radians) != 0.0) {
+                return TrajectoryGenerationResult(null, listOf(errorDiagnostic("rotation_without_translation",
+                    "The jerk-limited provider cannot rotate between coincident waypoints")))
+            }
         }
         if (distinctWaypoints.size < 2) {
             return TrajectoryGenerationResult(
@@ -303,40 +194,65 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
             )
         }
 
-        val path = SCurveTrajectoryParameterizer.generateTrajectory(
-            waypoints = distinctWaypoints.map { Translation2d(it.x, it.y) },
-            constraints = SCurveTrajectoryParameterizer.Constraints(
-                maxVelocityMps = request.limits.maxVelocityMps,
-                maxAccelerationMps2 = request.limits.maxAccelerationMps2,
-                maxJerkMps3 = request.limits.maxJerkMps3,
-                maxCentripetalAccelMps2 = request.limits.maxCentripetalAccelerationMps2
-            ),
-            startHeading = distinctWaypoints.first().heading,
-            endHeading = distinctWaypoints.last().heading,
-            startVelocityMps = request.startVelocityMps,
-            endVelocityMps = request.endVelocityMps,
-            spacingMeters = request.sampleSpacingMeters
-        )
-        val trajectory = timeParameterize(path, request.limits)
-        val diagnostics = mutableListOf(TrajectoryDiagnostic(
-            TrajectoryDiagnosticSeverity.INFO,
-            "kinematic_profile",
-            "Generated a kinematic profile with checked sample acceleration and jerk; no drivetrain force optimization was applied"
-        ))
-        val first = trajectory.states.first()
-        val last = trajectory.states.last()
-        if (abs(hypot(first.velocityXMps, first.velocityYMps) - request.startVelocityMps) > 1e-6 ||
-            abs(hypot(last.velocityXMps, last.velocityYMps) - request.endVelocityMps) > 1e-6) {
-            diagnostics += TrajectoryDiagnostic(
-                TrajectoryDiagnosticSeverity.WARNING,
-                "boundary_velocity_scaled",
-                "Time scaling reduced the requested entry or exit speed; review the trajectory handover"
+        return try {
+            val path = SCurveTrajectoryParameterizer.generateTrajectory(
+                waypoints = distinctWaypoints.map { Translation2d(it.x, it.y) },
+                constraints = SCurveTrajectoryParameterizer.Constraints(
+                    maxVelocityMps = request.limits.maxVelocityMps,
+                    maxAccelerationMps2 = request.limits.maxAccelerationMps2,
+                    maxJerkMps3 = request.limits.maxJerkMps3,
+                    maxCentripetalAccelMps2 = request.limits.maxCentripetalAccelerationMps2
+                ),
+                startHeading = distinctWaypoints.first().heading,
+                endHeading = distinctWaypoints.last().heading,
+                startVelocityMps = request.startVelocityMps,
+                endVelocityMps = request.endVelocityMps,
+                spacingMeters = request.sampleSpacingMeters
             )
+            applyWaypointHeadings(path, distinctWaypoints)
+            val trajectory = timeParameterize(path, request.limits)
+            val diagnostics = mutableListOf(TrajectoryDiagnostic(
+                TrajectoryDiagnosticSeverity.INFO,
+                "kinematic_profile",
+                "Generated a kinematic profile with checked sample acceleration and jerk; no drivetrain force optimization was applied"
+            ))
+            val first = trajectory.states.first()
+            val last = trajectory.states.last()
+            if (abs(hypot(first.velocityXMps, first.velocityYMps) - request.startVelocityMps) > 1e-6 ||
+                abs(hypot(last.velocityXMps, last.velocityYMps) - request.endVelocityMps) > 1e-6) {
+                diagnostics += TrajectoryDiagnostic(
+                    TrajectoryDiagnosticSeverity.WARNING,
+                    "boundary_velocity_scaled",
+                    "Time scaling reduced the requested entry or exit speed; review the trajectory handover"
+                )
+            }
+            TrajectoryGenerationResult(
+                trajectory = trajectory,
+                diagnostics = diagnostics
+            )
+        } catch (failure: IllegalArgumentException) {
+            TrajectoryGenerationResult(null, listOf(errorDiagnostic("unrepresentable_profile",
+                "Cannot represent this trajectory with the configured limits: ${failure.message}")))
         }
-        return TrajectoryGenerationResult(
-            trajectory = trajectory,
-            diagnostics = diagnostics
-        )
+    }
+
+    /** Preserve each requested orientation, independently of the spatial seed's endpoint heading. */
+    private fun applyWaypointHeadings(path: Path, waypoints: List<Pose2d>) {
+        var segment = 0
+        var segmentStart = 0.0
+        var segmentEnd = hypot(waypoints[1].x - waypoints[0].x, waypoints[1].y - waypoints[0].y)
+        for (point in path.points) {
+            while (segment < waypoints.lastIndex - 1 && point.distanceMeters > segmentEnd) {
+                segmentStart = segmentEnd
+                segment++
+                segmentEnd += hypot(waypoints[segment + 1].x - waypoints[segment].x,
+                    waypoints[segment + 1].y - waypoints[segment].y)
+            }
+            val fraction = ((point.distanceMeters - segmentStart) / (segmentEnd - segmentStart)).coerceIn(0.0, 1.0)
+            val start = waypoints[segment].heading.radians
+            val heading = start + wrapAngle(waypoints[segment + 1].heading.radians - start) * fraction
+            point.pose = Pose2d(point.pose.x, point.pose.y, Rotation2d(heading))
+        }
     }
 
     private fun timeParameterize(path: Path, limits: TrajectoryLimits): TimedTrajectory {
@@ -348,29 +264,31 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
             val before = path.points[index]
             val after = path.points[index + 1]
             val distance = after.distanceMeters - before.distanceMeters
-            val velocitySum = before.velocityMps + after.velocityMps
-            val translationTime = if (distance <= 1e-12) {
-                0.0
-            } else {
-                require(velocitySum > 1e-9) { "Profile contains an unreachable zero-velocity segment" }
-                2.0 * distance / velocitySum
-            }
+            val speedScale = max(before.velocityMps, after.velocityMps)
+            require(distance > 0.0 && speedScale > 0.0) { "Profile contains an unreachable or unrepresentable segment" }
+            // Normalize before summing: no overflow and no arbitrary near-zero speed cutoff.
+            val translationTime = (distance / speedScale) /
+                ((before.velocityMps / speedScale + after.velocityMps / speedScale) * 0.5)
+            require(translationTime.isFinite() && translationTime > 0.0) { "Segment time must be finite and positive" }
             val headingDelta = wrapAngle(after.pose.heading.radians - before.pose.heading.radians)
             val rotationTime = abs(headingDelta) / limits.maxAngularVelocityRps
-            segmentTimes[index] = translationTime.coerceAtLeast(1e-6)
+            segmentTimes[index] = translationTime
             timeScale = max(timeScale, rotationTime / segmentTimes[index])
             segmentAngularVelocities[index] = headingDelta / segmentTimes[index]
         }
 
-        var maximumAlpha = 0.0
-        for (index in 1 until segmentAngularVelocities.size) {
-            val averageTime = (segmentTimes[index - 1] + segmentTimes[index]) * 0.5
-            maximumAlpha = max(
-                maximumAlpha,
-                abs(segmentAngularVelocities[index] - segmentAngularVelocities[index - 1]) / averageTime
-            )
+        val omega = DoubleArray(count) { index ->
+            when (index) {
+                0 -> segmentAngularVelocities.first()
+                count - 1 -> segmentAngularVelocities.last()
+                else -> segmentAngularVelocities[index - 1] * 0.5 + segmentAngularVelocities[index] * 0.5
+            }
         }
-        timeScale = max(timeScale, sqrt(maximumAlpha / limits.maxAngularAccelerationRps2))
+        var maximumAlpha = 0.0
+        for (index in 1 until count) {
+            maximumAlpha = max(maximumAlpha, abs(omega[index] - omega[index - 1]) / segmentTimes[index - 1])
+        }
+        timeScale = max(timeScale, sqrt(maximumAlpha) / sqrt(limits.maxAngularAccelerationRps2))
 
         // The spatial sweeps are a seed, not a proof of the final vector acceleration
         // or jerk bounds (especially at a turn or a cruise transition). Measure those
@@ -386,46 +304,41 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
                 before.velocityMps * cos(before.tangentRadians)) / dt
             val ay = (after.velocityMps * sin(after.tangentRadians) -
                 before.velocityMps * sin(before.tangentRadians)) / dt
-            timeScale = max(timeScale, sqrt(hypot(ax, ay) / limits.maxAccelerationMps2))
+            timeScale = max(timeScale, sqrt(hypot(ax, ay)) / sqrt(limits.maxAccelerationMps2))
             if (index > 0) {
                 val jerk = hypot(ax - previousAx, ay - previousAy) / dt
-                timeScale = max(timeScale, Math.cbrt(jerk / limits.maxJerkMps3))
+                timeScale = max(timeScale, Math.cbrt(jerk) / Math.cbrt(limits.maxJerkMps3))
             }
             previousAx = ax
             previousAy = ay
         }
+        require(timeScale.isFinite()) { "Profile time scaling cannot be represented" }
         if (timeScale > 1.0) {
             for (index in segmentTimes.indices) {
                 segmentTimes[index] *= timeScale
-                segmentAngularVelocities[index] /= timeScale
             }
         }
 
         val times = DoubleArray(count)
         for (index in 1 until count) {
             times[index] = times[index - 1] + segmentTimes[index - 1]
+            require(times[index].isFinite() && times[index] > times[index - 1]) { "Accumulated trajectory times must remain finite and distinct" }
         }
         val velocityX = DoubleArray(count)
         val velocityY = DoubleArray(count)
-        val omega = DoubleArray(count)
         for (index in 0 until count) {
             val point = path.points[index]
             val adjustedSpeed = point.velocityMps / timeScale
             velocityX[index] = adjustedSpeed * cos(point.tangentRadians)
             velocityY[index] = adjustedSpeed * sin(point.tangentRadians)
-            omega[index] = when {
-                segmentAngularVelocities.isEmpty() -> 0.0
-                index == 0 -> segmentAngularVelocities.first()
-                index == count - 1 -> segmentAngularVelocities.last()
-                else -> (segmentAngularVelocities[index - 1] + segmentAngularVelocities[index]) * 0.5
-            }
+            omega[index] /= timeScale
         }
 
         val states = ArrayList<TimedTrajectoryState>(count)
         for (index in 0 until count) {
             val derivativeIndex = if (index == 0) 1.coerceAtMost(count - 1) else index
             val previousIndex = (derivativeIndex - 1).coerceAtLeast(0)
-            val dt = (times[derivativeIndex] - times[previousIndex]).coerceAtLeast(1e-9)
+            val dt = times[derivativeIndex] - times[previousIndex]
             states += TimedTrajectoryState(
                 timeSeconds = times[index],
                 pose = path.points[index].pose,
@@ -447,11 +360,14 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
 /** Performs format-independent validation before any solver is invoked. */
 fun validateTrajectoryRequest(request: TrajectoryRequest): List<TrajectoryDiagnostic> {
     val diagnostics = mutableListOf<TrajectoryDiagnostic>()
+    if (request.waypoints.size > MAX_TRAJECTORY_SAMPLES) {
+        return listOf(errorDiagnostic("sample_budget_exceeded", "Trajectory input exceeds the 100000-sample budget"))
+    }
     if (request.waypoints.size < 2) {
         diagnostics += errorDiagnostic("too_few_waypoints", "At least two waypoints are required")
     }
     request.waypoints.forEachIndexed { index, pose ->
-        if (!pose.isFinite()) {
+        if (!pose.hasFiniteTrajectoryCoordinates()) {
             diagnostics += errorDiagnostic("invalid_waypoint", "Waypoint $index contains a non-finite value")
         }
     }
@@ -484,22 +400,27 @@ fun validateTrajectoryRequest(request: TrajectoryRequest): List<TrajectoryDiagno
             "invalid_spacing",
             "Sample spacing must be finite and between 0.005 m and 0.25 m"
         )
+    } else {
+        var previous: Pose2d? = null
+        var count = 1L
+        for (pose in request.waypoints) {
+            val before = previous
+            if (before != null) {
+                val steps = boundedTrajectorySegmentSteps(hypot(pose.x - before.x, pose.y - before.y), request.sampleSpacingMeters)
+                count += if (steps < 0) MAX_TRAJECTORY_SAMPLES.toLong() else steps.toLong()
+                if (count > MAX_TRAJECTORY_SAMPLES) {
+                    diagnostics += errorDiagnostic("sample_budget_exceeded", "Trajectory geometry exceeds the 100000-sample budget or finite distance range")
+                    break
+                }
+            }
+            previous = pose
+        }
     }
     return diagnostics
 }
 
-private fun TimedTrajectoryState.isFinite(): Boolean =
-    timeSeconds.isFinite() && pose.isFinite() && velocityXMps.isFinite() && velocityYMps.isFinite() &&
-        angularVelocityRps.isFinite() && accelerationXMps2.isFinite() && accelerationYMps2.isFinite() &&
-        angularAccelerationRps2.isFinite() && distanceMeters.isFinite() && curvature.isFinite() &&
-        pathTangentRadians.isFinite() &&
-        moduleFeedforwards.all { it.forceXNewtons.isFinite() && it.forceYNewtons.isFinite() }
-
-private fun Pose2d.isFinite(): Boolean =
-    x.isFinite() && y.isFinite() && heading.radians.isFinite()
-
-private fun lerp(start: Double, end: Double, fraction: Double): Double =
-    start + (end - start) * fraction
+internal fun Pose2d.hasFiniteTrajectoryCoordinates(): Boolean =
+    x.isFinite() && y.isFinite() && heading.rawRadians.isFinite()
 
 private fun errorDiagnostic(code: String, message: String): TrajectoryDiagnostic =
     TrajectoryDiagnostic(TrajectoryDiagnosticSeverity.ERROR, code, message)

@@ -55,9 +55,9 @@ internal object FrcSeasonHardwareFactory {
         createSimulation(fieldContract)
     }
 
-    private fun createReal(fieldContract: FrcFieldContract?, canBus: CANBus): FrcSeasonHardware {
+    private fun createReal(fieldContract: FrcFieldContract?, canBus: CANBus): FrcSeasonHardware = withFrcStartupResources { startup ->
         val powerDistribution = try {
-            PowerDistribution()
+            startup.own(PowerDistribution())
         } catch (error: Exception) {
             DriverStation.reportError(
                 "ARES: PowerDistribution initialization failed; current monitoring will fail closed: ${error.message}",
@@ -65,19 +65,19 @@ internal object FrcSeasonHardwareFactory {
             )
             null
         }
-        val leftMasterFX = TalonFX(9, canBus)
-        val leftFollowerFX = TalonFX(10, canBus)
-        val rightMasterFX = TalonFX(11, canBus)
-        val rightFollowerFX = TalonFX(12, canBus)
-        val cowlFX = TalonFX(13, canBus)
-        val pivotFX = TalonFX(14, canBus)
-        val rollerFX = TalonFX(15, canBus)
-        val floorFX = TalonFX(16, canBus)
-        val climberFX = TalonFX(19, canBus)
-        val feederFX = TalonFX(20, canBus)
+        val leftMasterFX = startup.own(TalonFX(9, canBus))
+        val leftFollowerFX = startup.own(TalonFX(10, canBus))
+        val rightMasterFX = startup.own(TalonFX(11, canBus))
+        val rightFollowerFX = startup.own(TalonFX(12, canBus))
+        val cowlFX = startup.own(TalonFX(13, canBus))
+        val pivotFX = startup.own(TalonFX(14, canBus))
+        val rollerFX = startup.own(TalonFX(15, canBus))
+        val floorFX = startup.own(TalonFX(16, canBus))
+        val climberFX = startup.own(TalonFX(19, canBus))
+        val feederFX = startup.own(TalonFX(20, canBus))
 
         val activeOffsets = SwerveOffsetManager.loadOffsets(CanonicalDrivebaseConfig.profiledOffsets())
-        val ctreDrivetrain = frc.robot.generated.TunerConstants.TunerSwerveDrivetrain(
+        val ctreDrivetrain = startup.own(frc.robot.generated.TunerConstants.TunerSwerveDrivetrain(
             frc.robot.generated.TunerConstants.DrivetrainConstants,
             0.0,
             VecBuilder.fill(0.1, 0.1, 0.1),
@@ -86,7 +86,7 @@ internal object FrcSeasonHardwareFactory {
             frc.robot.generated.TunerConstants.createFrontRight(Units.Rotations.of(activeOffsets.frontRight)),
             frc.robot.generated.TunerConstants.createBackLeft(Units.Rotations.of(activeOffsets.backLeft)),
             frc.robot.generated.TunerConstants.createBackRight(Units.Rotations.of(activeOffsets.backRight)),
-        )
+        ))
 
         // Each camera retains its independently surveyed robot-space transform from its web UI.
         val validTagIds = fieldContract?.config?.apriltags
@@ -97,34 +97,32 @@ internal object FrcSeasonHardwareFactory {
         val visionIO = if (validTagIds.isEmpty()) {
             null
         } else {
-            CompositeVisionIO(
-                listOf(
-                    FrcLimelightIO("limelight-shooter", validFiducialIds = validTagIds),
-                    FrcLimelightIO("limelight-back", validFiducialIds = validTagIds),
-                )
-            )
+            val shooter = startup.own(FrcLimelightIO("limelight-shooter", validFiducialIds = validTagIds))
+            val back = startup.own(FrcLimelightIO("limelight-back", validFiducialIds = validTagIds))
+            // Keep both camera owners separate until commit so rollback attempts each close.
+            CompositeVisionIO(listOf(shooter, back))
         }
 
-        return FrcSeasonHardware(
-            swerveIO = FRCSwerveHardwareIO(ctreDrivetrain),
+        FrcSeasonHardware(
+            swerveIO = startup.replace(FRCSwerveHardwareIO(ctreDrivetrain), ctreDrivetrain),
             visionIO = visionIO,
-            flywheelIO = FRCFlywheelHardwareIO(leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX),
-            cowlIO = FRCCowlHardwareIO(cowlFX),
-            intakeIO = FRCIntakeHardwareIO(pivotFX, rollerFX),
-            feederIO = FRCFeederHardwareIO(feederFX),
-            floorIO = FRCFloorHardwareIO(floorFX),
-            climberIO = FRCClimberHardwareIO(climberFX),
+            flywheelIO = startup.replace(FRCFlywheelHardwareIO(leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX), leftMasterFX, leftFollowerFX, rightMasterFX, rightFollowerFX),
+            cowlIO = startup.replace(FRCCowlHardwareIO(cowlFX), cowlFX),
+            intakeIO = startup.replace(FRCIntakeHardwareIO(pivotFX, rollerFX), pivotFX, rollerFX),
+            feederIO = startup.replace(FRCFeederHardwareIO(feederFX), feederFX),
+            floorIO = startup.replace(FRCFloorHardwareIO(floorFX), floorFX),
+            climberIO = startup.replace(FRCClimberHardwareIO(climberFX), climberFX),
             simulation = null,
             dashboardDriveInput = null,
             powerDistribution = powerDistribution,
         )
     }
 
-    private fun createSimulation(fieldContract: FrcFieldContract?): FrcSeasonHardware {
-        val simulation = fieldContract?.config?.let { config ->
+    private fun createSimulation(fieldContract: FrcFieldContract?): FrcSeasonHardware = withFrcStartupResources { startup ->
+        val simulation = startup.own(fieldContract?.config?.let { config ->
             Dyn4jSimulation(config = config, seed = 42L)
-        } ?: Dyn4jSimulation(seed = 42L)
-        return FrcSeasonHardware(
+        } ?: Dyn4jSimulation(seed = 42L))
+        FrcSeasonHardware(
             swerveIO = null,
             visionIO = null,
             flywheelIO = simulation.flywheelIO,
@@ -134,7 +132,7 @@ internal object FrcSeasonHardwareFactory {
             floorIO = simulation.floorIO,
             climberIO = simulation.climberIO,
             simulation = simulation,
-            dashboardDriveInput = FrcDashboardDriveInput(),
+            dashboardDriveInput = startup.own(FrcDashboardDriveInput()),
             powerDistribution = null,
         )
     }

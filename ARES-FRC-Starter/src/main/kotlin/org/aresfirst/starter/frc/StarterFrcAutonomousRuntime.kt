@@ -2,18 +2,19 @@ package org.aresfirst.starter.frc
 
 import com.areslib.action.RobotAction
 import com.areslib.control.feedback.PIDController
+import com.areslib.math.wrapAngle
 import com.areslib.math.coordinate.AllianceMirroring
-import com.areslib.math.coordinate.CoordinateTransformers
 import com.areslib.math.coordinate.FieldOrigin
-import com.areslib.math.coordinate.FieldSymmetry
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.routine.AutonomousCatalogEntry
+import com.areslib.routine.AutonomousCatalogResolution
+import com.areslib.routine.AutonomousCatalogResolver
 import com.areslib.routine.RoutineAlliance
 import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineRequestResult
-import com.areslib.routine.RoutineStartPolicy
+import com.areslib.routine.ownRoutineTaskTree
 import com.areslib.sequencer.ParallelDeadlineGroup
 import com.areslib.sequencer.ParallelTaskGroup
 import com.areslib.sequencer.SequentialTaskGroup
@@ -22,7 +23,12 @@ import com.areslib.sequencer.TaskExecutor
 import com.areslib.sequencer.TaskResources
 import com.areslib.sequencer.TaskStateMachine
 import com.areslib.sequencer.TaskStatus
+import com.areslib.sequencer.TaskCallbacks
+import com.areslib.sequencer.TaskTimeoutManager
 import com.areslib.state.Alliance
+import com.areslib.state.FieldType
+import com.areslib.state.RobotFieldConfig
+import com.areslib.state.RobotFieldManager
 import com.areslib.state.RobotState
 import com.areslib.state.RoutineExecutionStatus
 import com.areslib.util.RobotClock
@@ -36,38 +42,18 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.hypot
 
-internal data class StarterAutonomousSelection(
-    val entry: AutonomousCatalogEntry,
-    val requestedId: String,
-    val usedFallback: Boolean,
-)
+internal typealias StarterAutonomousSelection = AutonomousCatalogResolution
 
-/** Deterministic generated-catalog selector with an always-safe fallback. */
+/** Shares enabled-entry ordering and configured fallback policy with the other league hosts. */
 internal class StarterFrcAutonomousSelector(
     entries: List<AutonomousCatalogEntry>,
     defaultEntryId: String?,
 ) {
-    private val enabledEntries = entries.filter(AutonomousCatalogEntry::enabled)
-        .sortedWith(compareBy<AutonomousCatalogEntry> { it.sortOrder }.thenBy { it.entryId })
-    private val entriesById = enabledEntries.associateBy(AutonomousCatalogEntry::entryId)
-    private val fallback = defaultEntryId?.let(entriesById::get)
-        ?: entriesById[SAFE_FALLBACK_ENTRY_ID]
-        ?: enabledEntries.firstOrNull()
+    private val resolver = AutonomousCatalogResolver(entries, defaultEntryId)
 
-    val availableEntryIds: List<String> = enabledEntries.map(AutonomousCatalogEntry::entryId)
+    val availableEntryIds: List<String> get() = resolver.availableEntryIds
 
-    fun resolve(requestedId: String): StarterAutonomousSelection {
-        val normalized = requestedId.trim()
-        val requested = entriesById[normalized]
-        val selected = requested ?: checkNotNull(fallback) {
-            "Generated autonomous catalog has no enabled fail-safe entry"
-        }
-        return StarterAutonomousSelection(selected, normalized, requested == null)
-    }
-
-    private companion object {
-        const val SAFE_FALLBACK_ENTRY_ID = "do-nothing"
-    }
+    fun resolve(requestedId: String): StarterAutonomousSelection = resolver.resolve(requestedId)
 }
 
 /** Platform-neutral transform shared by starter pose seeding and every generated drive target. */
@@ -75,7 +61,16 @@ internal fun transformStarterFrcPose(
     pose: RoutinePose,
     entry: AutonomousCatalogEntry,
     activeAlliance: Alliance,
+    field: RobotFieldConfig = RobotFieldManager.activeConfig,
 ): Pose2d {
+    require(pose.xMeters.isFinite() && pose.yMeters.isFinite() && pose.headingRadians.isFinite()) {
+        "FRC autonomous pose must contain finite coordinates and raw heading"
+    }
+    require(field.fieldType == FieldType.FRC &&
+        (field.widthMeters == 0.0 || field.widthMeters.isFinite() && field.widthMeters > 0.0) &&
+        (field.heightMeters == 0.0 || field.heightMeters.isFinite() && field.heightMeters > 0.0)) {
+        "FRC autonomous transforms require a valid FRC field"
+    }
     val authoredAlliance = when (entry.authoredAlliance) {
         RoutineAlliance.RED -> Alliance.RED
         RoutineAlliance.BLUE -> Alliance.BLUE
@@ -85,9 +80,9 @@ internal fun transformStarterFrcPose(
     return AllianceMirroring.mirror(
         pose = base,
         alliance = Alliance.RED,
-        symmetry = FieldSymmetry.MIRRORED,
-        fieldLength = CoordinateTransformers.FRC_FIELD_LENGTH,
-        fieldWidth = CoordinateTransformers.FRC_FIELD_WIDTH,
+        symmetry = field.allianceSymmetry,
+        fieldLength = field.resolvedWidthMeters,
+        fieldWidth = field.resolvedHeightMeters,
         fieldOrigin = FieldOrigin.CORNER,
     )
 }
@@ -108,69 +103,92 @@ internal fun resolveStarterFrcAutonomousRequest(
 internal class StarterGeneratedCapabilities(
     private val robot: StarterRobotRuntime,
     private val drivePermitted: Boolean,
+    private val actionFactory: ((String) -> Task?)? = null,
 ) : GeneratedAresProjectCapabilities {
     private var autonomousEntry: AutonomousCatalogEntry? = null
     private var autonomousAlliance: Alliance = Alliance.BLUE
+    private var autonomousField: RobotFieldConfig? = null
+    private val driveCommand = RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0, isFieldCentric = true)
+    private val actionBindings by lazy { GeneratedAresProject.runtimeBindings(this) }
 
     fun configureAutonomous(entry: AutonomousCatalogEntry, alliance: Alliance) {
         autonomousEntry = entry
         autonomousAlliance = alliance
+        autonomousField = RobotFieldManager.activeConfig
     }
 
     fun clearAutonomous() {
         autonomousEntry = null
+        autonomousField = null
     }
 
     fun transform(pose: RoutinePose): Pose2d = transformStarterFrcPose(
         pose,
         checkNotNull(autonomousEntry) { "Autonomous entry was not configured" },
         autonomousAlliance,
+        checkNotNull(autonomousField) { "Autonomous field was not configured" },
     )
 
     override fun onDriveCommand(vx: Double, vy: Double, omega: Double, active: Boolean) {
-        val permitted = drivePermitted && active
-        robot.store.dispatch(
-            RobotAction.JoystickDriveIntent(
-                targetXVelocity = if (permitted && vx.isFinite()) vx.coerceIn(-1.0, 1.0) *
-                    GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND else 0.0,
-                targetYVelocity = if (permitted && vy.isFinite()) vy.coerceIn(-1.0, 1.0) *
-                    GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND else 0.0,
-                targetAngularVelocity = if (permitted && omega.isFinite()) omega.coerceIn(-1.0, 1.0) *
-                    GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND else 0.0,
-                isFieldCentric = true,
-            )
-        )
+        val permitted = drivePermitted && active && vx.isFinite() && vy.isFinite() && omega.isFinite()
+        val x = if (permitted) vx.coerceIn(-1.0, 1.0) else 0.0
+        val y = if (permitted) vy.coerceIn(-1.0, 1.0) else 0.0
+        val scale = GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND / hypot(x, y).coerceAtLeast(1.0)
+        driveCommand.targetXVelocity = x * scale
+        driveCommand.targetYVelocity = y * scale
+        driveCommand.targetAngularVelocity = if (permitted) omega.coerceIn(-1.0, 1.0) *
+            GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND else 0.0
+        driveCommand.timestampMs = RobotClock.currentTimeMillis()
+        robot.store.dispatch(driveCommand)
     }
 
     override fun createDriveTask(step: RoutineDriveStep): Task {
+        check(drivePermitted) { "FRC drive tasks require a permitted simulation or reviewed physical adapter" }
         val target = transform(step.target)
         val preset = StarterFrcMotionPreset.fromKey(step.motionPresetKey)
-        val drive = StarterFrcDriveToPoseTask(target, preset)
-        val markerTasks = step.markers.map { marker ->
-            StarterFrcDriveMarkerTask(
-                target = target,
-                progress = marker.progress,
-                action = requireGeneratedAction(marker.actionKey),
-            )
+        val created = ArrayList<Task>()
+        val cleanupOwners = java.util.IdentityHashMap<Task, Boolean>()
+        fun <T : Task> own(task: T): T {
+            check(TaskStateMachine.getStatus(task) == TaskStatus.PENDING) { "Action factories must return unstarted tasks" }
+            check(!cleanupOwners.containsKey(task)) { "Action factories must return distinct task instances" }
+            cleanupOwners[task] = true
+            created += task
+            return task
         }
-        val duringTasks = step.duringActionKeys.map(::requireGeneratedAction)
-        val companions = markerTasks + duringTasks
-        val driveWithCompanions: Task = if (companions.isEmpty()) {
-            drive
-        } else {
-            ParallelDeadlineGroup(drive, companions)
-        }
-        val arrivals = step.arrivalActionKeys.map(::requireGeneratedAction)
-        return when (arrivals.size) {
-            0 -> driveWithCompanions
-            1 -> SequentialTaskGroup(listOf(driveWithCompanions, arrivals.single()))
-            else -> SequentialTaskGroup(listOf(driveWithCompanions, ParallelTaskGroup(arrivals)))
+        try {
+            val drive = own(StarterFrcDriveToPoseTask(target, preset))
+            val markerTasks = step.markers.map { marker ->
+                val action = own(requireGeneratedAction(marker.actionKey))
+                own(StarterFrcDriveMarkerTask(target, marker.progress, action)).also {
+                    cleanupOwners[action] = false // The marker owns its private child metadata.
+                }
+            }
+            val duringTasks = step.duringActionKeys.map { own(requireGeneratedAction(it)) }
+            val companions = markerTasks + duringTasks
+            val driveWithCompanions: Task = if (companions.isEmpty()) drive else own(ParallelDeadlineGroup(drive, companions))
+            val arrivals = step.arrivalActionKeys.map { own(requireGeneratedAction(it)) }
+            return when (arrivals.size) {
+                0 -> driveWithCompanions
+                1 -> own(SequentialTaskGroup(listOf(driveWithCompanions, arrivals.single())))
+                else -> own(SequentialTaskGroup(listOf(driveWithCompanions, own(ParallelTaskGroup(arrivals)))))
+            }
+        } catch (failure: Throwable) {
+            retainStarterFailure(null, failure)
+            for (index in created.indices.reversed()) {
+                val task = created[index]
+                try {
+                    if (cleanupOwners[task] == true) releaseStarterTaskMetadata(task)
+                } catch (cleanup: Throwable) { retainStarterFailure(failure, cleanup) }
+                finally { TaskTimeoutManager.reset(task); TaskCallbacks.reset(task) }
+            }
+            throw failure
         }
     }
 
-    private fun requireGeneratedAction(key: String): Task = requireNotNull(
-        GeneratedAresProject.runtimeBindings(this).createActionTask(key, emptyMap())
-    ) { "Generated drive action '$key' is unavailable" }
+    private fun requireGeneratedAction(key: String): Task = ownRoutineTaskTree(requireNotNull(
+        if (actionFactory != null) actionFactory.invoke(key)
+        else actionBindings.createActionTask(key, emptyMap())
+    ) { "Generated drive action '$key' is unavailable" })
 }
 
 internal enum class StarterFrcMotionPreset(val speedScale: Double) {
@@ -204,20 +222,41 @@ internal class StarterFrcDriveToPoseTask(
     private val xController = PIDController(0.0, 0.0, 0.0)
     private val yController = PIDController(0.0, 0.0, 0.0)
     private val headingController = PIDController(0.0, 0.0, 0.0)
+    private val targetHeading = wrapAngle(target.heading.rawRadians)
+    private var configuredTimeoutMs = MAX_DRIVE_DURATION_MS
     private var settledSamples = 0
+    private var lastSettledObservationMs = -1L
+    private var lastObservedTimestampMs = -1L
     private var lastControllerTimestampMs = -1L
     private var previousXVelocity = 0.0
     private var previousYVelocity = 0.0
     private var previousAngularVelocity = 0.0
 
     init {
-        withTimeout(MAX_DRIVE_DURATION_MS)
+        require(target.x.isFinite() && target.y.isFinite() && target.heading.rawRadians.isFinite()) {
+            "FRC drive target must contain finite coordinates and heading"
+        }
         headingController.enableContinuousInput(-PI, PI)
     }
 
+    override fun withTimeout(ms: Long): Task {
+        super.withTimeout(ms)
+        configuredTimeoutMs = ms
+        return this
+    }
+
     override fun initialize(state: RobotState): List<RobotAction> {
+        // Terminal cleanup removes registry deadlines. Reapply the configured duration on reuse.
+        super.withTimeout(configuredTimeoutMs)
         super.initialize(state)
+        resetControlHistory()
+        return emptyList()
+    }
+
+    private fun resetControlHistory() {
         settledSamples = 0
+        lastSettledObservationMs = -1L
+        lastObservedTimestampMs = -1L
         lastControllerTimestampMs = -1L
         previousXVelocity = 0.0
         previousYVelocity = 0.0
@@ -225,13 +264,15 @@ internal class StarterFrcDriveToPoseTask(
         xController.reset()
         yController.reset()
         headingController.reset()
-        return emptyList()
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        val pose = state.drive.poseEstimator.estimatedPose
-        val positionReady = hypot(target.x - pose.x, target.y - pose.y) <= POSITION_TOLERANCE_METERS
-        val headingReady = abs(wrapRadians(target.heading.radians - pose.heading.radians)) <= HEADING_TOLERANCE_RADIANS
+        if (!usable(state, RobotClock.currentTimeMillis(), elapsedMs)) return false
+        val pose = state.drive.poseEstimator
+        if (pose.lastObservationTimestampMs == lastSettledObservationMs) return false
+        lastSettledObservationMs = pose.lastObservationTimestampMs
+        val positionReady = hypot(target.x - pose.estimatedPoseX, target.y - pose.estimatedPoseY) <= POSITION_TOLERANCE_METERS
+        val headingReady = abs(wrapAngle(targetHeading - wrapAngle(pose.estimatedPoseHeading))) <= HEADING_TOLERANCE_RADIANS
         settledSamples = if (positionReady && headingReady) settledSamples + 1 else 0
         return settledSamples >= REQUIRED_SETTLED_SAMPLES
     }
@@ -239,14 +280,8 @@ internal class StarterFrcDriveToPoseTask(
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         super.execute(state, elapsedMs)
         val now = RobotClock.currentTimeMillis()
-        val observation = state.drive.poseEstimator.lastObservationTimestampMs
-        if (!state.drive.measuredMotionValid || observation < 0L || now < observation ||
-            now - observation > GeneratedAresDrivebaseConfig.STALE_FEEDBACK_TIMEOUT_MS
-        ) {
-            TaskStateMachine.markFailed(this)
-            return neutralResult
-        }
-        val pose = state.drive.poseEstimator.estimatedPose
+        if (!usable(state, now, elapsedMs)) return neutralAt(now)
+        val pose = state.drive.poseEstimator
         // The generated typed profile is the experiment boundary. Presets remain conservative
         // envelopes within that reviewed global scale, so a live-safe change affects real behavior.
         val tunedScale = state.tuning.drive.pathVelocityScale.coerceIn(0.0, 1.0)
@@ -254,10 +289,15 @@ internal class StarterFrcDriveToPoseTask(
             preset.speedScale * tunedScale
         val maximumAngular = GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND *
             preset.speedScale * tunedScale
-        val dtSeconds = if (lastControllerTimestampMs < 0L || now <= lastControllerTimestampMs) {
+        // A repeated clock sample cannot integrate PID state or grow the acceleration ramp.
+        if (now == lastControllerTimestampMs) {
+            return limitedCommand(previousXVelocity, previousYVelocity, previousAngularVelocity,
+                maximumLinear, maximumAngular, now)
+        }
+        val dtSeconds = if (lastControllerTimestampMs < 0L) {
             NOMINAL_DT_SECONDS
         } else {
-            ((now - lastControllerTimestampMs) / 1000.0).coerceIn(MIN_DT_SECONDS, MAX_DT_SECONDS)
+            ((now - lastControllerTimestampMs) / 1000.0).coerceAtMost(MAX_DT_SECONDS)
         }
         lastControllerTimestampMs = now
         val translationGains = state.tuning.drive.pathTranslationGains
@@ -275,9 +315,19 @@ internal class StarterFrcDriveToPoseTask(
         headingController.d = rotationGains.kD
         headingController.setOutputLimits(-maximumAngular, maximumAngular)
 
-        val requestedX = xController.calculate(pose.x, target.x, dtSeconds)
-        val requestedY = yController.calculate(pose.y, target.y, dtSeconds)
-        val requestedOmega = headingController.calculate(pose.heading.radians, target.heading.radians, dtSeconds)
+        var requestedX = xController.calculate(pose.estimatedPoseX, target.x, dtSeconds)
+        var requestedY = yController.calculate(pose.estimatedPoseY, target.y, dtSeconds)
+        val requestedOmega = headingController.calculate(wrapAngle(pose.estimatedPoseHeading), targetHeading, dtSeconds)
+        if (!xController.lastCalculationValid || !yController.lastCalculationValid || !headingController.lastCalculationValid) {
+            TaskStateMachine.markFailed(this)
+            return neutralAt(now)
+        }
+        val requestedMagnitude = hypot(requestedX, requestedY)
+        if (requestedMagnitude > maximumLinear) {
+            val scale = maximumLinear / requestedMagnitude
+            requestedX *= scale
+            requestedY *= scale
+        }
         val accelerationLimit = state.tuning.drive.pathAccelerationLimit.coerceIn(0.05, 20.0)
         val translationDeltaLimit = accelerationLimit * dtSeconds
         val deltaX = requestedX - previousXVelocity
@@ -290,10 +340,20 @@ internal class StarterFrcDriveToPoseTask(
             (GeneratedAresDrivebaseConfig.MAX_ANGULAR_SPEED_RADIANS_PER_SECOND /
                 GeneratedAresDrivebaseConfig.MAX_LINEAR_SPEED_METERS_PER_SECOND.coerceAtLeast(0.01))
         val angularDeltaLimit = angularAccelerationLimit * dtSeconds
-        command.targetXVelocity = previousXVelocity + deltaX * translationScale
-        command.targetYVelocity = previousYVelocity + deltaY * translationScale
-        command.targetAngularVelocity = previousAngularVelocity +
-            (requestedOmega - previousAngularVelocity).coerceIn(-angularDeltaLimit, angularDeltaLimit)
+        return limitedCommand(previousXVelocity + deltaX * translationScale,
+            previousYVelocity + deltaY * translationScale,
+            previousAngularVelocity + (requestedOmega - previousAngularVelocity).coerceIn(-angularDeltaLimit, angularDeltaLimit),
+            maximumLinear, maximumAngular, now)
+    }
+
+    /** Tightening a safety envelope wins over the normal acceleration ramp, including scale zero. */
+    private fun limitedCommand(x: Double, y: Double, omega: Double, maximumLinear: Double, maximumAngular: Double,
+        now: Long): List<RobotAction> {
+        val magnitude = hypot(x, y)
+        val scale = if (magnitude > maximumLinear) maximumLinear / magnitude else 1.0
+        command.targetXVelocity = x * scale
+        command.targetYVelocity = y * scale
+        command.targetAngularVelocity = omega.coerceIn(-maximumAngular, maximumAngular)
         previousXVelocity = command.targetXVelocity
         previousYVelocity = command.targetYVelocity
         previousAngularVelocity = command.targetAngularVelocity
@@ -301,81 +361,201 @@ internal class StarterFrcDriveToPoseTask(
         return commandResult
     }
 
-    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        super.end(state, interrupted)
-        neutral.timestampMs = RobotClock.currentTimeMillis()
+    /** Validate the raw snapshot before wrapping angles can hide invalid input. */
+    private fun usable(state: RobotState, now: Long, elapsedMs: Long): Boolean {
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return false
+        val pose = state.drive.poseEstimator
+        val observation = pose.lastObservationTimestampMs
+        val tuning = state.tuning.drive
+        val translation = tuning.pathTranslationGains
+        val rotation = tuning.pathRotationGains
+        if (elapsedMs < 0L || elapsedMs > configuredTimeoutMs ||
+            !state.drive.measuredMotionValid || observation < 0L || now < observation ||
+            now - observation > GeneratedAresDrivebaseConfig.STALE_FEEDBACK_TIMEOUT_MS ||
+            observation < lastObservedTimestampMs || now < lastControllerTimestampMs ||
+            !pose.estimatedPoseX.isFinite() || !pose.estimatedPoseY.isFinite() || !pose.estimatedPoseHeading.isFinite() ||
+            !tuning.pathVelocityScale.isFinite() || !tuning.pathAccelerationLimit.isFinite() || tuning.pathAccelerationLimit <= 0.0 ||
+            !translation.kP.isFinite() || !translation.kI.isFinite() || !translation.kD.isFinite() ||
+            !rotation.kP.isFinite() || !rotation.kI.isFinite() || !rotation.kD.isFinite()) {
+            TaskStateMachine.markFailed(this)
+            return false
+        }
+        lastObservedTimestampMs = observation
+        return true
+    }
+
+    private fun neutralAt(now: Long): List<RobotAction> {
+        neutral.timestampMs = now
         return neutralResult
     }
 
+    override fun pause(state: RobotState): List<RobotAction> {
+        resetControlHistory()
+        return neutralAt(RobotClock.currentTimeMillis())
+    }
+
+    override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
+        super.end(state, interrupted)
+        return neutralAt(RobotClock.currentTimeMillis())
+    }
+
     override fun releaseRuntimeState() {
-        settledSamples = 0
-        lastControllerTimestampMs = -1L
-        previousXVelocity = 0.0
-        previousYVelocity = 0.0
-        previousAngularVelocity = 0.0
-        xController.reset()
-        yController.reset()
-        headingController.reset()
+        resetControlHistory()
         super.releaseRuntimeState()
     }
 
-    private companion object {
+    companion object {
         const val POSITION_TOLERANCE_METERS = 0.05
-        val HEADING_TOLERANCE_RADIANS = Math.toRadians(2.0)
-        const val REQUIRED_SETTLED_SAMPLES = 3
-        const val MAX_DRIVE_DURATION_MS = 10_000L
-        const val NOMINAL_DT_SECONDS = 0.02
-        const val MIN_DT_SECONDS = 0.001
-        const val MAX_DT_SECONDS = 0.05
+        private val HEADING_TOLERANCE_RADIANS = Math.toRadians(2.0)
+        private const val REQUIRED_SETTLED_SAMPLES = 3
+        private const val MAX_DRIVE_DURATION_MS = 10_000L
+        private const val NOMINAL_DT_SECONDS = 0.02
+        private const val MAX_DT_SECONDS = 0.05
     }
 }
 
-/** Starts one generated action when drive progress crosses its declarative marker. */
-private class StarterFrcDriveMarkerTask(
+/** Starts one generated action at translation progress; the accepted position tolerance is the endpoint. */
+internal class StarterFrcDriveMarkerTask(
     private val target: Pose2d,
     private val progress: Double,
     private val action: Task,
 ) : Task {
     override val name: String = "FRC drive marker ${action.name} at ${(progress * 100.0).toInt()}%"
     override val requiredResources: Long = action.requiredResources
-    private val executor = TaskExecutor()
+    private var executor = TaskExecutor()
     private var startDistance = 0.0
     private var triggered = false
+    private var childReleased = false
+    private var ended = false
+    private var lastProgressObservationMs = -1L
+    private var configuredTimeoutMs = -1L
+
+    init {
+        require(progress.isFinite() && progress in 0.0..1.0) { "Marker progress must be in [0, 1]" }
+        require(target.x.isFinite() && target.y.isFinite() && target.heading.rawRadians.isFinite()) {
+            "Marker target must be finite"
+        }
+    }
 
     override fun initialize(state: RobotState): List<RobotAction> {
+        check(executor.size == 0) { "Cannot reinitialize a marker with an active action" }
+        if (configuredTimeoutMs >= 0L) super.withTimeout(configuredTimeoutMs)
         super.initialize(state)
-        val pose = state.drive.poseEstimator.estimatedPose
-        startDistance = hypot(target.x - pose.x, target.y - pose.y)
+        executor.resume()
         triggered = false
+        childReleased = false
+        ended = false
+        lastProgressObservationMs = -1L
+        startDistance = remainingDistance(state)
         return emptyList()
     }
 
-    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean = triggered && executor.size == 0
+    override fun withTimeout(ms: Long): Task {
+        super.withTimeout(ms)
+        configuredTimeoutMs = ms
+        return this
+    }
+
+    override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        propagateChildStatus()
+        return !ended && TaskStateMachine.getStatus(this) == TaskStatus.RUNNING && triggered &&
+            executor.size == 0 && TaskStateMachine.getStatus(action) == TaskStatus.COMPLETED
+    }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         super.execute(state, elapsedMs)
+        if (ended || TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) {
+            return if (executor.size > 0) executor.cancelAll(state) else emptyList()
+        }
         if (!triggered) {
-            val pose = state.drive.poseEstimator.estimatedPose
-            val remaining = hypot(target.x - pose.x, target.y - pose.y)
-            val completed = if (startDistance <= 1e-9) 1.0 else (1.0 - remaining / startDistance).coerceIn(0.0, 1.0)
+            val remaining = remainingDistance(state)
+            if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return emptyList()
+            val completed = if (remaining <= StarterFrcDriveToPoseTask.POSITION_TOLERANCE_METERS || startDistance <= 1e-9) {
+                1.0
+            } else (1.0 - remaining / startDistance).coerceIn(0.0, 1.0)
             if (completed >= progress) {
                 executor.addTask(action)
                 triggered = true
             }
         }
-        return if (triggered) executor.update(state, RobotClock.currentTimeMillis()) else emptyList()
+        if (!triggered) return emptyList()
+        val actions = executor.update(state, RobotClock.currentTimeMillis())
+        propagateChildStatus()
+        return actions
+    }
+
+    private fun remainingDistance(state: RobotState): Double {
+        val pose = state.drive.poseEstimator
+        val now = RobotClock.currentTimeMillis()
+        val observation = pose.lastObservationTimestampMs
+        val remaining = hypot(target.x - pose.estimatedPoseX, target.y - pose.estimatedPoseY)
+        if (!state.drive.measuredMotionValid || observation < 0L || observation > now ||
+            now - observation > GeneratedAresDrivebaseConfig.STALE_FEEDBACK_TIMEOUT_MS ||
+            observation < lastProgressObservationMs || !remaining.isFinite() || !pose.estimatedPoseHeading.isFinite()) {
+            TaskStateMachine.markFailed(this)
+        } else lastProgressObservationMs = observation
+        return remaining
+    }
+
+    private fun propagateChildStatus() {
+        if (!triggered || TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return
+        when (TaskStateMachine.getStatus(action)) {
+            TaskStatus.FAILED -> TaskStateMachine.markFailed(this)
+            TaskStatus.CANCELLED -> TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+            else -> Unit
+        }
+    }
+
+    override fun pause(state: RobotState): List<RobotAction> {
+        if (!triggered || executor.size == 0 || ended) return emptyList()
+        try { return action.pause(state) } finally { executor.suspend() }
+    }
+
+    override fun resume(state: RobotState): List<RobotAction> {
+        if (!triggered || executor.size == 0 || ended) return emptyList()
+        executor.resume()
+        return action.resume(state)
     }
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        val cleanup = if (interrupted && executor.size > 0) executor.cancelAll(state) else emptyList()
-        super.end(state, interrupted)
+        if (ended) return emptyList()
+        propagateChildStatus()
+        ended = true
+        if (!interrupted && (!triggered || executor.size > 0 || TaskStateMachine.getStatus(action) != TaskStatus.COMPLETED)) {
+            TaskStateMachine.markFailed(this)
+        }
+        var cleanup: List<RobotAction> = emptyList()
+        var failure: Throwable? = null
+        try {
+            if (executor.size > 0) {
+                cleanup = executor.cancelAll(state)
+            } else if (!triggered && !childReleased) {
+                childReleased = true
+                releaseStarterTaskMetadata(action)
+            }
+        } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { super.end(state, interrupted) }
+        catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        failure?.let { throw it }
         return cleanup
     }
 
     override fun releaseRuntimeState() {
-        startDistance = 0.0
-        triggered = false
-        super.releaseRuntimeState()
+        try {
+            // Like Task.cancel(), metadata release alone cannot dispatch hardware cleanup actions.
+            if (!childReleased && (!triggered || executor.size > 0)) {
+                childReleased = true
+                releaseStarterTaskMetadata(action, cancelled = triggered)
+            }
+        } finally {
+            if (executor.size > 0) executor = TaskExecutor()
+            startDistance = 0.0
+            triggered = false
+            childReleased = true
+            ended = true
+            lastProgressObservationMs = -1L
+            super.releaseRuntimeState()
+        }
     }
 }
 
@@ -389,6 +569,7 @@ internal class StarterFrcAutonomousRuntime(
     entries: List<AutonomousCatalogEntry> = GeneratedAresProject.autonomousEntries,
     defaultEntryId: String? = GeneratedAresProject.DEFAULT_AUTONOMOUS_ENTRY_ID,
     private val selectionProvider: () -> String = ::dashboardSelection,
+    private val cancelGenerated: (String) -> Unit = generatedControls::cancelAll,
 ) {
     private val selector = StarterFrcAutonomousSelector(entries, defaultEntryId)
     private var activeExecutionId: Long? = null
@@ -434,7 +615,7 @@ internal class StarterFrcAutonomousRuntime(
             }
             startedAtMs = now
             finished = false
-            publishStatus(if (selection.usedFallback) "Running safe fallback" else "Running")
+            publishStatus(if (selection.usedFallback) "Running fallback" else "Running")
         } catch (failure: Throwable) {
             fail("Autonomous preflight failed: ${failure.message ?: failure::class.java.simpleName}")
         }
@@ -465,11 +646,7 @@ internal class StarterFrcAutonomousRuntime(
             }
             when (terminal.status) {
                 RoutineExecutionStatus.COMPLETED -> {
-                    finished = true
-                    activeExecutionId = null
-                    capabilities.clearAutonomous()
-                    robot.safeHardware()
-                    publishStatus("Complete")
+                    stop("Autonomous complete", status = "Complete")
                 }
                 RoutineExecutionStatus.FAILED -> fail(terminal.message ?: "Autonomous task failed")
                 RoutineExecutionStatus.CANCELLED -> fail(terminal.message ?: "Autonomous was cancelled")
@@ -482,13 +659,17 @@ internal class StarterFrcAutonomousRuntime(
     }
 
     fun stop(reason: String, status: String = "Stopped") {
-        generatedControls.cancelAll(reason)
         activeExecutionId = null
         startedAtMs = -1L
         finished = true
         capabilities.clearAutonomous()
-        robot.safeHardware()
-        publishStatus(status)
+        var failure: Throwable? = null
+        try { cancelGenerated(reason) } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { capabilities.onDriveCommand(0.0, 0.0, 0.0, active = false) }
+        catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { robot.safeHardware() } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        try { publishStatus(status) } catch (error: Throwable) { failure = retainStarterFailure(failure, error) }
+        failure?.let { throw it }
     }
 
     private fun fail(message: String) {
@@ -525,11 +706,4 @@ internal class StarterFrcAutonomousRuntime(
             }.getOrDefault(fallback)
         }
     }
-}
-
-private fun wrapRadians(value: Double): Double {
-    var wrapped = value
-    while (wrapped > PI) wrapped -= 2.0 * PI
-    while (wrapped < -PI) wrapped += 2.0 * PI
-    return wrapped
 }

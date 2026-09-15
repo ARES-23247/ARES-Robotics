@@ -147,9 +147,10 @@ fun PathPlannerScreen(
         }
     }
     val lightingPreviewModel = remember(projectPath) { RoutineLightingPreviewModel.load(projectPath) }
-    val lightingPreview = remember(lightingPreviewModel, state.previewActions, state.playbackTime) {
-        lightingPreviewModel.at(state.previewActions, state.playbackTime)
+    val lightingTimeline = remember(lightingPreviewModel, state.previewActions) {
+        lightingPreviewModel.compile(state.previewActions)
     }
+    val lightingPreview = lightingTimeline.at(state.playbackTime)
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val presentation = routineBuilderLayoutPresentation(maxWidth.value, AresThemeSettings.largeTextMode)

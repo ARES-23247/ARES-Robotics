@@ -3,7 +3,10 @@ package com.areslib.control.tuning
 /**
  * Reusable Gain Coefficient Container for Closed-Loop PIDF Controllers.
  *
- * Encapsulates feedback gains ($k_P, k_I, k_D$) and static feedforward gain ($k_F$) for linear mechanisms, rotating joints, or flywheels.
+ * Encapsulates feedback gains ($k_P, k_I, k_D$) and setpoint-proportional feedforward gain
+ * ($k_F$) for linear mechanisms, rotating joints, or flywheels. This is a value container;
+ * consuming controllers validate supported gains and may use only the PID components.
+ * $k_F$ multiplies the setpoint; it is not the sign-dependent static-friction term $k_S$.
  *
  * ### Control Law Formulation:
  * $$u(k) = k_P \cdot e(k) + k_I \cdot \sum e(i) \Delta t + k_D \cdot \frac{e(k) - e(k-1)}{\Delta t} + k_F \cdot r(k)$$
@@ -17,7 +20,7 @@ package com.areslib.control.tuning
  * @property kP Proportional feedback gain coefficient ($k_P$).
  * @property kI Integral feedback gain coefficient ($k_I$).
  * @property kD Derivative feedback gain coefficient ($k_D$).
- * @property kF Direct static setpoint feedforward gain ($k_F$).
+ * @property kF Direct setpoint-proportional feedforward gain ($k_F$).
  * @see com.areslib.control.feedback.PIDController
  */
 data class PIDFCoefficients(

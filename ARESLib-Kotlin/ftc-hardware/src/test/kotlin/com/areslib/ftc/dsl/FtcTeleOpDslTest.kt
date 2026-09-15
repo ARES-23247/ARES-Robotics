@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test
 class FtcTeleOpDslTest {
     @Test
     fun `invalid pose storage restores documented red default instead of stale alliance`() {
-        assertEquals(
-            com.areslib.state.Alliance.RED,
-            allianceForTeleOpRestore(false, com.areslib.state.Alliance.BLUE)
-        )
-        assertEquals(
-            com.areslib.state.Alliance.BLUE,
-            allianceForTeleOpRestore(true, com.areslib.state.Alliance.BLUE)
-        )
+        val prior = com.areslib.util.PoseStorage.snapshot
+        try {
+            assertEquals(com.areslib.state.Alliance.RED, allianceForTeleOpRestore(null))
+            com.areslib.util.PoseStorage.save(com.areslib.math.geometry.Pose2d(), com.areslib.state.Alliance.BLUE)
+            assertEquals(com.areslib.state.Alliance.BLUE, allianceForTeleOpRestore(com.areslib.util.PoseStorage.snapshot))
+        } finally {
+            prior?.let { com.areslib.util.PoseStorage.save(it.pose, it.alliance) } ?: com.areslib.util.PoseStorage.clear()
+        }
     }
 
     @Test

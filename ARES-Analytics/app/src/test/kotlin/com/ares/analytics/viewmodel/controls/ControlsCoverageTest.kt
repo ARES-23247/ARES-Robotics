@@ -1,5 +1,7 @@
 package com.ares.analytics.viewmodel.controls
 
+import com.ares.analytics.domain.project.controlsCoverage
+
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityContext
 import com.areslib.controls.ControlBindingDocument

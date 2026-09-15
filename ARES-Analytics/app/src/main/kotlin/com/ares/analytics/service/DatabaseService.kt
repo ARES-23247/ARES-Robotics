@@ -104,6 +104,8 @@ class DatabaseService(
     private val transactionCoordinator: DatabaseTransactionCoordinator
     private val sessionMetadataRepo: SessionMetadataRepository
     private val telemetryRepo: TelemetryRepository
+    private val analysisTelemetryRepo: AnalysisTelemetryRepository
+    private val replayPoseRepo: ReplayPoseRepository
     private val robotActionRepo: RobotActionRepository
     private val runEvidenceRepo: RunEvidenceRepository
     private val backupExporter: DatabaseBackupExporter
@@ -163,6 +165,8 @@ class DatabaseService(
         )
         sessionMetadataRepo = SessionMetadataRepository(transactionCoordinator)
         telemetryRepo = TelemetryRepository(transactionCoordinator)
+        analysisTelemetryRepo = AnalysisTelemetryRepository(transactionCoordinator)
+        replayPoseRepo = ReplayPoseRepository(transactionCoordinator)
         robotActionRepo = RobotActionRepository(transactionCoordinator)
         runEvidenceRepo = RunEvidenceRepository(transactionCoordinator, sessionMetadataRepo)
         backupExporter = DatabaseBackupExporter(conn, dbMutex)
@@ -195,8 +199,11 @@ class DatabaseService(
     ): QueryResult = transactionCoordinator.readOnlyQueries.executeRaw(AiSqlQueryGuard.validate(sql), rowLimit)
     suspend fun executeQueryWithParams(sql: String, params: List<Any>): QueryResult =
         transactionCoordinator.readOnlyQueries.executeWithParams(sql, params)
+    internal suspend fun executeTelemetryQueryWithParams(sessionId: String, sql: String, params: List<Any>): QueryResult =
+        transactionCoordinator.telemetryQueriesFor(sessionId).executeWithParams(sql, params)
     suspend fun insertSession(session: Session) = sessionMetadataRepo.insertSession(session)
     internal suspend fun insertImportSession(session: Session) = sessionMetadataRepo.insertImportSession(session)
+    suspend fun getSession(sessionId: String): Session? = sessionMetadataRepo.getSession(sessionId)
     suspend fun getSessions(): List<Session> = sessionMetadataRepo.getSessions()
     suspend fun getSessionsForWorkspace(teamId: String, seasonId: String, robotId: String): List<Session> =
         sessionMetadataRepo.getSessionsForWorkspace(teamId, seasonId, robotId)
@@ -231,6 +238,13 @@ class DatabaseService(
     suspend fun getTelemetryRangeBatched(sessionId: String, startMs: Long, endMs: Long, limit: Long, offset: Long): List<TelemetryFrame> = telemetryRepo.getTelemetryRangeBatched(sessionId, startMs, endMs, limit, offset)
     suspend fun countTelemetryFrames(sessionId: String): Long = telemetryRepo.countTelemetryFrames(sessionId)
     suspend fun getTelemetryForKey(sessionId: String, key: String): List<TelemetryFrame> = telemetryRepo.getTelemetryForKey(sessionId, key)
+    internal suspend fun getAnalysisTelemetry(
+        sessionId: String, groups: List<AnalysisTelemetryGroup>, limits: AnalysisTelemetryLimits = AnalysisTelemetryLimits(),
+    ): Map<String, AnalysisTelemetryInput> = analysisTelemetryRepo.read(sessionId, groups, limits)
+    internal suspend fun getReplayPoseTrace(
+        sessionId: String, startMs: Long, endMs: Long, maxPoints: Int,
+    ): List<ReplayPoseSample> = replayPoseRepo.read(sessionId, startMs, endMs, maxPoints)
+
     override suspend fun getTelemetrySeries(
         sessionId: String,
         key: String,
@@ -306,7 +320,7 @@ class DatabaseService(
     suspend fun associateSessionWithMatch(sessionId: String, matchNumber: Int, allianceColor: String, opponentTeams: List<String>) = sessionMetadataRepo.associateSessionWithMatch(sessionId, matchNumber, allianceColor, opponentTeams)
     suspend fun insertAlert(alert: AlertRecord) {
         sessionMetadataRepo.insertAlert(alert)
-        val session = sessionMetadataRepo.getSessions().firstOrNull { it.sessionId == alert.sessionId }
+        val session = sessionMetadataRepo.getSession(alert.sessionId)
         if (session != null) {
             integrationEvents.alertPersisted(
                 alert,
@@ -411,7 +425,6 @@ class DatabaseService(
             // writers. Lock order here matches the repository's established write->read order.
             dbMutex.withLock {
                 readMutex.withLock {
-                    sessionMetadataRepo.dispose()
                     if (!readConn.isClosed) { readConn.close() }
                     if (!conn.isClosed) {
                         runCatching { conn.createStatement().use { it.execute("CHECKPOINT") } }

@@ -6,6 +6,7 @@ import com.areslib.control.drivetrain.VisionAlignController
 import com.areslib.control.tuning.PIDFCoefficients
 import com.areslib.control.tuning.SimpleFeedforwardCoeffs
 import com.areslib.ftc.calibration.FtcMecanumCalibrationController
+import com.areslib.ftc.core.retainFtcFailure
 import com.areslib.ftc.drivetrain.MecanumFallbackOdometry
 import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import com.areslib.ftc.drivetrain.MecanumKinematicsController
@@ -19,7 +20,6 @@ import com.areslib.state.RobotState
 import com.areslib.state.TuningState
 import com.areslib.subsystem.DriveSubsystem
 import com.areslib.subsystem.MecanumDriveFacade
-import com.areslib.telemetry.logDriveMotor
 import com.areslib.tuning.TuningManager
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
@@ -188,8 +188,15 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     val mecanumDrive = MecanumDriveFacade(store, headingGains, headingDeadzoneDeg)
 
     private val visionAlignController = VisionAlignController()
-    /** Optional declaration-driven tuning transport installed by the season composition root. */
+    private var tuningClosed = false
+    /** Owned tuning transport. Replace only with updates stopped; replacement drains the old writer. */
     var tuningManager: TuningManager? = null
+        @Synchronized set(value) {
+            check(!tuningClosed) { "Robot tuning is closed" }
+            if (field === value) return
+            field?.close()
+            field = value
+        }
 
     init {
         com.areslib.telemetry.RobotStatusTracker.ftcLimelightProxyConfigured = limelightProxyEnabled
@@ -278,7 +285,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
 
     /** Shared follower used by native ARES auto compilation and online pathfinding. */
     val pathFollower get() = trajectoryFollower.pathfindFollower
-    private var lastLocalTelemetryUpdateMs = 0L
+    private val driveTelemetry = FtcMecanumTelemetry()
 
     init {
         val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
@@ -318,6 +325,8 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     override fun updateSubsystems(dtSeconds: Double, batteryVoltage: Double, powerScale: Double) {
         val currentTuning = store.state.tuning
         if (currentTuning !== lastTuning) {
+            // A rejected attempt must allow reapplying the exact prior snapshot on rollback.
+            lastTuning = null
             kinematicsController.updateTuning(currentTuning)
             trajectoryFollower.updateTuning(currentTuning)
 
@@ -351,30 +360,7 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      * @param timestamp System clock timestamp in milliseconds ($ms$).
      */
     override fun publishRobotTelemetry(timestamp: Long) {
-        if (timestamp - lastLocalTelemetryUpdateMs >= 100L) {
-            telemetryManager.customDriverStationText["Motor Powers"] = String.format("FL:%.2f | FR:%.2f | RL:%.2f | RR:%.2f",
-                mecanumIO.flIO.power * mecanumIO.flIO.powerScale, mecanumIO.frIO.power * mecanumIO.frIO.powerScale,
-                mecanumIO.rlIO.power * mecanumIO.rlIO.powerScale, mecanumIO.rrIO.power * mecanumIO.rrIO.powerScale
-            )
-            telemetryManager.customDriverStationText["Current Draw"] = if (powerManager.floodgate != null) {
-                String.format("%.1f A (Physical)", powerManager.floodgate.current)
-            } else {
-                String.format("%.1f A (Estimated)", powerManager.currentAmps)
-            }
-            telemetryManager.customDriverStationText["Drive Output Safety"] = if (isDriveOutputFaultLatched) {
-                "FAULT LATCHED — release controls and run Recover drive after a fault"
-            } else {
-                "Ready — motor outputs permitted"
-            }
-            lastLocalTelemetryUpdateMs = timestamp
-        }
-
-        telemetryManager.dataLoggingTelemetry.putBoolean("Drive/OutputFaultLatched", isDriveOutputFaultLatched)
-
-        telemetryManager.dataLoggingTelemetry.logDriveMotor("fl", mecanumIO.flIO)
-        telemetryManager.dataLoggingTelemetry.logDriveMotor("fr", mecanumIO.frIO)
-        telemetryManager.dataLoggingTelemetry.logDriveMotor("rl", mecanumIO.rlIO)
-        telemetryManager.dataLoggingTelemetry.logDriveMotor("rr", mecanumIO.rrIO)
+        driveTelemetry.publish(timestamp, telemetryManager, powerManager, mecanumIO)
 
         calibrationController.publishRobotTelemetry(
             timestamp, store, telemetryManager, mecanumIO, visionTracker, ticksPerMeter, 2000.0
@@ -386,18 +372,12 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
      */
     override fun safeHardware() {
         var firstFailure: Throwable? = null
-        val safetySteps = arrayOf<() -> Unit>(
-            { calibrationController.disableMode(telemetryManager, mecanumIO) },
-            { hardwareRegistry.safeAll() },
-            { stopAll() }
-        )
-        for (step in safetySteps) {
-            try {
-                step()
-            } catch (failure: Throwable) {
-                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
-            }
-        }
+        try { calibrationController.disableMode(telemetryManager, mecanumIO) }
+        catch (failure: Throwable) { firstFailure = retainFtcFailure(firstFailure, failure) }
+        // disableMode owns drivetrain/calibration neutralization; the registry owns all other
+        // registered devices. stopAll delegates to this same traversal, so call it only once.
+        try { stopAll() }
+        catch (failure: Throwable) { firstFailure = retainFtcFailure(firstFailure, failure) }
         firstFailure?.let { throw it }
     }
 
@@ -490,12 +470,21 @@ open class FtcMecanumRobot @kotlin.jvm.JvmOverloads constructor(
     /**
      * Shuts down subsystem threads, disables motor hardware, and clears proxy servers.
      */
+    @Synchronized
     override fun close() {
-        super.close()
-        // close() is teardown: stop the proxy instead of resurrecting it. Starting here (the
-        // historical behavior) re-spawned the proxy on every OpMode teardown even after an
-        // explicit stop, contradicting this method's own documentation.
-        if (isAndroid && limelightProxyEnabled) LimelightProxyAutoStart.stop()
+        if (tuningClosed) return
+        tuningClosed = true
+        var firstFailure: Throwable? = null
+        fun attempt(action: () -> Unit) {
+            try { action() } catch (failure: Throwable) {
+                firstFailure = retainFtcFailure(firstFailure, failure)
+            }
+        }
+        // Neutralize and release hardware before waiting on any filesystem operation.
+        attempt { super.close() }
+        attempt { tuningManager?.close() }
+        attempt { if (isAndroid && limelightProxyEnabled) LimelightProxyAutoStart.stop() }
+        firstFailure?.let { throw it }
     }
 
     private companion object {

@@ -29,15 +29,21 @@ fun rootReducer(state: RobotState, action: RobotAction): RobotState {
             )
         }
         else -> {
-            // Standard action propagation: Compose all independent domain slice reducers
-            state.copy(
-                drive = DriveReducer.reduce(state.drive, action),
-                vision = VisionReducer.reduce(state.vision, action),
-                superstructure = SuperstructureReducer.reduce(state.superstructure, action),
-                pathState = PathReducer.reduce(state.pathState, action),
-                routineState = RoutineReducer.reduce(state.routineState, action),
-                timestampMs = action.timestampMs
-            )
+            val drive = DriveReducer.reduce(state.drive, action)
+            val vision = VisionReducer.reduce(state.vision, action)
+            val superstructure = SuperstructureReducer.reduce(state.superstructure, action)
+            val pathState = PathReducer.reduce(state.pathState, action)
+            val routineState = RoutineReducer.reduce(state.routineState, action)
+            // Identity checks avoid traversing paths, maps or user-defined subsystem equality.
+            // Every action still reaches the slices and Store observers; a new time is observable.
+            if (drive === state.drive && vision === state.vision &&
+                superstructure === state.superstructure && pathState === state.pathState &&
+                routineState === state.routineState && action.timestampMs == state.timestampMs) {
+                state
+            } else {
+                state.copy(drive = drive, vision = vision, superstructure = superstructure,
+                    pathState = pathState, routineState = routineState, timestampMs = action.timestampMs)
+            }
         }
     }
 }

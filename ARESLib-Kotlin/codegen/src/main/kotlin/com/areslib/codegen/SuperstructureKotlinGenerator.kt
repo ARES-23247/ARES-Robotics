@@ -26,8 +26,8 @@ object SuperstructureKotlinGenerator {
         actionKeys: Set<String>,
         parameterlessActionKeys: Set<String> = actionKeys,
     ): GeneratedSuperstructureFile {
-        require(packageName.isKotlinPackage()) { "Invalid superstructure package '$packageName'" }
-        require(subsystemRegistryFqn.isKotlinFqn()) { "Invalid subsystem registry '$subsystemRegistryFqn'" }
+        require(packageName.isKotlinPackageName()) { "Invalid superstructure package '$packageName'" }
+        require(subsystemRegistryFqn.isKotlinQualifiedName()) { "Invalid subsystem registry '$subsystemRegistryFqn'" }
         val errors = validateSuperstructureProject(document, subsystems, actionKeys, parameterlessActionKeys)
             .filter { it.severity == SuperstructureIssueSeverity.ERROR }
         require(errors.isEmpty()) { errors.joinToString("; ") { "${it.path}: ${it.message}" } }
@@ -126,6 +126,7 @@ object SuperstructureKotlinGenerator {
         documents: List<SuperstructureDocument>,
         packageName: String,
     ): GeneratedSuperstructureFile {
+        require(packageName.isKotlinPackageName()) { "Invalid superstructure package '$packageName'" }
         val owners = documents.flatMap { document ->
             document.transitions.filter { it.triggerKind == TransitionTriggerKind.ACTION_REQUEST }
                 .mapNotNull { edge -> edge.actionKey?.let { it to document } }
@@ -222,7 +223,7 @@ object SuperstructureKotlinGenerator {
     }
 
     private fun healthFunction(ports: List<PortBinding>, basePackage: String): String = buildString {
-        appendLine("    override fun readHealthBits(port: Int, state: RobotState, nowMs: Long): Int {")
+        appendLine("    override fun readHealthBits(port: Int, state: RobotState, nowMs: Long, maximumAgeMs: Long): Int {")
         appendLine("        return when (port) {")
         ports.forEach { port ->
             val segment = port.subsystem.documentId.replace('-', '_')
@@ -236,8 +237,8 @@ object SuperstructureKotlinGenerator {
                 appendLine("                val snapshot = state.superstructure.subsystems[${port.subsystem.documentId.kotlinStringLiteral()}] as? $stateFqn ?: return 0")
             appendLine("                var bits = 0")
             appendLine("                if (snapshot.feedbackValid) bits = bits or SuperstructurePortHealthBits.VALID")
-            appendLine("                val ageMs = if (nowMs >= snapshot.feedbackTimestampMs) nowMs - snapshot.feedbackTimestampMs else Long.MAX_VALUE")
-            appendLine("                if (ageMs <= ${maxAgeMs}L) bits = bits or SuperstructurePortHealthBits.FRESH")
+            appendLine("                val ageMs = nowMs - snapshot.feedbackTimestampMs")
+            appendLine("                if (nowMs >= snapshot.feedbackTimestampMs && ageMs >= 0L && ageMs <= ${maxAgeMs}L && ageMs <= maximumAgeMs) bits = bits or SuperstructurePortHealthBits.FRESH")
             appendLine("                if (snapshot.configurationHealthy) bits = bits or SuperstructurePortHealthBits.CONFIGURED")
             appendLine("                if (snapshot.homed) bits = bits or SuperstructurePortHealthBits.HOMED")
             appendLine("                if (snapshot.calibrated) bits = bits or SuperstructurePortHealthBits.CALIBRATED")
@@ -295,8 +296,3 @@ private data class PortBinding(
     val field: SubsystemStateFieldDocument,
     val index: Int = -1,
 )
-
-private fun String.isKotlinPackage(): Boolean =
-    matches(Regex("[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*"))
-
-private fun String.isKotlinFqn(): Boolean = isKotlinPackage() && contains('.')

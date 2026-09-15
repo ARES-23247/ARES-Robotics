@@ -11,6 +11,25 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopDriveInputPublisherTest {
+    @Test fun `slow keyboard drive scales all axes while preserving mechanism flags and neutral gates`() {
+        val keyboard = KeyboardDriveState().apply {
+            enabled = true; isWPressed = true; isDPressed = true; isLeftPressed = true
+            isJPressed = true; isLPressed = true; isShiftPressed = true
+        }
+        fun intent(active: Boolean = true) = desktopDriveIntent(keyboard, GamepadState(), active, League.FTC, true)
+        val normal = intent()
+        keyboard.isSpacePressed = true
+        val slow = intent()
+        assertEquals(normal.command.vxMetersPerSecond * 0.1, slow.command.vxMetersPerSecond, 1e-9)
+        assertEquals(normal.command.vyMetersPerSecond * 0.1, slow.command.vyMetersPerSecond, 1e-9)
+        assertEquals(normal.command.omegaRadiansPerSecond * 0.1, slow.command.omegaRadiansPerSecond, 1e-9)
+        assertEquals(normal.actuationFlags, slow.actuationFlags)
+        assertEquals(DesktopFieldDriveCommand(0.0, 0.0, 0.0), intent(false).command)
+        keyboard.disarm()
+        assertEquals(0L, intent().actuationFlags)
+        assertEquals(DesktopFieldDriveCommand(0.0, 0.0, 0.0), intent().command)
+    }
+
     @Test
     fun `receiver acknowledgement prevents false armed session after accepted queue stalls`() {
         var nowMs = 1_000L

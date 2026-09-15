@@ -29,8 +29,19 @@ object SubsystemUnits {
         require(stateUnitsPerMechanismRevolution.isFinite() && stateUnitsPerMechanismRevolution > 0.0) {
             "State units per mechanism revolution must be finite and positive"
         }
-        return stateUnitsPerMechanismRevolution /
-            (nativeUnitsPerMotorRevolution * motorRevolutionsPerMechanismRevolution)
+        // Scale each factor by a power of two so an intermediate product cannot overflow or
+        // underflow when the final conversion is representable. This also preserves subnormals.
+        val nativeExponent = Math.getExponent(nativeUnitsPerMotorRevolution)
+        val gearingExponent = Math.getExponent(motorRevolutionsPerMechanismRevolution)
+        val stateExponent = Math.getExponent(stateUnitsPerMechanismRevolution)
+        val fraction = Math.scalb(stateUnitsPerMechanismRevolution, -stateExponent) /
+            (Math.scalb(nativeUnitsPerMotorRevolution, -nativeExponent) *
+                Math.scalb(motorRevolutionsPerMechanismRevolution, -gearingExponent))
+        val scale = Math.scalb(fraction, stateExponent - nativeExponent - gearingExponent)
+        require(scale.isFinite() && scale > 0.0) {
+            "Motor measurement scale must be representable as a finite positive value"
+        }
+        return scale
     }
 
     private fun normalize(unit: String): String = when (unit.trim().lowercase()) {

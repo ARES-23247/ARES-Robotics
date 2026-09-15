@@ -15,13 +15,14 @@ import org.junit.jupiter.api.Test
 class MarvinSuperstructureSafetyTest {
 
     private class RecordingFlywheelIO : FlywheelIO {
+        var voltageCommand = Double.NaN
         var velocityRpmCommand = Double.NaN
         var effortScale = Double.NaN
         override fun setVelocityRpm(rpm: Double, maxEffortScale: Double) {
             velocityRpmCommand = rpm
             effortScale = maxEffortScale
         }
-        override fun setAppliedVoltage(volts: Double) = Unit
+        override fun setAppliedVoltage(volts: Double) { voltageCommand = volts }
     }
 
     private class RecordingCowlIO : CowlIO {
@@ -38,6 +39,7 @@ class MarvinSuperstructureSafetyTest {
     private class RecordingIntakeIO : IntakeIO {
         var pivotAngleCommand = Double.NaN
         var rollerVelocityCommand = Double.NaN
+        var rollerVoltageCommand = Double.NaN
         var pivotEffortScale = Double.NaN
         var pivotVoltageCommand = Double.NaN
         override fun setPivotAngle(degrees: Double, maxEffortScale: Double) {
@@ -45,7 +47,7 @@ class MarvinSuperstructureSafetyTest {
             pivotEffortScale = maxEffortScale
         }
         override fun setPivotVoltage(volts: Double) { pivotVoltageCommand = volts }
-        override fun setRollerVoltage(volts: Double) = Unit
+        override fun setRollerVoltage(volts: Double) { rollerVoltageCommand = volts }
         override fun setRollerVelocityRps(rps: Double) { rollerVelocityCommand = rps }
     }
 
@@ -322,6 +324,13 @@ class MarvinSuperstructureSafetyTest {
 
         subsystem.writeOutputs(state, 1.0)
 
+        assertEquals(0.0, flywheel.voltageCommand)
+        assertTrue(flywheel.velocityRpmCommand.isNaN())
+        assertTrue(cowl.angleCommand.isNaN())
+        assertTrue(intake.pivotAngleCommand.isNaN())
+        assertTrue(intake.rollerVelocityCommand.isNaN())
+        assertTrue(climber.positionCommandRotations.isNaN())
+        assertEquals(0.0, intake.rollerVoltageCommand)
         assertEquals(0.0, cowl.voltageCommand)
         assertEquals(0.0, intake.pivotVoltageCommand)
         assertEquals(0.0, feeder.voltageCommand)

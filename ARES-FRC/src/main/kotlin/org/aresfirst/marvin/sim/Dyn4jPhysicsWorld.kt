@@ -75,13 +75,27 @@ class Dyn4jPhysicsWorld(
         }
     }
 
-    /** Advances the physics world by [dt] seconds. */
+    /** Advances by finite, nonnegative [dt] seconds; zero leaves queued effort and state untouched. */
     fun step(dt: Double) {
+        require(dt.isFinite() && dt >= 0.0) { "Physics timestep must be finite and nonnegative" }
+        if (dt == 0.0) return
         world.step(1, dt)
     }
 
-    /** Rebuilds static bodies and game elements from [config], retaining [robotBody]. */
+    /** Builds a replacement first; a construction failure leaves the active world untouched. */
     fun buildWorld(config: com.areslib.state.RobotFieldConfig) {
+        val replacement = World<Body>()
+        org.aresfirst.marvin.sim.field.FrcFieldBuilder.buildWorldWalls(
+            replacement, config.resolvedWidthMeters, config.resolvedHeightMeters
+        )
+        com.areslib.sim.field.FieldObstacleLoader.loadObstacles(replacement, config.obstacles)
+        val loadedElements = com.areslib.sim.field.FieldElementLoader.loadElements(
+            replacement, config.elementTypes, config.elements
+        )
+        val replacementBodies = replacement.bodies.toList()
+        // Detach ownership before moving the successfully constructed bodies to the live world.
+        replacement.removeAllBodies()
+
         val bodies = world.bodies.toList()
         for (body in bodies) {
             if (body != robotBody) {
@@ -90,22 +104,20 @@ class Dyn4jPhysicsWorld(
         }
         balls.clear()
         flyingBalls.clear()
-
-        val width = config.resolvedWidthMeters
-        val height = config.resolvedHeightMeters
-
-        org.aresfirst.marvin.sim.field.FrcFieldBuilder.buildWorldWalls(world, width, height)
-        com.areslib.sim.field.FieldObstacleLoader.loadObstacles(world, config.obstacles)
-        
-        val loadedElements = com.areslib.sim.field.FieldElementLoader.loadElements(world, config.elementTypes, config.elements)
+        for (body in replacementBodies) world.addBody(body)
         balls.addAll(loadedElements)
         if (debug) println("[FRC Sim] Successfully built world with ${config.obstacles.size} obstacles and ${config.elements.size} elements.")
     }
 
-    /** Teleports the robot using field meters and a CCW-positive heading in radians. */
+    /** Teleports using finite field meters and CCW radians, discarding velocity and old effort. */
     fun resetPose(x: Double, y: Double, heading: Double) {
+        require(x.isFinite() && y.isFinite() && heading.isFinite()) { "Reset pose must be finite" }
         robotBody.transform.setTranslation(x, y)
         robotBody.transform.setRotation(heading)
+        robotBody.clearForce()
+        robotBody.clearTorque()
+        robotBody.clearAccumulatedForce()
+        robotBody.clearAccumulatedTorque()
         robotBody.linearVelocity.set(0.0, 0.0)
         robotBody.angularVelocity = 0.0
         robotBody.isAtRest = false

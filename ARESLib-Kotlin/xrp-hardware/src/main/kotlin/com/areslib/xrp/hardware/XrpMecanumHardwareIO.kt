@@ -2,6 +2,7 @@ package com.areslib.xrp.hardware
 
 import com.areslib.kinematics.MecanumKinematics
 import com.areslib.math.geometry.ChassisSpeeds
+import kotlin.math.abs
 
 /**
  * High-level hardware IO contract for a 4-wheel Mecanum XRP Drivetrain.
@@ -14,34 +15,43 @@ interface XrpMecanumHardwareIO {
     val kinematics: MecanumKinematics
     val wheelRadiusMeters: Double
 
+    /** Invalid coupled commands neutralize all four motors; incomplete writes attempt every stop. */
     fun setPowers(fl: Double, fr: Double, bl: Double, br: Double) {
-        frontLeftMotor.effort = fl.coerceIn(-1.0, 1.0)
-        frontRightMotor.effort = fr.coerceIn(-1.0, 1.0)
-        backLeftMotor.effort = bl.coerceIn(-1.0, 1.0)
-        backRightMotor.effort = br.coerceIn(-1.0, 1.0)
+        val valid = fl.isFinite() && fr.isFinite() && bl.isFinite() && br.isFinite()
+        neutralizeOnFailure {
+            frontLeftMotor.effort = if (valid) fl.coerceIn(-1.0, 1.0) else 0.0
+            frontRightMotor.effort = if (valid) fr.coerceIn(-1.0, 1.0) else 0.0
+            backLeftMotor.effort = if (valid) bl.coerceIn(-1.0, 1.0) else 0.0
+            backRightMotor.effort = if (valid) br.coerceIn(-1.0, 1.0) else 0.0
+        }
     }
 
+    /**
+     * Scales wheel speeds together before converting to power. This default allocates scratch;
+     * the standard implementation reuses a buffer. Enable, freshness and fault-latch ownership
+     * remains with robot controllers and concrete motor adapters, outside this raw IO layer.
+     */
     fun drive(chassisSpeeds: ChassisSpeeds, maxLinearSpeedMps: Double = 0.85) {
-        val speeds = kinematics.toWheelSpeeds(chassisSpeeds)
-        val flP = if (maxLinearSpeedMps > 0.0) speeds.frontLeftMetersPerSecond / maxLinearSpeedMps else 0.0
-        val frP = if (maxLinearSpeedMps > 0.0) speeds.frontRightMetersPerSecond / maxLinearSpeedMps else 0.0
-        val blP = if (maxLinearSpeedMps > 0.0) speeds.backLeftMetersPerSecond / maxLinearSpeedMps else 0.0
-        val brP = if (maxLinearSpeedMps > 0.0) speeds.backRightMetersPerSecond / maxLinearSpeedMps else 0.0
-        setPowers(flP, frP, blP, brP)
+        applyMecanumDrive(this, chassisSpeeds, maxLinearSpeedMps, DoubleArray(4))
     }
 
+    /** Attempts every stop, preserving the first failure and suppressing later distinct failures. */
     fun stop() {
-        frontLeftMotor.stop()
-        frontRightMotor.stop()
-        backLeftMotor.stop()
-        backRightMotor.stop()
+        var failure = attemptMotorStop(null) { frontLeftMotor.stop() }
+        failure = attemptMotorStop(failure) { frontRightMotor.stop() }
+        failure = attemptMotorStop(failure) { backLeftMotor.stop() }
+        failure = attemptMotorStop(failure) { backRightMotor.stop() }
+        if (failure != null) throw failure
     }
 
+    /** Refreshes each motor once on success; incomplete refresh attempts all neutral outputs. */
     fun update() {
-        frontLeftMotor.update()
-        frontRightMotor.update()
-        backLeftMotor.update()
-        backRightMotor.update()
+        neutralizeOnFailure {
+            frontLeftMotor.update()
+            frontRightMotor.update()
+            backLeftMotor.update()
+            backRightMotor.update()
+        }
     }
 }
 
@@ -52,7 +62,50 @@ open class StandardXrpMecanumHardwareIO(
     override val backRightMotor: XrpMotorIO = XrpMotorDouble(4),
     trackWidthMeters: Double = 0.155,
     wheelBaseMeters: Double = 0.140,
-    override val wheelRadiusMeters: Double = 0.030
+    wheelRadiusMeters: Double = 0.030
 ) : XrpMecanumHardwareIO {
+    override val wheelRadiusMeters: Double = wheelRadiusMeters.also { radius ->
+        require(radius.isFinite() && radius > 0.0) {
+            "wheelRadiusMeters must be finite and positive"
+        }
+    }
     override val kinematics: MecanumKinematics = MecanumKinematics(trackWidthMeters, wheelBaseMeters)
+    private val wheelSpeeds = DoubleArray(4)
+
+    /** Single-owner periodic drive path using preallocated wheel scratch. */
+    override fun drive(chassisSpeeds: ChassisSpeeds, maxLinearSpeedMps: Double) {
+        applyMecanumDrive(this, chassisSpeeds, maxLinearSpeedMps, wheelSpeeds)
+    }
+}
+
+private fun applyMecanumDrive(io: XrpMecanumHardwareIO, speeds: ChassisSpeeds, maximum: Double, output: DoubleArray) {
+    val vx = speeds.vxMetersPerSecond
+    val vy = speeds.vyMetersPerSecond
+    val omega = speeds.omegaRadiansPerSecond
+    if (!maximum.isFinite() || maximum <= 0.0 || !vx.isFinite() || !vy.isFinite() || !omega.isFinite()) {
+        io.setPowers(0.0, 0.0, 0.0, 0.0)
+        return
+    }
+    io.kinematics.toWheelSpeeds(vx, vy, omega, output)
+    // Convert directly to normalized power; an intermediate tiny speed can round away a
+    // representable power ratio. Invalid wheel vectors reach setPowers as invalid and neutralize.
+    val divisor = maxOf(maximum, maxOf(maxOf(abs(output[0]), abs(output[1])), maxOf(abs(output[2]), abs(output[3]))))
+    io.setPowers(output[0] / divisor, output[1] / divisor, output[2] / divisor, output[3] / divisor)
+}
+
+private inline fun attemptMotorStop(failure: Throwable?, stop: () -> Unit): Throwable? {
+    try { stop() } catch (caught: Throwable) {
+        if (failure == null) return caught
+        if (caught !== failure) failure.addSuppressed(caught)
+    }
+    return failure
+}
+
+private inline fun XrpMecanumHardwareIO.neutralizeOnFailure(operation: () -> Unit) {
+    try { operation() } catch (failure: Throwable) {
+        try { stop() } catch (cleanup: Throwable) {
+            if (cleanup !== failure) failure.addSuppressed(cleanup)
+        }
+        throw failure
+    }
 }

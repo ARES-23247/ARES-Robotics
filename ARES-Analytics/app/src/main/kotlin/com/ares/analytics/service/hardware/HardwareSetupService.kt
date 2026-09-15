@@ -4,7 +4,8 @@ import com.ares.analytics.service.drivebase.DriveHardwareRole
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
 import com.ares.analytics.service.commissioning.CommissioningSimulationSummary
 import com.ares.analytics.service.commissioning.CommissioningVerificationService
-import com.ares.analytics.service.writeFileAtomically
+import com.ares.analytics.service.BeforeAtomicReplace
+import com.ares.analytics.service.NO_OP_BEFORE_ATOMIC_REPLACE
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.project.persistence.SubsystemProjectRepository
 import com.ares.analytics.util.Sha256
@@ -18,8 +19,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
 import java.time.Clock
 
 enum class HardwareInventoryOwner { DRIVEBASE, SUBSYSTEM }
@@ -30,7 +29,7 @@ enum class HardwareAddressKind(val label: String) {
     CAN("CAN device"),
     PWM("PWM channel"),
     I2C("I2C device"),
-    DIO("digital-input channel"),
+    DIO("digital I/O channel"),
     ANALOG("analog-input channel"),
     SPI("SPI device"),
     PNEUMATICS("pneumatics module/channel"),
@@ -102,10 +101,15 @@ data class HardwareSetupSnapshot(
         get() = issues.filter { it.severity == HardwareIssueSeverity.ERROR }
 
     val canReview: Boolean
-        get() = items.isNotEmpty() && errorIssues.isEmpty()
+        get() = items.isNotEmpty() && issues.none { it.severity == HardwareIssueSeverity.ERROR }
+
+    val readyForPhysicalValidation: Boolean
+        get() = canReview && reviewStatus == HardwareReviewStatus.CURRENT && simulationVerification.verified
 }
 
 data class HardwareReviewRequest(
+    /** Inventory shown when these human checks were completed; never inferred again at save time. */
+    val expectedInventoryHash: String,
     val reviewerName: String,
     val wiringMatched: Boolean,
     val addressesChecked: Boolean,
@@ -122,6 +126,8 @@ data class HardwarePhysicalValidationEvidence(
 )
 
 data class HardwarePhysicalValidationRequest(
+    /** Inventory shown when these human checks were completed; never inferred again at save time. */
+    val expectedInventoryHash: String,
     val validatedBy: String,
     val evidenceSummary: String,
     val directionsAndPolarityTested: Boolean,
@@ -165,6 +171,11 @@ private data class HardwarePhysicalValidationDocument(
     val faultRecoveryTested: Boolean,
 )
 
+private data class HardwareInspection(
+    val snapshot: HardwareSetupSnapshot,
+    val sources: List<HardwareSourceFingerprint>,
+)
+
 private data class HardwareReviewReadResult(
     val status: HardwareReviewStatus,
     val reviewedBy: String?,
@@ -189,8 +200,12 @@ class HardwareSetupService(
     private val subsystemRepository: SubsystemProjectRepository = SubsystemProjectRepository(),
     private val commissioningVerificationService: CommissioningVerificationService = CommissioningVerificationService(),
     private val clock: Clock = Clock.systemUTC(),
+    /** Test seam after evidence bytes are prepared and before their publication. */
+    private val beforeEvidencePublish: BeforeAtomicReplace = NO_OP_BEFORE_ATOMIC_REPLACE,
 ) {
-    fun inspect(projectPath: String, league: League): HardwareSetupSnapshot {
+    fun inspect(projectPath: String, league: League): HardwareSetupSnapshot = inspectHardware(projectPath, league).snapshot
+
+    private fun inspectHardware(projectPath: String, league: League): HardwareInspection {
         val root = File(projectPath).canonicalFile
         require(root.isDirectory) { "Project directory does not exist: ${root.path}" }
 
@@ -363,11 +378,13 @@ class HardwareSetupService(
             )
         }
         items.filter { it.address.isNotBlank() }
-            .groupBy(::collisionKey)
+            .flatMap { item -> collisionKeys(item).map { key -> key to item } }
+            .groupBy({ it.first }, { it.second })
             .filterValues { it.size > 1 }
-            .values
-            .forEach { conflicts ->
-                val address = conflicts.first().addressDescription
+            .forEach { (key, conflicts) ->
+                val address = if (key.startsWith("dio:")) {
+                    "${HardwareAddressKind.DIO.label}: ${key.removePrefix("dio:")}"
+                } else conflicts.first().addressDescription
                 issues += HardwareInventoryIssue(
                     HardwareIssueSeverity.ERROR,
                     "$address is claimed by ${conflicts.joinToString { "${it.ownerDisplayName} / ${it.displayName}" }}. Physical addresses must have one owner.",
@@ -391,7 +408,7 @@ class HardwareSetupService(
         val review = readReview(root, league, inventoryHash, normalizedSources, issues)
         val simulationVerification = commissioningVerificationService.verify(subsystemDocuments)
 
-        return HardwareSetupSnapshot(
+        val snapshot = HardwareSetupSnapshot(
             projectPath = root.path,
             league = league,
             inventoryHash = inventoryHash,
@@ -402,15 +419,18 @@ class HardwareSetupService(
             reviewStatus = review.status,
             reviewedBy = review.reviewedBy,
             simulationVerification = simulationVerification,
-            physicalValidation = review.physicalValidation,
+            physicalValidation = review.physicalValidation.takeIf { issues.none { it.severity == HardwareIssueSeverity.ERROR } },
         )
+        return HardwareInspection(snapshot, normalizedSources)
     }
 
     fun saveReview(projectPath: String, league: League, request: HardwareReviewRequest): HardwareSetupSnapshot {
-        val snapshot = inspect(projectPath, league)
+        val inspection = inspectHardware(projectPath, league)
+        val snapshot = inspection.snapshot
         require(snapshot.canReview) {
             snapshot.errorIssues.joinToString(" ") { it.message }.ifBlank { "Fix hardware mapping errors before recording a review." }
         }
+        requireReviewedInventory(snapshot, request.expectedInventoryHash)
         val reviewer = request.reviewerName.trim()
         require(reviewer.length in 2..80) { "Enter the name of the team member who compared the configuration with the robot." }
         require(
@@ -418,13 +438,14 @@ class HardwareSetupService(
                 request.neutralOutputsChecked && request.limitsChecked,
         ) { "Complete every hardware review check before recording the review." }
 
-        val sourcePaths = snapshot.items.map(HardwareInventoryItem::sourcePath).distinct().sorted()
-        val sources = sourcePaths.map { path ->
-            val file = File(snapshot.projectPath, path).canonicalFile
-            require(file.isFile && file.toPath().startsWith(File(snapshot.projectPath).canonicalFile.toPath())) {
-                "Hardware source $path is missing or outside the project."
+        // Preserve the same descriptor hashes used to construct inventoryHash. Re-reading here
+        // could combine an earlier inventory with sources edited while its inspection completed.
+        val projectRoot = File(snapshot.projectPath).canonicalFile.toPath()
+        inspection.sources.forEach { source ->
+            val file = File(snapshot.projectPath, source.path).canonicalFile
+            require(file.isFile && file.toPath().startsWith(projectRoot)) {
+                "Hardware source ${source.path} is missing or outside the project."
             }
-            sourceFingerprint(path, file)
         }
         val review = HardwareReviewDocument(
             league = league.name,
@@ -435,10 +456,10 @@ class HardwareSetupService(
             directionsChecked = true,
             neutralOutputsChecked = true,
             limitsChecked = true,
-            sources = sources,
+            sources = inspection.sources,
             recordedAtEpochMillis = clock.millis(),
         )
-        appendEvidence(configurationReviewDirectory(File(snapshot.projectPath)), review.recordedAtEpochMillis, review)
+        appendEvidence(File(snapshot.projectPath), HardwareEvidenceKind.CONFIGURATION, review.recordedAtEpochMillis, review)
         return inspect(projectPath, league)
     }
 
@@ -448,12 +469,15 @@ class HardwareSetupService(
         request: HardwarePhysicalValidationRequest,
     ): HardwareSetupSnapshot {
         val snapshot = inspect(projectPath, league)
-        require(snapshot.reviewStatus == HardwareReviewStatus.CURRENT) {
-            "Record a current configuration review before physical validation."
+        require(snapshot.readyForPhysicalValidation) {
+            when {
+                !snapshot.canReview -> "Resolve hardware inventory errors before physical validation."
+                snapshot.reviewStatus != HardwareReviewStatus.CURRENT ->
+                    "Record a current configuration review before physical validation."
+                else -> "Resolve deterministic commissioning simulation failures before physical validation."
+            }
         }
-        require(snapshot.simulationVerification.verified) {
-            "Resolve deterministic commissioning simulation failures before physical validation."
-        }
+        requireReviewedInventory(snapshot, request.expectedInventoryHash)
         val validator = request.validatedBy.trim()
         val evidence = request.evidenceSummary.trim()
         require(validator.length in 2..80) { "Enter the team member who performed the physical checks." }
@@ -476,7 +500,7 @@ class HardwareSetupService(
             limitsAndCurrentTested = true,
             faultRecoveryTested = true,
         )
-        appendEvidence(physicalValidationDirectory(File(snapshot.projectPath)), validation.recordedAtEpochMillis, validation)
+        appendEvidence(File(snapshot.projectPath), HardwareEvidenceKind.PHYSICAL, validation.recordedAtEpochMillis, validation)
         return inspect(projectPath, league)
     }
 
@@ -506,9 +530,8 @@ class HardwareSetupService(
         currentSources: List<HardwareSourceFingerprint>,
         issues: MutableList<HardwareInventoryIssue>,
     ): HardwareReviewReadResult {
-        val reviewFiles = configurationReviewDirectory(root).listFiles { file -> file.isFile && file.extension == "json" }
-            ?.sortedByDescending(File::getName)
-            .orEmpty()
+        val evidence = HardwareEvidenceStore(root.toPath())
+        val reviewFiles = evidence.files(HardwareEvidenceKind.CONFIGURATION).sortedByDescending(File::getName)
         if (reviewFiles.isEmpty()) return HardwareReviewReadResult(HardwareReviewStatus.NOT_REVIEWED, null, null)
         val decodedReviews = reviewFiles.mapNotNull { file ->
             runCatching { HARDWARE_REVIEW_JSON.decodeFromString<HardwareReviewDocument>(file.readText()) }
@@ -536,10 +559,8 @@ class HardwareSetupService(
             review.inventoryHash == inventoryHash && review.sources.sortedBy(HardwareSourceFingerprint::path) == currentSources
         }
         return if (currentReview != null) {
-            val physical = physicalValidationDirectory(root)
-                .listFiles { file -> file.isFile && file.extension == "json" }
-                ?.sortedByDescending(File::getName)
-                .orEmpty()
+            val physical = evidence.files(HardwareEvidenceKind.PHYSICAL)
+                .sortedByDescending(File::getName)
                 .asSequence()
                 .mapNotNull { file ->
                     runCatching { HARDWARE_REVIEW_JSON.decodeFromString<HardwarePhysicalValidationDocument>(file.readText()) }
@@ -564,6 +585,12 @@ class HardwareSetupService(
             HardwareReviewReadResult(HardwareReviewStatus.STALE, validReviews.first().reviewedBy, null)
         }
     }
+
+    private fun collisionKeys(item: HardwareInventoryItem): List<String> =
+        if (item.addressKind == HardwareAddressKind.DIO) {
+            // A quadrature encoder owns each channel, not one composite "A/B" address.
+            item.address.split('/').map { "dio:$it" }
+        } else listOf(collisionKey(item))
 
     private fun collisionKey(item: HardwareInventoryItem): String = when (item.addressKind) {
         HardwareAddressKind.FTC_HARDWARE_MAP -> "ftc:${item.address.lowercase()}"
@@ -602,34 +629,14 @@ class HardwareSetupService(
         return Sha256.hex(canonical)
     }
 
-    private fun configurationReviewDirectory(root: File): File = File(root, ".ares/evidence/hardware/configuration")
-
-    private fun physicalValidationDirectory(root: File): File = File(root, ".ares/evidence/hardware/physical")
-
-    private inline fun <reified T> appendEvidence(directory: File, recordedAtEpochMillis: Long, document: T) {
+    private inline fun <reified T> appendEvidence(root: File, kind: HardwareEvidenceKind, recordedAtEpochMillis: Long, document: T) {
         val encoded = HARDWARE_REVIEW_JSON.encodeToString(document).trimEnd() + System.lineSeparator()
-        val hash = Sha256.hex(encoded).take(12)
-        val target = File(directory, "$recordedAtEpochMillis-$hash.json")
-        require(!target.exists()) { "This exact evidence record already exists; append-only evidence is never replaced." }
-        writeFileAtomically(target) { temporary ->
-            Files.writeString(
-                temporary.toPath(),
-                encoded,
-                StandardOpenOption.TRUNCATE_EXISTING,
-                StandardOpenOption.WRITE,
-            )
-        }
+        HardwareEvidenceStore(root.toPath()).append(kind, recordedAtEpochMillis, encoded, beforeEvidencePublish)
     }
 
-    private fun sourceFingerprint(path: String, file: File): HardwareSourceFingerprint {
-        val hash = when {
-            file.extension.equals("aresdrivetrain", ignoreCase = true) ->
-                DrivetrainDocumentCodec.contentHash(DrivetrainDocumentCodec.decode(file.readText()))
-            file.extension.equals("aressubsystem", ignoreCase = true) ->
-                SubsystemDocumentCodec.contentHash(SubsystemDocumentCodec.decode(file.readText()))
-            else -> error("Unsupported hardware source $path")
+    private fun requireReviewedInventory(snapshot: HardwareSetupSnapshot, expectedInventoryHash: String) {
+        require(snapshot.inventoryHash == expectedInventoryHash) {
+            "Hardware configuration changed since this checklist was loaded. Refresh Hardware Setup and repeat the checks for the current inventory."
         }
-        return HardwareSourceFingerprint(path, hash)
     }
-
 }

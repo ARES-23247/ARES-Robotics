@@ -12,9 +12,10 @@ import com.areslib.math.geometry.Rotation2d
  * - Drive Speed (`speedMetersPerSecond`): Linear wheel surface speed in meters per second ($m/s$).
  * - Steering Angle (`angle`): [Rotation2d] orientation in radians ($rad$), **CCW-positive** (0° = +X forward).
  *
- * ### Zero-GC Compliance:
- * Fields are mutable (`var`) to allow [SwerveKinematics] to update pre-allocated module state array instances in-place,
- * guaranteeing zero heap allocations during 50Hz–1000Hz execution loops.
+ * ### Storage ownership:
+ * Mutable fields allow callers to reuse module-state instances and arrays. Speed normalization
+ * preserves the angle value. [Rotation2d] is an inline value class stored as a primitive here;
+ * replacing this field does not itself require a boxed angle. Owning arrays/state copies allocate.
  *
  * @property speedMetersPerSecond Target wheel drive velocity in meters per second ($m/s$).
  * @property angle Target module steering orientation as a [Rotation2d] instance ($rad$, CCW positive).

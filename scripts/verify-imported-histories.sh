@@ -17,6 +17,10 @@ for record in "${imports[@]}"; do
   IFS='|' read -r path import_commit source_commit <<< "$record"
   git cat-file -e "${import_commit}^{commit}"
   git cat-file -e "${source_commit}^{commit}"
+  if ! git merge-base --is-ancestor "$import_commit" HEAD; then
+    echo "$path import commit is not an ancestor of HEAD." >&2
+    exit 1
+  fi
   git merge-base --is-ancestor "$source_commit" HEAD
   imported_tree="$(git rev-parse "${import_commit}:${path}")"
   source_tree="$(git rev-parse "${source_commit}^{tree}")"

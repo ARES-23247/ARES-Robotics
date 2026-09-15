@@ -24,6 +24,10 @@ Thumbs.db
 **/logs/
 ares_run_summary.json
 
+# Local calibration output; persistence tests use an isolated temporary storage root.
+/frc-hardware/backups/
+/frc-hardware/swerve_offsets_runtime.json
+
 # Local experiments
 scratch/
 # Scratch crash-test main, never shipped

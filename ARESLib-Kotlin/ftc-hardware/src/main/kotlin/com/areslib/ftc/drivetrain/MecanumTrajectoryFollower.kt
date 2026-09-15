@@ -1,9 +1,13 @@
 package com.areslib.ftc.drivetrain
 
 import com.areslib.Store
+import com.areslib.action.RobotAction
+import com.areslib.pathing.FieldWaypoint
+import com.areslib.sequencer.TaskStateMachine
+import com.areslib.sequencer.TaskStatus
+import com.areslib.sequencer.TaskTimeoutManager
 import com.areslib.ftc.telemetry.FtcTelemetryManager
 import com.areslib.math.geometry.Pose2d
-import com.areslib.math.geometry.Rotation2d
 import com.areslib.pathing.AutoBuilder
 import com.areslib.pathing.Costmap
 import com.areslib.pathing.FieldWaypointLoader
@@ -25,8 +29,9 @@ import com.areslib.util.RobotClock
  * - **Heading**: Radians ($rad$), **CCW-positive** standard ($0 = +X$, $\pi/2 = +Y$).
  * - **Velocities & Limits**: Scaled by tuning parameters `pathVelocityScale` and acceleration limit `pathAccelerationLimit` ($m/s, m/s^2$).
  *
- * ### Zero-GC Guarantee:
- * Once [activePathfindTask] is initialized, trajectory evaluation loops execute with zero dynamic heap allocations.
+ * Calls belong to one robot loop. Planning and file reloads allocate on explicit request edges;
+ * held waypoint lookups reuse their pose. The delegated follower and immutable Redux actions
+ * can still allocate during motion. Failed requests require release before another planning attempt.
  *
  * @param drive Drive subsystem reference for motion commands.
  *
@@ -48,6 +53,11 @@ class MecanumTrajectoryFollower(
         private set
 
     private var pathfindStartMs = 0L
+    private val idlePose = Pose2d()
+    private var cachedWaypoint: FieldWaypoint? = null
+    private var cachedWaypointPose = idlePose
+    private var missingWaypointName: String? = null
+    private var missingWaypointMessage = ""
 
     /** Status flag indicating whether pathfinding was requested in the previous loop frame. */
     var wasPathfindRequested = false
@@ -70,50 +80,84 @@ class MecanumTrajectoryFollower(
         isRequested: Boolean,
         mirrorForAlliance: Boolean = true
     ) {
+        if (!isRequested) {
+            wasPathfindRequested = false
+            activePathfindTask?.let { finishTask(store, it, interrupted = true) }
+            return
+        }
+        if (wasPathfindRequested && activePathfindTask == null) return
+
         val now = RobotClock.currentTimeMillis()
-        val task = activePathfindTask
-        val elapsed = if (task != null) now - pathfindStartMs else 0L
-
-        when {
-            isRequested && !wasPathfindRequested -> {
+        try {
+            if (!wasPathfindRequested) {
+                // Latch before planning or dispatch: a throwing request must not restart every frame.
+                wasPathfindRequested = true
                 val config = RobotFieldManager.activeConfig
-                val costmap = Costmap.fromFieldConfig(config)
-
-                activePathfindTask = PathfindToPoseTask(
+                val task = PathfindToPoseTask(
                     targetPose = targetPose,
                     follower = pathfindFollower,
-                    costmap = costmap,
+                    costmap = Costmap.fromFieldConfig(config),
                     maxVelocityMps = mecanumIO.maxWheelSpeedMetersPerSecond * store.state.tuning.drive.pathVelocityScale,
                     maxAccelerationMps2 = store.state.tuning.drive.pathAccelerationLimit,
                     mirrorForAlliance = mirrorForAlliance,
                     symmetry = config.allianceSymmetry,
                     authoredAlliance = com.areslib.state.Alliance.RED
                 )
-
+                activePathfindTask = task
                 pathfindStartMs = now
-                val initActions = activePathfindTask!!.initialize(store.state)
-                initActions.forEach { store.dispatch(it) }
-                wasPathfindRequested = true
-            }
-            isRequested && wasPathfindRequested && task != null && task.isCompleted(store.state, elapsed) -> {
-                val endActions = task.end(store.state, interrupted = false)
-                endActions.forEach { store.dispatch(it) }
-                activePathfindTask = null
-            }
-            isRequested && wasPathfindRequested && task != null -> {
-                val execActions = task.execute(store.state, elapsed)
-                execActions.forEach { store.dispatch(it) }
-            }
-            !isRequested && wasPathfindRequested -> {
-                if (task != null) {
-                    val endActions = task.end(store.state, interrupted = true)
-                    endActions.forEach { store.dispatch(it) }
+                dispatch(store, task.initialize(store.state))
+                if (TaskStateMachine.getStatus(task) != TaskStatus.RUNNING) {
+                    finishTask(store, task, interrupted = false)
                 }
-                pathfindFollower.stop()
-                activePathfindTask = null
-                wasPathfindRequested = false
+                return
             }
+            val task = activePathfindTask ?: return
+            val elapsed = now - pathfindStartMs
+            if (now < pathfindStartMs || elapsed < 0L || TaskTimeoutManager.isTimedOut(task, elapsed)) {
+                TaskStateMachine.markFailed(task)
+            }
+            val completed = TaskStateMachine.getStatus(task) == TaskStatus.RUNNING &&
+                task.isCompleted(store.state, elapsed)
+            if (completed || TaskStateMachine.getStatus(task) != TaskStatus.RUNNING) {
+                finishTask(store, task, interrupted = false)
+            } else {
+                dispatch(store, task.execute(store.state, elapsed))
+                if (TaskStateMachine.getStatus(task) != TaskStatus.RUNNING) {
+                    finishTask(store, task, interrupted = false)
+                }
+            }
+        } catch (failure: Throwable) {
+            val task = activePathfindTask
+            if (task != null) TaskStateMachine.markFailed(task)
+            try {
+                if (task != null) finishTask(store, task, interrupted = true)
+                else pathfindFollower.stop()
+            } catch (cleanupFailure: Throwable) {
+                if (cleanupFailure !== failure) failure.addSuppressed(cleanupFailure)
+            }
+            throw failure
         }
+    }
+
+    private fun dispatch(store: Store, actions: List<RobotAction>) {
+        var index = 0
+        while (index < actions.size) store.dispatch(actions[index++])
+    }
+
+    private fun finishTask(store: Store, task: PathfindToPoseTask, interrupted: Boolean) {
+        activePathfindTask = null
+        var failure: Throwable? = null
+        try { dispatch(store, task.end(store.state, interrupted)) }
+        catch (error: Throwable) { failure = error }
+        try { task.releaseRuntimeState() }
+        catch (error: Throwable) {
+            if (failure == null) failure = error else if (error !== failure) failure.addSuppressed(error)
+        }
+        try { pathfindFollower.stop() }
+        catch (error: Throwable) {
+            if (failure == null) failure = error else if (error !== failure) failure.addSuppressed(error)
+        }
+        failure?.let { throw it }
     }
 
     /**
@@ -135,14 +179,26 @@ class MecanumTrajectoryFollower(
         isRequested: Boolean,
         mirrorForAlliance: Boolean = true
     ) {
+        if (!isRequested) {
+            driveToPose(store, mecanumIO, idlePose, false, mirrorForAlliance)
+            return
+        }
         val wp = FieldWaypointLoader.getWaypoint(name)
         if (wp != null) {
-            driveToPose(store, mecanumIO, wp.toPose(), isRequested, mirrorForAlliance)
-        } else {
-            if (isRequested) {
-                telemetryManager.customDriverStationText["Error"] = "Waypoint '${name}' not found!"
+            if (cachedWaypoint !== wp) {
+                cachedWaypoint = wp
+                cachedWaypointPose = wp.toPose()
             }
-            driveToPose(store, mecanumIO, Pose2d(0.0, 0.0, Rotation2d(0.0)), false, false)
+            driveToPose(store, mecanumIO, cachedWaypointPose, true, mirrorForAlliance)
+        } else {
+            if (missingWaypointName != name) {
+                missingWaypointName = name
+                missingWaypointMessage = "Waypoint '$name' not found!"
+            }
+            if (telemetryManager.customDriverStationText["Error"] != missingWaypointMessage) {
+                telemetryManager.customDriverStationText["Error"] = missingWaypointMessage
+            }
+            driveToPose(store, mecanumIO, idlePose, false, false)
         }
     }
 

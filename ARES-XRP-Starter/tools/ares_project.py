@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import pathlib
+import pprint
 import subprocess
 import sys
 import unittest
@@ -40,10 +41,22 @@ def canonical_content_sha256() -> str:
     return digest.hexdigest()
 
 
+def _reject_json_constant(value: str):
+    raise ValueError(f"Non-finite JSON number: {value}")
+
+
+def _finite_json_float(value: str) -> float:
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"JSON number exceeds finite range: {value}")
+    return result
+
+
 def load_json(path: pathlib.Path) -> dict:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+        return json.loads(path.read_text(encoding="utf-8"),
+                          parse_constant=_reject_json_constant, parse_float=_finite_json_float)
+    except (OSError, ValueError) as error:
         raise ValueError(f"{path.relative_to(ROOT)} is not valid JSON: {error}") from error
 
 
@@ -65,6 +78,22 @@ def validate_controller_port(kind: str, channel: int | None, controller_model: s
         )
 
 
+def _require_finite_number(value, label: str) -> None:
+    try:
+        valid = type(value) in (int, float) and math.isfinite(value)
+    except OverflowError:
+        valid = False
+    if not valid:
+        raise ValueError(f"{label} must be a finite number")
+
+
+def _validate_routine_pose(pose, label: str) -> None:
+    if not isinstance(pose, dict):
+        raise ValueError(f"{label} must be a pose object")
+    for component in ("xMeters", "yMeters", "headingRadians"):
+        _require_finite_number(pose.get(component), f"{label}.{component}")
+
+
 def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict]]:
     catalog = load_json(ARES / "autonomous-catalog.json")
     default_id = catalog.get("defaultEntryId")
@@ -76,6 +105,8 @@ def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict
         routine_id = entry.get("routineId")
         if not entry_id or not routine_id:
             raise ValueError("Every enabled autonomous entry requires entryId and routineId")
+        if entry_id in routines:
+            raise ValueError(f"Duplicate enabled autonomous entry: {entry_id}")
         path = ARES / "routines" / f"{routine_id}.aresroutine"
         routine = load_json(path)
         if routine.get("schemaVersion") != 2 or routine.get("documentId") != routine_id:
@@ -84,11 +115,21 @@ def selected_routines(action_keys: set[str]) -> tuple[str | None, dict[str, dict
             kind = step.get("kind")
             if kind not in ("DRIVE_TO", "WAIT", "ACTION"):
                 raise ValueError(f"XRP routine {entry_id} contains unsupported step {kind}")
-            if kind == "WAIT" and float(step.get("durationSeconds", -1.0)) < 0.0:
-                raise ValueError(f"XRP routine {entry_id} has a negative wait")
+            if kind == "WAIT":
+                duration = step.get("durationSeconds")
+                _require_finite_number(duration, f"XRP routine {entry_id} wait duration")
+                if duration < 0.0:
+                    raise ValueError(f"XRP routine {entry_id} has a negative wait")
+            if kind == "DRIVE_TO":
+                drive = step.get("drive")
+                if not isinstance(drive, dict):
+                    raise ValueError(f"XRP routine {entry_id} requires a drive target")
+                _validate_routine_pose(drive.get("target"), f"XRP routine {entry_id} drive target")
             if kind == "ACTION" and step.get("actionKey") not in action_keys:
                 raise ValueError(f"XRP routine action {step.get('actionKey')} is not declared")
-        routine["_startingPose"] = entry.get("startingPose", {"xMeters": 0.0, "yMeters": 0.0, "headingRadians": 0.0})
+        starting_pose = entry.get("startingPose", {"xMeters": 0.0, "yMeters": 0.0, "headingRadians": 0.0})
+        _validate_routine_pose(starting_pose, f"XRP routine {entry_id} starting pose")
+        routine["_startingPose"] = starting_pose
         routines[entry_id] = routine
     if default_id is not None and default_id not in routines:
         raise ValueError("The default autonomous entry is missing or disabled")
@@ -283,12 +324,12 @@ def generated_source(project: dict, drivebase: dict, default_routine_id: str | N
             separators=(",", ":"),
         ).encode("utf-8")
     ).hexdigest()
-    encoded = json.dumps(values, sort_keys=True, indent=4)
+    encoded = pprint.pformat(values, sort_dicts=True, width=100)
     return (
         '"""Generated from .ares documents. Do not edit by hand."""\n\n'
         "from ares_micro import AutonomousRoutine, GeneratedXrpSubsystem, Waypoint\n\n"
         f"CONTENT_SHA256 = {content_hash!r}\n"
-        f"PROJECT = {encoded.replace('true', 'True').replace('false', 'False').replace('null', 'None')}\n"
+        f"PROJECT = {encoded}\n"
         f"DEFAULT_AUTONOMOUS_ID = {repr(default_routine_id)}\n"
         f"AUTONOMOUS_ROUTINES = {repr(generated_routines)}\n"
         f"SUBSYSTEMS = {repr(subsystems)}\n\n"
@@ -393,8 +434,8 @@ class GeneratedSafetyTest(unittest.TestCase):
             self.assertIn(default_id, routines)
 
     def test_generated_superstructure_references_and_interlocks_are_valid(self):
-        from pathlib import Path
-        self.assertFalse(list((Path.cwd() / ".ares" / "superstructures").glob("*.aressuperstructure")),
+        from tools import ares_project
+        self.assertFalse(list((ares_project.ROOT / ".ares" / "superstructures").glob("*.aressuperstructure")),
                          "XRP superstructures are not a generated runtime capability")
 
     def test_fail_closed_link_policy(self):
@@ -523,30 +564,41 @@ class RecordingTestResult(unittest.TextTestResult):
         super().addSuccess(test)
 
 
+def _xml_text(value: str) -> str:
+    # XML 1.0 cannot represent control characters or lone surrogate code points.
+    return "".join(char if (char in "\t\n\r" or 0x20 <= ord(char) <= 0xD7FF or
+                           0xE000 <= ord(char) <= 0xFFFD or 0x10000 <= ord(char) <= 0x10FFFF)
+                   else "\uFFFD" for char in value)
+
+
 def write_junit_report(result) -> None:
-    failures = {test.id(): detail for test, detail in result.failures}
-    errors = {test.id(): detail for test, detail in result.errors}
-    skipped = {test.id(): reason for test, reason in result.skipped}
-    tests = list(result.successes) + [test for test, _ in result.failures + result.errors + result.skipped]
+    # Keep each outcome: repeated subtest IDs must not collapse in a dictionary.
+    outcomes = [(test, None, "", "") for test in result.successes]
+    outcomes += [(test, "failure", "assertion failed", detail) for test, detail in result.failures]
+    outcomes += [(test, "error", "test error", detail) for test, detail in result.errors]
+    outcomes += [(test, "skipped", reason, "") for test, reason in result.skipped]
+    outcomes += [(test, "skipped", "expected failure", detail) for test, detail in result.expectedFailures]
+    outcomes += [(test, "failure", "unexpected success", "Test marked expectedFailure passed unexpectedly")
+                 for test in result.unexpectedSuccesses]
     suite = ET.Element("testsuite", {
         "name": "ares-xrp",
-        "tests": str(len(tests)),
-        "failures": str(len(failures)),
-        "errors": str(len(errors)),
-        "skipped": str(len(skipped)),
+        "tests": str(len(outcomes)),
+        "failures": str(sum(kind == "failure" for _, kind, _, _ in outcomes)),
+        "errors": str(sum(kind == "error" for _, kind, _, _ in outcomes)),
+        "skipped": str(sum(kind == "skipped" for _, kind, _, _ in outcomes)),
     })
-    for test_case in sorted(tests, key=lambda item: item.id()):
+    for test_case, kind, message, detail in sorted(outcomes, key=lambda item: item[0].id()):
         identity = test_case.id()
+        # Subtest IDs include parameters, which can themselves contain dots.
+        parent = getattr(test_case, "test_case", test_case)
+        classname = parent.id().rsplit(".", 1)[0]
+        name = identity[len(classname) + 1:] if identity.startswith(classname + ".") else identity
         case = ET.SubElement(suite, "testcase", {
-            "classname": identity.rsplit(".", 1)[0],
-            "name": getattr(test_case, "_testMethodName", identity),
+            "classname": _xml_text(classname),
+            "name": _xml_text(name),
         })
-        if identity in failures:
-            ET.SubElement(case, "failure", {"message": "assertion failed"}).text = failures[identity]
-        elif identity in errors:
-            ET.SubElement(case, "error", {"message": "test error"}).text = errors[identity]
-        elif identity in skipped:
-            ET.SubElement(case, "skipped", {"message": skipped[identity]})
+        if kind is not None:
+            ET.SubElement(case, kind, {"message": _xml_text(message)}).text = _xml_text(detail)
     TEST_RESULTS.mkdir(parents=True, exist_ok=True)
     ET.ElementTree(suite).write(TEST_RESULTS / "TEST-ares-xrp.xml", encoding="utf-8", xml_declaration=True)
 

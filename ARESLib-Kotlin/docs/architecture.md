@@ -27,6 +27,31 @@ rootReducer + season reducer  ---> immutable RobotState
 
 Reducers calculate state only. Device reads, telemetry writes, file access, clocks, and background work belong outside reducers.
 
+The shared robot facade registers subsystems once by identity during initialization and exposes
+stable read-only registry snapshots. Its single-owner read/write loops use indexed traversal;
+nonfinite power scale becomes neutral and finite scale is bounded to zero through one.
+Subsystems must enforce enable, configuration and fresh-feedback policy and honor declared
+neutral when scale is zero. Platform owners catch loop failures and neutralize the robot.
+Subsystem closure is terminal: every neutral is attempted before any close, then every resource
+gets a close attempt. Ordinary cleanup exceptions retain best-effort behavior; serious throwables
+are reported after remaining attempts. FTC shutdown includes this shared subsystem teardown.
+
+Generated capability catalogs are setup-time data. Subsystem IDs and manual action keys must
+be unique; an equal generated descriptor can coexist with its one manual declaration.
+Range-filtered lighting choices always contain their declared default.
+
+Unchanged path progress and repeated indicator, Prism or identical subsystem instances reuse
+their existing slices. The root reuses its snapshot only when every reduced slice and the action
+timestamp are unchanged. Store observers still receive each dispatch. Custom subsystem values
+must be immutable; a distinct instance is published without invoking user-defined equality.
+Path values retain their existing shared ownership: do not mutate their point/event lists or
+payloads while a retained state or follower uses them.
+
+Vision retention copies pooled measurements into scalar immutable snapshots, including all three
+poses. Mutable rotations and retained poses share Euler extraction, including the roll-zero
+representation at pitch singularities and accurate pitch near them. Quaternion components must
+remain unit length; snapshot capture does not validate sensor data.
+
 ## Module boundaries
 
 ### `core`
@@ -47,13 +72,36 @@ Reducers calculate state only. Device reads, telemetry writes, file access, cloc
 
 Do not put FTC SDK, WPILib, CTRE, REV, or Android types in this module.
 
+The core current-budget model requires finite positive electrical parameters. Re-registering the
+same motor/model preserves its calibration; changing the model replaces that motor's slot and
+clears the learned correction. Missing battery voltage, invalid motor observations or failed
+cached getters produce unknown current and zero available power until valid observations recover.
+Callers must use fresh cached observations; a model estimate is not a physical fuse-trip guarantee.
+For registered branch observations, `updateFromCurrentSources` reconciles each measured branch
+against the calibrated motor samples from that same update. Unknown non-motor leaves invalidate
+the budget; ambiguous overlapping coverage retains a conservative total. The FTC coordinator
+removes obsolete registry-owned model slots while preserving surviving calibration and explicitly
+external models. Ordinary `update` remains available for a known independent additional load.
+
 ### `ftc-hardware`
 
 This module adapts FTC devices to ARESLib contracts. Important boundaries include `FtcBaseRobot`, `FtcMecanumRobot`, `MecanumHardwareIO`, `PinpointIO`, FTC vision adapters, cached hardware wrappers, and bulk sensor readers. `ftc-mocks` is compile-only for production and present at test runtime; it is not shipped as robot hardware code by this module.
 
+In native Mecanum velocity mode, live PID updates configure all four hub channels. The
+three-argument `updateMotorGains` preserves each channel's accepted F coefficient; its four-argument
+overload supplies F explicitly. Changed native settings require neutral first. A failed update
+inhibits output until valid configuration is reapplied and explicit neutral recovery succeeds.
+Unchanged accepted settings perform no coefficient reads or writes. Software velocity mode keeps
+PID feedback separate from chassis feedforward. Motor and servo command caches force a retry
+after uncertain writes, including requests to return to the previously accepted command.
+The tuning controller validates its complete consumed proposal before changing hardware, reuses
+unchanged geometry, and restores construction gains when `motorGains` becomes null. Disabling
+kV-derived speed limits restores the construction speed limit. A rejected proposal requires valid
+tuning followed by explicit neutral recovery; clearing a fault alone cannot accept invalid settings.
+
 ### `frc-hardware`
 
-This module adapts WPILib and vendor hardware to the same core contracts. It owns `FrcBaseRobot`, `FrcSwerveRobot`, swerve hardware IO, the FRC Limelight adapter, telemetry, and power management. Season classes intentionally live in ARES-FRC, even when they share the `com.areslib.frc` package.
+This module adapts WPILib and vendor hardware to the same core contracts. It owns `FrcBaseRobot`, `FrcSwerveRobot`, swerve hardware IO, the FRC Limelight adapter, telemetry, and power management under `com.areslib.frc`. Season classes live in ARES-FRC under `org.aresfirst.marvin`.
 
 ### `ftc-mocks`
 
@@ -95,6 +143,9 @@ Before merging an ARESLib contract change:
 
 - Search ARES-FTC, ARES-FRC, and ARES-Analytics for consumers.
 - Keep telemetry topic spelling, units, and types compatible or provide an explicit migration.
-- Test ARESLib, publish it to Maven Local, and then test all affected consumers.
+- Test ARESLib and its API contracts, publish a unique prerelease to the isolated validation
+  repository, and test consumers in dependency order using that same version and absolute repository
+  URI. Explicit sibling substitution is available for focused iteration; Maven Local is not
+  candidate validation evidence. See the [build guide](../../.agents/skills/ares-build-release/SKILL.md).
 - Verify both physical adapters and simulator mocks implement changed IO contracts.
 - Update the relevant document in this directory in the same change.

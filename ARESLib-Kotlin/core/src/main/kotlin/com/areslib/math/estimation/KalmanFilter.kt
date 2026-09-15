@@ -28,6 +28,9 @@ package com.areslib.math.estimation
  * @param measurementNoise Initial measurement noise covariance variance $R$.
  * @param initialState Seed initial state estimate $\hat{x}_0$ (default $0.0$).
  * @param initialError Seed initial error covariance $P_0$ (default $1.0$).
+ * @throws IllegalArgumentException If the initial state is nonfinite or its error is nonfinite/negative.
+ * The first valid observation seeds state directly; [reset] instead supplies a prior to filter.
+ * Invalid observations or noise parameters suppress updates without changing state or covariance.
  */
 class KalmanFilter(
     private var processNoise: Double,
@@ -39,6 +42,11 @@ class KalmanFilter(
     private var x = initialState // Estimated state
     private var p = initialError // Error covariance
     private var hasFirstValue = false
+
+    init {
+        require(initialState.isFinite()) { "Initial state must be finite" }
+        require(initialError.isFinite() && initialError >= 0.0) { "Initial error must be finite and nonnegative" }
+    }
 
     /**
      * Updates the filter state with a new raw measurement and returns the optimal estimate $\hat{x}_k$.
@@ -59,19 +67,30 @@ class KalmanFilter(
         }
 
         // 1. Predict (Time Update)
-        p += processNoise
+        val predicted = p + processNoise
 
         // 2. Correct (Measurement Update)
-        val denominator = p + measurementNoise
-        val k = if (denominator > 0.0) p / denominator else 0.0
+        val denominator = predicted + measurementNoise
+        val k = if (!denominator.isFinite()) {
+            // Normalize the sum, not its already-overflowed result. The posterior
+            // is bounded by R even when P + Q cannot be represented as a Double.
+            val scale = maxOf(p, processNoise, measurementNoise)
+            val scaledPrediction = p / scale + processNoise / scale
+            scaledPrediction / (scaledPrediction + measurementNoise / scale)
+        } else if (denominator > 0.0) predicted / denominator else 0.0
         
         val delta = measurement - x
         if (delta.isFinite()) {
             x += k * delta
+        } else {
+            // Opposite finite extremes can have an infinite difference while
+            // their convex combination remains finite.
+            x = (1.0 - k) * x + k * measurement
         }
         
-        // Equivalent to (1 - K) P, without subtracting nearly equal numbers when R << P.
-        p = if (denominator > 0.0) measurementNoise * k else p
+        // Multiply the smaller variance by the well-resolved weight. This avoids
+        // cancellation at K ~= 1 and preserves P when an extremely small K rounds to zero.
+        p = if (predicted <= measurementNoise) predicted * (1.0 - k) else measurementNoise * k
 
         return x
     }
@@ -92,8 +111,12 @@ class KalmanFilter(
      *
      * @param state Baseline state estimate $\hat{x}_0$.
      * @param error Baseline error covariance $P_0$.
+     * @throws IllegalArgumentException If state is nonfinite or error is nonfinite/negative.
+     * Invalid arguments leave the previous filter state unchanged.
      */
     fun reset(state: Double = 0.0, error: Double = 1.0) {
+        require(state.isFinite()) { "State must be finite" }
+        require(error.isFinite() && error >= 0.0) { "Error must be finite and nonnegative" }
         x = state
         p = error
         hasFirstValue = true

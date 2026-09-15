@@ -44,9 +44,11 @@ class FtcHardwareInitializer(
     private val pinpointYDirection: com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection = com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.EncoderDirection.FORWARD,
     private val pinpointIsCcwPositive: Boolean = true
 ) {
-    /** Lazy-initialized GoBilda Pinpoint odometry IO interface. */
-    val pinpointIO: PinpointIO? by lazy {
-        FtcHardwareMapInitializer.initPinpoint(
+    private val resourceLock = Any()
+    @Volatile private var closed = false
+
+    private val pinpointDelegate = lazy(resourceLock) {
+        if (closed) null else FtcHardwareMapInitializer.initPinpoint(
             hardwareMap = hardwareMap,
             pinpointName = pinpointName,
             xOffsetMm = pinpointXOffsetMm,
@@ -58,27 +60,46 @@ class FtcHardwareInitializer(
         )
     }
 
-    /** Lazy-initialized Control Hub IMU IO interface. */
-    val imuIO: ImuIO? by lazy {
-        FtcHardwareMapInitializer.initImu(hardwareMap, imuName)
+    private val imuDelegate = lazy(resourceLock) {
+        if (closed) null else FtcHardwareMapInitializer.initImu(hardwareMap, imuName)
     }
 
-    /** Lazy-initialized Limelight 3A vision IO interface. */
-    val limelightIO: VisionIO? by lazy {
-        FtcHardwareMapInitializer.initLimelight(hardwareMap, limelightName)
+    private val limelightDelegate = lazy(resourceLock) {
+        if (closed) null else FtcHardwareMapInitializer.initLimelight(hardwareMap, limelightName)
     }
+
+    /** Lazy-initialized GoBilda Pinpoint IO, unavailable after close. */
+    val pinpointIO: PinpointIO? get() = if (closed) null else pinpointDelegate.value
+
+    /** Lazy-initialized Control Hub IMU IO, unavailable after close. */
+    val imuIO: ImuIO? get() = if (closed) null else imuDelegate.value
+
+    /** Lazy-initialized Limelight vision IO, unavailable after close. */
+    val limelightIO: VisionIO? get() = if (closed) null else limelightDelegate.value
 
     /**
      * Safely closes the sensor IO resources owned by this initializer.
      */
     fun close() {
-        pinpointIO?.close()
-        try {
-            (imuIO as? AutoCloseable)?.close()
-        } catch (_: Exception) {}
-        try {
-            (limelightIO as? AutoCloseable)?.close()
-        } catch (_: Exception) {}
-        com.areslib.ftc.hardware.FtcMotor.unregisterAll()
+        // Share the lazy initialization lock only on the cold lifecycle path. A first
+        // getter racing shutdown either finishes initialization before this snapshot or
+        // observes closed without creating hardware. Warm getters retain lazy's fast path.
+        val resources = synchronized(resourceLock) {
+            if (closed) return
+            closed = true
+            arrayOf(
+                if (pinpointDelegate.isInitialized()) pinpointDelegate.value else null,
+                if (imuDelegate.isInitialized()) imuDelegate.value as? AutoCloseable else null,
+                if (limelightDelegate.isInitialized()) limelightDelegate.value as? AutoCloseable else null
+            )
+        }
+        var firstFailure: Throwable? = null
+        for (resource in resources) {
+            try { resource?.close() }
+            catch (failure: Throwable) {
+                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            }
+        }
+        firstFailure?.let { throw it }
     }
 }

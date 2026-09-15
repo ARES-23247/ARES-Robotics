@@ -37,11 +37,17 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
 
     private var lastPosition = 0.0
     private var lastTime = 0L
+    private var hasPositionSample = false
+    private var hasVelocitySample = false
+    private var lastRawPosition = 0
+    private var hasRawPosition = false
+    @Volatile private var closed = false
 
     /**
      * Synchronously polls physical electrical current draw ($A$) from REV Lynx Hub hardware registers.
      */
     override fun pollSync() {
+        if (closed) return
         try {
             val amps = motor.getCurrent(CurrentUnit.AMPS)
             if (amps.isFinite() && amps >= 0.0) {
@@ -64,33 +70,65 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
      * Zero-GC compliance: zero dynamic heap allocations.
      */
     fun updateInputs() {
+        if (closed) return
         try {
-            cachedPosition = motor.currentPosition.toDouble()
+            val rawPosition = motor.currentPosition
             val now = RobotClock.currentTimeMillis()
-            if (lastTime != 0L) {
+            if (now < 0L) {
+                hasPositionSample = false
+                return
+            }
+            // Subtract in the counter's signed 32-bit domain before widening. This unwraps
+            // rollover provided fewer than 2^31 ticks elapsed between successful reads.
+            cachedPosition = if (hasRawPosition) {
+                cachedPosition + (rawPosition - lastRawPosition).toDouble()
+            } else {
+                rawPosition.toDouble()
+            }
+            lastRawPosition = rawPosition
+            hasRawPosition = true
+            val elapsed = now - lastTime
+            if (hasPositionSample && now >= lastTime && elapsed in 0L..MAX_POSITION_SAMPLE_AGE_MS) {
                 val dt = (now - lastTime) / 1000.0
                 if (dt > 0.0) {
                     cachedVelocity = (cachedPosition - lastPosition) / dt
+                    hasVelocitySample = true
+                } else {
+                    // Publish the latest position, but retain the finite-difference baseline
+                    // until time advances. Repeated reads must not discard displacement.
+                    return
                 }
+            } else {
+                // First/recovered samples, gaps and replay rewinds start a new baseline.
+                hasVelocitySample = false
             }
             lastPosition = cachedPosition
             lastTime = now
-        } catch (_: Exception) {}
+            hasPositionSample = true
+        } catch (_: Exception) {
+            hasPositionSample = false
+        }
     }
 
-    /** Measured motor velocity in encoder ticks per second ($ticks/s$). */
+    /** Measured ticks/s; NaN when missing, failed, older than 100 ms, future-dated or closed. */
     override val velocity: Double
-        get() = cachedVelocity
+        get() = if (positionSampleFresh() && hasVelocitySample) cachedVelocity else Double.NaN
 
-    /** Measured motor position in total cumulative encoder ticks ($ticks$). */
+    /** Unwrapped cumulative ticks; NaN under the same observation-freshness rules as [velocity]. */
     override val position: Double
-        get() = cachedPosition
+        get() = if (positionSampleFresh()) cachedPosition else Double.NaN
+
+    private fun positionSampleFresh(): Boolean {
+        val now = RobotClock.currentTimeMillis()
+        return !closed && hasPositionSample && now >= lastTime &&
+            now - lastTime in 0L..MAX_POSITION_SAMPLE_AGE_MS
+    }
 
     /** Measured electrical current draw in Amperes ($A$). */
     override val currentAmps: Double
         get() {
             val ageMs = RobotClock.currentTimeMillis() - lastCurrentSampleMs
-            return if (hasCurrentSample && ageMs in 0..MAX_CURRENT_SAMPLE_AGE_MS) cachedAmps else Double.NaN
+            return if (!closed && hasCurrentSample && ageMs in 0..MAX_CURRENT_SAMPLE_AGE_MS) cachedAmps else Double.NaN
         }
 
     private fun invalidateCurrentSample() {
@@ -98,18 +136,24 @@ class EstimateMotorIO(private val motor: DcMotorEx) : MotorIO, AutoCloseable, Sy
         hasCurrentSample = false
     }
 
-    /** Resets the local motor encoder zero reference (no-op to preserve cached estimates). */
+    /**
+     * Intentionally leaves the encoder reference unchanged; this read-only wrapper cannot reset hardware.
+     * External SDK counter resets require a new wrapper to establish a new cumulative reference.
+     */
     override fun resetEncoder() {
         // No-op to avoid side-effects in estimation wrapper
     }
 
     /** Releases hardware resources upon OpMode termination. */
     override fun close() {
+        closed = true
+        hasPositionSample = false
         invalidateCurrentSample()
     }
 
     private companion object {
         const val MAX_CURRENT_SAMPLE_AGE_MS = 1_000L
+        private const val MAX_POSITION_SAMPLE_AGE_MS = 100L
     }
 }
 

@@ -5,8 +5,10 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $historical = @('ARESLib-Kotlin/audit_report_areslib_kotlin.md', 'CLEAN_SLATE_ARCHITECTURE_COMPLETION.md')
 $historicalPrefixes = @('.planning/', 'ARES-Analytics/docs/cycles/', 'ARES-Analytics/reports/')
-$tracked = git -C $root ls-files '*.md'
+$trackedOutput = @(git -C $root ls-files -z -- '*.md')
 if ($LASTEXITCODE -ne 0) { throw 'Unable to enumerate tracked Markdown files.' }
+$tracked = ($trackedOutput -join "`n").Split([char[]]@([char]0), [System.StringSplitOptions]::RemoveEmptyEntries)
+$fencePattern = [regex]::new('^ {0,3}(?<fence>`{3,}|~{3,})(?<info>.*)$')
 $errors = [System.Collections.Generic.List[string]]::new()
 $checked = 0
 $skipped = 0
@@ -18,17 +20,34 @@ foreach ($relativePath in $tracked) {
     }
     $file = Join-Path $root $relativePath
     $directory = Split-Path -Parent $file
-    $insideFence = $false
+    $fenceMarker = $null
+    $fenceLength = 0
     $lineNumber = 0
-    foreach ($line in Get-Content -LiteralPath $file) {
+    foreach ($line in Get-Content -LiteralPath $file -Encoding UTF8) {
         $lineNumber++
-        if ($line -match '^\s*(```|~~~)') { $insideFence = -not $insideFence; continue }
-        if ($insideFence) { continue }
+        $fenceMatch = $fencePattern.Match($line)
+        if ($fenceLength -gt 0) {
+            if ($fenceMatch.Success) {
+                $candidateFence = $fenceMatch.Groups['fence'].Value
+                if ($candidateFence[0] -eq $fenceMarker -and $candidateFence.Length -ge $fenceLength -and
+                    $fenceMatch.Groups['info'].Value -match '^[ \t]*$') { $fenceLength = 0 }
+            }
+            continue
+        }
+        if ($fenceMatch.Success) {
+            $candidateFence = $fenceMatch.Groups['fence'].Value
+            if ($candidateFence[0] -ne [char]96 -or -not $fenceMatch.Groups['info'].Value.Contains('`')) {
+                $fenceMarker = $candidateFence[0]
+                $fenceLength = $candidateFence.Length
+                continue
+            }
+        }
+        if (-not $line.Contains('](')) { continue }
         $withoutInlineCode = [regex]::Replace($line, '`[^`]*`', '')
         foreach ($match in [regex]::Matches($withoutInlineCode, '!??\[[^\]]*\]\((?<target>[^)]+)\)')) {
             $target = $match.Groups['target'].Value.Trim()
-            if ($target.StartsWith('<') -and $target.EndsWith('>')) { $target = $target.Substring(1, $target.Length - 2) }
-            if ($target -match '^([^\s]+)\s+["''].*["'']$') { $target = $matches[1] }
+            if ($target -match '^<(?<path>[^<>]*)>(?:[ \t]+(?:"[^"]*"|''[^'']*''))?$') { $target = $matches['path'] }
+            elseif ($target -match '^([^\s]+)\s+["''].*["'']$') { $target = $matches[1] }
             if ($target -match '^(https?://|mailto:|#|chatgpt-conversation:|skill:|app:)') { continue }
             if ($target -match '^file:') { $errors.Add("$normalized`:$lineNumber uses a machine-local file URL: $target"); continue }
             $target = ($target -split '[?#]', 2)[0]

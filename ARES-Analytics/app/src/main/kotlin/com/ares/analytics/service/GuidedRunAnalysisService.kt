@@ -110,15 +110,13 @@ class GuidedRunAnalysisService(
     private val driverAnalysisService: DriverAnalysisService,
 ) : GuidedRunAnalysisRepository {
     override suspend fun listWorkspaceSessions(workspace: WorkspaceConfig): List<Session> = withContext(Dispatchers.IO) {
-        databaseService.getSessions()
-            .filter { it.belongsTo(workspace) }
-            .sortedByDescending(Session::createdAt)
+        databaseService.getSessionsForWorkspace(workspace.teamId, workspace.seasonId, workspace.robotId)
     }
 
     override suspend fun analyze(workspace: WorkspaceConfig, sessionId: String): GuidedRunAnalysisReport =
         withContext(Dispatchers.IO) {
             require(sessionId.isNotBlank()) { "Select a run before starting the guided review" }
-            val session = databaseService.getSessions().firstOrNull { it.sessionId == sessionId }
+            val session = databaseService.getSession(sessionId)
                 ?: throw IllegalArgumentException("The selected run no longer exists in the local database")
             require(session.belongsTo(workspace)) {
                 "The selected run belongs to another team, season, or robot workspace"

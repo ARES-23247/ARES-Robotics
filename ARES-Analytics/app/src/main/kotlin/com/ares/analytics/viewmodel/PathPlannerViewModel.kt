@@ -14,6 +14,7 @@ import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
 import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectMetadataDocument
+import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.controls.ControllerInputPlatform
 import com.ares.analytics.service.project.persistence.AutonomousCatalogProjectRepository
 import com.ares.analytics.service.project.persistence.RoutineProjectRepository
@@ -43,6 +44,9 @@ import com.areslib.routine.RoutineStep
 import com.areslib.routine.RoutineStepKind
 import com.areslib.routine.RoutineValidationSeverity
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,6 +74,7 @@ class PathPlannerViewModel(
     val state: StateFlow<PathPlannerState> = _state.asStateFlow()
 
     private var playbackJob: kotlinx.coroutines.Job? = null
+    private var routinePreviewJob: Job? = null
     private var projectRefreshJob: Job? = null
     private val projectRefreshGeneration = AtomicLong()
     @Volatile private var selectedProjectPath: String? = null
@@ -175,30 +180,40 @@ class PathPlannerViewModel(
                             robotLengthMeters = dimensions.lengthMeters,
                             robotWidthMeters = dimensions.widthMeters,
                         )
-                        val savedRevision = withContext(Dispatchers.IO) {
-                            val session = projectSession
-                            val revision = current.projectRevision
-                            if (session != null && revision != null) {
-                                when (val result = session.saveProjectIdentity(revision, updatedMetadata)) {
-                                    is ProjectSessionMutationResult.Applied -> result.snapshot.revision
-                                    is ProjectSessionMutationResult.Stale -> error(
-                                        "The project changed after the autonomous editor loaded. Reload before changing the robot footprint.",
+                        try {
+                            val savedRevision = withContext(Dispatchers.IO) {
+                                val session = projectSession
+                                val revision = current.projectRevision
+                                if (session != null && revision != null) {
+                                    when (val result = session.saveProjectIdentity(revision, updatedMetadata)) {
+                                        is ProjectSessionMutationResult.Applied -> result.snapshot.revision
+                                        is ProjectSessionMutationResult.Stale -> error(
+                                            "The project changed after the autonomous editor loaded. Reload before changing the robot footprint.",
+                                        )
+                                        is ProjectSessionMutationResult.Conflict -> error(result.message)
+                                        is ProjectSessionMutationResult.Failed -> error(result.message)
+                                    }
+                                } else {
+                                    metadataRepository.saveReviewed(
+                                        projectPath,
+                                        AresProjectMetadataCodec.contentHash(metadata),
+                                        updatedMetadata,
                                     )
-                                    is ProjectSessionMutationResult.Conflict -> error(result.message)
-                                    is ProjectSessionMutationResult.Failed -> error(result.message)
+                                    null
                                 }
-                            } else {
-                                metadataRepository.save(projectPath, updatedMetadata)
-                                null
                             }
-                        }
-                        _state.update { current ->
-                            current.copy(
-                                projectMetadata = updatedMetadata,
-                                robotDimensions = dimensions,
-                                projectRevision = savedRevision ?: current.projectRevision,
-                                saveStatus = "Saved canonical robot footprint to .ares/project.json"
-                            )
+                            _state.update { current ->
+                                current.copy(
+                                    projectMetadata = updatedMetadata,
+                                    robotDimensions = dimensions,
+                                    projectRevision = savedRevision ?: current.projectRevision,
+                                    saveStatus = "Saved canonical robot footprint to .ares/project.json"
+                                )
+                            }
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                            throw cancelled
+                        } catch (error: Exception) {
+                            _state.update { it.copy(saveStatus = "Failed to save canonical robot footprint: ${error.message}") }
                         }
                     }
                 }
@@ -263,6 +278,7 @@ class PathPlannerViewModel(
                     }
                     recalculateRoutinePreview()
                 }
+                is PathPlannerIntent.ImportBiobuzzAuto -> importBiobuzzAuto(intent.projectPath, intent.zipPath)
                 is PathPlannerIntent.LoadRoutine -> loadRoutine(intent.projectPath, intent.documentId)
                 is PathPlannerIntent.SaveRoutine -> saveRoutine(intent.projectPath)
                 is PathPlannerIntent.SaveAndGenerateRoutine -> {
@@ -731,6 +747,39 @@ class PathPlannerViewModel(
         return savedSuccessfully
     }
 
+    private suspend fun importBiobuzzAuto(projectPath: String?, zipPath: String) {
+        val path = loadedPathFor(projectPath, "importing an auto") ?: return
+        val before = _state.value
+        runCatching {
+            require(before.activeLeague == League.FTC) { "Open a BIOBUZZ FTC RobotBuilder project first." }
+            val requiredActions = setOf("subsystem.biobuzz-intake.set.intakeVoltage",
+                "subsystem.biobuzz-shooter.set.flywheelVoltage", "subsystem.biobuzz-shooter.set.transferVoltage")
+            require(before.routineActions.map { it.key }.containsAll(requiredActions)) {
+                "This project needs the BIOBUZZ RobotBuilder intake and shooter actions."
+            }
+            withContext(Dispatchers.IO) {
+                com.ares.analytics.service.project.persistence.BiobuzzAutoBundle.read(File(zipPath))
+            }
+        }.onSuccess { draft ->
+            if (!isLoadedProject(path) || _state.value.routine != before.routine) return@onSuccess
+            val validation = routineEditorValidation(draft.routine, before.capabilityCatalog,
+                before.availableRoutines, before.activeLeague, before.robotDimensions, draft.entry)
+            if (validation.any { it.severity == RoutineValidationSeverity.ERROR }) {
+                _state.update { it.copy(saveStatus = "Auto import failed: " + validation.joinToString { issue -> issue.message }) }
+                return@onSuccess
+            }
+            playbackJob?.cancel()
+            routineProjectPath = path
+            _state.update { it.copy(routine = draft.routine, autonomousEntry = draft.entry,
+                availableInAutonomousSelector = true, routineDirty = true, routineRevisions = emptyList(),
+                routineValidation = validation, isPlaying = false, playbackTime = 0.0,
+                saveStatus = "Imported a new BIOBUZZ auto draft. Review it, then Save & Generate.") }
+            recalculateRoutinePreview()
+        }.onFailure { failure ->
+            if (isLoadedProject(path)) _state.update { it.copy(saveStatus = "Auto import failed: ${failure.message}") }
+        }
+    }
+
     private suspend fun restoreRoutine(projectPath: String?, contentHash: String) {
         val activeProjectPath = loadedPathFor(projectPath, "restoring a routine") ?: return
         val current = _state.value
@@ -805,68 +854,57 @@ class PathPlannerViewModel(
         }
     }
 
+    @Synchronized
     private fun recalculateRoutinePreview() {
+        routinePreviewJob?.cancel()
+        playbackJob?.cancel()
         val snapshot = _state.value
+        val projectGeneration = projectRefreshGeneration.get()
         val draft = snapshot.routine
         val analysis = analyzeRoutinePreview(draft, snapshot.availableRoutines)
-        if (analysis.warning != null) {
-            playbackJob?.cancel()
-            if (_state.value.routine == draft) {
-                _state.update {
-                    it.copy(
-                        trajectory = null,
-                        previewActions = emptyList(),
-                        estimatedDuration = 0.0,
-                        playbackTime = 0.0,
-                        isPlaying = false,
-                        routinePreviewWarning = analysis.warning
-                    )
-                }
-            }
-            return
+
+        fun matchesInputs(current: PathPlannerState): Boolean =
+            projectRefreshGeneration.get() == projectGeneration &&
+                current.routine == draft &&
+                current.activeLeague == snapshot.activeLeague &&
+                current.autonomousEntry == snapshot.autonomousEntry &&
+                current.availableRoutines == snapshot.availableRoutines
+
+        // Invalidate the previous timeline immediately, including while a replacement
+        // is being generated. Check the inputs inside the atomic state update.
+        _state.update { current ->
+            if (!matchesInputs(current)) current else current.copy(
+                trajectory = null,
+                previewActions = emptyList(),
+                estimatedDuration = 0.0,
+                playbackTime = 0.0,
+                isPlaying = false,
+                routinePreviewWarning = analysis.warning,
+            )
         }
-        val drives = analysis.drives
-        val previewStart = snapshot.autonomousEntry?.startingPose ?: drives.firstOrNull()?.target
-        scope.launch(Dispatchers.Default) {
-            if (previewStart == null || analysis.steps.isEmpty()) {
-                if (_state.value.routine == draft) {
-                    _state.update {
-                        it.copy(
-                            trajectory = null,
-                            previewActions = emptyList(),
-                            estimatedDuration = 0.0,
-                            playbackTime = 0.0,
-                            isPlaying = false,
-                            routinePreviewWarning = null
-                        )
-                    }
-                }
-                return@launch
-            }
+        if (analysis.warning != null || analysis.steps.isEmpty()) return
+        val previewStart = snapshot.autonomousEntry?.startingPose ?: analysis.drives.firstOrNull()?.target
+            ?: return
+        routinePreviewJob = scope.launch(Dispatchers.Default, start = CoroutineStart.LAZY) {
+            if (!isActive) return@launch
             val preview = routinePreviewCompiler.compile(
                 steps = analysis.steps,
                 previewStart = previewStart,
                 hasAutonomousStart = snapshot.autonomousEntry != null,
                 league = snapshot.activeLeague,
+                checkActive = { ensureActive() },
             )
-            val latest = _state.value
-            if (latest.routine == draft &&
-                latest.activeLeague == snapshot.activeLeague &&
-                latest.autonomousEntry == snapshot.autonomousEntry &&
-                latest.availableRoutines == snapshot.availableRoutines
-            ) {
-                _state.update {
-                    it.copy(
-                        trajectory = preview.trajectory,
-                        previewActions = preview.actions,
-                        estimatedDuration = preview.estimatedDurationSeconds,
-                        playbackTime = 0.0,
-                        isPlaying = false,
-                        routinePreviewWarning = null
-                    )
-                }
+            _state.update { current ->
+                if (!isActive || !matchesInputs(current)) current else current.copy(
+                    trajectory = preview.trajectory,
+                    previewActions = preview.actions,
+                    estimatedDuration = preview.estimatedDurationSeconds,
+                    playbackTime = 0.0,
+                    isPlaying = false,
+                    routinePreviewWarning = preview.warning,
+                )
             }
-        }
+        }.also { it.start() }
     }
 
     private fun Waypoint.toRoutinePose(): RoutinePose = RoutinePose(

@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -12,6 +13,8 @@ import java.io.File
 class AutoTuningDigitalTwinTest {
     private lateinit var autoTuner: AutoTunerService
     private lateinit var nt4: Nt4ClientService
+    private lateinit var database: DatabaseService
+    private lateinit var databaseFile: File
     private val digitalTwin = AutoTuningDigitalTwin()
 
     @Test
@@ -31,10 +34,14 @@ class AutoTuningDigitalTwinTest {
 
     @Before
     fun setUp() {
-        val database = DatabaseService(File.createTempFile("auto_tuning_twin", ".duckdb").apply { deleteOnExit() }.absolutePath)
+        databaseFile = File.createTempFile("auto_tuning_twin", ".duckdb")
+        database = DatabaseService(databaseFile.absolutePath)
         nt4 = Nt4ClientService(database)
         autoTuner = AutoTunerService(nt4, SysIdService(database))
     }
+
+    @After
+    fun tearDown() = runBlocking { nt4.stop(); database.close(); databaseFile.delete(); Unit }
 
     @Test
     fun `digital twin generation is deterministic`() {
@@ -50,7 +57,13 @@ class AutoTuningDigitalTwinTest {
         )
         assertEquals(36, summary.cases)
         assertTrue(summary.recommendationsProduced >= 34)
-        assertTrue(summary.readyOrReviewable >= 28)
+        val supported = summary.evaluations.filter { it.scenario.plant.mechanism in
+            setOf(SysIdMechanism.LINEAR, SysIdMechanism.ANGULAR, SysIdMechanism.FLYWHEEL) }
+        val unsupported = summary.evaluations - supported.toSet()
+        assertEquals(18, supported.size)
+        assertTrue(unsupported.all { it.recommendation?.quality == RecommendationQuality.REJECTED && it.recommendation.topicValues.isEmpty() })
+        // Preserve the previous 28/36 acceptance threshold within the mechanisms with a valid proposal contract.
+        assertTrue("Reviewable=${summary.readyOrReviewable}; rejected=" + supported.filter { it.recommendation?.quality == RecommendationQuality.REJECTED }.map { it.scenario.name to it.recommendation?.stepMetrics }, summary.readyOrReviewable >= supported.size * 28 / 36)
         assertTrue(summary.recoveredWithinTolerance >= 28)
         assertTrue(summary.stableClosedLoops >= 24)
         assertEquals(0, summary.unsafeRecommendations)
@@ -78,7 +91,11 @@ class AutoTuningDigitalTwinTest {
             digitalTwin.generateSamples(scenario)
         )!!
         val tampered = recommendation.copy(
-            recommendedGains = recommendation.recommendedGains.copy(kP = recommendation.safetyEnvelope.maxKP + 1.0),
+            recommendedkV = recommendation.safetyEnvelope.maxKV + 1.0,
+            topicValues = recommendation.topicValues.mapValues { (key, value) ->
+                if (key == com.ares.analytics.service.tuning.TuningParameterKeys.DRIVE_FEEDFORWARD_KV)
+                    recommendation.safetyEnvelope.maxKV + 1.0 else value
+            },
             quality = RecommendationQuality.READY
         )
 

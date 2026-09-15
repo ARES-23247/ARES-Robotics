@@ -1,11 +1,19 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.ui.help.AcademyRuntimeSnapshot
-import com.ares.analytics.ui.help.LearningCatalog
-import com.ares.analytics.ui.help.LearningCheckpointEvidence
-import com.ares.analytics.ui.help.LearningJourneyEvaluator
-import com.ares.analytics.ui.help.LearningRubricRating
-import com.ares.analytics.ui.help.AcademyClassroomToolkit
+import com.ares.analytics.domain.learning.LearningProgress
+import com.ares.analytics.domain.learning.AcademyLearningAssignment
+import com.ares.analytics.domain.learning.AcademyLearnerRecord
+import com.ares.analytics.domain.learning.AcademyClassroomStore
+import com.ares.analytics.domain.learning.AcademyProgressSnapshot
+import com.ares.analytics.domain.learning.CURRENT_LEARNING_CONTENT_VERSION
+import com.ares.analytics.domain.learning.ACADEMY_CLASSROOM_SCHEMA_VERSION
+
+import com.ares.analytics.domain.learning.AcademyRuntimeSnapshot
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.learning.LearningCheckpointEvidence
+import com.ares.analytics.domain.learning.LearningJourneyEvaluator
+import com.ares.analytics.domain.learning.LearningRubricRating
+import com.ares.analytics.domain.learning.AcademyClassroomToolkit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -444,7 +452,5 @@ class LearningProgressService(
 
 }
 
-const val CURRENT_LEARNING_CONTENT_VERSION = 5
-const val ACADEMY_CLASSROOM_SCHEMA_VERSION = 1
 private const val MAX_LEARNING_NOTE_LENGTH = 4_000
 private const val DEFAULT_LEARNER_ID = "learner-default"

@@ -40,10 +40,10 @@ class ARESRobotTimedBehaviorRegressionTest {
 
     @AfterEach
     fun tearDown() {
-        timedRobot?.close()
-        timedRobot = null
-        DriverStationSim.resetData()
-        RobotClock.useSystemTime()
+        try { timedRobot?.close() } finally {
+            timedRobot = null
+            try { DriverStationSim.resetData() } finally { RobotClock.useSystemTime() }
+        }
     }
 
     @Test

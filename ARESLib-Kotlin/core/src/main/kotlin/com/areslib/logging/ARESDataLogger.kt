@@ -2,7 +2,6 @@ package com.areslib.logging
 
 import java.io.BufferedWriter
 import java.io.File
-import java.io.FilterOutputStream
 import java.io.IOException
 import java.io.OutputStream
 import java.io.OutputStreamWriter
@@ -22,8 +21,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
-import java.util.zip.Deflater
-import java.util.zip.GZIPOutputStream
 
 /** Point-in-time operational metrics for one asynchronous telemetry logger. */
 internal data class ARESDataLoggerMetrics(
@@ -53,7 +50,8 @@ internal data class ARESDataLoggerMetrics(
  * the caller. Any [HashMap] passed to [logFrame] is cleared and returned to the logger's pool, so use
  * [obtainMap] for pooled producer frames and do not retain that reference. While writing, the file
  * ends in `.csv.active` or `.csv.gz.active`; [stop] blocks until every accepted frame is drained
- * and atomically exposes the completed name. The selected [policy] controls compression, rotation,
+ * and exposes the completed name after a successful writer close. Failed closes retain the active
+ * reservation for later recovery. The selected [policy] controls compression, rotation,
  * and completed-log retention. Importers can therefore ignore active files instead of guessing
  * from temporary size stability.
  *
@@ -82,7 +80,10 @@ class ARESDataLogger private constructor(
     ) : this(mode, logDirectory, policy, runId, Unit)
 
     private val retentionEnabled = RobotLogEnvironment.isRetentionEnabled()
-    private val logQueue = LinkedBlockingQueue<Map<String, Any>>(1000)
+    private class PendingFrame(var data: Map<String, Any>? = null, var mode: String = "")
+    private val logQueue = LinkedBlockingQueue<PendingFrame>(1000)
+    private val framePool = LinkedBlockingQueue<PendingFrame>()
+    private var writerMode = mode
     private val activeKeys = mutableListOf<String>()
     private val activeKeySet = HashSet<String>()
     private var sink: ReservedLog? = null
@@ -90,6 +91,8 @@ class ARESDataLogger private constructor(
     @Volatile private var isRunning = false
     private val queueStateLock = Any()
     private val workerDone = CountDownLatch(1)
+    /** Scheduling seam for deterministic blocked-writer ownership tests. */
+    @Volatile internal var beforeWriteForTest: (() -> Unit)? = null
     private val droppedFrames = AtomicLong(0L)
     private val acceptedFrames = AtomicLong(0L)
     private val writtenFrames = AtomicLong(0L)
@@ -136,6 +139,7 @@ class ARESDataLogger private constructor(
         // Pre-populate the map pool with 16 instances
         for (i in 0 until 16) {
             mapPool.offer(HashMap())
+            framePool.offer(PendingFrame())
         }
 
         try {
@@ -183,7 +187,10 @@ class ARESDataLogger private constructor(
      * Ownership transfers immediately, including on rejection. The frame is counted as dropped when
      * shutdown has started or the queue is full.
      */
-    fun logFrame(data: Map<String, Any>) {
+    fun logFrame(data: Map<String, Any>) = logFrame(data, mode)
+
+    /** Captures mode at enqueue time; file transitions occur on the existing writer thread. */
+    internal fun logFrame(data: Map<String, Any>, frameMode: String) {
         synchronized(queueStateLock) {
             if (!isRunning) {
                 droppedFrames.incrementAndGet()
@@ -192,8 +199,10 @@ class ARESDataLogger private constructor(
                 }
                 return
             }
-            val accepted = logQueue.offer(data)
+            val pending = (framePool.poll() ?: PendingFrame()).apply { this.data = data; mode = frameMode }
+            val accepted = logQueue.offer(pending)
             if (!accepted) {
+                recyclePending(pending)
                 droppedFrames.incrementAndGet()
                 if (data is HashMap<String, Any>) {
                     recycleMap(data)
@@ -210,8 +219,27 @@ class ARESDataLogger private constructor(
             try {
                 while (isRunning || logQueue.isNotEmpty()) {
                     try {
-                        val frame = logQueue.poll(100, TimeUnit.MILLISECONDS) ?: continue
-                        writeFrame(frame)
+                        val pending = logQueue.poll(100, TimeUnit.MILLISECONDS) ?: continue
+                        var handedToWriter = false
+                        try {
+                            beforeWriteForTest?.invoke()
+                            if (pending.mode != writerMode || sink == null) {
+                                closeAndFinalizeCurrentLog()
+                                sink = reserveUniqueLog(com.areslib.util.RobotClock.currentTimeMillis(), pending.mode)
+                                writerMode = pending.mode
+                                isHeaderWritten = false
+                                activeKeys.clear()
+                                activeKeySet.clear()
+                            }
+                            handedToWriter = true
+                            writeFrame(checkNotNull(pending.data))
+                        } finally {
+                            if (!handedToWriter) {
+                                droppedFrames.incrementAndGet()
+                                (pending.data as? HashMap<String, Any>)?.let(::recycleMap)
+                            }
+                            recyclePending(pending)
+                        }
                     } catch (_: InterruptedException) {
                         // Preserve all accepted frames even if shutdown races an interruption.
                         // Restore the flag after the queue has been drained and the writer closed.
@@ -221,11 +249,23 @@ class ARESDataLogger private constructor(
                     }
                 }
             } finally {
-                closeAndFinalizeCurrentLog()
-                workerDone.countDown()
-                if (wasInterrupted) Thread.currentThread().interrupt()
+                try {
+                    closeAndFinalizeCurrentLog()
+                } catch (failure: Exception) {
+                    System.err.println("ARESDataLogger: Error finalizing log: ${failure.message}")
+                } finally {
+                    // A filesystem/retention failure must never strand stop() after this worker exits.
+                    workerDone.countDown()
+                    if (wasInterrupted) Thread.currentThread().interrupt()
+                }
             }
         }
+    }
+
+    private fun recyclePending(pending: PendingFrame) {
+        pending.data = null
+        pending.mode = ""
+        framePool.offer(pending)
     }
 
     // Reused builders reduce steady-state row formatting churn.
@@ -316,37 +356,6 @@ class ARESDataLogger private constructor(
         return extraFieldsBuilder
     }
 
-    private fun StringBuilder.appendDouble(d: Double, places: Int = 4) {
-        if (d.isNaN()) { append("NaN"); return }
-        if (d.isInfinite()) { append(if (d < 0) "-Infinity" else "Infinity"); return }
-        var value = d
-        if (value < 0) {
-            append('-')
-            value = -value
-        }
-        val intPart = value.toLong()
-        append(intPart)
-        val fracPart = value - intPart
-        if (fracPart > 0.0) {
-            append('.')
-            var multiplier = 1L
-            for (i in 0 until places) multiplier *= 10L
-            var fracInt = (fracPart * multiplier + 0.5).toLong()
-            if (fracInt >= multiplier) {
-                // Rare rounding case
-                fracInt = multiplier - 1
-            }
-            val digits = CharArray(places)
-            for (i in places - 1 downTo 0) {
-                digits[i] = ((fracInt % 10L) + 48L).toInt().toChar()
-                fracInt /= 10L
-            }
-            append(digits)
-        } else {
-            append(".0")
-        }
-    }
-
     private fun writeFrame(frame: Map<String, Any>) {
         val currentSink = sink
         if (currentSink == null) {
@@ -399,7 +408,8 @@ class ARESDataLogger private constructor(
                     val value = frame[activeKeys[i]]
                     if (value != null) {
                         if (value is Double) {
-                            csvBuilder.appendDouble(value, 4)
+                            // Preserve the exact finite Double on parse, including tiny/huge values.
+                            csvBuilder.append(value.toString())
                         } else {
                             csvBuilder.appendCsvField(value.toString())
                         }
@@ -414,7 +424,7 @@ class ARESDataLogger private constructor(
                 System.err.println("ARESDataLogger: Failed to write CSV row: ${e.message}")
             }
         } finally {
-            if (rowWritten) writtenFrames.incrementAndGet()
+            if (rowWritten) writtenFrames.incrementAndGet() else droppedFrames.incrementAndGet()
             // HashMap inputs follow the ownership contract and return to this logger's pool.
             if (frame is HashMap<String, Any>) {
                 recycleMap(frame)
@@ -444,9 +454,11 @@ class ARESDataLogger private constructor(
     private fun closeAndFinalizeCurrentLog() {
         val current = sink ?: return
         sink = null
+        var closedSuccessfully = false
         try {
-            current.writer.flush()
-            current.writer.close()
+            // use closes even after flush fails and preserves the original exception if both fail.
+            current.writer.use { it.flush() }
+            closedSuccessfully = true
         } catch (e: IOException) {
             System.err.println("ARESDataLogger: Failed to close writer: ${e.message}")
         } finally {
@@ -457,7 +469,8 @@ class ARESDataLogger private constructor(
                 if (current.channel.isOpen) current.channel.close()
             }
         }
-        finalizeLogFile(current.active, current.completed)
+        // Never advertise a possibly incomplete CSV/gzip stream as a completed log.
+        if (closedSuccessfully) finalizeLogFile(current.active, current.completed)
         enforceRetentionIfEnabled()
     }
 
@@ -490,10 +503,10 @@ class ARESDataLogger private constructor(
         System.err.println("ARESDataLogger: Could not reserve a collision-free completed log for ${active.absolutePath}")
     }
 
-    private fun reserveUniqueLog(nowMs: Long): ReservedLog {
+    private fun reserveUniqueLog(nowMs: Long, fileMode: String = writerMode): ReservedLog {
         val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", Locale.getDefault())
             .format(Date(nowMs))
-        val safeMode = mode.map { character ->
+        val safeMode = fileMode.map { character ->
             if (character.isLetterOrDigit() || character == '-' || character == '_') character else '_'
         }.joinToString("").ifBlank { "Unknown" }
         val safeRunId = runId?.map { character ->
@@ -515,9 +528,9 @@ class ARESDataLogger private constructor(
                     StandardOpenOption.WRITE
                 )
                 lock = channel.lock()
-                val byteCounter = CountingOutputStream(Channels.newOutputStream(channel))
+                val byteCounter = CountingLogOutputStream(Channels.newOutputStream(channel))
                 val output: OutputStream = if (policy.compress) {
-                    FastGzipOutputStream(byteCounter)
+                    FastLogGzipOutputStream(byteCounter, WRITER_BUFFER_BYTES)
                 } else {
                     byteCounter
                 }
@@ -607,32 +620,11 @@ class ARESDataLogger private constructor(
         val active: File,
         val completed: File,
         val writer: BufferedWriter,
-        val byteCounter: CountingOutputStream,
+        val byteCounter: CountingLogOutputStream,
         val channel: FileChannel,
         val lock: FileLock,
         val startedAtMs: Long
     )
 
-    private class CountingOutputStream(output: OutputStream) : FilterOutputStream(output) {
-        @Volatile
-        var count: Long = 0L
-            private set
 
-        override fun write(value: Int) {
-            out.write(value)
-            count++
-        }
-
-        override fun write(bytes: ByteArray, offset: Int, length: Int) {
-            out.write(bytes, offset, length)
-            count += length.toLong()
-        }
-    }
-
-    private class FastGzipOutputStream(output: OutputStream) :
-        GZIPOutputStream(output, WRITER_BUFFER_BYTES, true) {
-        init {
-            def.setLevel(Deflater.BEST_SPEED)
-        }
-    }
 }

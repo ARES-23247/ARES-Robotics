@@ -95,6 +95,12 @@ class FRCFlywheelHardwareIO(
     private val leftMasterTemp = leftMaster.deviceTemp
     private val rightMasterTemp = rightMaster.deviceTemp
 
+    // Retain argument groups; the Phoenix list overload avoids per-refresh vararg arrays.
+    private val resetMotors = arrayOf(leftMaster, leftFollower, rightMaster, rightFollower)
+    private val velocitySignals = listOf<BaseStatusSignal>(leftMasterVelocity, leftFollowerVelocity, rightMasterVelocity, rightFollowerVelocity)
+    private val currentSignals = listOf<BaseStatusSignal>(leftMasterCurrent, leftFollowerCurrent, rightMasterCurrent, rightFollowerCurrent)
+    private val tempSignals = listOf<BaseStatusSignal>(leftMasterTemp, rightMasterTemp)
+
     init {
         leftMaster.optimizeBusUtilization()
         leftFollower.optimizeBusUtilization()
@@ -166,15 +172,10 @@ class FRCFlywheelHardwareIO(
 
 
     override fun refresh() {
-        if (anyTalonResetOccurred(leftMaster, leftFollower, rightMaster, rightFollower)) {
+        if (anyDeviceResetOccurred(resetMotors) { it.hasResetOccurred() }) {
             resetDetected = true
         }
-        val velocityRefreshOk = BaseStatusSignal.refreshAll(
-            leftMasterVelocity,
-            leftFollowerVelocity,
-            rightMasterVelocity,
-            rightFollowerVelocity
-        ).isOK
+        val velocityRefreshOk = BaseStatusSignal.refreshAll(velocitySignals).isOK
         val leftMasterRpm = kotlin.math.abs(leftMasterVelocity.valueAsDouble * 60.0)
         val leftFollowerRpm = kotlin.math.abs(leftFollowerVelocity.valueAsDouble * 60.0)
         val rightMasterRpm = kotlin.math.abs(rightMasterVelocity.valueAsDouble * 60.0)
@@ -194,14 +195,11 @@ class FRCFlywheelHardwareIO(
         } else {
             0.0
         }
-        cachedCurrentValid = BaseStatusSignal.refreshAll(
-            leftMasterCurrent, leftFollowerCurrent,
-            rightMasterCurrent, rightFollowerCurrent
-        ).isOK && leftMasterCurrent.valueAsDouble.isFinite() && leftMasterCurrent.valueAsDouble >= 0.0 &&
+        cachedCurrentValid = BaseStatusSignal.refreshAll(currentSignals).isOK && leftMasterCurrent.valueAsDouble.isFinite() && leftMasterCurrent.valueAsDouble >= 0.0 &&
             leftFollowerCurrent.valueAsDouble.isFinite() && leftFollowerCurrent.valueAsDouble >= 0.0 &&
             rightMasterCurrent.valueAsDouble.isFinite() && rightMasterCurrent.valueAsDouble >= 0.0 &&
             rightFollowerCurrent.valueAsDouble.isFinite() && rightFollowerCurrent.valueAsDouble >= 0.0
-        BaseStatusSignal.refreshAll(leftMasterTemp, rightMasterTemp)
+        BaseStatusSignal.refreshAll(tempSignals)
     }
 
     override fun setVelocityRpm(rpm: Double, maxEffortScale: Double) {

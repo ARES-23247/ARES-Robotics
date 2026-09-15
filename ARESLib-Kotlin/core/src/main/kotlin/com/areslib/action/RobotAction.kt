@@ -21,8 +21,8 @@ interface RobotAction {
      * @property xVelocity Robot's X velocity in meters/second (WPILib: +X = forward).
      * @property yVelocity Robot's Y velocity in meters/second (WPILib: +Y = left).
      * @property angularVelocity Robot's angular velocity in radians/second (CCW-positive).
-     * @property deltaX Incremental X translation in meters since last frame.
-     * @property deltaY Incremental Y translation in meters since last frame.
+     * @property deltaX Robot-local forward component of the SE(2) displacement twist in meters since last frame.
+     * @property deltaY Robot-local leftward component of the SE(2) displacement twist in meters since last frame.
      * @property deltaHeading Incremental heading change in radians since last frame (CCW-positive).
      * @property pitchDegrees Robot pitch angle in degrees (nose-up positive).
      * @property rollDegrees Robot roll angle in degrees (right-side-down positive).
@@ -54,12 +54,16 @@ interface RobotAction {
      * @property fuseIntoPoseEstimator False when an upstream estimator has already consumed
      *   these observations. The vision slice is still updated for diagnostics and dashboards,
      *   but the ARES EKF is left unchanged.
+     * @property diagnosticMeasurementIndex Optional index in the original [measurements] list for
+     *   a dedicated acceptance/rejection result in VisionState. -1 disables it. Invalid indices
+     *   produce no selected result. Selection does not change filtering or fusion order.
      */
     data class VisionMeasurementsReceived(
         val measurements: List<com.areslib.state.VisionMeasurement>,
         override val timestampMs: Long,
         val customVisionStdDevs: Vector3? = null,
-        val fuseIntoPoseEstimator: Boolean = true
+        val fuseIntoPoseEstimator: Boolean = true,
+        val diagnosticMeasurementIndex: Int = -1
     ) : RobotAction
 
     /**
@@ -154,6 +158,8 @@ interface RobotAction {
      * @property targetAngularVelocity Desired rotational velocity in radians per second (CCW-positive).
      * @property isFieldCentric If true, X/Y are relative to the field; if false, relative to the robot chassis.
      * @property isXLock If true, locks X movement.
+     * @property fromHeadingHold Angular velocity is controller correction, not manual heading override.
+     * @property fromPositionHold Translation is controller correction, not manual position override.
      */
     data class JoystickDriveIntent @kotlin.jvm.JvmOverloads constructor(
         var targetXVelocity: Double,
@@ -162,7 +168,9 @@ interface RobotAction {
         override var timestampMs: Long = com.areslib.util.RobotClock.currentTimeMillis(),
         var isFieldCentric: Boolean = true,
         var fromHeadingHold: Boolean = false,
-        var isXLock: Boolean = false
+        var isXLock: Boolean = false,
+        /** Closed-loop position correction, not a driver's request to release the position target. */
+        var fromPositionHold: Boolean = false
     ) : RobotAction
 
     // Autonomous Events

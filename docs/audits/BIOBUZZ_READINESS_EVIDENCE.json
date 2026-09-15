@@ -1,0 +1,2944 @@
+{
+  "checkpoint": "BioBuzz desktop functional readiness; real-time pacing and hardware remain unverified",
+  "recorded_utc": "2026-09-15T14:53:59.639607+00:00",
+  "base_commit": "c52d4301",
+  "branch": "codex/biobuzz-readiness",
+  "library_tree": "6d49e143e3a919569c5b3d933b8a8200adeb9a36",
+  "candidate_version": "19.0.1-rc.6d49e143e3a9",
+  "candidate_repository": "../audit-pass191/ARESLib-Kotlin/build/release-repository",
+  "source_patch_sha256": "9f7e7e38b45429dc5c69fa397c8dc7dbadb6562450ccbd68fdc5b02fc6914b97",
+  "biobuzz_archive_sha256": "a46f29f90792fe145f8c5e3510a9830062f92604ab5045e4066078fd254d27b8",
+  "source_inventory": [
+    {
+      "path": ".github/workflows/monorepo-ci.yml",
+      "method": "build/release/CI integration",
+      "git_blob": "e742f345687948cebefbacfcbacaf2d41bf665e3",
+      "sha256_worktree_bytes": "3ac7651c7ae710af88bcead224b977d8e18d73e59a69967e8ca3df63088c0777"
+    },
+    {
+      "path": "ARES-Analytics/app/build.gradle.kts",
+      "method": "build/release/CI integration",
+      "git_blob": "af93baed9967476761ca7ca3c229b4a2d7899e2c",
+      "sha256_worktree_bytes": "3cc7b5925a22aa3a5dab28c5f895ba0350e548191877e14e3c6cea8325b9c6bc"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt",
+      "method": "runtime/integration source",
+      "git_blob": "337df64a89f4a8048657dfea96519a5dc480e731",
+      "sha256_worktree_bytes": "29297a9ede1034efd76c00d0e994595cc258f0b9369ec9a7555321b2b2d1b208"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/OfficialRobotProjectTemplates.kt",
+      "method": "runtime/integration source",
+      "git_blob": "040184b81e616df9a28fa5b2f2a962ead82ae531",
+      "sha256_worktree_bytes": "5fdc682464fcfc5b0e5c7ac6e04b78a7d25dacb36a08935e32daba780e868ae5"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/RobotProjectTemplateService.kt",
+      "method": "runtime/integration source",
+      "git_blob": "99df68a3fdcb7c8965e82e657984d8e21a56b008",
+      "sha256_worktree_bytes": "f3c8379c33812b388b90a8e10102220fa70d33a02be919a6645c2b4938fbff40"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/persistence/BiobuzzAutoBundle.kt",
+      "method": "runtime/integration source",
+      "git_blob": "676716a892ef06d28a1d7df50da60562610c7d42",
+      "sha256_worktree_bytes": "a2b14de6ac44e6727f68fe6abfc58ea7060e8922ab014f63eff5338d8aceacc2"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/WorkspaceSelector.kt",
+      "method": "runtime/integration source",
+      "git_blob": "2efe5bc060390264491ce6d3eebb70c6250f9f75",
+      "sha256_worktree_bytes": "23aea9929486184cbe03065b4f10ad6e70e804f17858aef76c980b757baef270"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/biobuzz/BiobuzzOverlay.kt",
+      "method": "runtime/integration source",
+      "git_blob": "5d2d1e7f09c929c3a6cbcda08dc9ac02b55e9a8e",
+      "sha256_worktree_bytes": "559c72a7a00b6efa075bdb6f9d40082bc137a85dbd478406c8bed4d2c71cb294"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/FieldViewerCard.kt",
+      "method": "runtime/integration source",
+      "git_blob": "1992c33473610a8de169e64984c8b749afc0856b",
+      "sha256_worktree_bytes": "9f3d0c74e26d7f4383cf94c58a03c66d60812c4545fcf9b895700dc2d55c5c09"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvas.kt",
+      "method": "runtime/integration source",
+      "git_blob": "fac3914651616459300d895f2fe281a32620b2ed",
+      "sha256_worktree_bytes": "e61deea5b4d4b55dadfd1fc7185c53aa2061493cdbcc736975d4e5deeab0c010"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/routine/RoutineEditorPanel.kt",
+      "method": "runtime/integration source",
+      "git_blob": "7f385b8dceda5ac13a5bd42516a181db8dcb965b",
+      "sha256_worktree_bytes": "17f4e6f1d60770757e26eb7fc9074783568edb11630973865d456be92346216c"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/input/DesktopDriveInputPublisher.kt",
+      "method": "runtime/integration source",
+      "git_blob": "b453e61ad737d8b88b18269f748fca5efa6a6fec",
+      "sha256_worktree_bytes": "11e87bc8cfe4b74d62013c75cd71fcb72c7c710f1638ad5cb52a92d50b796839"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/input/DesktopDriveKeyDispatcher.kt",
+      "method": "runtime/integration source",
+      "git_blob": "c366e464e3c2bd525fbaf19668d3a03d28897fb1",
+      "sha256_worktree_bytes": "80b497d4ba0235dee9c37ff61ac534b4df931070467256ce512379d2027e6777"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/FieldEditorScreen.kt",
+      "method": "runtime/integration source",
+      "git_blob": "08b13984580f36caeabc890c1f15896c5b45fdc9",
+      "sha256_worktree_bytes": "0872584fd9975317f2d8602f09c0f6126be5467e04e1bb14552accf18c722732"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreen.kt",
+      "method": "runtime/integration source",
+      "git_blob": "e05814e6e5bf0a61939d1089316bf523e96b9bf4",
+      "sha256_worktree_bytes": "3c57a7583c22350918ed296159ba92d767fcf56808a1352139ec451324250da9"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/OnboardingScreen.kt",
+      "method": "runtime/integration source",
+      "git_blob": "e7f32b060dcecda68dd9f123aa7622d8d40b7ce1",
+      "sha256_worktree_bytes": "ec7590ef9835ff3f6d5ecd210cb282ae0c63ade1c46e2016b91b9e1a9e3c77ec"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/SyncStep.kt",
+      "method": "runtime/integration source",
+      "git_blob": "1c9ad03b613aac4f88d7a4fda567d53bb9bf3a47",
+      "sha256_worktree_bytes": "e6da32e532ac627a2a53defe361bcfe36a709f4a99923d85b780e9e8d52160fd"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt",
+      "method": "runtime/integration source",
+      "git_blob": "a6a7d1ac90749a10c122cb14b2352569132fb2d2",
+      "sha256_worktree_bytes": "888683e7eac5c823ea8510c8603bbe469d5855bbfcf46c32cbf71b786baab2db"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldViewerViewModel.kt",
+      "method": "runtime/integration source",
+      "git_blob": "436a48eb00ada588a265d802e43c59c9e8917c39",
+      "sha256_worktree_bytes": "d98126701a15a09e7dc2c6e0f966667d802e3c2539a154e2a715cacc1fab5655"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt",
+      "method": "runtime/integration source",
+      "git_blob": "3811f34e32da8131b98cf13120b997ec743a6f6e",
+      "sha256_worktree_bytes": "fc0748ec489fe3c20109ff5e9aa23a286b9d617a2d83c4cc887bb9d6bf4ab076"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerModels.kt",
+      "method": "runtime/integration source",
+      "git_blob": "bef1833c748b4283c4015676a5390061ead0ec06",
+      "sha256_worktree_bytes": "dd074263920bf6237ddf0b02e1da9749362888ee1105b3f940464c8222b199c5"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt",
+      "method": "runtime/integration source",
+      "git_blob": "ec96c26be0aae066edd34301af0c157f60178c58",
+      "sha256_worktree_bytes": "063f9118f94622da72c588209e149db86959a2f1d2ab2bc294b130d727c8fe26"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldDocumentMapper.kt",
+      "method": "runtime/integration source",
+      "git_blob": "66cbde26ae1834e213c53e59328b5b0606395747",
+      "sha256_worktree_bytes": "a4518ba8dc08182c10c4666b8086d301f2a4a5b2300a73364b7189d26f907ac7"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorTransactions.kt",
+      "method": "runtime/integration source",
+      "git_blob": "3a60d4fc9d0f1b1596028e533bf20ee5d5dc8e21",
+      "sha256_worktree_bytes": "edea98bcdae43da1b1064fb5759ae30685995673e2d03f8538e1a2e63d4b4120"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldImageLoader.kt",
+      "method": "runtime/integration source",
+      "git_blob": "937038e40cc63da929dc1d67486fa7c0179eb444",
+      "sha256_worktree_bytes": "f29e64a9614146fb02f649307536a4fc3e4e25dec11c093fcb076842a0ffda15"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldTopicSubscriber.kt",
+      "method": "runtime/integration source",
+      "git_blob": "63077fca1924a88e4009c77f0892d8bfac03d3ce",
+      "sha256_worktree_bytes": "4445cefe0e86cd5d3e966e3afea7aa70fb56cb82a12d9975c1f2d382854429ce"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/ReplayFieldSnapshot.kt",
+      "method": "runtime/integration source",
+      "git_blob": "960e108a610bb7c601ddb9cff366b125f40f2bcd",
+      "sha256_worktree_bytes": "7dbc36dfb4b91bceb09bca59ce18db9bdfd4d24806e62d5d50c766c868ef54a3"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.0.2.zip",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "7365e3dec5722d18e25fcf03cdd5b2f25668554c",
+      "sha256_worktree_bytes": "a46f29f90792fe145f8c5e3510a9830062f92604ab5045e4066078fd254d27b8"
+    },
+    {
+      "path": "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/di/KeyboardDriveStateTest.kt",
+      "method": "regression check",
+      "git_blob": "c8fcc2b30afaf3c97dea206c21019aee5a0e9ddd",
+      "sha256_worktree_bytes": "44ff3fa6d520f2a85ee3679f95796a796ab5f5c574ed9438f305789af741b911"
+    },
+    {
+      "path": "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/BiobuzzAutoBundleTest.kt",
+      "method": "regression check",
+      "git_blob": "99e678603459a830adde6ca53ba899530a31a51f",
+      "sha256_worktree_bytes": "9058f3ec87a130b9256d61b2f4bc4d6c9a7dee7efa622544a812bb7a9f1a49f9"
+    },
+    {
+      "path": "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/input/DesktopDriveInputPublisherTest.kt",
+      "method": "regression check",
+      "git_blob": "e2accee53efdbc643231da8a8d53867b5bce93a3",
+      "sha256_worktree_bytes": "ba036f55fdbf19b1c8bb890f163fcd6513379c73c6bdd7e170152ea35e91cf7c"
+    },
+    {
+      "path": "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/input/DesktopDriveKeyDispatcherTest.kt",
+      "method": "regression check",
+      "git_blob": "30602a45b8fbbf784ef75b04198dfd1b8e707f4b",
+      "sha256_worktree_bytes": "bf9a34854bf6b6cab8a6f923af13c45add22157c96a7f645231529bc060d5f73"
+    },
+    {
+      "path": "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/BiobuzzDashboardTelemetryTest.kt",
+      "method": "regression check",
+      "git_blob": "e542ea75a152bcd66d5c45520d175c6fed948cab",
+      "sha256_worktree_bytes": "56cb6f87fb7f3d2f067376cb946f1d9bcee936abf35e7b4eef156eef62beee21"
+    },
+    {
+      "path": "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/BiobuzzFieldIntegrationTest.kt",
+      "method": "regression check",
+      "git_blob": "d4f7db97d00b6ca08c5bf314e3a6583726679129",
+      "sha256_worktree_bytes": "62dfdd0fe88c5402cbe70b3a045906c614f2d1caea539bd05a40486027935fd6"
+    },
+    {
+      "path": "ARES-Analytics/app/src/test/resources/biobuzz/browser-auto.zip",
+      "method": "regression check",
+      "git_blob": "f1d30f21e07e6d9527b924d07fcc7e2025333f88",
+      "sha256_worktree_bytes": "b70acb39444befaf22d9d222801e66572496dc76a5c93ca9770955bf30e08f67"
+    },
+    {
+      "path": "ARES-Analytics/docs/biobuzz-dashboard-plan.md",
+      "method": "documentation review",
+      "git_blob": "dd7e26a715bb04b14133fc31ea6b5b297045be2a",
+      "sha256_worktree_bytes": "0fe3258e2d7521b7d18b4681744749f97b3a55c1d570d98abd22c32a936ce502"
+    },
+    {
+      "path": "ARES-Analytics/docs/biobuzz-simulation.md",
+      "method": "documentation review",
+      "git_blob": "ff0ec10904a5640755161e407116c07057a3cf7a",
+      "sha256_worktree_bytes": "a6c66ad5001e0a6e74798f87d05208f292b683f7cbc70bfa1a4f0ca5e2c857b0"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/.ares/action-catalog.json",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "3596adda2cca848748e46283b7aa3697fa77c697",
+      "sha256_worktree_bytes": "440e9c01eb47064ce936560ee7183a06de73037fbc1e22e5a40d753db9167a8b"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/.ares/autonomous-catalog.json",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "641ecf7f60cfba4b6cc88a8b106911d44824499f",
+      "sha256_worktree_bytes": "b4d153adc7afa6417dd8358cd8f3aa33faf57423995305912a7c34c569d16ec6"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/.ares/controls/driver.arescontrols",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "3a7246c96f16ac8e42434581c2d584468523bc39",
+      "sha256_worktree_bytes": "1526c1b9f969b07d13d3475f58c01219cb757966e0172c535c1a75f380b316c3"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/.ares/project.json",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "f16fa236e0a6a508541fdd4e68ce19c2a507b1b8",
+      "sha256_worktree_bytes": "11d959a3ff196fc15ff84a1f401ef78a05c678616df4db0df7711cbfd4854022"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/.ares/subsystems/biobuzz-intake.aressubsystem",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "794ce9c3b9406e0bb61bfd285df536cc176e6dd6",
+      "sha256_worktree_bytes": "1c36260638aa03ea12e9300db959fe65a45f942b75cef56db18ce5215becbb07"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/.ares/subsystems/biobuzz-shooter.aressubsystem",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "7bbaee764c242ba08dfafc63ed66184d2f4da0ee",
+      "sha256_worktree_bytes": "b44711586d4921bd5a1908d6b602566f809dcf99705336e36279c84f4c3ee813"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/.ares/tuning/simulation.arestuning",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "309b6f6f2bfddd7770cd8b91d9c706e0ac91383f",
+      "sha256_worktree_bytes": "596e9ca6fdc3d2291b01ea0ed815b339402509044432740d74b39d09bd9d06be"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/TeamCode/build.gradle",
+      "method": "build/release/CI integration",
+      "git_blob": "dc685b1f0989e172671b8dbd90b02c69ec58a7c1",
+      "sha256_worktree_bytes": "3c31dece4840d4bcde0cc983fc79858872f626468d76a0042ab9fecbe9da2db3"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt",
+      "method": "runtime/integration source",
+      "git_blob": "aed7809d18510220dfdfc049b357ae457659b02c",
+      "sha256_worktree_bytes": "2f4484e9b2e7af18c2095a02616052926382e793e67b4ddae421912393656406"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/docs/BIOBUZZ.md",
+      "method": "documentation review",
+      "git_blob": "d1bf50c1d3c878b2cedd74ac7d2eac376e18e596",
+      "sha256_worktree_bytes": "9e858004bf2366c28d836c149ac43917518422e59c99c1c509917a835972875a"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/shared/src/main/kotlin/org/ares/biobuzz/BiobuzzField.kt",
+      "method": "runtime/integration source",
+      "git_blob": "7492a3923acdb2df7fad5341332b6b9c8f75f39e",
+      "sha256_worktree_bytes": "3cf4dac7d2d68e30c6c71eb8cfde4431ea7f2ad006e46086119b2501ba6ecf5c"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/shared/src/main/kotlin/org/ares/biobuzz/BiobuzzTelemetry.kt",
+      "method": "runtime/integration source",
+      "git_blob": "d37943a24b78dbf42a99dcbffed20dcce2dc8349",
+      "sha256_worktree_bytes": "8a15541dfbf969a7686c69f6a88ffcc8003035c0efdd418521c3e94437e0c009"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/shared/src/main/resources/field-presets/ftc/2026-2027-biobuzz.json",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "6e5cb1779375e851b820af701aef739fa91c7960",
+      "sha256_worktree_bytes": "4bf66d9efc3c3925260b54b62c003052f9d0daa6d168aa72f36744d833e8ac13"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/shared/src/main/resources/field-presets/ftc/2026-2027-biobuzz.png",
+      "method": "packaged configuration/asset; generated consumer validation",
+      "git_blob": "f262ed0af1fb099c1ed95dd9904b2e05c390bbc8",
+      "sha256_worktree_bytes": "d76bc3e804a0666d84f92435e537d260d7ddf4750f7e2669cef39806b5ed9c58"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/simulator/build.gradle.kts",
+      "method": "build/release/CI integration",
+      "git_blob": "642f2e6b1c3695eb6b57f460b6ae07108e2758cc",
+      "sha256_worktree_bytes": "262d6b042a012f479bfa4371f26dacbb8a676f90b8a8088ec989cbf821fb4bc9"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/simulator/src/main/kotlin/org/ares/biobuzz/BiobuzzSimLauncher.kt",
+      "method": "runtime/integration source",
+      "git_blob": "aa51e9f532df1730458a13a74d68270b3ae501d1",
+      "sha256_worktree_bytes": "a83e6c9fd4a83b181ae3f231ef7d76612174f1d081da3a5d709e80b57ddd81b8"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/simulator/src/main/kotlin/org/ares/biobuzz/BiobuzzSimulation.kt",
+      "method": "runtime/integration source",
+      "git_blob": "311c1089f2a9193b5e5525c0b11167b4884cd265",
+      "sha256_worktree_bytes": "893fd7f3cdb420b5c2a5b861224ae468c130ffa2cdf804e91b6a3ecc147431c0"
+    },
+    {
+      "path": "ARES-FTC/biobuzz/simulator/src/test/kotlin/org/ares/biobuzz/BiobuzzSimulationTest.kt",
+      "method": "regression check",
+      "git_blob": "a6cb8772a7adbcd4a86dbf7eb156a8af721700be",
+      "sha256_worktree_bytes": "6ad62a9689305268d34c49e2945bcfadd1d132d893f1116337de5ceaf3d13fc2"
+    },
+    {
+      "path": "docs/audits/BIOBUZZ_READINESS_REPORT.md",
+      "method": "documentation review",
+      "git_blob": "6aebc1bab77fe0806079651dd5eef6af4c03d4fb",
+      "sha256_worktree_bytes": "259bc25d59528724eb531931f5eeaa5a7fad08efe196e38fbaec46e7c519c31f"
+    },
+    {
+      "path": "release/ares-versions.properties",
+      "method": "build/release/CI integration",
+      "git_blob": "880c025712249a5d64ada193f437fb7a68650b99",
+      "sha256_worktree_bytes": "bde66a5ebc0567fd04dda4a0cdcff30fbdd0dcf1aa4d66108bcb9ffbd4ee0d4f"
+    },
+    {
+      "path": "release/starter-artifacts.properties",
+      "method": "build/release/CI integration",
+      "git_blob": "058308b9aab463ff89b07f666d9244801b2e7086",
+      "sha256_worktree_bytes": "0ffc6e50e41b89b5b99420e74dfc9e4b284c5a93c590becfb629382c80cc0f72"
+    },
+    {
+      "path": "scripts/build-starter-archives.ps1",
+      "method": "build/release/CI integration",
+      "git_blob": "31ba364c46ea120e5b1c421371ba6fe01d1757e7",
+      "sha256_worktree_bytes": "7784734f74dc7183295b3a15805bb594a345e0e54b383e7303060b83f2384b38"
+    },
+    {
+      "path": "scripts/classify_ci_paths.py",
+      "method": "build/release/CI integration",
+      "git_blob": "55e1cf0efc7d5f5a8dda15078f85bc23c4111fab",
+      "sha256_worktree_bytes": "215b4c9baeb8906fea121c8aff34293e2f88d0f723ac773c47583a7f418c2901"
+    },
+    {
+      "path": "scripts/export-starter-mirrors.ps1",
+      "method": "build/release/CI integration",
+      "git_blob": "b7d1c4559b7d7e1c7c62eff3fbb44d2bfbe11a6a",
+      "sha256_worktree_bytes": "4d9b9d472eff93be4d1fc64962357262a506aa3d52ae928e3569eb7fa06ee89b"
+    },
+    {
+      "path": "scripts/render_biobuzz_field.py",
+      "method": "build/release/CI integration",
+      "git_blob": "c8adf2cc331955d95c57830ed5f6acffb8698a84",
+      "sha256_worktree_bytes": "a1899ac3323c1b4f83b56314e426285b98917fa3f15dffb8ca1221a99143f1a1"
+    },
+    {
+      "path": "scripts/tests/test_classify_ci_paths.py",
+      "method": "regression check",
+      "git_blob": "4a08ec814efa211798ed332f8cea4c9550739999",
+      "sha256_worktree_bytes": "a7d93e7e1de3e16dce11095bd2ebbe794302a6c1a1e98b272a9b8f4607382f70"
+    },
+    {
+      "path": "scripts/tests/test_monorepo_policy.py",
+      "method": "regression check",
+      "git_blob": "80a5ddfc6255599dafd36aa1acda34acbaadfe9c",
+      "sha256_worktree_bytes": "d6bec06626a646708ca36187bf42ebfde9113f00dcb59fe336c7219888121d35"
+    },
+    {
+      "path": "scripts/tests/test_starter_export.py",
+      "method": "regression check",
+      "git_blob": "3b52543124cd455d43fa003649c5acbe6b778bb4",
+      "sha256_worktree_bytes": "4c4a292c3f94909e099e21c000b3e7633a49d9c53a84b9e3c736c45f1d563903"
+    },
+    {
+      "path": "scripts/verify-monorepo-policy.ps1",
+      "method": "build/release/CI integration",
+      "git_blob": "5d6edd82dbbe25b5de5b5b39b4113cf93963897e",
+      "sha256_worktree_bytes": "f02909a064c48766f993a8a038842051e74a41c66f6673c66a474afa23ceebe6"
+    }
+  ],
+  "local_evidence": [
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/analyze_timing.py",
+      "bytes": 1743,
+      "sha256": "0535b6a3730539e26bfe71b0f0a1b96b3f9c63de5665d42a579e90b8eeecfc2f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/archive-build-2.log",
+      "bytes": 1216,
+      "sha256": "a7b95290d7f0e0501e420ff37777cad991a9fe32ee8a959153abc0a4342aa34c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/archive-build.log",
+      "bytes": 1216,
+      "sha256": "5bf41e2179d1a847f2f8444bb05fa523e06e05f128960b53929db55f441d88bf"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/bundled-before-fix-1.0.1.zip",
+      "bytes": 1169329,
+      "sha256": "a8eaf3397b1e6549861be0c659fbbc41b5c272b46a77c1c16adcf2f115113ea9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-001.png",
+      "bytes": 112622,
+      "sha256": "48a3ec8c611df685ae47a4d8dce38b90f7956a8cb5d849f992fd98288b7e90c3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-002.png",
+      "bytes": 107825,
+      "sha256": "3fba1347e5efe0b979768dd38ce8758026c3aed912d21383bb481886246b1a42"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-003.png",
+      "bytes": 76157,
+      "sha256": "8311dd82e79071a9ae584223b77f5f891a87adec1911cbc5f7f4dc8958871258"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-004.png",
+      "bytes": 77849,
+      "sha256": "fbd6e2a501753bfa6accf188d7b5011f03861365addc420a54cf65aa2249ddec"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-005.png",
+      "bytes": 101039,
+      "sha256": "1dea46efb86397a6aed3a9e51d7a70721469186e683f73c107578081e2901e3b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-006.png",
+      "bytes": 113179,
+      "sha256": "102f255a907d76ffe8317df53ab1686bf84f661662ba206e4c7db3f0fcab69af"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-007.png",
+      "bytes": 113345,
+      "sha256": "d6eaffc046b4b6334b7bbe198cfe533be5c690bef8b4a955c6bfef3c83445238"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-008.png",
+      "bytes": 113354,
+      "sha256": "721beb3a4251b48a0a03d4951667936dd6c077acc329b3003edfacb7f700b234"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-009.png",
+      "bytes": 97033,
+      "sha256": "21908bd6b589eb6fceac6cfb799bcd27caa4cc5240f3e5f7d7d1abccd214d9df"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-010.png",
+      "bytes": 103958,
+      "sha256": "95cfee53d408972f39dafacd51ad522a587caa529a09d89357c4d61afafbfe27"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-011.png",
+      "bytes": 109427,
+      "sha256": "e97211a525894ad89166b9a26c18c200d4d338fabd39b87b3b61c48fccf7f15a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-012.png",
+      "bytes": 111537,
+      "sha256": "5bf5ab76b7e4bc46a1b7059ad7b0b3cd375210acb6f03b387e2feed1c6863eb4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-013.png",
+      "bytes": 121172,
+      "sha256": "5e1d56d43852c7e2ea57ec6c014239d3555c57cb112e5aa85519289735e7199e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-014.png",
+      "bytes": 121627,
+      "sha256": "8998603e031747e8229222659d0828957380eea9f3b66b3b1d6ac1e37693cf60"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-015.png",
+      "bytes": 121273,
+      "sha256": "70bd83b229e5e8df27a38a755458e005c8e23afaf8222f794b9ecfea4799dc7e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-016.png",
+      "bytes": 177253,
+      "sha256": "ad889d37583b1e4c24df3151b49a7af7af83c03f677a572c5926051407ccb8e5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-017.png",
+      "bytes": 115077,
+      "sha256": "5fb520b20d67abfac2bffbcfaf4f0daa93c55f4ceaaf47cda9766f2ea1936261"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-018.png",
+      "bytes": 115493,
+      "sha256": "1cf345b728b83aefb25332d69153d2c66b1df611cbf5b5aa507be4dfbad284aa"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-019.png",
+      "bytes": 115471,
+      "sha256": "b6f72f324187facde7c436cc888a78c5285210d68a998b2a0240095e63e7a340"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-020.png",
+      "bytes": 111196,
+      "sha256": "764d3bd35311f650b105f55d24ed853e3c787949d1ec7f6a03dee018d0ed44d9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-021.png",
+      "bytes": 111237,
+      "sha256": "ce1d9212dfbcbffcdab4235624cb33f2caad1412e067a48d30dcce3961744a84"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-022.png",
+      "bytes": 113586,
+      "sha256": "015f28cd07aac6ed4cb7e2b3e773525903a0085f93fd0ecfea86f8f4cc958f5c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-023.png",
+      "bytes": 114517,
+      "sha256": "609d1f98ddbeaa91f31b4f6b732ba74d5f15e6b66ef1a0d06d61eff65a75486f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-024.png",
+      "bytes": 114093,
+      "sha256": "7616e38706ea4797e50df89dd64808b01567ae5995a8ef2ae78b692d604f9dc0"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-025.png",
+      "bytes": 115016,
+      "sha256": "f2236ab07a64dc0515ee74cf5aabf36e6fe5348dac2f1b7ae08da43c676c4ea5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-026.png",
+      "bytes": 114437,
+      "sha256": "491d69583c2480437f7d23a683af945f9f310b527602a0226a4840ca7f9fdc52"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-027.png",
+      "bytes": 114487,
+      "sha256": "2286ea76b8ae5e2882e9c7f124a2ab525b417af8b8231e587fa20b4c2b4a9468"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-028.png",
+      "bytes": 114867,
+      "sha256": "2aa5dd5a289e56a35fb0dd48e1117c6eb77223367d1cd88c6e7acdaca7e9f8dd"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-029.png",
+      "bytes": 116792,
+      "sha256": "e04622114f360911f690310ede60da8bc6a3a0e43abc6f77d0306ac49f8eedb9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-030.png",
+      "bytes": 106140,
+      "sha256": "f6738596fe43454948b3bcb9286e56809d9ffaebffd7a1c15dd3881b9039522b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-031.png",
+      "bytes": 106044,
+      "sha256": "4f66b1a01a2a501501ed7ca39c570c9d0b391b9ba840416d9d04c65d32bd40d3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-032.png",
+      "bytes": 93498,
+      "sha256": "82ce968ca342d076b9ede0ce277d53868b6df498357e65d28ff127e9dcff35c8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-033.png",
+      "bytes": 96421,
+      "sha256": "6d3b4e5bf0a9bcabd7620225d6e3953ad01620174c5bf1e86bac5bc01a342de7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-034.png",
+      "bytes": 135458,
+      "sha256": "9cbe05ebd5c1c9c211be2c34cbb8c14f1d5172b1615711da6bf9a38553653873"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/captures-1/capture-035.png",
+      "bytes": 137060,
+      "sha256": "e5331d6af45daac302dfcf389fd09503dd115d550bb75bbe476c7c3f27689faa"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/final-source-policy.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/final-source-policy.log",
+      "bytes": 243,
+      "sha256": "4c6e683ea867d0190535c3a1958dbc02e9e9d19ea5a5c52e5a2a5bec669b7805"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/launch-1.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/launch-1.log",
+      "bytes": 20616,
+      "sha256": "5121dad6d220937417826918ab7c60d2044cb9f67571d69a590c8c34da8ed00c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/launch-2.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/launch-2.log",
+      "bytes": 4378,
+      "sha256": "4811c79afe8c730360ff8a786f414a28b1d04e1a3992da277a8f642ccfab9b7c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/make_manifest.py",
+      "bytes": 3142,
+      "sha256": "b058a9966b070c00a4e4722ef7b4cb50560da8009dd326c55e7c4dea17370db3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/native-1.png",
+      "bytes": 98742,
+      "sha256": "1e62ab1121d8dc62792108f90de9d1b10f033e6c1178279e25156d08a1f40fa4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/native-2-inspection.txt",
+      "bytes": 4957,
+      "sha256": "a4aa3023b8611639f9e453d0dbb39d658109087b36a0ae4e8e15612107691561"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/native-driving.png",
+      "bytes": 163621,
+      "sha256": "0a82960e9b0cdcae7e9c19334b0b59a22f3f0f60f360f3b6394466dfbf5cc390"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/nt4-latest.json",
+      "bytes": 83189,
+      "sha256": "936232feeede08f725971ecda5a936aa90aec6b02597f26dcbb29eacf106975d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/nt4-observations.jsonl",
+      "bytes": 59430891,
+      "sha256": "88a47c998211970061e7555180074ffdeeb0aeae139a45fbb03e2164456ad98e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/observe_nt4.py",
+      "bytes": 2366,
+      "sha256": "a728ca95d7fba0b348731434faa782e82a6aa56b45d3b36aa3fb8daf4a204bb8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/observer.log",
+      "bytes": 29,
+      "sha256": "93a47ff0bb24cac9749fe6cf7f7da74ef015eb25bca10ce4ba20713ba66186b2"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/original-biobuzz-1.0.0.zip",
+      "bytes": 1166880,
+      "sha256": "e04654639692a18869f2ae671640585a9e322727d01da3ba2e9a779e9c56df57"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/original-source-after.patch",
+      "bytes": 829582,
+      "sha256": "9f7e7e38b45429dc5c69fa397c8dc7dbadb6562450ccbd68fdc5b02fc6914b97"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/pacing-java17.log",
+      "bytes": 208,
+      "sha256": "7894dbb1ef182bc692fd8ad9b8557884438034f562dda8c6a0b54028c4fb34be"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/pacing-java21.log",
+      "bytes": 208,
+      "sha256": "ad2d33e15fdfe463bc143443b55faec8306987f6eaa29280e9210ede63a3680e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/PacingProbe.java",
+      "bytes": 1153,
+      "sha256": "708b9a7b884f912cef75f3447128934015940661bcdbd350e8114d16c37ef7e7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/policy-tests-final.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/policy-tests-final.log",
+      "bytes": 119,
+      "sha256": "5e2e5782de051c05585942ccad669c14042f9c1a5b89678a47c51d6d45291c83"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/prelaunch-ports.json",
+      "bytes": 4,
+      "sha256": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/prelaunch-processes.json",
+      "bytes": 4,
+      "sha256": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-build-2.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-build-2.log",
+      "bytes": 5700,
+      "sha256": "651addc6497d7d4918ce0a1afb0823633408c351fbf0d37588b0d0c8d03d6fed"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-build.exit",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-build.log",
+      "bytes": 4320,
+      "sha256": "143cd382a92ea3ebdbf998b25c04bd4dfa1ec9b0d0c49614a22e59767652c664"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/simulator/TEST-org.ares.biobuzz.BiobuzzSimulationTest.xml",
+      "bytes": 1648,
+      "sha256": "3def8d3b075fa203a9280ece40559466c0f38c07f5574d848786833754557278"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/simulator/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml",
+      "bytes": 1142,
+      "sha256": "70c01a75eaca83d7bc99b4b1b101e003a66398f38c650d76fd5cad9b5dfedcca"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/TeamCode/TEST-org.firstinspires.ftc.teamcode.FtcDriveAssistModesTest.xml",
+      "bytes": 661,
+      "sha256": "8251a7ccf5313825df9e4ad7b443a5fa610fafbc700a9c52e5ec3a69d8e0aae4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/TeamCode/TEST-org.firstinspires.ftc.teamcode.FtcStarterFeedforwardUnitsTest.xml",
+      "bytes": 709,
+      "sha256": "6d00e79bd79052a65f99e1dbe4af1d417984419c9e64a9ee837e9d0297cdeaa3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/TeamCode/TEST-org.firstinspires.ftc.teamcode.generated.GeneratedAresProjectContractTest.xml",
+      "bytes": 1213,
+      "sha256": "244d4f467524211fcd33fd91c36cd48134ee51200133b41b65bde19b2744dab5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/TeamCode/TEST-org.firstinspires.ftc.teamcode.opmodes.StarterFtcFieldContractLoaderTest.xml",
+      "bytes": 909,
+      "sha256": "84e70da05886baf3dc250ead29a3373e3168ec3cfe057f479c381ef54c9ee5f9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/TeamCode/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+      "bytes": 1020,
+      "sha256": "b5634b230b145396740d187c385f9bc0cdd4f6be849fa5bf9a556ac9d4e7c707"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/TeamCode/TEST-org.firstinspires.ftc.teamcode.subsystems.biobuzz_intake.BiobuzzIntakeGeneratedTest.xml",
+      "bytes": 2056,
+      "sha256": "59da904866d3d0b1608f507e4787616dccb81af3efdc86c1f9738bdcb0616a27"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/robot-final-xml/TeamCode/TEST-org.firstinspires.ftc.teamcode.subsystems.biobuzz_shooter.BiobuzzShooterGeneratedTest.xml",
+      "bytes": 2073,
+      "sha256": "d031952a90f0499c8ad669daf724ce2550cb61fe87b84c97eecefb301bccfede"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/runtime-rebuild-2.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/runtime-rebuild-2.log",
+      "bytes": 2779,
+      "sha256": "e086a0ae864811ab317f3d993e5f091db112c32cfaad157990f1b985a6d41ad7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/runtime-rebuild.exit",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/runtime-rebuild.log",
+      "bytes": 1607,
+      "sha256": "3b75beb141008d96480b4364e0119b5e90ad4cb5a2b4a84eaa7d35742a4c3f00"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/simulator-process.json",
+      "bytes": 7376,
+      "sha256": "3aafbe56e18011e87ef8f083b95f35e8db611fbdd1982cfeb5142db7eb2cf028"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/snapshot-cleanup.json",
+      "bytes": 204,
+      "sha256": "0c9acce06556d876239c1163d201037551b1d44e05c870b23c2b78a389a18038"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/startup-1.png",
+      "bytes": 112544,
+      "sha256": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/startup-2.png",
+      "bytes": 103382,
+      "sha256": "2d91a28d279521d80ebf40f2e53be207f3d62f2eac4c309b95e8141e7078d016"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.di.KeyboardDriveStateTest.xml",
+      "bytes": 607,
+      "sha256": "6d305f6b429430080171ac2baafaace6497de60c990c4eab536479f480bbed20"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.service.project.persistence.BiobuzzAutoBundleTest.xml",
+      "bytes": 1177,
+      "sha256": "88701dd83ab0401c375e3c54255724a3090a2d98a1fa61260063caf8f997e35c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.service.project.RobotProjectTemplateServiceTest.xml",
+      "bytes": 3654,
+      "sha256": "e6dcd1c54e4e83cddaba8c6ad0769d1dfb859c558c189417f195705b2eb23aec"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.ui.input.DesktopDriveCommandMapperTest.xml",
+      "bytes": 1509,
+      "sha256": "84e3dca32f320a91903dd1e5679df36893a7cfd4e5203154632b97c50565e4db"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.ui.input.DesktopDriveInputPublisherTest.xml",
+      "bytes": 1924,
+      "sha256": "65eda55694ebb669502e72ef2405e792fbf0aa33157b0d950ff664bf734356c8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.ui.input.DesktopDriveKeyDispatcherTest.xml",
+      "bytes": 1003,
+      "sha256": "ad9e3d0aef3c4786811a341909f78a7dd950c3b119b570b61e29bd6d6e623262"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.ui.screens.fieldeditor.FieldEditorTransformsTest.xml",
+      "bytes": 1183,
+      "sha256": "5f7259f8345e956dc84a692d72fa0f66e85112dcc3852ac5c1c2902879b0d933"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.viewmodel.field.BiobuzzDashboardTelemetryTest.xml",
+      "bytes": 1175,
+      "sha256": "40e68c820f39d281ccf56cbcf837c0beb3fdd1043282397edaad66362f3f52c7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.viewmodel.field.BiobuzzFieldIntegrationTest.xml",
+      "bytes": 1116,
+      "sha256": "2706c2b586296860610c40bbab640117e7043e31fed948cc10acc298daa0a6f4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.viewmodel.field.FieldEditorInteractionTest.xml",
+      "bytes": 3940,
+      "sha256": "3380078742dd785f833ed1a5affbc600cdb3761b7e3e73e699350b1a7574c933"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.viewmodel.field.FieldEditorTransactionsTest.xml",
+      "bytes": 1399,
+      "sha256": "7c99a568a413236974b3ad7da450d5cf8b035dd4841cd80a54cca3f8cf252469"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.viewmodel.field.FieldSubscriberLifecycleAuditTest.xml",
+      "bytes": 5863,
+      "sha256": "bad38c180bd7c39468fb5b58c4bed6794e8e9528ef1773321b839c5b4dfd293a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.viewmodel.field.FieldTopicSubscriberTest.xml",
+      "bytes": 2045,
+      "sha256": "27d5cf503f2054372490d60d8f42baf7d1f0120d9e3446c06bf5cb662e6d963c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2-xml/TEST-com.ares.analytics.viewmodel.field.ReplayFieldSnapshotTest.xml",
+      "bytes": 1416,
+      "sha256": "cb3bdd2fa7e752b5bf329959a5412109bc349d531383daa954ad51e94a160490"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus-2.log",
+      "bytes": 4573,
+      "sha256": "c652d78cf0bef9476f4a91143821e970a9294d0b1304fbb8c0ef63613858d255"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-focus.log",
+      "bytes": 5124,
+      "sha256": "6766461548b364147bdc5c7568bacefb9661660fb11cbb9fb1234aa4672dfa47"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.BrandIdentityTest.xml",
+      "bytes": 632,
+      "sha256": "9c1e245cffb7dfc9c7cf8f3a3aca4e993a134759482dde80e63b8058981bce40"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml",
+      "bytes": 850,
+      "sha256": "6cef3dafd3064d3004e88101c638f57b9dd88d87784f2a83c23bb37d6bba6e78"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.desktop.DesktopShutdownCoordinatorTest.xml",
+      "bytes": 734,
+      "sha256": "2ad1e62fe02f22293243ac91f0c39fe9e4d9c4e5b6088a9211f9ed97e2593d3d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.desktop.DesktopStartupMachineTest.xml",
+      "bytes": 1644,
+      "sha256": "06e5ece6b172fbfdd65a93f1e14f50635abea4f323bab58a19e1c3c61202b5ba"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.desktop.DesktopTestControlServerTest.xml",
+      "bytes": 1062,
+      "sha256": "9815d2053887ec16f08fe72c33486f0508146f1f9ac0749ed98c977f11154586"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.desktop.DesktopWindowCreationWatchdogTest.xml",
+      "bytes": 828,
+      "sha256": "0777dd6f2dc6f068076d1fd722c8bb63ea25b089925aaef983be8d9d2f799695"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.desktop.DesktopWindowPresentationControllerTest.xml",
+      "bytes": 7244,
+      "sha256": "3f5cab78628adfe7e547ea09f7f9fa8103ad618cef42a41ae3685efab8b1b801"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.DesktopCoroutineDispatcherTest.xml",
+      "bytes": 486,
+      "sha256": "271a4cdbd3454a47b40581f33692263981acb7b6bac65a434be4fa3c8a917057"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.DesktopServiceBootstrapTest.xml",
+      "bytes": 480,
+      "sha256": "63a52a23623e486f6f43aee0f82ea1cf6e430c42462ce06c07c6e77189325c94"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.DesktopWindowIdentityTest.xml",
+      "bytes": 789,
+      "sha256": "a12ba211bd557ee4427827faa476b30d040f287d547273981b85bdcb5383f6aa"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.di.KeyboardDriveStateTest.xml",
+      "bytes": 605,
+      "sha256": "3862c5fa65315f452e41afcdcb3a31f1014c472a179a6279397202487a766bad"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.PackagedProjectValidationTest.xml",
+      "bytes": 852,
+      "sha256": "038a2a046714da0a8f5c4ef622de94dac7873b9dd76e87af535293cca3f321a7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AcademyClassroomPilotTest.xml",
+      "bytes": 510,
+      "sha256": "a1959ded046d67d9d8c9e4897d8b57ad3c2c97a92e3f7bee998148915a2d3584"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AcademyPracticePackServiceTest.xml",
+      "bytes": 812,
+      "sha256": "99d76d0e32b964472db88bdb0e30493767b14d2691052bab4b09c7e7de5982d1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AcademyPracticeWorkflowServiceTest.xml",
+      "bytes": 877,
+      "sha256": "92ff07d7373bf246d2c0d9f9f3778485e7f612a952b66f7de7ee43c51e470be3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AdbServiceTest.xml",
+      "bytes": 493,
+      "sha256": "7d6ed4d8150ff29c93ac9563de7df8907cd8093da35414d647c8f20c3ca0261e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AdvancedAnalyticsMathAuditTest.xml",
+      "bytes": 5786,
+      "sha256": "46afb46344c27ef78a9387afd4a88fc0027878a367ad4a24f052933de602b86b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AdvancedAnalyticsServiceTest.xml",
+      "bytes": 1015,
+      "sha256": "3f535d694baa2a45835aed1a809f666235c360351192ffef90823f9586ded00e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertAudioLifecycleAuditTest.xml",
+      "bytes": 1102,
+      "sha256": "55a62a2e7862fb1f03d5ff2efc8519f1822db94ae84de8af42561840be5603af"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertAudioNotifierTest.xml",
+      "bytes": 2669,
+      "sha256": "753ed66b9d1527bd8e14cd2bee46edf36b2f35ef1efe5abf35d084322e2880ea"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertConfigurationAuditTest.xml",
+      "bytes": 1134,
+      "sha256": "544b496c47bc02c56fb6978c91387bf91c0192a082d3059464cc8b63ae445044"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertEngineCompositeTest.xml",
+      "bytes": 625,
+      "sha256": "342d018dc70c1c4867bda82b64ef878de5bb1b4e849f6e11e9fc3dc361c968e3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertEngineServiceTest.xml",
+      "bytes": 1269,
+      "sha256": "40ca2bedc0d57e2b877edca661ac7ac95151211732bd9f1b96e3d03d10239ec9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertLifecycleAuditTest.xml",
+      "bytes": 2489,
+      "sha256": "5785977f5f82cb20e0dd88226bf12715175f4e0c51c8187ec6d188a23874d41f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertPersistenceAuditTest.xml",
+      "bytes": 1605,
+      "sha256": "6bdfd0d966026ab82bdbaa8b9d418aafd853b72aaf873e70f1ae93e6929c85a8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertPersistenceWriterTest.xml",
+      "bytes": 2244,
+      "sha256": "f4df0cca4abef8b2cbb41c18222cb30d9a29ebc1edb851ca9121ab76f7839d85"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertRuleConfigurationTest.xml",
+      "bytes": 2487,
+      "sha256": "a3d15de6c244b0a8b9413c4bb1ee194d9f6adf75563300ba53ead8de79e2f25f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertRuleSemanticsTest.xml",
+      "bytes": 952,
+      "sha256": "da1c94765c9b8a19d099857542674970e5976188128ac23b545a7a8daa764283"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertSourceAuditTest.xml",
+      "bytes": 2080,
+      "sha256": "aba7b6e59d8998ead667399967c75722c3644209d3443b2a3bd6e825a5926a15"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AlertTransitionsTest.xml",
+      "bytes": 1581,
+      "sha256": "6968ac958ad950c23332d6ff43c05e165f75e920dc4aaaa85b6dc80d1c121b98"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AnalysisTelemetryAuditTest.xml",
+      "bytes": 2567,
+      "sha256": "0a7fbcd473027d2e620be4f148896a928e95177cfd2e3296b6bc00a23379cc83"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AnalysisTelemetryRepositoryAuditTest.xml",
+      "bytes": 2557,
+      "sha256": "88cc7bb646962ce5dbcb732e524b9007befba47c01909f1e2d5b1957861fc688"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AppDataPathsTest.xml",
+      "bytes": 878,
+      "sha256": "b916e081f8484691b8fb1e7f84c906eb311e7c9b999d727e2dcadc1b17619f9e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AppSimE2EPipelineTest.xml",
+      "bytes": 928,
+      "sha256": "71b0816145cc8feef087d5e6b7e0c80dfa77b71cb5e635214c64b06775797106"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AutoImportServiceTest.xml",
+      "bytes": 2091,
+      "sha256": "a0b018e70bf1285ecd8a1af6e78b0fe53fed490a2ada546e363d6b8cbb4fb517"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AutoTunerInputAuditTest.xml",
+      "bytes": 3389,
+      "sha256": "242c68dde040fb4bc992c9e64f9824e15a6a71fa84a8a355a515976be6a7b725"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AutoTunerProposalAuditTest.xml",
+      "bytes": 1364,
+      "sha256": "9800ec5eb041c6ff1484bc9ff6ffd9f9263695a8352f0213704d6b68eb1bf5ed"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AutoTunerServiceTest.xml",
+      "bytes": 977,
+      "sha256": "1e0063ec55d965dc8fa83d86874e84cc03adca1439f3c42564549656577a42a3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.AutoTuningDigitalTwinTest.xml",
+      "bytes": 1147,
+      "sha256": "f15a827899c6af3dc8bea9b0e0bfd2e5b67eb063564b075b5e73362f288ecd1d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.calibration.CameraCalibrationMathAuditTest.xml",
+      "bytes": 5398,
+      "sha256": "5b3f6bf1881bf2ee5d487be4983a1c0325a3722ad5cc466c3541e9f79f894e08"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.CalibrationServiceTest.xml",
+      "bytes": 869,
+      "sha256": "4eff86b5e69c9c78870e38736deb02aa5d976370d7e40ce7274a3f13aff42320"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.CliDriverLauncherTest.xml",
+      "bytes": 649,
+      "sha256": "04e7275e3623be4233795d5c5205b2c491fbb2db9900755f3e65a633f4f867a2"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.CloudArchiveDownloadTest.xml",
+      "bytes": 804,
+      "sha256": "ce9006cf6cbdadf4a21e1476248cfcf423e6bd4cac0a21e8274515838a1e5be9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.commissioning.CommissioningVerificationServiceTest.xml",
+      "bytes": 741,
+      "sha256": "441c0341a8f889ee4eee36ccf88267e25071d1552429190e0a2abb4d5eb7a571"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DashboardHealthAuditTest.xml",
+      "bytes": 3213,
+      "sha256": "a4cf5d3a214f3e7038db5b4122d010ed55e8444ecacfd57c638e67bb636e7292"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DashboardHealthServiceTest.xml",
+      "bytes": 513,
+      "sha256": "940b3a167f972ee85cd5b341506099c1e2a16db7496429339833b034b387f591"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DashboardWidgetCatalogTest.xml",
+      "bytes": 1289,
+      "sha256": "dfb47c944add71421591e13a1716a9478ac109c631b5b27d09e79ec1b6b5b33d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DatabaseMetricsAuditTest.xml",
+      "bytes": 1782,
+      "sha256": "00750eae6362d6eb51735a465811178d8ac28c8480058f2d9cc68b6b5d8dd248"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DatabaseMetricsTest.xml",
+      "bytes": 479,
+      "sha256": "012459d3deec74b9c06ad8d629ea2d6e52fa5e3e7888515364e8ca1fa85874a8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DatabaseResourceSettingsTest.xml",
+      "bytes": 836,
+      "sha256": "b65d077a451d70a890c8039af11e7f26247dcb37c6d943c58196b2573d00a8d1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DatabaseServiceIntegrationTest.xml",
+      "bytes": 2873,
+      "sha256": "1a127ebbf325b479195a199856112443e2e0e4616119b5f5d60644ff888dfeb2"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DatabaseViewportQueryTest.xml",
+      "bytes": 1309,
+      "sha256": "12bdb14ac803662d24664e67f3b520cd2ea6b427df1489184e4aef1a2c2e96da"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.db.AiSqlQueryGuardTest.xml",
+      "bytes": 813,
+      "sha256": "5c44022ce5a6caa128d90e530258906554e9f44ee1f26fdb870b9cb8903e3889"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.db.DatabaseBackupExporterInvariantTest.xml",
+      "bytes": 941,
+      "sha256": "ada69faef92e39b75adf3406d538a515b67fe078e2259de585fba96db840e3ce"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.db.DatabaseCoordinatorAuditTest.xml",
+      "bytes": 1711,
+      "sha256": "9324ec4f76fc61faef957c2fc9ea198145dbe5b94ce56974dae27307fdaa030c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.db.DuckDbAppenderCleanupAuditTest.xml",
+      "bytes": 903,
+      "sha256": "e05aa3be134b21dd5a4ebc6951aeb09c1a17aeabd9179db0b3edfedf8b48b301"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.db.DuckDbAppenderTransactionAuditTest.xml",
+      "bytes": 1453,
+      "sha256": "1a48c446eeb9e603f999fd7c3d75e649595d97692ed1e6036b50562153ad993a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.db.RepositoryTransactionAuditTest.xml",
+      "bytes": 1678,
+      "sha256": "242bf6fcaa7c80ad9631ea071005585def1b6d2c3c2c06bc1936821ba6f1bda6"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DesignAssistantsTest.xml",
+      "bytes": 1390,
+      "sha256": "7ff8368ecf647b42adb63a9dd6c842d34e2a6a22bd4ae8629adc4352188243a3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DiagnosticCoachHealthAuditTest.xml",
+      "bytes": 6717,
+      "sha256": "96edad4572e497657d08fadac85c2b5552a85f0a6471b0f788edc5a9446ea653"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DiagnosticCoachServiceTest.xml",
+      "bytes": 1820,
+      "sha256": "9ed59e0683345fb7182154b0fadd4889be1f8e271747d45e69baeddf5dd002f6"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DiagnosticConfigurationAuditTest.xml",
+      "bytes": 2396,
+      "sha256": "7122eefae272fccb8c23a002e2f20085a09234ae404c8862a0ab9679dcf0b411"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.drivebase.DrivebaseAuthoringTest.xml",
+      "bytes": 5015,
+      "sha256": "6b035acdc68f337094492c5c00ff52af539cc677e71b8c3e41fac81a34201bab"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.drivebase.FtcFeedforwardUnitsTest.xml",
+      "bytes": 528,
+      "sha256": "e60ccdcc1ea1d4a1d873c0189e3157163f3cac3843809e31b7a764f87fd7c389"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DriveFrameTelemetryRecorderTest.xml",
+      "bytes": 836,
+      "sha256": "cf98e3e736f8aa44f02d5b01ec01435ccb400502592d2ad30eeaa7f6e6b67c00"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DriverAnalysisServiceTest.xml",
+      "bytes": 1330,
+      "sha256": "a390e553a055f2ffd05b8f279c75fabeb6ff827af398b5b1fd20d7fb7d4545cc"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DriverProfilePersistenceAuditTest.xml",
+      "bytes": 4400,
+      "sha256": "d5c654083f4ce2565d74fcf031beafc653ad0eb727066fea9476fd7d6d7bb5b8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.DSLogDecoderServiceTest.xml",
+      "bytes": 792,
+      "sha256": "654e5a844077ff7c05efe205f3fc307552dd4907e2f882ce368b371c67616f35"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.EnvironmentServiceCanonicalIdentityTest.xml",
+      "bytes": 549,
+      "sha256": "682ca9f0edc1e8e292d2879d75e8b18633bfefe0c7d44019c01e001281eaf9c4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.EnvironmentServicePersistenceTest.xml",
+      "bytes": 536,
+      "sha256": "2559e59e59312800bd3d5160fe9b15424c765b14ae4e80900eb1683faabbd7c3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ExportServiceTest.xml",
+      "bytes": 1798,
+      "sha256": "25a5bbc0bd2a6e9d4b0559aa902853131e49b3e1531166783a2cd62c738429bc"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.FrameBatcherTest.xml",
+      "bytes": 952,
+      "sha256": "74d556de72d658ae977aa10477084f217943f3a74669bc5e4d8aae15ddb67897"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.GamepadServiceTest.xml",
+      "bytes": 604,
+      "sha256": "d7f80870212b8d3b6d8e8392b9b235a17837e30679542adb281c017fd80fa16e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.GoldenAutoTuningRegressionTest.xml",
+      "bytes": 682,
+      "sha256": "07c89fbd4f305f0d22e312e325eaba1f25fb3fa19102e6ff9b9a27c46db00ece"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.GoogleDriveDestinationTest.xml",
+      "bytes": 1838,
+      "sha256": "8699ed13daa3a70c9dd12af87185b65a57813f04727481cd061df458de764602"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.GoogleDriveServiceIntegrityTest.xml",
+      "bytes": 1469,
+      "sha256": "f59ec3f4fbbf0c928c3bf5f66627766214ce9b847a0bd0299f1b791179aaba7f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.GoogleOAuthClientConfigTest.xml",
+      "bytes": 1533,
+      "sha256": "7d1bcdefafa2f4870f2f24fa6205729c79c90876337598c54cfee90549c7dbed"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.GuidedRunAnalysisServiceTest.xml",
+      "bytes": 1044,
+      "sha256": "42b73bd63b2b48e676dd28872f372695c30fd6a4449ec092f1c5e35cdfb09171"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.hardware.HardwareEvidencePersistenceTest.xml",
+      "bytes": 1344,
+      "sha256": "5537553167a9136063103dc63c262fb5441758a43f6b66ebc12eb40cd9d9ab3a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.hardware.HardwareEvidenceStorageTest.xml",
+      "bytes": 1756,
+      "sha256": "a5f0242b70a0a9e6270a943ad2f159e805b3c2e0831446dae9c59e056733106c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.hardware.HardwareEvidenceStoreTest.xml",
+      "bytes": 1250,
+      "sha256": "18eede551039e52f0e19fc91b5bb9e955c1bb5bffb48eabbd6c679518f2e928f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.hardware.HardwareInventoryFormattingTest.xml",
+      "bytes": 902,
+      "sha256": "196a17cce47832da7efa415a09098d97f5ba6785806025c79b60933c4cc432cc"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.hardware.HardwareSetupServiceTest.xml",
+      "bytes": 3732,
+      "sha256": "9b1b1cf420cf8fb6018bac715b5c9ab2b4ee1b96a64fe59589a04238ed4f490f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.hardware.SubsystemHealthTelemetryTest.xml",
+      "bytes": 2615,
+      "sha256": "d3a4fd6c5487bd8917e72dc75339d938b9e92b7a15b35497eae8f90d61fd2c9f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.HardwareTopologyWireCompatibilityTest.xml",
+      "bytes": 527,
+      "sha256": "d4af754e03f5550fa937c7e03a375d3da8e2cd3a6e3dc758823322d743cae483"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.HootDecoderServiceTest.xml",
+      "bytes": 975,
+      "sha256": "609d33459c5b7a791f4dd59e7795c7ff4795f1a06a159a214f4a0a50a94de6d9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ImportArchiveServiceTest.xml",
+      "bytes": 958,
+      "sha256": "cec754600e5753457520253150d3ed55a1531bc52b6db7b58f5113bcad895a98"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.integration.EngineeringNotebookDraftServiceTest.xml",
+      "bytes": 1108,
+      "sha256": "59798ec1bdfee66059e8384cc0fa0a6e4d2d8861faa453654dd6a5023be423c7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.integration.IntegrationCenterServiceTest.xml",
+      "bytes": 739,
+      "sha256": "bbd9f495c374fd2173cb07122f8072923dbbe4a275866778dc1bd0fe8634603c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.integration.IntegrationOutboxIntegrationTest.xml",
+      "bytes": 2034,
+      "sha256": "b7a900e9314e866aa157b00e7127ce19d7c2fbc8cf3cdc5980b3d3f9fb386331"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.integration.NotebookPublishersTest.xml",
+      "bytes": 1033,
+      "sha256": "b18f1bf5e4c734438efb14b59316208714b7cb0dc47d24d8680eb61ecd82543f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.integration.NotificationProvidersTest.xml",
+      "bytes": 1186,
+      "sha256": "783ddc2b3823fbd9b574669cd1221a92cc1e0bd1c105e80b2bda86805d9b0e86"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.JavaSoundAlertToneTest.xml",
+      "bytes": 1933,
+      "sha256": "f6fdc6e4cd7dd53fc4511e41e737bbe2350ec02adfa41c6fefd3cb5e50ff8d74"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.LayoutPreferenceServiceTest.xml",
+      "bytes": 1569,
+      "sha256": "dac2300935d85e784bccec6f8f061c7a672c4045e310c72f1e432e665a747233"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.LearningProgressServiceTest.xml",
+      "bytes": 5230,
+      "sha256": "8bbbaa93d212d945b06f4181ab5f990c75566dad26d1e5eaae39987be8812a47"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.log.CsvLogDecoderTest.xml",
+      "bytes": 2602,
+      "sha256": "09c42e22baa4dddb85b9d183414f8e6e22945ccf77dd9b61c02eb2348a80a281"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.log.JsonlLogDecoderTest.xml",
+      "bytes": 1791,
+      "sha256": "616afc4d76f991cba8322790d088c8347e4adf100d7b2b30823aa4c1960f23ae"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.log.ParquetLogDecoderTest.xml",
+      "bytes": 683,
+      "sha256": "7af7b15d85d345848d8af74f67c585f07eb45df3f51ddb52d94a641852069863"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.log.RlogDecoderServiceTest.xml",
+      "bytes": 1304,
+      "sha256": "3b4e6a0e60c050f8271c02a27c228d25e2528bfe99677efc19668cf8ca688d46"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.log.RoadRunnerDecoderServiceTest.xml",
+      "bytes": 1012,
+      "sha256": "58c7ae5ed69a8af94cb1c74ec86cbd63a910f8bd607393ad5cd13816be32425e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.log.WpiLogDecoderTest.xml",
+      "bytes": 1119,
+      "sha256": "8d07874b8020a6229eb44057c5722e2fc130333c8dd2532805120eeaecc9cc20"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.LogParserServiceTest.xml",
+      "bytes": 1851,
+      "sha256": "1feea4a1b91dd0dec96f5c75493b48c28fefa459ce49d7e4d296ba25a8fca94b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.LoopAlertWindowAuditTest.xml",
+      "bytes": 1446,
+      "sha256": "428605e026ab96a72697ee27c2f20b71d1797bd7dbfb974be3bd72b939bf8655"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.LoopOverrunWindowTest.xml",
+      "bytes": 1980,
+      "sha256": "4812ea80a44620c262448b68b26b841f51791cf6c7d286da29666806dcfb1ece"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ManagedToolchainServiceTest.xml",
+      "bytes": 1516,
+      "sha256": "aff9cd5818558b0497e2f2bf064a5c611677dda3a90ede3faddeccf798bccd9f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ManualLogImportServiceTest.xml",
+      "bytes": 530,
+      "sha256": "40f2a17cf876f248d94c99a2dc8bc4cedb99847d25ebefbdf986abf6fd123092"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.MotorCurrentWindowTest.xml",
+      "bytes": 2075,
+      "sha256": "c8ab6d226e681acd5d690d3b7b894b54bd6c5843f487fb75aacda35eaf8949ff"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.MotorDiagnosticAuditTest.xml",
+      "bytes": 2020,
+      "sha256": "abf143bed77f00fa22e821c13bcb69d25fd8c4212c1b6b82bfd54a1776d369c5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.MotorDiagnosticStateTest.xml",
+      "bytes": 1657,
+      "sha256": "d3835663b81c428398b241341447c8ec0d8776576cb8a382b3c0f3915d565bb9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.Nt4ClientServiceTest.xml",
+      "bytes": 20188,
+      "sha256": "6e2879de98e1a1bd6bbc5a1aba159da75eb076c85f8741c289662f2405e259fb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.Nt4DisposalAuditTest.xml",
+      "bytes": 49747,
+      "sha256": "85031ac2479e1fac4deeeeec2f3fdf645bb2b79ee044fa393de91f65720833bc"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.Nt4IntegrationDiagnosticTest.xml",
+      "bytes": 2569,
+      "sha256": "046c1816e595440206ec91f4fa14fc215f26ff3847950b0dfcfd6ec4c2c9417e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.Nt4LiveWireDiagnosticTest.xml",
+      "bytes": 615,
+      "sha256": "9570c3759612cf0aafdee8fd294288e3ed9e6c2200e4dbf94db67a014d93a910"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.Nt4TuningRequestWireAuditTest.xml",
+      "bytes": 2057,
+      "sha256": "03e25238f5feb1c0871a33ad48c9adb4215ed5b43644e4c7e9d5f1f72e3e5ae4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+      "bytes": 3147,
+      "sha256": "efb06bafc032568d5c51395fba0b8f03e4945363b9056525a527c9699a313b9e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.OAuthTokenStoreTest.xml",
+      "bytes": 632,
+      "sha256": "07722ac689c616abebffe5879c54a29c9f9a36a0592d4a6689bca74ed05dec22"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ParquetExporterServiceTest.xml",
+      "bytes": 516,
+      "sha256": "d3502cd5a18e2891fe547b1bae38feec652c9f852814bb99de6692be9fa74585"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.PlatformAlertAuditTest.xml",
+      "bytes": 2014,
+      "sha256": "e9b5d4955a9ced50222953572607e4a1f3d3d1ef089c39fb23e77a29e007db03"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.PlatformAlertThresholdsTest.xml",
+      "bytes": 1740,
+      "sha256": "e912627265e8e648466f82d65f2458859f15cb5351f07a14939f4473fcc35bb2"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.GenericStarterTemplateIntegrationTest.xml",
+      "bytes": 5936,
+      "sha256": "039f4d389df87262dc52ccf7292bd14a35967569b07d70b8cef4016d0a20c659"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest.xml",
+      "bytes": 5939,
+      "sha256": "af77b2dab14c2975dfd73889e193794135753c2a5446d303476326b3df93f1d9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.persistence.AutonomousCatalogRestoreAuditTest.xml",
+      "bytes": 2014,
+      "sha256": "c7f0e77b32b191b76fbf052f623b449c3ad63e19e293a2be5156d273212a3d90"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.persistence.BiobuzzAutoBundleTest.xml",
+      "bytes": 1177,
+      "sha256": "bbb1b4ba05bea64aec73ffc7a5c338327f87f6814e09ea6aa278de573ad4f49b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.persistence.ProjectDocumentPathOwnershipTest.xml",
+      "bytes": 3726,
+      "sha256": "3588e5a4e63de6dee0855580b0b8896af827e3baf848e5f0157371796110303e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.persistence.ProjectDocumentStoreAuditTest.xml",
+      "bytes": 2751,
+      "sha256": "1c60f21a2984c936aa2c88b85b213d68e36ba04e353b10ea40b69250759b7469"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.persistence.ProjectMetadataInspectionAuditTest.xml",
+      "bytes": 1415,
+      "sha256": "0299df1d295773bc8d4af350b89c35ee54ddbe93d9f3d6de92989261c451dc1f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.persistence.ProjectMetadataPersistenceAuditTest.xml",
+      "bytes": 1970,
+      "sha256": "99f8e6d2095199936ec5a006cc548a8ff46ada0b5d6248d930ef91442218e4bb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.persistence.ProjectMutationTransactionTest.xml",
+      "bytes": 3087,
+      "sha256": "9c90546c1dd1c1ebdd693eb14e719e24e2e5ffe19c0a42ff49f913038a8d6a44"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.ProjectIdeLauncherTest.xml",
+      "bytes": 1045,
+      "sha256": "5b610e5bcaf50b61e51c19c880657cf1e1fb134ec86c93d094fc7334ba4c01d4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.ProjectSessionTest.xml",
+      "bytes": 2489,
+      "sha256": "fe38b706bb8511296fdbcf1a5479732104ebefc41948c8050e93934babb2b4b6"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.RepresentativeZeroCodeStarterIntegrationTest.xml",
+      "bytes": 5984,
+      "sha256": "fd227044605ccd6d95b9d2a31d982a2ddd3cf096029c12d286ade7d417ec8941"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.project.RobotProjectTemplateServiceTest.xml",
+      "bytes": 3655,
+      "sha256": "cbf1275872be2adb12ccde44dbcb1f454e9fc1a023c08db99021012c6de3fab9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ProjectBuildServiceTest.xml",
+      "bytes": 3528,
+      "sha256": "8f7d7b038e9c6e14b04e6f8d159a0064631bcb9216489e95004fc636ce99b101"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.RecordedDriverAnalysisAuditTest.xml",
+      "bytes": 5209,
+      "sha256": "0a6a0f8c9f5bf13e607659bffc7d8714d539a87089e515a3689347c075f0c721"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ReplayCacheAndClockTest.xml",
+      "bytes": 771,
+      "sha256": "b70c090f5120eaa150ccc17e6c159ee2013c9b142df18d12eacf4bf609191d1d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ReplayDeterminismTest.xml",
+      "bytes": 1296,
+      "sha256": "d7400c30e8f31bdbdaadcde676449769c2c2a92488ed75a4d0d41d108e4bfd53"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ReplayEngineServiceTest.xml",
+      "bytes": 1406,
+      "sha256": "283b48a44823deb0bba1f2d2c3f71300f9b7b98a76952eaea07474dba397c847"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ReplayLifecycleAuditTest.xml",
+      "bytes": 1945,
+      "sha256": "f76ee5889fbf7a33c3101e338ef6e0cfff853ecdc1d3172078e24da983bac3d5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ReplayPlaybackTimeAuditTest.xml",
+      "bytes": 2299,
+      "sha256": "45b6ae462892c40ea164832d124c2a2099502a8fe51f8757b280da8cb35133a3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ReplayWindowAuditTest.xml",
+      "bytes": 1921,
+      "sha256": "ac77b21e8b8ace886fd70d10fdb4c60114e140b284089d3efab44e5426890f03"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ReplayWindowSourceAuditTest.xml",
+      "bytes": 1034,
+      "sha256": "9f2f33f2d0bd8960932c68cff2af4ece72ce2de562864041a1c7099fff35a613"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.RobotActionStorageAuditTest.xml",
+      "bytes": 1468,
+      "sha256": "ca732cd840cea9007e59970070de3781bd5345357eddb742e85a9ca868846800"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.RobotDeploymentServiceTest.xml",
+      "bytes": 672,
+      "sha256": "60264bdb28588e9ee46c9d836b9dbde539dc2be03a7964b3d22f92a93310051c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.RobotLogDownloaderTest.xml",
+      "bytes": 810,
+      "sha256": "5f9bda2a5d37deb1c0e2159d2a62c6d3944bbf2ed5452a29de7729d2e71dd674"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.RobotLogIngestionServiceTest.xml",
+      "bytes": 530,
+      "sha256": "44ebe937ac29f870931364c439a136292b7f13c6ac301144e37dfeaa4dba2299"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.RobotProjectReadinessServiceTest.xml",
+      "bytes": 726,
+      "sha256": "6df2fba1818c163ccae7bd866f1e7385dfb008e250ed75f4aba686d0459f14be"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.RunComparisonPerformanceTest.xml",
+      "bytes": 498,
+      "sha256": "225108a9d4663af9270a0c6c0d8d2f24cc98a5df1248517252390ecc5e46bcbc"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.RunComparisonServiceTest.xml",
+      "bytes": 1370,
+      "sha256": "3663bd6a4dbb443a2717e2e53fdabf054b63f9702213a4accb8d1be2644008b8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ScalarDiagnosticAuditTest.xml",
+      "bytes": 2850,
+      "sha256": "501d89d2d76344b263b8c7be92991da87eafe67f90eb8fb50813705a6259ecad"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.ScalarDiagnosticRulesTest.xml",
+      "bytes": 1464,
+      "sha256": "54ec1e5ef73e2270423cc418382cfca3cecf845eb382d8140baad099dc0328cf"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.security.PlatformSecretStoreTest.xml",
+      "bytes": 849,
+      "sha256": "126395437c53597885389dfe4a371b2d352b580c98dc2a262f9ce150baecd6b8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SessionBundleServiceTest.xml",
+      "bytes": 509,
+      "sha256": "3fd91566f2b8019a42e00515699a13834a529e33cef572725db2365bc50690c4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SessionMetadataReadAuditTest.xml",
+      "bytes": 1641,
+      "sha256": "503a4f7be3b2bfcabe500952fa394694f694858884fbbea0b6d29eaa653f806d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SimulatorControlSoakTest.xml",
+      "bytes": 519,
+      "sha256": "2bbf86754cd8eeb35df7c564fb03faa191c4922b8d6b4a85ea4c20b520ef4138"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SimulatorProcessServiceTest.xml",
+      "bytes": 668,
+      "sha256": "5798b2dd10fc9cb154471abde440424671660123b9bbe595b47c509787b3d47d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.StepResponseMathAuditTest.xml",
+      "bytes": 3193,
+      "sha256": "7c8ac886ed8736b5026ff6bba43eeba9c3b2eb5127dc77b52b4d624be4f69aa1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SubsystemDesignAssistantTest.xml",
+      "bytes": 714,
+      "sha256": "c7ee3f3eea9c1ba58a659cbd1bbcad709545dfdb1c9f54809b71e4c0d8244f6f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SummaryAggregationAuditTest.xml",
+      "bytes": 4564,
+      "sha256": "86794d6da39b3cd91de33f0fc734d8811bf81a53ea6ce8073207d7db5c68f862"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SummaryEngineServiceTest.xml",
+      "bytes": 1069,
+      "sha256": "72d1bac5f696d57b303822b1b00ac48abc047981474178b3df239bb05c096410"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SummaryHealthAuditTest.xml",
+      "bytes": 4986,
+      "sha256": "e9f50fb849521598cd420f71371018d7434d0a610d7e9d78863ee1ac330cf6e7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SummaryLocalizationAuditTest.xml",
+      "bytes": 5378,
+      "sha256": "db8ec6b842d8053fe1fac3c9e352740cb6d4278326deb8784f87bd0ca4ed6074"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SummarySysIdInputAuditTest.xml",
+      "bytes": 7022,
+      "sha256": "1fd2cccf1502beacb1344a7266f0f5505a2bf7df07397e9d7536f9c5201dbbb2"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SyncEngineDeleteAtomicityTest.xml",
+      "bytes": 991,
+      "sha256": "f2b8451a018dc8e2f079d68b5212f981dfc5df3c3189f3e753f39debfea304bb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SyncEngineManifestConvergenceTest.xml",
+      "bytes": 827,
+      "sha256": "3d74e19ac02e519de125da081f9275249c57cc0be508e5f7b3f75c31983d6b75"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SyncEngineUploadAtomicityTest.xml",
+      "bytes": 1050,
+      "sha256": "4a92083c9f78671d2ea2a1f693869cff22437da8af8b64832bd017e8dab83721"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SysIdAnalysisMathAuditTest.xml",
+      "bytes": 3095,
+      "sha256": "069bffce31fbcba0cff6910e819888f8e02964fbb7101fffaf12b8620c8b96d7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.SysIdServiceTest.xml",
+      "bytes": 972,
+      "sha256": "55339147bd36a975ff575790c3107725170648c51541f789e83a5de37cfc8eeb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.TelemetryDensityAuditTest.xml",
+      "bytes": 1626,
+      "sha256": "a57709c9659aade6495c3be9763fcdf8f08d594d623356cb6f33210ec4f9e6cb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.TelemetryPublicationTest.xml",
+      "bytes": 1675,
+      "sha256": "1efb57b5016a14d8ffdc9523fb7f2be3759e6eae1b7ae134be5ea52f1fe1c040"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.TelemetryStoreTest.xml",
+      "bytes": 1556,
+      "sha256": "3f845ce5df3a0982fd467c1bb4b732137da3c18cadd07ad37fd459eef5cce7bd"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.tuning.GuidedTuningExperimentTest.xml",
+      "bytes": 2670,
+      "sha256": "938a8a181dfd80ca6fab406768e0d3b4d34505e20d4a5bbcbf8514217a33d464"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.tuning.TuningProfileAuthoringTest.xml",
+      "bytes": 2485,
+      "sha256": "5afcb43d2f15607b04de356987ae581e0834531824a1c8ecbdf012c28e447367"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.tuning.TuningPromotionPersistenceAuditTest.xml",
+      "bytes": 2782,
+      "sha256": "993fa80a2c7b4d142707f9fbbbb57764d2f772d6057ce4ffb712237ce2cfa1ec"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.tuning.TuningProposalInboxAuditTest.xml",
+      "bytes": 1360,
+      "sha256": "755ec1ca93d1dd33af15a7d93838e4c9f05141044cf63ed1366289f3199519a4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.tuning.TuningValueResolutionAuditTest.xml",
+      "bytes": 3214,
+      "sha256": "fdf438d0afc15f4cb1476fbbe70559a3075414aadfa0902806394ee00f3f9eb1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.UiTelemetryFanoutTest.xml",
+      "bytes": 680,
+      "sha256": "4a752c88e78d75cacbbde57877af87fcf88cdc48249795ec81f4c54c89f554fb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.UpdateCheckerServiceTest.xml",
+      "bytes": 1281,
+      "sha256": "8ed072760fefc66317a693981cae7ba2fb146701687bfbd796c8eec18009e797"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.verification.RobotVerificationReportLoaderTest.xml",
+      "bytes": 1372,
+      "sha256": "b5990ab1cf4f380326862012cf1967bd6693e05116dca9418a2075f53c54f62c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.verification.VerificationRunStoreTest.xml",
+      "bytes": 723,
+      "sha256": "a95391de5215716d566b4292263c52076d0776b8f0e96c17c99c505d71b5309b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml",
+      "bytes": 718,
+      "sha256": "0a3946f651c7090288f186b55658b816b59d99b5ebd89aa75caf24ba7119f4dd"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.versioncontrol.ProjectReviewTokenFactoryTest.xml",
+      "bytes": 711,
+      "sha256": "f5f7d6db418b05e1fba0042978581c62a6d5b7e415a916dbbfd4c52d6ec0166b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.versioncontrol.ProjectVersionControlServiceTest.xml",
+      "bytes": 5188,
+      "sha256": "6376688b9fe544fc54d51d0d256bd2a1e5d8e00b520ed03eeb3086dba9b6e7df"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.VideoSyncServiceTest.xml",
+      "bytes": 501,
+      "sha256": "8db14fa06bc475019ea53e225013d5b269eacb04d857b8fe021e3957f0481073"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.WindowsProcessAdapterTest.xml",
+      "bytes": 970,
+      "sha256": "1816d480b45570c805c18d8465b12d9f0423b739415435736107971328759d75"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.WindowsUpdateServiceTest.xml",
+      "bytes": 1999,
+      "sha256": "bbc712114efcd5fe9797af1ddbfa38f8e5c1e51605a1c5d1ac70b4f60852eca4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.service.XrpLinkServiceTest.xml",
+      "bytes": 1235,
+      "sha256": "9e43a40923f7c9f977e7643dd35512457a71be68fc531f56ad81cc5a460eb2c6"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.AcademyEngineeringLabsTest.xml",
+      "bytes": 1153,
+      "sha256": "37f242472c6c503a3b38cdb0a16512bf88691b8b7a89dc8433b668625c4ec7ed"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.AresFileChooserNativeTest.xml",
+      "bytes": 4770,
+      "sha256": "706b5008c558de97587addab2c4efc142f5ca4b214f46baa762c0c2c63a83a84"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.AresFileChooserStateTest.xml",
+      "bytes": 881,
+      "sha256": "3a4e94133c505a32bcba909402ac0dde4c9f86974cdb9c90f35435dfd778ff53"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.AresFileChooserVisualTest.xml",
+      "bytes": 684,
+      "sha256": "9599ef759d9aa0dfeda8cc1c852ce582a0ae86ff7a51917bb09537fd6951fe52"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.BuilderVisualScreenshotTest.xml",
+      "bytes": 4259,
+      "sha256": "458de24c9d292a9f67de368062c11e266bbe769ee0ec0b64a397d6e89ae8fea4"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.canvas.VectorDrawingUtilsTest.xml",
+      "bytes": 806,
+      "sha256": "e952b057ba07676fbf37e9c2602301dfc82f455d43a72e6bc011bd2a31018c97"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.core.AresNumberFieldTest.xml",
+      "bytes": 644,
+      "sha256": "37f5009fdcb223251c6d398c5875347bb6e1c190bb58f5c95b3818b8b90cc407"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.AlertPersistenceRenderTest.xml",
+      "bytes": 551,
+      "sha256": "28ccfb772ad59c06b915ff6ad5c0400612e1ed2195b759a6d7461023606450e9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.AutonomousSelectorCardTest.xml",
+      "bytes": 739,
+      "sha256": "efba45b9ed01fedaa6c2e13c0dce459d8350dbcd72fd086eedb7d1ab7e60cd66"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.ControllerHealthCompositionTest.xml",
+      "bytes": 567,
+      "sha256": "e01b985822f4eae079670baab7a439a0c3b8ae88549f5c90755ccbb717ded6e3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.ControllerHealthObservationTest.xml",
+      "bytes": 2623,
+      "sha256": "7ce9b66fea1c05f4d8298fc45b87d3b2c79657c8ba5119bf4310ab7e93745e1f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.ControllerHealthRenderTest.xml",
+      "bytes": 550,
+      "sha256": "cec64c29dcf72f82c3c9b7370f9a1a6538665287f256180f28efbc75c50d3915"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.DashboardAlertPresentationTest.xml",
+      "bytes": 1468,
+      "sha256": "ace4fb154d8bbec66e649e28353ef0a30ea609daf296855e58915f6da6e8b2ee"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.DashboardLayoutEngineTest.xml",
+      "bytes": 863,
+      "sha256": "40ea85afe6c36251d59d69230565bd7fd80d642ef29848d7714dccdc464d196c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.DashboardMissionAuditTest.xml",
+      "bytes": 3684,
+      "sha256": "3d2d0d798fb362ab24f0ca52b268a14a917feeacb748cccf474509907785d015"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.DashboardMissionHeaderTest.xml",
+      "bytes": 1842,
+      "sha256": "0d400133b345f53b2b1c98863bd757012f9c9a559c54938d1e3701a0296544db"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.DashboardMissionRenderTest.xml",
+      "bytes": 733,
+      "sha256": "b6fa3b9910afedb35a18456666f79034ad523b8d032ab19600850fd0f8d5fcbf"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.DashboardTelemetryParsingTest.xml",
+      "bytes": 1100,
+      "sha256": "734fd0ad764f7502ff3f329398541b898895ff899e509dc3c53f748f05ef27eb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.DashboardWidgetGridBytecodeTest.xml",
+      "bytes": 536,
+      "sha256": "2dc57cafab085e4551b497b04c1ec2dee1c87dd6e2dc95defd4029d44aa2a73b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.EkfSensorFusionLabTest.xml",
+      "bytes": 655,
+      "sha256": "f7c0e5a4c68b8274723a15d30a08de1b6ec4d56d3e0106024700f7157c688b7f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.FieldViewerCardPoseTest.xml",
+      "bytes": 882,
+      "sha256": "d426d9fd49f9fd89c901069bd0899e81a7f816e6d14c57a3f829c2ee818488cf"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.FtcDriverStationWidgetTest.xml",
+      "bytes": 544,
+      "sha256": "588712d742d4c10beae61103fcc49e65eadb382f63524c509c7a87063884df2b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.GamepadMenuButtonsAuditTest.xml",
+      "bytes": 903,
+      "sha256": "f711e14d1e0dc0dc521d0f41f26d853fb0ad0bc2b0c645b10fe442db9ef0887a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.HardwareTopologyCardTest.xml",
+      "bytes": 1069,
+      "sha256": "727c2a6634db4d334d07f81eaf4cb6b0e29666f0b5d29b8eea26b20eca914899"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.HardwareTopologyObservationAuditTest.xml",
+      "bytes": 1886,
+      "sha256": "cd0b86960462e884b6e6d1c2e94b7aae052122ee6f0036688e7df95436c97919"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.HardwareTopologyPresentationAuditTest.xml",
+      "bytes": 1821,
+      "sha256": "abd72d900b48a24fc1c8a7a2c45aa183007cb19be37e55de4814eb6a71d05b5c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.HardwareTopologyRenderAuditTest.xml",
+      "bytes": 928,
+      "sha256": "96a28c806d4a39ca88bc040b528bf81d91ad808607f1f85234c342a4b1f9ce13"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.HardwareTopologySelectionAuditTest.xml",
+      "bytes": 1162,
+      "sha256": "d45111a4da6c7700431ef87a345805d2338adc289021f45fa125a412971b6054"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.HealthSnapshotAuditTest.xml",
+      "bytes": 2769,
+      "sha256": "336c10b8b6ddb22089d4c2188f91ae612255c35b279c68adc40eac14963d1fdf"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.IndicatorLightsCardTest.xml",
+      "bytes": 1048,
+      "sha256": "53256289d13282baa931d830619a81100a5ccfe89d195150efeafbefcf408d08"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.LocalSimulatorControlBarTest.xml",
+      "bytes": 4048,
+      "sha256": "7822bb1375be1ebe571a35cc02ab60e27ebd59f9f3c5ab9414263c8c4055ef15"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.MecanumVisualizerTest.xml",
+      "bytes": 1183,
+      "sha256": "7de98d9d131edc55737f2173748a647a423dd49d18a5c39625d856d61e996252"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.PlatformHealthPresentationTest.xml",
+      "bytes": 1583,
+      "sha256": "80b9a29ee7c45946acad62ee9be9929a1e0b3e38193d6687ccaa867aac4f4a2a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.ReplayDashboardModelsTest.xml",
+      "bytes": 724,
+      "sha256": "3a53f8047de64ba25d1163345028cf7d8d71336662af6d68c80a01997ae4bb71"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.SingleSignalWidgetTest.xml",
+      "bytes": 882,
+      "sha256": "a04dc6c94e8738bfa3acf88d9420bb7b7d04e19f90b2bd00b179731551f78784"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.SubsystemHealthCompositionTest.xml",
+      "bytes": 565,
+      "sha256": "291748b006a925ecd5e19500008655085005c4fd15a2a1437ffc0bd14b7e823d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.SubsystemHealthObservationTest.xml",
+      "bytes": 1151,
+      "sha256": "ad5ef3cd0c8be121da8f5a5f38e9d6045496ce188217cf2adcb2f4370ee7e766"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.SystemHealthRuntimeStatusTest.xml",
+      "bytes": 724,
+      "sha256": "1bff04d0b0d620f5cf935b016dea31410db974e45e316f5ddf5107888acd0322"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.TelemetryChartModelTest.xml",
+      "bytes": 1058,
+      "sha256": "5d82fe9acbf62566317010373e4f2198afc23be810d6a9c270df1c06955123b1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.TelemetrySignalTreeTest.xml",
+      "bytes": 700,
+      "sha256": "0a15af5b2eb366f38e040c1c145b5b726f97f3b23ab4dbe8bd1710f0da4ec201"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.dashboard.WidgetPickerTest.xml",
+      "bytes": 832,
+      "sha256": "a773f4e0d65cde9080f0c7bcfee9f6286ee11a84ef8199549077882e9a72fe3c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.linkage.LinkagePhysicsLabStateTest.xml",
+      "bytes": 723,
+      "sha256": "e603c48b6831671a131f73d8b1f1a72695ba930ec50fac76f43b9f540e9e2963"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.LinkageAndBehaviorComponentsTest.xml",
+      "bytes": 730,
+      "sha256": "b8eaf294c4e56a9e5a8bcbfa571a230898240844421126c6bd5000e5ba88a583"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.NavigationModelTest.xml",
+      "bytes": 1422,
+      "sha256": "65a05e63bc78655a4b4f4d903dfa4c53074f59af3f30f89cad8b315351d3bce9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.pathplanner.FieldCanvasGesturesTest.xml",
+      "bytes": 1288,
+      "sha256": "6590200ee9c35dbad6807327bc88213ff4744cce03a4afb01b341a488bc0b583"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.pathplanner.FieldCanvasMathAuditTest.xml",
+      "bytes": 916,
+      "sha256": "98a63e86795a9166782d681a58043e3f16523b0eb26b68719877324efb7945d7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.pathplanner.FieldEraseTargetTest.xml",
+      "bytes": 1086,
+      "sha256": "b40bf8dcf530768c87488bbf8936a29ed5af81aec202ec30e9cacfbae9e6fc31"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.pathplanner.FieldItemHitTest.xml",
+      "bytes": 884,
+      "sha256": "9087fe8291c2ceb22d44b50675301a6b30762219323c822d8b484fa0457a71d3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.pathplanner.FieldObstacleSelectionTest.xml",
+      "bytes": 910,
+      "sha256": "5e2cd25123eca33650b16586cd0375aa8441b4b4ce58d3d91c9787a8b38157e8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.pathplanner.MotionProfileLabTest.xml",
+      "bytes": 813,
+      "sha256": "0be7ac38e20200fc1f1527bb5df741fa2c5c06920e2aef9179285e6079ca4d4a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.pathplanner.PolygonHitTestTest.xml",
+      "bytes": 701,
+      "sha256": "70b417f8cda604c48b2cbde800b103a6a9c5ec2c8987979dd217f02dedb49e2a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.pathplanner.XrpFieldCanvasCoordinatesTest.xml",
+      "bytes": 705,
+      "sha256": "186bfd7ab626ffa1899009440a0606ed27564851455f9607dfbe852e5cce219d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.robotstudio.RobotStudioPresentationTest.xml",
+      "bytes": 1423,
+      "sha256": "68cd3efa5ce95088fbb3e277fe6d836a43190832d69a17e700b439a9d13dc87e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.routine.RoutineBuilderResponsiveLayoutTest.xml",
+      "bytes": 925,
+      "sha256": "f03bb45e7bcbdb07d2d95aeb3f75b34a85660a62a47632d8b1cef09a6affef01"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.routine.RoutineReplacementPolicyTest.xml",
+      "bytes": 1065,
+      "sha256": "728796c7e23226f708710c1fa621568953764a8fc7fa40828fbbf808c79fad0d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.subsystems.SubsystemFaultLabModelTest.xml",
+      "bytes": 938,
+      "sha256": "58c8baec804c1c81013d71fa74fb1261eec2cf9050c836be019bef4c12f043ce"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.subsystems.SubsystemPurposeSectionTest.xml",
+      "bytes": 539,
+      "sha256": "9734ead347206b4c3523625c8d44ef8b70cf167f225b5ed2cf07ea6863aad2a5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.components.terminal.TerminalDrawerContrastTest.xml",
+      "bytes": 733,
+      "sha256": "526fb5f1270693e6ffe1a69e45e31be152a9b18e2daa5516379a1d456685967b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.controls.ControlsEditorPresentationTest.xml",
+      "bytes": 2615,
+      "sha256": "6e57432be805c7422fbf1fc08c5ff5ab228ddf2716b7d274baa608e8463fee2d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.DashboardOfflineGuideTest.xml",
+      "bytes": 496,
+      "sha256": "331bd958121fedcdd3ce9dc90b6fba03f4878bec595019d07aec3aeb6879a8ed"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.HardwareSelfTestWizardTest.xml",
+      "bytes": 948,
+      "sha256": "6fc9217adfb55ba52307771d2620e19d42689442a96bf92bb68d8ec48114f1e8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.AcademyCatalogDocumentTest.xml",
+      "bytes": 809,
+      "sha256": "09ef800ccd31463c60fe40eb75cd26db89115129d8f71b7be986dabc630f2543"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.AcademyClassroomToolkitTest.xml",
+      "bytes": 852,
+      "sha256": "7f4e547fa82e407df4b65d23bfac52bf1388099ede7dfb13e0ccc8ecfefa0d45"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.AutonomousSafetyTeachingModelTest.xml",
+      "bytes": 1697,
+      "sha256": "b4fdcdf016cc40d80cfe096c5836645433ee002089222b73ab7ff40b57c809d0"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.DeveloperReferenceCatalogTest.xml",
+      "bytes": 657,
+      "sha256": "94a024ed626b73b5bef7cd208f56e4a2bc0e644d22138fe50e508d6b705de96c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.GlossaryCatalogTest.xml",
+      "bytes": 937,
+      "sha256": "63e1554b5819e3491f3df1b574d71314090dca4e429ac2bc4f7d771cf5d9c907"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.HomingSafetyTeachingModelTest.xml",
+      "bytes": 1141,
+      "sha256": "c52c6197b76ed1f877d8ca7c83923cc8976018148f62d1b7df65f4dfd3dc666e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.LearningCatalogTest.xml",
+      "bytes": 3249,
+      "sha256": "0b1d8c9444ab949740db7439131407f5e98283171c5ce0ad60a19b69eb49251e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.LearningJourneyTest.xml",
+      "bytes": 2389,
+      "sha256": "db7a847e4d4c0bbf027a2ade4e87cddd4730bc0b606ebc8942dcf3184cab17e6"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.ProjectMissionEvidenceTest.xml",
+      "bytes": 1049,
+      "sha256": "1c4a96fccc0fe1d442a79176ce16103aaca9af0278152647dc26d552419bb4b9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.RobotSignalFlowTeachingModelTest.xml",
+      "bytes": 1189,
+      "sha256": "9ee5e81e9d78e783d6053105ea872fae5760de959402e09323d3a2f507a17a0a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.RobotStudioLearningEvidenceTest.xml",
+      "bytes": 841,
+      "sha256": "6febd7dfc069e063de8ce77ba695ad97e4028a098e13ed79af2e8e303002e8e8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.RoutineValidationLearningLinksTest.xml",
+      "bytes": 546,
+      "sha256": "c8b58de156b9736fb62c21a77e48a39de61bfe7ce6adf7deb5396ae9e9068bc5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.RunAnalysisLearningEvidenceTest.xml",
+      "bytes": 845,
+      "sha256": "69b9fd9f5b848df5ffb3dc891527262b114ac28b37862d8f871030431e850e2d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.help.TuningLearningEvidenceTest.xml",
+      "bytes": 687,
+      "sha256": "18c20df8f8cd4d21e85465111879287ae7cf5c0ebf8137b0e0826703aeea66db"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.input.DesktopDriveCommandMapperTest.xml",
+      "bytes": 1511,
+      "sha256": "32d41bea526457829ca59203b151a28cdd4d32dc7a0da02b77ea7ed5c898df8b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.input.DesktopDriveInputPublisherTest.xml",
+      "bytes": 1918,
+      "sha256": "0c31cc2cc3b9e72afc819bc655f5d414f5a36e4f6bc2c82a0e8dc1e99e82f4f1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.input.DesktopDriveKeyDispatcherTest.xml",
+      "bytes": 1003,
+      "sha256": "5c88b1e820d8a735ba07a7317c516df1a31c5c2476e1d95b06db616536360757"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.MatchStrategyAnalyticsTest.xml",
+      "bytes": 468,
+      "sha256": "7ca316173dbed0538bd2f8b86706826b5523734e3cf046e177e9dd534020abae"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.AcademyLayoutTest.xml",
+      "bytes": 783,
+      "sha256": "097389580d60e99697105d26c0df00f1fab5f29dad21a02ce04e0fb3a93e8853"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.ControlTheorySandboxTest.xml",
+      "bytes": 1035,
+      "sha256": "62061b5f79b8dfe7f1cc109a060067e5277188122258f589ab4c83bb77b716d8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.DashboardScreenBytecodeTest.xml",
+      "bytes": 524,
+      "sha256": "c3a6494e943d51218428d1b10d5d69e3d35be2451f010d2f25540cf047540bb7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.fieldeditor.FieldEditorTransformsTest.xml",
+      "bytes": 1181,
+      "sha256": "13b6c38e61416b5d593986e0da4a6ff54c52d30866bf81b230e8d1de9766d4fd"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.ImportCenterSelectionTest.xml",
+      "bytes": 676,
+      "sha256": "3b80ccee0c8f2b4c05853cdf23940966c0d594ff4f66bfe198bb29cccd218097"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.MechanismKinematicsTest.xml",
+      "bytes": 734,
+      "sha256": "bf851a912c64bf4d263a7ec72e5f516f22f47559ce4d1ef7499695c6c9479717"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.onboarding.SyncStepTest.xml",
+      "bytes": 493,
+      "sha256": "e7dcd5d496267445b24c23149df5e295a1509514bd113bb699bb653ba27209b6"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.OnboardingPresentationTest.xml",
+      "bytes": 514,
+      "sha256": "09be54dda0496dc63013b1e3a26ad90299a7cba8bbdd3a29ea240839e6f53d23"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.ProjectIdentityPresentationTest.xml",
+      "bytes": 1365,
+      "sha256": "6f420d5a7fe6647d73ac77c1d52360f1fb3cbd88073130379ffa1e28dc6a0964"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.SubsystemCommissioningModelTest.xml",
+      "bytes": 1643,
+      "sha256": "13e844d9456fde1434ec8616bfdabf5b9af6a64cd2611b0220d3e65966708b32"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.screens.SuperstructureStudioScreenTest.xml",
+      "bytes": 824,
+      "sha256": "521b9075e428d1b3344cffe23040b9ab9d14f042715efd149d1acff39cdfd28a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.theme.AresBrandContractTest.xml",
+      "bytes": 985,
+      "sha256": "dfa9b7811f7ab8426ca4907226a26d35f9b8b9c5072a8c26aba6d1bcd5da8333"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.theme.AresThemeContrastTest.xml",
+      "bytes": 649,
+      "sha256": "b6d4996fc43fa212ce3eeca86ccf0ddc1a0a2d59ff658aae75bf7528f1c0b0c9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.theme.AresThemeTest.xml",
+      "bytes": 923,
+      "sha256": "5456a5b0e767b39439c8d70804ce2fb681c76c9a38e8573acf9b8fb961e30dd9"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.theme.BrightButtonForegroundTest.xml",
+      "bytes": 525,
+      "sha256": "1d5b34852287446711492b4943c0b9c2f7ff5929822b1716a8ae3edda2181fce"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.util.AresFormattersTest.xml",
+      "bytes": 785,
+      "sha256": "25b3c0b9e16f0eedc788e6bdc77ea1f68129ca3d34e224da98a63c80b8ec0573"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.ui.util.DesktopFileChoosersTest.xml",
+      "bytes": 969,
+      "sha256": "d5e22a086bf9d799dc2c67b29018d4617c7c9c6a3d700eb07271e3ba8e49823b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.util.LightingColorMapperTest.xml",
+      "bytes": 825,
+      "sha256": "7ac224651440859fc23d14c9b6cd608c04dbe41737689f975d46784ac61bacb1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.util.ProjectLayoutTest.xml",
+      "bytes": 1432,
+      "sha256": "b18957980a5d450921466daa166e5fe37ed06c6170209b83522b279dc767d584"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.util.Sha256Test.xml",
+      "bytes": 1049,
+      "sha256": "70f6cfc71c2206f9bcc9bf797784af0fa64ba4a41b4e0a0be84ca6825ec4b0f7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.validation.DashboardPerformanceBaselineTest.xml",
+      "bytes": 4882,
+      "sha256": "f0a484466d53edc236b449bd512d4d827139cfad379b13422c9cf3713e2e8a5d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.validation.DashboardValidationTest.xml",
+      "bytes": 696,
+      "sha256": "8eaef2c1e2ac7ea665e77932666bb7c6163eada6f2c0d178f2278f14a612b633"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.validation.HardwareDashboardValidationTest.xml",
+      "bytes": 5828,
+      "sha256": "d23e364005b422d1d906060db64deb6355bf35350b1aeaebb6d5bff140c22231"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.CloudRobotLogGroupingTest.xml",
+      "bytes": 505,
+      "sha256": "8de44b11ac10fde06740a2837b699375bf8245bfd215905daa269e5e55c71334"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.CloudViewModelTest.xml",
+      "bytes": 835,
+      "sha256": "88e53e936b46a035b0a91bafea1772d29139dfcf9aba29e8757dfc85f922d7c7"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.controls.ControlsCoverageTest.xml",
+      "bytes": 684,
+      "sha256": "bb29eccba60e0e3cc1c61d23a166a3794d7579c2abc5fdae47c7a6f6506e266e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.controls.ControlsEditorViewModelTest.xml",
+      "bytes": 3938,
+      "sha256": "207c98e4a9019fd86258d99dd088e49b72fba76d21e941d77b06b3fc2777948a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.DashboardLayoutTransactionQueueTest.xml",
+      "bytes": 532,
+      "sha256": "a681506a2c98c308007e47232fa390e89b4bb032011e35587cbe66a6e8ea6108"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.ExternalTuningProposalAuditTest.xml",
+      "bytes": 2068,
+      "sha256": "1ee59f6e4d3167c8516f6e9a7894929ebfc4751d38eca5742a5fc3253f576c3e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.AprilTagImportContractTest.xml",
+      "bytes": 2325,
+      "sha256": "6f9e00dd51dda80d2cba41db3ee770021b2612d975d6a2b071afbddecbdbad85"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.AprilTagMapPresetCatalogTest.xml",
+      "bytes": 1214,
+      "sha256": "7ca0096366e3f8041a9d0dc548030969d53a426bd71b036df82d60caf502980c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.BiobuzzDashboardTelemetryTest.xml",
+      "bytes": 1172,
+      "sha256": "d70aee715222ea5abe91a76d0dc3a62ba6f6c8a9482a02e9397d11ddf185236e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.BiobuzzFieldIntegrationTest.xml",
+      "bytes": 1115,
+      "sha256": "b86b29143423ce6faa0223f6b6cfec7f4a02dca51e4c1c215148901e0d45539e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldArrayDeliveryAuditTest.xml",
+      "bytes": 5943,
+      "sha256": "29b23cfff0888f478ae106f0637c406b22c7ba73789b425b37b99975370e81a5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldDocumentLeagueTest.xml",
+      "bytes": 899,
+      "sha256": "5b2f5c43555b310b98853efe9e6b3da530757453fc3c4115944f697e263f34af"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldDocumentMapperAuditTest.xml",
+      "bytes": 705,
+      "sha256": "6f32987e6346ecfc3ddf15f0f63373ec3085ababbd6f502dce2ac035cb29939c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldDocumentStoreTest.xml",
+      "bytes": 1838,
+      "sha256": "57f2889db357b3ff2a29fd32cbbaddfe6c926b0a9b661751bccbc426e9c2162f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldEditorInteractionTest.xml",
+      "bytes": 3937,
+      "sha256": "af24a9e7c3590e37e8ef43fdc535d5cded848c4e4124b75ae42727fc4facde9f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldEditorTransactionsTest.xml",
+      "bytes": 1397,
+      "sha256": "435b4b8ad11e66ba5e6cee73b218a482aa497b4a6ad2838eb85d14873dd8458c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldImageLoaderTest.xml",
+      "bytes": 864,
+      "sha256": "82fa62b899dacd114041196792514f6c3787995f0f1f931339911e657b01d845"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldPoseBufferManagerTest.xml",
+      "bytes": 903,
+      "sha256": "ba366235cf577f44db5598c3ab810d9ed66d8953fadcebac02923edb9ea95f51"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldSubscriberLifecycleAuditTest.xml",
+      "bytes": 5865,
+      "sha256": "2ebc667e42902a3895020459c252a788b3f8e11b8056aa29e19d353f5bf4c4fe"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldTopicSubscriberTest.xml",
+      "bytes": 2042,
+      "sha256": "a7dd9aacd6d8d58f9a0b09bc66959edddb31f9a7c2d82817e95a765a37697017"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.FieldValidationAuditTest.xml",
+      "bytes": 707,
+      "sha256": "eb95e0e8a395504c73c12020d26ef3b9e374f906d45f1650accf819924fbc5e1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.GamePieceFrameAuditTest.xml",
+      "bytes": 4857,
+      "sha256": "8ec790a42fcc55a2f8679c5605915aa3b2df1251651a1b391403ed579b404e3d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.LivePoseIntegrityAuditTest.xml",
+      "bytes": 6341,
+      "sha256": "624d584c78295d1d0fc617b97f652840a850b74989479c4548a75374e7a1b899"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.ReplayFieldSnapshotTest.xml",
+      "bytes": 1411,
+      "sha256": "fc7c1c884fac83cf2eef0a51048a8d9cdf8fd7aee997bc464d01ca12b15f061a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.ReplayPoseIntegrityAuditTest.xml",
+      "bytes": 4997,
+      "sha256": "8d3f8606434e09efbbc2284c6b8492b666f5baf960112233f49111cb42e080a5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.field.SimulatorFieldApplyReceiptTest.xml",
+      "bytes": 891,
+      "sha256": "f8d685e5be6e4e76cec4b00070c918ef9466d4001f933d100d63ff96e569d814"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.hardware.HardwareSetupViewModelTest.xml",
+      "bytes": 2629,
+      "sha256": "a6da391f9d9266ff81e8d372b6a0e4c18d1596030f878b8a0400fca46f3eb94e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.integrationcenter.IntegrationCenterViewModelTest.xml",
+      "bytes": 1129,
+      "sha256": "58d502a51f0534e3529b6a0f6571516c9600fbb1392cc37a15037dd2cc9b8fbc"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.MainViewModelWorkspaceTransitionTest.xml",
+      "bytes": 542,
+      "sha256": "2aed1d61c3932f950e669bdbeb5f76b4a16a415869de1c2705d5b3cfe1873ecd"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.MjpegFrameAssemblerTest.xml",
+      "bytes": 810,
+      "sha256": "b82dcc7e3195337bd9acc2b23554bf712358c069f52215c818e1160271f08e31"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.OnboardingModelTest.xml",
+      "bytes": 3112,
+      "sha256": "01448cf9101bab3033dd03aaef7453c69405f466ef5580bd5982318a452eca9c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.pathing.AutoFieldBoundsTest.xml",
+      "bytes": 878,
+      "sha256": "7e28c8438d3b66c4513951d5ca4aed08fc00c2c85f3a869d586a310529b0389f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.PathPlannerMetadataAuditTest.xml",
+      "bytes": 870,
+      "sha256": "a6234b08ce210935863f4e6579bb9fdf6fd33fb16c2455f096e11eb8084d1563"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.project.ProjectDocumentRepositoriesTest.xml",
+      "bytes": 3485,
+      "sha256": "df1c59bb033b6c9d080a3ffd0086e8921e04476f11100d50d34485257398d8ed"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.project.ProjectIdentityConcurrencyAuditTest.xml",
+      "bytes": 3079,
+      "sha256": "f86ded67e8960a8de59ecd361094e41fb557cb97a9dce2e29c6316ce9e4399eb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.project.ProjectIdentityRepairAuditTest.xml",
+      "bytes": 1481,
+      "sha256": "6fdf7a88a34df304c25e5e791b2c2385be1eaea1cb09e1da5a8f949b0edcc2e1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.project.ProjectIdentityValidationAuditTest.xml",
+      "bytes": 3069,
+      "sha256": "51474bda5e11523a2dc94e1e8df5eecaaefdc3b34410e53cd6fa3b6660b8e906"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.project.ProjectIdentityViewModelTest.xml",
+      "bytes": 2547,
+      "sha256": "21cb7e5c6be0acd864181e82e62af5173b68636102a78a80459b6b3fdbc191fe"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.project.ProjectModelArchitectureTest.xml",
+      "bytes": 3333,
+      "sha256": "2d6d682b81e430453030411f35956aab4c6972357f8072e929c3a69f75c3b87d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.project.SuperstructureProjectRepositoryTest.xml",
+      "bytes": 1318,
+      "sha256": "cf6e3c96bc3b4508c6c9b2e0b146a70eebc61898a6410cd9281ee0486bbe7998"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.robotstudio.RobotStudioModelTest.xml",
+      "bytes": 3616,
+      "sha256": "e67da22f7d5e5abfd39b97a8a038e7eb38cb818d00a9b256ec765ee4d6acd294"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.routine.RoutineEditorModelTest.xml",
+      "bytes": 2231,
+      "sha256": "279f0607790646bf18b954ab9fb6cd6fa0610abd471e3647ae01fce257c8eefb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.routine.RoutineFootprintAuditTest.xml",
+      "bytes": 874,
+      "sha256": "48b1a66564a238185529766dfe06af7a3785dc1f10ef58446e7db6e87252e0e1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.routine.RoutineLightingParityAuditTest.xml",
+      "bytes": 3440,
+      "sha256": "44e3d7f35071a021b95e016718561bdcf774e4a4c80ba11bb29226cd2d4604b8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.routine.RoutineLightingPreviewTest.xml",
+      "bytes": 543,
+      "sha256": "a632bb540c2f450f0229b7493722e25cefb21ae897b3ff464cbdfd05bb35f6c1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.routine.RoutinePreviewAnalyzerAuditTest.xml",
+      "bytes": 1661,
+      "sha256": "bcef9593dd9957ebdc4bb93c3c2f54e20ca9d08937c295e70a5e9762fd5afd74"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.routine.RoutinePreviewFailureAuditTest.xml",
+      "bytes": 2324,
+      "sha256": "dfdafd4539d60074020551d0786dd2c94f784465407efb492daeb3cab893a1c6"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.routine.RoutineTrajectoryPreviewCompilerTest.xml",
+      "bytes": 1311,
+      "sha256": "f69fd9f97dc146f39024816ff65af62fbf887242debc18736cfa9e1358d9a02b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.RoutineBuilderViewModelTest.xml",
+      "bytes": 3674,
+      "sha256": "3059254c1c8553879d9e46d5624d46eadbc50ca071e07cd1d0b058d5179300fb"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.RoutinePreviewRecoveryAuditTest.xml",
+      "bytes": 543,
+      "sha256": "f7d604873bcf7178e64d88e4a9ae71d4db881d0963cee5139f8565611a5c8c4f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.runanalysis.GuidedRunAnalysisViewModelTest.xml",
+      "bytes": 1487,
+      "sha256": "1cb94e22990b8c1e2a8cdf9c4573baba6f952fdb961d4f3dbf7f9fe55cd2a418"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.subsystem.SubsystemDocumentAuthoringTest.xml",
+      "bytes": 930,
+      "sha256": "bcd6d4be2b34bf27d745e288fbfc7b82aaed48e912624a56b42bb45dcacf6f99"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditorTest.xml",
+      "bytes": 1282,
+      "sha256": "73bd732d59ce6cce96d3960b3e98c3a91428c9b6fde56a58559788fbe60f4464"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.subsystem.SubsystemRemovalStateTransitionsTest.xml",
+      "bytes": 745,
+      "sha256": "74bfc0b76d05ef7adda7eafc82e216ac67bfbbccbf3d0bf8bcf07adc4b921d00"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.subsystem.XrpExtensionScaffoldTest.xml",
+      "bytes": 1037,
+      "sha256": "4e623c5635ee00a2c69873c3596142555db1d811461d96f0946c6597013dbd27"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.SubsystemGeneratorViewModelTest.xml",
+      "bytes": 6470,
+      "sha256": "afd7bf92b8ea877d0eaaf827473418dcb6d7bc09a320c6fc385834e63c4f465a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.SubsystemTuningAuthoringTest.xml",
+      "bytes": 1224,
+      "sha256": "cccb1cb555019870d04a93ad4ee879f80c8b09a788d9fd342e844fbc1c35b39a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.superstructure.SuperstructureInterlockDescriptionTest.xml",
+      "bytes": 788,
+      "sha256": "f3d0841402f3dde2a91218e3e6aac4ff77c60d9e0c00891aefb2719c59ae1b27"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.superstructure.SuperstructurePreviewSessionTest.xml",
+      "bytes": 1126,
+      "sha256": "9ce76b5898f50d2b1151a2defbc367fef47c217ce3d762708373ce2440b0995b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.sysid.SysIdAcknowledgementAuditTest.xml",
+      "bytes": 5902,
+      "sha256": "4321669229a3979fbc552552bed03648d7b4254be38dc112d84c5d8e3c982aef"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.sysid.SysIdCalibrationAuditTest.xml",
+      "bytes": 2785,
+      "sha256": "3ff80a0094b584c399b0dffd4d5c1cc008bd9ccb86b361f994adb10fc6aa049c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.sysid.SysIdLiveCollectionAuditTest.xml",
+      "bytes": 5502,
+      "sha256": "2dbd735e055b94ff7ae4e12110625acc6b068ff6bf66d9fac63bc17aa4eae897"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.sysid.SysIdLogImportAuditTest.xml",
+      "bytes": 3642,
+      "sha256": "ae7499f9082a00132c090d9583b85fb0d9d2745ea0e973f65742c9589176506c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.sysid.SysIdRegressionSolverTest.xml",
+      "bytes": 1010,
+      "sha256": "45f8dc5996f3a585b5def721030145362c2f507df83d1c4f87673df7552fb6a3"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.sysid.SysIdSampleAssemblerTest.xml",
+      "bytes": 1359,
+      "sha256": "56604bca704d2306b29bad26f35a38a4dc39485df5fb0dd741a6fcf10ac55ad0"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.sysid.SysIdSignalGeneratorTest.xml",
+      "bytes": 884,
+      "sha256": "63975ce53aa423ce10d5a41538082c3b78d9790c96a1d3e6d61cba4f6d094d19"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.sysid.SysIdSimulationPreviewAuditTest.xml",
+      "bytes": 3224,
+      "sha256": "75d0bdeedf31fe4bb357fdf3f271455fb2ce266ca9719c9f3c36fdf2e0f053f8"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.SysIdCapabilityTest.xml",
+      "bytes": 644,
+      "sha256": "e5b5c0b5234cd91aab986e1581e73b7abe06ee66fe45a880ae95a98811145050"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.TuningLiveRequestAuditTest.xml",
+      "bytes": 3750,
+      "sha256": "ef24f996fd310474f74a82bd2ab2497342e3c0bb1dddebf353317152c6b02501"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/app/TEST-com.ares.analytics.viewmodel.TuningPromotionLifecycleAuditTest.xml",
+      "bytes": 3151,
+      "sha256": "3071907c4e9993fe87dffcf042bae019875e465518fd32ab8273036662eebefd"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/gateway/TEST-com.ares.analytics.gateway.auth.GoogleOidcAuthTest.xml",
+      "bytes": 10698,
+      "sha256": "388cc904a318a0fbbafd1593f5b9eaee4ade5c7ad845d78ec661707c09193454"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/gateway/TEST-com.ares.analytics.gateway.routes.DiagnosticsFutureTest.xml",
+      "bytes": 801,
+      "sha256": "7abe0d7014f6c2dbe62baeef716d0eb56c097560876c4c4930860623b3547f41"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/gateway/TEST-com.ares.analytics.gateway.routes.GatewayRouteTest.xml",
+      "bytes": 1587,
+      "sha256": "da311466f46395ff6ef788bdb9b259f2b20e1070311a43d04ece99e2d62e2a49"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/gateway/TEST-com.ares.analytics.gateway.routes.GoogleOAuthBrokerRoutesTest.xml",
+      "bytes": 2586,
+      "sha256": "3e2265fad6d51bd53047d0e9ae50e53c76060b6e49707c053ed0640de93dabde"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/gateway/TEST-com.ares.analytics.gateway.routes.SourceCodeRoutesTest.xml",
+      "bytes": 1004,
+      "sha256": "a6e6041e9681aaab3d26caaa6872807585d2d6792c3182730f8ec5639f0c1439"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/shared/TEST-com.ares.analytics.shared.IntegrationModelsTest.xml",
+      "bytes": 972,
+      "sha256": "96284c22d9d8747389d4e119cbd6842b9acc682a956b30d3110f256857ab281a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/shared/TEST-com.ares.analytics.shared.ModelPackageBoundaryTest.xml",
+      "bytes": 497,
+      "sha256": "4fdd7e93793eb2637e7578a33109ea4f5f231689ed67416e83b6d8c74f66ce08"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/shared/TEST-com.ares.analytics.shared.ModelsTest.xml",
+      "bytes": 1464,
+      "sha256": "1016e8b29e7ea14069fb5e0345c5ff313427dc22768db9cbce553dccc2480892"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/shared/TEST-com.ares.analytics.shared.SessionModelContractTest.xml",
+      "bytes": 833,
+      "sha256": "85c11ba2049fc03acbe65ce26b0baa97761711fae7896dc08ccb5bca7838de57"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/shared/TEST-com.ares.analytics.shared.TelemetryFrameTimestampTest.xml",
+      "bytes": 1143,
+      "sha256": "d2784d8a459c06ee5e2b8a4892605bf38210731e1d33ec9af94fe9b51bb8c551"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/shared/TEST-com.ares.analytics.shared.TelemetryMetricCatalogTest.xml",
+      "bytes": 657,
+      "sha256": "b5e6e57ea887e081c7c27cbbf8bafb1383abd4b3963ca07344cb4ca8e30d8f3f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full-xml/shared/TEST-com.ares.analytics.shared.UnitConversionTest.xml",
+      "bytes": 1418,
+      "sha256": "5d59e890d5871019a355f93f3130fa68ed071c32406ef4ae8ee7f59809ba683f"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-full.log",
+      "bytes": 3434,
+      "sha256": "9f35e42ca6b85bfdad1b06a67b4f175f21917e3e903ad7086b1faa14a96d523c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/studio-process-2.json",
+      "bytes": 21889,
+      "sha256": "504eb6ac011f10c134e6a0d798708347c1a6ffd7e936b5bff385b8a9a653f989"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/test-summary.json",
+      "bytes": 288,
+      "sha256": "9681b428a990533bb00ba8eff03fd1911636ff39d437acda7db9c906b1414c06"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/timing-summary.json",
+      "bytes": 908,
+      "sha256": "4f566ce3b24dec6be8deff71a82f5739c2f669f096329860735df883159e1239"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/tooling-tests-2.log",
+      "bytes": 13703,
+      "sha256": "1c85fc51fe3e6f88634ff5b477f7a649e9f19adfc88a6d8c2959a28aa7642c1c"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/tooling-tests-3.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/tooling-tests-3.log",
+      "bytes": 151,
+      "sha256": "9e396571c6f59b09ba7d15873062d020533f00eb7933bcfedd706fad8a4613c1"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/tooling-tests.log",
+      "bytes": 74199,
+      "sha256": "12ee19556a7d8e3f858ed46975be92a3ca8acd0a6932cd7fd7a678649cd01714"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/ui_probe.py",
+      "bytes": 1162,
+      "sha256": "b35bea7eb40f8449f5f7e3a47444fe1e6ea11edee4b440142522f5796c7c7525"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-aim-hive.json",
+      "bytes": 64403,
+      "sha256": "1739696ae9f2e7b5a369c3e99031b474470b7f007c2d08be834037c867b207ed"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-field-push-after-rebuild.json",
+      "bytes": 83189,
+      "sha256": "936232feeede08f725971ecda5a936aa90aec6b02597f26dcbb29eacf106975d"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-field-push.json",
+      "bytes": 83187,
+      "sha256": "987345880f6c57a11d8579f16f88dd821b6502500fb7ed1328b2db4429008319"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-first-hive-shot.json",
+      "bytes": 64269,
+      "sha256": "6aaa587024fec6daf6add92307d605468d5288b685655fbe1f3adcf74eceed0e"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-flywheel-only.json",
+      "bytes": 64301,
+      "sha256": "84bcc27181f42586ca066275223456e5e3cc298daa6afbaf8f67c0dfcdc8a485"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-held-shoot.json",
+      "bytes": 64275,
+      "sha256": "03faec30b3970ed6ce6666c167dc47811739379045908555da343282c4493967"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-hive-scoring.json",
+      "bytes": 64272,
+      "sha256": "9b35995b38600e03a513b7db486e34628807fe089f17bb05063a1a3174bb206b"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-mixed-load-below-tip.json",
+      "bytes": 64276,
+      "sha256": "7c971c458647c4cbe1d131154ade10d12bb9c553bc3a456094858fbc14425132"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-move-to-shot-armed.json",
+      "bytes": 64292,
+      "sha256": "2e3aaceaf1245d9984266a54d059c0147c598d5561e2464681064ae7eb3dcc3a"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-move-to-shot.json",
+      "bytes": 64117,
+      "sha256": "206714b95d9efff16a1ba68bb6cc2ff075dc7d5b2d79d082ff45dc9ff19e05d5"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-restarted.json",
+      "bytes": 63571,
+      "sha256": "467cddd3d96f982b8e5cb4d015b09ab8d6510656b041d3c2a2530accaf0960e2"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-simultaneous-drive-intake.json",
+      "bytes": 64088,
+      "sha256": "9e9402cd1341d0b6695bac2daabaf7142b663d8d1aa7f93d492ca25e32a961fc"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-slow-aim.json",
+      "bytes": 64259,
+      "sha256": "76dd518284b21bf94a70c83a1301cf620b9a4fcfc84866b3f12b5c60c0b2fa30"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-stopped-before.json",
+      "bytes": 64198,
+      "sha256": "b10762ad6e3426817225c421d1709e918e787efe181d2e287a096343f5b87265"
+    },
+    {
+      "path": "ARES-Analytics/build/biobuzz-readiness/verified-stopped-held.json",
+      "bytes": 64198,
+      "sha256": "f99a63f4ebe7f7a83caaf1995c64bfa723bc5df83463788a0c3483d65ad049b0"
+    }
+  ],
+  "test_summary": {
+    "shared": {
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "gateway": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "app": {
+      "tests": 2625,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 6
+    }
+  },
+  "timing_summary": {
+    "scope": "Windows desktop, visible Studio + Java 21 BioBuzz, read-only NT4 arrivals. Pose intervals include only pairs in the same enabled TeleOp epoch; deliberate Stop intervals excluded. These are not robot compute timings or target-controller results.",
+    "active_pose_arrival": {
+      "n": 12791,
+      "mean_ms": 30.95463787117926,
+      "p50_ms": 30.957698822021484,
+      "p95_ms": 62.110185623168945,
+      "p99_ms": 62.96539306640625,
+      "worst_ms": 64.64600563049316
+    },
+    "biobuzz_snapshot_arrival": {
+      "n": 5435,
+      "mean_ms": 154.79682204694845,
+      "p50_ms": 154.79421615600586,
+      "p95_ms": 157.16314315795898,
+      "p99_ms": 158.2014560699463,
+      "worst_ms": 326.08747482299805
+    },
+    "active_pose_arrivals_over_20ms": 9777,
+    "active_pose_sequence_gaps": 0,
+    "observed_seconds": 841.3510842323303,
+    "max_estimator_to_truth_including_startup_m": 1.1999999999999997
+  },
+  "original_worktrees_preserved": {
+    "BioBuzz_staged_paths": 53,
+    "main_staged_guidance_paths": 12
+  },
+  "limitations": [
+    "Desktop/simulator only; no target hardware",
+    "Fixed-sleep pacing unchanged",
+    "No full live flower/tipping UI journey repeated in this checkpoint; season regressions cover those rules",
+    "No new packaged native installer or match-auto acceptance run"
+  ]
+}

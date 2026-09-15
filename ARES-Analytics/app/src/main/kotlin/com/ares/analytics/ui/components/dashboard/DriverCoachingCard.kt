@@ -62,11 +62,12 @@ fun DriverMotionReviewCard(report: DriverCoachingReport, modifier: Modifier = Mo
         Text("Driver motion review", color = AresTextPrimary, fontWeight = FontWeight.Bold)
         Text("Evidence-based practice prompts from synchronized chassis speeds. This is not a driver score and does not infer wheel slip, energy use, or match cycles.", color = AresTextSecondary, fontSize = 12.sp)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            ReviewMetric("Coverage", "${"%.0f".format(report.coverageFraction * 100.0)}%")
-            ReviewMetric("Duration", "${"%.1f".format(report.durationSeconds)} s")
-            ReviewMetric("Translate + turn", "${"%.0f".format(report.simultaneousTranslationRotationFraction * 100.0)}%")
-            ReviewMetric("Large reversals", "${"%.0f".format(report.directionReversalRatePerMinute)}/min")
+            ReviewMetric("Matched samples", "${"%.0f".format(report.coverageFraction * 100.0)}%")
+            ReviewMetric("Observed time", "${"%.1f".format(report.observedDurationSeconds)} s")
+            ReviewMetric("Combined samples", report.simultaneousTranslationRotationFraction?.let { "${"%.0f".format(it * 100.0)}%" } ?: "N/A")
+            ReviewMetric("Large reversals", report.directionReversalRatePerMinute?.let { "${"%.0f".format(it)}/observed min" } ?: "N/A")
         }
+        Text("Recorded span: ${"%.1f".format(report.durationSeconds)} s; valid adjacent intervals cover ${"%.0f".format(report.timeCoverageFraction * 100.0)}% of that span.", color = AresTextSecondary, fontSize = 11.sp)
         Text(confidenceText, color = confidenceColor, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
         report.observations.forEach { observation ->
             AresCard(backgroundColor = AresSurface, contentPadding = 10.dp, contentSpacing = 4.dp) {

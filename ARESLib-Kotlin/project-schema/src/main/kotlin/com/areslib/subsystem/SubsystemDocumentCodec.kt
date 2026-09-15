@@ -4,9 +4,12 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.util.parseJsonElement
 import com.areslib.util.sha256Hex
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
 
 object SubsystemDocumentCodec {
-    private val gson = GsonBuilder().setPrettyPrinting().create()
+    private val gson = GsonBuilder()
+        .registerTypeAdapterFactory(SubsystemJsonScalarAdapterFactory)
+        .setPrettyPrinting().create()
 
     fun encode(document: SubsystemDocument): String {
         requireValid(document)
@@ -39,16 +42,20 @@ object SubsystemDocumentCodec {
             require(implementation.has("kind") && implementation.has("ownership")) {
                 "Subsystem implementation kind and ownership are required"
             }
+            require(root.get("platform")?.isJsonPrimitive == true) { "Subsystem platform is required" }
+            val simulationSupportWasDeclared = implementation.getAsJsonObject("simulation")?.has("support") == true
+            applyPrimitiveDefaults(root)
             // The normalization below is load-bearing: Gson allocates via Unsafe
             // without calling constructors, leaving omitted or defaulted fields null at runtime.
             // We fully normalize and re-instantiate each model with non-null defaults.
-            val parsed = gson.fromJson(json, SubsystemDocument::class.java)
+            val parsed = gson.fromJson(root, SubsystemDocument::class.java)
                 ?: throw IllegalArgumentException("Subsystem document is empty")
             normalizeSubsystemDocument(
                 parsed,
                 feedbackTimeoutWasDeclared = root.getAsJsonObject("safety")?.has("feedbackTimeoutMs") == true,
                 generateMockIoWasDeclared = root.has("generateMockIo"),
                 generateTestWasDeclared = root.has("generateTest"),
+                simulationSupportWasDeclared = simulationSupportWasDeclared,
             )
         } catch (error: Exception) {
             throw IllegalArgumentException("Subsystem document is not valid JSON: ${error.message}", error)
@@ -57,12 +64,56 @@ object SubsystemDocumentCodec {
         return document
     }
 
+    /** Required constructor arguments make Gson use Unsafe, which otherwise supplies primitive zeros. */
+    private fun applyPrimitiveDefaults(root: JsonObject) {
+        if (!root.has("revision")) root.addProperty("revision", 1)
+        if (!root.has("requiredAtStartup")) root.addProperty("requiredAtStartup", true)
+        root.getAsJsonArray("tuningParameters").forEach { element ->
+            val parameter = element.asJsonObject
+            require(parameter.has("type") && parameter.has("applyPolicy") &&
+                parameter.get("defaultValue")?.isJsonObject == true
+            ) { "Tuning type, default value and apply policy must be explicit" }
+        }
+        root.get("hardware")?.takeIf { it.isJsonArray }?.asJsonArray?.forEach { element ->
+            val hardware = element.asJsonObject
+            require(hardware.has("kind")) { "Hardware kind is required" }
+            if (!hardware.has("required")) hardware.addProperty("required", true)
+            hardware.get("measurements")?.takeIf { it.isJsonArray }?.asJsonArray?.forEach { entry ->
+                val measurement = entry.asJsonObject
+                require(measurement.has("source")) { "Measurement source is required" }
+                if (!measurement.has("scale")) measurement.addProperty("scale", 1.0)
+            }
+        }
+        root.get("stateFields")?.takeIf { it.isJsonArray }?.asJsonArray?.forEach { element ->
+            val field = element.asJsonObject
+            require(field.has("type") && field.has("role")) { "State type and role are required" }
+        }
+        root.get("controlLoops")?.takeIf { it.isJsonArray }?.asJsonArray?.forEach { element ->
+            val loop = element.asJsonObject
+            require(loop.has("strategy")) { "Control strategy is required" }
+            if (!loop.has("minimumOutput")) loop.addProperty("minimumOutput", -12.0)
+            if (!loop.has("maximumOutput")) loop.addProperty("maximumOutput", 12.0)
+            if (!loop.has("derivativeFilterTimeConstantSeconds")) loop.addProperty("derivativeFilterTimeConstantSeconds", 0.02)
+        }
+        // Gson constructs an all-default linkage before setting its lengths. Its constructor's
+        // dependent center-of-mass defaults must therefore be recomputed from the declared lengths.
+        root.get("linkage")?.takeIf { it.isJsonObject }?.asJsonObject?.let { linkage ->
+            if (!linkage.has("link1CenterOfMassMeters")) {
+                linkage.addProperty("link1CenterOfMassMeters", (linkage.get("link1LengthMeters")?.asDouble ?: 0.35) / 2.0)
+            }
+            if (!linkage.has("link2CenterOfMassMeters")) {
+                linkage.addProperty("link2CenterOfMassMeters", (linkage.get("link2LengthMeters")?.asDouble ?: 0.25) / 2.0)
+            }
+        }
+    }
+
     @Suppress("USELESS_ELVIS", "UNNECESSARY_SAFE_CALL", "UNNECESSARY_NOT_NULL_ASSERTION")
     private fun normalizeSubsystemDocument(
         doc: SubsystemDocument,
         feedbackTimeoutWasDeclared: Boolean,
         generateMockIoWasDeclared: Boolean,
         generateTestWasDeclared: Boolean,
+        simulationSupportWasDeclared: Boolean,
     ): SubsystemDocument {
         val hardware = (doc.hardware ?: emptyList()).map { h ->
             val conn = h.connection
@@ -243,7 +294,7 @@ object SubsystemDocumentCodec {
             impl?.kind == SubsystemImplementationKind.HAND_AUTHORED -> false
             else -> true
         }
-        val simSupport = when (impl?.kind) {
+        val simSupport = if (simulationSupportWasDeclared) requireNotNull(sim?.support) else when (impl?.kind) {
             SubsystemImplementationKind.DECLARATIVE_GENERATED,
             SubsystemImplementationKind.GENERATED_STARTER -> if (genMock) SubsystemSimulationSupport.GENERATED_MOCK else SubsystemSimulationSupport.UNAVAILABLE
             SubsystemImplementationKind.HAND_AUTHORED -> sim?.support ?: SubsystemSimulationSupport.UNAVAILABLE
@@ -260,7 +311,7 @@ object SubsystemDocumentCodec {
             hardwareAdapterClassName = impl?.hardwareAdapterClassName,
             simulation = SubsystemSimulationDocument(
                 support = simSupport,
-                adapterClassName = if (impl?.kind?.isAresGenerated() != false) null else sim?.adapterClassName,
+                adapterClassName = sim?.adapterClassName,
                 interaction = SubsystemSimInteractionDocument(
                     role = inter?.role ?: SimInteractionRole.NONE,
                     triggerActuatorId = inter?.triggerActuatorId,

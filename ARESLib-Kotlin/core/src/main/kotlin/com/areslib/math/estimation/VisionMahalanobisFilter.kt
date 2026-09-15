@@ -1,7 +1,6 @@
 package com.areslib.math.estimation
 
 import com.areslib.state.VisionMeasurement
-import com.areslib.math.geometry.Vector3
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.wrapAngle
@@ -17,13 +16,15 @@ import com.areslib.math.wrapAngle
  *    $$\mathbf{y} = \begin{bmatrix} x_{\text{vision}} - x_{\text{est}} \\ y_{\text{vision}} - y_{\text{est}} \\ \text{wrapAngle}(\theta_{\text{vision}} - \theta_{\text{est}}) \end{bmatrix}$$
  * 2. **Measurement Noise Covariance ($\mathbf{R}$)**:
  *    Scales baseline standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ by distance, multi-tag count, incidence angle, and tag ambiguity:
- *    $$\sigma_{\text{scaled}} = \sigma_{\text{base}} \cdot \frac{\sqrt{1 + d^2}}{\sqrt{N_{\text{tags}}}} \cdot \frac{1}{\cos^2(\phi)} \cdot (1 + 10 \cdot \text{ambiguity}^2)$$
+ *    Distance uses hypot for stable range scaling. The multi-tag factor is bounded below by 0.5,
+ *    and inverse squared incidence cosine is bounded above by 10.
  * 3. **Innovation Covariance ($\mathbf{S}$)** & **Mahalanobis Distance ($d_M^2$)**:
  *    $$\mathbf{S} = \mathbf{P}_{\text{history}} + \mathbf{R}$$
  *    $$d_M^2 = \mathbf{y}^T \mathbf{S}^{-1} \mathbf{y}$$
  * 4. **Kalman Gain ($\mathbf{K}$)** & **Covariance Update**:
  *    $$\mathbf{K} = \mathbf{P}_{\text{history}} \mathbf{S}^{-1}$$
- *    $$\mathbf{P}_{\text{updated}} = (\mathbf{I} - \mathbf{K}) \mathbf{P}_{\text{history}}$$
+ *    Uses the Joseph covariance form $(I-K)P(I-K)^T + KRK^T$, without an absolute variance floor.
+ *    A normalized Cholesky factor whitens residuals and solves for K without an explicit inverse.
  *
  * ### Physical Units & Coordinate Conventions:
  * - Position $(x, y, d)$: Meters ($m$)
@@ -46,18 +47,20 @@ object VisionMahalanobisFilter {
      *
      * @param state Current EKF pose estimator state snapshot.
      * @param measurement Observed AprilTag 3D pose measurement (units: meters, radians).
-     * @param visionStdDevs Baseline vision standard deviations $(\sigma_x, \sigma_y, \sigma_\theta)$ (units: meters, radians).
+     * @param visionStdDevX X standard deviation in meters; baseline unless [scaleStdDevX] is false.
+     * @param visionStdDevY Y standard deviation in meters; baseline unless [scaleStdDevY] is false.
+     * @param visionStdDevHeading Heading standard deviation in radians; baseline unless [scaleStdDevHeading] is false.
      * @param numTags Total number of detected AprilTags in the current vision frame.
      * @param useMahalanobisRejection If true, rejects vision observations exceeding [mahalanobisThreshold].
      * @param mahalanobisThreshold Normalized-innovation-squared threshold for the 3-DOF
      * $(x, y, \theta)$ residual. [PoseEstimator] defaults this value to $12.0$; callers may tune it
      * from validated field data.
-     * @param maxAmbiguity Maximum acceptable AprilTag pose solver ambiguity ratio (0.0 to 1.0).
+     * @param maxAmbiguity Finite nonnegative maximum acceptable available solver ambiguity.
      * @param activeTags Map of tag IDs to field-space 3D poses for incidence angle calculations.
      * @param baseQ Process noise covariance matrix.
      * @param scratchR Pre-allocated scratchpad matrix for measurement covariance $\mathbf{R}$.
-     * @param scratchS Pre-allocated scratchpad matrix for innovation covariance $\mathbf{S}$.
-     * @param scratchSInv Pre-allocated scratchpad matrix for inverted innovation covariance $\mathbf{S}^{-1}$.
+     * @param scratchS Pre-allocated scratchpad matrix for normalized innovation covariance.
+     * @param scratchSInv Legacy-named workspace holding normalized P for the gain solve; no inverse is formed.
      * @param scratchK Pre-allocated scratchpad matrix for Kalman Gain $\mathbf{K}$.
      * @param scratchCov Pre-allocated scratchpad matrix for updated state covariance $\mathbf{P}$.
      * @param scratchHistory Pre-allocated scratchpad buffer for trajectory re-propagation.
@@ -84,7 +87,10 @@ object VisionMahalanobisFilter {
         scratchCov: Matrix3x3,
         scratchHistory: HistoryBuffer,
         scratchCov2: Matrix3x3,
-        scratchInterpolatedEntry: PoseHistoryEntry
+        scratchInterpolatedEntry: PoseHistoryEntry,
+        scaleStdDevX: Boolean = true,
+        scaleStdDevY: Boolean = true,
+        scaleStdDevHeading: Boolean = true
     ): PoseEstimatorState {
         if (state.history.isEmpty()) {
             state.lastMeasurementAccepted = false
@@ -97,7 +103,13 @@ object VisionMahalanobisFilter {
             return state
         }
 
-        if (!measurement.ambiguity.isFinite() || measurement.ambiguity > maxAmbiguity) {
+        if (!maxAmbiguity.isFinite() || maxAmbiguity < 0.0) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "invalid_ambiguity_limit"
+            return state
+        }
+        val ambiguity = if (measurement.ambiguityAvailable) measurement.ambiguity else 0.0
+        if (!ambiguity.isFinite() || ambiguity < 0.0 || ambiguity > maxAmbiguity) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "high_ambiguity"
             return state
@@ -150,53 +162,86 @@ object VisionMahalanobisFilter {
             scratchInterpolatedEntry
         )
         val baseEntry = if (intervalFraction > 0.0) scratchInterpolatedEntry else state.history[closestIndex]
-
-        val tagPose = activeTags[measurement.tagId]
-        var incidenceScale = 1.0
-        val distance = if (tagPose != null) {
-            val dx = baseEntry.x - tagPose.x
-            val dy = baseEntry.y - tagPose.y
-            val planarDistance = kotlin.math.hypot(dx, dy)
-            if (planarDistance > 1e-4) {
-                val tagYaw = tagPose.rotation.z
-                val cosPhi = kotlin.math.abs(
-                    (dx * kotlin.math.cos(tagYaw) + dy * kotlin.math.sin(tagYaw)) / planarDistance)
-                incidenceScale = 1.0 / (cosPhi * cosPhi).coerceIn(0.1, 1.0)
-            }
-            planarDistance
-        } else {
-            kotlin.math.abs(measurement.robotPoseTargetSpace.z)
+        if (!baseEntry.x.isFinite() || !baseEntry.y.isFinite() || !baseEntry.headingRad.isFinite() ||
+            !VisionCovarianceValidation.isValid(baseEntry.covariance)) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "invalid_prior_covariance_or_pose"
+            return state
         }
 
-        val ambiguityScale = 1.0 + 10.0 * (measurement.ambiguity * measurement.ambiguity)
-        val finalScale = incidenceScale * ambiguityScale
-
-        val multiTagFactor = kotlin.math.max(0.5, 1.0 / kotlin.math.sqrt(numTags.coerceAtLeast(1).toDouble()))
-        val distFactor = kotlin.math.sqrt(1.0 + distance * distance)
-        val stdDevScale = multiTagFactor * distFactor * finalScale
-        val scaledStdDevsX = visionStdDevX * stdDevScale
-        val scaledStdDevsY = visionStdDevY * stdDevScale
-        val scaledStdDevsZ = visionStdDevHeading * stdDevScale
+        val stdDevScale = if (scaleStdDevX || scaleStdDevY || scaleStdDevHeading) {
+            val tagPose = activeTags[measurement.tagId]
+            var incidenceScale = 1.0
+            val distance = if (tagPose != null) {
+                val dx = baseEntry.x - tagPose.x
+                val dy = baseEntry.y - tagPose.y
+                val planarDistance = kotlin.math.hypot(dx, dy)
+                if (planarDistance > 1e-4) {
+                    val tagYaw = tagPose.rotation.z
+                    val cosPhi = kotlin.math.abs(
+                        (dx * kotlin.math.cos(tagYaw) + dy * kotlin.math.sin(tagYaw)) / planarDistance)
+                    incidenceScale = 1.0 / (cosPhi * cosPhi).coerceIn(0.1, 1.0)
+                }
+                planarDistance
+            } else {
+                val targetSpace = measurement.robotPoseTargetSpace
+                kotlin.math.hypot(kotlin.math.hypot(targetSpace.x, targetSpace.y), targetSpace.z)
+            }
+            val ambiguityScale = 1.0 + 10.0 * (ambiguity * ambiguity)
+            val multiTagFactor = kotlin.math.max(0.5, 1.0 / kotlin.math.sqrt(numTags.toDouble()))
+            multiTagFactor * kotlin.math.hypot(1.0, distance) * incidenceScale * ambiguityScale
+        } else 1.0
+        val scaledStdDevsX = visionStdDevX * if (scaleStdDevX) stdDevScale else 1.0
+        val scaledStdDevsY = visionStdDevY * if (scaleStdDevY) stdDevScale else 1.0
+        val scaledStdDevsZ = visionStdDevHeading * if (scaleStdDevHeading) stdDevScale else 1.0
 
         scratchR.m00 = scaledStdDevsX * scaledStdDevsX; scratchR.m01 = 0.0; scratchR.m02 = 0.0
         scratchR.m10 = 0.0; scratchR.m11 = scaledStdDevsY * scaledStdDevsY; scratchR.m12 = 0.0
         scratchR.m20 = 0.0; scratchR.m21 = 0.0; scratchR.m22 = scaledStdDevsZ * scaledStdDevsZ
 
-        scratchS.m00 = baseEntry.covariance.m00 + scratchR.m00
-        scratchS.m01 = baseEntry.covariance.m01
-        scratchS.m02 = baseEntry.covariance.m02
-        scratchS.m10 = baseEntry.covariance.m10
-        scratchS.m11 = baseEntry.covariance.m11 + scratchR.m11
-        scratchS.m12 = baseEntry.covariance.m12
-        scratchS.m20 = baseEntry.covariance.m20
-        scratchS.m21 = baseEntry.covariance.m21
-        scratchS.m22 = baseEntry.covariance.m22 + scratchR.m22
+        if (!scratchR.m00.isFinite() || !scratchR.m11.isFinite() || !scratchR.m22.isFinite()) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "invalid_measurement_covariance"
+            return state
+        }
+        val prior = baseEntry.covariance
+        val varianceScaleX = maxOf(prior.m00, scratchR.m00)
+        val varianceScaleY = maxOf(prior.m11, scratchR.m11)
+        val varianceScaleHeading = maxOf(prior.m22, scratchR.m22)
+        if (varianceScaleX <= 0.0 || varianceScaleY <= 0.0 || varianceScaleHeading <= 0.0) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "non_positive_definite_innovation_covariance"
+            return state
+        }
+        // Normalize each axis before adding P and R. A single common scale can erase
+        // valid small axes. With D = diag(sqrt(max(Pii, Rii))), solve in D^-1 S D^-1.
+        val axisX = kotlin.math.sqrt(varianceScaleX)
+        val axisY = kotlin.math.sqrt(varianceScaleY)
+        val axisHeading = kotlin.math.sqrt(varianceScaleHeading)
+        scratchSInv.m00 = prior.m00 / varianceScaleX
+        scratchSInv.m01 = prior.m01 / axisX / axisY
+        scratchSInv.m02 = prior.m02 / axisX / axisHeading
+        scratchSInv.m10 = prior.m10 / axisY / axisX
+        scratchSInv.m11 = prior.m11 / varianceScaleY
+        scratchSInv.m12 = prior.m12 / axisY / axisHeading
+        scratchSInv.m20 = prior.m20 / axisHeading / axisX
+        scratchSInv.m21 = prior.m21 / axisHeading / axisY
+        scratchSInv.m22 = prior.m22 / varianceScaleHeading
+        scratchS.m00 = scratchSInv.m00 + scratchR.m00 / varianceScaleX
+        scratchS.m01 = (scratchSInv.m01 + scratchSInv.m10) * 0.5
+        scratchS.m02 = (scratchSInv.m02 + scratchSInv.m20) * 0.5
+        scratchS.m10 = scratchS.m01
+        scratchS.m11 = scratchSInv.m11 + scratchR.m11 / varianceScaleY
+        scratchS.m12 = (scratchSInv.m12 + scratchSInv.m21) * 0.5
+        scratchS.m20 = scratchS.m02
+        scratchS.m21 = scratchS.m12
+        scratchS.m22 = scratchSInv.m22 + scratchR.m22 / varianceScaleHeading
 
         // S must be symmetric positive definite. Cholesky factorization is more
         // numerically stable than an adjugate/determinant inverse and rejects an
         // invalid covariance before it can produce a plausible-looking Kalman gain.
         val l00Squared = scratchS.m00
-        if (!l00Squared.isFinite() || l00Squared <= 1e-18) {
+        if (!l00Squared.isFinite() || l00Squared <= 0.0) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "non_positive_definite_innovation_covariance"
             return state
@@ -205,7 +250,7 @@ object VisionMahalanobisFilter {
         val l10 = scratchS.m10 / l00
         val l20 = scratchS.m20 / l00
         val l11Squared = scratchS.m11 - l10 * l10
-        if (!l11Squared.isFinite() || l11Squared <= 1e-18) {
+        if (!l11Squared.isFinite() || l11Squared <= 0.0) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "non_positive_definite_innovation_covariance"
             return state
@@ -213,14 +258,16 @@ object VisionMahalanobisFilter {
         val l11 = kotlin.math.sqrt(l11Squared)
         val l21 = (scratchS.m21 - l20 * l10) / l11
         val l22Squared = scratchS.m22 - l20 * l20 - l21 * l21
-        if (!l22Squared.isFinite() || l22Squared <= 1e-18) {
+        if (!l22Squared.isFinite() || l22Squared <= 0.0) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "non_positive_definite_innovation_covariance"
             return state
         }
         val l22 = kotlin.math.sqrt(l22Squared)
 
-        val headingDiff = wrapAngle(measuredHeading - baseEntry.headingRad)
+        val rawHeadingDiff = measuredHeading - baseEntry.headingRad
+        val headingDiff = if (rawHeadingDiff.isFinite()) wrapAngle(rawHeadingDiff)
+            else wrapAngle(wrapAngle(measuredHeading) - wrapAngle(baseEntry.headingRad))
 
         val yX = measurement.targetPose.x - baseEntry.x
         val yY = measurement.targetPose.y - baseEntry.y
@@ -228,9 +275,9 @@ object VisionMahalanobisFilter {
 
         // Whiten the residual with L before computing its squared norm. This avoids
         // cancellation in y^T S^-1 y, and rejected observations need no inverse.
-        val whitenedX = yX / l00
-        val whitenedY = (yY - l10 * whitenedX) / l11
-        val whitenedHeading = (yZ - l20 * whitenedX - l21 * whitenedY) / l22
+        val whitenedX = (yX / axisX) / l00
+        val whitenedY = (yY / axisY - l10 * whitenedX) / l11
+        val whitenedHeading = (yZ / axisHeading - l20 * whitenedX - l21 * whitenedY) / l22
         val dMSquared = whitenedX * whitenedX + whitenedY * whitenedY + whitenedHeading * whitenedHeading
         state.lastNormalizedInnovationSquared = if (dMSquared.isFinite() && dMSquared >= 0.0) dMSquared else 0.0
         if (!dMSquared.isFinite() || dMSquared < -1e-9 ||
@@ -243,33 +290,34 @@ object VisionMahalanobisFilter {
                 return state
         }
 
-        val a = 1.0 / l00
-        val b = -l10 / (l00 * l11)
-        val c = (l10 * l21 - l20 * l11) / (l00 * l11 * l22)
-        val d = 1.0 / l11
-        val e = -l21 / (l11 * l22)
-        val f = 1.0 / l22
-        scratchSInv.m00 = a * a + b * b + c * c
-        scratchSInv.m01 = b * d + c * e
-        scratchSInv.m02 = c * f
-        scratchSInv.m10 = scratchSInv.m01
-        scratchSInv.m11 = d * d + e * e
-        scratchSInv.m12 = e * f
-        scratchSInv.m20 = scratchSInv.m02
-        scratchSInv.m21 = scratchSInv.m12
-        scratchSInv.m22 = f * f
+        // Solve S K^T = P^T directly. No explicit inverse or products of three large pivots.
+        var z0 = scratchSInv.m00 / l00
+        var z1 = (scratchSInv.m01 - l10 * z0) / l11
+        var z2 = (scratchSInv.m02 - l20 * z0 - l21 * z1) / l22
+        scratchK.m02 = z2 / l22
+        scratchK.m01 = (z1 - l21 * scratchK.m02) / l11
+        scratchK.m00 = (z0 - l10 * scratchK.m01 - l20 * scratchK.m02) / l00
+        z0 = scratchSInv.m10 / l00
+        z1 = (scratchSInv.m11 - l10 * z0) / l11
+        z2 = (scratchSInv.m12 - l20 * z0 - l21 * z1) / l22
+        scratchK.m12 = z2 / l22
+        scratchK.m11 = (z1 - l21 * scratchK.m12) / l11
+        scratchK.m10 = (z0 - l10 * scratchK.m11 - l20 * scratchK.m12) / l00
+        z0 = scratchSInv.m20 / l00
+        z1 = (scratchSInv.m21 - l10 * z0) / l11
+        z2 = (scratchSInv.m22 - l20 * z0 - l21 * z1) / l22
+        scratchK.m22 = z2 / l22
+        scratchK.m21 = (z1 - l21 * scratchK.m22) / l11
+        scratchK.m20 = (z0 - l10 * scratchK.m21 - l20 * scratchK.m22) / l00
 
-        scratchK.m00 = baseEntry.covariance.m00 * scratchSInv.m00 + baseEntry.covariance.m01 * scratchSInv.m10 + baseEntry.covariance.m02 * scratchSInv.m20
-        scratchK.m01 = baseEntry.covariance.m00 * scratchSInv.m01 + baseEntry.covariance.m01 * scratchSInv.m11 + baseEntry.covariance.m02 * scratchSInv.m21
-        scratchK.m02 = baseEntry.covariance.m00 * scratchSInv.m02 + baseEntry.covariance.m01 * scratchSInv.m12 + baseEntry.covariance.m02 * scratchSInv.m22
-
-        scratchK.m10 = baseEntry.covariance.m10 * scratchSInv.m00 + baseEntry.covariance.m11 * scratchSInv.m10 + baseEntry.covariance.m12 * scratchSInv.m20
-        scratchK.m11 = baseEntry.covariance.m10 * scratchSInv.m01 + baseEntry.covariance.m11 * scratchSInv.m11 + baseEntry.covariance.m12 * scratchSInv.m21
-        scratchK.m12 = baseEntry.covariance.m10 * scratchSInv.m02 + baseEntry.covariance.m11 * scratchSInv.m12 + baseEntry.covariance.m12 * scratchSInv.m22
-
-        scratchK.m20 = baseEntry.covariance.m20 * scratchSInv.m00 + baseEntry.covariance.m21 * scratchSInv.m10 + baseEntry.covariance.m22 * scratchSInv.m20
-        scratchK.m21 = baseEntry.covariance.m20 * scratchSInv.m01 + baseEntry.covariance.m21 * scratchSInv.m11 + baseEntry.covariance.m22 * scratchSInv.m21
-        scratchK.m22 = baseEntry.covariance.m20 * scratchSInv.m02 + baseEntry.covariance.m21 * scratchSInv.m12 + baseEntry.covariance.m22 * scratchSInv.m22
+        // Restore K = D K_normalized D^-1. Sequential multiply/divide avoids an
+        // overflowing scale ratio, including zero cross gains between extreme axes.
+        scratchK.m01 = scratchK.m01 * axisX / axisY
+        scratchK.m02 = scratchK.m02 * axisX / axisHeading
+        scratchK.m10 = scratchK.m10 * axisY / axisX
+        scratchK.m12 = scratchK.m12 * axisY / axisHeading
+        scratchK.m20 = scratchK.m20 * axisHeading / axisX
+        scratchK.m21 = scratchK.m21 * axisHeading / axisY
 
         val dxX = scratchK.m00 * yX + scratchK.m01 * yY + scratchK.m02 * yZ
         val dxY = scratchK.m10 * yX + scratchK.m11 * yY + scratchK.m12 * yZ
@@ -350,25 +398,31 @@ object VisionMahalanobisFilter {
         val pn21 = p1_21 + p2_21
         val pn22 = p1_22 + p2_22
 
-        val sym00 = pn00.coerceAtLeast(1e-9)
-        val sym01 = (pn01 + pn10) / 2.0
-        val sym02 = (pn02 + pn20) / 2.0
+        val sym00 = pn00.coerceAtLeast(0.0)
+        val sym01 = pn01 * 0.5 + pn10 * 0.5
+        val sym02 = pn02 * 0.5 + pn20 * 0.5
 
-        val sym11 = pn11.coerceAtLeast(1e-9)
-        val sym12 = (pn12 + pn21) / 2.0
+        val sym11 = pn11.coerceAtLeast(0.0)
+        val sym12 = pn12 * 0.5 + pn21 * 0.5
 
-        val sym22 = pn22.coerceAtLeast(1e-9)
+        val sym22 = pn22.coerceAtLeast(0.0)
 
         scratchCov.m00 = sym00; scratchCov.m01 = sym01; scratchCov.m02 = sym02
         scratchCov.m10 = sym01; scratchCov.m11 = sym11; scratchCov.m12 = sym12
         scratchCov.m20 = sym02; scratchCov.m21 = sym12; scratchCov.m22 = sym22
+        if (!dxX.isFinite() || !dxY.isFinite() || !dxZ.isFinite() || !VisionCovarianceValidation.isValid(scratchCov)) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "invalid_correction"
+            return state
+        }
 
+        state.history.copyInto(scratchHistory)
         var replayIndex = closestIndex
         if (intervalFraction > 0.0) {
-            // Persist the capture-time split so history remains internally consistent
+            // Prepare the capture-time split so history remains internally consistent
             // for the next camera frame. The following entry retains only the remaining
             // odometry motion and process noise after image capture.
-            replayIndex = state.history.insertEntryDirect(
+            replayIndex = scratchHistory.insertEntryDirect(
                 closestIndex + 1,
                 baseEntry.timestampMs,
                 baseEntry.x,
@@ -382,9 +436,9 @@ object VisionMahalanobisFilter {
                 baseEntry.hasMotion,
                 baseEntry.effectiveQHeadingScale
             )
-            if (replayIndex + 1 < state.history.size) {
+            if (replayIndex + 1 < scratchHistory.size) {
                 val remainingFraction = 1.0 - intervalFraction
-                val followingEntry = state.history[replayIndex + 1]
+                val followingEntry = scratchHistory[replayIndex + 1]
                 val remainderScale = remainingFraction / intervalFraction
                 followingEntry.deltaXRobot = baseEntry.deltaXRobot * remainderScale
                 followingEntry.deltaYRobot = baseEntry.deltaYRobot * remainderScale
@@ -395,14 +449,16 @@ object VisionMahalanobisFilter {
             }
         }
 
-        state.history.copyInto(scratchHistory)
-
-        EKFStatePropagator.repropagateHistory(
-            state, replayIndex, baseEntry,
+        if (!EKFStatePropagator.tryRepropagateHistory(
+            state, scratchHistory, replayIndex, baseEntry,
             dxX, dxY, dxZ,
             scratchCov, baseQ,
             scratchHistory, scratchCov2
-        )
+        )) {
+            state.lastMeasurementAccepted = false
+            state.lastRejectionReason = "invalid_replay"
+            return state
+        }
 
         scratchHistory.copyInto(state.history)
 
@@ -420,4 +476,6 @@ object VisionMahalanobisFilter {
 
         return state
     }
+
+
 }

@@ -9,7 +9,7 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.util.Sha256
-import com.ares.analytics.viewmodel.field.FieldDocumentMapper
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import java.io.File
@@ -27,9 +27,10 @@ internal data class LoadedFieldDocument(
 /** Canonical, history-preserving owner of the single project field document. */
 internal object FieldDocumentStore {
     fun load(projectPath: String, league: League): LoadedFieldDocument {
-        val canonicalFile = ProjectLayout.fieldDefinitionFile(projectPath, league)
+        val paths = ProjectPathOwnership(projectPath)
+        val canonicalFile = paths.check(ProjectLayout.fieldDefinitionFile(paths.root.path, league))
         return if (canonicalFile.isFile) {
-            fromDocument(RobotFieldDocument.decode(canonicalFile.readText()))
+            fromDocument(requireLeague(RobotFieldDocument.decode(canonicalFile.readText()), league))
         } else {
             fromDocument(
                 FieldDocumentMapper.newDocument(
@@ -52,25 +53,32 @@ internal object FieldDocumentStore {
 
     fun save(projectPath: String, league: League, document: RobotFieldConfig) {
         val encoded = RobotFieldDocument.encode(document)
-        val validated = RobotFieldDocument.decode(encoded)
-        val canonicalFile = ProjectLayout.fieldDefinitionFile(projectPath, league)
+        val validated = requireLeague(RobotFieldDocument.decode(encoded), league)
+        val paths = ProjectPathOwnership(projectPath)
+        val canonicalFile = paths.check(ProjectLayout.fieldDefinitionFile(paths.root.path, league))
         ProjectDocumentWriteLocks.withLock(canonicalFile) {
-            val previous = canonicalFile.takeIf(File::isFile)?.let { RobotFieldDocument.decode(it.readText()) }
-            if (previous != null) checkpoint(projectPath, previous)
-            checkpoint(projectPath, validated)
+            val previous = canonicalFile.takeIf(File::isFile)?.let { requireLeague(RobotFieldDocument.decode(it.readText()), league) }
+            if (previous != null) checkpoint(paths, previous)
+            checkpoint(paths, validated)
             if (previous != validated || !canonicalFile.isFile) {
                 AtomicProjectFileWriter.write(canonicalFile, encoded, replaceExisting = true)
             }
         }
     }
 
-    private fun checkpoint(projectPath: String, document: RobotFieldConfig) {
+    private fun requireLeague(document: RobotFieldConfig, league: League): RobotFieldConfig = document.also {
+        require(it.fieldType.name == league.name) {
+            "Field document league ${it.fieldType} does not match project league $league."
+        }
+    }
+
+    private fun checkpoint(paths: ProjectPathOwnership, document: RobotFieldConfig) {
         val encoded = RobotFieldDocument.encode(document)
         val hash = Sha256.hex(encoded)
-        val historyFile = File(
-            resolveProjectPath(projectPath, ".ares/history/fields"),
+        val historyFile = paths.check(File(
+            paths.resolve(".ares/history/fields"),
             "${document.revision.toString().padStart(8, '0')}-${hash.take(12)}.json",
-        )
+        ))
         if (historyFile.isFile) {
             require(historyFile.readText() == encoded) {
                 "Field history checkpoint '${historyFile.name}' already exists with different bytes"

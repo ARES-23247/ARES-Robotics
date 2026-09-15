@@ -21,6 +21,11 @@ import com.areslib.math.geometry.ChassisSpeeds
  * - Angular Velocities: Radians per second ($rad/s$), counter-clockwise positive
  * - Rotational Moment Arm Constant ($k$): Meters ($m$)
  *
+ * Raw conversions follow IEEE arithmetic: invalid inputs or genuinely unrepresentable
+ * components may be nonfinite. Normalization neutralizes invalid coupled wheel vectors.
+ * Buffered methods require at least four elements and reject short buffers before mutation;
+ * trailing output elements remain untouched. Returned value objects are independently owned.
+ *
  * ### Zero-GC Guarantees:
  * High-frequency update loops (50Hz–1000Hz) must call the primitive overload [toWheelSpeeds] passing a pre-allocated
  * `DoubleArray(4)` buffer to ensure zero heap allocations in hot paths.
@@ -41,9 +46,8 @@ class MecanumKinematics(
     }
 
     /** The effective rotational moment arm constant $k = \frac{W}{2} + \frac{L}{2}$ in meters ($m$). */
-    val k: Double = (trackWidthMeters / 2.0) + (wheelBaseMeters / 2.0)
+    val k: Double = wheelMean(trackWidthMeters, wheelBaseMeters)
 
-    private val invFourK: Double = if (k > 0.0) 1.0 / (4.0 * k) else 0.0
 
     /**
      * Calculates individual wheel surface speeds from robot-centric [ChassisSpeeds].
@@ -57,10 +61,13 @@ class MecanumKinematics(
         val vy = speeds.vyMetersPerSecond
         val omega = speeds.omegaRadiansPerSecond
 
-        val fl = vx - vy - omega * k
-        val fr = vx + vy + omega * k
-        val bl = vx + vy - omega * k
-        val br = vx - vy + omega * k
+        val minus = vx - vy
+        val plus = vx + vy
+        val rotation = omega * k
+        val fl = minus - rotation
+        val fr = plus + rotation
+        val bl = plus - rotation
+        val br = minus + rotation
 
         return MecanumWheelSpeeds(fl, fr, bl, br)
     }
@@ -75,9 +82,9 @@ class MecanumKinematics(
      * @return Calculated robot-frame [ChassisSpeeds] velocity vector $[v_x, v_y, \omega]^T$ (m/s, rad/s).
      */
     fun toChassisSpeeds(fl: Double, fr: Double, bl: Double, br: Double): ChassisSpeeds {
-        val vx = (fl + fr + bl + br) * 0.25
-        val vy = (-fl + fr + bl - br) * 0.25
-        val omega = (-fl + fr - bl + br) * invFourK
+        val vx = wheelMean(fl, fr, bl, br)
+        val vy = wheelMean(-fl, fr, bl, -br)
+        val omega = wheelMeanRatio(-fl, fr, -bl, br, k)
         return ChassisSpeeds(vx, vy, omega)
     }
 
@@ -92,11 +99,14 @@ class MecanumKinematics(
      * @param outSpeeds Pre-allocated 4-element array receiving $[v_{FL}, v_{FR}, v_{BL}, v_{BR}]$ in m/s.
      */
     fun toWheelSpeeds(vx: Double, vy: Double, omega: Double, outSpeeds: DoubleArray) {
-        if (outSpeeds.size < 4) return
-        outSpeeds[0] = vx - vy - omega * k
-        outSpeeds[1] = vx + vy + omega * k
-        outSpeeds[2] = vx + vy - omega * k
-        outSpeeds[3] = vx - vy + omega * k
+        require(outSpeeds.size >= 4) { "Mecanum wheel output requires four elements" }
+        val minus = vx - vy
+        val plus = vx + vy
+        val rotation = omega * k
+        outSpeeds[0] = minus - rotation
+        outSpeeds[1] = plus + rotation
+        outSpeeds[2] = plus - rotation
+        outSpeeds[3] = minus + rotation
     }
 
     companion object {
@@ -107,25 +117,15 @@ class MecanumKinematics(
          * @param maxSpeedMetersPerSecond Maximum allowed wheel surface speed in m/s.
          */
         fun normalize(speeds: DoubleArray, maxSpeedMetersPerSecond: Double) {
-            if (speeds.size < 4) return
+            require(speeds.size >= 4) { "Mecanum wheel speeds require four elements" }
             val maxMagnitude = kotlin.math.max(
                 kotlin.math.max(kotlin.math.abs(speeds[0]), kotlin.math.abs(speeds[1])),
                 kotlin.math.max(kotlin.math.abs(speeds[2]), kotlin.math.abs(speeds[3])))
             val scale = wheelSpeedScale(maxMagnitude, maxSpeedMetersPerSecond)
-            if (scale == 0.0) {
-                speeds[0] = 0.0
-                speeds[1] = 0.0
-                speeds[2] = 0.0
-                speeds[3] = 0.0
-                return
-            }
-
-            if (scale < 1.0) {
-                speeds[0] *= scale
-                speeds[1] *= scale
-                speeds[2] *= scale
-                speeds[3] *= scale
-            }
+            speeds[0] = scaledWheelSpeed(speeds[0], maxMagnitude, maxSpeedMetersPerSecond, scale)
+            speeds[1] = scaledWheelSpeed(speeds[1], maxMagnitude, maxSpeedMetersPerSecond, scale)
+            speeds[2] = scaledWheelSpeed(speeds[2], maxMagnitude, maxSpeedMetersPerSecond, scale)
+            speeds[3] = scaledWheelSpeed(speeds[3], maxMagnitude, maxSpeedMetersPerSecond, scale)
         }
     }
 }

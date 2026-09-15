@@ -3,16 +3,18 @@ package com.areslib.math.filter
 /**
  * Sliding window Median Filter for non-linear outlier spike rejection.
  *
- * Tracks a sliding ring-buffer of $N$ recent sensor samples, sorts them using a pre-allocated
- * primitive scratch array, and outputs the sample median. Completely rejects impulse noise spikes (e.g. ultrasonic sensor dropouts,
- * optical sensor reflection glints) without phase lag or attenuation.
+ * Tracks a sliding ring-buffer of $N$ recent finite samples and a preallocated sorted window.
+ * Each update removes the oldest entry and inserts the new entry in O(N) worst-case time;
+ * reading the cached median is O(1). No full-window sort is performed during updates or reads.
+ * Isolated outliers can be rejected, but step delay and nonlinear distortion depend on window
+ * occupancy; a median filter does not guarantee removal of arbitrary bursts without lag.
  *
  * ### Mathematical Definition:
  * For sorted sample window $(x_{(1)} \le x_{(2)} \le \dots \le x_{(N)})$:
  * $$\text{Median} = \begin{cases} x_{\left(\frac{N+1}{2}\right)} & \text{if } N \text{ is odd} \\ \frac{x_{\left(\frac{N}{2}\right)} + x_{\left(\frac{N}{2}+1\right)}}{2} & \text{if } N \text{ is even} \end{cases}$$
  *
  * ### Zero-GC Guarantee:
- * Uses pre-allocated primitive array buffers (`buffer`, `tempBuffer`) to maintain zero dynamic heap allocations during updates.
+ * Uses preallocated primitive ring/sorted arrays to maintain zero dynamic heap allocations during updates.
  *
  * @param windowSize Total number of historical samples to track ($N \ge 1$).
  */
@@ -25,9 +27,10 @@ class MedianFilter(
     }
 
     private val buffer = DoubleArray(windowSize)
-    private val tempBuffer = DoubleArray(windowSize)
+    private val ordered = DoubleArray(windowSize)
     private var size = 0
     private var writeIndex = 0
+    private var median = 0.0
 
     /**
      * Pushes a new raw measurement into the sliding window and returns the current median.
@@ -36,52 +39,46 @@ class MedianFilter(
      * @return Calculated median value across active window samples.
      */
     fun calculate(measurement: Double): Double {
-        if (!measurement.isFinite()) return value
-
-        if (size < windowSize) {
-            buffer[size] = measurement
-            size++
-        } else {
-            buffer[writeIndex] = measurement
-            writeIndex = (writeIndex + 1) % windowSize
+        if (!measurement.isFinite()) return median
+        var retained = size
+        if (size == windowSize) {
+            val removal = java.util.Arrays.binarySearch(ordered, 0, size, buffer[writeIndex])
+            System.arraycopy(ordered, removal + 1, ordered, removal, size - removal - 1)
+            retained--
+        } else size++
+        buffer[writeIndex] = measurement
+        writeIndex++
+        if (writeIndex == windowSize) writeIndex = 0
+        val found = java.util.Arrays.binarySearch(ordered, 0, retained, measurement)
+        val insertion = if (found >= 0) found else -found - 1
+        System.arraycopy(ordered, insertion, ordered, insertion + 1, retained - insertion)
+        ordered[insertion] = measurement
+        median = if (size % 2 == 1) ordered[size / 2] else {
+            val lower = ordered[size / 2 - 1]
+            val upper = ordered[size / 2]
+            val sum = lower + upper
+            if (sum.isFinite()) sum * 0.5 else lower * 0.5 + upper * 0.5
         }
-
-        System.arraycopy(buffer, 0, tempBuffer, 0, size)
-        tempBuffer.sort(0, size)
-
-        return if (size % 2 == 1) {
-            tempBuffer[size / 2]
-        } else {
-            val mid = size / 2
-            (tempBuffer[mid - 1] + tempBuffer[mid]) / 2.0
-        }
+        return median
     }
 
     /**
      * Gets the current median value without pushing a new sample.
      */
-    val value: Double
-        get() {
-            if (size == 0) return 0.0
-            System.arraycopy(buffer, 0, tempBuffer, 0, size)
-            tempBuffer.sort(0, size)
-            return if (size % 2 == 1) {
-                tempBuffer[size / 2]
-            } else {
-                val mid = size / 2
-                (tempBuffer[mid - 1] + tempBuffer[mid]) / 2.0
-            }
-        }
+    val value: Double get() = median
 
     /**
      * Resets the buffer to a baseline pre-filled initial value.
      *
-     * @param initialValue Baseline initial value to pre-fill the entire window buffer.
+     * @param initialValue Baseline for the entire window. Nonfinite baselines clear history.
      */
     fun reset(initialValue: Double = 0.0) {
+        if (!initialValue.isFinite()) { clear(); return }
         buffer.fill(initialValue)
+        ordered.fill(initialValue)
         size = windowSize
         writeIndex = 0
+        median = initialValue
     }
 
     /**
@@ -90,5 +87,6 @@ class MedianFilter(
     fun clear() {
         size = 0
         writeIndex = 0
+        median = 0.0
     }
 }

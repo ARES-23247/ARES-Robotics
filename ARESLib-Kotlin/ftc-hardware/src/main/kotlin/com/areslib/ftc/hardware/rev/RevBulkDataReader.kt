@@ -1,7 +1,5 @@
 package com.areslib.ftc.hardware.rev
 
-import java.util.concurrent.CopyOnWriteArrayList
-
 /**
  * Asynchronous current sampling manager for REV Expansion Hub motor ports.
  *
@@ -15,9 +13,9 @@ import java.util.concurrent.CopyOnWriteArrayList
  * @see RevMotorController
  */
 object RevBulkDataReader {
-    private val motorsList = CopyOnWriteArrayList<RevMotorController>()
-    @Volatile private var pollingRunning = false
+    private val motorsList = ArrayList<RevMotorController>()
     private var pollingThread: Thread? = null
+    private var rrIndex = 0
 
     /**
      * Registers a [RevMotorController] instance to be included in round-robin background current polling.
@@ -26,6 +24,7 @@ object RevBulkDataReader {
      */
     fun registerMotor(motor: RevMotorController) {
         synchronized(this) {
+            if (motor.isClosed || motorsList.contains(motor)) return
             motorsList.add(motor)
             startPollingThreadIfNeeded()
         }
@@ -37,51 +36,77 @@ object RevBulkDataReader {
      * @param motor Motor controller instance.
      */
     fun unregisterMotor(motor: RevMotorController) {
-        synchronized(this) {
+        val stopped = synchronized(this) {
             motorsList.remove(motor)
+            if (motorsList.isEmpty()) detachPollingThread() else null
         }
+        stopWorker(stopped)
     }
 
-    private var rrIndex = 0
-
     private fun startPollingThreadIfNeeded() {
-        if (pollingRunning) return
-        pollingRunning = true
-        pollingThread = Thread {
-            while (pollingRunning) {
-                try {
-                    val list = motorsList
-                    if (list.isNotEmpty()) {
-                        val index = Math.abs(rrIndex) % list.size
-                        val motorInstance = list.getOrNull(index)
-                        motorInstance?.pollCurrentSync()
-                        rrIndex++
+        if (pollingThread != null) return
+        val worker = Thread {
+            val self = Thread.currentThread()
+            try {
+                while (!self.isInterrupted) {
+                    // One coherent selection under the registry lock; hardware IO never holds it.
+                    // Thread identity prevents a stopped worker from adopting a new registration.
+                    val motor = synchronized(this) {
+                        if (pollingThread !== self || motorsList.isEmpty()) return@Thread
+                        if (rrIndex >= motorsList.size) rrIndex = 0
+                        motorsList[rrIndex++]
                     }
-                    Thread.sleep(50) // 20Hz round-robin (only 1 I2C current read per 50ms)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    break
-                } catch (_: Exception) {
-                    // Ignore concurrent modification or polling errors
+                    try {
+                        motor.pollCurrentSync()
+                    } catch (_: Exception) {
+                        // A failed device must not turn the reader into an unpaced retry loop.
+                    }
+                    if (synchronized(this) { pollingThread !== self }) return@Thread
+                    try {
+                        Thread.sleep(50) // One current read per 50 ms across registered motors.
+                    } catch (_: InterruptedException) {
+                        self.interrupt()
+                        return@Thread
+                    }
+                }
+            } finally {
+                synchronized(this) {
+                    if (pollingThread === self) pollingThread = null
                 }
             }
         }.apply {
             isDaemon = true
             name = "ARES-MotorCurrent-Thread"
-            start()
         }
+        pollingThread = worker
+        worker.start()
     }
 
     /**
      * Stops the background polling thread and unregisters all motor controller instances.
+     * Waits at most one second for a blocked SDK read; a detached worker exits when that
+     * read returns and cannot poll a later registration. This does not close actuators.
      */
     fun unregisterAll() {
-        synchronized(this) {
-            pollingRunning = false
-            pollingThread?.interrupt()
-            pollingThread = null
+        val stopped = synchronized(this) {
             motorsList.clear()
+            detachPollingThread()
         }
+        stopWorker(stopped)
+    }
+
+    /** Caller holds the registry lock. Only the returned worker belongs to this stop. */
+    private fun detachPollingThread(): Thread? {
+        rrIndex = 0
+        return pollingThread.also { pollingThread = null }
+    }
+
+    private fun stopWorker(worker: Thread?) {
+        if (worker == null) return
+        worker.interrupt()
+        if (worker === Thread.currentThread()) return
+        try { worker.join(1000) }
+        catch (_: InterruptedException) { Thread.currentThread().interrupt() }
     }
 }
 

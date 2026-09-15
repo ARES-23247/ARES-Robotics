@@ -9,6 +9,8 @@ import java.lang.ref.WeakReference
  * Task registries are deliberately small, so a compact linear table avoids allocating temporary
  * lookup weak references and `HashMap` iterators in 20 Hz watchdog scans. Entries allocate only
  * when a new task is registered; lookup, removal, and [forEachLive] are allocation-free.
+ * Queue cleanup compacts the table once per observed collection burst, in O(entries + queued
+ * references) work. Values remain strongly held and must not retain their own weak keys.
  */
 internal class WeakIdentityMap<K : Any, V> {
     internal fun interface EntryVisitor<K : Any, V> {
@@ -54,7 +56,11 @@ internal class WeakIdentityMap<K : Any, V> {
         return findIndex(key) >= 0
     }
 
-    /** Visits live entries directly without constructing a snapshot, iterator, pair, or lambda. */
+    /**
+     * Visits live entries in insertion order without constructing a snapshot or iterator. The
+     * caller supplies/reuses its visitor. It runs under this monitor and must not reenter the map
+     * or wait for another thread using it. Collection may remove keys between calls.
+     */
     @Synchronized
     fun forEachLive(visitor: EntryVisitor<K, V>) {
         removeCollectedKeys()
@@ -76,18 +82,20 @@ internal class WeakIdentityMap<K : Any, V> {
         return -1
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun removeCollectedKeys() {
-        while (true) {
-            val collected = referenceQueue.poll() as WeakReference<K>? ?: return
-            var index = 0
-            while (index < entries.size) {
-                if (entries[index].reference === collected) {
-                    entries.removeAt(index)
-                    break
-                }
-                index++
+        if (referenceQueue.poll() == null) return
+        while (referenceQueue.poll() != null) { /* Drain notification backlog before one scan. */ }
+        var readIndex = 0
+        var writeIndex = 0
+        while (readIndex < entries.size) {
+            val entry = entries[readIndex]
+            if (entry.reference.get() != null) {
+                if (writeIndex != readIndex) entries[writeIndex] = entry
+                writeIndex++
             }
+            readIndex++
         }
+        // Removing only the tail releases values without repeatedly shifting live entries.
+        while (entries.size > writeIndex) entries.removeAt(entries.lastIndex)
     }
 }

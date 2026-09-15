@@ -19,7 +19,13 @@ object LocalizationCalibrationCli {
             }
             i++
         }
+        require(files.isNotEmpty()) { "Provide one or more localization calibration CSV files" }
         require(files.all(File::isFile)) { "Every input must be an existing calibration CSV" }
+        val destination = output
+        require(destination == null || files.none {
+            it.canonicalFile == destination.canonicalFile ||
+                (destination.exists() && java.nio.file.Files.isSameFile(it.toPath(), destination.toPath()))
+        }) { "Calibration output must not overwrite an input log" }
         val report = LocalizationCalibrationFitter.fit(LocalizationCalibrationCsv.read(files))
         val json = report.toJson()
         println(json)

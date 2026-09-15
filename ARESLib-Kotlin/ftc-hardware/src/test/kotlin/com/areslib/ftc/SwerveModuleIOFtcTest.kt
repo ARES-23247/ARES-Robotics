@@ -14,7 +14,8 @@ class SwerveModuleIOFtcTest {
         val drive = MockDcMotorEx()
         val steer = MockDcMotorEx()
         val analog = MutableAnalogInput(Double.NaN)
-        val io = SwerveModuleIOFtc(drive, steer, analog)
+        // This generic fixture has no SDK motor metadata; supply its explicit test calibration.
+        val io = SwerveModuleIOFtc(drive, steer, analog, driveTicksPerRevolution = 2048.0)
         val inputs = SwerveModuleInputs()
 
         try {

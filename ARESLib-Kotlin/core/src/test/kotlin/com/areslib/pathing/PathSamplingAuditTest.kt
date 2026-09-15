@@ -16,7 +16,7 @@ class PathSamplingAuditTest {
 
     @Test
     fun `late path sampling requires logarithmic point reads`() {
-        val points = object : AbstractList<PathPoint>() {
+        val points = object : AbstractList<PathPoint>(), java.util.RandomAccess {
             var reads = 0
             override val size = 32768
             override fun get(index: Int): PathPoint {

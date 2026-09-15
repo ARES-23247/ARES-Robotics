@@ -1,23 +1,31 @@
 package com.areslib.util
 
 import com.areslib.math.geometry.Pose2d
+import com.areslib.state.Alliance
 
 /**
- * Global static storage for persisting robot pose between Autonomous and TeleOp.
+ * Process-local immutable pose/alliance handoff between Autonomous and TeleOp.
+ * Read [snapshot] once before dispatching actions or calling user code. A null snapshot is invalid.
  */
 object PoseStorage {
-    @JvmStatic
-    var currentPose: Pose2d = Pose2d()
+    /** A validated pose and its authored alliance, published together. */
+    class Snapshot internal constructor(val pose: Pose2d, val alliance: Alliance)
 
     @JvmStatic
-    var hasValidPose: Boolean = false
+    @Volatile
+    var snapshot: Snapshot? = null
+        private set
 
+    /** Publishes one finite handoff; invalid input discards any older handoff and returns false. */
     @JvmStatic
-    var alliance: com.areslib.state.Alliance = com.areslib.state.Alliance.RED
+    fun save(pose: Pose2d, alliance: Alliance): Boolean {
+        val valid = pose.x.isFinite() && pose.y.isFinite() && pose.heading.rawRadians.isFinite()
+        snapshot = if (valid) Snapshot(pose, alliance) else null
+        return valid
+    }
 
     @JvmStatic
     fun clear() {
-        currentPose = Pose2d()
-        hasValidPose = false
+        snapshot = null
     }
 }

@@ -79,6 +79,8 @@ internal fun Modifier.fieldCanvasGestures(
 
             val w = size.width.toFloat()
             val h = size.height.toFloat()
+            val pressCoord = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM,
+                league, zoomScale, panOffset, viewRotation)
 
             when (editorMode) {
                 EditorMode.SELECT -> {
@@ -189,29 +191,8 @@ internal fun Modifier.fieldCanvasGestures(
                             // Selected waypoint
                         }
                         else -> {
-                            val clickCoord = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
-                            val hitObs = currentActiveObstacles.minByOrNull { obs ->
-                                when (obs) {
-                                    is Obstacle.Circle -> sqrt((clickCoord.x - obs.centerX).pow(2) + (clickCoord.y - obs.centerY).pow(2)) - obs.radius
-                                    is Obstacle.Rectangle -> {
-                                        val dx = clickCoord.x - obs.centerX
-                                        val dy = clickCoord.y - obs.centerY
-                                        sqrt(dx * dx + dy * dy)
-                                    }
-                                    is Obstacle.Polygon -> obs.vertices.minOf { sqrt((clickCoord.x - it.x).pow(2) + (clickCoord.y - it.y).pow(2)) }
-                                }
-                            }?.takeIf { obs ->
-                                when (obs) {
-                                    is Obstacle.Circle -> sqrt((clickCoord.x - obs.centerX).pow(2) + (clickCoord.y - obs.centerY).pow(2)) <= obs.radius
-                                    is Obstacle.Rectangle -> {
-                                        val dx = clickCoord.x - obs.centerX
-                                        val dy = clickCoord.y - obs.centerY
-                                        val rad = Math.toRadians(-obs.rotation)
-                                        kotlin.math.abs(dx * cos(rad) - dy * sin(rad)) <= obs.width / 2.0 && kotlin.math.abs(dx * sin(rad) + dy * cos(rad)) <= obs.height / 2.0
-                                    }
-                                    is Obstacle.Polygon -> obs.vertices.any { sqrt((clickCoord.x - it.x).pow(2) + (clickCoord.y - it.y).pow(2)) < 0.3 }
-                                }
-                            }
+                            val clickCoord = pressCoord
+                            val hitObs = findObstacleForDrag(clickCoord, currentActiveObstacles)
                             newObsId = hitObs?.id
                             if (newObsId != null) {
                                 onItemSelected?.invoke(newObsId, "Obstacle")
@@ -281,12 +262,12 @@ internal fun Modifier.fieldCanvasGestures(
                     change.consume()
 
                     fun snap(v: Double) = if (isShiftPressed) kotlin.math.round(v * 10.0) / 10.0 else v
-                    val totalDelta = getDragDeltaInFieldCoords(accumulatedDragPx, w, h, fieldWidthM, fieldHeightM, league, zoomScale)
+                    val totalDelta = getDragDeltaInFieldCoords(accumulatedDragPx, w, h, fieldWidthM, fieldHeightM, league, zoomScale, viewRotation)
 
                     when (val target = dragTarget) {
                         is FieldCanvasDragTarget.Waypoint -> {
                             val wp = currentWaypoints[target.index]
-                            val posMeters = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                            val posMeters = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset, viewRotation)
                             val dx = posMeters.x - wp.x
                             val dy = posMeters.y - wp.y
 
@@ -311,7 +292,7 @@ internal fun Modifier.fieldCanvasGestures(
                                     )
                                 }
                                 else -> {
-                                    val newPos = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                                    val newPos = posMeters
                                     val existingWp = currentWaypoints[target.index]
                                     onWaypointsChanged(
                                         currentWaypoints.toMutableList().apply {
@@ -362,7 +343,7 @@ internal fun Modifier.fieldCanvasGestures(
                             if (targetWp != null && !targetWp.locked) {
                                 when {
                                     target.heading -> {
-                                        val posMeters = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                                        val posMeters = getRobotCoordFromScreen(change.position, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset, viewRotation)
                                         val angle = kotlin.math.atan2(posMeters.y - targetWp.y, posMeters.x - targetWp.x)
                                         val degrees = Math.toDegrees(angle)
                                         val targetHeading = -degrees - 90.0
@@ -388,23 +369,23 @@ internal fun Modifier.fieldCanvasGestures(
             if (!hasDragged) {
                 when (editorMode) {
                     EditorMode.ADD_WAYPOINT -> {
-                        val newWp = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                        val newWp = pressCoord
                         onWaypointsChanged(currentWaypoints + newWp)
                     }
                     EditorMode.DRAW_POLYGON -> {
-                        val newWp = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                        val newWp = pressCoord
                         currentPolygonPoints.add(PathPoint(newWp.x, newWp.y))
                     }
                     EditorMode.DRAW_CIRCLE -> {
-                        val newWp = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                        val newWp = pressCoord
                         updateObstacles(currentActiveObstacles + Obstacle.Circle("circle_${System.currentTimeMillis()}", "Circle Obstacle ${currentActiveObstacles.size + 1}", newWp.x, newWp.y, 0.25))
                     }
                     EditorMode.DRAW_RECTANGLE -> {
-                        val newWp = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                        val newWp = pressCoord
                         updateObstacles(currentActiveObstacles + Obstacle.Rectangle("rect_${System.currentTimeMillis()}", "Rectangle Obstacle ${currentActiveObstacles.size + 1}", newWp.x, newWp.y, 0.5, 0.5, 0.0))
                     }
                     EditorMode.PLACE_GAME_PIECE -> {
-                        val newWp = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                        val newWp = pressCoord
                         val type = availableGamePieceTypes.firstOrNull { it.id == activeGamePieceType }
                             ?: availableGamePieceTypes.firstOrNull()
                         if (type != null) {
@@ -421,43 +402,29 @@ internal fun Modifier.fieldCanvasGestures(
                         }
                     }
                     EditorMode.PLACE_APRILTAG -> {
-                        val newWp = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                        val newWp = pressCoord
                         updateAprilTags(currentActiveAprilTags + AprilTagPlacement("apriltag_${System.currentTimeMillis()}", 11 + currentActiveAprilTags.size, newWp.x, newWp.y, 0.5, 0.0))
                     }
                     EditorMode.PLACE_FIELD_WAYPOINT -> {
-                        val newWp = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
+                        val newWp = pressCoord
                         updateFieldWaypoints(currentActiveFieldWaypoints + FieldWaypoint("fieldwp_${System.currentTimeMillis()}", "Waypoint ${currentActiveFieldWaypoints.size + 1}", newWp.x, newWp.y, 0.0))
                     }
                     EditorMode.ERASER -> {
                         val hitIdx = currentWaypoints.indexOfFirst {
-                            sqrt((pressOffset.x - getTransformedCanvasOffset(it, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset, viewRotation).x).pow(2) + (pressOffset.y - getTransformedCanvasOffset(it, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset, viewRotation).y).pow(2)) < 25f
+                            val screen = getTransformedCanvasOffset(it, w, h, fieldWidthM, fieldHeightM,
+                                league, zoomScale, panOffset, viewRotation)
+                            (pressOffset - screen).getDistance() < 25f
                         }
                         if (hitIdx != -1) {
                             onWaypointsChanged(currentWaypoints.toMutableList().apply { removeAt(hitIdx) })
                         } else {
-                            val robotWp = getRobotCoordFromScreen(pressOffset, w, h, fieldWidthM, fieldHeightM, league, zoomScale, panOffset)
-                            val hitGp = currentActiveGamePieces.find { sqrt((robotWp.x - it.x).pow(2) + (robotWp.y - it.y).pow(2)) < 0.3 }
-                            if (hitGp != null) {
-                                updateGamePieces(currentActiveGamePieces - hitGp)
-                            } else {
-                                val hitObs = currentActiveObstacles.find { obs ->
-                                    when (obs) {
-                                        is Obstacle.Circle -> sqrt((robotWp.x - obs.centerX).pow(2) + (robotWp.y - obs.centerY).pow(2)) - obs.radius < 0.5
-                                        is Obstacle.Rectangle -> sqrt((robotWp.x - obs.centerX).pow(2) + (robotWp.y - obs.centerY).pow(2)) - maxOf(obs.width, obs.height) / 2.0 < 0.5
-                                        is Obstacle.Polygon -> obs.vertices.any { sqrt((robotWp.x - it.x).pow(2) + (robotWp.y - it.y).pow(2)) < 0.5 }
-                                    }
-                                }
-                                if (hitObs != null) {
-                                    updateObstacles(currentActiveObstacles - hitObs)
-                                } else {
-                                    val hitAt = currentActiveAprilTags.find { sqrt((robotWp.x - it.x).pow(2) + (robotWp.y - it.y).pow(2)) < 0.3 }
-                                    if (hitAt != null) {
-                                        updateAprilTags(currentActiveAprilTags - hitAt)
-                                    } else {
-                                        val hitFwp = currentActiveFieldWaypoints.find { sqrt((robotWp.x - it.x).pow(2) + (robotWp.y - it.y).pow(2)) < 0.3 }
-                                        if (hitFwp != null) updateFieldWaypoints(currentActiveFieldWaypoints - hitFwp)
-                                    }
-                                }
+                            when (val target = findFieldEraseTarget(pressCoord, currentActiveObstacles,
+                                currentActiveGamePieces, currentActiveAprilTags, currentActiveFieldWaypoints)) {
+                                is FieldEraseTarget.Piece -> updateGamePieces(currentActiveGamePieces - target.item)
+                                is FieldEraseTarget.Shape -> updateObstacles(currentActiveObstacles - target.item)
+                                is FieldEraseTarget.Tag -> updateAprilTags(currentActiveAprilTags - target.item)
+                                is FieldEraseTarget.NamedWaypoint -> updateFieldWaypoints(currentActiveFieldWaypoints - target.item)
+                                null -> Unit
                             }
                         }
                     }

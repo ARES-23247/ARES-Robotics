@@ -49,6 +49,21 @@ class PathfindToPoseTaskLifecycleTest {
     }
 
     @Test
+    fun `unreachable target stops instead of substituting a straight path`() {
+        costmap.setObstacle(1.0, 2.0)
+        costmap.inflate(0.0)
+        val task = newTask()
+        var failures = 0
+        task.onFail { failures++ }
+        task.initialize(RobotState())
+        assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(task))
+        assertEquals(listOf(Triple(0.0, 0.0, 0.0)), drivetrain.commands)
+        assertFalse(task.isCompleted(RobotState(), 100L))
+        assertTrue(task.execute(RobotState(), 100L).isEmpty())
+        assertEquals(1, failures)
+    }
+
+    @Test
     fun `wrapper timeout fails the task and invokes the fail callback`() {
         val task = newTask()
         var failInvoked = false
@@ -123,9 +138,38 @@ class PathfindToPoseTaskLifecycleTest {
         assertEquals(listOf(Triple(0.0, 0.0, 0.0)), drivetrain.commands)
     }
 
+    @Test
+    fun `delegate cleanup exception still finalizes wrapper and releases both registries`() {
+        val task = newTask()
+        var failures = 0
+        task.withTimeout(1000).onFail { failures++ }
+        task.initialize(RobotState())
+        // Observe ownership of the private delegated task without widening the runtime API.
+        val field = PathfindToPoseTask::class.java.getDeclaredField("delegateTask")
+        field.isAccessible = true
+        val delegate = field.get(task) as Task
+        var delegateCallbacks = 0
+        delegate.onComplete { delegateCallbacks++ }
+        delegate.withTimeout(1000)
+        val original = IllegalStateException("injected stop failure")
+        drivetrain.stopFailure = original
+        val actual = kotlin.test.assertFailsWith<IllegalStateException> { task.end(RobotState(), true) }
+        kotlin.test.assertSame(original, actual)
+        assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(task))
+        assertFalse(TaskTimeoutManager.isTimedOut(task, Long.MAX_VALUE))
+        assertFalse(TaskTimeoutManager.isTimedOut(delegate, Long.MAX_VALUE))
+        TaskCallbacks.invokeComplete(delegate)
+        assertEquals(0, delegateCallbacks)
+        task.releaseRuntimeState()
+        TaskCallbacks.invokeFail(task)
+        assertEquals(0, failures, "interrupted failure callbacks are released, not delivered later")
+    }
+
     private class RecordingDrivetrain : DrivetrainSubsystem {
+        var stopFailure: Throwable? = null
         val commands = mutableListOf<Triple<Double, Double, Double>>()
         override fun setChassisSpeeds(vx: Double, vy: Double, omega: Double) {
+            stopFailure?.let { throw it }
             commands.add(Triple(vx, vy, omega))
         }
         override fun getEstimatedPose(): Pose2d = Pose2d()

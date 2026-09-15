@@ -657,96 +657,24 @@ fun SafetyInspector(state: SubsystemGeneratorState, viewModel: SubsystemGenerato
 }
 
 @Composable
-fun FaultRecoveryCard(document: SubsystemDocument, viewModel: SubsystemGeneratorViewModel) {
-    val recovery = document.safety.faultRecovery
-    val eligibleActuators = document.hardware.filter {
-        it.following == null && it.kind in setOf(SubsystemHardwareKind.MOTOR, SubsystemHardwareKind.CONTINUOUS_SERVO)
-    }
-
-    EditorCard("Automatic Jam Recovery / Anti-Stall", Icons.Default.Build) {
-        Text("Detects mechanical jams from motor current and triggers automatic recovery.", color = AresTextSecondary, fontSize = 11.sp)
-        if (eligibleActuators.isNotEmpty()) {
-            ToggleRow("Enable anti-jam pulse", recovery.enabled) { value ->
-                viewModel.edit { doc ->
-                    val actuator = eligibleActuators.firstOrNull { it.hardwareId == doc.safety.faultRecovery.actuatorId }
-                        ?: eligibleActuators.first()
-                    val current = actuator.measurements.firstOrNull { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }
-                    doc.copy(safety = doc.safety.copy(
-                        faultRecovery = doc.safety.faultRecovery.copy(
-                            enabled = value,
-                            actuatorId = actuator.hardwareId.takeIf { value },
-                            currentFieldId = current?.fieldId.takeIf { value },
-                        ),
-                        requiresCurrentMonitoring = doc.safety.requiresCurrentMonitoring || value,
-                    ))
-                }
-            }
-            if (recovery.enabled) {
-                DropdownSelector("Actuator to recover", recovery.actuatorId ?: eligibleActuators.first().hardwareId, eligibleActuators.map { it.hardwareId }) { selected ->
-                    val current = eligibleActuators.first { it.hardwareId == selected }.measurements
-                        .firstOrNull { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }?.fieldId
-                    viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(faultRecovery = doc.safety.faultRecovery.copy(actuatorId = selected, currentFieldId = current))) }
-                }
-                val currentOptions = document.hardware.firstOrNull { it.hardwareId == recovery.actuatorId }?.measurements
-                    .orEmpty().filter { it.source == SubsystemMeasurementSource.MOTOR_CURRENT_AMPS }.map { it.fieldId }
-                if (currentOptions.isNotEmpty()) {
-                    DropdownSelector("Cached current signal", recovery.currentFieldId ?: currentOptions.first(), currentOptions) { selected ->
-                        viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(faultRecovery = doc.safety.faultRecovery.copy(currentFieldId = selected))) }
-                    }
-                } else {
-                    Text("The selected actuator needs a cached motor-current signal before recovery can be saved.", color = AresGold, fontSize = 10.sp)
-                }
-                DoubleInput("Jam current threshold (A)", recovery.currentThresholdAmps) { value ->
-                    viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(faultRecovery = doc.safety.faultRecovery.copy(currentThresholdAmps = value))) }
-                }
-                LongInput("Jam evidence duration (ms)", recovery.currentDurationMs) { value ->
-                    viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(faultRecovery = doc.safety.faultRecovery.copy(currentDurationMs = value))) }
-                }
-                EnumSelector(
-                    "Recovery action",
-                    recovery.recoveryAction,
-                    listOf(FaultRecoveryActionKind.REVERSE_BRIEFLY, FaultRecoveryActionKind.NEUTRAL_STOP),
-                ) { action ->
-                    viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(faultRecovery = doc.safety.faultRecovery.copy(recoveryAction = action))) }
-                }
-                if (recovery.recoveryAction == FaultRecoveryActionKind.REVERSE_BRIEFLY) {
-                    DoubleInput("Reverse output (normalized -1 to 1)", recovery.reverseDutyCycle) { value ->
-                        viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(faultRecovery = doc.safety.faultRecovery.copy(reverseDutyCycle = value))) }
-                    }
-                    LongInput("Reverse duration (ms)", recovery.reverseDurationMs) { value ->
-                        viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(faultRecovery = doc.safety.faultRecovery.copy(reverseDurationMs = value))) }
-                    }
-                    IntInput("Maximum automatic retries", recovery.maxRetries) { value ->
-                        viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(faultRecovery = doc.safety.faultRecovery.copy(maxRetries = value))) }
-                    }
-                }
-                FieldGuidance("Recovery is bounded and uses cached current only. Exhausted retries or a failed write leave the subsystem neutral and fault-latched.")
-            }
-        } else {
-            Text("Add an independently controlled motor before enabling anti-jam protection.", color = AresTextTertiary, fontSize = 10.sp)
-        }
-    }
-}
-
-@Composable
 fun InterlockMatrixCard(document: SubsystemDocument, state: SubsystemGeneratorState, viewModel: SubsystemGeneratorViewModel) {
     val targets = state.documents.filter {
         it.uid != document.uid && it.implementation.kind.isAresGenerated() && it.stateFields.isNotEmpty()
     }.sortedBy { it.displayName.lowercase() }
+    val targetOptions = targets.map { "${it.displayName} (${it.documentId})" }
     EditorCard("Positional Interlocks (${document.interlocks.size})", Icons.Default.Lock) {
-        Text("Interlocks read another generated subsystem's immutable state and force this mechanism to a declared safe fallback when a rule is not satisfied.", color = AresTextSecondary, fontSize = 11.sp)
+        Text("Interlocks block movement when a listed condition is true or the other subsystem's feedback is unavailable. Each actuator then uses its configured safe output.", color = AresTextSecondary, fontSize = 11.sp)
         if (document.interlocks.isEmpty()) {
             Text("No positional interlocks configured.", color = AresTextTertiary, fontSize = 10.sp)
         }
         document.interlocks.forEach { interlock ->
             val target = targets.firstOrNull { it.uid == interlock.targetSubsystemUid }
-            val targetOptions = targets.map { it.displayName }
             Surface(color = AresSurface, border = BorderStroke(1.dp, AresBorder), shape = RoundedCornerShape(6.dp)) {
                 Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(interlock.interlockId, color = AresCyan, fontFamily = FontFamily.Monospace, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     if (targetOptions.isNotEmpty()) {
-                        DropdownSelector("Other subsystem", target?.displayName ?: targetOptions.first(), targetOptions) { selectedName ->
-                            val selected = targets.first { it.displayName == selectedName }
+                        DropdownSelector("Other subsystem", target?.let { "${it.displayName} (${it.documentId})" } ?: "Select a subsystem", targetOptions) { selectedName ->
+                            val selected = targets.getOrNull(targetOptions.indexOf(selectedName)) ?: return@DropdownSelector
                             val field = selected.stateFields.first()
                             viewModel.updateInterlock(interlock.interlockId) {
                                 it.copy(
@@ -771,15 +699,16 @@ fun InterlockMatrixCard(document: SubsystemDocument, state: SubsystemGeneratorSt
                             }
                         }
                         val field = fields.firstOrNull { it.fieldId == interlock.targetFieldId }
-                        val comparisons = if (field?.type in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)) {
+                        val numericField = field?.type in setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)
+                        val comparisons = if (numericField) {
                             InterlockComparison.entries
                         } else {
                             listOf(InterlockComparison.EQUALS_STATE, InterlockComparison.NOT_EQUALS_STATE)
                         }
-                        EnumSelector("Permit movement when", interlock.comparison, comparisons) { comparison ->
+                        EnumSelector("Block movement when", interlock.comparison, comparisons) { comparison ->
                             viewModel.updateInterlock(interlock.interlockId) { it.copy(comparison = comparison) }
                         }
-                        if (interlock.comparison in setOf(InterlockComparison.LESS_THAN, InterlockComparison.GREATER_THAN)) {
+                        if (numericField) {
                             DoubleInput("Threshold (${field?.unit ?: "state units"})", interlock.thresholdValue) { value ->
                                 viewModel.updateInterlock(interlock.interlockId) { it.copy(thresholdValue = value) }
                             }
@@ -792,8 +721,15 @@ fun InterlockMatrixCard(document: SubsystemDocument, state: SubsystemGeneratorSt
                     TextInput("Student-facing reason", interlock.forbiddenZoneDescription) { value ->
                         viewModel.updateInterlock(interlock.interlockId) { it.copy(forbiddenZoneDescription = value) }
                     }
-                    NullableDoubleInput("Safe fallback output (optional)", interlock.safeFallbackValue) { value ->
-                        viewModel.updateInterlock(interlock.interlockId) { it.copy(safeFallbackValue = value) }
+                    if (!document.implementation.kind.isAresGenerated()) {
+                        NullableDoubleInput("Custom fallback output (implementation-owned)", interlock.safeFallbackValue) { value ->
+                            viewModel.updateInterlock(interlock.interlockId) { it.copy(safeFallbackValue = value) }
+                        }
+                    } else if (interlock.safeFallbackValue != null) {
+                        Text("This fallback override is unsupported. Use each actuator's configured safe output.", color = AresTextSecondary, fontSize = 11.sp)
+                        TextButton(onClick = { viewModel.updateInterlock(interlock.interlockId) { it.copy(safeFallbackValue = null) } }) {
+                            Text("Use configured safe outputs")
+                        }
                     }
                     TextButton(onClick = { viewModel.removeInterlock(interlock.interlockId) }) {
                         Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(14.dp))

@@ -140,7 +140,7 @@ fun HardwareSetupScreen(
 private fun CommissioningEvidenceLadder(snapshot: HardwareSetupSnapshot) {
     val simulationVerified = snapshot.simulationVerification.status == CommissioningSimulationStatus.VERIFIED
     val configurationReviewed = snapshot.reviewStatus == HardwareReviewStatus.CURRENT
-    val ready = simulationVerified && configurationReviewed && snapshot.errorIssues.isEmpty()
+    val ready = snapshot.readyForPhysicalValidation
     val physicallyValidated = snapshot.physicalValidation != null
     Card(
         colors = CardDefaults.cardColors(containerColor = AresSurface),
@@ -192,7 +192,7 @@ private fun CommissioningEvidenceLadder(snapshot: HardwareSetupSnapshot) {
 @Composable
 private fun PhysicalValidationSection(state: HardwareSetupState, viewModel: HardwareSetupViewModel) {
     val snapshot = state.snapshot ?: return
-    val ready = snapshot.reviewStatus == HardwareReviewStatus.CURRENT && snapshot.simulationVerification.verified
+    val ready = snapshot.readyForPhysicalValidation
     Card(
         colors = CardDefaults.cardColors(containerColor = AresSurface),
         border = BorderStroke(1.dp, if (snapshot.physicalValidation != null) AresGreen else AresBorder),
@@ -269,12 +269,17 @@ private fun EvidenceRow(label: String, passed: Boolean, detail: String) {
     }
 }
 
+/** Inventory diagnostics can change without changing any successfully decoded source fingerprint. */
+@Composable
+internal fun rememberCommissioningPlan(snapshot: HardwareSetupSnapshot) =
+    remember(snapshot) { snapshot.commissioningPlan() }
+
 @Composable
 private fun CommissioningGuide(
     snapshot: HardwareSetupSnapshot,
     onOpenPitDiagnostics: (() -> Unit)?,
 ) {
-    val plan = remember(snapshot.inventoryHash) { snapshot.commissioningPlan() }
+    val plan = rememberCommissioningPlan(snapshot)
     @Suppress("DEPRECATION") val clipboard = LocalClipboardManager.current
     Card(
         colors = CardDefaults.cardColors(containerColor = AresSurface),

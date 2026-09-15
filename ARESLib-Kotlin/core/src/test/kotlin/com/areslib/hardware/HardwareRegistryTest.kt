@@ -169,47 +169,71 @@ class HardwareRegistryTest {
         assertEquals(HARDWARE_TOPOLOGY_SCHEMA_VERSION, decoded.schemaVersion)
     }
 
-    class MockSyncPolledDevice : SyncPolledDevice {
-        var pollSyncCount = 0
-        override fun pollSync() {
-            pollSyncCount++
-        }
-    }
-
     @Test
     fun testRoundRobinDevicePolling() {
-        val d1 = MockSyncPolledDevice()
-        val d2 = MockSyncPolledDevice()
-        
-        registry.registerRoundRobinDevice(d1)
-        registry.registerRoundRobinDevice(d2)
-
-        // Give the background polling thread some time to spin up and poll
-        Thread.sleep(150)
-        
-        registry.closeAll()
-
-        // It should have polled each one at least once depending on timing
-        assertTrue(d1.pollSyncCount > 0)
-        assertTrue(d2.pollSyncCount > 0)
-        // Usually should be roughly equal (differ by at most 1)
-        assertTrue(kotlin.math.abs(d1.pollSyncCount - d2.pollSyncCount) <= 1)
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val observed = CountDownLatch(6)
+        val order = mutableListOf<String>()
+        var initialRead = true
+        val first = object : SyncPolledDevice {
+            override fun pollSync() {
+                if (initialRead) {
+                    initialRead = false
+                    entered.countDown()
+                    release.await()
+                } else {
+                    order.add("first")
+                    observed.countDown()
+                }
+            }
+        }
+        val second = object : SyncPolledDevice {
+            override fun pollSync() { order.add("second"); observed.countDown() }
+        }
+        try {
+            registry.setPollingIntervalMs(10L)
+            registry.registerRoundRobinDevice(first)
+            assertTrue(entered.await(2, TimeUnit.SECONDS))
+            registry.registerRoundRobinDevice(second)
+            release.countDown()
+            assertTrue(observed.await(2, TimeUnit.SECONDS))
+        } finally {
+            release.countDown()
+            registry.closeAll()
+        }
+        // Inspect a stable registered population, excluding the first construction-time read.
+        val frame = order.take(6)
+        assertEquals(3, frame.count { it == "first" })
+        assertEquals(3, frame.count { it == "second" })
+        frame.zipWithNext().forEach { (left, right) -> assertNotEquals(left, right) }
     }
 
     @Test
     fun `throwing polled device does not stop healthy devices`() {
+        val failedPoll = CountDownLatch(1)
+        val healthyAfterFailure = CountDownLatch(1)
         val throwing = object : SyncPolledDevice {
-            override fun pollSync() = error("sensor unavailable")
+            override fun pollSync() {
+                failedPoll.countDown()
+                error("sensor unavailable")
+            }
         }
-        val healthy = MockSyncPolledDevice()
+        val healthy = object : SyncPolledDevice {
+            override fun pollSync() {
+                if (failedPoll.count == 0L) healthyAfterFailure.countDown()
+            }
+        }
         registry.setPollingIntervalMs(10L)
 
-        registry.registerRoundRobinDevice(throwing)
-        registry.registerRoundRobinDevice(healthy)
-        Thread.sleep(100L)
-        registry.closeAll()
-
-        assertTrue(healthy.pollSyncCount > 0)
+        try {
+            registry.registerRoundRobinDevice(throwing)
+            registry.registerRoundRobinDevice(healthy)
+            assertTrue(healthyAfterFailure.await(2, TimeUnit.SECONDS),
+                "A healthy device must be polled after another device throws")
+        } finally {
+            registry.closeAll()
+        }
     }
 
     @Test
@@ -230,13 +254,6 @@ class HardwareRegistryTest {
                 }
             }
         }
-        registry.setPollingIntervalMs(10L)
-        registry.registerRoundRobinDevice(blocking)
-        assertTrue(enteredOldPoll.await(1, TimeUnit.SECONDS))
-
-        // closeAll times out waiting for the deliberately blocked worker, then clears the registry.
-        registry.closeAll()
-
         val newWorkerPolls = AtomicInteger()
         val resurrectedOldWorkerPolls = AtomicInteger()
         val newWorkerObserved = CountDownLatch(1)
@@ -250,11 +267,23 @@ class HardwareRegistryTest {
                 }
             }
         }
-        registry.registerRoundRobinDevice(replacement)
-        assertTrue(newWorkerObserved.await(1, TimeUnit.SECONDS))
-        releaseOldPoll.countDown()
-        Thread.sleep(100L)
-        registry.closeAll()
+        try {
+            registry.setPollingIntervalMs(10L)
+            registry.registerRoundRobinDevice(blocking)
+            assertTrue(enteredOldPoll.await(2, TimeUnit.SECONDS))
+            // The bounded close cannot cancel this deliberately uninterruptible vendor call.
+            registry.closeAll()
+            registry.registerRoundRobinDevice(replacement)
+            assertTrue(newWorkerObserved.await(2, TimeUnit.SECONDS))
+            releaseOldPoll.countDown()
+            oldWorker.get().join(2000L)
+            assertFalse(oldWorker.get().isAlive)
+        } finally {
+            releaseOldPoll.countDown()
+            oldWorker.get()?.join(2000L)
+            registry.closeAll()
+            assertTrue(oldWorker.get()?.isAlive != true)
+        }
 
         assertTrue(newWorkerPolls.get() > 0)
         assertEquals(0, resurrectedOldWorkerPolls.get())

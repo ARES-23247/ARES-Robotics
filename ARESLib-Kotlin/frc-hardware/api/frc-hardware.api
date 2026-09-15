@@ -88,6 +88,7 @@ public final class com/areslib/frc/FrcSwerveRobot : com/areslib/frc/FrcBaseRobot
 	public fun <init> ()V
 	public fun <init> (Lcom/areslib/hardware/drive/SwerveHardwareIO;Lcom/areslib/hardware/vision/VisionIO;ZLcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/hardware/HardwareRegistry;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function3;)V
 	public synthetic fun <init> (Lcom/areslib/hardware/drive/SwerveHardwareIO;Lcom/areslib/hardware/vision/VisionIO;ZLcom/areslib/state/RobotState;Lkotlin/jvm/functions/Function2;Lcom/areslib/hardware/HardwareRegistry;Lcom/areslib/telemetry/ITelemetry;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function3;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
 	public final fun getDrive ()Lcom/areslib/subsystem/DriveSubsystem;
 	public fun getPowerManager ()Lcom/areslib/frc/power/FrcPowerManager;
 	public final fun getSwerveDrive ()Lcom/areslib/subsystem/SwerveDriveFacade;
@@ -186,16 +187,19 @@ public final class com/areslib/frc/vision/FrcLocalizationCalibrationSession : ja
 	public static synthetic fun adjustTruth$default (Lcom/areslib/frc/vision/FrcLocalizationCalibrationSession;DDDILjava/lang/Object;)V
 	public fun close ()V
 	public final fun cycleTestType ()V
+	public final fun getActionPending ()Z
 	public final fun getContinuousRecording ()Z
 	public final fun getDroppedSampleCount ()J
 	public final fun getRunId ()I
+	public final fun getStationaryReady ()Z
 	public final fun getTestType ()Lcom/areslib/math/estimation/LocalizationCalibrationTestType;
 	public final fun getTruthHeading ()D
 	public final fun getTruthX ()D
 	public final fun getTruthY ()D
 	public final fun markEnd (J)V
 	public final fun markStart (J)V
-	public final fun periodic (J)V
+	public final fun periodic (JZ)V
+	public static synthetic fun periodic$default (Lcom/areslib/frc/vision/FrcLocalizationCalibrationSession;JZILjava/lang/Object;)V
 	public final fun seedPoseToTruth (J)V
 	public final fun toggleContinuousRecording ()V
 	public final fun zeroTruth ()V

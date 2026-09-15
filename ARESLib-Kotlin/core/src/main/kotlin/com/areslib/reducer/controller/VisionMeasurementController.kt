@@ -15,7 +15,18 @@ internal data class VisionEstimatorDiagnostics(
     val covarianceBeforeUpdate: DoubleArray?,
     val covarianceAfterUpdate: DoubleArray?,
     val acceptedCountDelta: Int,
-    val rejectedCountDelta: Int
+    val rejectedCountDelta: Int,
+    val lastNis: Double = 0.0,
+    val lastNisDegreesOfFreedom: Int = 0,
+    val lastNisTimestampMs: Long = 0L,
+    val lastNisSourceId: String = "",
+    val lastNisFrameId: Long = 0L,
+    val lastNisTagId: Int = -1,
+    val lastNisSolverType: com.areslib.state.VisionSolverType = com.areslib.state.VisionSolverType.UNKNOWN,
+    val lastNisAccepted: Boolean = false,
+    val diagnosticMeasurementIndex: Int = -1,
+    val diagnosticMeasurementAccepted: Boolean = false,
+    val diagnosticMeasurementRejectionReason: String? = null
 )
 
 /** A filtered public action plus private-runtime diagnostics for one camera frame. */
@@ -40,6 +51,8 @@ internal class StoreVisionMeasurementProcessor {
     ): PreparedVisionMeasurements {
         val measurements = action.measurements
         val validMeasurements = ArrayList<VisionMeasurement>(measurements.size)
+        val diagnosticIndex = if (action.diagnosticMeasurementIndex in measurements.indices) action.diagnosticMeasurementIndex else -1
+        var diagnosticValidIndex = -1
 
         for (i in 0 until measurements.size) {
             val measurement = measurements[i]
@@ -55,6 +68,7 @@ internal class StoreVisionMeasurementProcessor {
                     linearAccelYG = state.drive.yAccelerationG,
                     linearAccelZG = state.drive.zAccelerationG
                 )) {
+                if (i == diagnosticIndex) diagnosticValidIndex = validMeasurements.size
                 validMeasurements.add(measurement)
             }
         }
@@ -69,6 +83,11 @@ internal class StoreVisionMeasurementProcessor {
         var lastCovAfter: DoubleArray? = null
         var lastAccepted = false
         var lastReason: String? = null
+        var lastNisMeasurement: VisionMeasurement? = null
+        var lastNis = 0.0
+        var lastNisAccepted = false
+        var diagnosticAccepted = false
+        var diagnosticReason: String? = if (diagnosticIndex >= 0) "prefilter_rejected" else null
 
         if (action.fuseIntoPoseEstimator) {
             for (i in 0 until validMeasurements.size) {
@@ -78,19 +97,23 @@ internal class StoreVisionMeasurementProcessor {
                 val reportedStdDevX = measurement.stdDevXMeters
                 val reportedStdDevY = measurement.stdDevYMeters
                 val reportedStdDevHeading = measurement.stdDevHeadingRadians
-                val stdDevX = if (reportedStdDevX.isFinite() && reportedStdDevX > 0.0) {
+                val hasReportedX = reportedStdDevX.isFinite() && reportedStdDevX > 0.0
+                val hasReportedY = reportedStdDevY.isFinite() && reportedStdDevY > 0.0
+                val hasReportedHeading = reportedStdDevHeading.isFinite() && reportedStdDevHeading > 0.0
+                val translationOnly = measurement.solverType == com.areslib.state.VisionSolverType.MEGATAG2
+                val stdDevX = if (hasReportedX) {
                     reportedStdDevX
                 } else {
                     defaultStdDevX
                 }
-                val stdDevY = if (reportedStdDevY.isFinite() && reportedStdDevY > 0.0) {
+                val stdDevY = if (hasReportedY) {
                     reportedStdDevY
                 } else {
                     defaultStdDevY
                 }
                 val stdDevHeading = when {
-                    measurement.solverType == com.areslib.state.VisionSolverType.MEGATAG2 -> 1.0e6
-                    reportedStdDevHeading.isFinite() && reportedStdDevHeading > 0.0 -> reportedStdDevHeading
+                    translationOnly -> 1.0e6
+                    hasReportedHeading -> reportedStdDevHeading
                     else -> defaultStdDevHeading
                 }
                 val nisThreshold = if (measurement.solverType == com.areslib.state.VisionSolverType.MEGATAG2) {
@@ -107,10 +130,26 @@ internal class StoreVisionMeasurementProcessor {
                     visionStdDevHeading = stdDevHeading,
                     numTags = measurement.tagCount.coerceAtLeast(1),
                     useMahalanobisRejection = true,
-                    mahalanobisThreshold = nisThreshold
+                    mahalanobisThreshold = nisThreshold,
+                    maxAmbiguity = state.vision.filterConfig.maxAmbiguity,
+                    scaleStdDevX = !hasReportedX,
+                    scaleStdDevY = !hasReportedY,
+                    scaleStdDevHeading = !translationOnly && !hasReportedHeading
                 )
                 lastAccepted = estimator.lastMeasurementAccepted
                 lastReason = estimator.lastRejectionReason
+                if (i == diagnosticValidIndex) {
+                    diagnosticAccepted = lastAccepted
+                    diagnosticReason = lastReason
+                }
+                // Early rejection leaves the workspace's previous NIS untouched. Only these
+                // outcomes establish a new finite innovation for this particular observation.
+                if ((lastAccepted || lastReason == "mahalanobis_rejected") &&
+                    estimator.lastNormalizedInnovationSquared.isFinite() && estimator.lastNormalizedInnovationSquared >= 0.0) {
+                    lastNisMeasurement = measurement
+                    lastNis = estimator.lastNormalizedInnovationSquared
+                    lastNisAccepted = lastAccepted
+                }
                 if (lastAccepted) {
                     acceptedCountDelta++
                     val before = lastCovBefore ?: DoubleArray(9).also { lastCovBefore = it }
@@ -131,6 +170,8 @@ internal class StoreVisionMeasurementProcessor {
             rejectedCountDelta = measurements.size - validMeasurements.size
             lastAccepted = validMeasurements.isNotEmpty()
             lastReason = if (!lastAccepted && measurements.isNotEmpty()) "external_filter_rejected" else null
+            diagnosticAccepted = diagnosticValidIndex >= 0
+            diagnosticReason = if (diagnosticIndex >= 0 && !diagnosticAccepted) "external_filter_rejected" else null
         }
 
         return PreparedVisionMeasurements(
@@ -141,7 +182,20 @@ internal class StoreVisionMeasurementProcessor {
                 covarianceBeforeUpdate = lastCovBefore,
                 covarianceAfterUpdate = lastCovAfter,
                 acceptedCountDelta = acceptedCountDelta,
-                rejectedCountDelta = rejectedCountDelta
+                rejectedCountDelta = rejectedCountDelta,
+                lastNis = lastNis,
+                lastNisDegreesOfFreedom = lastNisMeasurement?.let {
+                    if (it.solverType == com.areslib.state.VisionSolverType.MEGATAG2) 2 else 3
+                } ?: 0,
+                lastNisTimestampMs = lastNisMeasurement?.timestampMs ?: 0L,
+                lastNisSourceId = lastNisMeasurement?.sourceId ?: "",
+                lastNisFrameId = lastNisMeasurement?.frameId ?: 0L,
+                lastNisTagId = lastNisMeasurement?.tagId ?: -1,
+                lastNisSolverType = lastNisMeasurement?.solverType ?: com.areslib.state.VisionSolverType.UNKNOWN,
+                lastNisAccepted = lastNisAccepted,
+                diagnosticMeasurementIndex = diagnosticIndex,
+                diagnosticMeasurementAccepted = diagnosticAccepted,
+                diagnosticMeasurementRejectionReason = diagnosticReason
             )
         )
     }

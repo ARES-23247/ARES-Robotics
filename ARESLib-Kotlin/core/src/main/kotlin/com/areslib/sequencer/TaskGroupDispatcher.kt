@@ -7,14 +7,18 @@ import java.util.IdentityHashMap
 
 /**
  * Task group that runs a list of tasks sequentially, one after another.
+ * Membership is copied at construction; task instances cannot repeat within built-in task trees.
  */
-class SequentialTaskGroup(private val tasks: List<Task>) : Task {
-    override val name = "Sequential(${tasks.joinToString { it.name }})"
-    override val requiredResources: Long = TaskResourceValidator.union(tasks)
+class SequentialTaskGroup(tasks: List<Task>) : Task {
+    private val membership = TaskResourceValidator.snapshot("Sequential task group", tasks, parallel = false)
+    internal val tasks: List<Task> get() = membership.tasks
+    override val name = "Sequential(${this.tasks.joinToString { it.name }})"
+    override val requiredResources: Long = membership.requiredResources
     internal fun suspendTimeouts(paused: Boolean) {
         for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
     }
     private var currentIndex = 0
+    private var initializedThrough = -1
     private var currentTaskStartTimeMs = 0L
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
@@ -23,34 +27,35 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
         currentIndex = 0
+        initializedThrough = -1
         currentTaskStartTimeMs = 0L
         pendingActions.clear()
         handledTasks.clear()
         if (tasks.isEmpty()) return emptyList()
+        initializedThrough = 0
         return tasks[0].initialize(state)
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
         while (currentIndex < tasks.size) {
             val currentTask = tasks[currentIndex]
             val currentTaskElapsed = elapsedMs - currentTaskStartTimeMs
             if (handleChildTerminalStatus(this, currentTask, state, handledTasks, pendingActions)) {
                 return false
             }
-            val childCompleted = currentTask.isCompleted(state, currentTaskElapsed)
+            val childCompleted = currentTask.completionReady(state, currentTaskElapsed)
+            if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
             if (handleChildTerminalStatus(this, currentTask, state, handledTasks, pendingActions)) {
                 return false
             }
             if (childCompleted) {
-                try {
-                    pendingActions.addAll(currentTask.end(state, interrupted = false))
-                } finally {
-                    handledTasks.add(currentTask)
-                    currentTask.releaseRuntimeState()
-                }
+                if (!completeChild(this, currentTask, state, handledTasks, pendingActions)) return false
+                if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
                 currentIndex++
                 currentTaskStartTimeMs = elapsedMs
                 if (currentIndex < tasks.size) {
+                    initializedThrough = currentIndex
                     pendingActions.addAll(tasks[currentIndex].initialize(state))
                 }
             } else {
@@ -83,14 +88,8 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
             actions.addAll(pendingActions)
             pendingActions.clear()
         }
-        if (interrupted && currentIndex < tasks.size && !handledTasks.contains(tasks[currentIndex])) {
-            val current = tasks[currentIndex]
-            try {
-                actions.addAll(current.end(state, interrupted = true))
-            } finally {
-                handledTasks.add(current)
-                current.releaseRuntimeState()
-            }
+        if (interrupted && currentIndex < tasks.size) {
+            endInterruptedChild(this, tasks[currentIndex], state, handledTasks, actions, currentIndex <= initializedThrough)
         }
         super.end(state, interrupted)
         return actions
@@ -99,50 +98,48 @@ class SequentialTaskGroup(private val tasks: List<Task>) : Task {
 
 /**
  * Task group that runs multiple tasks simultaneously in parallel.
+ * Membership is copied at construction; identity, not task equality, owns lifecycle bookkeeping.
  */
-class ParallelTaskGroup(private val tasks: List<Task>) : Task {
-    init {
-        TaskResourceValidator.requireNoParallelConflicts("Parallel task group", tasks)
-    }
-    override val name = "Parallel(${tasks.joinToString { it.name }})"
-    override val requiredResources: Long = TaskResourceValidator.union(tasks)
+class ParallelTaskGroup(tasks: List<Task>) : Task {
+    private val membership = TaskResourceValidator.snapshot("Parallel task group", tasks, parallel = true)
+    internal val tasks: List<Task> get() = membership.tasks
+    override val name = "Parallel(${this.tasks.joinToString { it.name }})"
+    override val requiredResources: Long = membership.requiredResources
     internal fun suspendTimeouts(paused: Boolean) {
         for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
     }
-    private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
     private val handledTasks = identityTaskSet()
+    private var initializedCount = 0
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
-        completedTasks.clear()
         pendingActions.clear()
         handledTasks.clear()
-        return tasks.flatMap { it.initialize(state) }
+        initializedCount = 0
+        return tasks.flatMap { initializedCount++; it.initialize(state) }
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!completedTasks.contains(task)) {
+            if (!handledTasks.contains(task)) {
                 if (handleChildTerminalStatus(this, task, state, handledTasks, pendingActions)) {
                     return false
                 }
-                if (task.isCompleted(state, elapsedMs)) {
-                    completedTasks.add(task)
-                    try {
-                        pendingActions.addAll(task.end(state, interrupted = false))
-                    } finally {
-                        handledTasks.add(task)
-                        task.releaseRuntimeState()
-                    }
+                val childCompleted = task.completionReady(state, elapsedMs)
+                if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
+                if (childCompleted) {
+                    if (!completeChild(this, task, state, handledTasks, pendingActions)) return false
+                    if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
                 } else if (handleChildTerminalStatus(this, task, state, handledTasks, pendingActions)) {
                     return false
                 }
             }
         }
-        return completedTasks.size == tasks.size
+        return handledTasks.size == tasks.size
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
@@ -155,7 +152,7 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
         if (TaskStateMachine.getStatus(this) == TaskStatus.FAILED) return actionsList
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!completedTasks.contains(task)) {
+            if (!handledTasks.contains(task)) {
                 actionsList.addAll(task.execute(state, elapsedMs))
                 if (handleChildTerminalStatus(this, task, state, handledTasks, actionsList)) break
             }
@@ -172,16 +169,7 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
         if (interrupted) {
             for (i in 0 until tasks.size) {
                 val task = tasks[i]
-                if (!handledTasks.contains(task)) {
-                    try {
-                        actions.addAll(task.end(state, interrupted = true))
-                    } catch (failure: Throwable) {
-                        System.err.println("TaskGroup: Exception ending task ${task.name}: ${failure.message}")
-                    } finally {
-                        handledTasks.add(task)
-                        task.releaseRuntimeState()
-                    }
-                }
+                endInterruptedChild(this, task, state, handledTasks, actions, i < initializedCount)
             }
         }
         super.end(state, interrupted)
@@ -191,48 +179,48 @@ class ParallelTaskGroup(private val tasks: List<Task>) : Task {
 
 /**
  * Task group that runs multiple tasks simultaneously in parallel.
+ * Membership is copied at construction; identity, not task equality, owns lifecycle bookkeeping.
  * Finishes as soon as ANY of the tasks completes, interrupting the rest.
  */
-class ParallelRaceGroup(private val tasks: List<Task>) : Task {
+class ParallelRaceGroup(tasks: List<Task>) : Task {
+    private val membership = TaskResourceValidator.snapshot("Parallel race group", tasks, parallel = true)
+    internal val tasks: List<Task> get() = membership.tasks
     init {
         require(tasks.isNotEmpty()) { "Parallel race requires at least one task" }
-        TaskResourceValidator.requireNoParallelConflicts("Parallel race group", tasks)
     }
-    override val name = "ParallelRace(${tasks.joinToString { it.name }})"
-    override val requiredResources: Long = TaskResourceValidator.union(tasks)
+    override val name = "ParallelRace(${this.tasks.joinToString { it.name }})"
+    override val requiredResources: Long = membership.requiredResources
     internal fun suspendTimeouts(paused: Boolean) {
         for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
     }
-    private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
     private var isCompleted = false
     private val handledTasks = identityTaskSet()
+    private var initializedCount = 0
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
-        completedTasks.clear()
         pendingActions.clear()
         isCompleted = false
         handledTasks.clear()
-        return tasks.flatMap { it.initialize(state) }
+        initializedCount = 0
+        return tasks.flatMap { initializedCount++; it.initialize(state) }
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
         if (isCompleted) return true
         for (i in 0 until tasks.size) {
             val task = tasks[i]
             if (handleChildTerminalStatus(this, task, state, handledTasks, pendingActions)) {
                 return false
             }
-            if (task.isCompleted(state, elapsedMs)) {
-                completedTasks.add(task)
-                try {
-                    pendingActions.addAll(task.end(state, interrupted = false))
-                } finally {
-                    handledTasks.add(task)
-                    task.releaseRuntimeState()
-                }
+            val childCompleted = task.completionReady(state, elapsedMs)
+            if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
+            if (childCompleted) {
+                if (!completeChild(this, task, state, handledTasks, pendingActions)) return false
+                if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
                 // The first finisher wins the race for this whole pass: stop evaluating
                 // siblings immediately so a later-iterated failed sibling cannot retroactively
                 // turn a finished race into a failure, and stragglers cannot "complete
@@ -258,7 +246,7 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
 
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!completedTasks.contains(task)) {
+            if (!handledTasks.contains(task)) {
                 actionsList.addAll(task.execute(state, elapsedMs))
                 if (handleChildTerminalStatus(this, task, state, handledTasks, actionsList)) break
             }
@@ -274,16 +262,7 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
         }
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!handledTasks.contains(task)) {
-                try {
-                    actions.addAll(task.end(state, interrupted = true))
-                } catch (failure: Throwable) {
-                    System.err.println("ParallelRaceGroup: failed to stop ${task.name}: ${failure.message}")
-                } finally {
-                    handledTasks.add(task)
-                    task.releaseRuntimeState()
-                }
-            }
+            endInterruptedChild(this, task, state, handledTasks, actions, i < initializedCount)
         }
         super.end(state, interrupted)
         return actions
@@ -292,55 +271,54 @@ class ParallelRaceGroup(private val tasks: List<Task>) : Task {
 
 /**
  * Task group that runs multiple tasks simultaneously in parallel.
+ * Membership is copied at construction; identity, not task equality, owns lifecycle bookkeeping.
  * Finishes as soon as a specific "deadline" task completes, interrupting the rest.
  */
 class ParallelDeadlineGroup(
     private val deadline: Task,
-    private val otherTasks: List<Task>
+    otherTasks: List<Task>
 ) : Task {
-    private val tasks = listOf(deadline) + otherTasks
-    init {
-        TaskResourceValidator.requireNoParallelConflicts("Parallel deadline group", tasks)
-    }
+    private val membership = TaskResourceValidator.snapshot(
+        "Parallel deadline group", listOf(deadline) + otherTasks, parallel = true
+    )
+    internal val tasks: List<Task> get() = membership.tasks
     override val name = "ParallelDeadline(deadline=${deadline.name}, others=${otherTasks.joinToString { it.name }})"
-    override val requiredResources: Long = TaskResourceValidator.union(tasks)
+    override val requiredResources: Long = membership.requiredResources
     internal fun suspendTimeouts(paused: Boolean) {
         for (index in tasks.indices) tasks[index].setTimeoutSuspended(paused)
     }
-    private val completedTasks = mutableSetOf<Task>()
     private val pendingActions = mutableListOf<RobotAction>()
     private val actionsList = mutableListOf<RobotAction>()
     private val handledTasks = identityTaskSet()
+    private var initializedCount = 0
 
     override fun initialize(state: RobotState): List<RobotAction> {
         super.initialize(state)
-        completedTasks.clear()
         pendingActions.clear()
         handledTasks.clear()
-        return tasks.flatMap { it.initialize(state) }
+        initializedCount = 0
+        return tasks.flatMap { initializedCount++; it.initialize(state) }
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
+        if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!completedTasks.contains(task)) {
+            if (!handledTasks.contains(task)) {
                 if (handleChildTerminalStatus(this, task, state, handledTasks, pendingActions)) {
                     return false
                 }
-                if (task.isCompleted(state, elapsedMs)) {
-                    completedTasks.add(task)
-                    try {
-                        pendingActions.addAll(task.end(state, interrupted = false))
-                    } finally {
-                        handledTasks.add(task)
-                        task.releaseRuntimeState()
-                    }
+                val childCompleted = task.completionReady(state, elapsedMs)
+                if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
+                if (childCompleted) {
+                    if (!completeChild(this, task, state, handledTasks, pendingActions)) return false
+                    if (!TaskTimeoutManager.permitsCompletion(this, elapsedMs)) return false
                 } else if (handleChildTerminalStatus(this, task, state, handledTasks, pendingActions)) {
                     return false
                 }
             }
         }
-        return completedTasks.contains(deadline)
+        return handledTasks.contains(deadline)
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
@@ -351,11 +329,11 @@ class ParallelDeadlineGroup(
             pendingActions.clear()
         }
         if (TaskStateMachine.getStatus(this) == TaskStatus.FAILED) return actionsList
-        if (completedTasks.contains(deadline)) return actionsList
+        if (handledTasks.contains(deadline)) return actionsList
 
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!completedTasks.contains(task)) {
+            if (!handledTasks.contains(task)) {
                 actionsList.addAll(task.execute(state, elapsedMs))
                 if (handleChildTerminalStatus(this, task, state, handledTasks, actionsList)) break
             }
@@ -371,19 +349,67 @@ class ParallelDeadlineGroup(
         }
         for (i in 0 until tasks.size) {
             val task = tasks[i]
-            if (!handledTasks.contains(task)) {
-                try {
-                    actions.addAll(task.end(state, interrupted = true))
-                } catch (failure: Throwable) {
-                    System.err.println("ParallelDeadlineGroup: failed to stop ${task.name}: ${failure.message}")
-                } finally {
-                    handledTasks.add(task)
-                    task.releaseRuntimeState()
-                }
-            }
+            endInterruptedChild(this, task, state, handledTasks, actions, i < initializedCount)
         }
         super.end(state, interrupted)
         return actions
+    }
+}
+
+private fun endInterruptedChild(
+    parent: Task,
+    child: Task,
+    state: RobotState,
+    handledTasks: MutableSet<Task>,
+    actions: MutableList<RobotAction>,
+    initialized: Boolean = true,
+) {
+    if (!handledTasks.add(child)) return
+    try {
+        // Track the call itself: a task can throw before publishing default lifecycle metadata.
+        if (initialized) {
+            actions.addAll(child.end(state, interrupted = true))
+        }
+    } catch (failure: Throwable) {
+        reportChildFailure(parent, child, "end", failure)
+    } finally {
+        releaseChildMetadata(parent, child)
+    }
+}
+
+private fun releaseChildMetadata(parent: Task, child: Task) {
+    try { TaskRuntimeOwnership.release(child) }
+    catch (failure: Throwable) { reportChildFailure(parent, child, "metadata release", failure) }
+}
+
+private fun reportChildFailure(parent: Task, child: Task, phase: String, failure: Throwable) {
+    retainTaskInterruption(failure)
+    TaskStateMachine.markFailed(parent)
+    TaskStateMachine.markFailed(child)
+    val label = try { child.name } catch (_: Throwable) { child.javaClass.name }
+    System.err.println("TaskGroup: $phase failed for $label: $failure")
+}
+
+/** Normal completion must still run interrupted cleanup if end rejects success or throws. */
+private fun completeChild(
+    parent: Task,
+    child: Task,
+    state: RobotState,
+    handledTasks: MutableSet<Task>,
+    actions: MutableList<RobotAction>
+): Boolean {
+    try {
+        try {
+            actions.addAll(child.end(state, interrupted = false))
+        } catch (failure: Throwable) {
+            retainTaskInterruption(failure)
+            TaskStateMachine.markFailed(child)
+            handleChildTerminalStatus(parent, child, state, handledTasks, actions)
+            throw failure
+        }
+        return !handleChildTerminalStatus(parent, child, state, handledTasks, actions)
+    } finally {
+        if (handledTasks.add(child)) releaseChildMetadata(parent, child)
     }
 }
 
@@ -406,34 +432,22 @@ private fun handleChildTerminalStatus(
 ): Boolean {
     return when (TaskStateMachine.getStatus(child)) {
         TaskStatus.FAILED -> {
-            if (handledTasks.add(child)) {
+            if (!handledTasks.contains(child)) {
                 try {
                     TaskCallbacks.invokeFail(child)
                 } catch (failure: Throwable) {
-                    System.err.println("TaskGroup: Exception in failure callback for ${child.name}: ${failure.message}")
+                    reportChildFailure(parent, child, "failure callback", failure)
                 }
-                try {
-                    actions.addAll(child.end(state, interrupted = true))
-                } catch (failure: Throwable) {
-                    System.err.println("TaskGroup: Exception cleaning failed child ${child.name}: ${failure.message}")
-                } finally {
-                    child.releaseRuntimeState()
-                }
+                endInterruptedChild(parent, child, state, handledTasks, actions)
             }
             TaskStateMachine.markFailed(parent)
             true
         }
         TaskStatus.CANCELLED -> {
-            if (handledTasks.add(child)) {
-                try {
-                    actions.addAll(child.end(state, interrupted = true))
-                } catch (failure: Throwable) {
-                    System.err.println("TaskGroup: Exception cleaning cancelled child ${child.name}: ${failure.message}")
-                } finally {
-                    child.releaseRuntimeState()
-                }
+            endInterruptedChild(parent, child, state, handledTasks, actions)
+            if (TaskStateMachine.getStatus(parent) != TaskStatus.FAILED) {
+                TaskStateMachine.transitionTo(parent, TaskStatus.CANCELLED)
             }
-            TaskStateMachine.transitionTo(parent, TaskStatus.CANCELLED)
             true
         }
         else -> false

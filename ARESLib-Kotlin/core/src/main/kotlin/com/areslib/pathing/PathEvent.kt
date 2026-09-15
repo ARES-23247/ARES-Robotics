@@ -3,8 +3,10 @@ package com.areslib.pathing
 /**
  * Trajectory Marker Event Trigger Definition.
  *
- * Represents an action marker embedded along a trajectory path triggered when the robot's accumulated
- * distance exceeds [triggerDistanceMeters].
+ * Represents one action occurrence triggered when supplied path progress reaches
+ * [triggerDistanceMeters]. Repeated [eventName] values represent separate occurrences.
+ * Progress may be a virtual target distance, not measured robot travel. The follower requires
+ * a finite, nonnegative threshold when installing its marker schedule.
  *
  * ### Physical Units:
  * - Trigger Distance ([triggerDistanceMeters]): Accumulated arc-length distance from path origin in meters ($m$).

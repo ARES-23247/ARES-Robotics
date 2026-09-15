@@ -25,6 +25,10 @@ internal fun kotlinProjectContentHash(
     }
     record("generator", ARES_KOTLIN_CODEGEN_VERSION.toString())
     record("subsystem-registry", request.subsystemRegistryFqn.orEmpty())
+    // The catalog alone does not distinguish generated Redux dispatch from hand-authored tasks.
+    request.subsystemActions.map { it.descriptor.key }.sorted().forEach { key ->
+        record("generated-subsystem-action", key)
+    }
     request.generatedActionRegistryBindings.toSortedMap().forEach { (key, registry) ->
         record("generated-action:$key", registry)
     }

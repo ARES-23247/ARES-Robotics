@@ -222,22 +222,17 @@ fun RunHistoryScreen(
 
     // Dynamic Motor Subsystem rows discovery
     val motorNames = remember(diagnosticsMap) {
-        diagnosticsMap.values.flatMap { it.keys }
-            .filter { it.startsWith("Diagnostics/SysId/Motors/") }
-            .map { it.split("/")[3] }
-            .map { RunDataDictionary.canonicalizeMotorName(it) }
-            .distinct()
-            .sorted()
+        com.ares.analytics.ui.components.history.sysIdMotorNames(diagnosticsMap.values)
     }
     val allMotorNames = remember(motorNames, summaries) {
         val currentMotors = summaries.values.flatMap { it.motorCurrentAverages.keys }
             .map { RunDataDictionary.canonicalizeMotorName(it) }
         (motorNames + currentMotors).distinct().sorted()
     }
-    val allRows = remember(allMotorNames) {
+    val allRows = remember(allMotorNames, motorNames) {
         val baseRowDefinitions = RunDataDictionary.buildBaseRowDefinitions()
         val currentDrawRowDefinitions = RunDataDictionary.buildMotorCurrentRows(allMotorNames)
-        val motorRowDefinitions = RunDataDictionary.buildMotorSysIdRows(allMotorNames)
+        val motorRowDefinitions = RunDataDictionary.buildMotorSysIdRows(motorNames)
         baseRowDefinitions + currentDrawRowDefinitions + motorRowDefinitions
     }
     val groupedRows = remember(allRows) {

@@ -8,11 +8,11 @@ import kotlin.math.abs
 import kotlin.math.hypot
 
 /**
- * Championship-grade test suite for [SCurveTrajectoryParameterizer].
+ * Spatial-profile regression tests for [SCurveTrajectoryParameterizer].
  *
- * Validates jerk-limited S-curve velocity profiling, centripetal constraint enforcement,
+ * Checks velocity-seed trends, discrete geometry and centripetal constraints,
  * boundary condition handling (empty/single waypoints), and NaN-guard resilience on the
- * spatial interpolation pipeline.
+ * spatial interpolation pipeline. These checks alone do not prove timed jerk limits.
  */
 class SCurveTrajectoryParameterizerTest {
 

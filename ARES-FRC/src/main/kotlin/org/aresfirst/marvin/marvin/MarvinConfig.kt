@@ -5,6 +5,9 @@ import com.areslib.math.geometry.Translation2d
 
 /** Tuned Marvin XIX mechanism, shot, and official 2024 Crescendo field constants. */
 object MarvinConfig {
+    /** Existing simulator hopper limit, shared by inventory accounting and metadata storage. */
+    const val INVENTORY_CAPACITY = 40
+
     /** Bumper-to-bumper footprint used by field-boundary validation. */
     const val ROBOT_BUMPER_LENGTH_METERS = 0.80
     const val ROBOT_BUMPER_WIDTH_METERS = 0.80

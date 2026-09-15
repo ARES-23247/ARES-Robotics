@@ -32,16 +32,30 @@ data class SubsystemHealthSnapshot(
 class SubsystemHealthAccumulator(
     private val staleAfterMs: Long = DEFAULT_STALE_AFTER_MS,
 ) {
+    init { require(staleAfterMs > 0L) { "staleAfterMs must be positive" } }
+
+    private var targetEpoch = 0L
+
     private data class MutableSubsystemHealth(
         val signals: MutableMap<String, Double> = linkedMapOf(),
         var lastReceiptNs: Long = 0L,
+        var lastHeartbeatNs: Long? = null,
     )
 
     private val subsystems = linkedMapOf<String, MutableSubsystemHealth>()
 
-    /** Returns true when [frame] belongs to generated subsystem telemetry. */
-    fun accept(frame: TelemetryFrame, receiptTimeNs: Long): Boolean {
-        val normalized = frame.key.removePrefix("/")
+    private fun selectTarget(nextEpoch: Long) {
+        if (targetEpoch != nextEpoch) {
+            subsystems.clear()
+            targetEpoch = nextEpoch
+        }
+    }
+
+    /** Returns true for recognized telemetry; invalid values remove prior evidence for that signal. */
+    @Synchronized
+    fun accept(frame: TelemetryFrame, receiptTimeNs: Long, targetEpoch: Long = 0L): Boolean {
+        selectTarget(targetEpoch)
+        val normalized = frame.key.trimStart('/')
         if (!normalized.startsWith(SUBSYSTEM_PREFIX)) return false
         val remainder = normalized.removePrefix(SUBSYSTEM_PREFIX)
         val separator = remainder.indexOf('/')
@@ -49,52 +63,73 @@ class SubsystemHealthAccumulator(
 
         val subsystemId = remainder.substring(0, separator)
         val signal = remainder.substring(separator + 1)
-        if ('/' in signal) return false
+        if (subsystemId.isBlank() || signal.isBlank() || '/' in signal) return false
         val health = subsystems.getOrPut(subsystemId) { MutableSubsystemHealth() }
-        health.signals[signal] = frame.value
+        val valid = frame.stringValue == null && frame.value.isFinite() && when (signal) {
+            "TelemetryHeartbeat" -> frame.value >= 0.0
+            in HEALTH_SIGNAL_NAMES -> frame.value == 0.0 || frame.value == 1.0
+            else -> true
+        }
+        if (valid) {
+            health.signals[signal] = frame.value
+            if (signal == "TelemetryHeartbeat") health.lastHeartbeatNs = receiptTimeNs
+        } else {
+            health.signals.remove(signal)
+        }
         health.lastReceiptNs = receiptTimeNs
         return true
     }
 
-    fun snapshots(nowNs: Long): List<SubsystemHealthSnapshot> = subsystems.map { (id, health) ->
-        val ageMs = ((nowNs - health.lastReceiptNs).coerceAtLeast(0L) / NANOS_PER_MILLISECOND)
-        val issues = buildList {
-            if (health.isFalse("ConfigurationHealthy")) add("Check device names, ports, and configuration.")
-            if (health.isFalse("FeedbackValid")) add("Sensor feedback is invalid or unavailable.")
-            if (health.isFalse("CurrentReadingValid")) add("Current monitoring is unavailable or invalid.")
-            if (health.isFalse("Homed")) add("Home the mechanism before commanding motion.")
-            if (health.isFalse("Calibrated")) add("Complete the required calibration.")
-            if (health.isTrue("HomingFaultLatched")) add("Homing failed; inspect the mechanism and recover through neutral.")
-            if (health.isTrue("OutputFaultLatched")) add("An output write failed; motion remains latched off until neutral recovery.")
-            if (ageMs > staleAfterMs) add("No subsystem telemetry received for ${ageMs} ms.")
+    @Synchronized
+    fun snapshots(nowNs: Long, targetEpoch: Long = 0L): List<SubsystemHealthSnapshot> {
+        selectTarget(targetEpoch)
+        return subsystems.map { (id, health) ->
+            // Once discovered, the heartbeat owns liveness; unrelated measurements cannot renew it.
+            val elapsedNs = nowNs - (health.lastHeartbeatNs ?: health.lastReceiptNs)
+            val ageMs = if (elapsedNs < 0L) Long.MAX_VALUE else elapsedNs / NANOS_PER_MILLISECOND
+            val stale = elapsedNs < 0L || ageMs > staleAfterMs
             val missingSignals = REQUIRED_HEALTH_SIGNAL_NAMES - health.signals.keys
-            if (missingSignals.isNotEmpty()) {
-                add("Waiting for generated health signals: ${missingSignals.sorted().joinToString()}.")
+            val issues = buildList {
+                if (health.isFalse("ConfigurationHealthy")) add("Check device names, ports, and configuration.")
+                if (health.isFalse("FeedbackValid")) add("Sensor feedback is invalid or unavailable.")
+                if (health.isFalse("CurrentReadingValid")) add("Current monitoring is unavailable or invalid.")
+                if (health.isFalse("Homed")) add("Home the mechanism before commanding motion.")
+                if (health.isFalse("Calibrated")) add("Complete the required calibration.")
+                if (health.isTrue("HomingFaultLatched")) add("Homing failed; inspect the mechanism and recover through neutral.")
+                if (health.isTrue("OutputFaultLatched")) add("An output write failed; motion remains latched off until neutral recovery.")
+                if (elapsedNs < 0L) add("Subsystem receipt clock moved backwards; waiting for fresh telemetry.")
+                else if (stale) {
+                    val source = if (health.lastHeartbeatNs == null) "telemetry" else "heartbeat"
+                    add("No subsystem $source received for ${ageMs} ms.")
+                }
+                if (missingSignals.isNotEmpty()) {
+                    add("Waiting for generated health signals: ${missingSignals.sorted().joinToString()}.")
+                }
             }
-        }
-        val status = when {
-            ageMs > staleAfterMs -> SubsystemHealthStatus.STALE
-            health.isTrue("OutputFaultLatched") -> SubsystemHealthStatus.OUTPUT_FAULT
-            health.isTrue("HomingFaultLatched") -> SubsystemHealthStatus.HOMING_FAULT
-            health.isFalse("ConfigurationHealthy") -> SubsystemHealthStatus.CONFIGURATION_FAULT
-            health.isFalse("FeedbackValid") -> SubsystemHealthStatus.FEEDBACK_INVALID
-            health.isFalse("CurrentReadingValid") -> SubsystemHealthStatus.CURRENT_INVALID
-            health.isFalse("Homed") -> SubsystemHealthStatus.NEEDS_HOMING
-            health.isFalse("Calibrated") -> SubsystemHealthStatus.NEEDS_CALIBRATION
-            !health.signals.keys.containsAll(REQUIRED_HEALTH_SIGNAL_NAMES) -> SubsystemHealthStatus.INCOMPLETE
-            else -> SubsystemHealthStatus.HEALTHY
-        }
-        SubsystemHealthSnapshot(
-            subsystemId = id,
-            status = status,
-            issues = issues,
-            measurements = health.signals.filterKeys { it !in HEALTH_SIGNAL_NAMES },
-            ageMs = ageMs,
-        )
-    }.sortedWith(compareBy<SubsystemHealthSnapshot> { it.status == SubsystemHealthStatus.HEALTHY }.thenBy { it.subsystemId })
+            val status = when {
+                stale -> SubsystemHealthStatus.STALE
+                health.isTrue("OutputFaultLatched") -> SubsystemHealthStatus.OUTPUT_FAULT
+                health.isTrue("HomingFaultLatched") -> SubsystemHealthStatus.HOMING_FAULT
+                health.isFalse("ConfigurationHealthy") -> SubsystemHealthStatus.CONFIGURATION_FAULT
+                health.isFalse("FeedbackValid") -> SubsystemHealthStatus.FEEDBACK_INVALID
+                health.isFalse("CurrentReadingValid") -> SubsystemHealthStatus.CURRENT_INVALID
+                health.isFalse("Homed") -> SubsystemHealthStatus.NEEDS_HOMING
+                health.isFalse("Calibrated") -> SubsystemHealthStatus.NEEDS_CALIBRATION
+                missingSignals.isNotEmpty() -> SubsystemHealthStatus.INCOMPLETE
+                else -> SubsystemHealthStatus.HEALTHY
+            }
+            SubsystemHealthSnapshot(
+                subsystemId = id,
+                status = status,
+                issues = issues,
+                measurements = health.signals.filterKeys { it !in HEALTH_SIGNAL_NAMES },
+                ageMs = ageMs,
+            )
+        }.sortedWith(compareBy<SubsystemHealthSnapshot> { it.status == SubsystemHealthStatus.HEALTHY }.thenBy { it.subsystemId })
+    }
 
-    private fun MutableSubsystemHealth.isTrue(key: String): Boolean = signals[key]?.let { it >= 0.5 } == true
-    private fun MutableSubsystemHealth.isFalse(key: String): Boolean = signals[key]?.let { it < 0.5 } == true
+    private fun MutableSubsystemHealth.isTrue(key: String): Boolean = signals[key] == 1.0
+    private fun MutableSubsystemHealth.isFalse(key: String): Boolean = signals[key] == 0.0
 
     companion object {
         const val DEFAULT_STALE_AFTER_MS = 1_000L

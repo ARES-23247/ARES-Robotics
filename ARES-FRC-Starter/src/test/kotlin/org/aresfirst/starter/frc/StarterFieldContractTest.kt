@@ -7,6 +7,15 @@ import org.junit.jupiter.api.Test
 
 class StarterFieldContractTest {
     @Test
+    fun `crossed obstacle is rejected before publishing a usable field contract`() {
+        val invalid = """{"schemaVersion":2,"fieldType":"frc","obstacles":[{"id":"crossed","shape":"polygon","points":[{"x":0,"y":0},{"x":2,"y":2},{"x":0,"y":2},{"x":2,"y":0}]}]}"""
+        assertNull(loadStarterFieldContract(invalid.toByteArray()))
+        assertEquals("Field contains an invalid obstacle", StarterFieldContractLoader.error)
+        assertNotNull(loadStarterFieldContract("""{"schemaVersion":2,"fieldType":"frc"}""".toByteArray()))
+        assertNull(StarterFieldContractLoader.error)
+    }
+
+    @Test
     fun `starter accepts an empty season map and a full WPILib pose`() {
         val empty = loadStarterFieldContract(
             """{"schemaVersion":2,"id":"choose-season","name":"Choose season","fieldType":"frc","widthMeters":16.5,"heightMeters":8.2,"apriltags":[]}""".toByteArray()
@@ -19,6 +28,10 @@ class StarterFieldContractTest {
         )
         val pose = populated!!.aprilTagLayout.getTagPose(3).orElseThrow()
         assertEquals(1.0, pose.x, 1e-9)
+        assertEquals(2.0, pose.y, 1e-9)
+        assertEquals(1.3, pose.z, 1e-9)
+        assertEquals(Math.toRadians(5.0), pose.rotation.x, 1e-9)
+        assertEquals(Math.toRadians(10.0), pose.rotation.y, 1e-9)
         assertEquals(Math.toRadians(90.0), pose.rotation.z, 1e-9)
 
         val defaultDimensions = loadStarterFieldContract(
@@ -35,5 +48,15 @@ class StarterFieldContractTest {
         )
         assertNull(result)
         assertEquals("Canonical season field must declare FRC geometry", StarterFieldContractLoader.error)
+    }
+
+    @Test
+    fun `undecodable documents expose a diagnostic and later valid input clears it`() {
+        for (invalid in listOf("not-json".toByteArray(), byteArrayOf(0xC3.toByte()))) {
+            assertNull(loadStarterFieldContract(invalid))
+            assertNotNull(StarterFieldContractLoader.error)
+            assertNotNull(loadStarterFieldContract("""{"schemaVersion":2,"fieldType":"frc"}""".toByteArray()))
+            assertNull(StarterFieldContractLoader.error)
+        }
     }
 }

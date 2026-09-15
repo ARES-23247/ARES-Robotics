@@ -46,6 +46,7 @@ internal fun applyDesktopDriveKey(
         KeyEvent.VK_L -> updateDriveKey(isPressed, controlDown) { state.isLPressed = it }
         KeyEvent.VK_U -> updateDriveKey(isPressed, controlDown) { state.isUPressed = it }
         KeyEvent.VK_I -> updateDriveKey(isPressed, controlDown) { state.isIPressed = it }
+        KeyEvent.VK_SPACE -> updateDriveKey(isPressed, controlDown) { state.isSpacePressed = it }
         KeyEvent.VK_SHIFT -> updateDriveKey(isPressed, controlDown) { state.isShiftPressed = it }
         else -> false
     }

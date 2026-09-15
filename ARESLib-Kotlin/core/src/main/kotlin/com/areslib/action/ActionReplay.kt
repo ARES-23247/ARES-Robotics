@@ -1,11 +1,13 @@
 package com.areslib.action
 
+import com.areslib.Store
 import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
 import com.areslib.state.SubsystemState
-import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import com.areslib.util.parseJsonElement
+import java.lang.reflect.Modifier
+import java.math.BigDecimal
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -33,7 +35,7 @@ object ActionReplay {
     const val SCHEMA_VERSION: Int = 1
 
     private const val SUBSYSTEM_STATE_TYPE_FIELD = "_ares_subsystem_state_type"
-    private val gson = Gson()
+    private val gson = GsonBuilder().serializeNulls().create()
 
     private val builtInByName: Map<String, Class<out RobotAction>> = linkedMapOf(
         "DriveHardwareUpdate" to RobotAction.DriveHardwareUpdate::class.java,
@@ -65,6 +67,15 @@ object ActionReplay {
     )
     private val builtInByClass: Map<Class<out RobotAction>, String> =
         builtInByName.entries.associate { (name, clazz) -> clazz to name }
+    private val coreFields = builtInByClass.keys.associateWith { clazz ->
+        clazz.declaredFields.filter { !it.isSynthetic && !Modifier.isStatic(it.modifiers) &&
+            !Modifier.isTransient(it.modifiers) }
+    }
+    private val nullableCoreFields = mapOf(
+        RobotAction.SetHeadingLockTarget::class.java to setOf("targetRadians"),
+        RobotAction.SetPositionLockTarget::class.java to setOf("targetX", "targetY"),
+        RobotAction.VisionMeasurementsReceived::class.java to setOf("customVisionStdDevs")
+    )
 
     private val customActionsByName = ConcurrentHashMap<String, Class<out RobotAction>>()
     private val customActionNamesByClass = ConcurrentHashMap<Class<out RobotAction>, String>()
@@ -82,6 +93,9 @@ object ActionReplay {
      * Registers a season/application action codec under [type].
      *
      * Registration is explicit and collision-safe; core action names/classes cannot be shadowed.
+     * Custom codecs must preserve a numeric `timestampMs` payload and return that same stable
+     * epoch after decoding. The interface's live-clock getter alone is not replayable. Custom
+     * constructors, adapters, and nested domain invariants remain the application's responsibility.
      */
     fun registerAction(type: String, clazz: Class<out RobotAction>) {
         require(type.isNotBlank()) { "Action type must not be blank" }
@@ -160,6 +174,12 @@ object ActionReplay {
             throw ActionReplayException("Action ${actionClass.name} encoded as a non-object payload")
         }
         val payload = element.asJsonObject
+        if (actionClass !in builtInByClass) {
+            val recordedTimestamp = payload.requiredLong("timestampMs")
+            if (recordedTimestamp != action.timestampMs) {
+                throw ActionReplayException("Action ${actionClass.name} encoded a different timestampMs")
+            }
+        }
         when (action) {
             is RobotAction.UpdateSubsystemState -> payload.addProperty(
                 SUBSYSTEM_STATE_TYPE_FIELD,
@@ -175,7 +195,7 @@ object ActionReplay {
     }
 
     /**
-     * Parses every non-empty record in [logFile], preserving file order exactly.
+     * Parses every record in [logFile], preserving file order exactly. Blank records fail.
      *
      * Missing files, malformed envelopes, unsupported schema versions, unknown action types, and
      * unavailable season state codecs all throw [ActionReplayException]. No record is skipped.
@@ -215,7 +235,12 @@ object ActionReplay {
         return actions
     }
 
-    /** Replays the complete log through [rootReducer] (or [reducer]) in recorded order. */
+    /**
+     * Replays the complete log through an isolated [Store] in recorded order, including its
+     * odometry and delayed-vision estimator runtime. The supplied reducer has the same contract
+     * as a live Store reducer, including private derived estimator transitions. No hardware
+     * action listener is installed and replay does not change the process RobotClock.
+     */
     @JvmOverloads
     fun replayLog(
         logFile: File,
@@ -223,18 +248,18 @@ object ActionReplay {
     ): List<RobotState> {
         val actions = parseActions(logFile)
         val states = ArrayList<RobotState>(actions.size + 1)
-        var currentState = RobotState()
-        states.add(currentState)
+        val store = Store(reducer = reducer)
+        states.add(store.state)
         for (action in actions) {
-            currentState = reducer(currentState, action)
-            states.add(currentState)
+            store.dispatch(action)
+            states.add(store.state)
         }
         return states
     }
 
     private fun deserializeAction(jsonLine: String): RobotAction {
         val parsed = try {
-            parseJsonElement(jsonLine)
+            ActionReplayJson.parse(jsonLine)
         } catch (e: Exception) {
             throw ActionReplayException("Malformed JSON: ${e.message}", e)
         }
@@ -271,12 +296,27 @@ object ActionReplay {
             )
 
         return try {
-            when (actionClass) {
-                RobotAction.UpdateSubsystemState::class.java -> decodeSubsystemUpdate(payload)
-                RobotAction.UpdateNamedSubsystemState::class.java -> decodeNamedSubsystemUpdate(payload)
+            // Every recorded action needs an exact epoch, including custom actions.
+            val timestampMs = payload.requiredLong("timestampMs")
+            // Normalize once so the generic Gson adapter need not reparse the decimal epoch.
+            payload.addProperty("timestampMs", timestampMs)
+            // Older schema-1 vision logs predate this optional diagnostic selector. It does not
+            // affect fusion; omission must retain the historical behavior without selecting index 0.
+            if (actionClass == RobotAction.VisionMeasurementsReceived::class.java &&
+                !payload.has("diagnosticMeasurementIndex")) {
+                payload.addProperty("diagnosticMeasurementIndex", -1)
+            }
+            validateCorePayload(payload, actionClass)
+            val decoded = when (actionClass) {
+                RobotAction.UpdateSubsystemState::class.java -> decodeSubsystemUpdate(payload, timestampMs)
+                RobotAction.UpdateNamedSubsystemState::class.java -> decodeNamedSubsystemUpdate(payload, timestampMs)
                 else -> gson.fromJson(payload, actionClass)
                     ?: throw ActionReplayException("Action '$type' decoded to null")
             }
+            if (actionClass !in builtInByClass && decoded.timestampMs != timestampMs) {
+                throw ActionReplayException("Action '$type' decoded a different timestampMs")
+            }
+            decoded
         } catch (e: ActionReplayException) {
             throw e
         } catch (e: Exception) {
@@ -284,18 +324,53 @@ object ActionReplay {
         }
     }
 
-    private fun decodeSubsystemUpdate(payload: JsonObject): RobotAction.UpdateSubsystemState {
-        val state = decodeSubsystemState(payload)
-        return RobotAction.UpdateSubsystemState(state, payload.requiredLong("timestampMs"))
+    private fun validateCorePayload(payload: JsonObject, actionClass: Class<out RobotAction>) {
+        val fields = coreFields[actionClass] ?: return // Registered season codecs own their schema.
+        val nullable = nullableCoreFields[actionClass].orEmpty()
+        for (field in fields) {
+            if (field.name == "timestampMs") continue // Validated once for every action above.
+            val value = payload.get(field.name)
+            // Schema-1 logs predating position-hold provenance are ordinary driver commands.
+            // Only absence has a default; explicit null or a non-boolean remains malformed.
+            if (value == null && actionClass == RobotAction.JoystickDriveIntent::class.java &&
+                field.name == "fromPositionHold") continue
+            if (value == null || value.isJsonNull) {
+                if (field.name in nullable) continue
+                throw ActionReplayException("Action ${actionClass.simpleName} requires ${field.name}")
+            }
+            val type = field.type
+            val valid = when {
+                type == java.lang.Boolean.TYPE -> value.isJsonPrimitive && value.asJsonPrimitive.isBoolean
+                type == java.lang.Long.TYPE -> {
+                    payload.requiredLong(field.name)
+                    true
+                }
+                type == java.lang.Integer.TYPE -> value.isJsonPrimitive && value.asJsonPrimitive.isNumber &&
+                    runCatching { BigDecimal(value.asString).intValueExact() }.isSuccess
+                type == java.lang.Double.TYPE || type == java.lang.Double::class.java ->
+                    value.isJsonPrimitive && value.asJsonPrimitive.isNumber && value.asDouble.isFinite()
+                type == String::class.java -> value.isJsonPrimitive && value.asJsonPrimitive.isString
+                type.isEnum -> value.isJsonPrimitive && value.asJsonPrimitive.isString &&
+                    type.enumConstants.any { (it as Enum<*>).name == value.asString }
+                type.isArray || Collection::class.java.isAssignableFrom(type) -> value.isJsonArray
+                else -> value.isJsonObject
+            }
+            if (!valid) throw ActionReplayException("Invalid ${actionClass.simpleName}.${field.name}")
+        }
     }
 
-    private fun decodeNamedSubsystemUpdate(payload: JsonObject): RobotAction.UpdateNamedSubsystemState {
+    private fun decodeSubsystemUpdate(payload: JsonObject, timestampMs: Long): RobotAction.UpdateSubsystemState {
+        val state = decodeSubsystemState(payload)
+        return RobotAction.UpdateSubsystemState(state, timestampMs)
+    }
+
+    private fun decodeNamedSubsystemUpdate(payload: JsonObject, timestampMs: Long): RobotAction.UpdateNamedSubsystemState {
         val subsystemId = payload.requiredString("subsystemId")
         val state = decodeSubsystemState(payload)
         return RobotAction.UpdateNamedSubsystemState(
             subsystemId,
             state,
-            payload.requiredLong("timestampMs")
+            timestampMs
         )
     }
 
@@ -324,7 +399,7 @@ object ActionReplay {
             throw ActionReplayException("Action payload field $name must be a number")
         }
         return try {
-            element.asLong
+            BigDecimal(element.asString).longValueExact()
         } catch (e: Exception) {
             throw ActionReplayException("Action payload field $name is not a valid Long", e)
         }

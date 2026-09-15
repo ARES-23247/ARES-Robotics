@@ -37,6 +37,10 @@ class RevMotorController(
     private var lastCurrentSampleMs = 0L
     private var hasCurrentSample = false
     private val currentLock = Any()
+    private val outputLock = Any()
+    private val synchronousMockCurrent = motor.javaClass.simpleName.contains("Mock")
+    @Volatile internal var isClosed = false
+        private set
 
     init {
         try {
@@ -49,16 +53,58 @@ class RevMotorController(
 
     private var targetPower: Double = 0.0
     private var stallStartTimeMs = 0L
+    private var hasStallStartTime = false
     private var isStalled = false
     private var lastSentPower = Double.NaN
 
     override var powerScale: Double = 1.0
         set(value) {
-            field = sanitizeScale(value)
-            if (!isStalled) {
+            synchronized(outputLock) {
+                if (isClosed) return
+                field = sanitizeScale(value)
+                if (!isStalled) {
+                    try {
+                        val commandPower = targetPower * field
+                        if (shouldWritePower(commandPower, lastSentPower)) {
+                            motor.power = commandPower
+                            lastSentPower = commandPower
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
+    override var power: Double
+        get() = targetPower
+        set(value) {
+            synchronized(outputLock) {
+                if (isClosed) return
+                val safePower = sanitizePower(value)
+                targetPower = safePower
+                val timeMs = com.areslib.util.RobotClock.currentTimeMillis()
+                val currentVel = this.velocity
+
+                if (kotlin.math.abs(safePower) > 0.5 && kotlin.math.abs(currentVel) < 10.0) {
+                    if (!hasStallStartTime) {
+                        stallStartTimeMs = timeMs
+                        hasStallStartTime = true
+                    } else {
+                        val elapsed = timeMs - stallStartTimeMs
+                        if (timeMs < stallStartTimeMs || elapsed < 0L || elapsed > 500L) isStalled = true
+                    }
+                } else {
+                    hasStallStartTime = false
+                    isStalled = false
+                }
+
+                val amps = this.currentAmps
+                if (amps > 9.2) {
+                    isStalled = true
+                }
+
                 try {
-                    val commandPower = targetPower * field
-                    if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
+                    val commandPower = if (isStalled) 0.0 else safePower * powerScale
+                    if (shouldWritePower(commandPower, lastSentPower)) {
                         motor.power = commandPower
                         lastSentPower = commandPower
                     }
@@ -66,60 +112,30 @@ class RevMotorController(
             }
         }
 
-    override var power: Double
-        get() = targetPower
-        set(value) {
-            val safePower = sanitizePower(value)
-            targetPower = safePower
-            val timeMs = com.areslib.util.RobotClock.currentTimeMillis()
-            val currentVel = this.velocity
-
-            if (kotlin.math.abs(safePower) > 0.5 && kotlin.math.abs(currentVel) < 10.0) {
-                when {
-                    stallStartTimeMs == 0L -> stallStartTimeMs = timeMs
-                    timeMs - stallStartTimeMs > 500 -> isStalled = true
-                }
-            } else {
-                stallStartTimeMs = 0L
-                isStalled = false
-            }
-
-            val amps = this.currentAmps
-            if (amps > 9.2) {
-                isStalled = true
-            }
-
-            try {
-                val commandPower = if (isStalled) 0.0 else safePower * powerScale
-                if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
-                    motor.power = commandPower
-                    lastSentPower = commandPower
-                }
-            } catch (_: Exception) {}
-        }
-
     /** Updates motor position and velocity cache variables from REV bulk data cache. */
     fun updateInputs() {
+        if (isClosed) return
         try {
             cachedPosition = motor.currentPosition.toDouble() - encoderOffset
         } catch (_: Exception) {}
         try {
             cachedVelocity = motor.velocity
         } catch (_: Exception) {}
-        if (motor.javaClass.simpleName.contains("Mock")) {
+        if (synchronousMockCurrent) {
             pollCurrentSync()
         }
     }
 
     /** Synchronously queries physical motor current draw in Amperes ($A$). */
     fun pollCurrentSync() {
+        if (isClosed) return
         try {
-            if (motor.javaClass.simpleName.contains("Mock")) {
+            if (synchronousMockCurrent) {
                 Thread.sleep(2)
             }
             val amps = motor.getCurrent(org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit.AMPS)
             synchronized(currentLock) {
-                if (amps.isFinite() && amps >= 0.0) {
+                if (!isClosed && amps.isFinite() && amps >= 0.0) {
                     cachedAmps = amps
                     lastCurrentSampleMs = com.areslib.util.RobotClock.currentTimeMillis()
                     hasCurrentSample = true
@@ -128,7 +144,8 @@ class RevMotorController(
                     hasCurrentSample = false
                 }
             }
-        } catch (_: Exception) {
+        } catch (failure: Exception) {
+            if (failure is InterruptedException) Thread.currentThread().interrupt()
             synchronized(currentLock) {
                 cachedAmps = Double.NaN
                 hasCurrentSample = false
@@ -150,23 +167,34 @@ class RevMotorController(
     override val currentAmps: Double
         get() = synchronized(currentLock) {
             val ageMs = com.areslib.util.RobotClock.currentTimeMillis() - lastCurrentSampleMs
-            if (hasCurrentSample && ageMs in 0..MAX_CURRENT_SAMPLE_AGE_MS) cachedAmps else Double.NaN
+            if (!isClosed && hasCurrentSample && ageMs in 0..MAX_CURRENT_SAMPLE_AGE_MS) cachedAmps else Double.NaN
         }
 
     /** Resets the physical encoder count position to zero. */
     override fun resetEncoder() {
+        if (isClosed) return
         try {
             encoderOffset = motor.currentPosition.toDouble()
             cachedPosition = 0.0
         } catch (_: Exception) {}
     }
 
-    /** Unregisters motor from background current polling thread. */
+    /** Neutralizes output once, inhibits later writes and unregisters this motor's polling. */
     override fun close() {
-        RevBulkDataReader.unregisterMotor(this)
-        synchronized(currentLock) {
-            cachedAmps = Double.NaN
-            hasCurrentSample = false
+        synchronized(outputLock) {
+            if (isClosed) return
+            isClosed = true
+            targetPower = 0.0
+            try {
+                motor.power = 0.0
+                lastSentPower = 0.0
+            } finally {
+                synchronized(currentLock) {
+                    cachedAmps = Double.NaN
+                    hasCurrentSample = false
+                }
+                RevBulkDataReader.unregisterMotor(this)
+            }
         }
     }
 
@@ -186,34 +214,42 @@ class RevMotorController(
 class RevCRServoController(
     private val crServo: CRServo,
     private val externalEncoder: MotorIO? = null,
-) : MotorIO {
+) : MotorIO, AutoCloseable {
     private var targetPower: Double = 0.0
     private var lastSentPower = Double.NaN
+    private val outputLock = Any()
+    private var closed = false
 
     override var powerScale: Double = 1.0
         set(value) {
-            field = sanitizeScale(value)
-            try {
-                val commandPower = targetPower * field
-                if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
-                    crServo.power = commandPower
-                    lastSentPower = commandPower
-                }
-            } catch (_: Exception) {}
+            synchronized(outputLock) {
+                if (closed) return
+                field = sanitizeScale(value)
+                try {
+                    val commandPower = targetPower * field
+                    if (shouldWritePower(commandPower, lastSentPower)) {
+                        crServo.power = commandPower
+                        lastSentPower = commandPower
+                    }
+                } catch (_: Exception) {}
+            }
         }
 
     override var power: Double
         get() = targetPower
         set(value) {
-            val safePower = sanitizePower(value)
-            targetPower = safePower
-            try {
-                val commandPower = safePower * powerScale
-                if (lastSentPower.isNaN() || kotlin.math.abs(commandPower - lastSentPower) > 0.001) {
-                    crServo.power = commandPower
-                    lastSentPower = commandPower
-                }
-            } catch (_: Exception) {}
+            synchronized(outputLock) {
+                if (closed) return
+                val safePower = sanitizePower(value)
+                targetPower = safePower
+                try {
+                    val commandPower = safePower * powerScale
+                    if (shouldWritePower(commandPower, lastSentPower)) {
+                        crServo.power = commandPower
+                        lastSentPower = commandPower
+                    }
+                } catch (_: Exception) {}
+            }
         }
 
     override fun refresh() { externalEncoder?.refresh() }
@@ -228,7 +264,19 @@ class RevCRServoController(
     override fun resetEncoder() {
         externalEncoder?.resetEncoder()
     }
+
+    /** Closes this actuator; the optional external feedback sensor retains its own owner. */
+    override fun close() = synchronized(outputLock) {
+        if (closed) return
+        closed = true
+        targetPower = 0.0
+        crServo.power = 0.0
+        lastSentPower = 0.0
+    }
 }
+
+private fun shouldWritePower(command: Double, previous: Double): Boolean =
+    previous.isNaN() || (command == 0.0 && previous != 0.0) || kotlin.math.abs(command - previous) > 0.001
 
 private fun sanitizePower(value: Double): Double =
     if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0

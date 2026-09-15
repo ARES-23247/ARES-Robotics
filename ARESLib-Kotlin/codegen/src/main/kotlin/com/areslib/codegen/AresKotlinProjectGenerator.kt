@@ -2,13 +2,11 @@ package com.areslib.codegen
 
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogCodec
-import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.CapabilityParameterDescriptor
 import com.areslib.catalog.CapabilityParameterType
 import com.areslib.catalog.ConditionDescriptor
 import com.areslib.controls.ControlEvent
 import com.areslib.controls.ControlBindingDocument
-import com.areslib.controls.ControlSchemeDocument
 import com.areslib.controls.ControlSourceKind
 import com.areslib.controls.ControlTargetKind
 import com.areslib.controls.ControlThresholdDirection
@@ -18,61 +16,17 @@ import com.areslib.controls.ControllerInputPlatform
 import com.areslib.controls.DriveAxisKeys
 import com.areslib.controls.ControllerProfileDocument
 import com.areslib.controls.RoutineInvocationPolicy
-import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutinePose
-import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.project.AresLeague
-import com.areslib.project.compiler.RobotProjectIr
 import com.areslib.project.requireFtcRuntimeOptions
 import com.areslib.subsystem.SubsystemTargetCapability
 import com.areslib.subsystem.subsystemTargetCapabilities
 import java.security.MessageDigest
 
-/** Generator format version embedded in every emitted Kotlin source file. */
-const val ARES_KOTLIN_CODEGEN_VERSION: Int = 8
-
-/** Renderer layout applied only after an effective project has been lowered to typed compiler IR. */
-data class KotlinProjectCompilationRequest(
-    val project: RobotProjectIr,
-    val packageName: String,
-    val objectName: String = "GeneratedAresProject",
-    val registryInterfaceName: String = "GeneratedAresProjectCapabilities",
-    /** Fully-qualified generated registry that creates the corresponding Redux tasks. */
-    val subsystemRegistryFqn: String? = null,
-    /** Parameterless action keys implemented by generated orchestration registries. */
-    val generatedActionRegistryBindings: Map<String, String> = emptyMap(),
-)
-
-/** Internal renderer input retained while focused renderers are extracted from the legacy file. */
-internal data class KotlinProjectCodegenRequest(
-    val packageName: String,
-    val objectName: String = "GeneratedAresProject",
-    val registryInterfaceName: String = "GeneratedAresProjectCapabilities",
-    val catalog: CapabilityCatalogDocument,
-    val routines: Collection<RoutineDocument>,
-    val autonomousCatalog: AutonomousCatalogDocument? = null,
-    val controlSchemes: Collection<ControlSchemeDocument> = emptyList(),
-    val controllerProfiles: Collection<ControllerProfileDocument> = emptyList(),
-    /** Robot-side InputFrame adapter whose learned HID indexes must be emitted. */
-    val targetInputPlatform: ControllerInputPlatform? = null,
-    /** Canonical project geometry. Build-time CLI projects require `.ares/project.json`. */
-    val projectMetadata: AresProjectMetadataDocument? = null,
-    /** Target setters derived from subsystem documents rather than hand-authored catalog entries. */
-    val subsystemActions: Collection<SubsystemTargetCapability> = emptyList(),
-    /** Fully-qualified generated registry that creates the corresponding Redux tasks. */
-    val subsystemRegistryFqn: String? = null,
-    /** Parameterless action keys implemented by generated orchestration registries. */
-    val generatedActionRegistryBindings: Map<String, String> = emptyMap(),
-)
-
-/** Generated source and the hashes a build can use to verify deterministic disposable output. */
-data class GeneratedKotlinSource(
-    val source: String,
-    val contentHash: String,
-    val sourceHash: String
-)
+/** Generator format version embedded in generated project source. */
+const val ARES_KOTLIN_CODEGEN_VERSION: Int = 10
 
 /**
  * Emits deterministic Kotlin without reflection or runtime file discovery.
@@ -141,6 +95,7 @@ object AresKotlinProjectGenerator {
             append("import com.areslib.input.ControllerBindingRuntime\n")
             append("import com.areslib.runtime.GeneratedControlTaskSink\n")
             append("import com.areslib.runtime.GeneratedProjectDefinition\n")
+            append("import com.areslib.runtime.GeneratedProjectControls\n")
             if (request.controlSchemes.isNotEmpty()) {
                 append("import com.areslib.routine.RoutineStartPolicy\n")
                 append("import com.areslib.input.AnalogBinding\n")
@@ -236,8 +191,13 @@ object AresKotlinProjectGenerator {
             append("        hasGeneratedDriveBindings = HAS_GENERATED_DRIVE_BINDINGS,\n")
             append("        routines = routines,\n")
             append("        runtimeBindings = ::runtimeBindings,\n")
-            append("        createControllerRuntimes = ::createControllerRuntimes,\n")
-            append("        emitDriveCommand = ::emitDriveCommand,\n")
+            append("        createControls = { schemeId, registry, routineManager, taskSink ->\n")
+            append("            val driveAxisValues = DoubleArray(3)\n")
+            append("            GeneratedProjectControls(\n")
+            append("                controllerRuntimes = createControllerRuntimes(schemeId, registry, routineManager, taskSink, driveAxisValues),\n")
+            append("                emitDriveCommand = { emitDriveCommand(registry, driveAxisValues) },\n")
+            append("            )\n")
+            append("        },\n")
             append("    )\n")
             append("}\n")
         }
@@ -437,13 +397,13 @@ object AresKotlinProjectGenerator {
         val hasDriveBindings = schemes.any { scheme -> scheme.bindings.any { it.enabled && it.target.kind == ControlTargetKind.DRIVE } }
         append("    /** True when the active scheme binds at least one drivetrain axis. */\n")
         append("    val HAS_GENERATED_DRIVE_BINDINGS: Boolean = $hasDriveBindings\n")
-        append("    private val driveAxisValues = DoubleArray(3)\n\n")
+        append("\n")
         append("    /**\n")
         append("     * Publishes the latest drive-axis listener values as one combined command. Disconnects emit\n")
         append("     * zeros and the analog rearm policy holds that neutral until every axis passes through its\n")
         append("     * deadband, so a deflected stick cannot lurch the robot across a controller reconnect.\n")
         append("     */\n")
-        append("    fun emitDriveCommand(registry: ${request.registryInterfaceName}) {\n")
+        append("    private fun emitDriveCommand(registry: ${request.registryInterfaceName}, driveAxisValues: DoubleArray) {\n")
         append("        registry.onDriveCommand(driveAxisValues[0], driveAxisValues[1], driveAxisValues[2], HAS_GENERATED_DRIVE_BINDINGS)\n")
         append("    }\n\n")
         append("    /**\n")
@@ -452,11 +412,12 @@ object AresKotlinProjectGenerator {
         append("     * window, preventing a near-simultaneous chord from leaking a single-button action.\n")
         append("     */\n")
         append("    @Suppress(\"UNUSED_PARAMETER\")\n")
-        append("    fun createControllerRuntimes(\n")
+        append("    private fun createControllerRuntimes(\n")
         append("        schemeId: String?,\n")
         append("        registry: ${request.registryInterfaceName},\n")
         append("        routineManager: RoutineManager,\n")
         append("        taskSink: GeneratedControlTaskSink,\n")
+        append("        driveAxisValues: DoubleArray,\n")
         append("    ): Map<Int, ControllerBindingRuntime> {\n")
         if (schemes.isEmpty()) {
             append("        require(schemeId == null) { \"This project has no generated control scheme\" }\n")

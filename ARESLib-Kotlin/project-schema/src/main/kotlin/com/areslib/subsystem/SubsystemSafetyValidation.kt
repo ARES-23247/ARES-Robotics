@@ -160,6 +160,11 @@ internal object SubsystemSafetyValidation {
             if (!booleanComparison && (evidence.threshold == null || !evidence.threshold.isFinite())) {
                 issue("$path.threshold", "Numeric homing evidence requires a finite threshold")
             }
+            if (evidence.comparison in setOf(SubsystemHomingComparison.ABS_AT_OR_ABOVE, SubsystemHomingComparison.ABS_AT_OR_BELOW) &&
+                evidence.threshold != null && evidence.threshold < 0.0
+            ) {
+                issue("$path.threshold", "Absolute homing evidence requires a non-negative magnitude threshold")
+            }
             when (homing.method) {
                 SubsystemHomingMethod.DIGITAL_SENSOR -> if (source != SubsystemMeasurementSource.DIGITAL_STATE) {
                     issue("$path.fieldId", "Digital-sensor homing requires a digital-state measurement")
@@ -245,6 +250,9 @@ internal object SubsystemSafetyValidation {
         duplicateInterlocks.forEach { issue("interlocks", "Interlock ID '$it' is duplicated") }
         document.interlocks.forEachIndexed { index, interlock ->
             val path = "interlocks[$index]"
+            if (document.implementation.kind.isAresGenerated() && interlock.safeFallbackValue != null) {
+                issue("$path.safeFallbackValue", "Generated interlocks use each actuator's configured safe output; clear the unsupported fallback override")
+            }
             if (interlock.targetSubsystemUid.isBlank()) {
                 issue("$path.targetSubsystemUid", "Target subsystem UID is required")
             }
@@ -259,9 +267,5 @@ internal object SubsystemSafetyValidation {
     
     private val SUBSYSTEM_NUMERIC_TYPES = setOf(SubsystemValueType.DOUBLE, SubsystemValueType.INT)
 
-    private fun duplicateSubsystemIds(ids: List<String>): Set<String> {
-        val seen = hashSetOf<String>()
-        return ids.filterNot(seen::add).toSet()
-    }
 }
 

@@ -1,6 +1,7 @@
 package com.areslib.ftc.input
 
-import com.areslib.input.InputFrame
+import com.areslib.input.*
+import kotlin.test.assertFailsWith
 import com.areslib.telemetry.GamepadState
 import com.qualcomm.robotcore.hardware.Gamepad
 import kotlin.test.Test
@@ -57,6 +58,10 @@ class FtcInputFrameAdapterTest {
         assertEquals(0.0, frame.axis(FtcAxisIndex.LEFT_STICK_X))
         assertEquals(0.0, frame.axis(FtcAxisIndex.LEFT_STICK_Y))
         assertEquals(0.0, frame.axis(FtcAxisIndex.LEFT_TRIGGER))
+        assertFalse(frame.isAxisAvailable(FtcAxisIndex.LEFT_STICK_X))
+        assertFalse(frame.isAxisAvailable(FtcAxisIndex.LEFT_STICK_Y))
+        assertFalse(frame.isAxisAvailable(FtcAxisIndex.LEFT_TRIGGER))
+        assertTrue(frame.isAxisAvailable(FtcAxisIndex.RIGHT_TRIGGER))
         assertTrue(frame.button(FtcButtonIndex.A))
 
         gamepad.id = Gamepad.ID_UNASSOCIATED
@@ -67,5 +72,30 @@ class FtcInputFrameAdapterTest {
         assertEquals(0, frame.buttonCount)
         assertEquals(0.0, frame.axis(FtcAxisIndex.LEFT_STICK_X))
         assertFalse(frame.button(FtcButtonIndex.A))
+    }
+
+    @Test
+    fun `invalid calibrated feedback cannot command a deflected axis`() {
+        val gamepad = Gamepad().apply { left_stick_x = 1.25f }
+        val frame = InputFrame()
+        val adapter = FtcInputFrameAdapter(gamepad)
+        val binding = AnalogBinding(FtcAxisIndex.LEFT_STICK_X, AxisTransform(0.0, 0.5, 1.0), object : AnalogBindingListener {})
+        adapter.sampleInto(frame, 0L); binding.update(frame, 0L)
+        assertEquals(0.0, binding.value)
+        gamepad.left_stick_x = 1.0f
+        adapter.sampleInto(frame, 1L); binding.update(frame, 1L)
+        assertEquals(0.0, binding.value)
+        gamepad.left_stick_x = 0.5f
+        adapter.sampleInto(frame, 2L); binding.update(frame, 2L)
+        gamepad.left_stick_x = 1.0f
+        adapter.sampleInto(frame, 3L); binding.update(frame, 3L)
+        assertEquals(1.0, binding.value)
+    }
+
+    @Test
+    fun `undersized adapter storage invalidates old feedback`() {
+        val frame = InputFrame(1, 1).apply { beginSample(true, 1, 1, 0L); setAxis(0, 1.0); setButton(0, true) }
+        assertFailsWith<IllegalArgumentException> { FtcInputFrameAdapter(Gamepad()).sampleInto(frame, 1L) }
+        assertFalse(frame.isConnected); assertFalse(frame.button(0))
     }
 }

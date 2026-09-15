@@ -3,6 +3,7 @@ package com.ares.analytics.ui.components.dashboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
@@ -62,9 +63,14 @@ fun DashboardWidgetGrid(
     onLayoutChanged: (List<WidgetConfig>) -> Unit,
     onRemoveWidget: (String) -> Unit,
     widgetBuilders: Map<String, @Composable (WidgetConfig, Modifier) -> Unit>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fullscreenWidgetId: String? = null,
+    scrollState: ScrollState = rememberScrollState(),
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val fullscreenId = fullscreenWidgetId?.takeIf { id -> !isEditing && widgets.any { it.id == id } }
+        val viewportWidth = maxWidth
+        val viewportHeight = maxHeight
         val columns = DashboardLayoutEngine.columnsForWidth(maxWidth.value)
         val effectiveEditing = isEditing && isDashboardLayoutEditingSupported(columns)
         val displayWidgets = remember(widgets, columns) { DashboardLayoutEngine.reflow(widgets, columns) }
@@ -76,8 +82,10 @@ fun DashboardWidgetGrid(
         val density = LocalDensity.current.density
         val currentWidgets by rememberUpdatedState(displayWidgets)
 
-        Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            Box(Modifier.fillMaxWidth().height(gridHeight)) {
+        Box(Modifier.fillMaxSize().verticalScroll(scrollState, enabled = fullscreenId == null)) {
+            // Keep the original scroll range and composition. Only the selected card is placed
+            // while expanded, preserving every widget's live subscriptions, history and state.
+            Box(Modifier.fillMaxWidth().height(maxOf(gridHeight, viewportHeight))) {
                 for (widget in displayWidgets) {
                     val builder = widgetBuilders[widget.type]
                     key(widget.id) {
@@ -90,15 +98,25 @@ fun DashboardWidgetGrid(
                         val height = rowHeight * widget.rowSpan + spacing * (widget.rowSpan - 1)
                         val x = colWidth * widget.col + spacing * widget.col
                         val y = rowHeight * widget.row + spacing * widget.row
+                        val isFullscreen = widget.id == fullscreenId
 
                         Box(
                             Modifier
-                                .offset { IntOffset(x.roundToPx() + offsetX.roundToInt(), y.roundToPx() + offsetY.roundToInt()) }
+                                .offset {
+                                    if (isFullscreen) IntOffset(0, scrollState.value)
+                                    else IntOffset(x.roundToPx() + offsetX.roundToInt(), y.roundToPx() + offsetY.roundToInt())
+                                }
                                 .layout { measurable, _ ->
-                                    val targetWidth = (width.toPx() + resizeX).roundToInt().coerceAtLeast(1)
-                                    val targetHeight = (height.toPx() + resizeY).roundToInt().coerceAtLeast(1)
-                                    val placeable = measurable.measure(Constraints.fixed(targetWidth, targetHeight))
-                                    layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+                                    if (fullscreenId != null && !isFullscreen) {
+                                        layout(0, 0) {}
+                                    } else {
+                                        val targetWidth = if (isFullscreen) viewportWidth.roundToPx()
+                                            else (width.toPx() + resizeX).roundToInt().coerceAtLeast(1)
+                                        val targetHeight = if (isFullscreen) viewportHeight.roundToPx()
+                                            else (height.toPx() + resizeY).roundToInt().coerceAtLeast(1)
+                                        val placeable = measurable.measure(Constraints.fixed(targetWidth, targetHeight))
+                                        layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+                                    }
                                 }
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(if (effectiveEditing) AresSurface else androidx.compose.ui.graphics.Color.Transparent)

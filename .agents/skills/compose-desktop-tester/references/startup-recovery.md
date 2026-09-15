@@ -29,7 +29,7 @@ Set-Location <monorepo-root>\ARES-Analytics
 jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
 ```
 
-If the listed ARES process has no usable window, use the scoped repository task:
+The repository task is scoped by application main class, not PID, checkout, isolated home, or orphan status. It can terminate healthy ARES instances too. Use it only after confirming that every matching ARES JVM belongs to this task:
 
 ```powershell
 .\gradlew.bat killExisting
@@ -39,8 +39,9 @@ Rules:
 
 - Never delete `app.lock` as a repair; deleting the path does not safely revoke a live process's lock.
 - Never kill every `java.exe`; Gradle daemons, IDEs, simulators, and robot tooling may also be Java processes.
-- Report the verified ARES PID terminated by `killExisting`.
-- `:app:run` depends on `killExisting`, but a packaged executable launched directly does not.
+- If another task owns an ARES instance, leave it running. After trying graceful close, terminate only an exact verified PID owned by this task.
+- Report the verified owned PIDs terminated and confirm their exit; do not require another task's JVM to disappear.
+- `:app:run` depends on `killExisting` unless `-PskipKill` is supplied; a packaged executable launched directly does not. For a separate test instance, combine `-PskipKill` with a dedicated `-ParesIsolatedDesktopHome=...`. The skip flag does not bypass the application instance lock. Apply these ownership checks to every launch and cleanup example below.
 
 ## Failure mode 2: missing Swing Main dispatcher
 
@@ -88,8 +89,8 @@ When the console reports a critical AWT fault:
 
 1. Open the exact `~/.ares-analytics/logs/crash-*.log` path named by the message, or inspect the newest file in that directory.
 2. Find the first stack frame in ARES application code and investigate the state/input that reached it. Do not stop at framework frames or the later lock message.
-3. Try the tester's native `-CloseWindow` action. If the damaged AWT thread cannot process `WM_CLOSE`, report the failed graceful shutdown and run `.\gradlew.bat killExisting` from `ARES-Analytics`.
-4. After the fix, require two clean launch, strict-capture, native-close cycles with no remaining ARES JVM.
+3. Try the tester's native `-CloseWindow` action. If the damaged AWT thread cannot process `WM_CLOSE`, report the failed graceful shutdown and apply the ownership-checked cleanup above; never terminate another task's instance.
+4. After the fix, require two clean launch, strict-capture, native-close cycles with no remaining ARES JVM owned by this task.
 
 Do not automate shutdown with `SendKeys` Alt+F4. Synthetic key input can be delivered to the currently focused Compose text field and trigger application key-handling code instead of closing the native window. The tester posts `WM_CLOSE` directly to the verified ARES HWND.
 
@@ -177,7 +178,7 @@ Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE
 Remove-Item Env:ARES_ANALYTICS_STARTUP_CAPTURE_CLOSE
 ```
 
-The app waits for settled `alwaysOnTop=false`, uses `java.awt.Robot` to capture its own window rectangle, and posts `WM_CLOSE` to the exact verified HWND. Normal launches do not perform this capture or auto-close behavior. Inspect the image and confirm `cleanupDesktopRunSnapshot`, `BUILD SUCCESSFUL`, and no remaining `MainKt`.
+The app waits for settled `alwaysOnTop=false`, uses `java.awt.Robot` to capture its own window rectangle, and posts `WM_CLOSE` to the exact verified HWND. Normal launches do not perform this capture or auto-close behavior. Inspect the image and confirm `cleanupDesktopRunSnapshot`, `BUILD SUCCESSFUL`, and exit of this task's owned app PID.
 
 ```powershell
 & "<monorepo-root>\.agents\skills\compose-desktop-tester\scripts\interact_app.ps1" `
@@ -187,4 +188,4 @@ The app waits for settled `alwaysOnTop=false`, uses `java.awt.Robot` to capture 
 jps -lv | Select-String 'com\.ares\.analytics\.MainKt'
 ```
 
-For startup-related edits, repeat the launch, strict capture, graceful close, and no-process check once. Do not claim success until both cycles pass.
+For startup-related edits, repeat the launch, strict capture, graceful close, and owned-process exit check once. Do not claim success until both cycles pass.

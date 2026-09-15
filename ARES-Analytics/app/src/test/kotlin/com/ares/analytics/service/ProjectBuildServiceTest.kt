@@ -443,13 +443,13 @@ class ProjectBuildServiceTest {
                 probeCommand("tree", oldParentPid.absolutePath, oldChildPid.absolutePath),
                 generationOperation = true
             )
-            val oldParent = awaitPid(oldParentPid)
-            val oldChild = awaitPid(oldChildPid)
+            val oldParent = awaitPid(oldParentPid, service)
+            val oldChild = awaitPid(oldChildPid, service)
 
             service.runManagedProcessForTest(
                 probeCommand("wait", newPidFile.absolutePath, releaseNew.absolutePath)
             )
-            val newPid = awaitPid(newPidFile)
+            val newPid = awaitPid(newPidFile, service)
 
             awaitProcessExit(oldParent)
             awaitProcessExit(oldChild)
@@ -511,14 +511,21 @@ class ProjectBuildServiceTest {
         }
     }
 
-    private suspend fun awaitPid(file: File): Long = withTimeout(5_000L) {
-        while (true) {
-            val pid = runCatching { file.takeIf(File::isFile)?.readText()?.trim()?.toLongOrNull() }
-                .getOrNull()
-            if (pid != null) return@withTimeout pid
-            delay(10L)
+    private suspend fun awaitPid(file: File, service: ProjectBuildService? = null): Long {
+        try {
+            return withTimeout(5_000L) {
+                while (true) {
+                    val pid = runCatching { file.takeIf(File::isFile)?.readText()?.trim()?.toLongOrNull() }
+                        .getOrNull()
+                    if (pid != null) return@withTimeout pid
+                    delay(10L)
+                }
+                error("unreachable")
+            }
+        } catch (timeout: TimeoutCancellationException) {
+            throw AssertionError("PID readiness timed out for ${file.name}; process=${service?.processState?.value}; " +
+                "generation=${service?.aresGenerationState?.value}; output=${service?.buildOutput?.replayCache}", timeout)
         }
-        error("unreachable")
     }
 
     private fun writeReleaseManifest(root: File, aresVersion: String) {

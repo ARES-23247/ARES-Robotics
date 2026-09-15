@@ -24,6 +24,8 @@ import com.areslib.math.geometry.Rotation2d
 import com.areslib.ftc.core.FtcHardwareInitializer
 import com.areslib.ftc.core.FtcOpModeLifecycleController
 import com.areslib.hardware.HardwareRegistry
+import com.areslib.ftc.core.preserveFtcInterrupt
+import com.areslib.ftc.core.retainFtcFailure
 
 /**
  * Abstract foundational base class for all FTC robots in ARESLib-Kotlin.
@@ -151,7 +153,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     companion object {
-        private const val IMU_MAX_SAMPLE_AGE_MS = 100L
         /**
          * Evaluates whether the current runtime environment is an Android OS target (Control Hub / Driver Station).
          */
@@ -200,7 +201,11 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     private var lastPinpointWarningTime = 0L
     protected var lastUpdateTime = 0L
+    private var hasUpdateTimestamp = false
+    private var reportedFatalSafetyFailure = false
+    private val closed = java.util.concurrent.atomic.AtomicBoolean(false)
     private var hasReadSensorsThisFrame = false
+    private var sensorReadDurationNanos = 0L
     private val odometrySourceArbiter = FtcOdometrySourceArbiter()
     private var heldFallbackX = 0.0
     private var heldFallbackY = 0.0
@@ -208,7 +213,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
     /** Cached independent Control Hub IMU sample used by drivetrain fallback odometry. */
     protected val cachedImuInputs = ImuInputs()
-    private val imuSampleBuffer = ImuInputs()
+    private val imuCache = FtcImuCache(cachedImuInputs)
 
     /** First fatal loop failure. A robot instance remains inhibited after this is set. */
     @Volatile
@@ -232,6 +237,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * Implementations should reuse hardware input buffers and avoid blocking work in this cycle.
      */
     fun readSensors() {
+        check(!closed.get()) { "Robot is closed" }
         if (hasReadSensorsThisFrame) return
         hasReadSensorsThisFrame = true
         try {
@@ -241,7 +247,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
 
         val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
         updateHardwareInputs()
-        refreshCachedImu()
+        imuCache.refresh(imuIO)
         val s2 = com.areslib.util.RobotClock.nanoTime()
 
         val pinpoint = pinpointIO
@@ -321,6 +327,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             visionMs = (s4 - s3) / 1_000_000.0
         )
         profiler.publishSensorsProfiling(telemetryManager)
+        sensorReadDurationNanos = com.areslib.util.RobotClock.nanoTime() - s0
         } catch (failure: Throwable) {
             hasReadSensorsThisFrame = false
             throw failure
@@ -357,49 +364,6 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
         )
     }
 
-    private fun refreshCachedImu() {
-        val imu = imuIO
-        if (imu == null) {
-            invalidateCachedImu()
-            return
-        }
-
-        try {
-            imu.updateInputs(imuSampleBuffer)
-            // Hardware or an asynchronous IMU sample may finish after the frame-start timestamp.
-            val sampleAgeMs = com.areslib.util.RobotClock.currentTimeMillis() - imuSampleBuffer.timestampMs
-            val valid = imuSampleBuffer.timestampMs > 0L && sampleAgeMs in 0..IMU_MAX_SAMPLE_AGE_MS &&
-                imuSampleBuffer.headingRadians.isFinite() && imuSampleBuffer.pitchRadians.isFinite() &&
-                imuSampleBuffer.rollRadians.isFinite() && imuSampleBuffer.yawVelocityRadPerSec.isFinite() &&
-                imuSampleBuffer.pitchVelocityRadPerSec.isFinite() && imuSampleBuffer.rollVelocityRadPerSec.isFinite()
-            if (!valid) {
-                invalidateCachedImu()
-                return
-            }
-            cachedImuInputs.headingRadians = imuSampleBuffer.headingRadians
-            cachedImuInputs.pitchRadians = imuSampleBuffer.pitchRadians
-            cachedImuInputs.rollRadians = imuSampleBuffer.rollRadians
-            cachedImuInputs.yawVelocityRadPerSec = imuSampleBuffer.yawVelocityRadPerSec
-            cachedImuInputs.pitchVelocityRadPerSec = imuSampleBuffer.pitchVelocityRadPerSec
-            cachedImuInputs.rollVelocityRadPerSec = imuSampleBuffer.rollVelocityRadPerSec
-            cachedImuInputs.timestampMs = imuSampleBuffer.timestampMs
-        } catch (_: Throwable) {
-            invalidateCachedImu()
-        }
-    }
-
-    private fun invalidateCachedImu() {
-        // Retain the last RAW heading (initially zero), but mark the sample invalid.
-        // Fallback adds its field offset separately. Feeding the fused field heading
-        // back here would add that offset again every frame and fabricate rotation.
-        cachedImuInputs.pitchRadians = 0.0
-        cachedImuInputs.rollRadians = 0.0
-        cachedImuInputs.yawVelocityRadPerSec = 0.0
-        cachedImuInputs.pitchVelocityRadPerSec = 0.0
-        cachedImuInputs.rollVelocityRadPerSec = 0.0
-        cachedImuInputs.timestampMs = 0L
-    }
-
     private fun reseedOdometrySources(pose: Pose2d) {
         pinpointIO?.initialize(pose, resetHardware = false)
         prepareFallbackOdometry(pose, cachedImuInputs.headingRadians)
@@ -422,24 +386,35 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      * @param gamepad2 Telemetry snapshot of Driver 2 gamepad inputs.
      */
     fun update(gamepad1: com.areslib.telemetry.GamepadState? = null, gamepad2: com.areslib.telemetry.GamepadState? = null) {
+        check(!closed.get()) { "Robot is closed" }
         fatalUpdateFailure?.let { failure ->
-            runCatching { safeHardware() }
+            safeAfterFatalFailure(failure)
             throw failure
         }
         try {
+            val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
+            val elapsed = if (hasUpdateTimestamp) timestamp - lastUpdateTime else 0L
+            check(!hasUpdateTimestamp || (timestamp >= lastUpdateTime && elapsed >= 0L)) {
+                "Robot clock rewound or elapsed control time overflowed"
+            }
+            // Zero is a valid replay timestamp. Retain the nominal first/repeated-frame
+            // interval without treating every frame following timestamp zero as the first.
+            val dtSeconds = if (elapsed == 0L) 0.02 else elapsed / 1000.0
+            lastUpdateTime = timestamp
+            hasUpdateTimestamp = true
             lifecycleController.update()
 
-            val timestamp = com.areslib.util.RobotClock.currentTimeMillis()
-            val dtSeconds = if (lastUpdateTime == 0L || timestamp == lastUpdateTime) 0.02 else (timestamp - lastUpdateTime) / 1000.0
-            lastUpdateTime = timestamp
-
-            val t0 = com.areslib.util.RobotClock.nanoTime()
+            val sensorsAlreadyRead = hasReadSensorsThisFrame
+            val updateStartNanos = com.areslib.util.RobotClock.nanoTime()
             try {
                 readSensors()
             } finally {
                 hasReadSensorsThisFrame = false
             }
             val t1 = com.areslib.util.RobotClock.nanoTime()
+            // OpModes may sample before calculating drive intent. Include that cached sensor
+            // work in the core-loop budget without counting the intervening caller code as IO.
+            val t0 = if (sensorsAlreadyRead) t1 - sensorReadDurationNanos else updateStartNanos
 
             val effectiveScale = powerManager.update(dtSeconds, timestamp)
             val batteryVoltage = powerManager.batteryVoltage
@@ -465,21 +440,33 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             profiler.recordAndPublishLoopDiagnostics(telemetryManager, t0, t1, t2, t3, t4)
             lifecycleController.sleepRemaining(timestamp, isAndroid)
         } catch (e: Throwable) {
-            if (e is InterruptedException || e.cause is InterruptedException) {
-                Thread.currentThread().interrupt()
-            }
+            preserveFtcInterrupt(e)
             fatalUpdateFailure = e
-            System.err.println("FtcBaseRobot: Exception in update loop: ${e.message}")
-            e.printStackTrace()
+            // Neutral must precede potentially blocking or failing diagnostic sinks.
+            safeAfterFatalFailure(e)
             try {
-                safeHardware()
-            } catch (safetyFailure: Throwable) {
-                e.addSuppressed(safetyFailure)
+                System.err.println("FtcBaseRobot: Exception in update loop: ${e.message}")
+                e.printStackTrace()
+            } catch (diagnosticFailure: Throwable) {
+                retainFtcFailure(e, diagnosticFailure)
             }
             try {
                 telemetryManager.dataLoggingTelemetry.putString("Robot/Error", "FATAL CRASH: ${e.message}")
-            } catch (_: Throwable) {}
+            } catch (diagnosticFailure: Throwable) { retainFtcFailure(e, diagnosticFailure) }
             throw e
+        }
+    }
+
+    private fun safeAfterFatalFailure(primary: Throwable) {
+        try { safeHardware() }
+        catch (failure: Throwable) {
+            preserveFtcInterrupt(failure)
+            // INIT may continue retrying a latched fault. Keep its first safety diagnostic
+            // without retaining a newly allocated Throwable on every subsequent frame.
+            if (!reportedFatalSafetyFailure) {
+                reportedFatalSafetyFailure = true
+                retainFtcFailure(primary, failure)
+            }
         }
     }
 
@@ -518,6 +505,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
      */
     @kotlin.jvm.JvmOverloads
     fun resetPose(pose: Pose2d = Pose2d(), resetHardware: Boolean = false) {
+        check(!closed.get()) { "Robot is closed" }
         pinpointIO?.initialize(pose, resetHardware = resetHardware)
         prepareFallbackOdometry(pose, cachedImuInputs.headingRadians)
         visionTracker.hasInitializedPoseWithVision = true
@@ -549,14 +537,18 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
     }
 
     /**
-     * Releases active hardware resources, background HTTP/NT4 threads, and closes telemetry channels.
+     * Releases active hardware resources, background HTTP/NT4 threads, and closes telemetry channels once.
+     * Later update, sensor-read, and pose-reset calls are rejected. The lifecycle owner must
+     * stop an in-flight control callback before closing its resources.
      */
     open fun close() {
+        if (!closed.compareAndSet(false, true)) return
         if (activeInstance === this) activeInstance = null
         closeBestEffort(
             { safeHardware() },
+            { closeSubsystems() },
             { lifecycleController.close() },
-            { telemetryManager.close() },
+            { hardwareRegistry.closeAll() },
             { hardwareInitializer.close() }
         )
     }
@@ -567,7 +559,7 @@ abstract class FtcBaseRobot @kotlin.jvm.JvmOverloads constructor(
             try {
                 action()
             } catch (failure: Throwable) {
-                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+                firstFailure = retainFtcFailure(firstFailure, failure)
             }
         }
         firstFailure?.let { throw it }

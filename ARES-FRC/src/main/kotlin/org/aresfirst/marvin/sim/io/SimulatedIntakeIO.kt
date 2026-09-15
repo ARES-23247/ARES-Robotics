@@ -12,7 +12,12 @@ import org.aresfirst.marvin.marvin.MarvinConfig
  */
 class SimulatedIntakeIO(private val sim: Dyn4jSimulation) : IntakeIO {
     override fun setPivotAngle(degrees: Double, maxEffortScale: Double) {
-        val error = safeTarget(degrees) - sim.intakePivotSim.angleDegrees
+        val measuredDegrees = sim.intakePivotSim.angleDegrees
+        if (!measuredDegrees.isFinite()) {
+            sim.simIntakePivotVoltage = 0.0
+            return
+        }
+        val error = safeTarget(degrees) - measuredDegrees
         val safeScale = maxEffortScale.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.0
         val maxVolts = 12.0 * safeScale
         sim.simIntakePivotVoltage = (error * 0.4).coerceIn(-maxVolts, maxVolts)

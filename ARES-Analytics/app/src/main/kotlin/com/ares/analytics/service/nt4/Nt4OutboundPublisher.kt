@@ -2,6 +2,9 @@ package com.ares.analytics.service.nt4
 
 import com.ares.analytics.service.DriveFrameContractValidator
 import com.areslib.telemetry.schema.DesktopDriveProtocol
+import com.areslib.networktables.NT4WireProtocol
+import com.areslib.tuning.TuningValue
+import com.areslib.tuning.TuningTopics
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.websocket.Frame
 import io.ktor.websocket.send
@@ -23,6 +26,16 @@ internal class Nt4OutboundPublisher(
 ) {
     @Volatile
     private var session: DefaultClientWebSocketSession? = null
+
+    private val connectionCounter = AtomicLong()
+    @Volatile private var connectionId = 0L
+
+    /** Socket generation, available before clock synchronization or publisher readiness. */
+    val connectionGeneration: Long get() = connectionId
+
+    /** Ready connection identity; unlike a Boolean flow this detects a conflated reconnect. */
+    val tuningConnectionId: Long?
+        get() = connectionId.takeIf { session != null && serverTimeOffsetUs != null }
 
     @Volatile
     private var serverTimeOffsetUs: Long? = null
@@ -47,6 +60,7 @@ internal class Nt4OutboundPublisher(
         serverTimeOffsetUs = null
         bestClockRoundTripUs = Long.MAX_VALUE
         session = connectedSession
+        connectionId = connectionCounter.incrementAndGet()
     }
 
     fun detach(connectedSession: DefaultClientWebSocketSession) {
@@ -119,6 +133,43 @@ internal class Nt4OutboundPublisher(
     suspend fun publishString(key: String, value: String): Boolean {
         val pubUid = ensurePublisher(key, "string")
         return publishInputString(pubUid, value)
+    }
+
+    /** Enqueue value then nonce as one NT4 frame, or enqueue neither; never migrate a queued request. */
+    suspend fun publishTuningRequest(
+        requestedKey: String,
+        nonceKey: String,
+        value: TuningValue,
+        nonce: Long,
+        expectedConnection: Long,
+    ): Boolean {
+        require(nonce in 0..DesktopDriveProtocol.MAX_SAFE_INTEGER_LONG) { "Invalid tuning request nonce" }
+        require(requestedKey.startsWith("${TuningTopics.ROOT}/Parameters/") && requestedKey.endsWith("/Requested") &&
+            nonceKey == requestedKey.removeSuffix("/Requested") + "/RequestNonce") { "Mismatched tuning request topics" }
+        require(listOf(value.doubleValue, value.intValue, value.booleanValue, value.textValue).count { it != null } == 1) {
+            "A tuning request must contain exactly one typed value"
+        }
+        val (type, typeId, wireValue) = when {
+            value.doubleValue != null -> {
+                require(value.doubleValue!!.isFinite()) { "Tuning values must be finite" }
+                Triple("double", 1, value.doubleValue)
+            }
+            value.intValue != null -> Triple("double", 1, value.intValue!!.toDouble())
+            value.booleanValue != null -> Triple("boolean", 0, value.booleanValue)
+            else -> {
+                require(value.textValue!!.toByteArray(Charsets.UTF_8).size <= MAX_STRING_BYTES) { "Tuning text is too large" }
+                Triple("string", 4, value.textValue)
+            }
+        }
+        val connectedSession = session ?: return false
+        if (tuningConnectionId != expectedConnection) return false
+        val requestedUid = ensurePublisher(requestedKey, type)
+        val nonceUid = ensurePublisher(nonceKey, "double")
+        if (session !== connectedSession || tuningConnectionId != expectedConnection) return false
+        // Receipt timestamps preserve one-shot tuning requests across paused simulator clocks.
+        val requested = NT4WireProtocol.encodeValueMessage(requestedUid.toLong(), 0L, typeId, wireValue)
+        val commit = NT4WireProtocol.encodeValueMessage(nonceUid.toLong(), 0L, 1, nonce.toDouble())
+        return connectedSession.outgoing.trySend(Frame.Binary(true, requested + commit)).isSuccess
     }
 
     internal fun encodeNt4BinaryUpdate(

@@ -13,7 +13,7 @@ import kotlin.math.sign
  *
  * ### Mathematical Formulation:
  * Feedforward calculation:
- * $$u_{FF} = \left(\frac{v_{desired}}{v_{max}} + k_S \cdot \text{sign}(v_{desired})\right) \cdot \frac{12.0}{V_{battery}}$$
+ * $$u_{FF} = k_V v_{desired} + k_A a_{desired} + k_S \operatorname{sign}(v_{desired})$$
  * Raw requested effort with PID feedback and voltage compensation:
  * $$u_{raw} = \text{coerceIn}\left((u_{FF} + u_{PID}) \cdot \frac{12}{V_{battery}}, -1.0, 1.0\right)$$
  *
@@ -37,98 +37,123 @@ import kotlin.math.sign
  * @param initialSlewRateLimit Acceleration slew rate limit ($1/s$).
  */
 class MecanumDriveFeedforward(
-    var initialKs: Double = 0.0,
-    var motorKp: Double? = null,
-    var motorKi: Double? = null,
-    var motorKd: Double? = null,
-    var initialSlewRateLimit: Double? = null
+    initialKs: Double = 0.0,
+    motorKp: Double? = null,
+    motorKi: Double? = null,
+    motorKd: Double? = null,
+    initialSlewRateLimit: Double? = null
 ) {
+    private var batchingGains = false
 
-    /** Static friction feedforward coefficient $k_S$. */
+    /** Legacy constructor property; assignments also update [kS]. */
+    var initialKs: Double = initialKs
+        set(value) { field = value; kS = value }
+    var motorKp: Double? = motorKp
+        set(value) { if (field == value) return; field = value; if (!batchingGains) configureControllers() }
+    var motorKi: Double? = motorKi
+        set(value) { if (field == value) return; field = value; if (!batchingGains) configureControllers() }
+    var motorKd: Double? = motorKd
+        set(value) { if (field == value) return; field = value; if (!batchingGains) configureControllers() }
+    /** Legacy constructor property; assignments also update [slewRateLimit]. */
+    var initialSlewRateLimit: Double? = initialSlewRateLimit
+        set(value) { field = value; slewRateLimit = value }
+
     var kS: Double = initialKs
+        set(value) { if (field == value) return; field = value; reset() }
     var kV: Double = 0.0
+        set(value) { if (field == value) return; field = value; reset() }
     var kA: Double = 0.0
+        set(value) { if (field == value) return; field = value; reset() }
 
     private val previousSpeeds = DoubleArray(4)
-
-    private var flController = if (motorKp != null) PIDController(motorKp!!, motorKi ?: 0.0, motorKd ?: 0.0) else null
-    private var frController = if (motorKp != null) PIDController(motorKp!!, motorKi ?: 0.0, motorKd ?: 0.0) else null
-    private var rlController = if (motorKp != null) PIDController(motorKp!!, motorKi ?: 0.0, motorKd ?: 0.0) else null
-    private var rrController = if (motorKp != null) PIDController(motorKp!!, motorKi ?: 0.0, motorKd ?: 0.0) else null
-
+    private var flController: PIDController? = null
+    private var frController: PIDController? = null
+    private var rlController: PIDController? = null
+    private var rrController: PIDController? = null
+    private var gainsValid = true
     private var flLimiter: SlewRateLimiter? = null
     private var frLimiter: SlewRateLimiter? = null
     private var rlLimiter: SlewRateLimiter? = null
     private var rrLimiter: SlewRateLimiter? = null
 
-    /** Maximum acceleration slew rate limit. */
-    var slewRateLimit: Double? = initialSlewRateLimit
+    /** Null disables limiting. Nonpositive/nonfinite values invalidate the configuration. */
+    var slewRateLimit: Double? = null
         set(value) {
-            val validLimit = value?.takeIf { it.isFinite() && it > 0.0 }
-            field = validLimit
-            if (validLimit != null) {
-                flLimiter = SlewRateLimiter(validLimit)
-                frLimiter = SlewRateLimiter(validLimit)
-                rlLimiter = SlewRateLimiter(validLimit)
-                rrLimiter = SlewRateLimiter(validLimit)
+            if (field == value) return
+            field = value
+            if (value != null && value.isFinite() && value > 0.0) {
+                // Changing a valid rate preserves ramp state and reuses existing limiters.
+                flLimiter = flLimiter ?: SlewRateLimiter(value)
+                frLimiter = frLimiter ?: SlewRateLimiter(value)
+                rlLimiter = rlLimiter ?: SlewRateLimiter(value)
+                rrLimiter = rrLimiter ?: SlewRateLimiter(value)
+                flLimiter?.setRateLimits(value); frLimiter?.setRateLimits(value)
+                rlLimiter?.setRateLimits(value); rrLimiter?.setRateLimits(value)
             } else {
-                flLimiter = null
-                frLimiter = null
-                rlLimiter = null
-                rrLimiter = null
+                reset()
+                flLimiter = null; frLimiter = null; rlLimiter = null; rrLimiter = null
             }
         }
 
-    /** Enables automatic reduction of slew acceleration limits when battery voltage drops below 12.0V. */
     var enableVoltageCompensatedSlew: Boolean = false
+    internal var lastCalculationValid: Boolean = false
+        private set
 
     init {
-        flController?.setOutputLimits(-1.0, 1.0)
-        frController?.setOutputLimits(-1.0, 1.0)
-        rlController?.setOutputLimits(-1.0, 1.0)
-        rrController?.setOutputLimits(-1.0, 1.0)
-
-        if (initialSlewRateLimit != null) {
-            slewRateLimit = initialSlewRateLimit
-        }
+        configureControllers()
+        slewRateLimit = initialSlewRateLimit
     }
 
-    /**
-     * Dynamically updates PID gains across all 4 wheel velocity controllers.
-     *
-     * @param kp Proportional gain $K_p$.
-     * @param ki Integral gain $K_i$.
-     * @param kd Derivative gain $K_d$.
-     */
+    /** Updates all gains together; unchanged configuration preserves controller history. */
     fun updateMotorGains(kp: Double, ki: Double, kd: Double) {
-        val fl = flController
-        if (fl == null) {
+        restoreMotorGains(kp, ki, kd)
+    }
+
+    /** Restores optional construction settings; three nulls restore feedback-free operation. */
+    internal fun restoreMotorGains(kp: Double?, ki: Double?, kd: Double?) {
+        if (motorKp == kp && motorKi == ki && motorKd == kd) return
+        batchingGains = true
+        motorKp = kp; motorKi = ki; motorKd = kd
+        batchingGains = false
+        configureControllers()
+    }
+
+    private fun configureControllers() {
+        reset()
+        val kp = motorKp ?: 0.0
+        val ki = motorKi ?: 0.0
+        val kd = motorKd ?: 0.0
+        gainsValid = kp.isFinite() && ki.isFinite() && kd.isFinite()
+        if (!gainsValid || motorKp == null && motorKi == null && motorKd == null) {
+            flController = null; frController = null; rlController = null; rrController = null
+            return
+        }
+        if (flController == null) {
             flController = PIDController(kp, ki, kd).apply { setOutputLimits(-1.0, 1.0) }
             frController = PIDController(kp, ki, kd).apply { setOutputLimits(-1.0, 1.0) }
             rlController = PIDController(kp, ki, kd).apply { setOutputLimits(-1.0, 1.0) }
             rrController = PIDController(kp, ki, kd).apply { setOutputLimits(-1.0, 1.0) }
         } else {
-            fl.p = kp; fl.i = ki; fl.d = kd
+            flController?.let { it.p = kp; it.i = ki; it.d = kd }
             frController?.let { it.p = kp; it.i = ki; it.d = kd }
             rlController?.let { it.p = kp; it.i = ki; it.d = kd }
             rrController?.let { it.p = kp; it.i = ki; it.d = kd }
         }
     }
 
+    /** Clears all dynamic state without allocating or changing configuration. */
+    internal fun reset() {
+        lastCalculationValid = false
+        previousSpeeds.fill(0.0)
+        flController?.reset(); frController?.reset(); rlController?.reset(); rrController?.reset()
+        flLimiter?.reset(0.0); frLimiter?.reset(0.0); rlLimiter?.reset(0.0); rrLimiter?.reset(0.0)
+    }
+
     /**
-     * Zero-GC calculation cycle for 4 motor duty-cycle powers with feedforward, PID feedback, and slew rate limiting.
-     *
-     * @param speeds Target 4 wheel surface speeds $[v_{FL}, v_{FR}, v_{RL}, v_{RR}]$ (m/s).
-     * @param maxWheelSpeedMps Maximum physical wheel speed capability (m/s).
-     * @param batteryVolts Current battery voltage level in Volts ($V$).
-     * @param dtSeconds Time step in seconds ($s$).
-     * @param useClosedLoopVelocity True if REV Control Hub internal closed-loop velocity PID is enabled.
-     * @param ticksPerMeter Encoder resolution in ticks per meter.
-     * @param flVel Front-left wheel velocity encoder reading (ticks/s).
-     * @param frVel Front-right wheel velocity encoder reading (ticks/s).
-     * @param rlVel Rear-left wheel velocity encoder reading (ticks/s).
-     * @param rrVel Rear-right wheel velocity encoder reading (ticks/s).
-     * @param outputPowers 4-element output array receiving computed motor power duty cycles (-1.0 to 1.0).
+     * Calculates four coupled duty-cycle requests, with caller-owned buffers that may alias.
+     * Rejected input/configuration clears the available output slots and all dynamic history.
+     * Extra output slots beyond the four wheels remain untouched. Feedforward-only operation
+     * needs no encoder observation; hub/software velocity control requires all four observations.
      */
     fun calculateMotorPowers(
         speeds: DoubleArray,
@@ -143,103 +168,80 @@ class MecanumDriveFeedforward(
         rrVel: Double,
         outputPowers: DoubleArray
     ) {
-        if (outputPowers.size < 4) return
-        outputPowers[0] = 0.0
-        outputPowers[1] = 0.0
-        outputPowers[2] = 0.0
-        outputPowers[3] = 0.0
-        if (speeds.size < 4) return
+        // Capture the input before clearing output: callers can reuse the same array.
+        val flRequest = if (speeds.size >= 4) speeds[0] else Double.NaN
+        val frRequest = if (speeds.size >= 4) speeds[1] else Double.NaN
+        val rlRequest = if (speeds.size >= 4) speeds[2] else Double.NaN
+        val rrRequest = if (speeds.size >= 4) speeds[3] else Double.NaN
+        for (i in 0 until minOf(4, outputPowers.size)) outputPowers[i] = 0.0
+        lastCalculationValid = false
+        val limit = slewRateLimit
+        if (outputPowers.size < 4 || speeds.size < 4 ||
+            !flRequest.isFinite() || !frRequest.isFinite() || !rlRequest.isFinite() || !rrRequest.isFinite() ||
+            !maxWheelSpeedMps.isFinite() || maxWheelSpeedMps <= 0.0 ||
+            !batteryVolts.isFinite() || batteryVolts <= 0.1 || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
+            !kS.isFinite() || !kV.isFinite() || !kA.isFinite() || !gainsValid ||
+            limit != null && (!limit.isFinite() || limit <= 0.0)) return reset()
 
-        val validMaxSpeed = maxWheelSpeedMps.takeIf { it.isFinite() && it > 0.0 } ?: return
-        val actualVolts = batteryVolts.takeIf { it.isFinite() && it > 0.1 } ?: return
-        val controlDt = dtSeconds.takeIf { it.isFinite() && it > 1e-4 } ?: 0.02
-        val maxVolts = 12.0
-        val voltageCompensationFactor = maxVolts / actualVolts
+        val softwareFeedback = !useClosedLoopVelocity && flController != null
+        if ((useClosedLoopVelocity || softwareFeedback) &&
+            (!flVel.isFinite() || !frVel.isFinite() || !rlVel.isFinite() || !rrVel.isFinite())) return reset()
+        if (softwareFeedback && (!ticksPerMeter.isFinite() || ticksPerMeter <= 1e-9)) return reset()
+        // Convert once, validate once, and pass primitive SI values directly into feedback.
+        val flMeasured = if (softwareFeedback) flVel / ticksPerMeter else 0.0
+        val frMeasured = if (softwareFeedback) frVel / ticksPerMeter else 0.0
+        val rlMeasured = if (softwareFeedback) rlVel / ticksPerMeter else 0.0
+        val rrMeasured = if (softwareFeedback) rrVel / ticksPerMeter else 0.0
+        if (!flMeasured.isFinite() || !frMeasured.isFinite() || !rlMeasured.isFinite() || !rrMeasured.isFinite()) return reset()
 
-        val flTarget = finiteClampedSpeed(speeds[0], validMaxSpeed)
-        val frTarget = finiteClampedSpeed(speeds[1], validMaxSpeed)
-        val rlTarget = finiteClampedSpeed(speeds[2], validMaxSpeed)
-        val rrTarget = finiteClampedSpeed(speeds[3], validMaxSpeed)
-
-        fun applyFeedforward(speedMetersPerSecond: Double, prevSpeed: Double): Double {
-            if (abs(speedMetersPerSecond) < 1e-4) return 0.0
-            val sign = sign(speedMetersPerSecond)
-            val acceleration = (speedMetersPerSecond - prevSpeed) / controlDt
-            val velocityFF = speedMetersPerSecond * kV.finiteOrZero()
-            val accelFF = acceleration * kA.finiteOrZero()
-            val staticFF = sign * kS.finiteOrZero()
-            return (velocityFF + accelFF + staticFF)
-        }
-
+        val flTarget = flRequest.coerceIn(-maxWheelSpeedMps, maxWheelSpeedMps)
+        val frTarget = frRequest.coerceIn(-maxWheelSpeedMps, maxWheelSpeedMps)
+        val rlTarget = rlRequest.coerceIn(-maxWheelSpeedMps, maxWheelSpeedMps)
+        val rrTarget = rrRequest.coerceIn(-maxWheelSpeedMps, maxWheelSpeedMps)
         if (abs(flTarget) < 1e-4) flController?.reset()
         if (abs(frTarget) < 1e-4) frController?.reset()
         if (abs(rlTarget) < 1e-4) rlController?.reset()
         if (abs(rrTarget) < 1e-4) rrController?.reset()
 
-        val fl = flController
-        val fr = frController
-        val rl = rlController
-        val rr = rrController
+        var flPower = feedforward(flTarget, previousSpeeds[0], dtSeconds) + feedback(flController, flMeasured, flTarget, dtSeconds, softwareFeedback)
+        var frPower = feedforward(frTarget, previousSpeeds[1], dtSeconds) + feedback(frController, frMeasured, frTarget, dtSeconds, softwareFeedback)
+        var rlPower = feedforward(rlTarget, previousSpeeds[2], dtSeconds) + feedback(rlController, rlMeasured, rlTarget, dtSeconds, softwareFeedback)
+        var rrPower = feedforward(rrTarget, previousSpeeds[3], dtSeconds) + feedback(rrController, rrMeasured, rrTarget, dtSeconds, softwareFeedback)
+        if (!flPower.isFinite() || !frPower.isFinite() || !rlPower.isFinite() || !rrPower.isFinite()) return reset()
+        previousSpeeds[0] = flTarget; previousSpeeds[1] = frTarget
+        previousSpeeds[2] = rlTarget; previousSpeeds[3] = rrTarget
 
-        val validTicksPerMeter = ticksPerMeter.takeIf { it.isFinite() && abs(it) > 1e-9 }
-        val flFeedback = calculateFeedback(fl, flVel, validTicksPerMeter, flTarget, controlDt, useClosedLoopVelocity)
-        val frFeedback = calculateFeedback(fr, frVel, validTicksPerMeter, frTarget, controlDt, useClosedLoopVelocity)
-        val rlFeedback = calculateFeedback(rl, rlVel, validTicksPerMeter, rlTarget, controlDt, useClosedLoopVelocity)
-        val rrFeedback = calculateFeedback(rr, rrVel, validTicksPerMeter, rrTarget, controlDt, useClosedLoopVelocity)
-
-        var flPower = applyFeedforward(flTarget, previousSpeeds[0]) + flFeedback
-        var frPower = applyFeedforward(frTarget, previousSpeeds[1]) + frFeedback
-        var rlPower = applyFeedforward(rlTarget, previousSpeeds[2]) + rlFeedback
-        var rrPower = applyFeedforward(rrTarget, previousSpeeds[3]) + rrFeedback
-        
-        previousSpeeds[0] = flTarget
-        previousSpeeds[1] = frTarget
-        previousSpeeds[2] = rlTarget
-        previousSpeeds[3] = rrTarget
-
-        val baseLimit = slewRateLimit
-        if (baseLimit != null) {
-            val posLimit = if (enableVoltageCompensatedSlew) {
-                val scale = ((actualVolts - 7.5) / (12.0 - 7.5)).coerceIn(0.2, 1.0)
-                baseLimit * scale
-            } else {
-                baseLimit
-            }
-            flLimiter?.setRateLimits(posLimit, -baseLimit)
-            frLimiter?.setRateLimits(posLimit, -baseLimit)
-            rlLimiter?.setRateLimits(posLimit, -baseLimit)
-            rrLimiter?.setRateLimits(posLimit, -baseLimit)
+        if (limit != null) {
+            val positive = if (enableVoltageCompensatedSlew)
+                limit * ((batteryVolts - 7.5) / 4.5).coerceIn(0.2, 1.0) else limit
+            flLimiter?.setRateLimits(positive, -limit); frLimiter?.setRateLimits(positive, -limit)
+            rlLimiter?.setRateLimits(positive, -limit); rrLimiter?.setRateLimits(positive, -limit)
         }
+        flLimiter?.let { flPower = it.calculate(flPower, dtSeconds) }
+        frLimiter?.let { frPower = it.calculate(frPower, dtSeconds) }
+        rlLimiter?.let { rlPower = it.calculate(rlPower, dtSeconds) }
+        rrLimiter?.let { rrPower = it.calculate(rrPower, dtSeconds) }
+        if (!flPower.isFinite() || !frPower.isFinite() || !rlPower.isFinite() || !rrPower.isFinite()) return reset()
 
-        flLimiter?.let { flPower = it.calculate(flPower, controlDt) }
-        frLimiter?.let { frPower = it.calculate(frPower, controlDt) }
-        rlLimiter?.let { rlPower = it.calculate(rlPower, controlDt) }
-        rrLimiter?.let { rrPower = it.calculate(rrPower, controlDt) }
-
-        outputPowers[0] = finiteClampedPower(flPower * voltageCompensationFactor)
-        outputPowers[1] = finiteClampedPower(frPower * voltageCompensationFactor)
-        outputPowers[2] = finiteClampedPower(rlPower * voltageCompensationFactor)
-        outputPowers[3] = finiteClampedPower(rrPower * voltageCompensationFactor)
+        // Clamp before multiplying so a finite saturated request cannot overflow to infinity.
+        val nominalLimit = batteryVolts / 12.0
+        val compensation = 12.0 / batteryVolts
+        outputPowers[0] = (flPower.coerceIn(-nominalLimit, nominalLimit) * compensation).coerceIn(-1.0, 1.0)
+        outputPowers[1] = (frPower.coerceIn(-nominalLimit, nominalLimit) * compensation).coerceIn(-1.0, 1.0)
+        outputPowers[2] = (rlPower.coerceIn(-nominalLimit, nominalLimit) * compensation).coerceIn(-1.0, 1.0)
+        outputPowers[3] = (rrPower.coerceIn(-nominalLimit, nominalLimit) * compensation).coerceIn(-1.0, 1.0)
+        lastCalculationValid = true
     }
 
-    private fun calculateFeedback(
-        controller: PIDController?,
-        measuredTicksPerSecond: Double,
-        ticksPerMeter: Double?,
-        targetMetersPerSecond: Double,
-        dtSeconds: Double,
-        useClosedLoopVelocity: Boolean
-    ): Double {
-        if (useClosedLoopVelocity || controller == null || ticksPerMeter == null) return 0.0
-        val measuredMetersPerSecond = measuredTicksPerSecond.finiteOrZero() / ticksPerMeter
-        return controller.calculate(measuredMetersPerSecond, targetMetersPerSecond, dtSeconds).finiteOrZero()
+    private fun feedforward(target: Double, previous: Double, dt: Double): Double {
+        if (abs(target) < 1e-4) return 0.0
+        val acceleration = if (kA == 0.0) 0.0 else kA * ((target - previous) / dt)
+        return kV * target + acceleration + kS * sign(target)
     }
 
-    private fun finiteClampedSpeed(value: Double, maxMagnitude: Double): Double =
-        if (value.isFinite()) value.coerceIn(-maxMagnitude, maxMagnitude) else 0.0
-
-    private fun finiteClampedPower(value: Double): Double =
-        if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
-
-    private fun Double.finiteOrZero(): Double = if (isFinite()) this else 0.0
+    private fun feedback(controller: PIDController?, measured: Double, target: Double, dt: Double, enabled: Boolean): Double {
+        if (!enabled || controller == null) return 0.0
+        val effort = controller.calculate(measured, target, dt)
+        return if (controller.lastCalculationValid) effort else Double.NaN
+    }
 }

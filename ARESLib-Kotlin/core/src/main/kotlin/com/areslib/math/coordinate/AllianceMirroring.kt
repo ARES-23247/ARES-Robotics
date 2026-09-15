@@ -4,7 +4,6 @@ import com.areslib.state.Alliance
 import com.areslib.math.geometry.*
 import com.areslib.pathing.Path
 import com.areslib.pathing.PathPoint
-import com.areslib.math.wrapAngle
 import com.google.gson.annotations.SerializedName
 
 /**
@@ -52,6 +51,10 @@ enum class FieldOrigin {
  *
  * @see CoordinateTransformers
  * @see Path
+ *
+ * Blue returns the original object without validation. Red requires finite geometry/raw angles
+ * and valid used field extents; invalid transforms throw IllegalArgumentException. Center
+ * reflection flips Y, while corner reflection flips X, preserving the two authored conventions.
  */
 object AllianceMirroring {
 
@@ -77,29 +80,17 @@ object AllianceMirroring {
         if (alliance == Alliance.BLUE) return pose
         return if (fieldOrigin == FieldOrigin.CENTER) {
             when (symmetry) {
-                FieldSymmetry.ROTATIONAL -> Pose2d(
-                    x = -pose.x,
-                    y = -pose.y,
-                    heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
-                )
-                FieldSymmetry.MIRRORED -> Pose2d(
+                FieldSymmetry.ROTATIONAL -> CoordinateTransformers.flipPoseRotational(pose, alliance)
+                FieldSymmetry.MIRRORED -> coordinatePose(
                     x = pose.x,
                     y = -pose.y,
-                    heading = Rotation2d(wrapAngle(-pose.heading.radians))
+                    rawHeading = allianceHeading(pose.heading.rawRadians, symmetry, fieldOrigin)
                 )
             }
         } else {
             when (symmetry) {
-                FieldSymmetry.ROTATIONAL -> Pose2d(
-                    x = fieldLength - pose.x,
-                    y = fieldWidth - pose.y,
-                    heading = Rotation2d(wrapAngle(pose.heading.radians + Math.PI))
-                )
-                FieldSymmetry.MIRRORED -> Pose2d(
-                    x = fieldLength - pose.x,
-                    y = pose.y,
-                    heading = Rotation2d(wrapAngle(Math.PI - pose.heading.radians))
-                )
+                FieldSymmetry.ROTATIONAL -> CoordinateTransformers.flipCornerPoseRotational(pose, alliance, fieldLength, fieldWidth)
+                FieldSymmetry.MIRRORED -> CoordinateTransformers.mirrorPoseReflectionalX(pose, alliance, fieldLength)
             }
         }
     }
@@ -126,19 +117,16 @@ object AllianceMirroring {
         if (alliance == Alliance.BLUE) return translation
         return if (fieldOrigin == FieldOrigin.CENTER) {
             when (symmetry) {
-                FieldSymmetry.ROTATIONAL -> Translation2d(-translation.x, -translation.y)
-                FieldSymmetry.MIRRORED -> Translation2d(translation.x, -translation.y)
+                FieldSymmetry.ROTATIONAL -> CoordinateTransformers.flipTranslationRotational(translation, alliance)
+                FieldSymmetry.MIRRORED -> coordinateTranslation(translation.x, -translation.y)
             }
         } else {
             when (symmetry) {
-                FieldSymmetry.ROTATIONAL -> Translation2d(
-                    x = fieldLength - translation.x,
-                    y = fieldWidth - translation.y
+                FieldSymmetry.ROTATIONAL -> coordinateTranslation(
+                    x = coordinateExtent(fieldLength) - translation.x,
+                    y = coordinateExtent(fieldWidth) - translation.y
                 )
-                FieldSymmetry.MIRRORED -> Translation2d(
-                    x = fieldLength - translation.x,
-                    y = translation.y
-                )
+                FieldSymmetry.MIRRORED -> CoordinateTransformers.mirrorTranslationReflectionalX(translation, alliance, fieldLength)
             }
         }
     }
@@ -146,6 +134,8 @@ object AllianceMirroring {
     /**
      * Mirrors an entire trajectory path [path] for the Red alliance.
      * Automatically flips coordinates, tangent headings, and path curvature signs for reflectional symmetry.
+     * Traversal is linear for linked and random-access lists. Red allocates independent points and
+     * poses but preserves the caller-owned event list. Do not mutate input points during this call.
      *
      * @param path Input trajectory [Path].
      * @param alliance Active team alliance color.
@@ -164,23 +154,25 @@ object AllianceMirroring {
         fieldOrigin: FieldOrigin = FieldOrigin.CENTER
     ): Path {
         if (alliance == Alliance.BLUE) return path
+        if (fieldOrigin == FieldOrigin.CORNER) {
+            coordinateExtent(fieldLength)
+            if (symmetry == FieldSymmetry.ROTATIONAL) coordinateExtent(fieldWidth)
+        }
         val numPoints = path.points.size
         val mirroredPoints = ArrayList<PathPoint>(numPoints)
-        for (i in 0 until numPoints) {
-            val point = path.points[i]
+        var previousDistance = 0.0
+        for (point in path.points) {
+            require(point.velocityMps.isFinite() && point.curvature.isFinite() &&
+                point.distanceMeters.isFinite() && point.distanceMeters >= previousDistance) {
+                "Path values must be finite with nonnegative ordered distance"
+            }
+            previousDistance = point.distanceMeters
             val mirroredPose = mirror(point.pose, alliance, symmetry, fieldLength, fieldWidth, fieldOrigin)
             val mirroredCurvature = when (symmetry) {
                 FieldSymmetry.ROTATIONAL -> point.curvature
                 FieldSymmetry.MIRRORED -> -point.curvature
             }
-            val mirroredTangent = when (symmetry) {
-                FieldSymmetry.ROTATIONAL -> wrapAngle(point.tangentRadians + Math.PI)
-                FieldSymmetry.MIRRORED -> if (fieldOrigin == FieldOrigin.CENTER) {
-                    wrapAngle(-point.tangentRadians)
-                } else {
-                    wrapAngle(Math.PI - point.tangentRadians)
-                }
-            }
+            val mirroredTangent = allianceHeading(point.tangentRadians, symmetry, fieldOrigin)
             mirroredPoints.add(
                 point.copy(
                     pose = mirroredPose,

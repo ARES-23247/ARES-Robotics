@@ -322,6 +322,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
             '{"protocol":"ares-xrp/1","type":"control","sessionId":"s",'
             '"sequence":1,"requestRevision":1,"command":"START","armed":true,"driveFrame":[1,0,0]}\n'
         )
+        server._recv_buffer = server._recv_buffer.encode("utf-8")
         server._process_buffer()
         self.assertEqual(server.get_command(), "")
 
@@ -386,6 +387,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
             "payload": payload,
         }) + "\n"
 
+        server._recv_buffer = server._recv_buffer.encode("utf-8")
         server._process_buffer()
 
         receipt = json.loads(capture.sent[-1])
@@ -420,6 +422,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
             "payload": "{}",
         }) + "\n"
 
+        server._recv_buffer = server._recv_buffer.encode("utf-8")
         server._process_buffer()
 
         rejection = json.loads(capture.sent[-1])
@@ -448,6 +451,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
             '{"protocol":"ares-xrp/1","type":"control","sessionId":"s",'
             '"sequence":1,"requestRevision":1,"command":"START_TELEOP","armed":true,"driveFrame":[1e999,0,0]}\n'
         )
+        server._recv_buffer = server._recv_buffer.encode("utf-8")
         server._process_buffer()
         self.assertIsNone(server.get_drive_frame())
         self.assertFalse(server.armed)
@@ -462,6 +466,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
             '"sequence":2,"requestRevision":7,"command":"START_AUTO","selectedOpMode":"route",'
             '"armed":true,"driveFrame":[0,0,0]}\n'
         )
+        server._recv_buffer = server._recv_buffer.encode("utf-8")
         server._process_buffer()
         self.assertEqual(server.get_command(), "START_AUTO")
         self.assertEqual(server.get_command(), "")
@@ -474,6 +479,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
             '{"protocol":"ares-xrp/1","type":"control","sessionId":"s",'
             '"sequence":1,"command":"START_TELEOP","armed":true,"driveFrame":[1,0,0]}\n'
         )
+        server._recv_buffer = server._recv_buffer.encode("utf-8")
         server._process_buffer()
         self.assertEqual(server.get_command(), "")
         self.assertFalse(server.armed)
@@ -488,8 +494,9 @@ class TestXrpRobotLifecycle(unittest.TestCase):
             '"sequence":2,"requestRevision":4,"command":"START_AUTO",'
             '"selectedOpMode":"route","armed":true,"driveFrame":[0.2,0,0]}\n'
         )
+        server._recv_buffer = server._recv_buffer.encode("utf-8")
         server._process_buffer()
-        self.assertEqual(server.get_command(), "START_TELEOP")
+        self.assertEqual(server.get_command(), "")
         self.assertFalse(server.armed)
 
     def test_failed_write_latches_until_successful_init_neutral(self):
@@ -540,6 +547,7 @@ class TestXrpRobotLifecycle(unittest.TestCase):
         )
         robot.drivetrain.update_odometry = lambda dt: setattr(robot.drivetrain, "x", 0.5)
         published = {}
+        robot.telemetry.is_connected = True
         robot.telemetry.publish_pose_frame = lambda **values: published.update(values)
 
         robot.step()

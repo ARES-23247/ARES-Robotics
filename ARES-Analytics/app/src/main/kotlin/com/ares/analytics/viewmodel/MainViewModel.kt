@@ -4,7 +4,7 @@ import com.ares.analytics.service.EnvironmentService
 import com.ares.analytics.service.EventApiService
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.shared.models.ForensicsResponse
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.AppWorkspaces

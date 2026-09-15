@@ -178,14 +178,15 @@ private fun TuningValueRow(row: ResolvedTuningValue, consumerSupported: Boolean?
                 Text("${d.unit.orEmpty()} · ${d.minimum ?: "unbounded"}–${d.maximum ?: "unbounded"} · owner ${d.owner().name.lowercase().replace('_', ' ')}", color = AresTextSecondary, fontSize = 9.sp)
                 Text(
                     when {
-                        row.sourceProfileId != null && row.sourceProfileId != viewModel.state.value.selectedProfileId -> "Inherited from ${row.sourceProfileId}"
+                        row.sourceProfileId != null && row.sourceProfileId != viewModel.state.value.selectedProfile?.uid -> "Inherited from ${row.sourceProfileId}"
                         row.provenance != null -> "Provenance: ${row.provenance.source} — ${row.provenance.note}"
+                        row.sourceProfileId == null -> "Declaration default"
                         else -> "No source provenance recorded"
                     },
                     color = AresTextSecondary, fontSize = 9.sp, maxLines = 2
                 )
             }
-            TypedValueCell(row.sourceTypedValue, d.unit, "Canonical source value from ${row.sourceProfileId ?: "no profile"}", Modifier.width(86.dp))
+            TypedValueCell(row.sourceTypedValue, d.unit, "Canonical source value from ${row.sourceProfileId ?: "the declaration default"}", Modifier.width(86.dp))
             Column(Modifier.width(86.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 TypedValueCell(row.liveTypedValue, d.unit, "Observed live robot value. This never changes source.", Modifier.fillMaxWidth())
                 TextButton(onClick = { viewModel.onIntent(TuningIntent.PullFromRobot(d.key)) }, enabled = row.liveTypedValue != null && d.applyPolicy != com.areslib.tuning.TuningApplyPolicy.READ_ONLY_VENDOR, contentPadding = PaddingValues(0.dp)) { Text("Propose", fontSize = 9.sp) }

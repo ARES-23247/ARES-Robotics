@@ -70,7 +70,7 @@ fun validateGuidedFirstRoutinePlan(
             add("$label must use finite X, Y, and heading values.")
             return
         }
-        if (pose != clampRoutinePose(pose, league, dimensions)) {
+        if (!routinePoseFitsField(pose, league, dimensions)) {
             add("$label would place part of the robot outside the field boundary.")
         }
     }
@@ -138,6 +138,12 @@ fun defaultRoutineStep(
     )
 }
 
+private fun routinePoseFitsField(pose: RoutinePose, league: League, dimensions: RobotDimensions): Boolean {
+    if (!pose.xMeters.isFinite() || !pose.yMeters.isFinite() || !pose.headingRadians.isFinite()) return false
+    val bounds = legalCenterBounds(league, dimensions, pose.headingRadians)
+    return bounds.canFit && pose.xMeters in bounds.minX..bounds.maxX && pose.yMeters in bounds.minY..bounds.maxY
+}
+
 fun clampRoutinePose(pose: RoutinePose, league: League, dimensions: RobotDimensions): RoutinePose {
     if (!pose.xMeters.isFinite() || !pose.yMeters.isFinite() || !pose.headingRadians.isFinite()) return pose
     val bounds = legalCenterBounds(league, dimensions, pose.headingRadians)
@@ -165,12 +171,13 @@ fun List<RoutineStep>.lastRoutineDriveTarget(): RoutinePose? = asReversed().firs
 }
 
 fun List<RoutineStep>.routineDriveStepsInExecutionOrder(): List<RoutineDriveStep> = buildList {
-    this@routineDriveStepsInExecutionOrder.forEach { step ->
+    fun visit(step: RoutineStep) {
         step.drive?.let(::add)
-        step.deadline?.let { addAll(listOf(it).routineDriveStepsInExecutionOrder()) }
-        addAll(step.children.routineDriveStepsInExecutionOrder())
-        addAll(step.elseChildren.routineDriveStepsInExecutionOrder())
+        step.deadline?.let(::visit)
+        step.children.forEach(::visit)
+        step.elseChildren.forEach(::visit)
     }
+    this@routineDriveStepsInExecutionOrder.forEach(::visit)
 }
 
 /** Replaces exactly one nested node without depending on its current list position. */
@@ -196,17 +203,32 @@ fun List<RoutineStep>.removeStepById(stepId: String): List<RoutineStep> = mapNot
 
 /** Moves a node only within its owning sibling lane. */
 fun List<RoutineStep>.moveStepById(stepId: String, direction: Int): List<RoutineStep> {
+    if (direction == 0) return this
     val index = indexOfFirst { it.stepId == stepId }
     if (index >= 0) {
-        val destination = index + direction
-        if (destination !in indices) return this
-        return toMutableList().apply { add(destination, removeAt(index)) }
+        val destination = index.toLong() + direction
+        if (destination < 0 || destination >= size) return this
+        return toMutableList().apply { add(destination.toInt(), removeAt(index)) }
     }
-    return map { step -> step.copy(
-        children = step.children.moveStepById(stepId, direction),
-        deadline = step.deadline,
-        elseChildren = step.elseChildren.moveStepById(stepId, direction)
-    ) }
+    var updated: MutableList<RoutineStep>? = null
+    for (i in indices) {
+        val original = this[i]
+        val changed = original.moveDescendantsById(stepId, direction)
+        if (changed !== original) {
+            if (updated == null) updated = toMutableList()
+            updated[i] = changed
+        }
+    }
+    return updated ?: this
+}
+
+private fun RoutineStep.moveDescendantsById(stepId: String, direction: Int): RoutineStep {
+    val updatedChildren = children.moveStepById(stepId, direction)
+    // The deadline itself has no sibling lane, but its descendants may have one.
+    val updatedDeadline = deadline?.moveDescendantsById(stepId, direction)
+    val updatedElse = elseChildren.moveStepById(stepId, direction)
+    return if (updatedChildren === children && updatedDeadline === deadline && updatedElse === elseChildren) this
+    else copy(children = updatedChildren, deadline = updatedDeadline, elseChildren = updatedElse)
 }
 
 fun List<RoutineStep>.withRoutineRouteWaypoints(
@@ -276,7 +298,7 @@ fun routineEditorValidation(
             if (entry.routineId != routine.documentId) {
                 add(routineIssue(routine, "autonomousEntry.routineId", "wrong_routine", "Autonomous choice points to another routine"))
             }
-            if (entry.startingPose != clampRoutinePose(entry.startingPose, league, dimensions)) {
+            if (!routinePoseFitsField(entry.startingPose, league, dimensions)) {
                 add(routineIssue(routine, "autonomousEntry.startingPose", "robot_outside_field", "Starting robot footprint crosses the field boundary"))
             }
         }
@@ -297,7 +319,7 @@ private fun validateStepFields(
     steps.forEach { step ->
         val stepPath = "$path/${step.stepId}"
         step.drive?.let { drive ->
-            if (drive.target != clampRoutinePose(drive.target, league, dimensions)) {
+            if (!routinePoseFitsField(drive.target, league, dimensions)) {
                 issues += routineIssue(routine, "$stepPath.drive.target", "robot_outside_field", "Drive goal robot footprint crosses the field boundary")
             }
             drive.markers.forEachIndexed { index, marker ->

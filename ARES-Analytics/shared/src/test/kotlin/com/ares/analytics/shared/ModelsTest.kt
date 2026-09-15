@@ -13,6 +13,36 @@ import kotlin.test.assertTrue
  */
 class ModelsTest {
     @Test
+    fun `integration defaults retain CMS approval when decoding older settings`() {
+        val empty = AppJson.decodeFromString<IntegrationSettings>("{}")
+        assertTrue(empty.notificationProviders.isEmpty())
+        assertTrue(empty.notebookPublishers.isEmpty())
+        assertEquals(INTEGRATION_SETTINGS_SCHEMA_VERSION, empty.schemaVersion)
+        for (kind in NotebookPublisherKind.entries) {
+            val publisher = AppJson.decodeFromString<NotebookPublisherConfig>(
+                """{"publisherId":"test","displayName":"Test","kind":"${kind.name}"}""")
+            assertEquals(kind, publisher.kind)
+            assertTrue(publisher.enabled)
+            assertEquals(kind == NotebookPublisherKind.CMS, publisher.requireApproval)
+        }
+    }
+
+    @Test
+    fun `Drive destination collaboration defaults follow the destination type`() {
+        for (type in DriveDestinationType.entries) {
+            val destination = AppJson.decodeFromString<DriveDestinationConfig>(
+                """{"type":"${type.name}","rootFolderId":"root","displayName":"Test","accountSubject":"subject","accountEmail":"user@example.com"}""")
+            val expected = if (type == DriveDestinationType.PERSONAL_FOLDER) {
+                WorkspaceCollaborationMode.PERSONAL
+            } else {
+                WorkspaceCollaborationMode.TEAM
+            }
+            assertEquals(expected, destination.collaborationMode, type.name)
+            assertEquals(destination, AppJson.decodeFromString<DriveDestinationConfig>(AppJson.encodeToString(destination)))
+        }
+    }
+
+    @Test
     fun `workspace diagnostics never render credentials`() {
         val secrets = listOf(
             "toa-secret",

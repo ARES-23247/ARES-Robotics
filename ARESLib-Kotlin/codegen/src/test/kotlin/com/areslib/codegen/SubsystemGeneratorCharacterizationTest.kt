@@ -16,14 +16,16 @@ import java.security.MessageDigest
  * simulator adapters, generated verification, and registry plumbing.
  */
 class SubsystemGeneratorCharacterizationTest {
+    // Lifecycle bridges now enforce timestamp ordering, close every owner after failures, and
+    // reject post-close work. GeneratedSubsystemLifecycleAuditTest executes those behaviors.
     @Test
     fun `all supported FTC templates retain their deterministic artifact manifest`() {
-        assertEquals("eabe79b7a31915ae5b3048106e98eca4709238481eb75eb5fbfcd27bb0599b13", manifestDigest(SubsystemPlatform.FTC))
+        assertEquals("f636b8b2092b24b82a63e7b5564f3a2b6891b417dd62cfdb1ebdeae865d3bd84", manifestDigest(SubsystemPlatform.FTC))
     }
 
     @Test
     fun `all supported FRC templates retain their deterministic artifact manifest`() {
-        assertEquals("40e35ce0034e727f14662f987ee4ff5995b468c340fb38952c1298b71800b101", manifestDigest(SubsystemPlatform.FRC))
+        assertEquals("0f9546f95352df6a05758ee296ca59aebffe71dcbfa45ac6a3343223edd5606e", manifestDigest(SubsystemPlatform.FRC))
     }
 
     private fun manifestDigest(platform: SubsystemPlatform): String {

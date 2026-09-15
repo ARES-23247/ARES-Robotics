@@ -12,7 +12,11 @@ import java.util.concurrent.TimeUnit
 internal data class BoundedProcessResult(val exitCode: Int, val output: String)
 
 /** No pipe read can block the deadline. Output is drained by the OS into an owned temporary file. */
-internal suspend fun runBoundedProcess(builder: ProcessBuilder, timeoutMs: Long): BoundedProcessResult? =
+internal suspend fun runBoundedProcess(
+    builder: ProcessBuilder,
+    timeoutMs: Long,
+    onStarted: (Process) -> Unit = {}
+): BoundedProcessResult? =
     withContext(Dispatchers.IO) {
         require(timeoutMs > 0)
         val output = Files.createTempFile("ares-process-", ".log").toFile()
@@ -22,6 +26,8 @@ internal suspend fun runBoundedProcess(builder: ProcessBuilder, timeoutMs: Long)
             val child = builder.redirectErrorStream(true).redirectOutput(output).start()
             process = child
             val started = System.nanoTime()
+            // Observe the owned OS process without relying on child startup or stdout readiness.
+            onStarted(child)
             while (child.isAlive) {
                 currentCoroutineContext().ensureActive()
                 if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) >= timeoutMs) {

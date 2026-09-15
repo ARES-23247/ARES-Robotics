@@ -216,38 +216,20 @@ class CurrentBudgetManagerTest {
     }
 
     @Test
-    fun `update with non-finite or non-positive battery voltage defaults to 12V safely`() {
+    fun `update with invalid battery voltage rejects the estimate`() {
         manager.register(motor1, stallCurrentAmps = 10.0, nominalVoltage = 12.0)
         motor1.power = 1.0
-        motor1.velocity = 0.0
-
-        val invalidVoltages = listOf(
-            Double.NaN,
-            Double.POSITIVE_INFINITY,
-            Double.NEGATIVE_INFINITY,
-            0.0,
-            -12.0,
-            0.05
-        )
-
-        for (vBat in invalidVoltages) {
-            manager.update(vBat)
-
-            assertTrue(manager.powerScale.isFinite(), "powerScale should be finite for vBat=$vBat")
-            assertFalse(manager.powerScale.isNaN(), "powerScale should not be NaN for vBat=$vBat")
-            assertTrue(manager.totalEstimatedAmps.isFinite(), "totalEstimatedAmps should be finite for vBat=$vBat")
-            assertFalse(manager.totalEstimatedAmps.isNaN(), "totalEstimatedAmps should not be NaN for vBat=$vBat")
-
-            // Since it defaults to 12.0V with 10.0A stall motor at power 1.0, current should be 10.0A
-            assertEquals(10.0, manager.getMotorAmps(0), 1e-6)
-            assertEquals(10.0, manager.totalEstimatedAmps, 1e-6)
-            assertEquals(CurrentBudgetState.HEALTHY, manager.state)
-            assertEquals(1.0, manager.powerScale, 1e-6)
+        for (voltage in listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0.0, -12.0, 0.05)) {
+            manager.update(voltage)
+            assertEquals(CurrentBudgetState.CRITICAL, manager.state)
+            assertEquals(0.0, manager.powerScale)
+            assertTrue(manager.totalEstimatedAmps.isNaN())
+            assertTrue(manager.getMotorAmps(0).isNaN())
         }
     }
 
     @Test
-    fun `update with negative or non-finite additional measured current defaults contribution to zero`() {
+    fun `update with negative or non-finite additional measured current fails closed`() {
         // No power on motors, base estimate is 0.0
         manager.register(motor1, stallCurrentAmps = 10.0, nominalVoltage = 12.0)
         motor1.power = 0.0
@@ -262,54 +244,24 @@ class CurrentBudgetManagerTest {
         for (additionalAmps in invalidAdditionalCurrents) {
             manager.update(12.0, additionalMeasuredCurrentAmps = additionalAmps)
 
-            assertTrue(manager.totalEstimatedAmps.isFinite(), "totalEstimatedAmps should be finite for additionalAmps=$additionalAmps")
-            assertFalse(manager.totalEstimatedAmps.isNaN(), "totalEstimatedAmps should not be NaN for additionalAmps=$additionalAmps")
-            assertEquals(0.0, manager.totalEstimatedAmps, 1e-9)
-            assertEquals(CurrentBudgetState.HEALTHY, manager.state)
-            assertEquals(1.0, manager.powerScale, 1e-9)
+            assertTrue(manager.totalEstimatedAmps.isNaN(), "Unknown current must remain distinguishable from zero")
+            assertEquals(CurrentBudgetState.CRITICAL, manager.state)
+            assertEquals(0.0, manager.powerScale, 1e-9)
         }
     }
 
     @Test
-    fun `register with non-finite or non-positive electrical parameters applies safe defaults`() {
-        val badValues = listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0.0, -12.0)
-
-        for (badStall in badValues) {
-            val mgr = CurrentBudgetManager()
-            val m = MockMotor(power = 1.0)
-            mgr.register(m, stallCurrentAmps = badStall, freeSpeedTps = 2786.0, nominalVoltage = 12.0)
-            mgr.update(12.0)
-
-            assertTrue(mgr.powerScale.isFinite())
-            assertFalse(mgr.powerScale.isNaN())
-            // Safe default stall is 9.2A
-            assertEquals(9.2, mgr.getMotorAmps(0), 1e-6)
-            assertEquals(9.2, mgr.totalEstimatedAmps, 1e-6)
+    fun `register with invalid electrical parameters rejects without changing a valid model`() {
+        manager.register(motor1, stallCurrentAmps = 10.0)
+        motor1.power = 0.5
+        for (invalid in listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0.0, -12.0)) {
+            assertThrows(IllegalArgumentException::class.java) { manager.register(motor1, stallCurrentAmps = invalid) }
+            assertThrows(IllegalArgumentException::class.java) { manager.register(motor1, freeSpeedTps = invalid) }
+            assertThrows(IllegalArgumentException::class.java) { manager.register(motor1, nominalVoltage = invalid) }
         }
-
-        for (badSpeed in badValues) {
-            val mgr = CurrentBudgetManager()
-            val m = MockMotor(power = 0.5, velocity = 1000.0)
-            mgr.register(m, stallCurrentAmps = 10.0, freeSpeedTps = badSpeed, nominalVoltage = 12.0)
-            mgr.update(12.0)
-
-            assertTrue(mgr.powerScale.isFinite())
-            assertFalse(mgr.powerScale.isNaN())
-            assertTrue(mgr.totalEstimatedAmps.isFinite())
-            assertFalse(mgr.totalEstimatedAmps.isNaN())
-        }
-
-        for (badVolt in badValues) {
-            val mgr = CurrentBudgetManager()
-            val m = MockMotor(power = 1.0)
-            mgr.register(m, stallCurrentAmps = 9.2, freeSpeedTps = 2786.0, nominalVoltage = badVolt)
-            mgr.update(12.0)
-
-            assertTrue(mgr.powerScale.isFinite())
-            assertFalse(mgr.powerScale.isNaN())
-            // Safe default nominal voltage is 12.0V, R = 12.0 / 9.2, current at 12V is 9.2A
-            assertEquals(9.2, mgr.getMotorAmps(0), 1e-6)
-            assertEquals(9.2, mgr.totalEstimatedAmps, 1e-6)
-        }
+        assertEquals(1, manager.motorCount)
+        manager.update(12.0)
+        assertEquals(5.0, manager.totalEstimatedAmps, 1e-12)
     }
+
 }

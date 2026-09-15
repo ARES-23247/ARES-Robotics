@@ -1,6 +1,7 @@
 package com.areslib.ftc.hardware
 
 import com.areslib.util.RobotClock
+import kotlin.math.exp
 
 /**
  * Minimal abstraction interface for reading analog voltage signals ($V$).
@@ -23,9 +24,11 @@ interface AnalogVoltageInput {
  *    $$I_{raw} = \frac{V}{3.3} \cdot I_{max}$$
  * 2. Low-pass exponential filtering ($\alpha = \text{filterAlpha}$):
  *    $$I_{filtered} = \alpha \cdot I_{raw} + (1 - \alpha) \cdot I_{filtered, k-1}$$
+ *    The first valid sample seeds the filter; invalid samples preserve its history.
  * 3. Fuse overload-energy model. Current at or below the fuse rating adds no damage; excess
- *    $I^2t$ accumulates and is normalized by a configurable calibration point:
- *    $$E_k = \max(0, E_{k-1} + \max(0, I^2-I_r^2)\Delta t - E_{k-1}\Delta t/\tau_c)$$
+ *    $I^2t$ accumulates above the rating: $E_k = E_{k-1} + (I^2-I_r^2)\Delta t$.
+ *    Below the rating it cools exponentially: $E_k = E_{k-1}\exp(-\Delta t/\tau_c)$.
+ *    Energy is normalized by a configurable calibration point, not a measured fuse trip curve.
  *
  * ### Physical Units:
  * - Telemetry Input: Volts ($V$), range $[0.0, 3.3] \text{ V}$.
@@ -55,46 +58,54 @@ class FtcFloodgateCurrentSensor(
     private val fuseCoolingTimeConstantSeconds: Double = 15.0
 ) {
 
+    init {
+        require(maxCurrentAmps.isFinite() && maxCurrentAmps > 0.0) { "Maximum current must be finite and positive" }
+        require(filterAlpha in 0.0..1.0) { "Filter alpha must be within [0, 1]" }
+        require(fuseRatingAmps.isFinite() && fuseRatingAmps > 0.0) { "Fuse rating must be finite and positive" }
+        require(fuseCalibrationMultiple.isFinite() && fuseCalibrationMultiple > 1.0) { "Calibration multiple must exceed one" }
+        require(fuseCalibrationTripSeconds.isFinite() && fuseCalibrationTripSeconds > 0.0) { "Calibration time must be finite and positive" }
+        require(fuseCoolingTimeConstantSeconds.isFinite() && fuseCoolingTimeConstantSeconds > 0.0) { "Cooling time constant must be finite and positive" }
+    }
+
     private var lastUpdateTime = RobotClock.currentTimeMillis()
     private var filteredCurrentAmps = 0.0
     private var totalAmpSeconds = 0.0
-    private var isInitialized = false
-    private var cachedAnalogVoltage = 0.0
+    private var hasValidIntegrationSample = false
+    private var hasFilterSample = false
+    private var cachedInstantaneousCurrent = 0.0
 
     /** Whether the most recent analog sample was finite and inside the ADC's physical range. */
     var isReadingValid: Boolean = false
         private set
 
-    private val safeMaxCurrentAmps = maxCurrentAmps.takeIf { it.isFinite() && it > 0.0 } ?: 80.0
-    private val safeFilterAlpha = filterAlpha.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.15
-    private val safeFuseRatingAmps = fuseRatingAmps.takeIf { it.isFinite() && it > 0.0 } ?: 20.0
-    private val safeCalibrationMultiple = fuseCalibrationMultiple
-        .takeIf { it.isFinite() && it > 1.0 } ?: 2.0
-    private val safeCalibrationTripSeconds = fuseCalibrationTripSeconds
-        .takeIf { it.isFinite() && it > 0.0 } ?: 2.0
-    private val safeCoolingTimeConstantSeconds = fuseCoolingTimeConstantSeconds
-        .takeIf { it.isFinite() && it > 0.0 } ?: 15.0
-
     // Conservative excess-I²t surrogate. This is deliberately parameterized rather than claiming
     // that every legal vendor's 20A ATM fuse has the same time-current curve.
     private var accumulatedThermalLoad = 0.0
-    private val calibratedCurrent = safeFuseRatingAmps * safeCalibrationMultiple
+    private val ratingSquared = fuseRatingAmps * fuseRatingAmps
+    private val calibratedCurrent = fuseRatingAmps * fuseCalibrationMultiple
     private val fuseThermalCapacity =
-        (calibratedCurrent * calibratedCurrent - safeFuseRatingAmps * safeFuseRatingAmps) *
-            safeCalibrationTripSeconds
+        (calibratedCurrent * calibratedCurrent - ratingSquared) * fuseCalibrationTripSeconds
+
+    init {
+        require((maxCurrentAmps * maxCurrentAmps).isFinite() &&
+            fuseThermalCapacity.isFinite() && fuseThermalCapacity > 0.0) {
+            "Current square and thermal capacity must be representable; capacity must be positive"
+        }
+    }
 
     /**
      * Periodically updates the current measurements, applies the smoothing filter, 
      * and integrates total energy consumption. Should be called inside your main OpMode loop.
+     * Integration requires consecutive valid observations; unknown intervals are omitted and
+     * retain thermal history. Rewinds re-anchor without integrating negative elapsed time.
+     * Charge totals therefore describe observed intervals, not guaranteed complete battery usage.
      */
     fun update() {
         val currentTime = RobotClock.currentTimeMillis()
-        val dtSeconds = if (isInitialized) {
-            (currentTime - lastUpdateTime) / 1000.0
-        } else {
-            isInitialized = true
-            0.0
-        }
+        val elapsed = currentTime - lastUpdateTime
+        val dtSeconds = if (!hasValidIntegrationSample || currentTime < lastUpdateTime) 0.0
+            else if (elapsed >= 0L) elapsed / 1000.0
+            else (currentTime.toDouble() - lastUpdateTime.toDouble()) / 1000.0
         lastUpdateTime = currentTime
 
         val sampledVoltage = try {
@@ -103,28 +114,32 @@ class FtcFloodgateCurrentSensor(
             Double.NaN
         }
         isReadingValid = sampledVoltage.isFinite() && sampledVoltage in 0.0..3.3
-        if (!isReadingValid) return
+        if (!isReadingValid) {
+            hasValidIntegrationSample = false
+            return
+        }
+        hasValidIntegrationSample = true
 
-        cachedAnalogVoltage = sampledVoltage
-        val rawCurrent = instantaneousCurrent
+        val rawCurrent = sampledVoltage / 3.3 * maxCurrentAmps
+        cachedInstantaneousCurrent = rawCurrent
         
         // 1. Apply Exponential Moving Average filter to smooth out spiky motor startup draws
-        filteredCurrentAmps = (safeFilterAlpha * rawCurrent) + ((1.0 - safeFilterAlpha) * filteredCurrentAmps)
+        filteredCurrentAmps = if (!hasFilterSample) rawCurrent
+            else (filterAlpha * rawCurrent) + ((1.0 - filterAlpha) * filteredCurrentAmps)
+        hasFilterSample = true
 
         if (dtSeconds > 0.0) {
             // 2. Integrate current over time to compute charge usage (Ampere-Seconds)
-            totalAmpSeconds += rawCurrent * dtSeconds
+            totalAmpSeconds = (totalAmpSeconds + rawCurrent * dtSeconds).coerceAtMost(Double.MAX_VALUE)
 
             // 3. Accumulate only energy above the continuous fuse rating. A rated 20A load must
             // not inevitably "blow" a 20A fuse in the software model.
-            val ratingSquared = safeFuseRatingAmps * safeFuseRatingAmps
-            val heating = (rawCurrent * rawCurrent - ratingSquared).coerceAtLeast(0.0) * dtSeconds
-            val cooling = if (rawCurrent < safeFuseRatingAmps) {
-                accumulatedThermalLoad / safeCoolingTimeConstantSeconds * dtSeconds
-            } else {
-                0.0
+            if (rawCurrent > fuseRatingAmps) {
+                val heating = (rawCurrent * rawCurrent - ratingSquared) * dtSeconds
+                accumulatedThermalLoad = (accumulatedThermalLoad + heating).coerceAtMost(Double.MAX_VALUE)
+            } else if (rawCurrent < fuseRatingAmps && accumulatedThermalLoad > 0.0) {
+                accumulatedThermalLoad *= exp(-dtSeconds / fuseCoolingTimeConstantSeconds)
             }
-            accumulatedThermalLoad = (accumulatedThermalLoad + heating - cooling).coerceAtLeast(0.0)
         }
     }
 
@@ -132,11 +147,7 @@ class FtcFloodgateCurrentSensor(
      * Reads the instantaneous, unfiltered current draw in Amperes.
      */
     val instantaneousCurrent: Double
-        get() {
-            val voltage = cachedAnalogVoltage
-            // Floodgate analog telemetry scales linearly from 0V to 3.3V
-            return if (isReadingValid) (voltage / 3.3).coerceIn(0.0, 1.0) * safeMaxCurrentAmps else 0.0
-        }
+        get() = if (isReadingValid) cachedInstantaneousCurrent else 0.0
 
     /**
      * Gets the smoothed, low-pass filtered current draw in Amperes.
@@ -170,12 +181,14 @@ class FtcFloodgateCurrentSensor(
      * of tripping the Floodgate V2 smart current limit or blowing the main battery fuse.
      */
     fun isOverloadWarning(warningThresholdAmps: Double = 18.0): Boolean {
+        require(warningThresholdAmps.isFinite() && warningThresholdAmps >= 0.0) { "Warning current must be finite and non-negative" }
         return maxOf(current, instantaneousCurrent) >= warningThresholdAmps ||
             fuseThermalLoadPercent >= 70.0
     }
 
     /**
      * Resets the energy integration tracker (e.g. at the beginning of a match).
+     * Preserves the latest current/filter/validity state while starting a new charge/thermal interval.
      */
     fun resetTracker() {
         totalAmpSeconds = 0.0

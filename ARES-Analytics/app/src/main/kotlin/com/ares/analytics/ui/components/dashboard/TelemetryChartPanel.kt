@@ -51,26 +51,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import java.util.concurrent.ConcurrentHashMap
 
-fun buildSignalTree(keys: List<String>): SignalNode {
-    val root = SignalNode("", "", false)
-    for (topic in keys) {
-        val parts = topic.split("/").filter { it.isNotEmpty() }
-        var current = root
-        var currentPath = ""
-        for (i in parts.indices) {
-            val part = parts[i]
-            currentPath += "/$part"
-            val isLeaf = (i == parts.lastIndex)
-            current = current.children.getOrPut(part) {
-                SignalNode(part, currentPath, isLeaf)
-            }
-        }
-    }
-    return root
-}
-
-data class TelemetryPoint(val timestampMs: Long, val value: Double)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TelemetryChartPanel(
@@ -79,7 +59,9 @@ fun TelemetryChartPanel(
     currentFrame: ReplayFrame? = null,
     properties: Map<String, String>,
     onPropertiesChanged: (Map<String, String>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFullscreen: Boolean = false,
+    onToggleFullscreen: (() -> Unit)? = null,
 ) {
     var parentWindowOffset by remember { mutableStateOf(Offset.Zero) }
     var draggedKey by remember { mutableStateOf<String?>(null) }
@@ -261,7 +243,7 @@ fun TelemetryChartPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
                     if (currentFrame == null) "Live Telemetry Viewer" else "Replay Telemetry Viewer",
                     style = MaterialTheme.typography.titleMedium,
@@ -284,6 +266,7 @@ fun TelemetryChartPanel(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                onToggleFullscreen?.let { WidgetFullscreenButton(isFullscreen, it) }
                 timeWindows.forEach { sec ->
                     FilterChip(
                         selected = selectedWindowSec == sec,

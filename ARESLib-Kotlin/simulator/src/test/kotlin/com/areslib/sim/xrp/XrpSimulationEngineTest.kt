@@ -33,7 +33,7 @@ class XrpSimulationEngineTest {
             drivetrainType = XrpDrivetrainType.DIFFERENTIAL,
             maxLinearSpeedMetersPerSecond = 1.0
         )
-        engine.resetPose(0.35, 0.7112, 0.0)
+        engine.resetPose(-0.92, 0.0, 0.0)
 
         engine.leftPower = 1.0
         engine.rightPower = 1.0
@@ -42,8 +42,8 @@ class XrpSimulationEngineTest {
             engine.step(0.02)
         }
 
-        assertTrue(engine.otosX > 0.35, "Robot should translate forward along X (was ${engine.otosX})")
-        assertEquals(0.7112, engine.otosY, 0.02, "Robot should not drift in Y during straight motion")
+        assertTrue(engine.otosX > -0.92, "Robot should translate forward along X (was ${engine.otosX})")
+        assertEquals(0.0, engine.otosY, 0.02, "Robot should not drift in Y during straight motion")
         assertEquals(0.0, engine.otosHeading, 0.05, "Robot heading should remain straight")
 
         engine.publishTelemetry()
@@ -62,7 +62,7 @@ class XrpSimulationEngineTest {
             trackWidthMeters = 0.155,
             maxLinearSpeedMetersPerSecond = 1.0
         )
-        engine.resetPose(0.35, 0.7112, 0.0)
+        engine.resetPose(-0.92, 0.0, 0.0)
 
         // Left reverse, right forward => CCW positive rotation
         engine.leftPower = -1.0
@@ -82,16 +82,17 @@ class XrpSimulationEngineTest {
             drivetrainType = XrpDrivetrainType.MECANUM,
             maxLinearSpeedMetersPerSecond = 1.0
         )
-        engine.resetPose(0.35, 0.7112, 0.0)
+        engine.resetPose(-0.92, 0.0, 0.0)
 
         // Command pure lateral strafe: vx=0, vy=0.5, omega=0
-        val driveFrame = doubleArrayOf(0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        engine.processDriveFrame(doubleArrayOf(2.0, 41.0, 0.0, 0.0, 0.0, 0.0, 0.0, 8.0))
+        val driveFrame = doubleArrayOf(2.0, 41.0, 1.0, 20.0, 0.0, 0.5, 0.0, 8.0)
         engine.processDriveFrame(driveFrame)
 
         for (i in 0 until 10) {
             engine.step(0.02)
         }
 
-        assertTrue(engine.otosY > 0.7112, "Mecanum should translate along Y (was ${engine.otosY})")
+        assertTrue(engine.otosY > 0.0, "Mecanum should translate along Y (was ${engine.otosY})")
     }
 }

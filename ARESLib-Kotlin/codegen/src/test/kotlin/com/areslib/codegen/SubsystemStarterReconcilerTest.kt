@@ -54,6 +54,50 @@ class SubsystemStarterReconcilerTest {
         }
     }
 
+    @Test
+    fun `duplicate destinations are rejected before any starter is written`() {
+        val content = "// ARES OWNERSHIP: GENERATED STARTER\nval version = 1\n"
+        for (alias in listOf("State.kt", "nested/../State.kt", "nested\\..\\State.kt")) {
+            val files = listOf(starter("State.kt", content), starter(alias, content.replace("1", "2")))
+            assertThrows(IllegalArgumentException::class.java) { SubsystemStarterReconciler.apply(root, files) }
+            assertTrue(Files.notExists(root.resolve("State.kt")))
+        }
+    }
+
+    @Test
+    fun `existing directories are protected before unrelated adds are written`() {
+        Files.createDirectory(root.resolve("Z.kt"))
+        val files = listOf(starter("A.kt", "new source"), starter("Z.kt", "replacement"))
+        assertEquals(SubsystemStarterChangeKind.PROTECTED,
+            SubsystemStarterReconciler.plan(root, files).changes.single { it.relativePath == "Z.kt" }.kind)
+        assertThrows(IllegalArgumentException::class.java) { SubsystemStarterReconciler.apply(root, files) }
+        assertTrue(Files.notExists(root.resolve("A.kt")))
+        assertTrue(Files.isDirectory(root.resolve("Z.kt")))
+    }
+
+    @Test
+    fun `starter paths must be relative descendants of their selected root`() {
+        for (path in listOf("", ".", "..", "../escaped.kt", root.resolve("Absolute.kt").toString())) {
+            assertThrows(IllegalArgumentException::class.java, {
+                SubsystemStarterReconciler.plan(root, listOf(starter(path, "source")))
+            }, path)
+        }
+    }
+
+    @Test
+    fun `changed current content invalidates an earlier replacement token`() {
+        val first = starter("State.kt", "// ARES OWNERSHIP: GENERATED STARTER\nval version = 1\n")
+        SubsystemStarterReconciler.apply(root, listOf(first))
+        val second = first.copy(content = first.content.replace("1", "2"))
+        val token = SubsystemStarterReconciler.plan(root, listOf(second)).confirmationToken
+        val intervening = first.content.replace("1", "3")
+        Files.writeString(root.resolve("State.kt"), intervening)
+        assertThrows(IllegalArgumentException::class.java) {
+            SubsystemStarterReconciler.apply(root, listOf(second), token)
+        }
+        assertEquals(intervening, Files.readString(root.resolve("State.kt")))
+    }
+
     private fun starter(path: String, content: String) = GeneratedSubsystemFile(
         relativePath = path,
         content = content,

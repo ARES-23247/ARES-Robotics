@@ -1,112 +1,90 @@
 package com.areslib.sim.xrp
 
-import com.areslib.networktables.NT4Instance
 import com.areslib.networktables.NT4Server
 import com.areslib.state.RobotFieldManager
+import com.areslib.telemetry.TelemetryTopicConstants
+import com.areslib.util.RobotClock
 import java.io.File
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class XrpSimulationE2ETest {
+    @Test fun testXrpEndToEndSimulationAndTelemetry() = runScenario(mecanum = false)
+    @Test fun testMecanumLauncherAcceptsItsModeAndCanonicalFrames() = runScenario(mecanum = true)
 
-    @Test
-    fun testXrpEndToEndSimulationAndTelemetry() {
-        println("[XRP E2E Test] Starting XRP End-to-End Simulation Test...")
-
+    private fun runScenario(mecanum: Boolean) {
+        RobotClock.useSystemTime()
+        val previousConfig = RobotFieldManager.activeConfig
+        val server = NT4Server.createInstance("127.0.0.1", 0)
+        val failure = AtomicReference<Throwable?>(null)
         val fieldPresetFile = locateMonorepoFieldPreset()
-        val previousFieldConfig = RobotFieldManager.activeConfig
-
-        // Launch XRP Simulator in headless background thread
-        XrpSimLauncher.isRunning = true
-        val simThread = Thread {
-            try {
-                XrpSimLauncher.main(arrayOf("--headless", "--field-config", fieldPresetFile.absolutePath))
-            } catch (t: Throwable) {
-                System.err.println("[XRP E2E Test] Exception in simThread:")
-                t.printStackTrace()
-            }
+        val args = mutableListOf("--headless", "--field-config", fieldPresetFile.absolutePath)
+        if (mecanum) args += "--mecanum"
+        val thread = Thread {
+            try { XrpSimLauncher.main(args.toTypedArray()) } catch (caught: Throwable) { failure.set(caught) }
         }
-        simThread.isDaemon = true
-        simThread.start()
-
+        thread.isDaemon = true
+        thread.start()
+        fun pose() = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", doubleArrayOf())
+        fun awaitReady() {
+            val deadline = System.nanoTime() + 5_000_000_000L
+            while (pose().size != 10 && System.nanoTime() < deadline) {
+                failure.get()?.let { throw AssertionError("Simulator failed", it) }
+                Thread.sleep(10)
+            }
+            assertEquals(10, pose().size, "This run must publish its initial pose")
+        }
+        var sequence = 0L
+        fun send(vx: Double = 0.0, vy: Double = 0.0, omega: Double = 0.0) {
+            val seq = sequence++
+            NT4Server.publishTopic(TelemetryTopicConstants.DRIVE_INPUT_FRAME,
+                doubleArrayOf(2.0, 4601.0, seq.toDouble(), (seq * 20).toDouble(), vx, vy, omega, 8.0))
+            Thread.sleep(20)
+        }
         try {
-            // Wait for NT4 server & simulation loop to initialize
-            var server = NT4Instance.defaultInstance.defaultServer
-            var attempts = 0
-            while (server == null && attempts < 50) {
-                Thread.sleep(50)
-                server = NT4Instance.defaultInstance.defaultServer
-                attempts++
-            }
-            assertNotNull(server, "NT4 Server should be running")
-            assertEquals(
-                "xrp-2026-orbit-odyssey",
-                RobotFieldManager.activeConfig.id,
-                "XRP simulation must load the canonical field selected by Studio",
-            )
-
-            // Wait for first pose frame publication
-            var initialFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
-            var frameAttempts = 0
-            while (initialFrame.size < 10 && frameAttempts < 50) {
-                Thread.sleep(50)
-                initialFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
-                frameAttempts++
-            }
-            assertEquals(10, initialFrame.size, "Simulator must publish 10-element SimulatorPoseFrame")
-
-            val initialTrueX = initialFrame[0]
-            val initialTrueY = initialFrame[1]
-            println("[XRP E2E Test] Initial pose: X=$initialTrueX, Y=$initialTrueY")
-
-            // Inject leased forward drive frame from Driver Station (vx = 0.6 m/s)
-            val driveCommand = doubleArrayOf(0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            NT4Server.publishTopic("ARES/Input/driveFrame", driveCommand)
-
-            // Step forward for 300ms
-            Thread.sleep(350)
-
-            // Read updated pose frame
-            val postDriveFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
-            assertEquals(10, postDriveFrame.size)
-            val postTrueX = postDriveFrame[0]
-            val postEstX = postDriveFrame[3]
-            val postOdomX = postDriveFrame[6]
-            val sequence = postDriveFrame[9]
-
-            println("[XRP E2E Test] Post-drive pose: trueX=$postTrueX, estX=$postEstX, odomX=$postOdomX, seq=$sequence")
-
-            assertTrue(postTrueX > initialTrueX, "Physical body should translate forward along X (was $postTrueX, initial $initialTrueX)")
-            assertTrue(postEstX > initialTrueX, "OTOS estimate should translate forward along X (was $postEstX)")
-            assertTrue(sequence > initialFrame[9], "Simulator frame sequence should increment")
-
-            // Verify topic mirrors
-            val poseX = NT4Server.getDouble("Drive/Pose_X", 0.0)
-            // The simulator remains live between these two independent reads, so the scalar may
-            // belong to the immediately following 50 Hz frame. It must never move backward or
-            // jump farther than one plausible update while the same forward command is active.
-            assertTrue(
-                poseX >= postEstX && poseX - postEstX < 0.05,
-                "Pose mirror must be current with the packed frame (packed=$postEstX, scalar=$poseX)",
-            )
-
-            // Inject rotational drive frame (omega = 2.0 rad/s CCW)
-            val turnCommand = doubleArrayOf(0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            NT4Server.publishTopic("ARES/Input/driveFrame", turnCommand)
-            Thread.sleep(300)
-
-            val postTurnFrame = NT4Server.getDoubleArray("ARES/SimulatorPoseFrame", DoubleArray(0))
-            val postHeading = postTurnFrame[2]
-            println("[XRP E2E Test] Post-turn heading: $postHeading rad")
-            assertTrue(postHeading > 0.0, "Robot heading should rotate CCW-positive (was $postHeading)")
-
+            awaitReady()
+            assertEquals("xrp-2026-orbit-odyssey", RobotFieldManager.activeConfig.id)
+            val initial = pose()
+            repeat(5) { send() }
+            repeat(15) { if (mecanum) send(vy = 0.4) else send(vx = 0.4) }
+            val moved = pose()
+            val axis = if (mecanum) 1 else 0
+            assertTrue(moved[axis] > initial[axis] + 0.04, "Physical body must move after leased input")
+            assertTrue(moved[axis + 3] > initial[axis] + 0.04, "Redux estimator must consume odometry")
+            assertTrue(moved[9] > initial[9])
+            repeat(15) { send(omega = 2.0) }
+            assertTrue(pose()[2] > 0.1, "Rotation remains CCW positive")
+            // Retained input must expire without another publication.
+            Thread.sleep(600)
+            val expired = pose()
+            Thread.sleep(100)
+            val settled = pose()
+            assertEquals(expired[0], settled[0], 1e-6)
+            assertEquals(expired[1], settled[1], 1e-6)
+            assertEquals(expired[2], settled[2], 1e-6)
+            val ack = NT4Server.getDoubleArray(TelemetryTopicConstants.DRIVE_INPUT_ACK, doubleArrayOf())
+            assertEquals(9, ack.size)
+            assertEquals(0.0, ack[5]); assertEquals(0.0, ack[6]); assertEquals(0.0, ack[7])
+            send(vx = 0.5)
+            assertEquals(0.0, NT4Server.getDoubleArray(TelemetryTopicConstants.DRIVE_INPUT_ACK, doubleArrayOf())[5])
         } finally {
-            println("[XRP E2E Test] Stopping simulation...")
             XrpSimLauncher.isRunning = false
-            simThread.interrupt()
-            RobotFieldManager.setActiveConfig(previousFieldConfig)
+            thread.interrupt()
+            thread.join(5000)
+            try {
+                assertFalse(thread.isAlive, "Simulator must terminate before restoring shared state")
+                assertSame(server, NT4Server.getInstance(), "Launcher must preserve a borrowed server")
+                failure.get()?.let { throw AssertionError("Simulator thread failed", it) }
+            } finally {
+                server.stop()
+                NT4Server.resetSharedState()
+                RobotFieldManager.setActiveConfig(previousConfig)
+                RobotClock.useSystemTime()
+            }
         }
     }
 
@@ -115,6 +93,6 @@ class XrpSimulationE2ETest {
         return generateSequence(File(System.getProperty("user.dir")).canonicalFile) { it.parentFile }
             .map { directory -> directory.resolve(relativePath) }
             .firstOrNull(File::isFile)
-            ?: error("Canonical XRP field preset was not found from ${System.getProperty("user.dir")}")
+            ?: error("Canonical XRP field preset was not found")
     }
 }

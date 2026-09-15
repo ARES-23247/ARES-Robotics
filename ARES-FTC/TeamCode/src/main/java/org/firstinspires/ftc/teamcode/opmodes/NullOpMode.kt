@@ -13,16 +13,19 @@ class NullOpMode : LinearOpMode() {
 
     override fun runOpMode() {
         telemetry.addData("Status", "Initialized Successfully!")
-        telemetry.addData("Diagnosis", "If you see this, Case A is true (I2C/Pinpoint Software Hang).")
+        telemetry.addData("Diagnosis", "Hardware-free initialization succeeded. If another mode hangs, investigate its startup and configured devices.")
         telemetry.update()
 
         waitForStart()
 
         var lastTelemetryMs = 0L
+        var hasTelemetryTime = false
         while (opModeIsActive()) {
             val nowMs = com.areslib.util.RobotClock.currentTimeMillis()
-            if (nowMs - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
+            val elapsed = nowMs - lastTelemetryMs
+            if (!hasTelemetryTime || nowMs < lastTelemetryMs || elapsed < 0L || elapsed >= TELEMETRY_PERIOD_MS) {
                 lastTelemetryMs = nowMs
+                hasTelemetryTime = true
                 telemetry.addData("Status", "Running...")
                 telemetry.update()
             }

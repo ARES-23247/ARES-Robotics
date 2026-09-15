@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AcademyGraduationSnapshot
+
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioStageId
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioStageStatus
 import com.ares.analytics.viewmodel.robotstudio.RobotStudioState

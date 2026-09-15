@@ -6,15 +6,17 @@ package com.areslib.util
  * Live millisecond time is anchored to the wall clock once, then advanced from the monotonic
  * nanosecond clock. This avoids discontinuities when the host wall clock changes during a run.
  * Mock mode is a fixed instant: time advances only when the replay or test calls [useMockTime]
- * again. The mock controls both [currentTimeMillis] and [nanoTime] on the same timeline.
+ * again. The mock controls both time methods; nanosecond conversion wraps in signed 64-bit
+ * arithmetic. Use subtraction for bounded elapsed intervals, not ordering of raw nanoTime values.
  *
  * Mode changes are process-global and are expected to be owned by lifecycle/test setup code, not
  * by control-loop components. Always restore [useSystemTime] after a test or replay session.
  */
 object RobotClock {
     /**
-     * One immutable mode snapshot prevents readers on different robot/simulator threads from
-     * observing `mocked == true` with an older mock timestamp (or the inverse transition).
+     * Each getter reads one immutable mode snapshot, so it cannot observe a partially published
+     * timestamp. Separate getter calls may observe different modes if their owner switches mode
+     * between them; the API does not provide an atomic multi-getter transaction.
      * Volatile publication is sufficient here and keeps the 50-100 Hz read path allocation-free.
      */
     private sealed interface ClockMode {
@@ -30,8 +32,9 @@ object RobotClock {
     /**
      * Returns the current robot timestamp in milliseconds.
      *
-     * In live mode this is epoch-like time advanced monotonically from the process-start anchor. In
-     * mock mode it is exactly the last value supplied to [useMockTime].
+     * In live mode this is epoch-like time advanced from the fixed process-start anchor, within
+     * the signed nanoTime elapsed range (less than 2^63 nanoseconds since that anchor). In mock
+     * mode it is exactly the last value supplied to [useMockTime], including negative values.
      */
     fun currentTimeMillis(): Long {
         return when (val snapshot = mode) {
@@ -41,8 +44,11 @@ object RobotClock {
     }
 
     /**
-     * Returns monotonic elapsed time in nanoseconds in live mode, or the mocked millisecond value
-     * converted to nanoseconds in mock mode. Do not compare the live value to Unix epoch time.
+     * Returns the JVM's nanosecond time source in live mode, or mock milliseconds multiplied by
+     * 1,000,000 modulo 2^64. Raw values may be negative and may wrap. Subtraction recovers intervals
+     * shorter than 2^63 nanoseconds within one unchanged mode/timeline; crossing modes, rewinding
+     * mock time or exceeding that range is not a valid forward elapsed interval. Live nanoTime
+     * has an arbitrary origin and must not be compared to Unix epoch time.
      */
     fun nanoTime(): Long {
         return when (val snapshot = mode) {

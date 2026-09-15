@@ -4,7 +4,6 @@ import com.qualcomm.robotcore.hardware.DcMotor
 import com.qualcomm.robotcore.hardware.DcMotorEx
 import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.HardwareMap
-import com.qualcomm.robotcore.hardware.PIDFCoefficients
 import com.areslib.ftc.hardware.CachedDcMotorEx
 import com.areslib.hardware.HardwareRegistry
 import com.areslib.util.RobotClock
@@ -61,14 +60,18 @@ class MecanumMotorCluster(
 ) : AutoCloseable {
 
 
+    private val motors = resolveMecanumMotors(hardwareMap, arrayOf(flName, frName, rlName, rrName))
+        .map<DcMotorEx, DcMotorEx> { CachedDcMotorEx(it) }.toTypedArray()
+    private val nativeConfiguration: MecanumNativeConfiguration?
+
     /** Front-left `DcMotorEx` hardware wrapper. */
-    val frontLeft: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, flName))
+    val frontLeft: DcMotorEx = motors[0]
     /** Front-right `DcMotorEx` hardware wrapper. */
-    val frontRight: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, frName))
+    val frontRight: DcMotorEx = motors[1]
     /** Rear-left `DcMotorEx` hardware wrapper. */
-    val rearLeft: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, rlName))
+    val rearLeft: DcMotorEx = motors[2]
     /** Rear-right `DcMotorEx` hardware wrapper. */
-    val rearRight: DcMotorEx = CachedDcMotorEx(hardwareMap.get(DcMotorEx::class.java, rrName))
+    val rearRight: DcMotorEx = motors[3]
 
     /** Front-left motor IO hardware cache. */
     val flIO = EstimateMotorIO(frontLeft)
@@ -80,48 +83,75 @@ class MecanumMotorCluster(
     val rrIO = EstimateMotorIO(rearRight)
 
     private var lastWarningTime = 0L
+    private var closed = false
+    private var closeNeutralConfirmed = false
 
     /** True after an invalid request or failed motor write until neutral succeeds explicitly. */
     var outputFaultLatched: Boolean = false
         private set
 
     init {
-        frontLeft.direction = flDirection
-        frontRight.direction = frDirection
-        rearLeft.direction = rlDirection
-        rearRight.direction = rrDirection
-
-        frontLeft.zeroPowerBehavior = zeroPowerBehavior
-        frontRight.zeroPowerBehavior = zeroPowerBehavior
-        rearLeft.zeroPowerBehavior = zeroPowerBehavior
-        rearRight.zeroPowerBehavior = zeroPowerBehavior
-
+        try {
+            check(applyNeutral()) { "Failed to neutralize drivetrain before configuration" }
+            frontLeft.direction = flDirection
+            frontRight.direction = frDirection
+            rearLeft.direction = rlDirection
+            rearRight.direction = rrDirection
+            for (motor in motors) {
+                motor.zeroPowerBehavior = zeroPowerBehavior
+                motor.mode = if (useClosedLoopVelocity) DcMotor.RunMode.RUN_USING_ENCODER
+                    else DcMotor.RunMode.RUN_WITHOUT_ENCODER
+            }
+            nativeConfiguration = if (useClosedLoopVelocity) MecanumNativeConfiguration(motors) else null
+            if (nativeConfiguration != null &&
+                (motorKp != null || motorKi != null || motorKd != null || motorKf != null)) {
+                val kp = motorKp ?: 0.0
+                val ki = motorKi ?: 0.0
+                val kd = motorKd ?: 0.0
+                val kf = motorKf ?: 0.0
+                require(MecanumNativeConfiguration.valid(kp, ki, kd, kf)) { "Motor gains must be finite" }
+                nativeConfiguration.apply(kp, ki, kd, kf)
+            }
+            // Mode/direction changes invalidate the power cache. Confirm neutral in the final mode.
+            check(applyNeutral()) { "Failed to neutralize configured drivetrain" }
+            nativeConfiguration?.captureDefaults()
+        } catch (failure: Exception) {
+            if (!applyNeutral()) failure.addSuppressed(IllegalStateException("Drivetrain cleanup could not confirm neutral"))
+            flIO.close()
+            frIO.close()
+            rlIO.close()
+            rrIO.close()
+            throw failure
+        }
+        // Do not expose or start polling a partially configured drivetrain.
         hardwareRegistry.registerMotor(flName, flIO)
         hardwareRegistry.registerMotor(frName, frIO)
         hardwareRegistry.registerMotor(rlName, rlIO)
         hardwareRegistry.registerMotor(rrName, rrIO)
-
         hardwareRegistry.registerSyncPolledDevice(flIO)
         hardwareRegistry.registerSyncPolledDevice(frIO)
         hardwareRegistry.registerSyncPolledDevice(rlIO)
         hardwareRegistry.registerSyncPolledDevice(rrIO)
+    }
 
-        if (useClosedLoopVelocity) {
-            listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
-                motor.mode = DcMotor.RunMode.RUN_USING_ENCODER
-            }
-            if (motorKp != null || motorKi != null || motorKd != null || motorKf != null) {
-                val coefficients = PIDFCoefficients(
-                    motorKp ?: 0.0, motorKi ?: 0.0, motorKd ?: 0.0, motorKf ?: 0.0
-                )
-                listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
-                    motor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients)
-                }
-            }
-        } else {
-            listOf(frontLeft, frontRight, rearLeft, rearRight).forEach { motor ->
-                motor.mode = DcMotor.RunMode.RUN_WITHOUT_ENCODER
-            }
+    /** Applies native gains while neutral; null F preserves each channel's last accepted F. */
+    internal fun requireOpen() { check(!closed) { "Cannot configure a closed drivetrain" } }
+
+    internal fun updateNativeGains(kp: Double, ki: Double, kd: Double, kf: Double? = null, restore: Boolean = false): Boolean {
+        requireOpen()
+        val configuration = checkNotNull(nativeConfiguration) { "Native velocity mode is disabled" }
+        try {
+            require(MecanumNativeConfiguration.valid(kp, ki, kd, kf)) { "Motor gains must be finite" }
+            if (if (restore) configuration.matchesDefaults() else configuration.matches(kp, ki, kd, kf)) return false
+            configuration.valid = false
+            setCachedPowers(0.0, 0.0, 0.0, 0.0)
+            check(applyNeutral()) { "Cannot configure motors before neutral succeeds" }
+            if (restore) configuration.restoreDefaults() else configuration.apply(kp, ki, kd, kf)
+            return true
+        } catch (failure: Exception) {
+            configuration.valid = false
+            latchOutputFault()
+            throw failure
         }
     }
 
@@ -135,7 +165,12 @@ class MecanumMotorCluster(
      * @param rr Rear-right motor power.
      */
     fun setMotorPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
-        if (outputFaultLatched || !fl.isFinite() || !fr.isFinite() || !rl.isFinite() || !rr.isFinite()) {
+        val flScale = flIO.powerScale
+        val frScale = frIO.powerScale
+        val rlScale = rlIO.powerScale
+        val rrScale = rrIO.powerScale
+        if (closed || outputFaultLatched || !fl.isFinite() || !fr.isFinite() || !rl.isFinite() || !rr.isFinite() ||
+            !validScale(flScale) || !validScale(frScale) || !validScale(rlScale) || !validScale(rrScale)) {
             outputFaultLatched = true
             setCachedPowers(0.0, 0.0, 0.0, 0.0)
             applyNeutral()
@@ -149,10 +184,10 @@ class MecanumMotorCluster(
         setCachedPowers(safeFl, safeFr, safeRl, safeRr)
 
         var succeeded = true
-        if (!safeSetPower(frontLeft, safeFl * flIO.powerScale, "frontLeft")) succeeded = false
-        if (!safeSetPower(frontRight, safeFr * frIO.powerScale, "frontRight")) succeeded = false
-        if (!safeSetPower(rearLeft, safeRl * rlIO.powerScale, "rearLeft")) succeeded = false
-        if (!safeSetPower(rearRight, safeRr * rrIO.powerScale, "rearRight")) succeeded = false
+        if (!safeSetPower(frontLeft, safeFl * flScale, "frontLeft")) succeeded = false
+        if (!safeSetPower(frontRight, safeFr * frScale, "frontRight")) succeeded = false
+        if (!safeSetPower(rearLeft, safeRl * rlScale, "rearLeft")) succeeded = false
+        if (!safeSetPower(rearRight, safeRr * rrScale, "rearRight")) succeeded = false
         if (!succeeded) {
             outputFaultLatched = true
             setCachedPowers(0.0, 0.0, 0.0, 0.0)
@@ -166,12 +201,16 @@ class MecanumMotorCluster(
      * @param scale Master power scale factor.
      */
     fun applyPowerScale(scale: Double) {
-        val s = if (scale.isFinite()) scale.coerceIn(0.0, 1.0) else 0.0
+        val valid = validScale(scale)
+        val s = if (!closed && valid) scale else 0.0
         flIO.powerScale = s
         frIO.powerScale = s
         rlIO.powerScale = s
         rrIO.powerScale = s
+        if (!valid) latchOutputFault()
     }
+
+    private fun validScale(scale: Double): Boolean = scale.isFinite() && scale in 0.0..1.0
 
     /**
      * Updates encoder position and velocity caches for all 4 motors from bulk-read registers.
@@ -200,6 +239,10 @@ class MecanumMotorCluster(
 
     /** Clears the latch only after all four motors accept an explicit neutral command. */
     fun recoverWithNeutral(): Boolean {
+        if (closed || nativeConfiguration?.valid == false) {
+            safe()
+            return false
+        }
         setCachedPowers(0.0, 0.0, 0.0, 0.0)
         val recovered = applyNeutral()
         outputFaultLatched = !recovered
@@ -240,10 +283,17 @@ class MecanumMotorCluster(
         if (power.isFinite()) power.coerceIn(-1.0, 1.0) else 0.0
 
     /**
-     * Releases motor IO resources upon OpMode completion.
+     * Permanently inhibits output, attempts neutral on every motor, then closes cached IO.
+     * A failed neutral is reported and may be retried by calling close again; it cannot reopen output.
      */
     override fun close() {
-        var firstFailure: Throwable? = null
+        if (closeNeutralConfirmed) return
+        closed = true
+        outputFaultLatched = true
+        applyPowerScale(0.0)
+        setCachedPowers(0.0, 0.0, 0.0, 0.0)
+        var firstFailure: Throwable? = if (applyNeutral()) null else
+            IllegalStateException("Failed to neutralize every drivetrain motor during close")
         for (motor in arrayOf(flIO, frIO, rlIO, rrIO)) {
             try {
                 motor.close()
@@ -252,5 +302,6 @@ class MecanumMotorCluster(
             }
         }
         firstFailure?.let { throw it }
+        closeNeutralConfirmed = true
     }
 }

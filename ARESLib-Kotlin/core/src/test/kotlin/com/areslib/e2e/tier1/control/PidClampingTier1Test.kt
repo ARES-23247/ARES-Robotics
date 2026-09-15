@@ -54,7 +54,7 @@ class PidClampingTier1Test {
     }
 
     @Test
-    fun testNonAllocatingPrimitiveCalculation() {
+    fun testPrimitiveCalculation() {
         val pid = PIDController(1.0, 0.0, 0.0)
         
         // Make sure it doesn't crash on standard updates

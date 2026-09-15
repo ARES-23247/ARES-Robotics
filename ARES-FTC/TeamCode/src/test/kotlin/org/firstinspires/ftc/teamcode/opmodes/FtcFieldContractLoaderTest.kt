@@ -8,6 +8,16 @@ import org.junit.Test
 
 /** Failure taxonomy of the extracted season field-contract loader. */
 class FtcFieldContractLoaderTest {
+    @Test
+    fun `crossed obstacle fails closed and a valid reload clears the diagnostic`() {
+        val valid = fieldJson()
+        val invalid = valid.dropLast(1) + """, "obstacles":[{"id":"crossed","shape":"polygon","points":[{"x":0,"y":0},{"x":2,"y":2},{"x":0,"y":2},{"x":2,"y":0}]}]}"""
+        assertNull(loadFtcFieldContract(invalid.toByteArray()))
+        assertEquals("Field contains an invalid obstacle", FtcFieldContractLoader.error)
+        assertNotNull(loadFtcFieldContract(valid.toByteArray()))
+        assertNull(FtcFieldContractLoader.error)
+    }
+
     private fun fieldJson(fieldType: String = "ftc", tags: String = """{"id":1,"name":"Test tag","family":"36h11","sizeMeters":0.1651,"x":1.0,"y":1.0,"z":1.0,"roll":10.0,"pitch":20.0,"yaw":90.0}""") =
         """{"schemaVersion":2,"id":"test-field","name":"Test","fieldType":"$fieldType","widthMeters":3.6576,"heightMeters":3.6576,"apriltags":[$tags]}"""
 

@@ -22,23 +22,23 @@ enum class DashboardDataSourceType(
     val icon: ImageVector,
     val explanation: String,
 ) {
-    SIMULATION_TRUTH(
+    LOCAL_SIMULATION(
         label = "Local Simulator",
-        badge = "SIM TRUTH",
+        badge = "SIMULATED",
         icon = Icons.Default.Computer,
-        explanation = "Synthetic dyn4j 2D physics ground truth and simulated IO",
+        explanation = "Simulated sensors and estimated state; ground-truth topics are identified separately",
     ),
     LIVE_ROBOT_FTC(
         label = "FTC Robot (Control Hub)",
         badge = "HARDWARE",
         icon = Icons.Default.PrecisionManufacturing,
-        explanation = "Real-time measurements from FTC REV Control Hub",
+        explanation = "Live FTC robot telemetry, including measured and estimated values",
     ),
     LIVE_ROBOT_FRC(
         label = "FRC Robot (RoboRIO)",
         badge = "HARDWARE",
         icon = Icons.Default.Memory,
-        explanation = "Real-time measurements from FRC RoboRIO and CTRE CAN bus",
+        explanation = "Live FRC robot telemetry, including measured and estimated values",
     ),
     LIVE_ROBOT_XRP(
         label = "XRP Robot (MicroPython)",
@@ -62,12 +62,17 @@ enum class DashboardDataSourceType(
 
 /** Freshness classification for real-time telemetry. */
 enum class TelemetryFreshness(val label: String, val badge: String, val color: Color) {
+    HISTORICAL("Recorded data", "REPLAY", AresAmber),
     FRESH("Fresh", "LIVE", AresGreen),
     STALE("Stale (>500ms)", "STALE", AresAmber),
     INACTIVE("Inactive", "OFFLINE", AresTextTertiary),
 }
 
-/** Snapshot of mission control state computed from live environment. */
+enum class MissionHealthTone { NEUTRAL, HEALTHY, WARNING, CRITICAL }
+
+data class MissionHealthSummary(val text: String, val tone: MissionHealthTone)
+
+/** Snapshot of mission control state computed from the selected source. */
 data class DashboardMissionSnapshot(
     val workspace: WorkspaceConfig,
     val isConnected: Boolean,
@@ -84,56 +89,69 @@ data class DashboardMissionSnapshot(
     val frameRateHz: Double = 0.0,
     val lastUpdateAgeMs: Long = -1L,
     val hostIp: String = "127.0.0.1",
+    val liveSessionId: String = "live-telemetry",
 ) {
     val sourceType: DashboardDataSourceType
         get() = when {
             isReplayActive || primarySessionId != null -> DashboardDataSourceType.HISTORICAL_REPLAY
-            isConnected && isLocalSimulator -> DashboardDataSourceType.SIMULATION_TRUTH
+            isConnected && isLocalSimulator -> DashboardDataSourceType.LOCAL_SIMULATION
             isConnected && workspace.league == League.FTC -> DashboardDataSourceType.LIVE_ROBOT_FTC
             isConnected && workspace.league == League.FRC -> DashboardDataSourceType.LIVE_ROBOT_FRC
             isConnected && workspace.league == League.XRP -> DashboardDataSourceType.LIVE_ROBOT_XRP
             else -> DashboardDataSourceType.NO_ACTIVE_SOURCE
         }
 
+    val isHistorical: Boolean get() = isReplayActive || primarySessionId != null
+    val validBatteryVoltage: Double? = batteryVoltage?.takeIf { it.isFinite() && it >= 0.0 }
+    val validLoopTimeMs: Double? = loopTimeMs?.takeIf { it.isFinite() && it > 0.0 && (1_000.0 / it).isFinite() }
+    val validLoopFrequencyHz: Double? = validLoopTimeMs?.let { 1_000.0 / it }
+    private val validBrownoutCount = brownoutCount?.takeIf { it >= 0 }
+    private val validOverruns = loopOverruns?.takeIf { it >= 0 }
+
+    val currentAlerts: List<AlertRecord> = currentDashboardAlerts(activeAlerts, liveSessionId, isConnected && !isHistorical)
+    val highestPriorityAlert: AlertRecord? = highestPriorityDashboardAlert(currentAlerts)
+
     val freshness: TelemetryFreshness
         get() = when {
-            !isConnected && !isReplayActive && primarySessionId == null -> TelemetryFreshness.INACTIVE
-            lastUpdateAgeMs < 0L -> TelemetryFreshness.INACTIVE
-            lastUpdateAgeMs in 0..500 -> TelemetryFreshness.FRESH
+            isHistorical -> TelemetryFreshness.HISTORICAL
+            !isConnected || lastUpdateAgeMs < 0L -> TelemetryFreshness.INACTIVE
+            lastUpdateAgeMs <= 500L -> TelemetryFreshness.FRESH
             else -> TelemetryFreshness.STALE
         }
 
-    val healthSummary: String
-        get() = when {
-            !isConnected && primarySessionId == null ->
-                "No live connection. You can practice safely in the Local Simulator or configure mechanisms in Robot Studio."
-            isReplayActive || primarySessionId != null ->
-                "Replaying session ${primarySessionId?.take(12) ?: "run"}. Review telemetry trends, alerts, and timeline scrubbing."
-            freshness == TelemetryFreshness.INACTIVE ->
-                "Connection selected, but no telemetry evidence has arrived yet. Check the selected target and connection before trusting dashboard values."
-            freshness == TelemetryFreshness.STALE ->
-                "Telemetry is stale (${lastUpdateAgeMs} ms since the last frame). Do not treat displayed values as current."
-            brownoutCount != null && brownoutCount > 0 ->
-                "Warning: $brownoutCount brownout events detected! Check battery voltage (${batteryVoltage?.let { String.format("%.2fV", it) } ?: "low"}) and motor current draw."
-            loopOverruns != null && loopOverruns > 0 ->
-                "Warning: $loopOverruns control-loop overruns detected. Review blocking I/O and periodic workload before operating the robot."
-            batteryVoltagePolicy(workspace.league, xrpBrownoutThresholdVolts).tone(batteryVoltage) in
-                setOf(HealthMetricTone.CAUTION, HealthMetricTone.CRITICAL) ->
-                "Caution: Low battery voltage (${String.format("%.2fV", batteryVoltage)}). Risk of mechanism stall or brownout under acceleration."
-            loopTimeMs != null && loopTimeMs.isFinite() && loopTimeMs > 30.0 ->
-                "Degraded: Control loop period is high (${String.format("%.1f ms", loopTimeMs)} / ${String.format("%.0f Hz", 1000.0 / loopTimeMs)}). Check for blocking I/O."
-            batteryVoltage == null || !batteryVoltage.isFinite() ||
-                loopTimeMs == null || !loopTimeMs.isFinite() || loopTimeMs <= 0.0 ->
-                "Connection is active, but battery and control-loop evidence is incomplete. Missing values are not assumed healthy."
-            else ->
-                "All systems nominal. Battery at ${String.format("%.2fV", batteryVoltage)}, control loop ${String.format("%.0f Hz", 1000.0 / loopTimeMs)} with ${loopOverruns ?: 0} overruns."
-        }
+    val health: MissionHealthSummary = summarizeHealth()
+    val healthSummary: String get() = health.text
 
-    val highestPriorityAlert: AlertRecord?
-        get() = activeAlerts.firstOrNull { alert ->
-            alert.ruleKey.contains("brownout", ignoreCase = true) ||
-                alert.ruleKey.contains("comms", ignoreCase = true) ||
-                alert.ruleKey.contains("can", ignoreCase = true) ||
-                alert.ruleKey.contains("battery", ignoreCase = true)
-        } ?: activeAlerts.firstOrNull()
+    private fun summarizeHealth(): MissionHealthSummary {
+        fun summary(text: String, tone: MissionHealthTone = MissionHealthTone.NEUTRAL) = MissionHealthSummary(text, tone)
+        val batteryTone = batteryVoltagePolicy(workspace.league, xrpBrownoutThresholdVolts).tone(validBatteryVoltage)
+        return when {
+            isHistorical && lastUpdateAgeMs < 0L ->
+                summary("Selected replay ${primarySessionId?.take(12) ?: "live rewind"}. Waiting for matching recorded telemetry.")
+            isHistorical ->
+                summary("Replaying session ${primarySessionId?.take(12) ?: "live rewind"}. Review telemetry trends, alerts, and timeline scrubbing.")
+            !isConnected ->
+                summary("No live connection. You can practice safely in the Local Simulator or configure mechanisms in Robot Studio.")
+            freshness == TelemetryFreshness.INACTIVE ->
+                summary("Connection selected, but no telemetry evidence has arrived yet. Check the selected target and connection before trusting dashboard values.")
+            freshness == TelemetryFreshness.STALE ->
+                summary("Telemetry is stale (${lastUpdateAgeMs} ms since the last frame). Do not treat displayed values as current.", MissionHealthTone.WARNING)
+            highestPriorityAlert != null ->
+                summary("Active alert: ${criticalAlertTitle(highestPriorityAlert.ruleKey)}. Review current telemetry and the alert history.",
+                    if (dashboardCriticalKind(highestPriorityAlert.ruleKey) != null) MissionHealthTone.CRITICAL else MissionHealthTone.WARNING)
+            validBrownoutCount != null && validBrownoutCount > 0 ->
+                summary("Warning: $validBrownoutCount brownout events detected! Check battery voltage (${validBatteryVoltage?.let { String.format("%.2fV", it) } ?: "unknown"}) and motor current draw.", MissionHealthTone.CRITICAL)
+            validOverruns != null && validOverruns > 0 ->
+                summary("Warning: $validOverruns control-loop overruns detected. Review blocking I/O and periodic workload before operating the robot.", MissionHealthTone.WARNING)
+            batteryTone == HealthMetricTone.CAUTION || batteryTone == HealthMetricTone.CRITICAL ->
+                summary("Caution: Low battery voltage (${String.format("%.2fV", validBatteryVoltage)}). Risk of mechanism stall or brownout under acceleration.",
+                    if (batteryTone == HealthMetricTone.CRITICAL) MissionHealthTone.CRITICAL else MissionHealthTone.WARNING)
+            validLoopTimeMs != null && validLoopTimeMs > 30.0 ->
+                summary("Degraded: Control loop period is high (${String.format("%.1f ms", validLoopTimeMs)} / ${String.format("%.0f Hz", validLoopFrequencyHz)}). Check for blocking I/O.", MissionHealthTone.WARNING)
+            validBatteryVoltage == null || validLoopTimeMs == null || validBrownoutCount == null || validOverruns == null ->
+                summary("Connection is active, but controller health evidence is incomplete. Missing values are not assumed healthy.")
+            else ->
+                summary("Observed health metrics are nominal. Battery at ${String.format("%.2fV", validBatteryVoltage)}, control loop ${String.format("%.0f Hz", validLoopFrequencyHz)} with $validOverruns overruns.", MissionHealthTone.HEALTHY)
+        }
+    }
 }

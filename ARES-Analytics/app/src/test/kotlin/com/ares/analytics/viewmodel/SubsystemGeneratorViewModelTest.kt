@@ -41,6 +41,24 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SubsystemGeneratorViewModelTest {
+    @Test fun `adding or registering a subsystem preserves an unsaved draft and undo history`() {
+        val root = Files.createTempDirectory("ares-preserve-draft").toFile()
+        val vm = SubsystemGeneratorViewModel(root.path, League.FTC)
+        try {
+            vm.newSubsystem(SubsystemTemplate.SIMPLE_ACTUATOR)
+            vm.edit { it.copy(displayName = "Keep my changes") }
+            val before = vm.state.value
+            vm.newSubsystem(SubsystemTemplate.FLYWHEEL_SHOOTER)
+            assertEquals(before.draft, vm.state.value.draft)
+            assertEquals(before.documents, vm.state.value.documents)
+            assertEquals(before.selectedDocumentId, vm.state.value.selectedDocumentId)
+            vm.registerHandAuthoredSubsystem()
+            assertEquals(before.draft, vm.state.value.draft)
+            assertTrue(vm.state.value.dirty)
+            assertTrue(vm.state.value.status.orEmpty().contains("Save or reload"))
+        } finally { vm.close(); root.deleteRecursively() }
+    }
+
     @Test
     fun `XRP Beta rejects servo ports unavailable on its controller`() {
         val document = SubsystemTemplates.create(
@@ -864,6 +882,8 @@ class SubsystemGeneratorViewModelTest {
         val root = Files.createTempDirectory("ares-interlock-test").toFile()
         val viewModel = SubsystemGeneratorViewModel(root.path, League.FTC)
         viewModel.newSubsystem()
+        viewModel.save()
+        assertFalse(viewModel.state.value.dirty)
         viewModel.registerHandAuthoredSubsystem()
 
         viewModel.addInterlock()

@@ -8,6 +8,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
 
 class FtcMecanumRobotBuilderTest {
 
@@ -55,8 +56,13 @@ class FtcMecanumRobotBuilderTest {
             limelightName = "my_limelight"
         }
 
-        assertNotNull(robot)
-        // Verify we can call update without issues
-        robot.update()
+        try {
+            assertNotNull(robot)
+            // Exercise the custom hardware names through one complete robot frame.
+            robot.update()
+        } finally {
+            robot.close()
+        }
+        assertNotSame(robot, FtcBaseRobot.activeInstance)
     }
 }

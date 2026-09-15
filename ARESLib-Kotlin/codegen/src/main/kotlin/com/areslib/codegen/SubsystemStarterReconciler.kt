@@ -1,6 +1,7 @@
 package com.areslib.codegen
 
 import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
 import java.security.MessageDigest
 
@@ -35,12 +36,12 @@ data class SubsystemStarterPlan(
 object SubsystemStarterReconciler {
     fun plan(root: Path, files: Collection<GeneratedSubsystemFile>): SubsystemStarterPlan {
         val normalizedRoot = root.toAbsolutePath().normalize()
-        val starters = files.filter { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }
-            .sortedBy { it.relativePath }
+        val starters = normalizedStarters(normalizedRoot, files).sortedBy { it.relativePath }
         val changes = starters.map { file ->
             val path = safePath(normalizedRoot, file.relativePath)
-            val current = path.takeIf(Files::isRegularFile)?.let(Files::readString)
+            val current = path.takeIf { Files.isRegularFile(it, NOFOLLOW_LINKS) }?.let(Files::readString)
             val kind = when {
+                current == null && Files.exists(path, NOFOLLOW_LINKS) -> SubsystemStarterChangeKind.PROTECTED
                 current == null -> SubsystemStarterChangeKind.ADD
                 current == file.content -> SubsystemStarterChangeKind.UNCHANGED
                 current.lineSequence().firstOrNull() == "// ARES OWNERSHIP: GENERATED STARTER" ->
@@ -84,8 +85,7 @@ object SubsystemStarterReconciler {
                 "Existing generated starters differ from the proposal. Review the structured diff and supply the exact replacement token.\n${plan.render()}"
             }
         }
-        val byPath = files.filter { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }
-            .associateBy { it.relativePath.replace('\\', '/') }
+        val byPath = normalizedStarters(root.toAbsolutePath().normalize(), files).associateBy { it.relativePath }
         plan.changes.filter { it.kind != SubsystemStarterChangeKind.UNCHANGED }.forEach { change ->
             val source = requireNotNull(byPath[change.relativePath])
             val path = safePath(root.toAbsolutePath().normalize(), change.relativePath)
@@ -102,10 +102,15 @@ object SubsystemStarterReconciler {
         }
     }
 
-    private fun safePath(root: Path, relative: String): Path {
-        val path = root.resolve(relative).normalize()
-        require(relative.isNotBlank() && path.startsWith(root)) { "Invalid subsystem starter path '$relative'" }
-        return path
+    private fun safePath(root: Path, relative: String): Path = GeneratedOutputPaths.resolve(root, relative)
+
+    private fun normalizedStarters(root: Path, files: Collection<GeneratedSubsystemFile>): List<GeneratedSubsystemFile> {
+        val destinations = mutableSetOf<Path>()
+        return files.filter { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }.map { file ->
+            val path = safePath(root, file.relativePath)
+            require(destinations.add(path)) { "Generated starter paths collide at '$path'" }
+            file.copy(relativePath = root.relativize(path).toString().replace('\\', '/'))
+        }
     }
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")

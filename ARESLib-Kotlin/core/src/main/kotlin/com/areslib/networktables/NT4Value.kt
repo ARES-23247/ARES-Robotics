@@ -91,6 +91,9 @@ sealed interface NT4Value {
 
     class StringArrayVal(value: Array<String>) : NT4Value {
         private val snapshot = value.copyOf()
+        init {
+            require((snapshot as Array<*>).all { it is String }) { "NT4 string arrays cannot contain null elements" }
+        }
         val value: Array<String> get() = snapshot.copyOf()
         override val typeString: String = "string[]"
         override fun getAsObject(): Any = snapshot.copyOf()
@@ -119,15 +122,16 @@ sealed interface NT4Value {
         }
 
         fun fromObject(obj: Any?): NT4Value = when (obj) {
+            is NT4Value -> obj
             is Boolean -> BooleanVal(obj)
             is Double -> DoubleVal(obj)
             is Float -> FloatVal(obj)
-            is Number -> LongVal(obj.toLong())
+            is Number -> LongVal(obj.toNT4LongExact())
             is String -> StringVal(obj)
             is BooleanArray -> BooleanArrayVal(obj)
             is DoubleArray -> DoubleArrayVal(obj)
             is FloatArray -> FloatArrayVal(obj)
-            is IntArray -> LongArrayVal(obj.map { it.toLong() }.toLongArray())
+            is IntArray -> LongArrayVal(LongArray(obj.size) { obj[it].toLong() })
             is LongArray -> LongArrayVal(obj)
             is Array<*> -> {
                 if (obj.isArrayOf<String>()) {
@@ -140,6 +144,21 @@ sealed interface NT4Value {
             null -> StringVal("")
             else -> StringVal(obj.toString())
         }
+    }
+}
+
+/** Exact integral conversion for extended Number implementations; common integer boxes allocate nothing. */
+internal fun Number.toNT4LongExact(): Long = when (this) {
+    is Long -> this
+    is Int -> toLong()
+    is Short -> toLong()
+    is Byte -> toLong()
+    else -> try {
+        java.math.BigDecimal(toString()).longValueExact()
+    } catch (failure: ArithmeticException) {
+        throw IllegalArgumentException("NT4 integer value must be an exact signed 64-bit integer", failure)
+    } catch (failure: NumberFormatException) {
+        throw IllegalArgumentException("NT4 integer value must be an exact signed 64-bit integer", failure)
     }
 }
 

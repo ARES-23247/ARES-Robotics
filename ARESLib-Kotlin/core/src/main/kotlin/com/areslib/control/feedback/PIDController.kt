@@ -1,6 +1,7 @@
 package com.areslib.control.feedback
 
-import com.areslib.util.RobotClock
+import kotlin.math.abs
+import kotlin.math.sign
 
 /**
  * Pure Mathematical Proportional-Integral-Derivative (PID) Feedback Controller with Anti-Windup and Continuous Input Domain Wrapping.
@@ -11,10 +12,11 @@ import com.areslib.util.RobotClock
  * Error definition: $e(k) = r(k) - y(k)$
  * Integral accumulation with anti-windup clamping:
  * $$I(k) = \text{clamp}\left(I(k-1) + e(k) \Delta t, I_{min}, I_{max}\right)$$
- * Finite-difference derivative:
- * $$\dot{e}(k) = \frac{e(k) - e(k-1)}{\Delta t}$$
- * Total control output with output saturation clamping:
- * $$u(k) = \text{clamp}\left(K_p \cdot e(k) + K_i \cdot I(k) + K_d \cdot \dot{e}(k), u_{min}, u_{max}\right)$$
+ * Filtered derivative on measurement (avoids a derivative kick on target changes):
+ * $$D(k) = 0.2 \frac{y(k)-y(k-1)}{\Delta t} + 0.8 D(k-1)$$
+ * An integral step that drives output farther into saturation is rejected using its
+ * contribution direction, including negative integral gains. Total output with clamping:
+ * $$u(k) = \text{clamp}\left(K_p \cdot e(k) + K_i \cdot I(k) - K_d \cdot D(k), u_{min}, u_{max}\right)$$
  *
  * ### Physical Units & Properties:
  * - Gains ($K_p, K_i, K_d$): Output effort per error unit
@@ -31,6 +33,10 @@ class PIDController(
     var i: Double,
     var d: Double
 ) {
+    /** Composition status for the last calculation; neutral output alone does not imply validity. */
+    var lastCalculationValid: Boolean = false
+        private set
+
     private var prevMeasurement: Double = 0.0
     private var totalError: Double = 0.0
     private var setpoint: Double = 0.0
@@ -40,18 +46,19 @@ class PIDController(
     private val derivativeRetention: Double = 1.0 - derivativeAlpha
     
     private var isContinuous: Boolean = false
-    private var continuousMin: Double = 0.0
-    private var continuousMax: Double = 0.0
+    private var continuousPeriod: Double = 0.0
+    private var continuousHalfPeriod: Double = 0.0
+    private var continuousInputValid: Boolean = true
 
     private var minOutput: Double = Double.NaN
     private var maxOutput: Double = Double.NaN
     private var minIntegral: Double = Double.NaN
     private var maxIntegral: Double = Double.NaN
+    private var outputLimitsValid: Boolean = true
+    private var integralLimitsValid: Boolean = true
 
-    /** Error deadzone threshold below which control effort output is forced to 0.0. */
+    /** Finite, nonnegative error deadzone. Invalid values make calculations neutralize and reset. */
     var deadzone: Double = 0.0
-
-    private var lastWarningTime: Long = 0L
 
     /**
      * Enables continuous circular input domain wrapping (e.g., $[-\pi, +\pi]$ or $[0, 360^\circ]$) to compute the shortest error path.
@@ -61,13 +68,18 @@ class PIDController(
      */
     fun enableContinuousInput(minimumInput: Double, maximumInput: Double) {
         isContinuous = true
-        continuousMin = minimumInput
-        continuousMax = maximumInput
+        continuousPeriod = maximumInput - minimumInput
+        continuousHalfPeriod = continuousPeriod * 0.5
+        continuousInputValid = minimumInput.isFinite() && maximumInput.isFinite() &&
+            continuousPeriod.isFinite() && continuousHalfPeriod > 0.0
         reset()
     }
 
     /**
      * Sets the minimum and maximum control output clamping bounds $[u_{min}, u_{max}]$.
+     *
+     * NaN disables that side of the bound; outward infinities are also unbounded.
+     * Invalid intervals make subsequent calculations return neutral until repaired.
      *
      * @param min Minimum allowable control output.
      * @param max Maximum allowable control output.
@@ -75,10 +87,14 @@ class PIDController(
     fun setOutputLimits(min: Double, max: Double) {
         minOutput = min
         maxOutput = max
+        outputLimitsValid = validLimits(min, max)
     }
 
     /**
      * Configures absolute anti-windup limits $[I_{min}, I_{max}]$ on the accumulated integral sum.
+     *
+     * NaN disables that side of the bound; outward infinities are also unbounded.
+     * Invalid intervals make subsequent calculations return neutral until repaired.
      *
      * @param min Minimum allowable integral sum bound.
      * @param max Maximum allowable integral sum bound.
@@ -86,17 +102,19 @@ class PIDController(
     fun setIntegratorRange(min: Double, max: Double) {
         minIntegral = min
         maxIntegral = max
+        integralLimitsValid = validLimits(min, max)
     }
 
     private var isFirstStep: Boolean = true
 
     /**
-     * Resets accumulated integral error sum ($I = 0.0$), previous error state, and the
+     * Resets accumulated integral error sum ($I = 0.0$), previous measurement state, and the
      * derivative filter to zero. The filtered derivative must clear with the rest or the EMA
      * keeps blending the previous motion segment's rate (~20 loops of phantom D) into the
      * first outputs after every reset.
      */
     fun reset() {
+        lastCalculationValid = false
         prevMeasurement = 0.0
         totalError = 0.0
         filteredDerivative = 0.0
@@ -133,79 +151,89 @@ class PIDController(
      * @return Computed control effort output $u(k)$.
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
+        lastCalculationValid = false
         if (!measurement.isFinite() || !setpoint.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
-            !p.isFinite() || !i.isFinite() || !d.isFinite()
-        ) {
-            val now = RobotClock.currentTimeMillis()
-            if (now - lastWarningTime > 2000L) {
-                System.err.println("PIDController: Invalid inputs detected (measurement=$measurement, setpoint=$setpoint, dtSeconds=$dtSeconds). Returning safe fallback 0.0.")
-                lastWarningTime = now
-            }
-            return 0.0
-        }
+            !p.isFinite() || !i.isFinite() || !d.isFinite() || !deadzone.isFinite() || deadzone < 0.0 ||
+            !outputLimitsValid || !integralLimitsValid || !continuousInputValid
+        ) return neutralAndReset()
 
-        var error = setpoint - measurement
+        val error = if (isContinuous) wrappedDifference(setpoint, measurement) else setpoint - measurement
+        if (!error.isFinite()) return neutralAndReset()
+        if (i == 0.0) totalError = 0.0
 
-        if (isContinuous) {
-            val errorBound = (continuousMax - continuousMin) * 0.5
-            error = inputModulus(error, -errorBound, errorBound)
-        }
-
-        if (deadzone.isFinite() && deadzone > 0.0 && kotlin.math.abs(error) < deadzone) {
-            // The deadzone is an output deadzone, not merely a proportional-error
-            // deadzone. Refresh the derivative baseline without integrating or allowing
-            // stored I/D state to command the mechanism while it is within tolerance.
+        if (deadzone > 0.0 && abs(error) < deadzone) {
+            // Suppress all effort in the deadzone while keeping the derivative baseline fresh.
             prevMeasurement = measurement
             filteredDerivative = 0.0
             isFirstStep = false
+            lastCalculationValid = true
             return 0.0
         }
 
-        var measurementDelta = measurement - prevMeasurement
-        if (isContinuous) {
-            val errorBound = (continuousMax - continuousMin) * 0.5
-            measurementDelta = inputModulus(measurementDelta, -errorBound, errorBound)
+        val nextDerivative = if (d != 0.0 && !isFirstStep) {
+            val measurementDelta = if (isContinuous) wrappedDifference(measurement, prevMeasurement)
+                else measurement - prevMeasurement
+            val measurementDerivative = measurementDelta / dtSeconds
+            if (!measurementDerivative.isFinite()) return neutralAndReset()
+            derivativeAlpha * measurementDerivative + derivativeRetention * filteredDerivative
+        } else 0.0
+        if (!nextDerivative.isFinite()) return neutralAndReset()
+
+        var candidateIntegral = if (i != 0.0) totalError + error * dtSeconds else 0.0
+        if (!candidateIntegral.isFinite()) return neutralAndReset()
+        if (i != 0.0) {
+            if (!minIntegral.isNaN()) candidateIntegral = maxOf(candidateIntegral, minIntegral)
+            if (!maxIntegral.isNaN()) candidateIntegral = minOf(candidateIntegral, maxIntegral)
         }
-        val measurementDerivative = if (isFirstStep) 0.0 else measurementDelta / dtSeconds
-        filteredDerivative = derivativeAlpha * measurementDerivative + derivativeRetention * filteredDerivative
-        
-        isFirstStep = false
+
+        val proportional = p * error
+        val derivative = d * nextDerivative
+        val preSatOutput = proportional + i * candidateIntegral - derivative
+        if (!preSatOutput.isFinite()) return neutralAndReset()
+        // Compare accumulator values instead of multiplying a potentially overflowing delta.
+        val integralDirection = when {
+            candidateIntegral > totalError -> sign(i)
+            candidateIntegral < totalError -> -sign(i)
+            else -> 0.0
+        }
+        val rejectIntegral = (!maxOutput.isNaN() && preSatOutput > maxOutput && integralDirection > 0.0) ||
+            (!minOutput.isNaN() && preSatOutput < minOutput && integralDirection < 0.0)
+        var output = if (rejectIntegral) proportional + i * totalError - derivative else preSatOutput
+        if (!output.isFinite()) return neutralAndReset()
+        if (!minOutput.isNaN()) output = maxOf(output, minOutput)
+        if (!maxOutput.isNaN()) output = minOf(output, maxOutput)
+
+        if (!rejectIntegral) totalError = candidateIntegral
+        filteredDerivative = nextDerivative
         prevMeasurement = measurement
-
-        val proposedError = totalError + error * dtSeconds
-        var clampedIntegral = proposedError
-        if (!minIntegral.isNaN()) { clampedIntegral = kotlin.math.max(clampedIntegral, minIntegral) }
-        if (!maxIntegral.isNaN()) { clampedIntegral = kotlin.math.min(clampedIntegral, maxIntegral) }
-
-        val preSatOutput = p * error + i * clampedIntegral - d * filteredDerivative
-        val isSaturated = (!maxOutput.isNaN() && preSatOutput > maxOutput && error > 0) || 
-                          (!minOutput.isNaN() && preSatOutput < minOutput && error < 0)
-                          
-        var output = if (!isSaturated) {
-            totalError = clampedIntegral
-            preSatOutput
-        } else {
-            p * error + i * totalError - d * filteredDerivative
-        }
-        
-        if (!minOutput.isNaN()) { output = kotlin.math.max(output, minOutput) }
-        if (!maxOutput.isNaN()) { output = kotlin.math.min(output, maxOutput) }
-        
+        isFirstStep = false
+        lastCalculationValid = true
         return output
     }
-    
-    private fun inputModulus(input: Double, minimumInput: Double, maximumInput: Double): Double {
-        var modulus = input - minimumInput
-        val wrapInput = maximumInput - minimumInput
-        
-        if (wrapInput <= 0) return input
-        
-        modulus %= wrapInput
-        
-        if (modulus < 0) {
-            modulus += wrapInput
+
+    private fun neutralAndReset(): Double {
+        reset()
+        return 0.0
+    }
+
+    private fun validLimits(minimum: Double, maximum: Double): Boolean =
+        minimum != Double.POSITIVE_INFINITY && maximum != Double.NEGATIVE_INFINITY &&
+            (minimum.isNaN() || maximum.isNaN() || minimum <= maximum)
+
+    private fun wrappedDifference(left: Double, right: Double): Double {
+        val difference = left - right
+        // Usually one remainder is sufficient. Reduce the operands separately only
+        // when finite endpoints have an unrepresentable direct difference.
+        return if (difference.isFinite()) wrapDelta(difference)
+            else wrapDelta(wrapDelta(left) - wrapDelta(right))
+    }
+
+    private fun wrapDelta(value: Double): Double {
+        val remainder = value % continuousPeriod
+        return when {
+            remainder >= continuousHalfPeriod -> remainder - continuousPeriod
+            remainder < -continuousHalfPeriod -> remainder + continuousPeriod
+            else -> remainder
         }
-        
-        return modulus + minimumInput
     }
 }

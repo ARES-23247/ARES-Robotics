@@ -53,7 +53,7 @@ class RepositorySafetyContractTest {
     }
 
     @Test
-    fun `zero-scheme project still installs the generated controller lifecycle safely`() {
+    fun `source retains generated controller lifecycle integration hooks`() {
         val lifecycleSource = File(
             projectRoot,
             "src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt",

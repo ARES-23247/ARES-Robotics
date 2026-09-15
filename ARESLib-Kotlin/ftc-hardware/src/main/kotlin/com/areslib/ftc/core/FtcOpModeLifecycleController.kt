@@ -72,9 +72,12 @@ class FtcOpModeLifecycleController {
     /** Sleeps an unpaced desktop worker for the remainder of its 20 ms control frame. */
     fun sleepRemaining(timestamp: Long, isAndroid: Boolean) {
         if (isAndroid || isCurrentFrameExternallyPaced()) return
-        val elapsed = com.areslib.util.RobotClock.currentTimeMillis() - timestamp
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
+        val elapsed = now - timestamp
+        // Replayed clocks can rewind; subtraction can also overflow. Neither permits a
+        // sleep beyond one frame. Check before subtracting elapsed from the frame budget.
+        if (now < timestamp || elapsed !in 0L until 20L) return
         val sleepTime = 20L - elapsed
-        if (sleepTime <= 0L) return
         try {
             Thread.sleep(sleepTime)
         } catch (_: InterruptedException) {

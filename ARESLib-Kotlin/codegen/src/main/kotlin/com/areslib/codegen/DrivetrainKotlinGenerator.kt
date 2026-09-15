@@ -23,7 +23,7 @@ object DrivetrainKotlinGenerator {
     ): GeneratedDrivebaseFile {
         val issues = validateDrivetrainDocument(document)
         require(issues.isEmpty()) { issues.joinToString("; ") { "${it.path}: ${it.message}" } }
-        require(packageName.matches(PACKAGE)) { "Invalid drivebase package '$packageName'" }
+        require(packageName.isKotlinPackageName()) { "Invalid drivebase package '$packageName'" }
         require(profiles.all { it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN }) {
             "Build generation accepts only checked-in canonical tuning profiles"
         }
@@ -176,7 +176,7 @@ object DrivetrainKotlinGenerator {
         require(document.kind == com.areslib.drivetrain.DrivetrainKind.FTC_MECANUM &&
             document.platform == com.areslib.drivetrain.DrivetrainPlatform.FTC
         ) { "Generated FTC mecanum runtime requires an FTC_MECANUM drivetrain" }
-        require(packageName.matches(PACKAGE)) { "Invalid drivebase package '$packageName'" }
+        require(packageName.isKotlinPackageName()) { "Invalid drivebase package '$packageName'" }
         require(profiles.all { it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN }) {
             "FTC runtime generation accepts only checked-in canonical tuning profiles"
         }
@@ -467,6 +467,7 @@ object DrivetrainKotlinGenerator {
         packageName: String,
     ): GeneratedDrivebaseFile {
         require(profiles.all { it.projectId == projectId && it.authority == TuningProfileAuthority.CANONICAL_CHECKED_IN })
+        require(packageName.isKotlinPackageName()) { "Invalid project tuning package '$packageName'" }
         require(declarations.map { it.uid }.distinct().size == declarations.size) { "Project tuning parameter UIDs are duplicated" }
         require(declarations.map { it.key }.distinct().size == declarations.size) { "Project tuning parameter keys are duplicated" }
         require(declarations.map { it.key.constantName() }.distinct().size == declarations.size) {
@@ -613,7 +614,6 @@ private val FTC_MECANUM_PINPOINT_REDUX_KEYS: Set<String> = setOf(
     "localization.pinpointEncoderResolution",
 )
 
-private val PACKAGE = Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*")
 private fun String.q() = buildString {
     append('"')
     this@q.forEach { character ->

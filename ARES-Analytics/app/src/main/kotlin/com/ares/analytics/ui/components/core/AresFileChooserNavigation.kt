@@ -134,6 +134,8 @@ Row(
             ) {
                 BasicTextField(
                     value = pathEditText,
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { goToEditedPath() }),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
                     onValueChange = { pathEditText = it },
                     singleLine = true,
                         textStyle = TextStyle(color = AresTextPrimary, fontSize = 12.sp),
@@ -141,13 +143,7 @@ Row(
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(
-                    onClick = {
-                        val target = File(pathEditText.trim())
-                        if (target.exists() && target.isDirectory) {
-                            navigateTo(target)
-                            isEditingPath = false
-                        }
-                    },
+                    onClick = ::goToEditedPath,
                     modifier = Modifier.size(28.dp),
                 ) {
                     Icon(Icons.Default.Check, contentDescription = "Go", tint = AresCyan, modifier = Modifier.size(16.dp))
@@ -254,7 +250,7 @@ Row(
 }
 private fun generatePathSegments(dir: File): List<Pair<String, File>> {
     val segments = mutableListOf<Pair<String, File>>()
-    var curr: File? = dir.canonicalFile
+    var curr: File? = dir.absoluteFile
     while (curr != null) {
         val name = curr.name.ifEmpty { curr.path }
         segments.add(0, name to curr)

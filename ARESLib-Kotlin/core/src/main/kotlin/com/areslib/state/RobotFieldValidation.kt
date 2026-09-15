@@ -112,7 +112,7 @@ object RobotFieldValidator {
         config.obstacles.forEach { obstacle ->
             val validId = obstacle.id.isNotBlank() && obstacleIds.add(obstacle.id)
             val validShape = when (obstacle.shape.lowercase()) {
-                "polygon" -> obstacle.points.size >= 3 && obstacle.points.all { it.x.isFinite() && it.y.isFinite() }
+                "polygon" -> isSimpleFieldPolygon(obstacle.points)
                 "circle", "rectangle" -> obstacle.width.isFinite() && obstacle.height.isFinite() &&
                     obstacle.width > 0.0 && obstacle.height > 0.0
                 else -> false

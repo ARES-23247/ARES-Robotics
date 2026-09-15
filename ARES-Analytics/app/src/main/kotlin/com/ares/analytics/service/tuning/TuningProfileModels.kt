@@ -7,7 +7,7 @@ import com.areslib.tuning.TuningProfileDocument
 import com.areslib.tuning.TuningValue
 
 enum class TuningValueOwner { ROBOT_PROFILE, VENDOR_SOURCE }
-enum class TuningValueStatus { INHERITED, PROFILE, PROPOSED, INVALID, LIVE_ONLY, UNDECLARED }
+enum class TuningValueStatus { INHERITED, PROFILE, PROPOSED, INVALID, DEFAULT, LIVE_ONLY, UNDECLARED }
 
 data class TuningValueProvenance(
     val source: String,
@@ -22,6 +22,7 @@ data class ResolvedTuningValue(
     val declaration: TuningParameterDeclaration,
     val sourceValue: Double?,
     val sourceTypedValue: TuningValue?,
+    /** Stable profile UID (not its human-facing profileId); null means the declaration default. */
     val sourceProfileId: String?,
     val liveValue: Double?,
     val liveTypedValue: TuningValue?,
@@ -34,7 +35,9 @@ data class ResolvedTuningValue(
 }
 
 fun TuningValue.displayValue(): String = when {
-    doubleValue != null -> "%.5f".format(doubleValue).trimEnd('0').trimEnd('.')
+    // This string also initializes editable fields. Keep an exact, locale-independent round trip,
+    // including subnormals and signed zero, without hundreds of fixed-point digits for large values.
+    doubleValue != null -> doubleValue.toString().removeSuffix(".0")
     intValue != null -> intValue.toString()
     booleanValue != null -> booleanValue.toString()
     textValue != null -> requireNotNull(textValue)
@@ -77,32 +80,41 @@ fun resolveTuningProfile(
     liveTypedValues: Map<String, TuningValue> = emptyMap(),
     proposalProvenance: Map<String, TuningValueProvenance> = emptyMap()
 ): List<ResolvedTuningValue> {
+    val declarationIssues = com.areslib.tuning.validateTuningParameterDeclarations(declarations)
+    require(declarationIssues.isEmpty()) { "Invalid tuning declarations: $declarationIssues" }
     val byUid = profiles.associateBy { it.uid }
+    require(byUid[profile.uid] == profile) { "Selected tuning profile does not match the loaded snapshot." }
     val resolved = com.areslib.tuning.resolveTuningProfiles(profiles, declarations).getValue(profile.uid)
     val direct = profile.values.associateBy { it.parameterUid }
     val parent = profile.baseProfileUid?.let(byUid::get)
-    return declarations.sortedWith(compareBy({ it.componentUid }, { it.displayName })).map { declaration ->
-        val sourceTyped = resolved[declaration.uid]
-        val source = sourceTyped?.numericValue()
-        val liveTyped = liveTypedValues[declaration.key] ?: liveValues[declaration.key]?.let { TuningValue(doubleValue = it) }
+    val inheritedUids = parent?.values?.mapTo(hashSetOf()) { it.parameterUid }.orEmpty()
+    return declarations.sortedWith(declarationOrder).map { declaration ->
+        val sourceTyped = resolved[declaration.uid] ?: declaration.defaultValue
+        val source = sourceTyped.numericValue()
+        val observation = liveTypedValues[declaration.key]
+        val liveTyped = if (observation != null) observation.takeIf {
+            it.matches(declaration.type) && it.numericValue()?.isFinite() != false
+        } else liveValues[declaration.key]?.let { numericObservation(it, declaration.type) }
         val proposed = proposals[declaration.key]
         val error = proposed?.let {
+            val numeric = it.numericValue()
+            val minimum = declaration.minimum
+            val maximum = declaration.maximum
             when {
                 !it.matches(declaration.type) -> "Value does not match declared ${declaration.type.name.lowercase()} type."
-                it.numericValue()?.isFinite() == false -> "Enter a finite number."
-                declaration.type == TuningParameterType.INT && it.intValue == null -> "Enter a whole number."
-                declaration.minimum != null && it.numericValue() != null && it.numericValue()!! < declaration.minimum!! -> "Must be at least ${declaration.minimum} ${declaration.unit.orEmpty()}."
-                declaration.maximum != null && it.numericValue() != null && it.numericValue()!! > declaration.maximum!! -> "Must be at most ${declaration.maximum} ${declaration.unit.orEmpty()}."
+                numeric?.isFinite() == false -> "Enter a finite number."
+                minimum != null && numeric != null && numeric < minimum -> "Must be at least $minimum ${declaration.unit.orEmpty()}."
+                maximum != null && numeric != null && numeric > maximum -> "Must be at most $maximum ${declaration.unit.orEmpty()}."
                 declaration.type == TuningParameterType.ENUM && it.textValue !in declaration.enumOptions -> "Choose one of ${declaration.enumOptions.joinToString()}."
                 declaration.applyPolicy == TuningApplyPolicy.READ_ONLY_VENDOR -> "This value is vendor-owned and read-only. Re-import its source instead."
                 else -> null
             }
         }
         val directValue = direct[declaration.uid]
-        val sourceUid = when { directValue != null -> profile.uid; parent?.values?.any { it.parameterUid == declaration.uid } == true -> parent.uid; else -> null }
+        val sourceUid = when { directValue != null -> profile.uid; declaration.uid in inheritedUids -> parent?.uid; else -> null }
         ResolvedTuningValue(
             declaration, source, sourceTyped, sourceUid, liveTyped?.numericValue(), liveTyped, proposed, proposalProvenance[declaration.key],
-            when { error != null -> TuningValueStatus.INVALID; proposed != null -> TuningValueStatus.PROPOSED; directValue != null -> TuningValueStatus.PROFILE; sourceUid != null -> TuningValueStatus.INHERITED; liveTyped != null -> TuningValueStatus.LIVE_ONLY; else -> TuningValueStatus.UNDECLARED }, error
+            when { error != null -> TuningValueStatus.INVALID; proposed != null -> TuningValueStatus.PROPOSED; directValue != null -> TuningValueStatus.PROFILE; sourceUid != null -> TuningValueStatus.INHERITED; else -> TuningValueStatus.DEFAULT }, error
         )
     }
 }
@@ -120,11 +132,25 @@ fun buildTuningReview(
         val proposed = row.proposedTypedValue ?: return@mapNotNull null
         if (row.validationMessage != null || proposed == row.sourceTypedValue) return@mapNotNull null
         val provenance = proposalProvenance[row.declaration.key]
-        if (provenance == null) { errors += "${row.declaration.displayName}: explain where this proposed value came from."; return@mapNotNull null }
+        if (provenance == null || provenance.source.isBlank()) { errors += "${row.declaration.displayName}: explain where this proposed value came from."; return@mapNotNull null }
         TuningProfileChange(row.declaration.uid, row.declaration.key, row.declaration.displayName, row.sourceTypedValue, proposed, row.declaration.unit.orEmpty(), row.declaration.owner(), row.declaration.applyPolicy, provenance)
     }
-    proposals.keys.filter { key -> declarations.none { it.key == key } }.forEach { errors += "$it is not declared by a robot component." }
+    val declaredKeys = declarations.mapTo(hashSetOf()) { it.key }
+    proposals.keys.filterNot { it in declaredKeys }.forEach { errors += "$it is not declared by a robot component." }
     return changes to errors.distinct()
+}
+
+private val declarationOrder = compareBy<TuningParameterDeclaration>({ it.componentUid }, { it.displayName })
+
+/** Numeric-only legacy observations must retain their declared type; never truncate an integer. */
+private fun numericObservation(value: Double, type: TuningParameterType): TuningValue? {
+    if (!value.isFinite()) return null
+    return when (type) {
+        TuningParameterType.DOUBLE -> TuningValue(doubleValue = value)
+        TuningParameterType.INT -> if (value % 1.0 == 0.0 && value in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble())
+            TuningValue(intValue = value.toInt()) else null
+        else -> null
+    }
 }
 
 private fun TuningValue.matches(type: TuningParameterType): Boolean = when (type) {

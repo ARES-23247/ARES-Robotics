@@ -18,9 +18,9 @@ fun interface NT4EventListener {
  * Mutable value and listener set for one normalized NT4 topic.
  *
  * [value] is volatile for cross-thread visibility, and listener registration is safe during
- * dispatch. [update] is a compare-then-set operation rather than an atomic transaction, so topic
- * mutations should remain serialized through [NT4Server]. Listener failures are isolated and do
- * not prevent subsequent listeners from running.
+ * dispatch. [update] serializes its value/timestamp transaction and synchronous callbacks. Public
+ * property setters are independent, so topic mutations should remain owned by [NT4Server].
+ * Listener exceptions are isolated; JVM Errors propagate to the mutation owner.
  */
 class NT4Entry(
     var id: Int,

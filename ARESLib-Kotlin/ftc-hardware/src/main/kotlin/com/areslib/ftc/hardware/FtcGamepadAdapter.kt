@@ -22,8 +22,13 @@ import com.areslib.math.InputMath
  * - Deadband: Absolute radial threshold below which stick values are suppressed to zero.
  *
  * @param gamepad Qualcomm FTC SDK [Gamepad] hardware instance.
- * @param deadband Radial joystick deadband threshold $[0.0, 1.0]$ (default 0.05).
- * @param curveExponent Non-linear sensitivity curve exponent $n$ (default 2.0).
+ * Each poll reads each SDK field once. One reusable primitive buffer avoids intermediate Pair/boxing
+ * allocations; the returned immutable snapshot is still newly allocated. Use from one polling owner.
+ * Invalid stick coordinates neutralize that whole stick, and invalid triggers neutralize individually.
+ * This adapter supplies values, not connection/age evidence; callers own freshness and output leases.
+ *
+ * @param deadband Radial joystick deadband threshold $[0.0, 1.0)$ (default 0.05).
+ * @param curveExponent Positive finite sensitivity exponent $n$ (default 2.0).
  *
  * @see ControllerState
  * @see InputMath.processJoystickVector
@@ -33,6 +38,8 @@ class FtcGamepadAdapter(
     private val deadband: Double = 0.05,
     private val curveExponent: Double = 2.0
 ) {
+    private val stick = DoubleArray(2)
+
     /**
      * Polls current hardware gamepad state and returns an immutable, deadbanded [ControllerState] object.
      *
@@ -51,8 +58,10 @@ class FtcGamepadAdapter(
         val rawRightTrigger = gamepad.right_trigger.toDouble()
 
         // Process joysticks using radial vector magnitude deadbanding & desaturation
-        val (curvedLeftX, curvedLeftY) = InputMath.processJoystickVector(rawLeftX, rawLeftY, deadband, curveExponent)
-        val (curvedRightX, curvedRightY) = InputMath.processJoystickVector(rawRightX, rawRightY, deadband, curveExponent)
+        InputMath.processJoystickVectorInto(rawLeftX, rawLeftY, stick, deadband, curveExponent)
+        val leftX = stick[0]
+        val leftY = stick[1]
+        InputMath.processJoystickVectorInto(rawRightX, rawRightY, stick, deadband, curveExponent)
 
         return ControllerState(
             a = gamepad.a,
@@ -70,13 +79,15 @@ class FtcGamepadAdapter(
             guide = gamepad.guide,
             leftStickButton = gamepad.left_stick_button,
             rightStickButton = gamepad.right_stick_button,
-            leftStickX = curvedLeftX,
-            leftStickY = curvedLeftY,
-            rightStickX = curvedRightX,
-            rightStickY = curvedRightY,
-            leftTrigger = rawLeftTrigger,
-            rightTrigger = rawRightTrigger
+            leftStickX = leftX,
+            leftStickY = leftY,
+            rightStickX = stick[0],
+            rightStickY = stick[1],
+            leftTrigger = validTrigger(rawLeftTrigger),
+            rightTrigger = validTrigger(rawRightTrigger)
         )
     }
+
+    private fun validTrigger(value: Double) = if (value.isFinite() && value >= 0.0 && value <= 1.0) value else 0.0
 }
 

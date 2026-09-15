@@ -100,7 +100,7 @@ class SafetyFaultToleranceTest {
     }
 
     @Test
-    fun `test CurrentBudgetManager register is immune to zero or negative parameters`() {
+    fun `test CurrentBudgetManager rejects invalid electrical parameters`() {
         val budget = CurrentBudgetManager.ftcDefaults()
         val mockMotor = object : MotorIO {
             override var power: Double = 0.0
@@ -111,11 +111,10 @@ class SafetyFaultToleranceTest {
             override fun resetEncoder() {}
         }
 
-        // Register with zero stall current
-        budget.register(mockMotor, stallCurrentAmps = 0.0, freeSpeedTps = 0.0, nominalVoltage = 0.0)
-        
-        // Ensure motor count registers and doesn't crash
-        assertEquals(1, budget.motorCount)
+        kotlin.test.assertFailsWith<IllegalArgumentException> {
+            budget.register(mockMotor, stallCurrentAmps = 0.0, freeSpeedTps = 0.0, nominalVoltage = 0.0)
+        }
+        assertEquals(0, budget.motorCount)
         
         // Running update doesn't divide by zero to produce NaN scaling
         budget.update(12.0)

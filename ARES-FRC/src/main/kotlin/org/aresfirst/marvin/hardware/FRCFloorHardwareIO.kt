@@ -27,6 +27,11 @@ class FRCFloorHardwareIO(
     private val floorVelocity = motor.velocity
     private val floorCurrent = motor.statorCurrent
 
+    // Retain argument groups; the Phoenix list overload avoids per-refresh vararg arrays.
+    private val resetMotors = arrayOf(motor)
+    private val velocitySignals = listOf<BaseStatusSignal>(floorVelocity)
+    private val currentSignals = listOf<BaseStatusSignal>(floorCurrent)
+
     init {
         motor.optimizeBusUtilization()
         setUpdateFrequencies(20.0, floorVelocity)
@@ -45,9 +50,9 @@ class FRCFloorHardwareIO(
     }
 
     override fun refresh() {
-        if (anyTalonResetOccurred(motor)) resetDetected = true
-        BaseStatusSignal.refreshAll(floorVelocity)
-        cachedCurrentValid = BaseStatusSignal.refreshAll(floorCurrent).isOK &&
+        if (anyDeviceResetOccurred(resetMotors) { it.hasResetOccurred() }) resetDetected = true
+        BaseStatusSignal.refreshAll(velocitySignals)
+        cachedCurrentValid = BaseStatusSignal.refreshAll(currentSignals).isOK &&
             floorCurrent.valueAsDouble.isFinite() && floorCurrent.valueAsDouble >= 0.0
     }
 

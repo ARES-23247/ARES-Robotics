@@ -14,7 +14,6 @@ import com.areslib.state.snapshot
  */
 object VisionReducer {
     private const val MAX_VISION_BUFFER_SIZE = 50
-    private const val MAX_AMBIGUITY = 0.2
 
     /**
      * Reduces the VisionState slice based on general vision updates and tag observations.
@@ -22,12 +21,15 @@ object VisionReducer {
     fun reduce(state: VisionState, action: RobotAction): VisionState {
         return when (action) {
             is RobotAction.VisionMeasurementsReceived -> {
-                // Filter out highly ambiguous measurements
+                // Preserve the configured inclusive/availability policy used by the runtime.
+                // Direct pure-reducer callers still need this guard before snapshot publication.
                 val measurements = action.measurements
+                val filterConfig = state.filterConfig
                 val validMeasurements = ArrayList<com.areslib.state.VisionMeasurement>(measurements.size)
                 for (i in 0 until measurements.size) {
                     val m = measurements[i]
-                    if (m.ambiguity < MAX_AMBIGUITY) {
+                    if (filterConfig.isValidConfiguration && (!m.ambiguityAvailable ||
+                        (m.ambiguity.isFinite() && m.ambiguity >= 0.0 && m.ambiguity <= filterConfig.maxAmbiguity))) {
                         validMeasurements.add(m)
                     }
                 }
@@ -61,6 +63,9 @@ object VisionReducer {
                     )
                 }
             }
+            is RobotAction.PoseUpdate -> if (action.isReset) state.copy(lastNisDegreesOfFreedom = 0,
+                diagnosticMeasurementIndex = -1, diagnosticMeasurementAccepted = false,
+                diagnosticMeasurementRejectionReason = null) else state
             is ApplyPoseEstimatorRuntimeResult -> {
                 val diagnostics = action.visionDiagnostics ?: return state
                 state.copy(
@@ -71,7 +76,18 @@ object VisionReducer {
                     covarianceAfterUpdate = diagnostics.covarianceAfterUpdate?.let(Matrix3x3Snapshot::from)
                         ?: state.covarianceAfterUpdate,
                     measurementCount = state.measurementCount + diagnostics.acceptedCountDelta,
-                    rejectionCount = state.rejectionCount + diagnostics.rejectedCountDelta
+                    rejectionCount = state.rejectionCount + diagnostics.rejectedCountDelta,
+                    lastNis = diagnostics.lastNis,
+                    lastNisDegreesOfFreedom = diagnostics.lastNisDegreesOfFreedom,
+                    lastNisTimestampMs = diagnostics.lastNisTimestampMs,
+                    lastNisSourceId = diagnostics.lastNisSourceId,
+                    lastNisFrameId = diagnostics.lastNisFrameId,
+                    lastNisTagId = diagnostics.lastNisTagId,
+                    lastNisSolverType = diagnostics.lastNisSolverType,
+                    lastNisAccepted = diagnostics.lastNisAccepted,
+                    diagnosticMeasurementIndex = diagnostics.diagnosticMeasurementIndex,
+                    diagnosticMeasurementAccepted = diagnostics.diagnosticMeasurementAccepted,
+                    diagnosticMeasurementRejectionReason = diagnostics.diagnosticMeasurementRejectionReason
                 )
             }
             else -> state

@@ -1,5 +1,8 @@
 package com.ares.analytics.viewmodel.controls
 
+import com.ares.analytics.domain.project.ControlsCoverage
+import com.ares.analytics.domain.project.controlsCoverage
+
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.ControlsDesignProposal
 import com.ares.analytics.service.project.ProjectSessionRevision

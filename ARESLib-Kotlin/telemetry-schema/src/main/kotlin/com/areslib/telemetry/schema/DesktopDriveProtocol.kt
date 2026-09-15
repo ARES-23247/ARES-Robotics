@@ -52,6 +52,7 @@ public enum class DesktopDriveReceiverStatus(public val code: Int) {
  * A new or expired session must publish one exact neutral frame before any later sequence can
  * authorize motion. Re-reading an identical retained frame never renews the receiver-time lease.
  * The class mutates preallocated scalar/bit buffers and allocates nothing while observing frames.
+ * Use one serialized receiver owner; the caller must keep the input array stable during observe.
  */
 public class DesktopDriveFrameGate(
     public val timeoutMs: Long = 200L,
@@ -60,6 +61,10 @@ public class DesktopDriveFrameGate(
     private var sessionNonce: Long = 0L
     private var lastSequence: Long = -1L
     private var lastClientTimeMs: Long = -1L
+    private var lastLeaseRenewalMs: Long = 0L
+    // Acceptance history is diagnostic state, independent of the active session's authority.
+    private var lastAcceptedSession: Long = -1L
+    private var lastAcceptedSequence: Long = -1L
     private var lastAcceptedAtMs: Long = 0L
     private var neutralHandshakeComplete: Boolean = false
     private val lastRawBits: LongArray = LongArray(DesktopDriveProtocol.VALUE_COUNT)
@@ -102,7 +107,7 @@ public class DesktopDriveFrameGate(
         maxTranslationMetersPerSecond: Double = DesktopDriveProtocol.MAX_TRANSLATION_METERS_PER_SECOND,
         maxOmegaRadiansPerSecond: Double = DesktopDriveProtocol.MAX_ANGULAR_RADIANS_PER_SECOND,
     ): Boolean {
-        if (timestampMs < 0L || timestampMs < lastAcceptedAtMs) {
+        if (timestampMs < 0L || timestampMs < lastLeaseRenewalMs) {
             return reject(DesktopDriveReceiverStatus.OUT_OF_ORDER, clearSession = timestampMs < 0L)
         }
         if (neutralHandshakeComplete && !isFresh(timestampMs)) {
@@ -131,7 +136,7 @@ public class DesktopDriveFrameGate(
         )
         if (
             encodedFrame[DesktopDriveProtocol.VERSION_INDEX] != DesktopDriveProtocol.VERSION ||
-            session == null || sequence == null || clientTime == null || parsedFlags == null ||
+            session < 0L || sequence < 0L || clientTime < 0L || parsedFlags < 0L ||
             parsedFlags and DesktopDriveProtocol.KNOWN_FLAGS_MASK.inv() != 0L ||
             !validAxis(vx, translationLimit) || !validAxis(vy, translationLimit) ||
             !validAxis(omega, omegaLimit)
@@ -163,14 +168,14 @@ public class DesktopDriveFrameGate(
             neutralHandshakeComplete = true
             motionAuthorized = false
             setCommand(0.0, 0.0, 0.0, parsedFlags)
-            lastAcceptedAtMs = timestampMs
+            recordAcceptance(timestampMs)
             status = DesktopDriveReceiverStatus.ARMED_NEUTRAL
             return true
         }
 
         setCommand(vx, vy, omega, parsedFlags)
         motionAuthorized = true
-        lastAcceptedAtMs = timestampMs
+        recordAcceptance(timestampMs)
         status = if (isNeutral(vx, vy, omega, parsedFlags)) {
             DesktopDriveReceiverStatus.ARMED_NEUTRAL
         } else {
@@ -181,8 +186,8 @@ public class DesktopDriveFrameGate(
 
     /** Returns whether the current command remains within its receiver-time lease. */
     public fun isFresh(timestampMs: Long): Boolean {
-        if (!neutralHandshakeComplete || timestampMs < lastAcceptedAtMs) return false
-        return timestampMs - lastAcceptedAtMs < timeoutMs
+        if (!neutralHandshakeComplete || timestampMs < lastLeaseRenewalMs) return false
+        return timestampMs - lastLeaseRenewalMs < timeoutMs
     }
 
     /** Disarms an expired command and reports whether a usable neutral/active frame remains. */
@@ -194,17 +199,21 @@ public class DesktopDriveFrameGate(
         return true
     }
 
-    /** Writes the stable nine-value acknowledgement without allocating. */
+    /**
+     * Writes the stable nine-value acknowledgement without allocating. Identity and age describe
+     * the last accepted frame, including after rejection/expiry; absent history is encoded as -1.
+     */
     public fun copyAcknowledgement(destination: DoubleArray, timestampMs: Long): Int {
         require(destination.size >= ACK_VALUE_COUNT) {
             "Desktop drive acknowledgement requires at least $ACK_VALUE_COUNT values"
         }
         val ready = receiverReady(timestampMs)
-        val ageMs = if (!hasSession) -1L else (timestampMs - lastAcceptedAtMs).coerceAtLeast(0L)
+        val ageMs = if (lastAcceptedSession < 0L) -1L
+            else if (timestampMs < lastAcceptedAtMs) 0L else timestampMs - lastAcceptedAtMs
         destination[0] = ACK_VERSION
         destination[1] = status.code.toDouble()
-        destination[2] = if (hasSession) sessionNonce.toDouble() else -1.0
-        destination[3] = if (lastSequence >= 0L) lastSequence.toDouble() else -1.0
+        destination[2] = lastAcceptedSession.toDouble()
+        destination[3] = lastAcceptedSequence.toDouble()
         destination[4] = ageMs.toDouble()
         destination[5] = if (ready) vxMetersPerSecond else 0.0
         destination[6] = if (ready) vyMetersPerSecond else 0.0
@@ -214,7 +223,7 @@ public class DesktopDriveFrameGate(
     }
 
     private fun reject(nextStatus: DesktopDriveReceiverStatus, clearSession: Boolean): Boolean {
-        rejectedFrameCount++
+        if (rejectedFrameCount < Long.MAX_VALUE) rejectedFrameCount++
         disarm(nextStatus, clearSession)
         return false
     }
@@ -223,7 +232,7 @@ public class DesktopDriveFrameGate(
         neutralHandshakeComplete = false
         motionAuthorized = false
         setCommand(0.0, 0.0, 0.0, 0L)
-        lastAcceptedAtMs = 0L
+        lastLeaseRenewalMs = 0L
         status = nextStatus
         if (clearSession) {
             hasSession = false
@@ -232,6 +241,13 @@ public class DesktopDriveFrameGate(
             lastClientTimeMs = -1L
             lastRawBits.fill(0L)
         }
+    }
+
+    private fun recordAcceptance(timestampMs: Long) {
+        lastLeaseRenewalMs = timestampMs
+        lastAcceptedSession = sessionNonce
+        lastAcceptedSequence = lastSequence
+        lastAcceptedAtMs = timestampMs
     }
 
     private fun setCommand(vx: Double, vy: Double, omega: Double, nextFlags: Long) {
@@ -252,10 +268,12 @@ public class DesktopDriveFrameGate(
         for (index in 0 until DesktopDriveProtocol.VALUE_COUNT) lastRawBits[index] = frame[index].toBits()
     }
 
-    private fun exactInteger(value: Double, positive: Boolean): Long? {
+    // -1 is outside every accepted metadata domain; primitive storage avoids nullable Long boxing.
+    private fun exactInteger(value: Double, positive: Boolean): Long {
         val minimum = if (positive) 1.0 else 0.0
-        if (!value.isFinite() || value < minimum || value > DesktopDriveProtocol.MAX_SAFE_INTEGER_DOUBLE) return null
-        return value.toLong().takeIf { it.toDouble() == value }
+        if (!value.isFinite() || value < minimum || value > DesktopDriveProtocol.MAX_SAFE_INTEGER_DOUBLE) return -1L
+        val integer = value.toLong()
+        return if (integer.toDouble() == value) integer else -1L
     }
 
     private fun validAxis(value: Double, maximum: Double): Boolean = value.isFinite() && abs(value) <= maximum

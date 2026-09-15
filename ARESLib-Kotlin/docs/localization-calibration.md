@@ -6,7 +6,7 @@ ARES records the same calibration schema on FTC and FRC, then fits it offline. T
 
 - **Q (process noise)** describes uncertainty accumulated by wheel/Pinpoint odometry. It is measured with repeated, surveyed translation and rotation routes while vision is disabled or ignored for the route endpoints.
 - **R (measurement noise)** describes the camera observation error. It is measured while the robot is motionless at surveyed poses, with independent truth rather than another output from the localization pipeline.
-- **NIS** checks whether accepted vision residuals agree with the filter's predicted innovation covariance. For a 3-DOF update, roughly 95% should fall below 7.815.
+- **NIS** checks whether computed vision innovations agree with the filter's predicted innovation covariance, including finite innovations rejected by the statistical gate. Accepted-only sampling biases this check. For a consistent 3-DOF model, roughly 95% should fall below 7.815; translation-only updates use 2 DOF. Frames rejected before an innovation is computed, external-estimator-only frames, and unmatched or stale diagnostics have unavailable NIS.
 - **NEES** checks estimated-pose error against covariance using independent ground truth. For 3 DOF, roughly 95% should also fall below 7.815.
 
 Use a tape/laser and field marks at minimum. A total station, motion-capture system, or carefully surveyed AprilTag fixture is better. Never use Limelight output as the truth used to calibrate Limelight noise.
@@ -21,6 +21,10 @@ Collect at least:
 4. Several combined driving runs with independently measured endpoint truth for final NIS/NEES validation.
 
 For route tests, enter the surveyed start pose, mark **START**, drive the route, enter the surveyed end pose, then mark **END**. Do not enter the odometry result as truth.
+
+Keep the signed turn count when entering the surveyed end heading: a full counter-clockwise turn from 0 degrees ends at +360 degrees, and a clockwise turn at -360 degrees. New FTC/FRC recordings retain this unwrapped heading and identify it with `TruthHeadingUnwrapped=true`. Only the pose sent to robot localization is normalized. The fitter uses surveyed angular travel to normalize process noise and wraps the endpoint angular error. Routes should turn consistently in one direction; endpoint data cannot recover travel lost by reversing direction. Older CSV files without the flag retain shortest-arc interpretation and cannot identify full turns from identical endpoint headings.
+
+Recording and pose seeds require neutral sticks and 500 ms of continuously observed stationary feedback (translation at most 0.03 m/s and rotation at most 0.05 rad/s). Feedback must be valid and no older than 100 ms; interrupted loops restart the dwell. Camera samples must be fresh (at most 250 ms old). Seeds and START/END requests wait for the gate; changing surveyed truth or test type cancels a pending request, so finish edits before requesting the checkpoint. Wait for the pending indicator to clear before driving. Continuous stationary/combined recording pauses during movement. This does not automatically measure surveyed truth.
 
 ## FTC workflow
 
@@ -55,6 +59,8 @@ cd ARESLib-Kotlin
 ```
 
 The report contains MegaTag1/MegaTag2 bias and standard deviations, normalized odometry process-noise estimates, sample counts, NIS/NEES summaries, and warnings when the dataset is too small. Correct repeatable bias (camera extrinsics, wheel radius, Pinpoint offsets, module geometry) before inflating Q or R to hide it.
+
+Unavailable statistics are JSON `null`. Translation spread uses sample standard deviation; heading statistics use circular residuals, with undefined circular means reported as unavailable. Each input file owns its run IDs, and a route END must follow its START. The CLI rejects output paths that would overwrite an input file.
 
 ## Stolen/kidnapped robot behavior
 

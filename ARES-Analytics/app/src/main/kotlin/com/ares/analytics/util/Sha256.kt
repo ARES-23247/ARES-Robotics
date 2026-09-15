@@ -26,7 +26,7 @@ internal object Sha256 {
 
     fun prefixHex(text: String, byteCount: Int): String {
         require(byteCount > 0) { "byteCount must be positive" }
-        return digest(text.toByteArray(Charsets.UTF_8)).take(byteCount).toByteArray().toHex()
+        return digest(text.toByteArray(Charsets.UTF_8)).toHex(byteCount)
     }
 
     /** Supports framed/composite hashes without duplicating the algorithm or hex encoding. */
@@ -40,10 +40,18 @@ internal object Sha256 {
 
     private fun digest(bytes: ByteArray): ByteArray = newDigest().digest(bytes)
 
-    private fun ByteArray.toHex(): String = joinToString(separator = "") { byte ->
-        "%02x".format(byte.toInt() and 0xff)
+    private fun ByteArray.toHex(byteCount: Int = size): String {
+        val count = minOf(byteCount, size)
+        val characters = CharArray(count * 2)
+        for (i in 0 until count) {
+            val value = this[i].toInt() and 0xff
+            characters[i * 2] = HEX_DIGITS[value ushr 4]
+            characters[i * 2 + 1] = HEX_DIGITS[value and 0x0f]
+        }
+        return characters.concatToString()
     }
 
+    private const val HEX_DIGITS = "0123456789abcdef"
     private const val ALGORITHM = "SHA-256"
     private const val BUFFER_SIZE = 64 * 1024
 }

@@ -59,7 +59,7 @@ Run these commands from this directory in PowerShell:
 .\gradlew.bat previewSubsystemChanges
 .\gradlew.bat generateSubsystemStarters
 
-# Start WPILib desktop simulation
+# Start the desktop simulation backend (HAL GUI is opt-in)
 .\gradlew.bat simulateJava
 
 # Deploy for the default team 23247 (override only for an intentional alternate target)
@@ -69,10 +69,14 @@ Run these commands from this directory in PowerShell:
 .\gradlew.bat fetchOffsets
 ```
 
-Normal builds consume the pinned ARESLib release from Maven Central. Library developers can opt into sibling source substitution with `-ParesUseSiblingLib=true`, or validate the exact unpublished binaries with:
+For the low-level HAL window and keyboard controls, add `-ParesFrcHalGui=true`.
+ARES Robotics Studio is the normal simulator UI.
+
+Normal builds consume the pinned ARESLib release from the configured Maven Central/ARES repositories. Library developers can opt into sibling source substitution with `-ParesUseSiblingLib=true`, or validate the exact unpublished binaries with:
 
 ```powershell
-$candidate = "8.0.0-rc.<areslib-commit>"
+$versions = ConvertFrom-StringData (Get-Content -Raw ..\release\ares-versions.properties)
+$candidate = "$($versions.aresVersion)-rc.<unique-source-id>" # Replace the placeholder with the reviewed source identity.
 cd ..\ARESLib-Kotlin
 .\gradlew.bat apiCheck publishReleaseValidation "-ParesVersion=$candidate"
 cd ..\ARES-FRC
@@ -99,12 +103,12 @@ $repository = ([Uri](Resolve-Path ..\ARESLib-Kotlin\build\release-repository)).A
 |---|---|
 | `.ares/project.json` | Canonical identity, geometry, coordinate convention, and runtime policy used by Studio and generation |
 | `.ares/` | Canonical routines plus autonomous and action catalogs |
-| `src/main/kotlin/com/areslib/frc/ARESRobot.kt` | `TimedRobot` lifecycle and real/sim composition root |
-| `src/main/kotlin/com/areslib/frc/robot/` | Teleop drive and autonomous orchestration |
-| `src/main/kotlin/com/areslib/frc/marvin/` | Season state, actions, reducer, facades, and mechanism controllers |
-| `src/main/kotlin/com/areslib/frc/hardware/` | Marvin XIX TalonFX IO bindings |
-| `src/main/kotlin/com/areslib/frc/sim/` | dyn4j physics, simulated IO, field construction, and telemetry |
-| `src/main/kotlin/com/areslib/frc/generated/` | Deterministic checked-in Kotlin generated from `.ares/` |
+| `src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt` | `TimedRobot` lifecycle and real/sim composition root |
+| `src/main/kotlin/org/aresfirst/marvin/robot/` | Teleop drive and autonomous orchestration |
+| `src/main/kotlin/org/aresfirst/marvin/marvin/` | Season state, actions, reducer, facades, and mechanism controllers |
+| `src/main/kotlin/org/aresfirst/marvin/hardware/` | Marvin XIX TalonFX IO bindings |
+| `src/main/kotlin/org/aresfirst/marvin/sim/` | dyn4j physics, simulated IO, field construction, and telemetry |
+| `build/generated/ares/` | Disposable Kotlin plumbing and tests generated from `.ares/`; never commit |
 | `src/main/deploy/paths/` | Canonical field geometry consumed by simulation and Analytics |
 | `src/test/kotlin/` | Lifecycle, reducer, IO, simulation, and autonomous regression tests |
 

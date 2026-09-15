@@ -21,8 +21,30 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.config.Services
 import java.nio.file.Files
+import java.net.URLClassLoader
+import com.areslib.state.RobotState
+import com.areslib.superstructure.SuperstructureRuntimeBinding
+import com.areslib.superstructure.SuperstructurePortHealthBits
 
 class SuperstructureKotlinGeneratorTest {
+    @Test
+    fun `standalone bindings and registries reject invalid Kotlin names`() {
+        val fixture = fixture()
+        for (name in listOf("org.when", "org.__", "org..example", "org.example; bad")) {
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                SuperstructureKotlinGenerator.generate(fixture.document, name,
+                    "org.example.GeneratedSubsystemRegistry", listOf(fixture.subsystem), fixture.actionKeys)
+            }
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                SuperstructureKotlinGenerator.generate(fixture.document, "org.example", "$name.Registry",
+                    listOf(fixture.subsystem), fixture.actionKeys)
+            }
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                SuperstructureKotlinGenerator.generateRegistry(listOf(fixture.document), name)
+            }
+        }
+    }
+
     @Test
     fun `generator emits typed runtime binding and parameterless action routing`() {
         val fixture = fixture()
@@ -133,6 +155,12 @@ class SuperstructureKotlinGeneratorTest {
                         val currentReadingValid: Boolean = true,
                         val outputFaultLatched: Boolean = false,
                     ) : SubsystemState
+
+                    fun auditState(timestampMs: Long): com.areslib.state.RobotState = com.areslib.state.RobotState(
+                        superstructure = com.areslib.state.SuperstructureState(
+                            subsystems = mapOf("arm" to ArmState(feedbackTimestampMs = timestampMs)),
+                        ),
+                    )
                     """.trimIndent()
                 )
             }
@@ -165,6 +193,41 @@ class SuperstructureKotlinGeneratorTest {
             }, Services.EMPTY, arguments)
 
             assertEquals(ExitCode.OK, result, messages.joinToString("\n"))
+            URLClassLoader(arrayOf(root.resolve("classes").toUri().toURL()), javaClass.classLoader).use { loader ->
+                val bindingClass = loader.loadClass("org.example.subsystems.superstructure.MainMachineSuperstructureBinding")
+                val binding = bindingClass.getDeclaredField("INSTANCE").apply { isAccessible = true }.get(null)
+                    as SuperstructureRuntimeBinding
+                val stateFactory = loader.loadClass("org.example.subsystems.arm.ArmStateKt")
+                    .getMethod("auditState", Long::class.javaPrimitiveType)
+                val target = fixture.subsystem.stateFields.first { it.role == SubsystemFieldRole.TARGET }
+                val port = binding.resolvePort(fixture.subsystem.uid, target.uid)
+                assertTrue(port >= 0)
+                val cases = listOf(
+                    Triple(0L, 0L, true),
+                    Triple(100L, 350L, true),
+                    Triple(100L, 351L, false),
+                    Triple(101L, 100L, false),
+                    Triple(-250L, 0L, true),
+                    Triple(Long.MIN_VALUE, Long.MIN_VALUE + 250L, true),
+                    Triple(Long.MAX_VALUE - 250L, Long.MAX_VALUE, true),
+                    Triple(Long.MIN_VALUE, 0L, false),
+                    Triple(-1L, Long.MAX_VALUE, false),
+                    Triple(Long.MIN_VALUE, Long.MAX_VALUE, false),
+                )
+                for ((timestamp, now, fresh) in cases) {
+                    val state = stateFactory.invoke(null, timestamp) as RobotState
+                    val bits = binding.readHealthBits(port, state, now)
+                    assertEquals(fresh, bits and SuperstructurePortHealthBits.FRESH != 0,
+                        "Freshness for feedback=$timestamp, now=$now")
+                    assertEquals(SuperstructurePortHealthBits.CONTROL_READY_MASK xor SuperstructurePortHealthBits.FRESH,
+                        bits and SuperstructurePortHealthBits.FRESH.inv())
+                }
+                val state = stateFactory.invoke(null, 100L) as RobotState
+                assertTrue(binding.readHealthBits(port, state, 120L, 20L) and SuperstructurePortHealthBits.FRESH != 0)
+                assertEquals(0, binding.readHealthBits(port, state, 121L, 20L) and SuperstructurePortHealthBits.FRESH)
+                assertEquals(0, binding.readHealthBits(port, state, 351L, 1_000L) and SuperstructurePortHealthBits.FRESH,
+                    "A guard cannot extend the descriptor lease")
+            }
         } finally {
             root.toFile().deleteRecursively()
         }

@@ -5,6 +5,7 @@ import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Translation2d
 import com.areslib.state.RobotState
 import com.areslib.pathing.Path
+import com.areslib.pathing.PathPoint
 import com.areslib.pathing.PathPlannerParser
 import com.areslib.pathing.ThetaStarPlanner
 import com.areslib.pathing.Costmap
@@ -20,6 +21,11 @@ import com.areslib.state.Alliance
  * preserve the [Task] contract itself — status transitions, timeout origin, callbacks — by
  * calling the default implementations, and must propagate a fail-closed delegate so the
  * executor observes this task as FAILED instead of ticking a wrapper that can never finish.
+ * Initialization neutralizes before planning, rejects nonfinite/nonpositive profile limits and
+ * preserves failures through cleanup. End the prior lifecycle before initializing again; reset
+ * and cancel release metadata but do not replace the owner's duty to call end. Only RUNNING
+ * tasks may advance a delegate. Geometry uses field meters and CCW-positive radians; planning
+ * allocates and must not be repeatedly invoked from a held request.
  */
 class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     private val targetPose: Pose2d,
@@ -36,7 +42,22 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     private var delegateTask: FollowPathTask? = null
 
     override fun initialize(state: RobotState): List<RobotAction> {
+        try {
+            return initializePath(state)
+        } catch (failure: Throwable) {
+            failAndRethrow(failure)
+        }
+    }
+
+    private fun initializePath(state: RobotState): List<RobotAction> {
+        check(delegateTask == null) { "End the previous path task before reinitializing" }
         super.initialize(state)
+        // Validation or planning can fail before FollowPathTask exists to own neutralization.
+        follower.stop()
+        require(maxVelocityMps.isFinite() && maxVelocityMps > 0.0 &&
+            maxAccelerationMps2.isFinite() && maxAccelerationMps2 > 0.0) {
+            "Path velocity and acceleration limits must be finite and positive"
+        }
         val startPose = state.drive.poseEstimator.estimatedPose
         val shouldTransform = mirrorForAlliance && state.drive.alliance != authoredAlliance
         // AllianceMirroring's RED branch is the involutive geometry operation. Authorship
@@ -54,16 +75,22 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
         // Plan 2D coordinate waypoints using Theta* any-angle pathfinder
         val coordinateWaypoints = ThetaStarPlanner.plan(costmap, startTrans, targetTrans)
 
-        // Ensure we always have at least start and end if pathfind fails or returns direct
-        val finalWaypoints = if (coordinateWaypoints.size < 2) {
-            listOf(startTrans, targetTrans)
-        } else {
-            coordinateWaypoints
+        if (coordinateWaypoints.size < 2) {
+            // An empty plan means blocked/invalid endpoints or no route. A straight-line
+            // substitute would turn a planner rejection into motion through the obstacle.
+            val newlyFailed = TaskStateMachine.markFailed(this)
+            TaskTimeoutManager.reset(this)
+            if (newlyFailed) TaskCallbacks.invokeFail(this)
+            return emptyList()
         }
 
         // Generate smooth profiled trajectory splines through coordinate joints
-        val path = PathPlannerParser.generatePath(
-            points = finalWaypoints,
+        val path = if (startTrans.x == targetTrans.x && startTrans.y == targetTrans.y) {
+            // Spatial spline progress cannot interpolate a heading over zero travel distance.
+            // Keep an owning target sample so the follower can turn until heading tolerance is met.
+            Path(listOf(PathPoint(Pose2d(activeTargetPose.x, activeTargetPose.y, activeTargetPose.heading), 0.0)))
+        } else PathPlannerParser.generatePath(
+            points = coordinateWaypoints,
             startHeading = startPose.heading,
             endHeading = activeTargetPose.heading,
             maxVelocityMps = maxVelocityMps,
@@ -78,25 +105,39 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
-        val delegate = delegateTask ?: return true
-        val completed = delegate.isCompleted(state, elapsedMs)
-        if (!completed && TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
-            propagateDelegateFailure(delegate)
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return false
+        try {
+            val delegate = delegateTask ?: return false
+            val completed = delegate.completionReady(state, elapsedMs)
+            if (!completed && TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
+                propagateDelegateFailure(delegate)
+            }
+            return completed
+        } catch (failure: Throwable) {
+            failAndRethrow(failure)
         }
-        return completed
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
-        super.execute(state, elapsedMs)
-        // The default implementation above may have marked this task failed (wrapper timeout);
-        // a failed wrapper must not keep producing drive commands.
-        if (TaskStateMachine.getStatus(this) == TaskStatus.FAILED) return emptyList()
-        val delegate = delegateTask ?: return emptyList()
-        val actions = delegate.execute(state, elapsedMs)
-        if (TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
-            propagateDelegateFailure(delegate)
+        try {
+            if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) {
+                follower.stop()
+                return emptyList()
+            }
+            super.execute(state, elapsedMs)
+            if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) {
+                follower.stop()
+                return emptyList()
+            }
+            val delegate = delegateTask ?: return emptyList()
+            val actions = delegate.execute(state, elapsedMs)
+            if (TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
+                propagateDelegateFailure(delegate)
+            }
+            return actions
+        } catch (failure: Throwable) {
+            failAndRethrow(failure)
         }
-        return actions
     }
 
     /** Stops drive output while a higher-priority task owns the drivetrain. */
@@ -111,10 +152,44 @@ class PathfindToPoseTask @kotlin.jvm.JvmOverloads constructor(
         delegateTask?.resume(state) ?: emptyList()
 
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
-        // Delegate cleanup runs first so a throwing cleanup still leaves this wrapper
-        // eligible for a terminal status via the default implementation.
-        val delegateActions = delegateTask?.end(state, interrupted) ?: emptyList()
-        return delegateActions + super.end(state, interrupted)
+        var failure: Throwable? = null
+        var delegateActions: List<RobotAction> = emptyList()
+        val delegate = delegateTask
+        delegateTask = null
+        try {
+            if (delegate == null) follower.stop()
+            else delegateActions = delegate.end(state, interrupted)
+        }
+        catch (error: Throwable) {
+            TaskStateMachine.markFailed(this)
+            failure = error
+        }
+        try { delegate?.releaseRuntimeState() }
+        catch (error: Throwable) {
+            TaskStateMachine.markFailed(this)
+            if (failure == null) failure = error else if (error !== failure) failure.addSuppressed(error)
+        }
+        if (delegate != null && TaskStateMachine.getStatus(delegate) == TaskStatus.FAILED) {
+            propagateDelegateFailure(delegate)
+        }
+        var ownActions: List<RobotAction> = emptyList()
+        try { ownActions = super.end(state, interrupted) }
+        catch (error: Throwable) {
+            if (failure == null) failure = error else if (error !== failure) failure.addSuppressed(error)
+        }
+        failure?.let { throw it }
+        return if (ownActions.isEmpty()) delegateActions else delegateActions + ownActions
+    }
+
+    private fun failAndRethrow(failure: Throwable): Nothing {
+        val newlyFailed = TaskStateMachine.markFailed(this)
+        TaskTimeoutManager.reset(this)
+        try { follower.stop() }
+        catch (cleanup: Throwable) { if (cleanup !== failure) failure.addSuppressed(cleanup) }
+        try { if (newlyFailed) TaskCallbacks.invokeFail(this) }
+        catch (callback: Throwable) { if (callback !== failure) failure.addSuppressed(callback) }
+        finally { TaskCallbacks.reset(this) }
+        throw failure
     }
 
     private fun propagateDelegateFailure(delegate: Task) {

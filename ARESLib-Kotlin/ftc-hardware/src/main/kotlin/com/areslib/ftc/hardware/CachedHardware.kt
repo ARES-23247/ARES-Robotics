@@ -1,6 +1,8 @@
 package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.hardware.DcMotorEx
+import com.qualcomm.robotcore.hardware.DcMotor
+import com.qualcomm.robotcore.hardware.DcMotorSimple
 import com.qualcomm.robotcore.hardware.Servo
 import kotlin.math.abs
 
@@ -14,8 +16,10 @@ import kotlin.math.abs
  * ### Performance & Bus Optimization:
  * This reduces REV Lynx command traffic and allocates no objects in the setter. Before the first
  * command, the getter delegates to hardware; after the first command it returns only the cached
- * value and never performs a hardware read. The decorator does not clamp power or validate
- * [epsilon], so callers retain the FTC SDK's normal range/validation responsibilities.
+ * value and never performs a hardware read until configuration invalidates the cache.
+ * Power is clamped to [-1, 1]; non-finite commands neutralize. Configuration changes
+ * invalidate the cache so the next explicit command reaches the device. A failed write forces
+ * the next command to reach hardware, even when returning to the last accepted value.
  *
  * @param delegate Underlying FTC SDK [DcMotorEx] hardware instance.
  * @param epsilon Power change threshold tolerance $[0.0, 1.0]$ (default 0.02).
@@ -27,19 +31,44 @@ class CachedDcMotorEx(
     private val epsilon: Double = 0.02
 ) : DcMotorEx by delegate {
 
-    private var lastPower = -10.0 // Invalid starting power to guarantee the first write
+    init { require(epsilon in 0.0..1.0) { "Power cache epsilon must be within [0, 1]" } }
+
+    private var hasPowerCommand = false
+    private var powerWriteUncertain = false
+    private var lastPower = 0.0
 
     override var power: Double
-        get() = if (lastPower != -10.0) lastPower else delegate.power
+        get() = if (hasPowerCommand) lastPower else delegate.power
         set(value) {
-            if (value == 0.0 && lastPower != 0.0) {
-                delegate.power = 0.0
-                lastPower = 0.0
-            } else if (abs(value - lastPower) >= epsilon) {
-                delegate.power = value
-                lastPower = value
+            val command = if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
+            if (!hasPowerCommand || powerWriteUncertain || (command != lastPower &&
+                (command == 0.0 || abs(command - lastPower) >= epsilon))) {
+                powerWriteUncertain = true
+                delegate.power = command
+                powerWriteUncertain = false
+                lastPower = command
+                hasPowerCommand = true
             }
         }
+
+    override var mode: DcMotor.RunMode
+        get() = delegate.mode
+        set(value) {
+            hasPowerCommand = false
+            delegate.mode = value
+        }
+
+    override var direction: DcMotorSimple.Direction
+        get() = delegate.direction
+        set(value) {
+            hasPowerCommand = false
+            delegate.direction = value
+        }
+
+    override fun resetDeviceConfigurationForOpMode() {
+        hasPowerCommand = false
+        delegate.resetDeviceConfigurationForOpMode()
+    }
 }
 
 /**
@@ -51,7 +80,9 @@ class CachedDcMotorEx(
  * ### Performance & Bus Optimization:
  * Prevents redundant servo PWM updates and allocates no objects in the setter. Before the first
  * command, the getter delegates to hardware; afterward it returns only the cached command. The
- * decorator does not clamp position or validate [epsilon].
+ * position is clamped to [0, 1]. Non-finite positions are rejected because a servo has
+ * no universal neutral position. Device resets invalidate the command cache; failed writes force
+ * the next command through while getters retain the last accepted value without polling hardware.
  *
  * @param delegate Underlying FTC SDK [Servo] hardware instance.
  * @param epsilon Servo position threshold tolerance $[0.0, 1.0]$ (default 0.005).
@@ -63,15 +94,30 @@ class CachedServo(
     private val epsilon: Double = 0.005
 ) : Servo by delegate {
 
-    private var lastPosition = -10.0 // Invalid starting position to guarantee the first write
+    init { require(epsilon in 0.0..1.0) { "Position cache epsilon must be within [0, 1]" } }
+
+    private var hasPositionCommand = false
+    private var positionWriteUncertain = false
+    private var lastPosition = 0.0
 
     override var position: Double
-        get() = if (lastPosition != -10.0) lastPosition else delegate.position
+        get() = if (hasPositionCommand) lastPosition else delegate.position
         set(value) {
-            if (abs(value - lastPosition) >= epsilon) {
-                delegate.position = value
-                lastPosition = value
+            require(value.isFinite()) { "Servo position must be finite" }
+            val command = value.coerceIn(0.0, 1.0)
+            if (!hasPositionCommand || positionWriteUncertain ||
+                (command != lastPosition && abs(command - lastPosition) >= epsilon)) {
+                positionWriteUncertain = true
+                delegate.position = command
+                positionWriteUncertain = false
+                lastPosition = command
+                hasPositionCommand = true
             }
         }
+
+    override fun resetDeviceConfigurationForOpMode() {
+        hasPositionCommand = false
+        delegate.resetDeviceConfigurationForOpMode()
+    }
 }
 

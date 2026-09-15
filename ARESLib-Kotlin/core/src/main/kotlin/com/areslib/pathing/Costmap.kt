@@ -16,8 +16,8 @@ import kotlin.math.roundToInt
  *    $$c = \text{round}\left(\frac{x - x_{\text{origin}}}{\text{res}}\right), \quad r = \text{round}\left(\frac{y - y_{\text{origin}}}{\text{res}}\right)$$
  * 2. **Flat 1D Row-Major Indexing**:
  *    $$\text{index}(c, r) = r \cdot N_{\text{widthCells}} + c$$
- * 3. **Circular Inflation Mask Condition**:
- *    $$\Delta c^2 + \Delta r^2 \le r_{\text{cell}}^2, \quad r_{\text{cell}} = \left\lceil \frac{r_{\text{bumper}}}{\text{res}} \right\rceil$$
+ * 3. **Positive-radius Inflation Mask Condition** (distance between closed cell squares):
+ *    $$\max(|\Delta c|-1,0)^2 + \max(|\Delta r|-1,0)^2 \le (r_{\text{bumper}}/\text{res})^2$$
  *
  * ### Physical Units & Coordinate Conventions:
  * - Dimensions $(W, H)$: Field width and height in meters ($m$)
@@ -130,33 +130,15 @@ class Costmap(
      * Rasterizes and registers a list of static obstacles from a field layout.
      */
     fun setStaticObstacles(obstacles: List<com.areslib.state.RobotFieldObstacle>) {
-        for (obs in obstacles) {
-            if (!obs.isBlocking) continue // Skip non-blocking elements like ramps
-
-            // Obstacle boundaries in meters (from centering)
-            val minX = obs.x - obs.width / 2.0
-            val maxX = obs.x + obs.width / 2.0
-            val minY = obs.y - obs.height / 2.0
-            val maxY = obs.y + obs.height / 2.0
-
-            // Map boundaries to grid cell ranges
-            val rawStartX = ((minX - origin.x) / resolutionMeters).roundToInt()
-            val rawEndX = ((maxX - origin.x) / resolutionMeters).roundToInt()
-            val rawStartY = ((minY - origin.y) / resolutionMeters).roundToInt()
-            val rawEndY = ((maxY - origin.y) / resolutionMeters).roundToInt()
-
-            if (rawStartX >= widthCells || rawEndX < 0 || rawStartY >= heightCells || rawEndY < 0) continue
-
-            val startCellX = rawStartX.coerceIn(0, widthCells - 1)
-            val endCellX = rawEndX.coerceIn(0, widthCells - 1)
-            val startCellY = rawStartY.coerceIn(0, heightCells - 1)
-            val endCellY = rawEndY.coerceIn(0, heightCells - 1)
-
-            // Mark cells as occupied
-            for (cx in startCellX..endCellX) {
-                for (cy in startCellY..endCellY) {
-                    setObstacle(cx, cy, true)
-                }
+        for (obstacle in obstacles) {
+            if (!obstacle.isBlocking) continue
+            when {
+                obstacle.shape.equals("rectangle", ignoreCase = true) -> StaticCostmapRasterizer.rectangle(
+                    this, obstacle.x, obstacle.y, obstacle.width, obstacle.height, obstacle.rotation)
+                obstacle.shape.equals("circle", ignoreCase = true) -> StaticCostmapRasterizer.circle(
+                    this, obstacle.x, obstacle.y, obstacle.width) // Canonical circle width stores radius.
+                obstacle.shape.equals("polygon", ignoreCase = true) -> StaticCostmapRasterizer.polygon(this, obstacle.points)
+                else -> throw IllegalArgumentException("Unsupported static obstacle shape: ${obstacle.shape}")
             }
         }
     }
@@ -183,29 +165,74 @@ class Costmap(
 
     /**
      * Inflates the obstacle boundaries by the robot's physical bumper radius.
-     * Prevents any paths from running the chassis edges directly into structures.
-     * @param robotRadiusMeters Radius of the robot bumper boundary.
+     * Every occupied cell is treated as a closed square. A target cell is blocked if any
+     * position in it is within the bumper radius of an occupied square, including tangency.
+     * This conservatively protects off-center waypoints as well as cell-center paths.
+     * @param robotRadiusMeters Finite non-negative bumper radius; zero copies raw occupancy without a halo.
      */
     fun inflate(robotRadiusMeters: Double) {
+        require(robotRadiusMeters.isFinite() && robotRadiusMeters >= 0.0) {
+            "Inflation radius must be finite and non-negative"
+        }
+        if (robotRadiusMeters == 0.0) {
+            grid.copyInto(inflatedGrid)
+            return
+        }
+        val radius = robotRadiusMeters / resolutionMeters
+        val maxDx = maxOf(widthCells - 2, 0).toDouble()
+        val maxDy = maxOf(heightCells - 2, 0).toDouble()
+        // Any occupied cell covers the entire grid at this radius. Avoid an O(cells^2) scan.
+        if (radius >= kotlin.math.hypot(maxDx, maxDy)) {
+            inflatedGrid.fill(grid.any { it })
+            return
+        }
         inflatedGrid.fill(false)
-        val cellRadius = kotlin.math.ceil(robotRadiusMeters / resolutionMeters).toInt().coerceAtLeast(1)
-        val r2 = cellRadius.toDouble() * cellRadius.toDouble()
-
+        // The grid-wide shortcut bounds radius before conversion and squaring, even if
+        // finite meters divided by resolution overflowed to infinity.
+        val extent = kotlin.math.ceil(radius).toInt() + 1
+        val radiusSquared = radius * radius
         for (cy in 0 until heightCells) {
             for (cx in 0 until widthCells) {
-                if (grid[cy * widthCells + cx]) {
-                    // Inflate outward in a circular radius
-                    for (dy in -cellRadius..cellRadius) {
-                        for (dx in -cellRadius..cellRadius) {
-                            if (dx.toDouble() * dx.toDouble() + dy.toDouble() * dy.toDouble() <= r2) {
-                                val nx = cx + dx
-                                val ny = cy + dy
-                                if (nx in 0 until widthCells && ny in 0 until heightCells) {
-                                    inflatedGrid[ny * widthCells + nx] = true
-                                }
-                            }
-                        }
+                if (!grid[cy * widthCells + cx]) continue
+                val minX = maxOf(0, cx - extent)
+                val maxX = minOf(widthCells - 1, cx + extent)
+                val minY = maxOf(0, cy - extent)
+                val maxY = minOf(heightCells - 1, cy + extent)
+                for (y in minY..maxY) {
+                    val dy = maxOf(kotlin.math.abs(y - cy) - 1, 0)
+                    val remainingSquared = radiusSquared - dy * dy
+                    if (remainingSquared < 0.0) continue
+                    val row = y * widthCells
+                    for (x in minX..maxX) {
+                        if (inflatedGrid[row + x]) continue
+                        val dx = maxOf(kotlin.math.abs(x - cx) - 1, 0)
+                        if (dx * dx <= remainingSquared) inflatedGrid[row + x] = true
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies a quantized circle only within grid bounds. Delta +1/-1 updates dynamic
+     * reference counts using exactly the same mask on insert and expiry.
+     * Long differences and subtraction from radius squared avoid Int and squared-sum overflow.
+     */
+    private fun rasterizeCircle(cellX: Int, cellY: Int, cellRadius: Int, delta: Int) {
+        val radius = cellRadius.toLong()
+        val radiusSquared = radius * radius
+        val minX = maxOf(0L, cellX.toLong() - radius).toInt()
+        val maxX = minOf(widthCells - 1L, cellX.toLong() + radius).toInt()
+        val minY = maxOf(0L, cellY.toLong() - radius).toInt()
+        val maxY = minOf(heightCells - 1L, cellY.toLong() + radius).toInt()
+        for (y in minY..maxY) {
+            val dy = y.toLong() - cellY
+            val remainingSquared = radiusSquared - dy * dy
+            for (x in minX..maxX) {
+                val dx = x.toLong() - cellX
+                if (dx * dx <= remainingSquared) {
+                    val index = y * widthCells + x
+                    dynamicOccupancyCounts[index] += delta
                 }
             }
         }
@@ -228,43 +255,18 @@ class Costmap(
         dynObsTimeMs[dynObsCount] = timestampMs
         dynObsCount++
 
-        for (dy in -cellRadius..cellRadius) {
-            for (dx in -cellRadius..cellRadius) {
-                if (dx * dx + dy * dy <= cellRadius * cellRadius) {
-                    val nx = cellX + dx
-                    val ny = cellY + dy
-                    if (nx in 0 until widthCells && ny in 0 until heightCells) {
-                        dynamicOccupancyCounts[ny * widthCells + nx]++
-                    }
-                }
-            }
-        }
+        rasterizeCircle(cellX, cellY, cellRadius, 1)
     }
 
     fun expireDynamicObstacles(currentTimeMs: Long, maxAgeMs: Long) {
         require(maxAgeMs >= 0L) { "maxAgeMs must be non-negative" }
         var i = 0
         while (i < dynObsCount) {
-            if (currentTimeMs - dynObsTimeMs[i] > maxAgeMs) {
-                val cellX = dynObsX[i]
-                val cellY = dynObsY[i]
-                val cellRadius = dynObsRadius[i]
-                
-                for (dy in -cellRadius..cellRadius) {
-                    for (dx in -cellRadius..cellRadius) {
-                        if (dx * dx + dy * dy <= cellRadius * cellRadius) {
-                            val nx = cellX + dx
-                            val ny = cellY + dy
-                            if (nx in 0 until widthCells && ny in 0 until heightCells) {
-                                val index = ny * widthCells + nx
-                                if (dynamicOccupancyCounts[index] > 0) {
-                                    dynamicOccupancyCounts[index]--
-                                }
-                            }
-                        }
-                    }
-                }
-                
+            val observedAt = dynObsTimeMs[i]
+            val age = currentTimeMs - observedAt
+            if (currentTimeMs >= observedAt && (age < 0L || age > maxAgeMs)) {
+                rasterizeCircle(dynObsX[i], dynObsY[i], dynObsRadius[i], -1)
+
                 dynObsCount--
                 if (i < dynObsCount) {
                     dynObsX[i] = dynObsX[dynObsCount]
@@ -286,34 +288,17 @@ class Costmap(
         elements: List<com.areslib.state.RobotFieldElementInstance>
     ) {
         val typesMap = elementTypes.associateBy { it.id }
-        for (el in elements) {
-            val type = typesMap[el.elementTypeId] ?: continue
-            if (type.movable) continue // Only static elements go into the costmap
-
-            val halfW = if (type.shape.lowercase() == "box") type.width / 2.0 else (type.diameter ?: 0.15) / 2.0
-            val halfH = if (type.shape.lowercase() == "box") type.height / 2.0 else (type.diameter ?: 0.15) / 2.0
-
-            val minX = el.x - halfW
-            val maxX = el.x + halfW
-            val minY = el.y - halfH
-            val maxY = el.y + halfH
-
-            val rawStartX = ((minX - origin.x) / resolutionMeters).roundToInt()
-            val rawEndX = ((maxX - origin.x) / resolutionMeters).roundToInt()
-            val rawStartY = ((minY - origin.y) / resolutionMeters).roundToInt()
-            val rawEndY = ((maxY - origin.y) / resolutionMeters).roundToInt()
-
-            if (rawStartX >= widthCells || rawEndX < 0 || rawStartY >= heightCells || rawEndY < 0) continue
-
-            val startCellX = rawStartX.coerceIn(0, widthCells - 1)
-            val endCellX = rawEndX.coerceIn(0, widthCells - 1)
-            val startCellY = rawStartY.coerceIn(0, heightCells - 1)
-            val endCellY = rawEndY.coerceIn(0, heightCells - 1)
-
-            for (cx in startCellX..endCellX) {
-                for (cy in startCellY..endCellY) {
-                    setObstacle(cx, cy, true)
-                }
+        require(typesMap.size == elementTypes.size) { "Duplicate field element type IDs" }
+        for (element in elements) {
+            val type = requireNotNull(typesMap[element.elementTypeId]) { "Unknown field element type: ${element.elementTypeId}" }
+            if (type.movable) continue
+            when {
+                type.shape.equals("box", ignoreCase = true) -> StaticCostmapRasterizer.rectangle(
+                    this, element.x, element.y, type.width, type.height, element.rotation)
+                type.shape.equals("circle", ignoreCase = true) || type.shape.equals("cylinder", ignoreCase = true) ||
+                    type.shape.equals("sphere", ignoreCase = true) ->
+                    StaticCostmapRasterizer.circle(this, element.x, element.y, (type.diameter ?: type.width) / 2.0)
+                else -> throw IllegalArgumentException("Unsupported static element shape: ${type.shape}")
             }
         }
     }

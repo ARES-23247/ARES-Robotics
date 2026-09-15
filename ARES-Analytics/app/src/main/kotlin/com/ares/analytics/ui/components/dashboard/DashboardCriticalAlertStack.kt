@@ -2,6 +2,9 @@ package com.ares.analytics.ui.components.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -26,9 +28,6 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.AlertRecord
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresError
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun DashboardCriticalAlertStack(
@@ -36,12 +35,11 @@ fun DashboardCriticalAlertStack(
     onDismiss: (AlertRecord) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val timeFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
-    Column(
-        modifier = modifier.width(320.dp),
+    LazyColumn(
+        modifier = modifier.width(320.dp).heightIn(max = 480.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        alerts.forEach { alert ->
+        items(alerts, key = { it.alertId }) { alert ->
             Card(
                 colors = CardDefaults.cardColors(containerColor = AresError.copy(alpha = 0.95f)),
                 shape = RoundedCornerShape(8.dp),
@@ -62,7 +60,7 @@ fun DashboardCriticalAlertStack(
                             color = AresBackground,
                         )
                         Text(
-                            text = "Peak: ${String.format("%.2f", alert.peakValue)} | Triggered: ${timeFormat.format(Date(alert.triggerTimestampMs))}",
+                            text = dashboardAlertDetail(alert),
                             fontSize = 10.sp,
                             color = AresBackground.copy(alpha = 0.8f),
                         )
@@ -74,11 +72,4 @@ fun DashboardCriticalAlertStack(
             }
         }
     }
-}
-internal fun criticalAlertTitle(ruleKey: String): String = when {
-    ruleKey.contains("brownout", ignoreCase = true) -> "CRITICAL BROWNOUT"
-    ruleKey.contains("comms", ignoreCase = true) -> "COMMS / PACKET LOSS"
-    ruleKey.contains("can", ignoreCase = true) -> "CANBUS HARDWARE ERROR"
-    ruleKey.contains("battery", ignoreCase = true) -> "LOW BATTERY ALERT"
-    else -> ruleKey.uppercase()
 }

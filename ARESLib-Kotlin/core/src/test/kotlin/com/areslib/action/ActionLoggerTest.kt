@@ -25,6 +25,41 @@ class ActionLoggerTest {
     @TempDir
     lateinit var tempDir: File
 
+    @Test fun `queued actions preserve mode across nonblocking transitions behind a stalled writer`() {
+        val logger=ActionLogger(runId="mode-capture",logDirectory=tempDir)
+        val entered=CountDownLatch(1)
+        val release=CountDownLatch(1)
+        val failure=java.util.concurrent.atomic.AtomicReference<Throwable?>()
+        logger.beforeWriteForTest={ entered.countDown(); check(release.await(5,TimeUnit.SECONDS)) }
+        val producer=Thread({
+            try {
+                logger.beginMode("Auto")
+                logger.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.BLUE,2L))
+                logger.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.RED,3L),"TeleOp")
+            } catch(error: Throwable) { failure.set(error) }
+        },"audit-owned-action-modes")
+        try {
+            logger.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.RED,1L))
+            assertTrue(entered.await(2,TimeUnit.SECONDS))
+            producer.start()
+            producer.join(1000)
+            assertFalse(producer.isAlive)
+        } finally {
+            release.countDown()
+            producer.join(3000)
+            logger.stop()
+            check(!producer.isAlive)
+        }
+        failure.get()?.let { throw it }
+        val records=tempDir.listFiles().orEmpty().filter { it.extension=="jsonl" }.map { file ->
+            JsonParser.parseString(file.readText().trim()).asJsonObject
+        }
+        assertEquals(mapOf(1L to "Init",2L to "Auto",3L to "TeleOp"),records.associate {
+            it["payload"].asJsonObject["timestampMs"].asLong to it["op_mode"].asString
+        })
+        assertEquals(0L,logger.droppedActionCount)
+    }
+
     @Test
     fun `mutable action is snapshotted and file becomes visible only after drain`() {
         val logger = ActionLogger(
@@ -40,14 +75,13 @@ class ActionLoggerTest {
             timestampMs = 123L
         )
 
-        logger.logAction(source)
-        source.targetXVelocity = 99.0
-
-        val active = tempDir.listFiles()?.singleOrNull { it.name.endsWith(".jsonl.active") }
-        assertNotNull(active)
-        assertFalse(tempDir.listFiles().orEmpty().any { it.extension == "jsonl" })
-
-        logger.stop()
+        val active: File
+        try {
+            logger.logAction(source)
+            source.targetXVelocity = 99.0
+            active = assertNotNull(tempDir.listFiles()?.singleOrNull { it.name.endsWith(".jsonl.active") })
+            assertFalse(tempDir.listFiles().orEmpty().any { it.extension == "jsonl" })
+        } finally { logger.stop() }
 
         assertFalse(active.exists())
         val completed = tempDir.listFiles()?.singleOrNull { it.extension == "jsonl" }
@@ -85,18 +119,21 @@ class ActionLoggerTest {
         val point = PathPoint(Pose2d(4.0, 5.0, Rotation2d(0.6)), 2.0)
         val points = mutableListOf(point)
 
-        logger.logAction(RobotAction.VisionMeasurementsReceived(measurements, 42L))
-        logger.logAction(RobotAction.SwitchPath(Path(points), timestampMs = 43L))
-        assertTrue(writerEntered.await(5, TimeUnit.SECONDS))
+        try {
+            logger.logAction(RobotAction.VisionMeasurementsReceived(measurements, 42L))
+            logger.logAction(RobotAction.SwitchPath(Path(points), timestampMs = 43L))
+            assertTrue(writerEntered.await(5, TimeUnit.SECONDS))
 
-        measurement.tagId = 99
-        measurement.targetPose.translation.x = 88.0
-        measurements.clear()
-        point.pose = Pose2d(77.0, 5.0, Rotation2d())
-        point.velocityMps = 66.0
-        points.clear()
-        releaseWriter.countDown()
-        logger.stop()
+            measurement.tagId = 99
+            measurement.targetPose.translation.x = 88.0
+            measurements.clear()
+            point.pose = Pose2d(77.0, 5.0, Rotation2d())
+            point.velocityMps = 66.0
+            points.clear()
+        } finally {
+            releaseWriter.countDown()
+            logger.stop()
+        }
 
         val completed = tempDir.listFiles().orEmpty().single { it.extension == "jsonl" }
         val records = completed.readLines().map { JsonParser.parseString(it).asJsonObject }
@@ -110,14 +147,18 @@ class ActionLoggerTest {
 
     @Test
     fun `same epoch run and mode reserve distinct completed files without overwrite`() {
+        val wasMocked = RobotClock.isMocked
+        val previousTime = RobotClock.currentTimeMillis()
         RobotClock.useMockTime(0L)
         try {
             val first = ActionLogger(runId = "run/id", mode = "Tele/op", logDirectory = tempDir)
             val second = ActionLogger(runId = "run/id", mode = "Tele/op", logDirectory = tempDir)
-            first.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.RED, 1L))
-            second.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.BLUE, 2L))
-            first.stop()
-            second.stop()
+            try {
+                first.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.RED, 1L))
+                second.logAction(RobotAction.SetAlliance(com.areslib.state.Alliance.BLUE, 2L))
+            } finally {
+                try { first.stop() } finally { second.stop() }
+            }
 
             val completed = tempDir.listFiles().orEmpty().filter { it.extension == "jsonl" }
             assertEquals(2, completed.size)
@@ -132,7 +173,7 @@ class ActionLoggerTest {
             )
             assertFalse(tempDir.listFiles().orEmpty().any { it.name.endsWith(".active") })
         } finally {
-            RobotClock.useSystemTime()
+            if (wasMocked) RobotClock.useMockTime(previousTime) else RobotClock.useSystemTime()
         }
     }
 }

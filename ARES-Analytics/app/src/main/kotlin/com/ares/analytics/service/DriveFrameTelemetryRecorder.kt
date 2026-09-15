@@ -2,6 +2,7 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -26,10 +27,11 @@ internal class DriveFrameTelemetryRecorder(
     private val accept: suspend (TelemetryFrame) -> Unit,
 ) {
     private val snapshots = Channel<DriveFrameTelemetrySnapshot>(Channel.CONFLATED)
+    private val worker: Job
 
     init {
         require(sampleIntervalMs > 0L) { "sampleIntervalMs must be positive" }
-        scope.launch {
+        worker = scope.launch {
             for (firstSnapshot in snapshots) {
                 // Control is transmitted at 50 Hz, but driver analysis does not need that rate.
                 // Wait for one analysis interval, then drain to the newest pending snapshot.
@@ -49,10 +51,14 @@ internal class DriveFrameTelemetryRecorder(
                 }
             }
         }
+        // Also runs when the supplied scope was already cancelled. Release the pending array
+        // and make offer() report that no consumer remains, including after ingestion failure.
+        worker.invokeOnCompletion { snapshots.cancel() }
     }
 
     /** Never suspends the control publisher; a newer pending snapshot replaces an older one. */
-    fun offer(snapshot: DriveFrameTelemetrySnapshot): Boolean = snapshots.trySend(snapshot).isSuccess
+    fun offer(snapshot: DriveFrameTelemetrySnapshot): Boolean =
+        worker.isActive && snapshots.trySend(snapshot).isSuccess
 
     private companion object {
         const val DEFAULT_SAMPLE_INTERVAL_MS = 100L

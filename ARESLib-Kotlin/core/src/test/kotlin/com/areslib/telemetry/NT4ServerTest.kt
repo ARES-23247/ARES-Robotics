@@ -47,7 +47,7 @@ class NT4ServerTest {
 
     @Test
     fun testNT4JsonSubscribeParsing() {
-        val json = """{"method":"subscribe","params":{"topics":["/Drive/","/ARES/"]}}"""
+        val json = """{"method":"subscribe","params":{"topics":["/Drive/","/ARES/"],"subuid":1}}"""
         val parsed = NT4Json.parseMessages(json)
         assertEquals(1, parsed.size)
         val msg = parsed[0]

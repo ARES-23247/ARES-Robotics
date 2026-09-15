@@ -1,11 +1,11 @@
 package com.ares.analytics.service
 
-import com.ares.analytics.ui.help.AcademyRunAnalysisSnapshot
-import com.ares.analytics.ui.help.AcademyRuntimeSnapshot
-import com.ares.analytics.ui.help.AcademyClassroomToolkit
-import com.ares.analytics.ui.help.FirstMissionCheckpointIds
-import com.ares.analytics.ui.help.LearningCatalog
-import com.ares.analytics.ui.help.LearningCheckpointEvidence
+import com.ares.analytics.domain.learning.AcademyRunAnalysisSnapshot
+import com.ares.analytics.domain.learning.AcademyRuntimeSnapshot
+import com.ares.analytics.domain.learning.AcademyClassroomToolkit
+import com.ares.analytics.domain.learning.FirstMissionCheckpointIds
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.learning.LearningCheckpointEvidence
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import java.io.File

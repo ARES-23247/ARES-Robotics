@@ -127,13 +127,13 @@ internal class FieldEditorClipboard(
             )
         }
         val usedTagIds = state.aprilTags.mapTo(hashSetOf()) { it.tagId }
+        var nextTagId = 1
         val clonedTags = aprilTags.map { tag ->
-            val nextTagId = generateSequence(1) { candidate -> candidate + 1 }
-                .first { candidate -> candidate !in usedTagIds }
+            while (nextTagId in usedTagIds) nextTagId++
             usedTagIds += nextTagId
             tag.copy(
                 id = clonedId(tag.id, "apriltag"),
-                tagId = nextTagId,
+                tagId = nextTagId++,
                 x = tag.x + offset,
                 y = tag.y + offset,
                 locked = false,
@@ -175,6 +175,8 @@ internal data class FieldEditorPasteResult(
 }
 
 internal data class FieldEditorSnapshot(
+    val document: com.areslib.state.RobotFieldConfig?,
+    val fieldImage: androidx.compose.ui.graphics.ImageBitmap?,
     val fieldImageConfig: FieldImageConfig,
     val obstacles: List<Obstacle>,
     val gamePieces: List<GamePiece>,
@@ -183,6 +185,8 @@ internal data class FieldEditorSnapshot(
     val fieldWaypoints: List<FieldWaypoint>,
 ) {
     fun applyTo(state: FieldEditorState): FieldEditorState = state.copy(
+        document = document,
+        fieldImage = fieldImage,
         fieldImageConfig = fieldImageConfig,
         obstacles = obstacles,
         gamePieces = gamePieces,
@@ -193,6 +197,8 @@ internal data class FieldEditorSnapshot(
 }
 
 internal fun FieldEditorState.editorSnapshot() = FieldEditorSnapshot(
+    document = document,
+    fieldImage = fieldImage,
     fieldImageConfig = fieldImageConfig,
     obstacles = obstacles,
     gamePieces = gamePieces,

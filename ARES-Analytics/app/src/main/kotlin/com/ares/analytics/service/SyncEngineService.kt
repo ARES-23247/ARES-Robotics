@@ -365,7 +365,7 @@ class SyncEngineService(
     suspend fun uploadSession(sessionId: String) = withContext(Dispatchers.IO) {
         val summary = databaseService.getSessionSummary(sessionId)
             ?: run {
-                val session = databaseService.getSessions().find { it.sessionId == sessionId }
+                val session = databaseService.getSession(sessionId)
                     ?: throw IllegalArgumentException("Session not found for $sessionId")
                 val generated = summaryEngineService.generateSummary(session)
                 databaseService.insertSessionSummary(generated)

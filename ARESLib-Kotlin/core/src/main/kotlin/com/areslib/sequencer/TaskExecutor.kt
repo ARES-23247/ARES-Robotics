@@ -1,8 +1,11 @@
 package com.areslib.sequencer
 
 import com.areslib.action.RobotAction
+import com.areslib.routine.RoutineTaskOwnership
 import com.areslib.state.RobotState
+import com.areslib.util.RobotClock
 import java.util.ArrayDeque
+import java.util.IdentityHashMap
 
 /**
  * Synchronized task queue with nested last-in/first-out preemption.
@@ -13,25 +16,72 @@ import java.util.ArrayDeque
  * complete tasks, capped at 100 transitions to prevent a malformed queue from locking the loop.
  *
  * Preemption calls [Task.pause] without performing terminal cleanup and pauses the task's watchdog
- * until [Task.resume] is called. [clear] performs best-effort interrupted
- * cleanup, releases runtime registries, and suppresses task exceptions.
+ * until [Task.resume] is called. [cancelAll] performs best-effort interrupted cleanup and releases
+ * runtime registries. Each admission exclusively owns its task tree until terminal cleanup.
+ * Failed admission preserves the caller's task metadata and does not pause existing work.
+ *
+ * Same-executor recursive update/preempt/cancel/suspend/resume is rejected before mutation. A
+ * lifecycle callback may append fresh work with [addTask], except during failure/cancellation or
+ * the executor's final metadata drain. These phases reject additions so they cannot replenish the queue.
+ *
+ * Timestamps must be monotonic within an active queue and use RobotClock's millisecond domain when
+ * suspend/resume is used. Negative origins are valid. Rollback or unrepresentable elapsed time
+ * fails the invocation. A void suspension operation rethrows its failure; the next update/preempt
+ * drains the fault and returns cleanup actions, even while suspended. Callers must dispatch them.
  */
 class TaskExecutor {
     private val queue = ArrayDeque<Task>()
+    private val admissions = IdentityHashMap<Task, RoutineTaskOwnership>()
+    private var isOperating = false
+    private var isCleaningUp = false
     private var activeTask: Task? = null
-    private var activeTaskStartTimeMs: Long = 0L
     private var isSuspended = false
-    private var suspendedAtMs: Long = 0L
+    private val clock = TaskExecutorClock()
+    private var controlFailure: Throwable? = null
 
     // Stack of (Task, elapsedMsBeforePreemption) to enable nested preemption & resumption
     private val preemptedStack = ArrayDeque<Pair<Task, Long>>()
 
     /**
-     * Appends a task to the standard queue.
+     * Claims an idle task tree and appends it to the standard queue. Terminal raw tasks may be
+     * explicitly resubmitted; released compiled invocations must be rebuilt. Successful admission
+     * marks reused nodes PENDING while preserving newly configured callbacks/timeouts. A subsequent
+     * failure or cancellation while queued prevents initialization.
+     * Duplicate, running, and foreign-owned instances are rejected without metadata loss.
+     * Callers must not initialize or reset admitted tasks before the executor releases them.
      */
     @Synchronized
     fun addTask(task: Task) {
+        check(!isCleaningUp) { "Cannot enqueue tasks during executor cleanup" }
+        admit(task)
         queue.offer(task)
+    }
+
+    private fun admit(task: Task) {
+        val ownership = RoutineTaskOwnership(allowTerminalReuse = true)
+        try { ownership.acquire(task); ownership.prepareQueuedInvocation() }
+        catch (failure: Throwable) {
+            ownership.abandonClaims()
+            throw failure
+        }
+        admissions[task] = ownership
+    }
+
+    private fun canInitialize(task: Task): Boolean {
+        val ownership = checkNotNull(admissions[task])
+        return TaskStateMachine.getStatus(task) == TaskStatus.PENDING && !ownership.propagateQueuedTerminal(task)
+    }
+
+    private inline fun <T> operation(name: String, block: () -> T): T {
+        check(!isOperating) { "Cannot recursively call TaskExecutor.$name from a lifecycle callback" }
+        isOperating = true
+        try { return block() } finally { isOperating = false }
+    }
+
+    private inline fun <T> cleanup(block: () -> T): T {
+        val previous = isCleaningUp
+        isCleaningUp = true
+        try { return block() } finally { isCleaningUp = previous }
     }
 
     /**
@@ -40,22 +90,62 @@ class TaskExecutor {
      * by the suspended interval so waits and deadlines measure execution time, not wall time.
      */
     @Synchronized
-    fun suspend() {
+    fun suspend() = operation("suspend") {
+        controlFailure?.let { throw it }
         if (!isSuspended) {
-            isSuspended = true
-            suspendedAtMs = com.areslib.util.RobotClock.currentTimeMillis()
-            activeTask?.setTimeoutSuspended(true)
+            try {
+                val task = activeTask
+                // Idle suspension has no bound clock epoch or elapsed time to preserve.
+                if (task != null) {
+                    val now = RobotClock.currentTimeMillis()
+                    clock.observeTimestamp(now)
+                    clock.elapsedSince(clock.activeTaskStartTimeMs, now)
+                    clock.suspendedAtMs = now
+                }
+                isSuspended = true
+                if (task != null) {
+                    task.setTimeoutSuspended(true)
+                    TaskExecutorFailures.requireRunning(task, admissions[task])
+                }
+            } catch (failure: Throwable) { latchControlFailure(failure); throw failure }
         }
     }
 
     /** Resumes execution of tasks. */
     @Synchronized
-    fun resume() {
+    fun resume() = operation("resume") {
+        controlFailure?.let { throw it }
         if (isSuspended) {
-            isSuspended = false
-            activeTask?.setTimeoutSuspended(false)
-            activeTaskStartTimeMs += com.areslib.util.RobotClock.currentTimeMillis() - suspendedAtMs
+            try {
+                val task = activeTask
+                if (task != null) {
+                    val now = RobotClock.currentTimeMillis()
+                    clock.observeTimestamp(now)
+                    val shiftedStart = Math.addExact(clock.activeTaskStartTimeMs, clock.elapsedSince(clock.suspendedAtMs, now))
+                    TaskExecutorFailures.requireRunning(task, admissions[task])
+                    task.setTimeoutSuspended(false)
+                    TaskExecutorFailures.requireRunning(task, admissions[task])
+                    clock.activeTaskStartTimeMs = shiftedStart
+                }
+                isSuspended = false
+            } catch (failure: Throwable) { latchControlFailure(failure); throw failure }
         }
+    }
+
+    private fun latchControlFailure(failure: Throwable) {
+        retainTaskInterruption(failure)
+        controlFailure = failure
+        activeTask?.let { TaskExecutorFailures.mark(it, failure) }
+    }
+
+    private fun drainFault(state: RobotState, phase: String, failure: Throwable): List<RobotAction> {
+        // This drain owns the failure's actions; nested cancelAllInternal must not append them again.
+        controlFailure = null
+        val task = activeTask ?: return cancelAllInternal(state)
+        var actions = addActions(null, TaskExecutorFailures.actions(task, phase, failure))
+        actions = addActions(actions, if (TaskStateMachine.getStatus(task) == TaskStatus.CANCELLED)
+            handleTaskCancellation(task, state) else handleTaskFailure(task, state))
+        return actions ?: emptyList()
     }
 
     /**
@@ -63,36 +153,66 @@ class TaskExecutor {
      * The currently active task is paused and pushed to the preemption stack, to be resumed later.
      */
     @Synchronized
-    fun preempt(task: Task, state: RobotState, currentTimestampMs: Long): List<RobotAction> {
+    fun preempt(task: Task, state: RobotState, currentTimestampMs: Long): List<RobotAction> = operation("preempt") {
+        admit(task) // Reject foreign/duplicate work before pausing the current task.
         var actions: MutableList<RobotAction>? = null
+
+        val pending = controlFailure
+        if (pending != null) {
+            releaseMetadata(task)
+            return@operation drainFault(state, "suspension", pending)
+        }
+        try { clock.observeTimestamp(currentTimestampMs) } catch (failure: Throwable) {
+            releaseMetadata(task)
+            return@operation drainFault(state, "preempt timestamp", failure)
+        }
+        if (!canInitialize(task)) return@operation rejectUnstarted(task, state)
 
         val currentActive = activeTask
         if (currentActive != null) {
-            val elapsed = (if (isSuspended) suspendedAtMs else currentTimestampMs) - activeTaskStartTimeMs
-            preemptedStack.push(Pair(currentActive, elapsed))
+            var elapsed = 0L
             try {
-                actions = addActions(actions, currentActive.pause(state))
-            } catch (e: Exception) {
-                System.err.println("TaskExecutor: Exception while pausing task ${currentActive.name}: ${e.message}")
-                e.printStackTrace()
-            } finally {
+                elapsed = clock.elapsedSince(clock.activeTaskStartTimeMs, if (isSuspended) clock.suspendedAtMs else currentTimestampMs)
+                TaskExecutorFailures.requireRunning(currentActive, admissions[currentActive])
+                if (TaskStateMachine.getStatus(currentActive) == TaskStatus.RUNNING) {
+                    actions = addActions(actions, currentActive.pause(state))
+                }
                 currentActive.setTimeoutSuspended(true)
+                TaskExecutorFailures.requireRunning(currentActive, admissions[currentActive])
+            } catch (failure: Throwable) {
+                actions = addActions(actions, TaskExecutorFailures.actions(currentActive, "pause", failure))
+            }
+            when (TaskStateMachine.getStatus(currentActive)) {
+                TaskStatus.RUNNING -> {
+                    preemptedStack.push(Pair(currentActive, elapsed))
+                    activeTask = null
+                }
+                else -> {
+                    actions = addActions(actions, if (TaskStateMachine.getStatus(currentActive) == TaskStatus.CANCELLED)
+                        handleTaskCancellation(currentActive, state) else handleTaskFailure(currentActive, state))
+                    releaseMetadata(task) // Incoming work never initialized and must not survive this fault.
+                    return@operation actions ?: emptyList()
+                }
             }
         }
         
-        if (isSuspended) suspendedAtMs = currentTimestampMs
+        if (!canInitialize(task)) {
+            actions = addActions(actions, rejectUnstarted(task, state))
+            return@operation actions ?: emptyList()
+        }
+        if (isSuspended) clock.suspendedAtMs = currentTimestampMs
         activeTask = task
-        activeTaskStartTimeMs = currentTimestampMs
+        clock.activeTaskStartTimeMs = currentTimestampMs
         try {
             actions = addActions(actions, task.initialize(state))
-        } catch (e: Exception) {
-            System.err.println("TaskExecutor: Exception during task.initialize for preempting task ${task.name}: ${e.message}")
-            e.printStackTrace()
-            actions = addActions(actions, handleTaskFailure(task, state))
-        } finally {
-            if (isSuspended) activeTask?.setTimeoutSuspended(true)
+            if (isSuspended) {
+                task.setTimeoutSuspended(true)
+                TaskExecutorFailures.requireRunning(task, admissions[task])
+            }
+        } catch (e: Throwable) {
+            actions = addActions(actions, drainFault(state, "preempt initialize/suspension", e))
         }
-        return actions ?: emptyList()
+        return@operation actions ?: emptyList()
     }
 
     /**
@@ -100,8 +220,25 @@ class TaskExecutor {
      * Returns a list of actions to dispatch to the Redux store.
      */
     @Synchronized
-    fun update(state: RobotState, currentTimestampMs: Long): List<RobotAction> {
-        if (isSuspended) return emptyList()
+    fun update(state: RobotState, currentTimestampMs: Long): List<RobotAction> = operation("update") {
+        controlFailure?.let { return@operation drainFault(state, "suspension", it) }
+        if (clock.hasTimestamp) {
+            try { clock.observeTimestamp(currentTimestampMs) } catch (failure: Throwable) {
+                return@operation drainFault(state, "update timestamp", failure)
+            }
+        }
+        if (isSuspended) {
+            val pausedTask = activeTask
+            if (pausedTask != null) {
+                // A root can also be failed/cancelled externally while its watchdog is paused.
+                when (TaskStateMachine.getStatus(pausedTask)) {
+                    TaskStatus.FAILED -> return@operation handleTaskFailure(pausedTask, state)
+                    TaskStatus.CANCELLED -> return@operation handleTaskCancellation(pausedTask, state)
+                    else -> Unit
+                }
+            }
+            return@operation emptyList()
+        }
         var actions: MutableList<RobotAction>? = null
 
         var task = activeTask
@@ -116,14 +253,17 @@ class TaskExecutor {
                         // Resume a previously preempted task
                         val (resumedTask, priorElapsed) = preemptedStack.pop()
                         activeTask = resumedTask
-                        activeTaskStartTimeMs = currentTimestampMs - priorElapsed
-                        TaskStateMachine.transitionTo(resumedTask, TaskStatus.RUNNING)
-                        resumedTask.setTimeoutSuspended(false)
                         try {
+                            clock.activeTaskStartTimeMs = Math.subtractExact(currentTimestampMs, priorElapsed)
+                            // Inspect owned descendants before any resume callback can reactivate output.
+                            TaskExecutorFailures.requireRunning(resumedTask, admissions[resumedTask])
+                            resumedTask.setTimeoutSuspended(false)
+                            TaskExecutorFailures.requireRunning(resumedTask, admissions[resumedTask])
                             actions = addActions(actions, resumedTask.resume(state))
-                        } catch (e: Exception) {
-                            System.err.println("TaskExecutor: Exception while resuming task ${resumedTask.name}: ${e.message}")
-                            actions = addActions(actions, handleTaskFailure(resumedTask, state))
+                        } catch (e: Throwable) {
+                            actions = addActions(actions, TaskExecutorFailures.actions(resumedTask, "resume", e))
+                            actions = addActions(actions, if (TaskStateMachine.getStatus(resumedTask) == TaskStatus.CANCELLED)
+                                handleTaskCancellation(resumedTask, state) else handleTaskFailure(resumedTask, state))
                             task = null
                             continue
                         }
@@ -132,13 +272,17 @@ class TaskExecutor {
                     queue.isNotEmpty() -> {
                         // Dequeue the next task
                         val nextTask = queue.poll()
+                        if (!canInitialize(nextTask)) {
+                            actions = addActions(actions, rejectUnstarted(nextTask, state))
+                            break
+                        }
                         activeTask = nextTask
-                        activeTaskStartTimeMs = currentTimestampMs
+                        clock.activeTaskStartTimeMs = currentTimestampMs
+                        clock.observeTimestamp(currentTimestampMs)
                         try {
                             actions = addActions(actions, nextTask.initialize(state))
-                        } catch (e: Exception) {
-                            System.err.println("TaskExecutor: Exception during task.initialize for task ${nextTask.name}: ${e.message}")
-                            e.printStackTrace()
+                        } catch (e: Throwable) {
+                            TaskExecutorFailures.report(nextTask, "initialize", e)
                             actions = addActions(actions, handleTaskFailure(nextTask, state))
                             break
                         }
@@ -160,12 +304,15 @@ class TaskExecutor {
                     }
                     else -> Unit
                 }
-                val elapsed = currentTimestampMs - activeTaskStartTimeMs
+                val elapsed = try { clock.elapsedSince(clock.activeTaskStartTimeMs, currentTimestampMs) }
+                catch (failure: Throwable) {
+                    actions = addActions(actions, drainFault(state, "elapsed time", failure))
+                    break
+                }
                 val isCompleted = try {
-                    task.isCompleted(state, elapsed)
-                } catch (e: Exception) {
-                    System.err.println("TaskExecutor: Exception in task.isCompleted for task ${task.name}: ${e.message}")
-                    e.printStackTrace()
+                    task.completionReady(state, elapsed)
+                } catch (e: Throwable) {
+                    TaskExecutorFailures.report(task, "completion check", e)
                     actions = addActions(actions, handleTaskFailure(task, state))
                     break
                 }
@@ -182,21 +329,33 @@ class TaskExecutor {
                     // Finalize active task
                     try {
                         actions = addActions(actions, task.end(state, interrupted = false))
-                    } catch (e: Exception) {
-                        System.err.println("TaskExecutor: Exception in task.end for task ${task.name}: ${e.message}")
-                        e.printStackTrace()
+                    } catch (e: Throwable) {
+                        TaskExecutorFailures.report(task, "end", e)
                         actions = addActions(actions, handleTaskFailure(task, state))
                         break
                     }
-                    task.releaseRuntimeState()
+                    when (TaskStateMachine.getStatus(task)) {
+                        TaskStatus.FAILED -> {
+                            actions = addActions(actions, handleTaskFailure(task, state))
+                            break
+                        }
+                        TaskStatus.CANCELLED -> {
+                            actions = addActions(actions, handleTaskCancellation(task, state))
+                            break
+                        }
+                        else -> Unit
+                    }
                     activeTask = null
+                    if (!releaseMetadata(task) || TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                        actions = addActions(actions, cancelAllInternal(state))
+                        break
+                    }
                     task = null // Continue loop to dequeue/resume instantly
                 } else {
                     val execActions = try {
                         task.execute(state, elapsed)
-                    } catch (e: Exception) {
-                        System.err.println("TaskExecutor: Exception in task.execute for task ${task.name}: ${e.message}")
-                        e.printStackTrace()
+                    } catch (e: Throwable) {
+                        TaskExecutorFailures.report(task, "execute", e)
                         actions = addActions(actions, handleTaskFailure(task, state))
                         break
                     }
@@ -215,7 +374,8 @@ class TaskExecutor {
             System.err.println("TaskExecutor: Loop transition threshold reached ($maxLoopCount). Aborting update to prevent lockup.")
         }
 
-        return actions ?: emptyList()
+        if (activeTask == null && preemptedStack.isEmpty() && queue.isEmpty()) clock.reset()
+        return@operation actions ?: emptyList()
     }
 
     private fun addActions(existing: MutableList<RobotAction>?, newActions: List<RobotAction>): MutableList<RobotAction>? {
@@ -225,82 +385,105 @@ class TaskExecutor {
         return list
     }
 
-    private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> {
-        System.err.println("TaskExecutor: Task ${task.name} failed. Aborting queued and preempted tasks.")
+    private fun handleTaskFailure(task: Task, state: RobotState): List<RobotAction> = cleanup {
         TaskStateMachine.markFailed(task)
+        activeTask = null
         try {
             // Invocation is one-shot, so this also covers tasks that marked themselves failed.
             TaskCallbacks.invokeFail(task)
-        } catch (e: Exception) {
-            System.err.println("TaskExecutor: Exception during failure callback: ${e.message}")
+        } catch (e: Throwable) {
+            TaskExecutorFailures.report(task, "failure callback", e)
         }
         val cleanupActions = try {
             task.end(state, interrupted = true)
-        } catch (e: Exception) {
-            System.err.println("TaskExecutor: Exception during task.end cleanup: ${e.message}")
-            e.printStackTrace()
+        } catch (e: Throwable) {
+            TaskExecutorFailures.report(task, "failed task end", e)
             emptyList()
         } finally {
-            task.releaseRuntimeState()
+            releaseMetadata(task)
         }
-        activeTask = null
         val allCleanupActions = cleanupActions.toMutableList()
-        allCleanupActions.addAll(cancelAll(state))
-        return allCleanupActions
+        allCleanupActions.addAll(cancelAllInternal(state))
+        allCleanupActions
     }
 
     /** Performs interrupted cleanup without converting cancellation into completion or failure. */
-    private fun handleTaskCancellation(task: Task, state: RobotState): List<RobotAction> {
+    private fun handleTaskCancellation(task: Task, state: RobotState): List<RobotAction> = cleanup {
+        activeTask = null
         val cleanupActions = try {
             task.end(state, interrupted = true)
-        } catch (error: Exception) {
-            System.err.println("TaskExecutor: Exception during cancelled task cleanup: ${error.message}")
+        } catch (error: Throwable) {
+            TaskExecutorFailures.report(task, "cancelled task end", error)
             emptyList()
         } finally {
-            task.releaseRuntimeState()
+            releaseMetadata(task)
         }
-        activeTask = null
         val allCleanupActions = cleanupActions.toMutableList()
-        allCleanupActions.addAll(cancelAll(state))
-        return allCleanupActions
+        allCleanupActions.addAll(cancelAllInternal(state))
+        allCleanupActions
     }
 
     /**
      * Interrupts initialized tasks, clears the executor, and returns every safe-cleanup action.
      *
-     * Unlike [clear], this method makes cancellation output observable to its caller. Runtime
+     * This method makes cancellation output observable to its caller. Runtime
      * managers must dispatch the returned actions before publishing their cancelled lifecycle
      * event. Tasks that never initialized are released without calling `end`, because their
      * cleanup implementations may depend on initialization-only state.
      */
     @Synchronized
-    fun cancelAll(state: RobotState): List<RobotAction> {
+    fun cancelAll(state: RobotState): List<RobotAction> = operation("cancelAll") {
+        cancelAllInternal(state)
+    }
+
+    private fun cancelAllInternal(state: RobotState): List<RobotAction> = cleanup {
         val actions = mutableListOf<RobotAction>()
-        activeTask?.let { task ->
-            try {
-                actions.addAll(task.end(state, interrupted = true))
-            } catch (error: Exception) {
-                System.err.println("TaskExecutor: Exception ending active task ${task.name}: ${error.message}")
-            } finally {
-                task.releaseRuntimeState()
-            }
-        }
-        for ((task, _) in preemptedStack) {
-            try {
-                actions.addAll(task.end(state, interrupted = true))
-            } catch (error: Exception) {
-                System.err.println("TaskExecutor: Exception ending preempted task ${task.name}: ${error.message}")
-            } finally {
-                task.releaseRuntimeState()
-            }
-        }
-        for (task in queue) {
-            task.releaseRuntimeState()
-        }
-        queue.clear()
-        preemptedStack.clear()
+        (controlFailure as? TaskTransitionAbort)?.let { actions.addAll(it.actions) }
+        controlFailure = null
+        val current = activeTask
         activeTask = null
-        return actions
+        fun cancelStarted(task: Task) {
+            try {
+                actions.addAll(task.end(state, interrupted = true))
+            } catch (error: Throwable) {
+                TaskExecutorFailures.report(task, "cancel end", error)
+                TaskStateMachine.markFailed(task)
+            } finally {
+                releaseMetadata(task)
+            }
+        }
+        current?.let(::cancelStarted)
+        while (preemptedStack.isNotEmpty()) cancelStarted(preemptedStack.pop().first)
+        while (queue.isNotEmpty()) releaseMetadata(queue.removeFirst())
+        clock.reset()
+        actions
+    }
+
+    private fun rejectUnstarted(task: Task, state: RobotState): List<RobotAction> = cleanup {
+        // External initialization after enqueue is invalid, but any running output still needs end.
+        if (TaskStateMachine.getStatus(task) == TaskStatus.RUNNING) {
+            return@cleanup handleTaskFailure(task, state)
+        }
+        if (TaskStateMachine.getStatus(task) != TaskStatus.CANCELLED) {
+            TaskStateMachine.markFailed(task)
+            try { TaskCallbacks.invokeFail(task) } catch (failure: Throwable) {
+                TaskExecutorFailures.report(task, "queued task failure callback", failure)
+            }
+        }
+        releaseMetadata(task)
+        cancelAllInternal(state)
+    }
+
+    private fun releaseMetadata(task: Task): Boolean = cleanup {
+        try {
+            val ownership = admissions.remove(task)
+            if (ownership != null) ownership.releaseAll() else TaskRuntimeOwnership.release(task)
+            true
+        } catch (failure: Throwable) {
+            TaskStateMachine.markFailed(task)
+            TaskExecutorFailures.report(task, "metadata release", failure)
+            false
+        }
     }
 
     /**

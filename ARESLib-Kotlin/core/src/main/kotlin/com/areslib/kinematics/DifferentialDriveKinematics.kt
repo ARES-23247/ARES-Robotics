@@ -23,6 +23,11 @@ import com.areslib.math.geometry.ChassisSpeeds
  * - Linear Velocities: Meters per second (m/s), +X forward
  * - Angular Velocities: Radians per second (rad/s), CCW-positive (\omega > 0 -> left turn)
  *
+ * Raw conversions follow IEEE arithmetic: invalid inputs or genuinely unrepresentable
+ * components may be nonfinite. Normalization neutralizes invalid coupled wheel vectors.
+ * Buffered methods require at least two elements and reject short buffers before mutation;
+ * trailing output elements remain untouched. Returned value objects are independently owned.
+ *
  * ### Zero-GC Guarantees:
  * High-frequency update loops (50Hz–1000Hz) must call the primitive overload [toWheelSpeeds] passing a pre-allocated
  * `DoubleArray(2)` buffer to eliminate heap allocations in hot paths.
@@ -39,7 +44,8 @@ class DifferentialDriveKinematics(
     }
 
     private val halfTrackWidth: Double = trackWidthMeters / 2.0
-    private val invTrackWidth: Double = 1.0 / trackWidthMeters
+    private fun rotationalSpeed(omega: Double): Double =
+        if (halfTrackWidth >= java.lang.Double.MIN_NORMAL) omega * halfTrackWidth else (omega * 0.5) * trackWidthMeters
 
     /**
      * Calculates individual wheel surface speeds from robot-centric [ChassisSpeeds].
@@ -51,8 +57,9 @@ class DifferentialDriveKinematics(
         val vx = speeds.vxMetersPerSecond
         val omega = speeds.omegaRadiansPerSecond
 
-        val left = vx - omega * halfTrackWidth
-        val right = vx + omega * halfTrackWidth
+        val rotation = rotationalSpeed(omega)
+        val left = vx - rotation
+        val right = vx + rotation
 
         return DifferentialWheelSpeeds(left, right)
     }
@@ -64,12 +71,13 @@ class DifferentialDriveKinematics(
      * @param output Pre-allocated DoubleArray where output[0] = v_L and output[1] = v_R.
      */
     fun toWheelSpeeds(speeds: ChassisSpeeds, output: DoubleArray) {
-        if (output.size < 2) return
+        require(output.size >= 2) { "Differential wheel output requires two elements" }
         val vx = speeds.vxMetersPerSecond
         val omega = speeds.omegaRadiansPerSecond
 
-        output[0] = vx - omega * halfTrackWidth
-        output[1] = vx + omega * halfTrackWidth
+        val rotation = rotationalSpeed(omega)
+        output[0] = vx - rotation
+        output[1] = vx + rotation
     }
 
     /**
@@ -80,9 +88,10 @@ class DifferentialDriveKinematics(
      * @param outSpeeds Pre-allocated DoubleArray where outSpeeds[0] = v_L and outSpeeds[1] = v_R.
      */
     fun toWheelSpeeds(vx: Double, omega: Double, outSpeeds: DoubleArray) {
-        if (outSpeeds.size < 2) return
-        outSpeeds[0] = vx - omega * halfTrackWidth
-        outSpeeds[1] = vx + omega * halfTrackWidth
+        require(outSpeeds.size >= 2) { "Differential wheel output requires two elements" }
+        val rotation = rotationalSpeed(omega)
+        outSpeeds[0] = vx - rotation
+        outSpeeds[1] = vx + rotation
     }
 
     /**
@@ -102,8 +111,8 @@ class DifferentialDriveKinematics(
      * @return Resulting forward chassis speeds [v_x, 0, \omega]^T.
      */
     fun toChassisSpeeds(leftMetersPerSecond: Double, rightMetersPerSecond: Double): ChassisSpeeds {
-        val vx = (leftMetersPerSecond + rightMetersPerSecond) * 0.5
-        val omega = (rightMetersPerSecond - leftMetersPerSecond) * invTrackWidth
+        val vx = wheelMean(leftMetersPerSecond, rightMetersPerSecond)
+        val omega = wheelDifferenceRatio(rightMetersPerSecond, leftMetersPerSecond, trackWidthMeters)
         return ChassisSpeeds(vx, 0.0, omega)
     }
 
@@ -115,19 +124,11 @@ class DifferentialDriveKinematics(
          * @param maxSpeedMetersPerSecond Maximum allowed wheel surface speed in m/s.
          */
         fun normalize(speeds: DoubleArray, maxSpeedMetersPerSecond: Double) {
-            if (speeds.size < 2) return
+            require(speeds.size >= 2) { "Differential wheel speeds require two elements" }
             val maxMagnitude = kotlin.math.max(kotlin.math.abs(speeds[0]), kotlin.math.abs(speeds[1]))
             val scale = wheelSpeedScale(maxMagnitude, maxSpeedMetersPerSecond)
-            if (scale == 0.0) {
-                speeds[0] = 0.0
-                speeds[1] = 0.0
-                return
-            }
-
-            if (scale < 1.0) {
-                speeds[0] *= scale
-                speeds[1] *= scale
-            }
+            speeds[0] = scaledWheelSpeed(speeds[0], maxMagnitude, maxSpeedMetersPerSecond, scale)
+            speeds[1] = scaledWheelSpeed(speeds[1], maxMagnitude, maxSpeedMetersPerSecond, scale)
         }
     }
 }

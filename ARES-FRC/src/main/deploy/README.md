@@ -21,8 +21,10 @@ capability documents at runtime. `SmartDashboard/SelectedAuto` selects among tho
 of applying the document's placeholder starting pose.
 
 Autos are authored once in Blue-alliance, corner-origin field coordinates. Red execution reflects
-X across the alliance-wall axis before trajectory generation. Keep every robot center at least
-0.40 m from the field boundary for Marvin's current 0.80 m square bumper footprint.
+X across the alliance-wall axis before trajectory generation. For Marvin's current 0.80 m square
+bumper footprint, an axis-aligned robot center needs at least 0.40 m of boundary clearance. Check
+all rotated bumper corners at other headings: at 45 degrees the required clearance grows to
+`0.40 * sqrt(2)`, approximately 0.566 m. The autonomous validator checks the full rotated footprint.
 
 ## Swerve offsets
 

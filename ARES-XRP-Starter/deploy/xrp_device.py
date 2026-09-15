@@ -17,6 +17,7 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "device" / "xrp-runtime-manifest.json"
 PREFLIGHT_MARKER = "ARES_XRP_PREFLIGHT="
+REQUIRED_APIS = ("drive", "encoders", "battery", "rangefinder", "imu", "motors")
 
 
 class DeviceError(RuntimeError):
@@ -56,12 +57,25 @@ def verified_download(url: str, destination: pathlib.Path, expected_size: int, e
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.is_file() and destination.stat().st_size == expected_size and sha256_file(destination) == expected_sha256:
         return destination
-    partial = destination.with_suffix(destination.suffix + ".partial")
+    partial = None
     try:
-        with urllib.request.urlopen(url, timeout=30) as response, partial.open("wb") as output:
-            shutil.copyfileobj(response, output)
-        actual_size = partial.stat().st_size
-        actual_sha256 = sha256_file(partial)
+        digest = hashlib.sha256()
+        actual_size = 0
+        with tempfile.NamedTemporaryFile(mode="wb", prefix=destination.name + ".", suffix=".partial",
+                                         dir=destination.parent, delete=False) as output:
+            partial = pathlib.Path(output.name)
+            with urllib.request.urlopen(url, timeout=30) as response:
+                while True:
+                    # One extra byte is enough to reject an oversized response.
+                    chunk = response.read(min(1024 * 1024, expected_size - actual_size + 1))
+                    if not chunk:
+                        break
+                    actual_size += len(chunk)
+                    if actual_size > expected_size:
+                        raise DeviceError("Downloaded image identity mismatch: response exceeds pinned size")
+                    digest.update(chunk)
+                    output.write(chunk)
+        actual_sha256 = digest.hexdigest()
         if actual_size != expected_size or actual_sha256 != expected_sha256:
             raise DeviceError(
                 f"Downloaded image identity mismatch: expected {expected_size} bytes/{expected_sha256}, "
@@ -70,7 +84,8 @@ def verified_download(url: str, destination: pathlib.Path, expected_size: int, e
         partial.replace(destination)
         return destination
     finally:
-        partial.unlink(missing_ok=True)
+        if partial is not None:
+            partial.unlink(missing_ok=True)
 
 
 def prepare_image(output: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
@@ -110,6 +125,8 @@ def run_mpremote(arguments: list[str], *, capture: bool = False) -> subprocess.C
 def _preflight_script() -> str:
     return """import json, sys
 result = {'machine': str(sys.implementation[2]), 'micropython': '.'.join(str(sys.implementation[1][i]) for i in range(3)), 'xrplib': '', 'apis': {}}
+def supports(device, names):
+    return all(callable(getattr(device, name, None)) for name in names)
 try:
     from XRPLib.version import __version__ as xrplib_version
     result['xrplib'] = str(xrplib_version)
@@ -119,31 +136,33 @@ try:
     import XRPLib.defaults as defaults
     board, drivetrain, left_motor, right_motor, rangefinder, imu, reflectance = defaults.board, defaults.drivetrain, defaults.left_motor, defaults.right_motor, defaults.rangefinder, defaults.imu, defaults.reflectance
     result['boardType'] = str(board.get_type()) if hasattr(board, 'get_type') else ''
-    result['apis']['drive'] = hasattr(drivetrain, 'set_effort')
-    result['apis']['encoders'] = hasattr(drivetrain, 'get_left_encoder_position') and hasattr(drivetrain, 'get_right_encoder_position')
-    result['apis']['battery'] = hasattr(board, 'get_battery_voltage')
-    result['apis']['rangefinder'] = hasattr(rangefinder, 'distance')
-    result['apis']['imu'] = hasattr(imu, 'get_yaw') and hasattr(imu, 'get_gyro_z_rate')
-    result['apis']['motors'] = hasattr(left_motor, 'set_effort') and hasattr(right_motor, 'set_effort')
+    result['apis']['drive'] = supports(drivetrain, ('set_effort',))
+    result['apis']['encoders'] = supports(drivetrain, ('get_left_encoder_position', 'get_right_encoder_position'))
+    result['apis']['battery'] = supports(board, ('get_battery_voltage',))
+    result['apis']['rangefinder'] = supports(rangefinder, ('distance',))
+    result['apis']['imu'] = supports(imu, ('get_yaw', 'get_gyro_z_rate'))
+    result['apis']['motors'] = all(supports(motor, ('set_effort', 'get_position')) for motor in (left_motor, right_motor))
     result['capabilities'] = {
-        'reflectance': all(hasattr(reflectance, name) for name in ('get_left', 'get_middle', 'get_right')),
-        'greenLed': hasattr(board, 'led_on') and hasattr(board, 'led_off'),
-        'rgbLed': hasattr(board, 'set_rgb_led'),
+        'reflectance': supports(reflectance, ('get_left', 'get_middle', 'get_right')),
+        'greenLed': supports(board, ('led_on', 'led_off')),
+        'rgbLed': supports(board, ('set_rgb_led',)),
+        'userButton': supports(board, ('is_button_pressed',)),
+        'fullImu': supports(imu, ('get_yaw', 'get_pitch', 'get_roll', 'get_gyro_x_rate', 'get_gyro_y_rate', 'get_gyro_z_rate', 'get_acc_x', 'get_acc_y', 'get_acc_z')),
         'genericIo': False,
         'buzzer': False,
     }
     result['ports'] = {
-        'motors': [number for number, name in ((1, 'left_motor'), (2, 'right_motor'), (3, 'motor_three'), (4, 'motor_four')) if getattr(defaults, name, None) is not None],
-        'servos': [number for number, name in ((1, 'servo_one'), (2, 'servo_two'), (3, 'servo_three'), (4, 'servo_four')) if getattr(defaults, name, None) is not None],
+        'motors': [number for number, name in ((1, 'left_motor'), (2, 'right_motor'), (3, 'motor_three'), (4, 'motor_four')) if supports(getattr(defaults, name, None), ('set_effort', 'get_position', 'get_speed'))],
+        'servos': [number for number, name in ((1, 'servo_one'), (2, 'servo_two'), (3, 'servo_three'), (4, 'servo_four')) if supports(getattr(defaults, name, None), ('set_angle',))],
     }
     try:
         from XRPLib.defaults import buzzer
-        result['capabilities']['buzzer'] = hasattr(buzzer, 'play_note') and hasattr(buzzer, 'reset_buzzer')
+        result['capabilities']['buzzer'] = supports(buzzer, ('play_note', 'reset_buzzer'))
     except ImportError:
         pass
     try:
         from machine import Pin, PWM, ADC
-        result['capabilities']['genericIo'] = all(item is not None for item in (Pin, PWM, ADC))
+        result['capabilities']['genericIo'] = all(callable(item) for item in (Pin, PWM, ADC))
     except ImportError:
         pass
 except Exception as error:
@@ -155,7 +174,13 @@ print('ARES_XRP_PREFLIGHT=' + json.dumps(result))
 def parse_preflight_output(output: str) -> dict:
     for line in reversed(output.splitlines()):
         if PREFLIGHT_MARKER in line:
-            return json.loads(line.split(PREFLIGHT_MARKER, 1)[1].strip())
+            try:
+                report = json.loads(line.split(PREFLIGHT_MARKER, 1)[1].strip())
+            except ValueError as error:
+                raise DeviceError("Connected device returned an invalid preflight report") from error
+            if not isinstance(report, dict):
+                raise DeviceError("Connected device preflight report must be an object")
+            return report
     raise DeviceError("Connected device did not return an ARES XRP preflight report")
 
 
@@ -173,7 +198,11 @@ def required_project_capabilities() -> set[str]:
                 required.add("greenLed" if channel is None else "rgbLed")
             elif kind == "BUZZER":
                 required.add("buzzer")
-            elif kind in ("DIGITAL_INPUT", "DIGITAL_OUTPUT", "PWM_OUTPUT") and channel is not None:
+            elif kind == "IMU":
+                required.add("fullImu")
+            elif kind == "DIGITAL_INPUT" and channel is None:
+                required.add("userButton")
+            elif kind == "ANALOG_INPUT" or (kind in ("DIGITAL_INPUT", "DIGITAL_OUTPUT", "PWM_OUTPUT") and channel is not None):
                 required.add("genericIo")
     return required
 
@@ -214,12 +243,16 @@ def preflight() -> dict:
         problems.append(f"XRPLib {report.get('xrplib') or 'missing'} is installed; ARES requires {manifest['xrplib']['version']}")
     if report.get("importError"):
         problems.append(f"XRPLib import failed: {report['importError']}")
-    missing_apis = sorted(name for name, present in report.get("apis", {}).items() if not present)
+    apis = report.get("apis", {})
+    capabilities = report.get("capabilities", {})
+    if not isinstance(apis, dict) or not isinstance(capabilities, dict):
+        raise DeviceError("XRP preflight API/capability evidence must be objects")
+    missing_apis = sorted(name for name in REQUIRED_APIS if apis.get(name) is not True)
     if missing_apis:
         problems.append("XRPLib is missing required APIs: " + ", ".join(missing_apis))
     missing_capabilities = sorted(
         name for name in required_project_capabilities()
-        if not report.get("capabilities", {}).get(name, False)
+        if capabilities.get(name) is not True
     )
     if missing_capabilities:
         problems.append("The selected project requires unavailable board capabilities: " + ", ".join(missing_capabilities))
@@ -266,7 +299,8 @@ def _stage_directory(slot: pathlib.Path, content_sha256: str, detected_board: st
         runtime = ROOT.parent / "ARESLib-Kotlin" / "ares-micro" / "ares_micro"
     if not runtime.is_dir():
         raise DeviceError("Pinned ares_micro runtime is missing; re-export this project from Studio")
-    shutil.copytree(runtime, slot / "ares_micro")
+    ignored_cache = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo")
+    shutil.copytree(runtime, slot / "ares_micro", ignore=ignored_cache)
     for source, destination in (
         (ROOT / "main.py", slot / "main.py"),
         (ROOT / "hardware.py", slot / "hardware.py"),
@@ -275,7 +309,7 @@ def _stage_directory(slot: pathlib.Path, content_sha256: str, detected_board: st
         shutil.copy2(source, destination)
     extensions = ROOT / "extensions"
     if extensions.is_dir():
-        shutil.copytree(extensions, slot / "extensions")
+        shutil.copytree(extensions, slot / "extensions", ignore=ignored_cache)
     secrets = ROOT / "xrp_secrets.py"
     if secrets.is_file():
         shutil.copy2(secrets, slot / "xrp_secrets.py")
@@ -294,8 +328,8 @@ def _stage_directory(slot: pathlib.Path, content_sha256: str, detected_board: st
 
 
 def _seal_payload(stage: pathlib.Path) -> str:
-    files = {path.relative_to(stage).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
-             for path in sorted(stage.rglob("*")) if path.is_file()}
+    files = {path.relative_to(stage).as_posix(): sha256_file(path)
+             for path in sorted(stage.rglob("*")) if path.is_file() and path != stage / "ares-files.json"}
     payload = (json.dumps(files, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
     (stage / "ares-files.json").write_bytes(payload)
     return hashlib.sha256(payload).hexdigest()
@@ -352,9 +386,9 @@ def replace_marker(path, value):
  sync()
 """ + f"next_slot={target}\n" + """try:
  current=read_slot('/ares_active_slot.txt')
-except (OSError, AssertionError, SyntaxError):
+except (OSError, AssertionError, SyntaxError, ValueError):
  try: current=read_slot('/ares_active_slot.prev')
- except (OSError, AssertionError, SyntaxError): current=None
+ except (OSError, AssertionError, SyntaxError, ValueError): current=None
 if current and current != next_slot:
  replace_marker('/ares_active_slot.prev',current)
 replace_marker('/ares_active_slot.txt',next_slot)
@@ -394,10 +428,13 @@ def deploy() -> str:
 
 def deployment_plan() -> dict:
     content_sha256 = _content_sha()
+    board_id, _ = selected_board()
     with tempfile.TemporaryDirectory(prefix="ares-xrp-plan-") as temporary:
         stage = pathlib.Path(temporary) / "payload"
         stage.mkdir()
-        _stage_directory(stage, content_sha256)
+        # Successful preflight requires this exact selected board. Include its
+        # identity so the read-only plan predicts the actual deployment payload.
+        _stage_directory(stage, content_sha256, board_id)
         digest = _seal_payload(stage)
         python_files = sorted(path.relative_to(stage).as_posix() for path in stage.rglob("*.py"))
         for path in stage.rglob("*.py"):

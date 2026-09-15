@@ -277,6 +277,7 @@ class ServiceRegistry {
     /** Tears down services that hold coroutine scopes or background jobs, in dependency order. */
     internal suspend fun disposeAndJoin() {
         var telemetryPersisted = true
+        var alertsPersisted = true
         if (lazyFieldInitialized(::updateCheckerService)) {
             updateCheckerService.dispose()
         }
@@ -325,7 +326,7 @@ class ServiceRegistry {
                     replayEngineService.disposeAndJoin()
                 }
                 if (lazyFieldInitialized(::alertEngineService)) {
-                    alertEngineService.dispose()
+                    alertsPersisted = alertEngineService.disposeAndJoin()
                 }
                 if (lazyFieldInitialized(::phoenixDiagnosticsService)) {
                     phoenixDiagnosticsService.dispose()
@@ -351,7 +352,7 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::eventApiService)) {
                     eventApiService.close()
                 }
-                if (telemetryPersisted && lazyFieldInitialized(::databaseService)) {
+                if (telemetryPersisted && alertsPersisted && lazyFieldInitialized(::databaseService)) {
                     databaseService.closeAndJoin()
                 }
                 if (lazyFieldInitialized(::gamepadService)) {
@@ -359,9 +360,9 @@ class ServiceRegistry {
                 }
             }
         )
-        if (!telemetryPersisted) {
+        if (!telemetryPersisted || !alertsPersisted) {
             throw java.io.IOException(
-                "Shutdown aborted before closing DuckDB because pending telemetry could not be persisted"
+                "Shutdown aborted before closing DuckDB because pending telemetry or alerts could not be persisted"
             )
         }
     }
@@ -412,6 +413,9 @@ class KeyboardDriveState {
     // Trigger (Shift)
     var isShiftPressed by androidx.compose.runtime.mutableStateOf(false)
 
+    // Hold Space for fine keyboard positioning; mechanism buttons keep their normal meaning.
+    var isSpacePressed by androidx.compose.runtime.mutableStateOf(false)
+
     fun releaseAll() {
         isWPressed = false
         isSPressed = false
@@ -428,6 +432,7 @@ class KeyboardDriveState {
         isQPressed = false
         isEPressed = false
         isShiftPressed = false
+        isSpacePressed = false
     }
 
     fun disarm() {

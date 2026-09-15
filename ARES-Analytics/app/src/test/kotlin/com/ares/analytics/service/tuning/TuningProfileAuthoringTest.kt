@@ -2,7 +2,8 @@ package com.ares.analytics.service.tuning
 
 import com.areslib.tuning.*
 import java.io.File
-import java.nio.file.Files
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
@@ -10,6 +11,7 @@ import com.ares.analytics.viewmodel.nextTuningRequestNonce
 import com.ares.analytics.viewmodel.recordTuningPromotionCheckpoint
 
 class TuningProfileAuthoringTest {
+    @get:Rule val temporary = TemporaryFolder()
     private val gain = declaration("drive.translation.kp", "drive.translation.kP", TuningApplyPolicy.LIVE_SAFE, 2.0, 0.0, 50.0)
     private val vendor = declaration("drive.vendor.radius", "drive.vendor.wheelRadius", TuningApplyPolicy.READ_ONLY_VENDOR, .05, .01, .25)
     private val declarations = listOf(gain, vendor)
@@ -50,7 +52,7 @@ class TuningProfileAuthoringTest {
 
     @Test
     fun `workspace load rejects duplicate profile identities and broken inheritance`() {
-        val duplicateRoot = Files.createTempDirectory("ares-duplicate-profile").toFile()
+        val duplicateRoot = temporary.newFolder("ares-duplicate-profile")
         val duplicateDir = File(duplicateRoot, ".ares/tuning").apply { mkdirs() }
         duplicateDir.resolve("a.arestuning").writeText(TuningProfileDocumentCodec.encode(profile("profile.a", "competition", null, emptyList()), emptyList()))
         duplicateDir.resolve("b.arestuning").writeText(TuningProfileDocumentCodec.encode(profile("profile.b", "competition", null, emptyList()), emptyList()))
@@ -58,7 +60,7 @@ class TuningProfileAuthoringTest {
         assertNotNull(duplicateFailure)
         assertTrue(duplicateFailure.message.orEmpty().contains("IDs must be unique"))
 
-        val brokenRoot = Files.createTempDirectory("ares-broken-profile").toFile()
+        val brokenRoot = temporary.newFolder("ares-broken-profile")
         val brokenDir = File(brokenRoot, ".ares/tuning").apply { mkdirs() }
         brokenDir.resolve("broken.arestuning").writeText(
             TuningProfileDocumentCodec.encode(profile("profile.broken", "broken", "profile.missing", emptyList()), emptyList())
@@ -127,7 +129,7 @@ class TuningProfileAuthoringTest {
 
     @Test
     fun `review is side effect free and promotion writes canonical codec profile plus history`() {
-        val root = Files.createTempDirectory("ares-tuning").toFile()
+        val root = temporary.newFolder("ares-tuning")
         val canonical = File(root, ".ares/tuning/competition.arestuning")
         canonical.parentFile.mkdirs()
         canonical.writeText(TuningProfileDocumentCodec.encode(competition, declarations))
@@ -181,7 +183,7 @@ class TuningProfileAuthoringTest {
 
     @Test
     fun `live or calibration provenance without verified evidence cannot promote`() {
-        val root = Files.createTempDirectory("ares-evidence").toFile()
+        val root = temporary.newFolder("ares-evidence")
         val canonical = File(root, ".ares/tuning/${competition.uid}.arestuning")
         canonical.parentFile.mkdirs()
         canonical.writeText(TuningProfileDocumentCodec.encode(competition, declarations))
@@ -193,7 +195,7 @@ class TuningProfileAuthoringTest {
 
     @Test
     fun `stale reviewed hash cannot replace canonical profile or create proposal snapshot`() {
-        val root = Files.createTempDirectory("ares-stale-review").toFile()
+        val root = temporary.newFolder("ares-stale-review")
         val canonical = File(root, ".ares/tuning/${competition.uid}.arestuning")
         canonical.parentFile.mkdirs()
         canonical.writeText(TuningProfileDocumentCodec.encode(competition, declarations))

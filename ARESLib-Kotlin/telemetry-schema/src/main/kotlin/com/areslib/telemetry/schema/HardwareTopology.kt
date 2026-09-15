@@ -54,7 +54,10 @@ public data class HardwareTopology(
     val schemaVersion: Int = HARDWARE_TOPOLOGY_SCHEMA_VERSION,
 )
 
-/** The canonical JSON boundary shared by robot publishers and desktop consumers. */
+/**
+ * Canonical JSON boundary with nonblank robot/node identities and unique node IDs.
+ * Parent links may refer to absent nodes so partial hardware discovery remains representable.
+ */
 public object HardwareTopologyCodec {
     private val json = Json {
         encodeDefaults = true
@@ -63,18 +66,24 @@ public object HardwareTopologyCodec {
     }
 
     public fun encode(topology: HardwareTopology): String {
-        requireSupported(topology)
+        requireValid(topology)
         return json.encodeToString(topology)
     }
 
     public fun decode(payload: String): HardwareTopology {
-        return json.decodeFromString<HardwareTopology>(payload).also(::requireSupported)
+        return json.decodeFromString<HardwareTopology>(payload).also(::requireValid)
     }
 
-    private fun requireSupported(topology: HardwareTopology) {
+    private fun requireValid(topology: HardwareTopology) {
         require(topology.schemaVersion == HARDWARE_TOPOLOGY_SCHEMA_VERSION) {
             "Unsupported hardware topology schema ${topology.schemaVersion}; " +
                 "expected $HARDWARE_TOPOLOGY_SCHEMA_VERSION"
+        }
+        require(topology.robotId.isNotBlank()) { "Hardware topology robotId must not be blank" }
+        val ids = HashSet<String>()
+        for (node in topology.nodes) {
+            require(node.id.isNotBlank()) { "Hardware topology node ID must not be blank" }
+            require(ids.add(node.id)) { "Duplicate hardware topology node ID: ${node.id}" }
         }
     }
 }

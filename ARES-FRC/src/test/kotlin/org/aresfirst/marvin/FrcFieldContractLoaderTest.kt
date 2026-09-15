@@ -4,8 +4,49 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class FrcFieldContractLoaderTest {
+    private fun field(tags: String = """{"id":7,"x":1.0,"y":2.0,"z":1.4}"""): String =
+        """{"schemaVersion":2,"id":"boundary","name":"Boundary","fieldType":"frc","widthMeters":16.54175,"heightMeters":8.21055,"apriltags":[$tags]}"""
+
+    @ParameterizedTest
+    @ValueSource(strings = ["malformed", "negative-width", "duplicate-tag", "invalid-tag", "nonfinite", "future-schema", "crossed-polygon"])
+    fun `invalid documents clear prior success and later valid loads clear diagnostics`(case: String) {
+        val valid = field()
+        assertNotNull(loadFrcFieldContract(valid.toByteArray()))
+        val invalid = when (case) {
+            "malformed" -> "{"
+            "negative-width" -> valid.replace("16.54175", "-1.0")
+            "duplicate-tag" -> field("""{"id":7},{"id":7}""")
+            "invalid-tag" -> field("""{"id":0}""")
+            "nonfinite" -> valid.replace("1.4", "1e999")
+            "future-schema" -> valid.replace("\"schemaVersion\":2", "\"schemaVersion\":999")
+            "crossed-polygon" -> valid.dropLast(1) + """, "obstacles":[{"id":"crossed","shape":"polygon","points":[{"x":0,"y":0},{"x":2,"y":2},{"x":0,"y":2},{"x":2,"y":0}]}]}"""
+            else -> error(case)
+        }
+        assertNull(loadFrcFieldContract(invalid.toByteArray()), case)
+        assertNotNull(FrcFieldContractLoader.error, case)
+        assertNotNull(loadFrcFieldContract(valid.toByteArray()), case)
+        assertNull(FrcFieldContractLoader.error, case)
+    }
+
+    @Test
+    fun `layout preserves full tag orientation and legitimate tags outside playable rectangle`() {
+        val contract = loadFrcFieldContract(field(
+            """{"id":7,"x":-0.04,"y":2.0,"z":1.4,"roll":20.0,"pitch":-30.0,"yaw":120.0}"""
+        ).toByteArray())!!
+        val pose = contract.aprilTagLayout.getTagPose(7).orElseThrow()
+        assertEquals(-0.04, pose.x, 1e-12)
+        assertEquals(1.4, pose.z, 1e-12)
+        assertEquals(Math.toRadians(20.0), pose.rotation.x, 1e-12)
+        assertEquals(Math.toRadians(-30.0), pose.rotation.y, 1e-12)
+        assertEquals(Math.toRadians(120.0), pose.rotation.z, 1e-12)
+        assertEquals(16.54175, contract.aprilTagLayout.fieldLength, 1e-12)
+        assertEquals(8.21055, contract.aprilTagLayout.fieldWidth, 1e-12)
+    }
+
     @Test
     fun `canonical FRC field supplies the same WPILib layout used by vision`() {
         val contract = loadFrcFieldContract(

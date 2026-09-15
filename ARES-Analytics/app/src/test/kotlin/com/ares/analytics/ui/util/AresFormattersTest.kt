@@ -3,6 +3,13 @@ package com.ares.analytics.ui.util
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class AresFormattersTest {
     @Test
@@ -21,11 +28,23 @@ class AresFormattersTest {
     }
 
     @Test
-    fun `formatters return deterministic text for repeated timestamps`() {
-        val timestamp = 1_725_000_000_123L
-
-        assertEquals(AresFormatters.formatTimeMillis(timestamp), AresFormatters.formatTimeMillis(timestamp))
-        assertEquals(AresFormatters.formatDateTimeShort(timestamp), AresFormatters.formatDateTimeShort(timestamp))
-        assertEquals(AresFormatters.formatDateTimeMinutes(timestamp), AresFormatters.formatDateTimeMinutes(timestamp))
+    fun `concurrent formatting agrees with independently prepared calendar expectations`() {
+        val timestamps = listOf(-1L, 0L, 951_782_400_123L, 1_725_000_000_123L, 2_147_483_648_000L)
+        val formats = listOf("HH:mm:ss.SSS", "MMM dd, HH:mm", "yyyy-MM-dd HH:mm").map { pattern ->
+            SimpleDateFormat(pattern, Locale.US).apply { timeZone = TimeZone.getDefault() }
+        }
+        // Prepare expectations on this thread; SimpleDateFormat itself is not shared with workers.
+        val expected = timestamps.associateWith { timestamp -> formats.map { it.format(Date(timestamp)) } }
+        val executor = Executors.newFixedThreadPool(4)
+        try {
+            val tasks = (0 until 200).map { index -> Callable {
+                val timestamp = timestamps[index % timestamps.size]
+                assertEquals(expected.getValue(timestamp), listOf(AresFormatters.formatTimeMillis(timestamp),
+                    AresFormatters.formatDateTimeShort(timestamp), AresFormatters.formatDateTimeMinutes(timestamp)))
+            } }
+            executor.invokeAll(tasks, 5, TimeUnit.SECONDS).forEach { it.get() }
+        } finally {
+            executor.shutdownNow()
+        }
     }
 }

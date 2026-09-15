@@ -35,6 +35,11 @@ class FRCClimberHardwareIO(
     private val climberPosition = motor.position
     private val climberCurrent = motor.statorCurrent
 
+    // Retain argument groups; the Phoenix list overload avoids per-refresh vararg arrays.
+    private val resetMotors = arrayOf(motor)
+    private val positionSignals = listOf<BaseStatusSignal>(climberPosition)
+    private val currentSignals = listOf<BaseStatusSignal>(climberCurrent)
+
     init {
         motor.optimizeBusUtilization()
         setUpdateFrequencies(50.0, climberPosition)
@@ -69,14 +74,14 @@ class FRCClimberHardwareIO(
     }
 
     override fun refresh() {
-        if (anyTalonResetOccurred(motor)) {
+        if (anyDeviceResetOccurred(resetMotors) { it.hasResetOccurred() }) {
             resetDetected = true
             homed = false
         }
-        val positionRefreshOk = BaseStatusSignal.refreshAll(climberPosition).isOK
+        val positionRefreshOk = BaseStatusSignal.refreshAll(positionSignals).isOK
         cachedPositionValid = homed && positionRefreshOk &&
             climberPosition.valueAsDouble.isFinite()
-        cachedCurrentValid = BaseStatusSignal.refreshAll(climberCurrent).isOK &&
+        cachedCurrentValid = BaseStatusSignal.refreshAll(currentSignals).isOK &&
             climberCurrent.valueAsDouble.isFinite() && climberCurrent.valueAsDouble >= 0.0
     }
 

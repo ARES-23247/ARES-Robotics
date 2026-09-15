@@ -6,14 +6,24 @@ import com.areslib.telemetry.ITelemetry
 import edu.wpi.first.networktables.NetworkTableInstance
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import org.dyn4j.dynamics.Body
 
 class Dyn4jSimulationTest {
+    private val simulations = mutableListOf<Dyn4jSimulation>()
+
+    private fun simulation(seed: Long = 42L, feederPieceDetectorConfigured: Boolean = false) =
+        Dyn4jSimulation(seed, feederPieceDetectorConfigured).also { simulations.add(it) }
+
+    @AfterEach
+    fun closeSimulations() {
+        assertAll(simulations.map { sim -> org.junit.jupiter.api.function.Executable { sim.close() } })
+    }
 
     @Suppress("UNCHECKED_CAST")
     @Test
     fun testHighCapacityInventoryLimit() {
-        val sim = Dyn4jSimulation(seed = 42L, feederPieceDetectorConfigured = true)
+        val sim = simulation(seed = 42L, feederPieceDetectorConfigured = true)
         val state = RobotState(superstructure = SuperstructureState(custom = org.aresfirst.marvin.marvin.MarvinState(inventoryCount = 39)))
 
         // Get private 'balls' field via reflection from physicsWorld
@@ -46,18 +56,15 @@ class Dyn4jSimulationTest {
         }
         assertTrue(pivotDegrees > 45.0, "Intake pivot should have deployed beyond 45 degrees")
 
-        // Ingestion sets the simulated detector edge rather than mutating inventory directly.
-        // The actual +1 inventory increment is applied by MarvinReducer on the
-        // false->true transition of SuperstructureSensorUpdate.pieceDetected in the
-        // full robot loop (MarvinSuperstructure.readSensors), so it is not observable
-        // from Dyn4jSimulation.step() in isolation.
+        // Ingestion exposes the virtual detector and emits an atomic count/detector observation.
+        // SimInventoryAuditTest also dispatches that action and reads sensors to reject recounting.
         assertTrue(pieceDetected, "Sim should signal feeder piece-detected after ball ingestion")
     }
 
     @Suppress("UNCHECKED_CAST")
     @Test
     fun defaultSimulatorCreditsInventoryWhenACollectedPieceHasNoVirtualDetector() {
-        val sim = Dyn4jSimulation(seed = 42L)
+        val sim = simulation(seed = 42L)
         val state = RobotState(
             superstructure = SuperstructureState(
                 custom = org.aresfirst.marvin.marvin.MarvinState(inventoryCount = 3)
@@ -89,7 +96,7 @@ class Dyn4jSimulationTest {
     @Suppress("UNCHECKED_CAST")
     @Test
     fun testShootingAnd2_5DProjectileMotion() {
-        val sim = Dyn4jSimulation(seed = 42L)
+        val sim = simulation(seed = 42L)
         
         // Setup state with active flywheel ready at 4000 RPM, and cowl angle
         val superstructure = SuperstructureState(
@@ -168,7 +175,7 @@ class Dyn4jSimulationTest {
             "Production feeder voltage ($productionVolts V) must pass the simulation spin gate"
         )
 
-        val sim = Dyn4jSimulation(seed = 42L)
+        val sim = simulation(seed = 42L)
         val state = RobotState(
             superstructure = SuperstructureState(
                 custom = org.aresfirst.marvin.marvin.MarvinState(
@@ -211,7 +218,7 @@ class Dyn4jSimulationTest {
     @Suppress("UNCHECKED_CAST")
     @Test
     fun testHubScoringAndCenterEjection() {
-        val sim = Dyn4jSimulation(seed = 42L)
+        val sim = simulation(seed = 42L)
         val state = RobotState()
 
         // Get private 'flyingBalls' list via reflection from physicsWorld
@@ -277,7 +284,7 @@ class Dyn4jSimulationTest {
     @Suppress("UNCHECKED_CAST")
     @Test
     fun testLandingOnGround() {
-        val sim = Dyn4jSimulation(seed = 42L)
+        val sim = simulation(seed = 42L)
         val state = RobotState()
 
         // Get private 'flyingBalls' list via reflection from physicsWorld
@@ -325,7 +332,7 @@ class Dyn4jSimulationTest {
     @Suppress("UNCHECKED_CAST")
     @Test
     fun testTelemetryPackaging() {
-        val sim = Dyn4jSimulation(seed = 42L)
+        val sim = simulation(seed = 42L)
         val state = RobotState()
 
         // Get private lists via reflection from physicsWorld
@@ -347,7 +354,7 @@ class Dyn4jSimulationTest {
             val arrays = mutableMapOf<String, DoubleArray>()
             val numbers = mutableMapOf<String, Double>()
             override fun putDoubleArray(key: String, value: DoubleArray) {
-                arrays[key] = value
+                arrays[key] = value.copyOf()
             }
             override fun putNumber(key: String, value: Double) { numbers[key] = value }
             override fun putString(key: String, value: String) {}
@@ -389,7 +396,7 @@ class Dyn4jSimulationTest {
 
     @Test
     fun testCowlAngleUnitMapping() {
-        val sim = Dyn4jSimulation()
+        val sim = simulation()
         
         // Step simulation forward for 2 seconds (100 steps of 0.02) to let closed-loop settle
         val state = RobotState()
@@ -407,7 +414,6 @@ class Dyn4jSimulationTest {
     fun `live field document rebuilds the FRC simulator world`() {
         val nt = NetworkTableInstance.getDefault()
         val publisher = nt.getStringTopic("ARES/Input/fieldConfig").publish()
-        val sim = Dyn4jSimulation(seed = 42L)
         val config = RobotFieldConfig(
             revision = 99L,
             id = "live-field-test",
@@ -421,6 +427,7 @@ class Dyn4jSimulationTest {
         )
 
         try {
+            val sim = simulation(seed = 42L)
             publisher.set(RobotFieldDocument.encode(config))
             nt.flush()
             sim.step(RobotState(), 0.02)
@@ -436,9 +443,12 @@ class Dyn4jSimulationTest {
             assertEquals(3.0, balls.single().transform.translationX, 1e-9)
             assertEquals(2.0, balls.single().transform.translationY, 1e-9)
         } finally {
-            publisher.set("")
-            nt.flush()
-            publisher.close()
+            try {
+                publisher.set("")
+                nt.flush()
+            } finally {
+                publisher.close()
+            }
         }
     }
 
@@ -452,29 +462,24 @@ class Dyn4jSimulationTest {
 
     @Test
     fun `field-centric velocity is not rotated a second time by simulation`() {
-        val fieldCentric = Dyn4jSimulation(seed = 42L)
-        val robotCentric = Dyn4jSimulation(seed = 42L)
-        try {
-            fieldCentric.resetPose(6.0, 1.0, Math.PI / 2.0)
-            robotCentric.resetPose(6.0, 1.0, Math.PI / 2.0)
-            val fieldState = RobotState(
-                drive = DriveState(xVelocityMetersPerSecond = 1.0, isFieldCentric = true)
-            )
-            val robotState = RobotState(
-                drive = DriveState(xVelocityMetersPerSecond = 1.0, isFieldCentric = false)
-            )
-            repeat(20) {
-                fieldCentric.step(fieldState, 0.02)
-                robotCentric.step(robotState, 0.02)
-            }
-
-            val fieldPose = fieldCentric.getPoseUpdate()
-            val robotPose = robotCentric.getPoseUpdate()
-            assertTrue(fieldPose.xMeters - 6.0 > kotlin.math.abs(fieldPose.yMeters - 1.0))
-            assertTrue(robotPose.yMeters - 1.0 > kotlin.math.abs(robotPose.xMeters - 6.0))
-        } finally {
-            fieldCentric.close()
-            robotCentric.close()
+        val fieldCentric = simulation(seed = 42L)
+        val robotCentric = simulation(seed = 42L)
+        fieldCentric.resetPose(6.0, 1.0, Math.PI / 2.0)
+        robotCentric.resetPose(6.0, 1.0, Math.PI / 2.0)
+        val fieldState = RobotState(
+            drive = DriveState(xVelocityMetersPerSecond = 1.0, isFieldCentric = true)
+        )
+        val robotState = RobotState(
+            drive = DriveState(xVelocityMetersPerSecond = 1.0, isFieldCentric = false)
+        )
+        repeat(20) {
+            fieldCentric.step(fieldState, 0.02)
+            robotCentric.step(robotState, 0.02)
         }
+
+        val fieldPose = fieldCentric.getPoseUpdate()
+        val robotPose = robotCentric.getPoseUpdate()
+        assertTrue(fieldPose.xMeters - 6.0 > kotlin.math.abs(fieldPose.yMeters - 1.0))
+        assertTrue(robotPose.yMeters - 1.0 > kotlin.math.abs(robotPose.xMeters - 6.0))
     }
 }

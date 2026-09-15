@@ -461,6 +461,7 @@ public final class com/areslib/ftc/drivetrain/MecanumHardwareIO : com/areslib/ha
 	public final fun setTicksPerMeter (D)V
 	public final fun updateInputs ()V
 	public final fun updateMotorGains (DDD)V
+	public final fun updateMotorGains (DDDD)V
 }
 
 public final class com/areslib/ftc/drivetrain/MecanumKinematicsController {
@@ -599,7 +600,14 @@ public final class com/areslib/ftc/drivetrain/SparkFunOtosIO$HealthStatus : java
 
 public final class com/areslib/ftc/drivetrain/SwerveModuleIOFtc : com/areslib/hardware/drive/SwerveModuleIO, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;D)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;DD)V
+	public fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;DDJ)V
+	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/DcMotorEx;Lcom/qualcomm/robotcore/hardware/AnalogInput;DDJILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close ()V
+	public final fun getAnalogRangeVolts ()D
+	public final fun getDriveTicksPerRevolution ()D
+	public final fun getSampleTimeoutMs ()J
 	public fun setDesiredPower (DD)V
 	public fun updateInputs (Lcom/areslib/hardware/drive/SwerveModuleInputs;)V
 }
@@ -667,6 +675,8 @@ public final class com/areslib/ftc/hardware/CachedDcMotorEx : com/qualcomm/robot
 	public fun getDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
 	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
 	public fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
+	public fun getMotorType ()Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;
+	public fun getPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;
 	public fun getPower ()D
 	public fun getVelocity ()D
 	public fun getVersion ()I
@@ -743,9 +753,10 @@ public final class com/areslib/ftc/hardware/FtcAnalogSensor : java/lang/AutoClos
 	public final fun getVoltage ()D
 }
 
-public final class com/areslib/ftc/hardware/FtcCRServo : com/areslib/hardware/actuator/MotorIO {
+public final class com/areslib/ftc/hardware/FtcCRServo : com/areslib/hardware/actuator/MotorIO, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/CRServo;Lcom/areslib/hardware/actuator/MotorIO;)V
 	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/CRServo;Lcom/areslib/hardware/actuator/MotorIO;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
 	public fun getCurrentAmps ()D
 	public fun getCurrentReadingValid ()Z
 	public fun getPosition ()D
@@ -1267,9 +1278,10 @@ public final class com/areslib/ftc/hardware/rev/RevBulkDataReader {
 	public final fun unregisterMotor (Lcom/areslib/ftc/hardware/rev/RevMotorController;)V
 }
 
-public final class com/areslib/ftc/hardware/rev/RevCRServoController : com/areslib/hardware/actuator/MotorIO {
+public final class com/areslib/ftc/hardware/rev/RevCRServoController : com/areslib/hardware/actuator/MotorIO, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/CRServo;Lcom/areslib/hardware/actuator/MotorIO;)V
 	public synthetic fun <init> (Lcom/qualcomm/robotcore/hardware/CRServo;Lcom/areslib/hardware/actuator/MotorIO;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
 	public fun getCurrentAmps ()D
 	public fun getCurrentReadingValid ()Z
 	public fun getPosition ()D

@@ -346,7 +346,7 @@ class AresProjectCodegenCliTest {
         )
         val generatedRoot = Files.createDirectories(temporary.resolve("build/generated/drivebase"))
         val stale = generatedRoot.resolve("GeneratedAresDrivebaseConfig.kt")
-        Files.writeString(stale, "// stale")
+        Files.writeString(stale, "// ARES OWNERSHIP: GENERATED - DO NOT EDIT\n// stale")
         Files.writeString(generatedRoot.resolve(".ares-drivebase-manifest"), "GeneratedAresDrivebaseConfig.kt\n")
 
         AresProjectCodegenCli.run(

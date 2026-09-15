@@ -20,7 +20,13 @@ class XrpRobot:
                  deadman_timeout_ms=200, brownout_threshold_volts=4.3,
                  battery_voltage_supplier=None, track_width=0.155,
                  wheel_base=0.140, wheel_radius=0.030, max_linear_speed=0.85,
-                 heading_supplier=None, runtime_identity=None, pose_constraint=None):
+                 heading_supplier=None, runtime_identity=None, pose_constraint=None,
+                 link_host="127.0.0.1"):
+        if (type(brownout_threshold_volts) not in (int, float)
+                or not math.isfinite(brownout_threshold_volts)
+                or not 3.0 <= brownout_threshold_volts <= 6.0):
+            raise ValueError("XRP brownout threshold must be finite and from 3.0 through 6.0 V")
+        self._closed = False
         if use_otos and i2c is None:
             raise ValueError("SPARKFUN_OTOS localization requires an explicit physical I2C bus")
         self.otos = SparkFunOTOS(i2c=i2c) if use_otos else None
@@ -49,12 +55,14 @@ class XrpRobot:
             project_id=project_id,
             content_sha256=content_sha256,
             drivetrain_type=drivetrain_type.lower(),
+            host=link_host,
             port=link_port,
             deadman_timeout_ms=deadman_timeout_ms,
             runtime_identity=runtime_identity,
         )
         self.mode = self.STATE_INIT
         self.active_routine = None
+        self._autonomous_complete = False
         self.autonomous_routines = {}
         self.default_autonomous_id = None
         self.faulted = False
@@ -69,9 +77,12 @@ class XrpRobot:
 
     def start_server(self):
         """Starts the wireless telemetry server for ARES Studio tethering."""
+        if self._closed:
+            return False
         return self.telemetry.start()
 
     def set_autonomous_routines(self, routines, default_id=None):
+        self._autonomous_complete = False
         self.autonomous_routines = routines or {}
         self.default_autonomous_id = default_id
         self.active_routine = self.autonomous_routines.get(default_id)
@@ -107,8 +118,12 @@ class XrpRobot:
         raise ValueError("Unknown XRP action: " + action_key)
 
     def step(self, dt=0.02):
-        """Main robot cycle executing at 50Hz (20ms)."""
+        """Run one control cycle with its measured positive period in seconds."""
+        if self._closed:
+            return
         try:
+            if type(dt) not in (int, float) or not math.isfinite(dt) or dt <= 0:
+                raise ValueError("Robot period must be finite and positive")
             self._step(dt)
         except Exception:
             self.emergency_stop()
@@ -130,11 +145,17 @@ class XrpRobot:
 
     def shutdown(self):
         """Termination cleanup, including KeyboardInterrupt in the physical loop."""
+        self._closed = True
         self.emergency_stop()
-        self.telemetry.close_client()
-        if self.telemetry.server_socket:
-            self.telemetry.server_socket.close()
-            self.telemetry.server_socket = None
+        # Detach ownership before cleanup so failed closes cannot leave a reusable
+        # listener or prevent the other socket from being released.
+        listener = self.telemetry.server_socket
+        self.telemetry.server_socket = None
+        try:
+            self.telemetry.close_client()
+        finally:
+            if listener is not None:
+                listener.close()
 
     def _step(self, dt):
         # 1. Poll incoming network telemetry
@@ -151,6 +172,7 @@ class XrpRobot:
             self.active_routine = self.autonomous_routines.get(selected)
             if self.active_routine and not self.faulted:
                 self.active_routine.reset()
+                self._autonomous_complete = False
                 self.mode = self.STATE_AUTO
             else:
                 self.mode = self.STATE_DISABLED
@@ -174,6 +196,7 @@ class XrpRobot:
                 self.mode = self.STATE_DISABLED
             if self.active_routine:
                 self.active_routine.reset()
+                self._autonomous_complete = False
 
         # A mode request can never clear a live brownout or invalid voltage reading.
         if not math.isfinite(battery_volts) or battery_volts < self.brownout_threshold_volts:
@@ -189,18 +212,21 @@ class XrpRobot:
                 self.drivetrain.x,
                 self.drivetrain.y,
                 self.drivetrain.heading,
-            )
+            ) if self.pose_constraint else None
             self.drivetrain.update_odometry(dt=dt)
+            if not (math.isfinite(self.drivetrain.x) and math.isfinite(self.drivetrain.y)
+                    and math.isfinite(self.drivetrain.heading)):
+                raise ValueError("XRP odometry pose must be finite")
             if self.pose_constraint:
+                proposed_pose = (self.drivetrain.x, self.drivetrain.y, self.drivetrain.heading)
                 constrained_pose = self.pose_constraint(
                     previous_pose,
-                    (self.drivetrain.x, self.drivetrain.y, self.drivetrain.heading),
+                    proposed_pose,
                 )
-                if constrained_pose != (
-                    self.drivetrain.x,
-                    self.drivetrain.y,
-                    self.drivetrain.heading,
-                ):
+                if (len(constrained_pose) != 3
+                        or not all(math.isfinite(value) for value in constrained_pose)):
+                    raise ValueError("XRP constrained pose must contain three finite values")
+                if constrained_pose != proposed_pose:
                     self.drivetrain.reset_pose(*constrained_pose)
                     self.drivetrain.vx = 0.0
                     self.drivetrain.vy = 0.0
@@ -213,16 +239,17 @@ class XrpRobot:
             if self.mode == self.STATE_AUTO:
                 # Autonomous motion remains leased by Studio. A disconnect or stale heartbeat
                 # stops the robot within the configured deadman interval.
-                if frame is None:
-                    self.mode = self.STATE_DISABLED
+                if self._autonomous_complete:
                     self.drivetrain.stop()
                 elif self.active_routine:
                     vx, omega, finished = self.active_routine.update(
                         self.drivetrain.x, self.drivetrain.y, self.drivetrain.heading, dt
                     )
                     if finished:
+                        self._autonomous_complete = True
                         self.drivetrain.stop()
-                        self.mode = self.STATE_TELEOP # Auto finished, transition to teleop ready
+                        # Keep mechanism targets under the existing autonomous
+                        # lease. Completion is not a request to enter teleop.
                     else:
                         if isinstance(self.drivetrain, MecanumDrivetrain):
                             self.drivetrain.drive(vx, 0.0, omega)
@@ -252,20 +279,11 @@ class XrpRobot:
                 else:
                     subsystem.stop()
         except Exception:
-            self.faulted = True
-            self.mode = self.STATE_DISABLED
-            self.telemetry.neutralize()
-            try:
-                self.drivetrain.stop()
-            except Exception:
-                pass
-            for subsystem in self.subsystems:
-                try:
-                    subsystem.stop()
-                except Exception:
-                    pass
+            self.emergency_stop()
 
         # 5. Stream telemetry frame to Studio
+        if not self.telemetry.is_connected:
+            return
         self.telemetry.publish_pose_frame(
             x=self.drivetrain.x,
             y=self.drivetrain.y,

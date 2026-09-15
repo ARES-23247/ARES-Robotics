@@ -16,6 +16,7 @@ import com.areslib.telemetry.TelemetryTopicConstants
  */
 class Dyn4jSimTelemetryPublisher {
     private var activeFuelData = DoubleArray(100 * 7)
+    private var previousFuelSize = 0
     private var gamePieceFrame = DoubleArray(SimGamePieceTelemetryFrame.requiredSize(0))
     private var gamePieceSequence = 0L
     private val subsystemPoseBuf = DoubleArray(7)
@@ -39,6 +40,8 @@ class Dyn4jSimTelemetryPublisher {
         val robotX = state.drive.odometryX
         val robotY = state.drive.odometryY
         val robotHeading = state.drive.odometryHeading
+        val headingCos = Math.cos(robotHeading)
+        val headingSin = Math.sin(robotHeading)
 
         val halfHeading = robotHeading / 2.0
         val robotQW = Math.cos(halfHeading)
@@ -48,8 +51,8 @@ class Dyn4jSimTelemetryPublisher {
             val halfPitch = pitchRad / 2.0
             val pCos = Math.cos(halfPitch)
             val pSin = Math.sin(halfPitch)
-            subsystemPoseBuf[0] = robotX + dx * Math.cos(robotHeading)
-            subsystemPoseBuf[1] = robotY + dx * Math.sin(robotHeading)
+            subsystemPoseBuf[0] = robotX + dx * headingCos
+            subsystemPoseBuf[1] = robotY + dx * headingSin
             subsystemPoseBuf[2] = dz
             subsystemPoseBuf[3] = robotQW * pCos
             subsystemPoseBuf[4] = -robotQZ * pSin
@@ -96,9 +99,11 @@ class Dyn4jSimTelemetryPublisher {
             activeFuelData[idx + 5] = 0.0 // qy
             activeFuelData[idx + 6] = 0.0 // qz
         }
-        for (i in neededSize until activeFuelData.size) {
+        // New arrays and the inactive tail are already zero; clear only records removed this frame.
+        for (i in neededSize until previousFuelSize) {
             activeFuelData[i] = 0.0
         }
+        previousFuelSize = neededSize
         telemetry.putDoubleArray("Robot/FuelPoses", activeFuelData)
 
         val requiredFrameSize = SimGamePieceTelemetryFrame.requiredSize(totalBallsCount)

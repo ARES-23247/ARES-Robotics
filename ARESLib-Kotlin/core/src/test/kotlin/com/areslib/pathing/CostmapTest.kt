@@ -36,8 +36,9 @@ class CostmapTest {
         assertFalse(costmap.isCellTraversable(51, 50), "Cell within inflation radius should be blocked")
         assertFalse(costmap.isCellTraversable(50, 51), "Cell within inflation radius should be blocked")
         
-        // Cell outside inflation radius should be traversable
-        assertTrue(costmap.isCellTraversable(53, 50), "Cell outside inflation radius should be traversable")
+        // Cell 53 touches the inflated occupied square at its near edge; cell 54 is clear.
+        assertFalse(costmap.isCellTraversable(53, 50), "Tangent cell must be blocked")
+        assertTrue(costmap.isCellTraversable(54, 50), "Cell beyond footprint clearance should be traversable")
     }
 
     @Test

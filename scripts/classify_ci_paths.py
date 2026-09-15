@@ -25,18 +25,25 @@ def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> di
         return result
 
     for raw_path in paths:
-        path = raw_path.replace("\\", "/")
+        # Git uses '/' separators on every host. A backslash is a literal filename byte on
+        # POSIX, not a Windows separator to normalize into a policy-only directory.
+        path = raw_path
         if not path:
             continue
         if path.startswith("ARESLib-Kotlin/"):
             result["full"] = True
             result["lib"] = True
+        elif path.startswith("ARES-FTC/biobuzz/"):
+            # The demo overlay is packaged from FTC and its field/telemetry source is
+            # compiled directly into Studio. Either side must validate a changed contract.
+            result["ftc"] = result["analytics_app"] = True
         elif path.startswith("ARES-FTC/"):
             result["ftc"] = True
         elif path.startswith("ARES-FRC/"):
             result["frc"] = True
         elif path.startswith("ARES-FTC-Starter/"):
-            result["ftc_starter"] = True
+            # BioBuzz overlays this base and runs in the FTC consumer job.
+            result["ftc_starter"] = result["ftc"] = True
         elif path.startswith("ARES-FRC-Starter/"):
             result["frc_starter"] = True
         elif path.startswith("ARES-XRP-Starter/"):
@@ -86,7 +93,7 @@ def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> di
 
 def _requires_full_matrix(path: str) -> bool:
     full_prefixes = ("release/", "build-logic/", "templates/", "scripts/", ".github/workflows/")
-    full_files = {"build.ps1", "setup.ps1", "setup.sh", "verify-autos.ps1", "verify-autos.sh"}
+    full_files = {"build.ps1", "setup.ps1", "setup.sh", "verify-autos.ps1", "verify-autos.sh", ".gitattributes"}
     return path.startswith(full_prefixes) or path in full_files
 
 
@@ -97,14 +104,14 @@ def _is_policy_only(path: str) -> bool:
         or path.startswith(".agents/")
         or path.startswith("docs/")
         or path == ".github/dependabot.yml"
-        or path in {".gitignore", ".gitattributes"}
+        or path == ".gitignore"
     )
 
 
 def _git_changed_paths(base_sha: str, head_sha: str) -> list[str]:
     if not base_sha or not head_sha:
         raise ValueError("Review classification requires both base and head SHAs")
-    if not all(re.fullmatch(r"[0-9a-fA-F]{40,64}", sha) for sha in (base_sha, head_sha)):
+    if not all(re.fullmatch(r"(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})", sha) for sha in (base_sha, head_sha)):
         raise ValueError("Expected full hexadecimal Git object IDs")
     completed = subprocess.run(
         # Both sides of a rename must be classified, including moves between products.

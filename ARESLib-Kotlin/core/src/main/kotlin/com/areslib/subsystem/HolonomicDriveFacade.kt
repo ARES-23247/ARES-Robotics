@@ -2,286 +2,299 @@ package com.areslib.subsystem
 
 import com.areslib.Store
 import com.areslib.action.RobotAction
-import com.areslib.math.geometry.Pose2d
-import com.areslib.math.filter.LowPassFilter
-import com.areslib.pathing.Path
-import com.areslib.math.wrapAngle
 import com.areslib.control.feedback.PIDController
 import com.areslib.control.tuning.PIDFCoefficients
+import com.areslib.math.geometry.Pose2d
+import com.areslib.math.filter.LowPassFilter
+import com.areslib.math.wrapAngle
+import com.areslib.pathing.HolonomicPathFollower
+import com.areslib.pathing.Path
+import com.areslib.sequencer.FollowPathTask
+import com.areslib.sequencer.Task
+import com.areslib.state.DriveMode
 import com.areslib.telemetry.AresGamepad
+import com.areslib.util.RobotClock
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.sin
 
 /**
- * Shared base class containing common mathematical algorithms and properties for holonomic drive facades.
- * Standardizes joystick driving, field-relative coordinate rotations, heading locking, and path following.
+ * Single-loop holonomic command facade. Translation is projected onto a circular speed limit;
+ * field transforms use one immutable EKF snapshot. Holding produces physical velocity targets,
+ * while motor feedforward, feedback freshness and enable gates remain in the platform pipeline.
+ * Reused actions must be snapshotted by observers that retain them after synchronous dispatch.
+ * Constructor heading gains apply until a new Redux drive-tuning object is supplied.
  */
 abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
     protected val store: Store,
     headingGains: PIDFCoefficients = PIDFCoefficients(1.8, 0.0, 0.08),
     headingDeadzoneDeg: Double = 1.0
 ) {
-    /**
-     * The maximum linear speed of the robot in meters per second.
-     * Used to normalize angular velocity output for heading hold PID.
-     */
+    /** Maximum translation magnitude in m/s; nonpositive/nonfinite limits neutralize commands. */
     var maxSpeedMps: Double = 3.5
-
-    /**
-     * The maximum angular speed of the robot in radians per second.
-     * Used to normalize angular velocity output for heading hold PID.
-     */
+    /** Maximum angular speed in rad/s; nonpositive/nonfinite limits neutralize commands. */
     var maxAngularSpeedRps: Double = 9.5
 
-    /**
-     * The current estimated longitudinal (X-axis) velocity of the robot on the field in meters per second.
-     */
-    val xVelocity: Double
-        get() = store.state.drive.xVelocityMetersPerSecond
+    /** Cached measured field-forward velocity in m/s, distinct from commanded velocity. */
+    val xVelocity: Double get() = store.state.drive.measuredFieldXVelocityMetersPerSecond
+    /** Cached measured field-left velocity in m/s, distinct from commanded velocity. */
+    val yVelocity: Double get() = store.state.drive.measuredFieldYVelocityMetersPerSecond
+    /** Cached measured CCW angular velocity in rad/s. */
+    val angularVelocity: Double get() = store.state.drive.measuredAngularVelocityRadiansPerSecond
+    /** Allocating convenience view of the EKF estimate; periodic calculations use primitives. */
+    val pose: Pose2d get() = store.state.drive.poseEstimator.estimatedPose
+    val odometryX: Double get() = store.state.drive.odometryX
+    val odometryY: Double get() = store.state.drive.odometryY
+    val odometryHeading: Double get() = store.state.drive.odometryHeading
 
-    /**
-     * The current estimated lateral (Y-axis) velocity of the robot on the field in meters per second.
-     */
-    val yVelocity: Double
-        get() = store.state.drive.yVelocityMetersPerSecond
-
-    /**
-     * The current estimated angular velocity of the robot in radians per second.
-     */
-    val angularVelocity: Double
-        get() = store.state.drive.measuredAngularVelocityRadiansPerSecond
-
-    /**
-     * The current 2D spatial pose of the robot ([Pose2d]) on the coordinate field, estimated via EKF.
-     */
-    val pose: Pose2d
-        get() = store.state.drive.poseEstimator.estimatedPose
-
-    /**
-     * The raw X coordinate of the odometry system computer in meters.
-     */
-    val odometryX: Double
-        get() = store.state.drive.odometryX
-
-    /**
-     * The raw Y coordinate of the odometry system computer in meters.
-     */
-    val odometryY: Double
-        get() = store.state.drive.odometryY
-
-    /**
-     * The raw heading of the odometry system computer in radians.
-     */
-    val odometryHeading: Double
-        get() = store.state.drive.odometryHeading
-
-    protected val headingPID = com.areslib.control.feedback.PIDController(headingGains.kP, headingGains.kI, headingGains.kD).apply {
+    private var lastDriveTuning = store.state.tuning.drive
+    protected val headingPID = PIDController(headingGains.kP, headingGains.kI, headingGains.kD).apply {
         enableContinuousInput(-Math.PI, Math.PI)
         setOutputLimits(-2.0, 2.0)
         deadzone = Math.toRadians(headingDeadzoneDeg)
     }
+    /** Retained for subclass compatibility; heading PID already filters its measurement derivative. */
+    protected val headingErrorFilter = LowPassFilter(0.0)
+    protected val positionPidX = PIDController(lastDriveTuning.positionHoldGains.kP,
+        lastDriveTuning.positionHoldGains.kI, lastDriveTuning.positionHoldGains.kD).apply { setOutputLimits(-1.4, 1.4) }
+    protected val positionPidY = PIDController(lastDriveTuning.positionHoldGains.kP,
+        lastDriveTuning.positionHoldGains.kI, lastDriveTuning.positionHoldGains.kD).apply { setOutputLimits(-1.4, 1.4) }
+    private var lastHeadingTarget = Double.NaN
+    private var lastPositionX = Double.NaN
+    private var lastPositionY = Double.NaN
+    private val reusableDriveIntent = RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0)
 
-    protected val headingErrorFilter = com.areslib.math.filter.LowPassFilter(0.0)
-
-    /** Pre-allocated PID controller for position hold X-axis correction (field-relative). */
-    protected val positionPidX = com.areslib.control.feedback.PIDController(1.5, 0.0, 0.1).apply {
-        setOutputLimits(-1.4, 1.4)  // ~40% of maxSpeedMps
-        deadzone = 0.02
+    /** Clears controller history when braking or abandoning a hold, without allocating. */
+    protected fun resetHoldControllers() {
+        headingPID.reset()
+        positionPidX.reset()
+        positionPidY.reset()
+        lastHeadingTarget = Double.NaN
+        lastPositionX = Double.NaN
+        lastPositionY = Double.NaN
     }
-
-    /** Pre-allocated PID controller for position hold Y-axis correction (field-relative). */
-    protected val positionPidY = com.areslib.control.feedback.PIDController(1.5, 0.0, 0.1).apply {
-        setOutputLimits(-1.4, 1.4)
-        deadzone = 0.02
-    }
-
-    private val reusableDriveIntent = com.areslib.action.RobotAction.JoystickDriveIntent(0.0, 0.0, 0.0)
 
     /**
-     * Executes robot-relative drivetrain movement effort.
-     *
-     * Coordinates are specified relative to the robot's local frame.
-     *
-     * @param vx Longitudinal driver effort scaled between [-1.0, 1.0].
-     * @param vy Lateral strafe driver effort scaled between [-1.0, 1.0].
-     * @param omega Angular driver effort scaled between [-1.0, 1.0].
+     * Dispatches robot-relative normalized effort. Translation retains direction and is bounded
+     * to the unit disk; angular effort is bounded to [-1, 1]. Invalid inputs neutralize the frame.
+     * Repeated commands refresh RobotClock time even when their numeric values have not changed.
      */
-    fun driveRobotRelativeNormalized(
-        vx: Double,
-        vy: Double,
-        omega: Double,
-        fromHeadingHold: Boolean = false
+    fun driveRobotRelativeNormalized(vx: Double, vy: Double, omega: Double, fromHeadingHold: Boolean = false) {
+        if (!fromHeadingHold) resetHoldControllers()
+        dispatchNormalized(vx, vy, omega, fromHeadingHold, false, RobotClock.currentTimeMillis())
+    }
+
+    private fun dispatchNormalized(
+        vx: Double, vy: Double, omega: Double, headingHold: Boolean, positionHold: Boolean,
+        timestampMs: Long, xLock: Boolean = false,
     ) {
-        reusableDriveIntent.targetXVelocity = finiteUnitInput(vx) * maxSpeedMps
-        reusableDriveIntent.targetYVelocity = finiteUnitInput(vy) * maxSpeedMps
-        reusableDriveIntent.targetAngularVelocity = finiteUnitInput(omega) * maxAngularSpeedRps
+        val valid = reusableDriveIntent.setLimitedVelocities(vx, vy, omega, 1.0, 1.0) &&
+            validDriveLimits(maxSpeedMps, maxAngularSpeedRps)
+        if (valid) {
+            reusableDriveIntent.targetXVelocity *= maxSpeedMps
+            reusableDriveIntent.targetYVelocity *= maxSpeedMps
+            reusableDriveIntent.targetAngularVelocity *= maxAngularSpeedRps
+        } else {
+            reusableDriveIntent.targetXVelocity = 0.0
+            reusableDriveIntent.targetYVelocity = 0.0
+            reusableDriveIntent.targetAngularVelocity = 0.0
+        }
         reusableDriveIntent.isFieldCentric = false
-        reusableDriveIntent.timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-        reusableDriveIntent.fromHeadingHold = fromHeadingHold
-        reusableDriveIntent.isXLock = false
+        reusableDriveIntent.timestampMs = timestampMs
+        reusableDriveIntent.fromHeadingHold = headingHold
+        reusableDriveIntent.fromPositionHold = positionHold
+        reusableDriveIntent.isXLock = xLock
         store.dispatch(reusableDriveIntent)
     }
 
-    private fun finiteUnitInput(value: Double): Double = if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
-
     /**
-     * Executes field-relative drivetrain movement effort.
-     *
-     * Coordinates are translated automatically using the current EKF-estimated heading
-     * to keep controls consistent regardless of which way the robot is facing.
-     *
-     * @param vx Field-centric X-axis velocity effort scaled between [-1.0, 1.0].
-     * @param vy Field-centric Y-axis velocity effort scaled between [-1.0, 1.0].
-     * @param omega Angular rotational velocity effort scaled between [-1.0, 1.0].
-     * @param useHeadingLock Enables active IMU closed-loop heading lock to stabilize the robot's orientation.
-     * @param usePositionHold Enables active EKF closed-loop position hold when joystick inputs are released.
-     * @param dtSeconds Timestep delta duration in seconds.
+     * Field-relative normalized driving with optional heading and position holds. Holds ignore
+     * stick noise up to 0.05, release on deliberate input, and preserve each other's targets.
+     * Invalid pose/input/limits/time neutralize and release holds. Position correction uses m/s
+     * and a circular limit; static motor feedforward is applied only by the hardware controller.
      */
     fun driveFieldRelativeNormalized(
-        vx: Double,
-        vy: Double,
-        omega: Double,
-        useHeadingLock: Boolean = false,
-        usePositionHold: Boolean = false,
-        dtSeconds: Double = 0.02
+        vx: Double, vy: Double, omega: Double, useHeadingLock: Boolean = false,
+        usePositionHold: Boolean = false, dtSeconds: Double = 0.02,
     ) {
-        val headingRad = pose.heading.radians
-        val cos = kotlin.math.cos(headingRad)
-        val sin = kotlin.math.sin(headingRad)
+        val state = store.state
+        val drive = state.drive
+        val estimate = drive.poseEstimator
+        val timestampMs = RobotClock.currentTimeMillis()
+        val validInput = reusableDriveIntent.setLimitedVelocities(vx, vy, omega, 1.0, 1.0)
+        if (!validInput || !validDriveLimits(maxSpeedMps, maxAngularSpeedRps) ||
+            !dtSeconds.isFinite() || dtSeconds <= 0.0 || !estimate.estimatedPoseX.isFinite() ||
+            !estimate.estimatedPoseY.isFinite() || !estimate.estimatedPoseHeading.isFinite()) {
+            resetHoldControllers()
+            val mode = if (drive.driveMode == DriveMode.X_BRAKE) DriveMode.X_BRAKE else DriveMode.TELEOP
+            publishHoldState(null, null, null, mode, timestampMs)
+            dispatchNormalized(0.0, 0.0, 0.0, false, false, timestampMs, mode == DriveMode.X_BRAKE)
+            return
+        }
+        val inputX = reusableDriveIntent.targetXVelocity
+        val inputY = reusableDriveIntent.targetYVelocity
+        val inputOmega = reusableDriveIntent.targetAngularVelocity
+        val hasLinearInput = abs(inputX) > 0.05 || abs(inputY) > 0.05
+        val isRotating = abs(inputOmega) > 0.05
+        if (drive.driveMode == DriveMode.X_BRAKE && !hasLinearInput && !isRotating) {
+            resetHoldControllers()
+            publishHoldState(null, null, null, DriveMode.X_BRAKE, timestampMs)
+            dispatchNormalized(0.0, 0.0, 0.0, false, false, timestampMs, true)
+            return
+        }
 
-        // Translate field-relative to robot-relative velocities
-        var finalRobotVx = vx * cos + vy * sin
-        var finalRobotVy = -vx * sin + vy * cos
+        val tuning = state.tuning.drive
+        if (tuning !== lastDriveTuning) {
+            headingPID.p = tuning.headingGains.kP
+            headingPID.i = tuning.headingGains.kI
+            headingPID.d = tuning.headingGains.kD
+            headingPID.deadzone = Math.toRadians(tuning.headingDeadzoneDeg)
+            positionPidX.p = tuning.positionHoldGains.kP
+            positionPidX.i = tuning.positionHoldGains.kI
+            positionPidX.d = tuning.positionHoldGains.kD
+            positionPidY.p = tuning.positionHoldGains.kP
+            positionPidY.i = tuning.positionHoldGains.kI
+            positionPidY.d = tuning.positionHoldGains.kD
+            lastDriveTuning = tuning
+        }
+        val x = estimate.estimatedPoseX
+        val y = estimate.estimatedPoseY
+        val heading = wrapAngle(estimate.estimatedPoseHeading)
+        val cosH = cos(heading)
+        val sinH = sin(heading)
+        var fieldX = inputX
+        var fieldY = inputY
+        var finalOmega = inputOmega
+        var headingTarget = drive.headingLockTargetRadians
+        var positionX = drive.positionLockX
+        var positionY = drive.positionLockY
+        var headingHold = false
+        var positionHold = false
 
-        var finalOmega = omega
-        var fromHeadingHold = false
-        
-        val isRotating = kotlin.math.abs(omega) > 0.05
-        val target = store.state.drive.headingLockTargetRadians
-        val driveMode = store.state.drive.driveMode
-
-        when {
-            !useHeadingLock && target != null -> {
-                store.dispatch(RobotAction.SetHeadingLockTarget(null))
-            }
-            useHeadingLock && isRotating && (target != null || driveMode != com.areslib.state.DriveMode.TELEOP) -> {
-                store.dispatch(RobotAction.SetHeadingLockTarget(null))
-                store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.TELEOP))
-            }
-            useHeadingLock && !isRotating && target == null -> {
-                val physicalAngularVelocity = angularVelocity
-
-                if (kotlin.math.abs(physicalAngularVelocity) < 0.03) {
-                    store.dispatch(RobotAction.SetHeadingLockTarget(headingRad))
-                    store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.HEADING_HOLD))
-                    headingErrorFilter.reset(0.0)
-                    headingPID.reset()
-                } else {
-                    // Let the robot's physical rotation coast/decelerate to a stop before locking heading target
-                    finalOmega = 0.0
+        if (!useHeadingLock || isRotating) {
+            headingTarget = null
+            headingPID.reset()
+            lastHeadingTarget = Double.NaN
+        } else {
+            finalOmega = 0.0
+            headingHold = true
+            if (headingTarget != null && !headingTarget.isFinite()) {
+                headingTarget = null
+                headingPID.reset()
+                lastHeadingTarget = Double.NaN
+            } else if (headingTarget == null) {
+                headingPID.reset()
+                lastHeadingTarget = Double.NaN
+                if (drive.measuredAngularVelocityRadiansPerSecond.isFinite() &&
+                    abs(drive.measuredAngularVelocityRadiansPerSecond) < 0.03) {
+                    headingTarget = heading
+                    lastHeadingTarget = heading
                 }
-            }
-            useHeadingLock && !isRotating && target != null -> {
-                val tuning = store.state.tuning
-                headingPID.p = tuning.drive.headingGains.kP
-                headingPID.i = tuning.drive.headingGains.kI
-                headingPID.d = tuning.drive.headingGains.kD
-                headingPID.deadzone = Math.toRadians(tuning.drive.headingDeadzoneDeg)
-
-                // Clamp heading hold correction effort to max power to prevent oscillation and snapping
-                val maxEffort = maxAngularSpeedRps * tuning.drive.headingMaxOutputLimit
-                headingPID.setOutputLimits(-maxEffort, maxEffort)
-
-                // Compute PID correction using real loop dtSeconds
-                finalOmega = headingPID.calculate(headingRad, target, dtSeconds) / maxAngularSpeedRps
-                fromHeadingHold = true
+            } else {
+                if (lastHeadingTarget != headingTarget) headingPID.reset()
+                lastHeadingTarget = headingTarget
+                val limit = tuning.headingMaxOutputLimit
+                if (limit.isFinite() && limit in 0.0..1.0) {
+                    val maxCorrection = maxAngularSpeedRps * limit
+                    headingPID.setOutputLimits(-maxCorrection, maxCorrection)
+                    finalOmega = headingPID.calculate(heading, headingTarget, dtSeconds) / maxAngularSpeedRps
+                } else headingPID.reset()
             }
         }
 
-        // --- Position Hold (mirrors heading lock pattern) ---
-        val posLockX = store.state.drive.positionLockX
-        val posLockY = store.state.drive.positionLockY
-        val hasLinearInput = kotlin.math.abs(vx) > 0.05 || kotlin.math.abs(vy) > 0.05
-
-        when {
-            !usePositionHold && posLockX != null -> {
-                // Position hold was disabled — release lock
-                store.dispatch(RobotAction.SetPositionLockTarget(null, null))
-            }
-            usePositionHold && hasLinearInput && posLockX != null -> {
-                // Driver is moving — release lock
-                store.dispatch(RobotAction.SetPositionLockTarget(null, null))
-                if (store.state.drive.driveMode == com.areslib.state.DriveMode.POSITION_HOLD) {
-                    store.dispatch(RobotAction.SetDriveMode(
-                        if (target != null) com.areslib.state.DriveMode.HEADING_HOLD
-                        else com.areslib.state.DriveMode.TELEOP
-                    ))
-                }
-            }
-            usePositionHold && !hasLinearInput && posLockX == null -> {
-                // Driver released joystick — latch target pose immediately
-                store.dispatch(RobotAction.SetPositionLockTarget(pose.x, pose.y))
-                store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.POSITION_HOLD))
+        if (!usePositionHold || hasLinearInput) {
+            positionX = null
+            positionY = null
+            positionPidX.reset()
+            positionPidY.reset()
+            lastPositionX = Double.NaN
+            lastPositionY = Double.NaN
+        } else {
+            fieldX = 0.0
+            fieldY = 0.0
+            positionHold = true
+            if (positionX == null && positionY == null) {
+                positionX = x
+                positionY = y
                 positionPidX.reset()
                 positionPidY.reset()
-            }
-            usePositionHold && !hasLinearInput && posLockX != null -> {
-                // Actively correct back to locked position
-                val tuning = store.state.tuning
-                positionPidX.p = tuning.drive.positionHoldGains.kP
-                positionPidX.i = tuning.drive.positionHoldGains.kI
-                positionPidX.d = tuning.drive.positionHoldGains.kD
-                positionPidX.deadzone = tuning.drive.positionHoldDeadzoneMeters
-                positionPidY.p = tuning.drive.positionHoldGains.kP
-                positionPidY.i = tuning.drive.positionHoldGains.kI
-                positionPidY.d = tuning.drive.positionHoldGains.kD
-                positionPidY.deadzone = tuning.drive.positionHoldDeadzoneMeters
-
-                // Clamp correction to max position hold speed limit
-                val maxCorrection = maxSpeedMps * tuning.drive.positionHoldMaxOutputLimit
-                positionPidX.setOutputLimits(-maxCorrection, maxCorrection)
-                positionPidY.setOutputLimits(-maxCorrection, maxCorrection)
-
-                val errX = posLockX - pose.x
-                val errY = posLockY!! - pose.y
-                val distError = kotlin.math.hypot(errX, errY)
-
-                if (distError > tuning.drive.positionHoldDeadzoneMeters) {
-                    val rawCorrVx = positionPidX.calculate(pose.x, posLockX, dtSeconds)
-                    val rawCorrVy = positionPidY.calculate(pose.y, posLockY, dtSeconds)
-
-                    // Apply minimum static friction feedforward from tuning state (tuning.driveFeedforward.kS)
-                    // so small position errors overcome wheel breakout friction and drive the robot back
-                    val kS = tuning.drive.driveFeedforward.kS
-                    val normX = errX / distError
-                    val normY = errY / distError
-
-                    val fieldVx = (rawCorrVx / maxSpeedMps) + (normX * kS)
-                    val fieldVy = (rawCorrVy / maxSpeedMps) + (normY * kS)
-
-                    finalRobotVx = fieldVx * cos + fieldVy * sin
-                    finalRobotVy = -fieldVx * sin + fieldVy * cos
+                lastPositionX = x
+                lastPositionY = y
+            } else if (positionX == null || positionY == null || !positionX.isFinite() || !positionY.isFinite() ||
+                !(positionX - x).isFinite() || !(positionY - y).isFinite()) {
+                positionX = null
+                positionY = null
+                positionPidX.reset()
+                positionPidY.reset()
+                lastPositionX = Double.NaN
+                lastPositionY = Double.NaN
+            } else {
+                if (lastPositionX != positionX || lastPositionY != positionY) {
+                    positionPidX.reset()
+                    positionPidY.reset()
+                }
+                lastPositionX = positionX
+                lastPositionY = positionY
+                val deadzone = tuning.positionHoldDeadzoneMeters
+                val limit = tuning.positionHoldMaxOutputLimit
+                if (deadzone.isFinite() && deadzone >= 0.0 && limit.isFinite() && limit in 0.0..1.0 &&
+                    hypot(positionX - x, positionY - y) > deadzone && limit > 0.0) {
+                    val maxCorrection = maxSpeedMps * limit
+                    positionPidX.setOutputLimits(-maxCorrection, maxCorrection)
+                    positionPidY.setOutputLimits(-maxCorrection, maxCorrection)
+                    val correctionX = positionPidX.calculate(x, positionX, dtSeconds)
+                    val correctionY = positionPidY.calculate(y, positionY, dtSeconds)
+                    if (positionPidX.lastCalculationValid && positionPidY.lastCalculationValid &&
+                        reusableDriveIntent.setLimitedVelocities(correctionX, correctionY, 0.0, maxCorrection, maxAngularSpeedRps)) {
+                        fieldX = reusableDriveIntent.targetXVelocity / maxSpeedMps
+                        fieldY = reusableDriveIntent.targetYVelocity / maxSpeedMps
+                    }
                 } else {
-                    finalRobotVx = 0.0
-                    finalRobotVy = 0.0
+                    positionPidX.reset()
+                    positionPidY.reset()
                 }
             }
         }
+        val mode = when {
+            positionX != null && positionY != null -> DriveMode.POSITION_HOLD
+            headingTarget != null -> DriveMode.HEADING_HOLD
+            else -> DriveMode.TELEOP
+        }
+        publishHoldState(headingTarget, positionX, positionY, mode, timestampMs)
+        dispatchNormalized(fieldX * cosH + fieldY * sinH, -fieldX * sinH + fieldY * cosH,
+            finalOmega, headingHold, positionHold, timestampMs)
+    }
 
-        driveRobotRelativeNormalized(finalRobotVx, finalRobotVy, finalOmega, fromHeadingHold)
+    private fun publishHoldState(heading: Double?, x: Double?, y: Double?, mode: DriveMode, timestampMs: Long) {
+        val drive = store.state.drive
+        if (drive.headingLockTargetRadians != heading) store.dispatch(RobotAction.SetHeadingLockTarget(heading, timestampMs))
+        if (drive.positionLockX != x || drive.positionLockY != y) store.dispatch(RobotAction.SetPositionLockTarget(x, y, timestampMs))
+        if (drive.driveMode != mode) store.dispatch(RobotAction.SetDriveMode(mode, timestampMs))
+    }
+
+    private class PathExecution(val follower: HolonomicPathFollower, val submit: (Task) -> Unit)
+    private var pathExecution: PathExecution? = null
+
+    /**
+     * Binds this facade to the robot's existing path follower and task lifecycle during setup.
+     * [submit] must queue the task on that robot's executor/runtime, which owns updates and stop.
+     * No background loop is created. Supply a follower for the same robot/state as this facade.
+     */
+    fun configurePathFollowing(follower: HolonomicPathFollower, submit: (Task) -> Unit) {
+        pathExecution = PathExecution(follower, submit)
     }
 
     /**
-     * Configures the active target autonomous navigation [Path] for the robot.
-     *
-     * @param path The target [Path] to follow.
+     * Queues a path on the configured execution owner, preserving the current EKF pose and the
+     * caller's field coordinates. Alliance transforms must be applied explicitly before this call.
+     * Unconfigured or empty requests fail before scheduling. The task validates path contents and
+     * owns progress, marker execution, interruption and neutral output through the existing runtime.
      */
     fun followPath(path: Path) {
-        store.dispatch(RobotAction.PoseUpdate(
-            xMeters = path.points.firstOrNull()?.pose?.x ?: pose.x,
-            yMeters = path.points.firstOrNull()?.pose?.y ?: pose.y,
-            headingRadians = path.points.firstOrNull()?.pose?.heading?.radians ?: pose.heading.radians,
-            timestampMs = com.areslib.util.RobotClock.currentTimeMillis(),
-            isReset = true
-        ))
+        val execution = checkNotNull(pathExecution) { "Configure path following with a follower and task submission owner first" }
+        require(path.points.isNotEmpty()) { "Cannot follow an empty path" }
+        execution.submit(FollowPathTask(execution.follower, path, mirrorForAlliance = false))
     }
 
     /**

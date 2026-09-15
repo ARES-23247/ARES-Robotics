@@ -97,6 +97,32 @@ class SuperstructureDocumentTest {
     }
 
     @Test
+    fun `finite LUT endpoints interpolate without overflow`() {
+        for (method in listOf(LutInterpolationMethod.LINEAR, LutInterpolationMethod.SMOOTH_COSINE)) {
+            val wideInput = SuperstructureDynamicLut("wide-input", interpolation = method, controlPoints = listOf(
+                LutControlPoint(-Double.MAX_VALUE, -1.0), LutControlPoint(Double.MAX_VALUE, 1.0),
+            ))
+            assertEquals(0.0, wideInput.sample(0.0), 1e-12, "$method input range overflow")
+            val wideOutput = wideInput.copy(controlPoints = listOf(
+                LutControlPoint(0.0, -Double.MAX_VALUE), LutControlPoint(1.0, Double.MAX_VALUE),
+            ))
+            assertEquals(0.0, wideOutput.sample(0.5) / Double.MAX_VALUE, 1e-12, "$method output range overflow")
+            assertTrue(wideOutput.sample(0.25).isFinite())
+            assertTrue(wideOutput.sample(0.75).isFinite())
+        }
+    }
+
+    @Test
+    fun `step LUT reproduces interior knots and holds each point until the next`() {
+        val lut = SuperstructureDynamicLut("steps", interpolation = LutInterpolationMethod.STEP,
+            controlPoints = listOf(LutControlPoint(0.0, 1.0), LutControlPoint(1.0, 2.0), LutControlPoint(2.0, 3.0)))
+        assertEquals(1.0, lut.sample(Math.nextDown(1.0)))
+        assertEquals(2.0, lut.sample(1.0))
+        assertEquals(2.0, lut.sample(Math.nextUp(1.0)))
+        assertEquals(3.0, lut.sample(2.0))
+    }
+
+    @Test
     fun `codec requires schema v3 and rejects unknown fields`() {
         val document = validFixture().document
         val encoded = SuperstructureDocumentCodec.encode(document)

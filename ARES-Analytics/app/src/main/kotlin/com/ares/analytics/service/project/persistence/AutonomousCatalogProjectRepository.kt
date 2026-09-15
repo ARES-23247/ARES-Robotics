@@ -29,12 +29,8 @@ class AutonomousCatalogProjectRepository(
     fun restore(
         projectPath: String,
         contentHash: String
-    ): SavedProjectRevision<AutonomousCatalogDocument> {
-        val historical = store.listRevisions(projectPath).firstOrNull { it.contentHash == contentHash }
-            ?: error("Revision $contentHash was not found for autonomous catalog")
-        val candidate = AutonomousCatalogCodec.decode(historical.file.readText())
+    ): SavedProjectRevision<AutonomousCatalogDocument> = store.restore(projectPath, contentHash) { candidate ->
         requireValidReferences(projectPath, candidate)
-        return store.restore(projectPath, contentHash)
     }
 
     fun diagnostic(projectPath: String): ProjectDocumentDiagnostic? = load(projectPath).exceptionOrNull()?.let { error ->
@@ -61,7 +57,9 @@ class AutonomousCatalogProjectRepository(
             .filter { it.routineId !in routineIds }
             .map { "Unknown routine '${it.routineId}'" }
         require(unknownRoutineErrors.isEmpty()) { unknownRoutineErrors.joinToString("; ") }
-        val errors = validateAutonomousCatalog(document, routineIds)
+        // The explicit membership check also covers an empty routine set; the schema validator
+        // treats that set as an instruction to skip reference validation.
+        val errors = validateAutonomousCatalog(document)
             .filter { it.severity == RoutineValidationSeverity.ERROR }
         require(errors.isEmpty()) { errors.joinToString("; ") { it.message } }
     }

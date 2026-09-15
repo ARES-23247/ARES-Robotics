@@ -5,6 +5,10 @@ import com.areslib.sequencer.Task
 import com.areslib.sequencer.TaskResources
 import com.areslib.sequencer.TaskStateMachine
 import com.areslib.sequencer.TaskStatus
+import com.areslib.sequencer.TaskCallbacks
+import com.areslib.sequencer.TaskTimeoutContainer
+import com.areslib.sequencer.completionReady
+import com.areslib.sequencer.setTimeoutSuspended
 import com.areslib.state.RobotState
 
 /** Stable identifier shared by code, path event markers, and the auto editor. */
@@ -142,7 +146,7 @@ object NamedCommands {
 private class DeferredNamedCommandTask(
     private val key: CommandKey,
     override val requiredResources: Long
-) : Task {
+) : Task, TaskTimeoutContainer {
     override val name: String = "NamedCommand(${key.value})"
     private var delegate: Task? = null
 
@@ -158,40 +162,78 @@ private class DeferredNamedCommandTask(
                 TaskResources.describe(resolved.requiredResources)
         }
         delegate = resolved
-        return resolved.initialize(state)
+        val actions = resolved.initialize(state)
+        propagateTerminal(resolved)
+        return actions
     }
 
     override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean {
         val task = requireNotNull(delegate) { "Named command '${key.value}' was not initialized" }
-        if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-            return false
-        }
-        return task.isCompleted(state, elapsedMs)
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return false
+        val completed = task.completionReady(state, elapsedMs)
+        return !propagateTerminal(task) && completed
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
         super.execute(state, elapsedMs)
-        if (TaskStateMachine.getStatus(this) == TaskStatus.FAILED) return emptyList()
+        if (TaskStateMachine.getStatus(this) != TaskStatus.RUNNING) return emptyList()
         val task = requireNotNull(delegate) { "Named command '${key.value}' was not initialized" }
+        if (propagateTerminal(task)) return emptyList()
         val actions = task.execute(state, elapsedMs)
-        if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
-            TaskStateMachine.markFailed(this)
-        }
+        propagateTerminal(task)
         return actions
     }
 
+    override fun pause(state: RobotState): List<RobotAction> = delegate?.pause(state).orEmpty()
+
+    override fun resume(state: RobotState): List<RobotAction> = delegate?.resume(state).orEmpty()
+
+    override fun suspendChildTimeouts(paused: Boolean) { delegate?.setTimeoutSuspended(paused) }
+
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         val task = delegate
-        val delegateFailed = task != null && TaskStateMachine.getStatus(task) == TaskStatus.FAILED
-        val actions = task?.end(state, interrupted || delegateFailed).orEmpty()
-        super.end(state, interrupted || delegateFailed)
+        var actions: List<RobotAction> = emptyList()
+        var failure: Throwable? = null
+        if (task != null) {
+            val terminal = propagateTerminal(task)
+            if (TaskStateMachine.getStatus(task) == TaskStatus.FAILED) {
+                try { TaskCallbacks.invokeFail(task) } catch (caught: Throwable) {
+                    // Diagnostic callbacks must not prevent physical cleanup or discard its actions.
+                    System.err.println("Named command failure callback failed: ${caught.message}")
+                }
+            }
+            try {
+                actions = task.end(state, interrupted || terminal)
+            } catch (caught: Throwable) {
+                TaskStateMachine.markFailed(task)
+                failure = caught
+            }
+            propagateTerminal(task)
+        }
+        try {
+            super.end(state, interrupted)
+        } catch (caught: Throwable) {
+            if (failure == null) failure = caught
+            else if (failure !== caught && failure.suppressed.none { it === caught }) failure.addSuppressed(caught)
+        }
+        failure?.let { throw it }
         return actions
     }
 
     override fun releaseRuntimeState() {
-        delegate?.releaseRuntimeState()
+        val task = delegate
         delegate = null
-        super.releaseRuntimeState()
+        try { task?.releaseRuntimeState() } finally { super.releaseRuntimeState() }
+    }
+
+    private fun propagateTerminal(task: Task): Boolean = when (TaskStateMachine.getStatus(task)) {
+        TaskStatus.FAILED -> { TaskStateMachine.markFailed(this); true }
+        TaskStatus.CANCELLED -> {
+            if (TaskStateMachine.getStatus(this) != TaskStatus.FAILED) {
+                TaskStateMachine.transitionTo(this, TaskStatus.CANCELLED)
+            }
+            true
+        }
+        else -> false
     }
 }

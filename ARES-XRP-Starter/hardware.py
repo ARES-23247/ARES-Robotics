@@ -3,6 +3,11 @@
 import math
 
 
+def _bounded_output(value, minimum, maximum):
+    value = float(value)
+    return max(minimum, min(maximum, value)) if math.isfinite(value) else 0.0
+
+
 def create_otos_i2c(machine_name, i2c_type, pin_type):
     """Create the board's externally exposed Qwiic bus for an OTOS."""
     identity = str(machine_name)
@@ -22,7 +27,7 @@ class _MotorAdapter:
         self.motor = motor
 
     def write(self, volts):
-        self.motor.set_effort(max(-1.0, min(1.0, float(volts) / 12.0)))
+        self.motor.set_effort(_bounded_output(float(volts) / 12.0, -1.0, 1.0))
 
     def read(self, source):
         if source == "MOTOR_POSITION_NATIVE":
@@ -38,7 +43,7 @@ class _DirectionalDriveMotor:
         self.sign = -1.0 if inverted else 1.0
 
     def set_effort(self, effort):
-        self.motor.set_effort(self.sign * float(effort))
+        self.motor.set_effort(self.sign * _bounded_output(effort, -1.0, 1.0))
 
     def get_position(self):
         return self.sign * float(self.motor.get_position())
@@ -65,7 +70,10 @@ class _ServoAdapter:
         self.servo = servo
 
     def write(self, position):
-        self.servo.set_angle(max(0.0, min(1.0, float(position))) * 180.0)
+        position = float(position)
+        if not math.isfinite(position):
+            raise ValueError("XRP servo position must be finite")
+        self.servo.set_angle(max(0.0, min(1.0, position)) * 180.0)
 
     def read(self, source):
         raise ValueError("XRPLib servos do not expose feedback")
@@ -146,7 +154,7 @@ class _DigitalOutputAdapter:
         self.pin = pin
 
     def write(self, value):
-        self.pin.value(1 if float(value) >= 0.5 else 0)
+        self.pin.value(1 if _bounded_output(value, 0.0, 1.0) >= 0.5 else 0)
 
     def read(self, source):
         raise ValueError("Digital output is output-only")
@@ -157,7 +165,7 @@ class _PwmOutputAdapter:
         self.pwm = pwm
 
     def write(self, value):
-        duty = max(0.0, min(1.0, float(value)))
+        duty = _bounded_output(value, 0.0, 1.0)
         self.pwm.duty_u16(int(round(duty * 65535.0)))
 
     def read(self, source):
@@ -175,31 +183,51 @@ class _BuzzerAdapter:
         midi_note = max(0, min(127, int(round(float(value)))))
         if midi_note == self.last_note:
             return
-        self.last_note = midi_note
+        # A failed call may have partially reached the device. Do not let a
+        # previous cached neutral suppress the recovery write after that failure.
+        self.last_note = None
         if midi_note == 0:
             self.buzzer.reset_buzzer()
-            return
-        note = self._NOTE_NAMES[midi_note % 12] + str(midi_note // 12 - 1)
-        self.buzzer.play_note(note, "quarter", blocking=False)
+        else:
+            note = self._NOTE_NAMES[midi_note % 12] + str(midi_note // 12 - 1)
+            self.buzzer.play_note(note, "quarter", blocking=False)
+        self.last_note = midi_note
 
     def read(self, source):
         raise ValueError("Buzzer is output-only")
 
 
 class _IndicatorLightAdapter:
-    _rgb = [0, 0, 0]
+    # RGB component adapters address one shared physical light. Keep their state
+    # per board identity; separate boards must never inherit another board's color.
+    _rgb_by_board = []
 
     def __init__(self, board, component=None):
         self.board = board
         self.component = component
+        if component is not None:
+            if component not in (0, 1, 2):
+                raise ValueError("RGB component must be 0, 1, or 2")
+            for owner, rgb in self._rgb_by_board:
+                if owner is board:
+                    self._rgb = rgb
+                    break
+            else:
+                self._rgb = [0, 0, 0]
+                self._rgb_by_board.append((board, self._rgb))
 
     def write(self, value):
-        level = max(0.0, min(1.0, float(value)))
+        level = _bounded_output(value, 0.0, 1.0)
         if self.component is None:
             self.board.led_on() if level >= 0.5 else self.board.led_off()
             return
+        previous = self._rgb[self.component]
         self._rgb[self.component] = int(round(level * 255.0))
-        self.board.set_rgb_led(*self._rgb)
+        try:
+            self.board.set_rgb_led(*self._rgb)
+        except BaseException:
+            self._rgb[self.component] = previous
+            raise
 
     def read(self, source):
         raise ValueError("Indicator light is output-only")
@@ -207,10 +235,12 @@ class _IndicatorLightAdapter:
 
 def create_xrp_hardware(device):
     from XRPLib.defaults import board, imu, motor_three, rangefinder, reflectance, servo_one, servo_two
-    try:
-        from XRPLib.defaults import motor_four, servo_three, servo_four
-    except ImportError:
-        motor_four = servo_three = servo_four = None
+    import XRPLib.defaults as defaults
+    # Optional channels are independent. The Beta board has motor 4 but only
+    # two servo ports; a missing servo must not hide an available motor.
+    motor_four = getattr(defaults, "motor_four", None)
+    servo_three = getattr(defaults, "servo_three", None)
+    servo_four = getattr(defaults, "servo_four", None)
     kind = device["kind"]
     channel = device.get("connection", {}).get("channel")
     if kind == "MOTOR" and channel in (3, 4):

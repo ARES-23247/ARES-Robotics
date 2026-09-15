@@ -4,9 +4,13 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
+import com.ares.analytics.service.project.persistence.SavedProjectMetadata
+import com.ares.analytics.service.project.persistence.UnsupportedProjectMetadataSchemaException
+import com.areslib.project.ARES_PROJECT_METADATA_SCHEMA_VERSION
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
+import com.ares.analytics.service.project.ProjectSessionSnapshot
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.project.AresCoordinateConvention
 import com.areslib.project.AresFtcHubCommandTransport
@@ -23,6 +27,8 @@ import com.areslib.project.requireFtcRuntimeOptions
 import com.areslib.project.requireXrpRuntimeOptions
 import com.areslib.project.validateAresProjectMetadata
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,6 +36,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
@@ -91,6 +98,8 @@ data class ProjectIdentityEditorState(
     val protectedError: String? = null,
     /** Hash of an invalid existing file that may be replaced only through reviewed repair. */
     val protectedContentHash: String? = null,
+    /** Explicit unsupported version from the inspected bytes; null is not evidence of an old format. */
+    val unsupportedSchemaVersion: Int? = null,
     val message: String? = null,
     val messageIsError: Boolean = false,
 ) {
@@ -116,6 +125,7 @@ class ProjectIdentityViewModel(
     private var generation = 0L
 
     fun load(config: WorkspaceConfig) {
+        if (!scope.isActive) return
         workspace = config
         val selectedGeneration = ++generation
         loadJob?.cancel()
@@ -124,11 +134,22 @@ class ProjectIdentityViewModel(
             projectPath = config.projectPath,
             workspaceLeague = config.league,
         )
-        loadJob = scope.launch {
-            val loaded = withContext(ioDispatcher) { runCatching { inspect(config) } }
-            if (selectedGeneration != generation || workspace != config) return@launch
-            _state.value = loaded.getOrElse { failure ->
-                ProjectIdentityEditorState(
+        loadJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                val loaded = withContext(ioDispatcher) { inspect(config) }
+                if (selectedGeneration != generation || workspace != config) return@launch
+                _state.value = loaded
+            } catch (cancelled: CancellationException) {
+                if (selectedGeneration == generation && workspace == config) {
+                    _state.value = _state.value.copy(
+                        loading = false,
+                        protectedError = "Project inspection was cancelled. Reload before reviewing an identity.",
+                    )
+                }
+                throw cancelled
+            } catch (failure: Exception) {
+                if (selectedGeneration != generation || workspace != config) return@launch
+                _state.value = ProjectIdentityEditorState(
                     loading = false,
                     projectPath = config.projectPath,
                     workspaceLeague = config.league,
@@ -142,9 +163,10 @@ class ProjectIdentityViewModel(
     fun update(field: ProjectIdentityField, value: String) {
         val config = workspace ?: return
         val current = _state.value
-        if (field in STABLE_IDENTITY_FIELDS && current.currentDocument != null) {
+        if (field in STABLE_IDENTITY_FIELDS && (current.currentDocument != null || current.saving)) {
             _state.value = current.copy(
-                message = "The saved project ID is stable. Create a new project instead of renaming this identity.",
+                message = if (current.saving) "The reviewed identity is being saved. Stable IDs are locked for this save."
+                    else "The saved project ID is stable. Create a new project instead of renaming this identity.",
                 messageIsError = false,
             )
             return
@@ -298,6 +320,7 @@ class ProjectIdentityViewModel(
     fun applyReviewed() {
         val config = workspace ?: return
         val current = _state.value
+        if (!scope.isActive || current.loading || current.saving) return
         val proposal = current.proposal ?: return
         val freshDocument = validateProjectIdentityDraft(config.league, current.draft).document
         if (freshDocument == null || AresProjectMetadataCodec.contentHash(freshDocument) != proposal.proposedContentHash) {
@@ -314,61 +337,50 @@ class ProjectIdentityViewModel(
             messageIsError = false,
         )
         val applyGeneration = generation
-        scope.launch {
-            runCatching {
-                withContext(ioDispatcher) {
-                    ProjectLayout.validationError(config.projectPath, config.league)?.let { sourceError ->
-                        error("The selected folder stopped being a valid robot project: $sourceError")
-                    }
-                    proposal.expectedInvalidRawContentHash?.let { invalidHash ->
-                        when (
-                            val result = projectSession?.repairProjectIdentity(
-                                config.projectPath,
-                                config.league.targetPlatform(),
-                                invalidHash,
-                                proposal.document,
-                            )
-                        ) {
-                            is ProjectSessionMutationResult.Applied -> result.value
-                            is ProjectSessionMutationResult.Stale -> error("The invalid project file changed after review. Review the repair again.")
-                            is ProjectSessionMutationResult.Conflict -> error(result.message)
-                            is ProjectSessionMutationResult.Failed -> error(result.message)
-                            null -> repository.repairReviewed(config.projectPath, invalidHash, proposal.document)
-                        }
-                    } ?: current.projectRevision?.let { revision ->
-                        when (val result = projectSession?.saveProjectIdentity(revision, proposal.document)) {
-                            is ProjectSessionMutationResult.Applied -> result.value
-                            is ProjectSessionMutationResult.Stale -> error("The project changed after this identity loaded. Reload before saving.")
-                            is ProjectSessionMutationResult.Conflict -> error(result.message)
-                            is ProjectSessionMutationResult.Failed -> error(result.message)
-                            null -> repository.saveReviewed(config.projectPath, proposal.expectedContentHash, proposal.document)
-                        }
-                    } ?: repository.saveReviewed(config.projectPath, proposal.expectedContentHash, proposal.document)
+        // Establish cancellation handling before dispatch, including cancellation of queued I/O.
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                val outcome = withContext(ioDispatcher) { persistReviewed(config, current, proposal) }
+                if (applyGeneration != generation || workspace != config) return@launch
+                val saved = outcome.metadata
+                val latest = _state.value
+                val editedWhileSaving = latest.draft != current.draft
+                val draft = if (editedWhileSaving) latest.draft else projectIdentityDraft(config, saved.document)
+                val validation = validateProjectIdentityDraft(config.league, draft)
+                val savedMessage = when {
+                    saved.repaired ->
+                        "Repaired .ares/project.json after explicit review. The exact invalid file is preserved in .ares/recovery/project."
+                    saved.created -> "Created .ares/project.json after explicit review."
+                    else -> "Saved .ares/project.json and preserved the previous version in project history."
                 }
-            }.onSuccess { saved ->
-                if (applyGeneration != generation || workspace != config) return@onSuccess
-                val validation = validateProjectIdentityDraft(config.league, projectIdentityDraft(config, saved.document))
                 _state.value = ProjectIdentityEditorState(
                     loading = false,
                     projectPath = config.projectPath,
                     workspaceLeague = config.league,
                     currentDocument = saved.document,
                     currentContentHash = saved.contentHash,
-                    projectRevision = projectSession?.state?.value?.revision,
-                    draft = projectIdentityDraft(config, saved.document),
+                    projectRevision = outcome.revision,
+                    draft = draft,
                     fieldErrors = validation.fieldErrors,
                     generalErrors = validation.generalErrors,
-                    message = when {
-                        saved.repaired ->
-                            "Repaired .ares/project.json after explicit review. The exact invalid file is preserved in .ares/recovery/project."
-                        saved.created -> "Created .ares/project.json after explicit review."
-                        else -> "Saved .ares/project.json and preserved the previous version in project history."
-                    },
+                    message = savedMessage + if (editedWhileSaving) " Your newer draft remains unsaved; review it before saving." else "",
                     messageIsError = false,
                 )
-            }.onFailure { failure ->
-                if (applyGeneration != generation || workspace != config) return@onFailure
-                _state.value = current.copy(
+            } catch (cancelled: CancellationException) {
+                if (applyGeneration == generation && workspace == config) {
+                    _state.value = _state.value.copy(
+                        saving = false,
+                        proposal = null,
+                        protectedError = "Saving was interrupted. Reload to check the canonical file before reviewing another change.",
+                        protectedContentHash = null,
+                        message = null,
+                        messageIsError = false,
+                    )
+                }
+                throw cancelled
+            } catch (failure: Exception) {
+                if (applyGeneration != generation || workspace != config) return@launch
+                _state.value = _state.value.copy(
                     saving = false,
                     proposal = null,
                     message = failure.message ?: "Project identity could not be saved. Reload and try again.",
@@ -378,18 +390,74 @@ class ProjectIdentityViewModel(
         }
     }
 
+    private data class IdentitySaveOutcome(val metadata: SavedProjectMetadata, val revision: ProjectSessionRevision?)
+
+    private fun savedIdentity(saved: SavedProjectMetadata, snapshot: ProjectSessionSnapshot?): IdentitySaveOutcome {
+        if (snapshot != null) {
+            check(snapshot.documents.query.metadata?.let(AresProjectMetadataCodec::contentHash) == saved.contentHash) {
+                "The reviewed identity was saved, but it changed again while refreshing the project. Reload before reviewing another change."
+            }
+        }
+        return IdentitySaveOutcome(saved, snapshot?.revision)
+    }
+
+    private fun persistReviewed(
+        config: WorkspaceConfig,
+        current: ProjectIdentityEditorState,
+        proposal: ProjectIdentityProposal,
+    ): IdentitySaveOutcome {
+        ProjectLayout.validationError(config.projectPath, config.league)?.let { sourceError ->
+            error("The selected folder stopped being a valid robot project: $sourceError")
+        }
+        val invalidHash = proposal.expectedInvalidRawContentHash
+        val result = when {
+            invalidHash != null -> projectSession?.repairProjectIdentity(
+                config.projectPath, config.league.targetPlatform(), invalidHash, proposal.document,
+            )
+            current.projectRevision != null -> projectSession?.saveProjectIdentity(current.projectRevision, proposal.document)
+            else -> null
+        }
+        when (result) {
+            is ProjectSessionMutationResult.Applied -> return savedIdentity(result.value, result.snapshot)
+            is ProjectSessionMutationResult.Stale -> error("The project changed after review. Reload before saving.")
+            is ProjectSessionMutationResult.Conflict -> error(result.message)
+            is ProjectSessionMutationResult.Failed -> error(result.message)
+            null -> Unit
+        }
+        val saved = if (invalidHash != null) {
+            repository.repairReviewed(config.projectPath, invalidHash, proposal.document)
+        } else {
+            repository.saveReviewed(config.projectPath, proposal.expectedContentHash, proposal.document)
+        }
+        val snapshot = projectSession?.let { session ->
+            try {
+                session.snapshot(config.projectPath, config.league.targetPlatform(), forceReload = true)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                throw IllegalStateException("The identity was saved, but the project could not be refreshed. Reload it: ${failure.message}", failure)
+            }
+        }
+        return savedIdentity(saved, snapshot)
+    }
+
     private fun inspect(config: WorkspaceConfig): ProjectIdentityEditorState {
-        val file = repository.file(config.projectPath)
-        val currentResult = repository.load(config.projectPath)
-        val current = currentResult.getOrNull()
-        val sessionRevision = current?.let {
-            projectSession?.snapshot(config.projectPath, config.league.targetPlatform(), forceReload = true)?.revision
+        val inspected = repository.inspect(config.projectPath)
+        val currentResult = inspected.result
+        val initiallyLoaded = currentResult.getOrNull()
+        val sessionSnapshot = initiallyLoaded?.let {
+            projectSession?.snapshot(config.projectPath, config.league.targetPlatform(), forceReload = true)
         }
-        val corruptError = currentResult.exceptionOrNull()?.takeIf { file.isFile }
-        val corruptHash = corruptError?.let { repository.rawContentHash(config.projectPath) }
-        val retiredSchema = corruptError?.message.orEmpty().let { message ->
-            message.contains("Unsupported project metadata schema") || message.contains("authoringModel")
+        val current = if (sessionSnapshot != null) {
+            checkNotNull(sessionSnapshot.documents.query.metadata) {
+                "The canonical identity changed while the project was loading. Reload before reviewing it."
+            }
+        } else {
+            initiallyLoaded
         }
+        val corruptError = currentResult.exceptionOrNull()?.takeIf { inspected.rawContentHash != null }
+        val corruptHash = corruptError?.let { inspected.rawContentHash }
+        val unsupportedSchema = corruptError as? UnsupportedProjectMetadataSchemaException
         val projectSourceError = ProjectLayout.validationError(config.projectPath, config.league)
         val mismatch = current?.takeIf { it.league != config.league.toAresLeague() }
         val draft = projectIdentityDraft(config, current)
@@ -400,21 +468,24 @@ class ProjectIdentityViewModel(
             workspaceLeague = config.league,
             currentDocument = current,
             currentContentHash = current?.let(AresProjectMetadataCodec::contentHash),
-            projectRevision = sessionRevision,
+            projectRevision = sessionSnapshot?.revision,
             draft = draft,
             fieldErrors = validation.fieldErrors,
             generalErrors = validation.generalErrors,
             projectSourceError = projectSourceError,
             protectedError = when {
-                retiredSchema ->
-                    "The selected .ares/project.json uses a retired project format. Current Studio supports schema-5 projects only and will not rewrite this project."
+                unsupportedSchema != null -> {
+                    val format = if (unsupportedSchema.schemaVersion < ARES_PROJECT_METADATA_SCHEMA_VERSION) "retired" else "newer"
+                    "The selected .ares/project.json uses a $format project format. ${unsupportedSchema.message}"
+                }
                 corruptError != null ->
                     "The existing .ares/project.json cannot be used: ${corruptError.message}. Its exact bytes remain unchanged. Enter the measured robot dimensions, review the repair, and ARES will preserve the original under .ares/recovery/project before replacing it."
                 mismatch != null ->
                     "The canonical project is ${mismatch.league}, but this workspace is ${config.league}. Select the correct workspace league; ARES will not rewrite platform identity automatically."
                 else -> null
             },
-            protectedContentHash = corruptHash.takeUnless { retiredSchema },
+            protectedContentHash = corruptHash.takeUnless { unsupportedSchema != null },
+            unsupportedSchemaVersion = unsupportedSchema?.schemaVersion,
             message = when {
                 corruptError != null -> null
                 projectSourceError != null ->

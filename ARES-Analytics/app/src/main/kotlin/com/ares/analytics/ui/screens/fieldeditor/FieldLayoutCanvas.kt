@@ -80,6 +80,7 @@ import com.ares.analytics.ui.components.pathplanner.getCanvasOffsetBase
 import com.ares.analytics.ui.components.pathplanner.getDragDeltaInFieldCoords
 import com.ares.analytics.ui.components.pathplanner.getRobotCoordFromScreen
 import com.ares.analytics.ui.components.pathplanner.getTransformedCanvasOffset
+import com.ares.analytics.ui.components.pathplanner.pointInPolygon
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -372,20 +373,6 @@ private fun Obstacle.contains(x: Double, y: Double): Boolean = when (this) {
             abs(dx * sin(radians) + dy * cos(radians)) <= height / 2.0
     }
     is Obstacle.Polygon -> pointInPolygon(x, y, vertices)
-}
-
-private fun pointInPolygon(x: Double, y: Double, vertices: List<PathPoint>): Boolean {
-    if (vertices.size < 3) return false
-    var inside = false
-    var previous = vertices.last()
-    for (current in vertices) {
-        if ((current.y > y) != (previous.y > y)) {
-            val intersectionX = (previous.x - current.x) * (y - current.y) / (previous.y - current.y) + current.x
-            if (x < intersectionX) inside = !inside
-        }
-        previous = current
-    }
-    return inside
 }
 
 private fun moveSelection(layout: FieldEditorLayout, ids: Set<String>, dx: Double, dy: Double): FieldEditorLayout = layout.copy(

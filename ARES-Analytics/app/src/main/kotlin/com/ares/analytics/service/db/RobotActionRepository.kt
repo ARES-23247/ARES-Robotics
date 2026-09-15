@@ -1,6 +1,7 @@
 package com.ares.analytics.service.db
 
 import com.ares.analytics.shared.models.RobotActionRecord
+import com.ares.analytics.shared.models.MAX_SUPPORTED_TIMESTAMP_MS
 import org.duckdb.DuckDBConnection
 import java.sql.Connection
 
@@ -12,37 +13,37 @@ internal class RobotActionRepository(
 
     suspend fun insert(actions: List<RobotActionRecord>) = transactions.write {
         if (actions.isEmpty()) return@write
-        val duckConnection = connection.unwrap(DuckDBConnection::class.java)
-        val appender = duckConnection.createAppender(DuckDBConnection.DEFAULT_SCHEMA, "robot_actions")
-        try {
-            actions.forEach { action ->
-                appender.beginRow()
-                appender.append(action.timestampMs)
-                appender.append(action.sessionId)
-                appender.append(action.runId)
-                appender.append(action.robotId)
-                appender.append(action.matchNumber)
-                appender.append(action.alliance)
-                appender.append(action.actionType)
-                appender.append(action.payloadJson)
-                appender.endRow()
+        withDuckDbAppenderTransaction(connection) {
+            val duckConnection = connection.unwrap(DuckDBConnection::class.java)
+            duckConnection.createAppender(DuckDBConnection.DEFAULT_SCHEMA, "robot_actions").use { appender ->
+                for (action in actions) {
+                    validate(action)
+                    appender.beginRow()
+                    appender.append(action.timestampMs)
+                    appender.append(action.sessionId)
+                    appender.append(action.runId)
+                    appender.append(action.robotId)
+                    appender.append(action.matchNumber)
+                    appender.append(action.alliance)
+                    appender.append(action.actionType)
+                    appender.append(action.payloadJson)
+                    appender.endRow()
+                }
+                appender.flush()
             }
-            appender.flush()
-        } finally {
-            appender.close()
         }
     }
 
-    suspend fun getForSession(sessionId: String): List<RobotActionRecord> = transactions.write {
+    suspend fun getForSession(sessionId: String): List<RobotActionRecord> = transactions.read {
         val actions = mutableListOf<RobotActionRecord>()
-        connection.prepareStatement(
+        transactions.readConnection.prepareStatement(
             "SELECT timestamp_ms, session_id, run_id, robot_id, match_number, alliance, action_type, payload_json " +
-                "FROM robot_actions WHERE session_id = ? ORDER BY timestamp_ms, run_id, action_type, payload_json",
+                "FROM robot_actions WHERE session_id = ? ORDER BY timestamp_ms, run_id, action_type, payload_json, robot_id, match_number, alliance",
         ).use { statement ->
             statement.setString(1, sessionId)
             statement.executeQuery().use { rows ->
                 while (rows.next()) {
-                    actions += RobotActionRecord(
+                    val action = RobotActionRecord(
                         timestampMs = rows.getLong("timestamp_ms"),
                         sessionId = rows.getString("session_id"),
                         runId = rows.getString("run_id"),
@@ -52,9 +53,16 @@ internal class RobotActionRepository(
                         actionType = rows.getString("action_type"),
                         payloadJson = rows.getString("payload_json"),
                     )
+                    validate(action)
+                    actions += action
                 }
             }
         }
         actions
+    }
+
+    private fun validate(action: RobotActionRecord) {
+        require(action.timestampMs in 0L..MAX_SUPPORTED_TIMESTAMP_MS) { "Action timestamp is outside the supported domain" }
+        require(action.sessionId.isNotBlank()) { "Action session ID must not be blank" }
     }
 }

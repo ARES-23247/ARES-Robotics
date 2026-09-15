@@ -90,8 +90,9 @@ file. If a newer template differs, review the structured preview first, then use
 ```
 
 Changing the first header to `USER-OWNED` permanently removes that file from replacement eligibility.
-The historical `generated.subsystems` package contains these editable starters, but the ownership
-header—not the package name—is authoritative. Only `build/generated` is disposable.
+The configured starter output directory retains a historical `com/areslib/frc` path, but generated
+season declarations use the team-owned `org.aresfirst.marvin.generated.subsystems` package.
+The ownership header—not the directory or package name—is authoritative. Only `build/generated` is disposable.
 
 ## Creating a subsystem by hand
 

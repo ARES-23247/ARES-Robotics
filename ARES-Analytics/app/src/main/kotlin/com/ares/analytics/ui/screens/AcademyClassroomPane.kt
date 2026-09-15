@@ -2,6 +2,13 @@
 
 package com.ares.analytics.ui.screens
 
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.learning.LearningJourneyEvaluator
+import com.ares.analytics.domain.learning.LearningRubricRating
+import com.ares.analytics.domain.learning.AcademyClassroomToolkit
+import com.ares.analytics.domain.learning.LearningProgress
+import com.ares.analytics.domain.learning.AcademyClassroomStore
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

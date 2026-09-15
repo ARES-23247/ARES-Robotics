@@ -24,7 +24,7 @@ published library have different toolchains and release boundaries.
 | **ARES-FRC-Starter/** | Canonical standalone FRC starter source exported into deterministic release archives | Same FRC toolchain | project root |
 | **ARES-XRP-Starter/** | Canonical standalone XRP source with deterministic `.ares`→MicroPython generation, simulator, and deploy wrapper | Python 3 host tooling + MicroPython/XRPLib target | `.ares/`, `tools/ares_project.py`, `ares_micro/`, `simulator/` |
 
-## 2. Dependency Graph (read this before changing anything)
+## 2. Dependency Graph and Release Validation
 
 ```
                          ARESLib-Kotlin  (foundation, pure Kotlin + math/control/pathing/state)
@@ -211,7 +211,7 @@ FTC Android app, team **23247**, season **DECODE**. Built on FTC SDK 11.1 (the `
   tests belong under Gradle generated directories.
 - **Canonical autonomous assets:** `.ares/routines/`, `.ares/autonomous-catalog.json`, `.ares/action-catalog.json`, and the generated project source. Loose PathPlanner/`.aresauto` deployment is unsupported.
 - **`simulator/` module** (desktop JVM, JDK 21): shares `TeamCode/src/main/java`, runs real OpModes against mocks. `runSim` → `DesktopSimLauncher --headless`; `CalibrationVerificationApp` exercises all SysId routines.
-- **`.ares/project.json`** — canonical team/season/robot, authoring-model, coordinate, footprint, and runtime identity. Older split identity files are unsupported. **`ares_tuning.json`** — live-tuning config.
+- **`.ares/project.json`** — canonical team/season/robot, authoring-model, coordinate, footprint, and runtime identity. Canonical tuning lives in `.ares/tuning/*.arestuning`; runtime experiments go to `.ares/local/tuning/runtime.arestuning`. The retired `ares_tuning.json` snapshot is not loaded.
 - **Build/deploy:** `.\gradlew.bat :TeamCode:assembleDebug`; deploy via `adb connect 192.168.43.1:5555` then `adb install -r`. Default FTC connection `192.168.43.1:5810`.
 
 ### ARES-FRC (`ARES-FRC/`)
@@ -299,10 +299,19 @@ Offline NT4 connection failures and Google Drive sign-in errors are expected whe
 
 ### Mandatory launch/debug workflow for every agent
 
+`killExisting` matches ARES Analytics main classes reported by JPS; it does not check PID
+ownership, checkout, isolated home, or whether a window is healthy. Before invoking it, including
+through a normal `:app:run`, verify that every matching JVM belongs to this task. Preserve other
+tasks' instances. For a separate test instance, use `-PskipKill` with a dedicated
+`-ParesIsolatedDesktopHome=...`; the skip flag does not bypass the application instance lock.
+After failed graceful close, terminate only an exact verified owned PID if other instances exist.
+Title-based capture/interaction helpers are ambiguous with multiple matching windows; use the
+owned instance's dedicated loopback test-control port or same-process capture in that case.
+
 1. Run `git status --short --branch` in `ARES-Analytics` and preserve all unrelated or in-progress edits.
-2. Separate compilation from presentation: run `.\gradlew.bat :app:compileKotlin` first. A successful compile does not prove a window exists.
+2. Choose the dependency mode before compiling and pass the same properties to compile and run. Separate compilation from presentation: run `.\gradlew.bat :app:compileKotlin` first with those properties. A successful compile does not prove a window exists.
 3. Before killing anything, inspect Java command lines with `jps -lv | Select-String 'com\.ares\.analytics\.MainKt'`.
-4. If a verified ARES JVM owns the lock but has no usable window, run `.\gradlew.bat killExisting` from `ARES-Analytics` and report the PID that was terminated.
+4. If a verified owned ARES JVM holds the lock but has no usable window, apply the ownership-checked cleanup above and report the exact owned PIDs terminated.
 5. If the crash is `NoClassDefFoundError` / `ClassNotFoundException` for an application class whose source exists, run `.\gradlew.bat :app:clean :app:compileKotlin --no-build-cache --rerun-tasks`; do not trust an incremental `FROM-CACHE` result for that recovery.
 6. Launch with `.\gradlew.bat :app:run` for released dependencies, or add `"-ParesUseSiblingLib=true"` only when intentionally validating sibling ARESLib source. Require the `Isolated desktop runtime classpath at ...ares-analytics-run-*` log; otherwise concurrent builds can corrupt the running app.
 7. Require `Desktop window shown` and `Desktop window opened` before a `Desktop window presented after windowOpened` (or explicit startup-fallback) log ending in `showing=true, nativeVisible=true, hwnd=<value>`. Then require `Desktop startup presentation settled: alwaysOnTop=false, focused=true, active=true, showing=true`. This second line proves the window remained presented after the bounded topmost interval instead of briefly flashing and falling behind the launcher.
@@ -311,10 +320,10 @@ Offline NT4 connection failures and Google Drive sign-in errors are expected whe
    If the exact ARES HWND has a black client area on the first capture, keep that same process alive, check for an AWT/render error, wait one paint interval, and capture the same HWND again. A rendered recapture is delayed painting; a persistently blank capture is a startup failure.
 9. If the console reports an uncaught `AWT-EventQueue-0` exception, inspect the named crash log before cleanup. The first relevant application frame is evidence of the initiating UI defect; the remaining process and lock are secondary effects.
 10. Close the app through its window so `disposeAndJoin()` and the shutdown watchdog are exercised. Use the tester skill's native `-CloseWindow` action; do not automate Alt+F4 through `SendKeys`, which can be delivered to a focused Compose text field as input. Use `killExisting` only as cleanup if graceful close fails.
-11. Confirm `jps -lv` no longer lists `com.ares.analytics.MainKt`.
+11. Confirm this task's owned app PID exited; other tasks' ARES JVMs must remain untouched.
 12. If startup, `Main.kt`, `ServiceRegistry`, Compose/coroutines dependencies, or Skiko settings changed, launch and capture a second time after a clean shutdown. This catches invisible lock owners and one-launch-only success.
 
-Never report "the app launches" based only on `BUILD SUCCESSFUL`, a long-running Gradle process, `MainScreen` logs, or a screenshot tool's full-screen fallback. The required evidence is a visible ARES HWND containing rendered UI, followed by a shutdown that leaves no ARES JVM.
+Never report "the app launches" based only on `BUILD SUCCESSFUL`, a long-running Gradle process, `MainScreen` logs, or a screenshot tool's full-screen fallback. The required evidence is a visible ARES HWND containing rendered UI, followed by shutdown of the verified owned app process.
 
 When multiple agents are active, inspect `jps -lv` / `Win32_Process.CommandLine` before attributing a disappearance to Compose. Another agent's build may explain the timing. Do not revert that agent's source edits; first verify whether their task is still writing, wait for a coherent compile boundary, then validate the combined tree. The isolated runtime intentionally does not hot-reload those edits.
 

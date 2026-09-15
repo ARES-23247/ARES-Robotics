@@ -6,29 +6,33 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.io.File
-import kotlin.math.exp
 import kotlin.math.sign
 import com.ares.analytics.service.tuning.TuningProposalInbox
-import com.ares.analytics.service.tuning.ExternalTuningProposal
-import kotlinx.coroutines.async
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.flow.first
-import org.junit.Assert.assertFalse
 
 class AutoTunerServiceTest {
     private lateinit var autoTunerService: AutoTunerService
     private lateinit var mockNt4Service: Nt4ClientService
+    private lateinit var database: DatabaseService
+    private lateinit var tempDb: File
 
     @Before
     fun setUp() {
-        val tempDb = File.createTempFile("mock_db_tuner", ".sqlite").apply { deleteOnExit() }
-        val database = DatabaseService(tempDb.absolutePath)
+        tempDb = File.createTempFile("mock_db_tuner", ".sqlite").apply { deleteOnExit() }
+        database = DatabaseService(tempDb.absolutePath)
         mockNt4Service = Nt4ClientService(database)
         autoTunerService = AutoTunerService(mockNt4Service, SysIdService(database))
+    }
+
+    @After
+    fun tearDown() = runBlocking {
+        mockNt4Service.stop()
+        database.close()
+        tempDb.delete()
+        Unit
     }
 
     @Test
@@ -62,13 +66,12 @@ class AutoTunerServiceTest {
     fun `approved gains become a review proposal without writing robot topics`() = runBlocking {
         val latestBefore = mockNt4Service.latestValues.toMap()
         val inbox = TuningProposalInbox()
-        autoTunerService = AutoTunerService(mockNt4Service, SysIdService(DatabaseService(File.createTempFile("proposal_db", ".sqlite").absolutePath)), inbox)
+        autoTunerService = AutoTunerService(mockNt4Service, SysIdService(database), inbox)
         val recommendation = autoTunerService.analyzeSamples(SysIdMechanism.LINEAR, syntheticBidirectionalRun())!!
-        val proposal = async<ExternalTuningProposal>(start = CoroutineStart.UNDISPATCHED) { withTimeout(2_000) { inbox.proposals.first() } }
 
         autoTunerService.approveAndApplyGains(recommendation)
         assertEquals(TuningApplyPhase.RECOMMENDED, autoTunerService.applyState.value.phase)
-        assertEquals(recommendation.topicValues, proposal.await().values)
+        assertTrue(inbox.deliverNext { assertEquals(recommendation.topicValues, it.values); true })
         assertEquals("AutoTuner approval must not publish any robot topic", latestBefore, mockNt4Service.latestValues.toMap())
     }
 
@@ -77,7 +80,7 @@ class AutoTunerServiceTest {
         val inbox = TuningProposalInbox()
         autoTunerService = AutoTunerService(
             mockNt4Service,
-            SysIdService(DatabaseService(File.createTempFile("teaching_db", ".sqlite").absolutePath)),
+            SysIdService(database),
             inbox,
         )
         val teaching = AutoTuningDigitalTwin.teachingScenario(SysIdMechanism.LINEAR)
@@ -91,21 +94,25 @@ class AutoTunerServiceTest {
 
         assertEquals(TuningApplyPhase.FAILED, autoTunerService.applyState.value.phase)
         assertTrue(autoTunerService.applyState.value.message.contains("did not measure", ignoreCase = true))
-        assertFalse(inbox.proposals.replayCache.isNotEmpty())
+        assertEquals(0, inbox.pendingCount.value)
         assertTrue(mockNt4Service.latestValues.isEmpty())
     }
 
     private fun syntheticBidirectionalRun(): List<AlignedDataRow> {
         val rows = ArrayList<AlignedDataRow>(120)
-        var previousVelocity = 0.0
+        // Multiple voltage levels identify all three coefficients. A single exponential
+        // trajectory makes sign(v), v and a linearly dependent and cannot identify them.
+        var velocity = 0.0
         for (i in 0 until 120) {
-            val local = if (i < 60) i else i - 60
-            val direction = if (i < 60) 1.0 else -1.0
-            val velocity = direction * 3.0 * (1.0 - exp(-local / 9.0))
-            val accel = if (i == 0 || i == 60) 0.0 else (velocity - previousVelocity) / 0.02
-            val voltage = 0.45 * sign(velocity) + 1.8 * velocity + 0.25 * accel
+            val voltage = when {
+                i < 5 -> 0.0
+                i < 35 -> -4.0
+                i < 60 -> -2.0
+                else -> 6.0
+            }
+            val accel = (voltage - 0.45 * sign(velocity) - 1.8 * velocity) / 0.25
             rows += AlignedDataRow(i * 20L, voltage, velocity, accel)
-            previousVelocity = velocity
+            velocity += accel * 0.02
         }
         return rows
     }

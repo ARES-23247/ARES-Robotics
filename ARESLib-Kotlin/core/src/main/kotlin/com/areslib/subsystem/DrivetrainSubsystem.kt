@@ -7,7 +7,8 @@ import com.areslib.math.geometry.Pose2d
  */
 interface DrivetrainSubsystem : Subsystem {
     /**
-     * Commands the drivetrain to execute specific Cartesian linear and angular speed targets.
+     * Commands robot-relative forward/left velocity in m/s and CCW angular velocity in rad/s.
+     * Implementations own configured limits and route intent through the robot's safety pipeline.
      */
     fun setChassisSpeeds(vx: Double, vy: Double, omega: Double)
 

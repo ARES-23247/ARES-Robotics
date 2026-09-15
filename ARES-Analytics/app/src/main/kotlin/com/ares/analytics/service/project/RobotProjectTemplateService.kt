@@ -66,6 +66,7 @@ data class RobotProjectTemplate(
 enum class RobotProjectTemplateKind {
     GENERIC_STARTER,
     EXAMPLE,
+    BIOBUZZ_EXAMPLE,
 }
 
 data class RobotProjectCreationRequest(

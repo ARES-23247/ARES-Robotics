@@ -146,14 +146,16 @@ dependencies {
     testRuntimeOnly wpi.java.vendor.jniRelease(wpi.platforms.desktop)
 }
 
-task extractTestNatives(type: Copy) {
+// Own a test-only directory so stale binaries can be removed without touching GradleRIO outputs.
+def testNativesDir = file("${buildDir}/jni/test-release")
+task extractTestNatives(type: Sync) {
     dependsOn configurations.testRuntimeClasspath
     from {
         (configurations.simulationRelease + configurations.testRuntimeClasspath).collect { 
             it.isDirectory() ? it : (it.name.endsWith('.zip') || it.name.endsWith('.jar') ? zipTree(it) : it)
         }
     }
-    into "${buildDir}/jni/release"
+    into testNativesDir
     include "**/*.dll"
     include "**/*.so"
     include "**/*.dylib"
@@ -185,7 +187,7 @@ test {
     classpath += configurations.simulationRelease
 
     // Set the library path to the extracted native binaries directory
-    def jniPath = file("${buildDir}/jni/release").absolutePath
+    def jniPath = testNativesDir.absolutePath
     systemProperty "java.library.path", jniPath
     
     // Prepend the native binaries directory to PATH so Windows can resolve transitive DLL dependencies

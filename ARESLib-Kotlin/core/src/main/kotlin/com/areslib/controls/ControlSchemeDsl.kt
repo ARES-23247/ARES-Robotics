@@ -34,7 +34,11 @@ class ControlSchemeBuilder internal constructor() {
     private fun addBinding(binding: ControlBindingDocument) {
         var candidate = binding.bindingId
         var suffix = 2
-        while (!allocatedBindingIds.add(candidate)) candidate = "${binding.bindingId}.$suffix".also { suffix++ }
+        while (!allocatedBindingIds.add(candidate)) {
+            val ending = ".$suffix"
+            candidate = binding.bindingId.take(64 - ending.length) + ending
+            suffix++
+        }
         bindings += if (candidate == binding.bindingId) binding else binding.copy(bindingId = candidate)
     }
 
@@ -62,10 +66,13 @@ class ControllerControlsBuilder internal constructor(
         controlId
     )
 
-    fun chord(first: String, second: String, vararg additional: String): DigitalControlBindingBuilder = digital(
-        ControlSourceDocument(ControlSourceKind.CHORD, slot, listOf(first, second) + additional),
-        (listOf(first, second) + additional).joinToString("-")
-    ).priority(100).suppressSingles()
+    fun chord(first: String, second: String, vararg additional: String): DigitalControlBindingBuilder {
+        val controls = listOf(first, second) + additional
+        return digital(
+            ControlSourceDocument(ControlSourceKind.CHORD, slot, controls),
+            controls.joinToString("-")
+        ).priority(100).suppressSingles()
+    }
 
     fun trigger(
         controlId: String,
@@ -280,7 +287,9 @@ class AnalogControlBindingBuilder internal constructor(
 
 private fun stableBindingId(slot: String, source: String, event: ControlEvent, target: String): String =
     "$slot.$source.${event.name.lowercase()}.$target"
-        .replace(Regex("[^A-Za-z0-9._-]+"), "-")
+        .replace(INVALID_BINDING_ID_CHARACTERS, "-")
         .take(64)
 
 private fun ControlEvent.friendlyName(): String = name.lowercase().replace('_', ' ')
+
+private val INVALID_BINDING_ID_CHARACTERS = Regex("[^A-Za-z0-9._-]+")

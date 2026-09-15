@@ -9,19 +9,34 @@ $ErrorActionPreference = 'Stop'
 $legacy = [System.IO.Path]::GetFullPath($LegacyWorkspace)
 $destinationPath = [System.IO.Path]::GetFullPath($Destination)
 if (-not (Test-Path -LiteralPath $legacy -PathType Container)) { throw "Legacy workspace not found: $legacy" }
-if ($destinationPath.Equals($legacy, [System.StringComparison]::OrdinalIgnoreCase)) { throw 'Destination must differ from the legacy workspace.' }
+if ($destinationPath.TrimEnd([char[]]'\/').Equals($legacy.TrimEnd([char[]]'\/'), [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw 'Destination must differ from the legacy workspace.'
+}
 $lines = [System.Collections.Generic.List[string]]::new()
 $lines.Add('ARES clean-monorepo migration inventory')
 $lines.Add("Legacy workspace: $legacy")
 $lines.Add("Proposed destination: $destinationPath")
 $lines.Add("Generated: $([DateTimeOffset]::Now.ToString('O'))")
+$lines.Add('Status format: Git porcelain v2; all untracked files are listed.')
 $lines.Add('')
 $repositories = @($legacy) + @(Get-ChildItem -LiteralPath $legacy -Directory -Force | Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName '.git') } | Select-Object -ExpandProperty FullName)
 foreach ($repository in $repositories | Select-Object -Unique) {
     if (-not (Test-Path -LiteralPath (Join-Path $repository '.git'))) { continue }
-    $branch = (git -C $repository branch --show-current).Trim()
-    $head = (git -C $repository rev-parse HEAD).Trim()
-    $status = @(git -C $repository status --short)
+    # One checked snapshot handles normal, detached and unborn HEAD states. Disable
+    # optional index refresh writes because this command only inventories existing work.
+    $snapshot = @(git --no-optional-locks -C $repository status --porcelain=v2 --branch --untracked-files=all)
+    if ($LASTEXITCODE -ne 0) { throw "Could not read Git status for $repository. No inventory was written." }
+    $branch = $null
+    $head = $null
+    $status = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in $snapshot) {
+        if ($line.StartsWith('# branch.head ')) { $branch = $line.Substring('# branch.head '.Length) }
+        elseif ($line.StartsWith('# branch.oid ')) { $head = $line.Substring('# branch.oid '.Length) }
+        elseif (-not $line.StartsWith('# ')) { $status.Add($line) }
+    }
+    if ([string]::IsNullOrWhiteSpace($branch) -or [string]::IsNullOrWhiteSpace($head)) {
+        throw "Incomplete Git branch metadata for $repository. No inventory was written."
+    }
     $lines.Add("Repository: $repository")
     $lines.Add("  Branch: $branch")
     $lines.Add("  HEAD: $head")

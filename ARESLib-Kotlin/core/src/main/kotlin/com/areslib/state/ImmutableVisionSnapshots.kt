@@ -3,13 +3,16 @@ package com.areslib.state
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Pose3d
 import com.areslib.math.geometry.Rotation2d
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.asin
-import kotlin.math.atan2
-import kotlin.math.withSign
+import com.areslib.math.geometry.quaternionRoll
+import com.areslib.math.geometry.quaternionPitch
+import com.areslib.math.geometry.quaternionYaw
 
-/** Deeply immutable 3D pose representation for Redux and replay ownership. */
+/**
+ * Deeply immutable 3D pose representation for Redux and replay ownership.
+ * Quaternion components must preserve the source rotation's unit length. Euler getters use
+ * the same Rz(yaw) Ry(pitch) Rx(roll) convention as Rotation3d, choosing roll zero at pitch
+ * singularities. Copying retains the quaternion exactly; it does not validate sensor data.
+ */
 data class Pose3dSnapshot(
     val x: Double = 0.0,
     val y: Double = 0.0,
@@ -20,24 +23,13 @@ data class Pose3dSnapshot(
     val quaternionZ: Double = 0.0
 ) {
     val rotationX: Double
-        get() {
-            val sinRollCosPitch = 2.0 * (quaternionW * quaternionX + quaternionY * quaternionZ)
-            val cosRollCosPitch = 1.0 - 2.0 * (quaternionX * quaternionX + quaternionY * quaternionY)
-            return atan2(sinRollCosPitch, cosRollCosPitch)
-        }
+        get() = quaternionRoll(quaternionW, quaternionX, quaternionY, quaternionZ)
 
     val rotationY: Double
-        get() {
-            val sinPitch = 2.0 * (quaternionW * quaternionY - quaternionZ * quaternionX)
-            return if (abs(sinPitch) >= 1.0) (PI / 2.0).withSign(sinPitch) else asin(sinPitch)
-        }
+        get() = quaternionPitch(quaternionW, quaternionX, quaternionY, quaternionZ)
 
     val rotationZ: Double
-        get() {
-            val sinYawCosPitch = 2.0 * (quaternionW * quaternionZ + quaternionX * quaternionY)
-            val cosYawCosPitch = 1.0 - 2.0 * (quaternionY * quaternionY + quaternionZ * quaternionZ)
-            return atan2(sinYawCosPitch, cosYawCosPitch)
-        }
+        get() = quaternionYaw(quaternionW, quaternionX, quaternionY, quaternionZ)
 
     fun toPose2d(): Pose2d = Pose2d(x, y, Rotation2d(rotationZ))
 

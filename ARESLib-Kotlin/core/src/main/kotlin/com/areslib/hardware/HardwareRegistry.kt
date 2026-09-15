@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.Collections
 import java.util.IdentityHashMap
-import java.util.concurrent.atomic.AtomicLong
 import com.areslib.hardware.actuator.*
 
 /**
@@ -17,7 +16,7 @@ import com.areslib.hardware.actuator.*
  *
  * Registration is normally performed once during robot construction. Device collections are
  * copy-on-write/concurrent so telemetry and background polling can inspect them safely, but repeated
- * registration of the same logical name still appends lifecycle entries and should be avoided.
+ * registration of the same logical name replaces its ordered lifecycle entry and cached lookups.
  * Hardware exceptions are isolated during best-effort safety, telemetry, and close passes.
  *
  * The polling daemon services at most one regular and one round-robin device per interval. Polled
@@ -27,22 +26,28 @@ import com.areslib.hardware.actuator.*
 class HardwareRegistry {
     private val devices = ConcurrentHashMap<String, LoggableDevice>()
     private val devicesList = CopyOnWriteArrayList<LoggableDevice>()
-    private val devicesNamesList = CopyOnWriteArrayList<String>()
-    private val devicesPrefixList = CopyOnWriteArrayList<String>()
-    private val devicesHeartbeatTopicList = CopyOnWriteArrayList<String>()
+    // Rebuilt only during registration. Loop readers retain one stable, identity-deduplicated snapshot.
+    @Volatile private var lifecycleDevices = emptyArray<SubsystemIO>()
+    private val telemetryPublisher = HardwareTelemetryPublisher()
     private val deviceIndices = ConcurrentHashMap<String, Int>()
     private val closeables = CopyOnWriteArrayList<AutoCloseable>()
-    private val topologyNodes = ConcurrentHashMap<String, TopologyNode>()
+    // Registration owns metadata. A null cache is rebuilt lazily under the same monitor;
+    // constructing a robot does not repeatedly sort every partially registered topology.
+    private val topologyNodes = LinkedHashMap<String, TopologyNode>()
+    @Volatile private var topologySnapshot: List<TopologyNode>? = emptyList()
     private val cachedMotorsWithNames = ConcurrentHashMap<String, MotorIO>()
     private val cachedMotorsList = CopyOnWriteArrayList<MotorIO>()
     private val registeredMotorsView: List<MotorIO> = Collections.unmodifiableList(cachedMotorsList)
     private val registeredMotorsByNameView: Map<String, MotorIO> = Collections.unmodifiableMap(cachedMotorsWithNames)
     private val cachedCurrentSourcesList = CopyOnWriteArrayList<CurrentSourceIO>()
     private val registeredCurrentSourcesView: List<CurrentSourceIO> = Collections.unmodifiableList(cachedCurrentSourcesList)
-    private val syncPolledDevices = CopyOnWriteArrayList<SyncPolledDevice>()
-    private val roundRobinDevices = CopyOnWriteArrayList<SyncPolledDevice>()
-    private val pollingFailureCounts = ConcurrentHashMap<SyncPolledDevice, Long>()
-    private val telemetryPublishSequence = AtomicLong(0L)
+    private class PollingEntry(val device: SyncPolledDevice) {
+        // Owned by the polling worker. Close discards entries before a new generation can register.
+        var consecutiveFailures = 0L
+    }
+    private val pollingEntriesByIdentity = IdentityHashMap<SyncPolledDevice, PollingEntry>()
+    @Volatile private var syncPolledDevices = emptyArray<PollingEntry>()
+    @Volatile private var roundRobinDevices = emptyArray<PollingEntry>()
     
     @Volatile private var pollingGeneration = 0L
     private var pollingThread: Thread? = null
@@ -58,17 +63,19 @@ class HardwareRegistry {
     /**
      * Registers a lifecycle resource for best-effort closure by [closeAll].
      */
+    @Synchronized
     fun registerCloseable(closeable: AutoCloseable) {
-        closeables.addIfAbsent(closeable)
+        if (closeables.none { it === closeable }) closeables.add(closeable)
     }
 
     /**
      * Adds [device] to the primary polling list and starts the daemon on first registration.
      * Duplicate object registrations in this list are ignored.
      */
+    @Synchronized
     fun registerSyncPolledDevice(device: SyncPolledDevice) {
-        if (!syncPolledDevices.contains(device)) {
-            syncPolledDevices.add(device)
+        if (syncPolledDevices.none { it.device === device }) {
+            syncPolledDevices += pollingEntry(device)
         }
         startPollingThreadIfNeeded()
     }
@@ -77,12 +84,16 @@ class HardwareRegistry {
      * Adds [device] to the secondary round-robin list and starts the daemon if needed.
      * One entry from this list is serviced per pass independently of the primary list.
      */
+    @Synchronized
     fun registerRoundRobinDevice(device: SyncPolledDevice) {
-        if (!roundRobinDevices.contains(device)) {
-            roundRobinDevices.add(device)
+        if (roundRobinDevices.none { it.device === device }) {
+            roundRobinDevices += pollingEntry(device)
         }
         startPollingThreadIfNeeded()
     }
+
+    private fun pollingEntry(device: SyncPolledDevice): PollingEntry =
+        pollingEntriesByIdentity[device] ?: PollingEntry(device).also { pollingEntriesByIdentity[device] = it }
 
     @Synchronized
     private fun startPollingThreadIfNeeded() {
@@ -93,19 +104,25 @@ class HardwareRegistry {
                 var index = 0
                 var roundRobinIndex = 0
                 while (pollingGeneration == generation) {
+                    val primary = syncPolledDevices
+                    val secondary = roundRobinDevices
+                    if (pollingGeneration != generation) break
                     var polledAny = false
-                    if (syncPolledDevices.isNotEmpty()) {
-                        val idx = index % syncPolledDevices.size
-                        pollSafely(syncPolledDevices[idx])
-                        index++
+                    if (primary.isNotEmpty()) {
+                        if (index >= primary.size) index = 0
+                        pollSafely(primary[index])
+                        // Keep the cursor bounded instead of overflowing a lifetime Int counter.
+                        index = if (index == primary.lastIndex) 0 else index + 1
                         polledAny = true
                     }
-                    if (roundRobinDevices.isNotEmpty()) {
-                        val idx = roundRobinIndex % roundRobinDevices.size
-                        pollSafely(roundRobinDevices[idx])
-                        roundRobinIndex++
+                    if (pollingGeneration != generation) break
+                    if (secondary.isNotEmpty()) {
+                        if (roundRobinIndex >= secondary.size) roundRobinIndex = 0
+                        pollSafely(secondary[roundRobinIndex])
+                        roundRobinIndex = if (roundRobinIndex == secondary.lastIndex) 0 else roundRobinIndex + 1
                         polledAny = true
                     }
+                    if (pollingGeneration != generation) break
                     if (polledAny) {
                         try { Thread.sleep(kotlin.math.max(10L, pollingIntervalMs)) } catch (_: InterruptedException) { break }
                     } else {
@@ -125,15 +142,16 @@ class HardwareRegistry {
         worker.start()
     }
 
-    private fun pollSafely(device: SyncPolledDevice) {
+    private fun pollSafely(entry: PollingEntry) {
         try {
-            device.pollSync()
-            pollingFailureCounts.remove(device)
+            entry.device.pollSync()
+            entry.consecutiveFailures = 0L
         } catch (exception: Exception) {
-            val failures = pollingFailureCounts.merge(device, 1L) { prior, increment -> prior + increment } ?: 1L
+            val failures = if (entry.consecutiveFailures < Long.MAX_VALUE) entry.consecutiveFailures + 1L else Long.MAX_VALUE
+            entry.consecutiveFailures = failures
             if (failures == 1L || failures and (failures - 1L) == 0L) {
                 System.err.println(
-                    "HardwareRegistry: ${device.javaClass.simpleName} polling failed " +
+                    "HardwareRegistry: ${entry.device.javaClass.simpleName} polling failed " +
                         "($failures consecutive): ${exception.message}"
                 )
             }
@@ -142,10 +160,9 @@ class HardwareRegistry {
 
     /**
      * Registers [device] under [name] for telemetry and lifecycle operations.
-     * Names should be unique; reusing a name replaces map lookup data but does not remove the prior
-     * device from ordered refresh/publish lists.
+     * Names should be unique; reusing a name replaces both map lookup data and the ordered
+     * refresh/publish entry. Separately registered polling and closeable resources retain their ownership.
      */
-    @Synchronized
     fun registerDevice(name: String, device: LoggableDevice) {
         registerDevice(name, "Hardware/$name", device)
     }
@@ -157,53 +174,87 @@ class HardwareRegistry {
      * physical-device address. Keeping this explicit prevents the registry's normal `Hardware/`
      * namespace from silently changing that public telemetry contract.
      */
-    @Synchronized
     fun registerTelemetryDevice(prefix: String, device: LoggableDevice) {
         registerDevice(prefix, prefix, device)
     }
 
-    private fun registerDevice(name: String, telemetryPrefix: String, device: LoggableDevice) {
+    @Synchronized
+    private fun registerDevice(
+        name: String,
+        telemetryPrefix: String,
+        device: LoggableDevice,
+        topology: TopologyNode? = null,
+    ) {
         require(name.isNotBlank()) { "Hardware device name must not be blank" }
         require(telemetryPrefix.isNotBlank() && !telemetryPrefix.startsWith('/')) {
             "Telemetry prefix must be non-blank and omit the leading slash"
         }
-        val prior = devices.put(name, device)
-        val heartbeatTopic = if (telemetryPrefix.startsWith("Subsystems/")) {
-            "$telemetryPrefix/TelemetryHeartbeat"
-        } else {
-            ""
+        // Validate and acquire caller-owned metadata before changing any device/cache state.
+        // An explicit physical ID may differ from the logical telemetry name, but must be unique.
+        val ownedTopology = topology?.let { node ->
+            require(node.id.isNotBlank()) { "Hardware topology node ID must not be blank" }
+            require(topologyNodes.none { (key, value) -> key != name && value.id == node.id }) {
+                "Duplicate hardware topology node ID: ${node.id}"
+            }
+            node.copy(metadata = Collections.unmodifiableMap(LinkedHashMap(node.metadata)))
         }
+        val prior = devices.put(name, device)
         val existingIndex = deviceIndices[name]
         if (existingIndex == null) {
             deviceIndices[name] = devicesList.size
             devicesList.add(device)
-            devicesNamesList.add(name)
-            devicesPrefixList.add(telemetryPrefix)
-            devicesHeartbeatTopicList.add(heartbeatTopic)
+            telemetryPublisher.stage(null, device, telemetryPrefix)
         } else {
             devicesList[existingIndex] = device
-            devicesPrefixList[existingIndex] = telemetryPrefix
-            devicesHeartbeatTopicList[existingIndex] = heartbeatTopic
+            telemetryPublisher.stage(existingIndex, device, telemetryPrefix)
         }
 
         val shortName = if (name.startsWith("Motors/")) name.substring("Motors/".length) else name
         if (prior is MotorIO && prior !== device) {
-            cachedMotorsWithNames.remove(shortName, prior)
-            if (cachedMotorsWithNames.values.none { it === prior }) {
-                cachedMotorsList.remove(prior)
+            if (cachedMotorsWithNames[shortName] === prior) {
+                cachedMotorsWithNames.remove(shortName)
+                // A raw name and its Motors/ alias can share the same short lookup key.
+                for ((otherName, otherDevice) in devices) {
+                    if (otherDevice is MotorIO && otherName.removePrefix("Motors/") == shortName) {
+                        cachedMotorsWithNames[shortName] = otherDevice
+                        break
+                    }
+                }
+            }
+            if (devices.values.none { it === prior }) {
+                val index = cachedMotorsList.indexOfFirst { it === prior }
+                if (index >= 0) cachedMotorsList.removeAt(index)
             }
         }
         if (prior is CurrentSourceIO && prior !== device && devices.values.none { it === prior }) {
-            cachedCurrentSourcesList.remove(prior)
+            val index = cachedCurrentSourcesList.indexOfFirst { it === prior }
+            if (index >= 0) cachedCurrentSourcesList.removeAt(index)
         }
         if (device is MotorIO) {
             cachedMotorsWithNames[shortName] = device
-            if (!cachedMotorsList.contains(device)) {
+            if (cachedMotorsList.none { it === device }) {
                 cachedMotorsList.add(device)
             }
         }
-        if (device is CurrentSourceIO && !cachedCurrentSourcesList.contains(device)) {
+        if (device is CurrentSourceIO && cachedCurrentSourcesList.none { it === device }) {
             cachedCurrentSourcesList.add(device)
+        }
+        val seen = IdentityHashMap<SubsystemIO, Boolean>()
+        val lifecycle = ArrayList<SubsystemIO>()
+        for (registered in devicesList) {
+            if (registered is SubsystemIO && seen.put(registered, true) == null) {
+                lifecycle.add(registered)
+            }
+        }
+        lifecycleDevices = lifecycle.toTypedArray()
+        telemetryPublisher.commitRegistration()
+        val previousTopology = topologyNodes[name]
+        // Bare re-registration of the same object keeps its address. A new object has no
+        // known address until explicitly supplied; never describe it using retired metadata.
+        val nextTopology = ownedTopology ?: previousTopology.takeIf { prior === device }
+        if (nextTopology != previousTopology) {
+            if (nextTopology == null) topologyNodes.remove(name) else topologyNodes[name] = nextTopology
+            topologySnapshot = null
         }
     }
 
@@ -227,27 +278,25 @@ class HardwareRegistry {
 
     fun registerMotor(name: String, motor: MotorIO, parentHub: String, port: Int) {
         val cleanName = "Motors/$name"
-        registerMotor(name, motor)
-        topologyNodes[cleanName] = TopologyNode(
+        registerDevice(cleanName, "Hardware/$cleanName", motor, TopologyNode(
             id = cleanName,
             type = TopologyNodeType.MOTOR,
             displayName = name,
             parentId = parentHub,
             port = port
-        )
+        ))
     }
 
     /** Registers an FTC servo and records its parent hub and zero-based port for topology export. */
     fun registerServo(name: String, servo: ServoIO, parentHub: String, port: Int) {
         val cleanName = "Servos/$name"
-        registerServo(name, servo)
-        topologyNodes[cleanName] = TopologyNode(
+        registerDevice(cleanName, "Hardware/$cleanName", servo, TopologyNode(
             id = cleanName,
             type = TopologyNodeType.SERVO,
             displayName = name,
             parentId = parentHub,
             port = port
-        )
+        ))
     }
 
     // ────────────────────────────────────────────────────────────────────────────
@@ -256,42 +305,49 @@ class HardwareRegistry {
 
     fun registerMotor(name: String, motor: MotorIO, canBus: String, canId: Int, busPosition: Int? = null) {
         val cleanName = "Motors/$name"
-        registerMotor(name, motor)
-        topologyNodes[cleanName] = TopologyNode(
+        registerDevice(cleanName, "Hardware/$cleanName", motor, TopologyNode(
             id = cleanName,
             type = TopologyNodeType.CAN_MOTOR_CONTROLLER,
             displayName = name,
             canId = canId,
             canBus = canBus,
             busPosition = busPosition
-        )
+        ))
     }
 
     /** Registers a CAN device and derives its topology type from its logical [name]. */
     fun registerDevice(name: String, device: LoggableDevice, canBus: String, canId: Int, busPosition: Int? = null) {
-        registerDevice(name, device)
-        topologyNodes[name] = TopologyNode(
+        registerDevice(name, "Hardware/$name", device, TopologyNode(
             id = name,
-            type = getDeviceNodeType(name),
-            displayName = name.split("/").last(),
+            type = HardwareTopologyTypes.forName(name),
+            displayName = name.substringAfterLast('/'),
             canId = canId,
             canBus = canBus,
             busPosition = busPosition
-        )
+        ))
     }
 
     // ────────────────────────────────────────────────────────────────────────────
     // Generic Topology Overload & Builder
     // ────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Registers a device and its physical address as one operation. Metadata is copied, so the
+     * caller must keep the supplied map stable until this call returns. Explicit node IDs may
+     * differ from logical names, but blank or duplicate IDs are rejected before replacement.
+     */
     fun registerDevice(name: String, device: LoggableDevice, topology: TopologyNode) {
-        registerDevice(name, device)
-        topologyNodes[name] = topology
+        registerDevice(name, "Hardware/$name", device, topology)
     }
 
-    /** Builds a point-in-time topology snapshot. Concurrent-map node order is unspecified. */
+    /** Builds an owned, read-only snapshot ordered by node ID; retained snapshots never change. */
     fun buildTopology(robotId: String): HardwareTopology {
-        return HardwareTopology(robotId, topologyNodes.values.sortedBy { it.id })
+        val nodes = topologySnapshot ?: synchronized(this) {
+            topologySnapshot ?: Collections.unmodifiableList(topologyNodes.values.sortedBy { it.id }).also {
+                topologySnapshot = it
+            }
+        }
+        return HardwareTopology(robotId, nodes)
     }
 
     /** Serializes the current topology snapshot as JSON for dashboard discovery. */
@@ -299,18 +355,6 @@ class HardwareRegistry {
         return HardwareTopologyCodec.encode(buildTopology(robotId))
     }
 
-    private fun getDeviceNodeType(name: String): TopologyNodeType {
-        val lower = name.lowercase()
-        return when {
-            lower.contains("imu") || lower.contains("gyro") -> TopologyNodeType.IMU
-            lower.contains("camera") || lower.contains("vision") -> TopologyNodeType.CAMERA
-            lower.contains("pinpoint") || lower.contains("odometry") -> TopologyNodeType.ODOMETRY_COMPUTER
-            lower.contains("color") -> TopologyNodeType.COLOR_SENSOR
-            lower.contains("distance") -> TopologyNodeType.DISTANCE_SENSOR
-            lower.contains("beam") -> TopologyNodeType.BEAM_BREAK
-            else -> TopologyNodeType.ANALOG_SENSOR
-        }
-    }
 
     // ────────────────────────────────────────────────────────────────────────────
     // Lifecycle & Batch Reads
@@ -336,37 +380,43 @@ class HardwareRegistry {
     fun getRegisteredCurrentSources(): List<CurrentSourceIO> = registeredCurrentSourcesView
 
     /**
-     * Calls [SubsystemIO.refresh] once for every registered subsystem in registration order.
+     * Calls [SubsystemIO.refresh] once per physical object in first-name registration order.
+     * Aliases retain separate telemetry entries but share a single hardware read.
      * Unlike safety and close passes, refresh exceptions propagate to the caller.
      */
     fun refreshAll() {
-        for (i in 0 until devicesList.size) {
-            val device = devicesList[i]
-            if (device is SubsystemIO) {
-                device.refresh()
-            }
+        val snapshot = lifecycleDevices
+        for (i in snapshot.indices) {
+            snapshot[i].refresh()
         }
     }
 
     /**
-     * Invokes every registered subsystem's fail-safe output and suppresses individual failures so
-     * one broken device cannot prevent the remaining devices from being stopped.
+     * Invokes each physical object's fail-safe output once. Ordinary exceptions remain suppressed;
+     * other throwables are rethrown after every device has been attempted, with distinct additional
+     * failures suppressed onto the first. A broken device cannot skip the remaining safety outputs.
      */
     fun safeAll() {
-        for (i in 0 until devicesList.size) {
-            val device = devicesList[i]
-            if (device is SubsystemIO) {
-                try {
-                    device.safe()
-                } catch (_: Exception) {}
+        var firstFailure: Throwable? = null
+        val snapshot = lifecycleDevices
+        for (i in snapshot.indices) {
+            try {
+                snapshot[i].safe()
+            } catch (failure: Throwable) {
+                if (failure !is Exception) firstFailure = retainFailure(firstFailure, failure)
             }
         }
+        firstFailure?.let { throw it }
     }
 
     /**
      * Stops polling, waits up to one second for its daemon, closes registered resources on a
-     * best-effort basis, and clears all registry state. Safe to call during repeated test/OpMode
-     * teardown; a resource registered in both ownership lists may receive more than one close call.
+     * best-effort basis, and clears all registry state. Registered devices close before auxiliary
+     * services so actuator shutdown cannot wait behind a logger drain. Resources shared between
+     * ownership lists close once by identity. Safe during repeated test/OpMode teardown.
+     * Ordinary close exceptions are suppressed; other throwables are rethrown only after all
+     * resources have been attempted and registry state cleared. Owners must quiesce registration
+     * and foreground callbacks before closing; the bounded join cannot cancel blocked device IO.
      */
     fun closeAll() {
         val thread = synchronized(this) {
@@ -381,39 +431,52 @@ class HardwareRegistry {
                 Thread.currentThread().interrupt()
             }
         }
-        syncPolledDevices.clear()
-        roundRobinDevices.clear()
-        pollingFailureCounts.clear()
+        syncPolledDevices = emptyArray()
+        roundRobinDevices = emptyArray()
+        pollingEntriesByIdentity.clear()
 
         val closedByIdentity = Collections.newSetFromMap(IdentityHashMap<AutoCloseable, Boolean>())
-        for (i in 0 until closeables.size) {
-            val closeable = closeables[i]
-            if (!closedByIdentity.add(closeable)) continue
-            try {
-                closeable.close()
-            } catch (_: Exception) {}
-        }
-        closeables.clear()
-
+        var firstFailure: Throwable? = null
         for (i in 0 until devicesList.size) {
             val device = devicesList[i]
             if (device is AutoCloseable && closedByIdentity.add(device)) {
                 try {
                     device.close()
-                } catch (_: Exception) {}
+                } catch (failure: Throwable) {
+                    if (failure !is Exception) firstFailure = retainFailure(firstFailure, failure)
+                }
             }
         }
+        for (i in 0 until closeables.size) {
+            val closeable = closeables[i]
+            if (!closedByIdentity.add(closeable)) continue
+            try {
+                closeable.close()
+            } catch (failure: Throwable) {
+                if (failure !is Exception) firstFailure = retainFailure(firstFailure, failure)
+            }
+        }
+        closeables.clear()
         devices.clear()
         devicesList.clear()
-        devicesNamesList.clear()
-        devicesPrefixList.clear()
-        devicesHeartbeatTopicList.clear()
+        lifecycleDevices = emptyArray()
+        telemetryPublisher.clearRegistrations()
         deviceIndices.clear()
         topologyNodes.clear()
+        topologySnapshot = emptyList()
         cachedMotorsWithNames.clear()
         cachedMotorsList.clear()
         cachedCurrentSourcesList.clear()
-        telemetryPublishSequence.set(0L)
+        telemetryPublisher.resetSequence()
+        firstFailure?.let { throw it }
+    }
+
+    private fun retainFailure(primary: Throwable?, failure: Throwable): Throwable {
+        if (primary == null) return failure
+        if (primary !== failure && primary.suppressed.none { it === failure }) {
+            primary.addSuppressed(failure)
+        }
+        return primary
     }
 
     /**
@@ -424,27 +487,9 @@ class HardwareRegistry {
     }
 
     /**
-     * Publishes registered devices in registration order. Concurrent registration skew and device
-     * telemetry failures are suppressed because diagnostics must not stop the robot loop.
+     * Publishes one coherent registration snapshot in order. Registration changes take effect on
+     * the next pass. Each device and its successful heartbeat are isolated from later producers.
+     * Heartbeats use exactly representable positive integers, wrapping to one before precision loss.
      */
-    fun publishAll(telemetry: ITelemetry) {
-        try {
-            val count = kotlin.math.min(
-                devicesList.size,
-                kotlin.math.min(devicesPrefixList.size, devicesHeartbeatTopicList.size),
-            )
-            val publishSequence = telemetryPublishSequence.incrementAndGet().toDouble()
-            for (i in 0 until count) {
-                try {
-                    val device = devicesList[i]
-                    val prefix = devicesPrefixList[i]
-                    device.logTelemetry(telemetry, prefix)
-                    val heartbeatTopic = devicesHeartbeatTopicList[i]
-                    if (heartbeatTopic.isNotEmpty()) {
-                        telemetry.putNumber(heartbeatTopic, publishSequence)
-                    }
-                } catch (_: IndexOutOfBoundsException) { break }
-            }
-        } catch (_: Throwable) {}
-    }
+    fun publishAll(telemetry: ITelemetry) = telemetryPublisher.publishAll(telemetry)
 }

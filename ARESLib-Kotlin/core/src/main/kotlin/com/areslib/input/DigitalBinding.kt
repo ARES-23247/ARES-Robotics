@@ -5,7 +5,7 @@ enum class BindingReleaseReason {
     /** The debounced physical or virtual input became inactive. */
     INPUT_RELEASED,
 
-    /** The controller disconnected. */
+    /** The controller disconnected or required input feedback became unavailable. */
     DISCONNECTED,
 
     /** The binding runtime was explicitly cancelled, normally on disable or OpMode stop. */
@@ -78,18 +78,42 @@ class DigitalBinding(
     private var stableActive = false
     private var acceptedActivation = false
     private var pressedAtNanos = 0L
-    private var lastAcceptedPressNanos = Long.MIN_VALUE
+    private var lastAcceptedPressNanos = 0L
+    private var hasAcceptedPress = false
     private var holdFired = false
-    private var nextRepeatNanos = Long.MAX_VALUE
+    private var nextRepeatElapsedNanos = -1L
     private var waitingForNeutral = false
+    private var generation = 0L
+    private var updating = false
+    private var terminating = false
 
     val isActive: Boolean get() = stableActive && acceptedActivation
 
     fun update(frame: InputFrame, nowNanos: Long) {
-        val sampled = source.sample(frame, nowNanos)
+        if (terminating) return
+        check(!updating) { "digital binding update must not be reentrant" }
+        updating = true
+        try {
+            updateSample(frame, nowNanos)
+        } catch (failure: Throwable) {
+            try { terminate(nowNanos, BindingReleaseReason.CANCELLED, requireNeutral = true) }
+            catch (cleanup: Throwable) { inputFailure(failure, cleanup) }
+            throw failure
+        } finally {
+            updating = false
+        }
+    }
 
+    private fun updateSample(frame: InputFrame, nowNanos: Long) {
+        val updateGeneration = generation
+        if (!source.isAvailable(frame)) {
+            terminate(nowNanos, BindingReleaseReason.DISCONNECTED, requireNeutral = true)
+            return
+        }
+        if (generation != updateGeneration) return
         if (waitingForNeutral) {
-            if (sampled) return
+            val neutral = source.isNeutral(frame, nowNanos)
+            if (generation != updateGeneration || !neutral) return
             waitingForNeutral = false
             hasCandidate = true
             candidate = false
@@ -97,6 +121,8 @@ class DigitalBinding(
             return
         }
 
+        val sampled = source.sample(frame, nowNanos)
+        if (generation != updateGeneration) return
         if (!hasCandidate || sampled != candidate) {
             hasCandidate = true
             candidate = sampled
@@ -110,22 +136,24 @@ class DigitalBinding(
             }
         }
 
-        if (!stableActive || !acceptedActivation) return
+        if (generation != updateGeneration || !stableActive || !acceptedActivation) return
         val heldFor = elapsedNanos(nowNanos, pressedAtNanos)
         if (timing.maximumActiveNanos >= 0L && heldFor >= timing.maximumActiveNanos) {
             terminate(nowNanos, BindingReleaseReason.MAXIMUM_DURATION, requireNeutral = true)
             return
         }
         listener.onHeld(heldFor)
+        if (generation != updateGeneration) return
 
         if (!holdFired && timing.holdAfterNanos >= 0L && heldFor >= timing.holdAfterNanos) {
             holdFired = true
             listener.onHold(heldFor)
+            if (generation != updateGeneration) return
         }
 
-        if (timing.repeatAfterNanos >= 0L && nowNanos >= nextRepeatNanos) {
+        if (nextRepeatElapsedNanos >= 0L && heldFor >= nextRepeatElapsedNanos) {
+            nextRepeatElapsedNanos = nextRepeatDeadline(nextRepeatElapsedNanos, heldFor, timing.repeatEveryNanos)
             listener.onRepeat(heldFor)
-            nextRepeatNanos = nextRepeatDeadline(nextRepeatNanos, nowNanos, timing.repeatEveryNanos)
         }
     }
 
@@ -133,16 +161,13 @@ class DigitalBinding(
         stableActive = true
         pressedAtNanos = nowNanos
         holdFired = false
-        nextRepeatNanos = if (timing.repeatAfterNanos >= 0L) {
-            saturatingAdd(nowNanos, timing.repeatAfterNanos)
-        } else {
-            Long.MAX_VALUE
-        }
+        nextRepeatElapsedNanos = timing.repeatAfterNanos
 
-        val outsideCooldown = lastAcceptedPressNanos == Long.MIN_VALUE ||
+        val outsideCooldown = !hasAcceptedPress ||
             elapsedNanos(nowNanos, lastAcceptedPressNanos) >= timing.cooldownNanos
         acceptedActivation = outsideCooldown
         if (outsideCooldown) {
+            hasAcceptedPress = true
             lastAcceptedPressNanos = nowNanos
             listener.onPress()
         }
@@ -150,26 +175,40 @@ class DigitalBinding(
 
     private fun confirmRelease(nowNanos: Long) {
         val heldFor = elapsedNanos(nowNanos, pressedAtNanos)
-        if (acceptedActivation) listener.onRelease(heldFor, BindingReleaseReason.INPUT_RELEASED)
+        val release = acceptedActivation
         stableActive = false
         acceptedActivation = false
         holdFired = false
-        nextRepeatNanos = Long.MAX_VALUE
+        nextRepeatElapsedNanos = -1L
+        if (release) listener.onRelease(heldFor, BindingReleaseReason.INPUT_RELEASED)
     }
 
     internal fun terminate(nowNanos: Long, reason: BindingReleaseReason, requireNeutral: Boolean) {
-        if (stableActive && acceptedActivation) {
-            listener.onRelease(elapsedNanos(nowNanos, pressedAtNanos), reason)
-        }
-        source.reset()
+        if (terminating) return
+        terminating = true
+        generation++
+        val release = stableActive && acceptedActivation
+        val heldFor = elapsedNanos(nowNanos, pressedAtNanos)
         hasCandidate = false
         candidate = false
         stableActive = false
         acceptedActivation = false
         holdFired = false
-        nextRepeatNanos = Long.MAX_VALUE
-        lastAcceptedPressNanos = Long.MIN_VALUE
+        nextRepeatElapsedNanos = -1L
+        hasAcceptedPress = false
         waitingForNeutral = requireNeutral
+        var failure: Throwable? = null
+        try {
+            try { source.reset() }
+            catch (next: Throwable) { failure = inputFailure(failure, next) }
+            if (release) {
+                try { listener.onRelease(heldFor, reason) }
+                catch (next: Throwable) { failure = inputFailure(failure, next) }
+            }
+        } finally {
+            terminating = false
+        }
+        failure?.let { throw it }
     }
 }
 
@@ -179,15 +218,9 @@ internal fun elapsedNanos(nowNanos: Long, sinceNanos: Long): Long {
     return if (difference < 0L) Long.MAX_VALUE else difference
 }
 
-private fun saturatingAdd(value: Long, increment: Long): Long =
-    if (increment > 0L && value > Long.MAX_VALUE - increment) Long.MAX_VALUE else value + increment
-
-private fun nextRepeatDeadline(previous: Long, now: Long, interval: Long): Long {
-    if (previous == Long.MAX_VALUE) return Long.MAX_VALUE
-    val elapsed = elapsedNanos(now, previous)
-    val completedIntervals = elapsed / interval
-    if (completedIntervals == Long.MAX_VALUE) return Long.MAX_VALUE
-    val intervalsToSkip = completedIntervals + 1L
-    if (intervalsToSkip > Long.MAX_VALUE / interval) return Long.MAX_VALUE
-    return saturatingAdd(previous, intervalsToSkip * interval)
+/** Returns -1 once there is no representable later repeat duration. */
+private fun nextRepeatDeadline(previous: Long, elapsed: Long, interval: Long): Long {
+    val remainder = (elapsed - previous) % interval
+    val untilNext = interval - remainder
+    return if (elapsed > Long.MAX_VALUE - untilNext) -1L else elapsed + untilNext
 }

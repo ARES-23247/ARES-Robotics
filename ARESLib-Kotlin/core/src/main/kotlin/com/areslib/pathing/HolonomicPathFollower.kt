@@ -5,34 +5,24 @@ import com.areslib.control.feedback.PIDController
 import com.areslib.subsystem.DrivetrainSubsystem
 
 /**
- * Closed-Loop Holonomic Path Following Trajectory Controller.
+ * Single-loop holonomic follower combining tangent velocity feedforward with X/Y/heading PID.
+ * Field poses use meters and CCW-positive radians; output is robot-relative m/s and rad/s.
+ * PID derivative acts on measurement, not setpoint error. Heading control is feedback only:
+ * [PathPoint] does not provide angular feedforward. Translation is limited by the drive controller.
  *
- * Tracks parameterized trajectory paths ([Path]) by combining trajectory feedforward velocities $\mathbf{v}_{\text{ff}}$
- * with closed-loop PID error feedback corrections along orthogonal Cartesian axes $(e_x, e_y)$ and heading orientation $e_\theta$.
+ * Calls, mutable inputs, and controllers belong to one robot loop; this class is not thread-safe.
+ * Direct sample following does not require [startPath]. That optional method owns callback markers;
+ * [com.areslib.sequencer.FollowPathTask] separately owns its named-command tasks and progress.
+ * Do not register both owners for the same physical side effects. Callbacks must be bounded and
+ * nonblocking. An update costs O(1 + crossed markers), excluding controller/IO/callback work.
+ * Marker setup allocates; update reuses speed storage. The drivetrain's pose getter and output
+ * implementation can still allocate, and this facade supplies no feedback freshness or enable latch.
+ * Those remain responsibilities of the robot's Redux/hardware pipeline.
  *
- * ### Mathematical Formulation:
- * 1. **Field-Centric Feedback Velocity Correction**:
- *    $$\mathbf{v}_{\text{fb}} = \begin{bmatrix} K_{p,x} (x_{\text{target}} - x_{\text{est}}) + K_{d,x} (\dot{x}_{\text{target}} - \dot{x}_{\text{est}}) \\ K_{p,y} (y_{\text{target}} - y_{\text{est}}) + K_{d,y} (\dot{y}_{\text{target}} - \dot{y}_{\text{est}}) \end{bmatrix}$$
- * 2. **Heading Error Feedback Correction**:
- *    $$e_\theta = \text{wrapAngle}(\theta_{\text{target}} - \theta_{\text{est}})$$
- *    $$\omega_{\text{fb}} = K_{p,\theta} e_\theta + K_{d,\theta} \dot{e}_\theta$$
- * 3. **Combined Drivetrain Command Output**:
- *    $$\mathbf{v}_{\text{cmd}} = \mathbf{v}_{\text{ff}} + \mathbf{v}_{\text{fb}}, \quad \omega_{\text{cmd}} = \omega_{\text{ff}} + \omega_{\text{fb}}$$
- *
- * ### Physical Units & Coordinate Conventions:
- * - Trajectory & EKF Positions $(x, y)$: Meters ($m$)
- * - Trajectory & EKF Headings $(\theta)$: Radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$)
- * - Linear Velocity Commands $(v_x, v_y)$: Meters per second ($m/s$)
- * - Angular Velocity Command ($\omega$): Radians per second ($rad/s$), CCW-positive
- * - Loop Period ($\Delta t$): Seconds ($s$)
- *
- * @param drivetrain Target holonomic drivetrain subsystem facade [DrivetrainSubsystem].
- * @param xController Translational PID controller along X-axis.
- * @param yController Translational PID controller along Y-axis.
- * @param thetaController Rotational PID controller with continuous $[-\pi, \pi)$ wrapping enabled.
- *
- * @see HolonomicDriveController
- * @see Path
+ * @param drivetrain Drivetrain facade accepting robot-relative chassis velocities.
+ * @param xController PID feedback along field X, reset when starting a path or stopping.
+ * @param yController PID feedback along field Y, reset when starting a path or stopping.
+ * @param thetaController Heading PID; continuous input is enabled over [-pi, pi).
  */
 class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
     val drivetrain: DrivetrainSubsystem,
@@ -46,74 +36,140 @@ class HolonomicPathFollower @kotlin.jvm.JvmOverloads constructor(
     /** Holonomic controller calculating corrective translational and angular velocities */
     val driveController = HolonomicDriveController(xController, yController, thetaController)
 
-    private var currentPath: Path? = null
-    private val triggeredEvents = mutableSetOf<String>()
+    private var events = emptyArray<PathEvent>()
+    private var nextEvent = 0
+    private var revision = 0L
+    private var updating = false
+    private val chassisSpeeds = com.areslib.math.geometry.ChassisSpeeds()
 
     /** Callback invoked whenever a PathEvent is crossed */
     var onEventTriggered: ((String) -> Unit)? = null
 
     /**
-     * Initializes tracking for a new path, resetting any previously triggered events.
+     * Snapshots markers in ascending distance order (stable for ties), and resets PID history.
+     * Each marker occurrence may fire once, including repeated command names. Setup may allocate;
+     * subsequent changes to the caller's event list have no effect. Distances must be finite and
+     * nonnegative. Rejected setup attempts neutral output and propagates the original failure.
+     * This configures markers only; callers continue to supply trajectory samples to [update].
      */
     fun startPath(path: Path) {
-        currentPath = path
-        triggeredEvents.clear()
+        try {
+            val snapshot = path.events.toTypedArray()
+            for (event in snapshot) {
+                require(event.triggerDistanceMeters.isFinite() && event.triggerDistanceMeters >= 0.0) {
+                    "Path event distance must be finite and nonnegative"
+                }
+            }
+            // Both signed zeros trigger at the same distance; preserve their authored tie order.
+            snapshot.sortWith { left, right ->
+                when {
+                    left.triggerDistanceMeters < right.triggerDistanceMeters -> -1
+                    left.triggerDistanceMeters > right.triggerDistanceMeters -> 1
+                    else -> 0
+                }
+            }
+            events = snapshot
+            nextEvent = 0
+            revision++
+            resetControllers()
+        } catch (failure: Throwable) {
+            stopAndRethrow(failure)
+        }
     }
 
     /**
      * Updates the drivetrain commands to track the target state of a spline path.
-     * Calculates the required field-relative steering and feeds it to the drivetrain subsystem.
+     * Calculates robot-relative chassis velocities from field-relative poses. Invalid pose, target,
+     * distance or time inputs stop/reset without consuming markers; NaN tangent retains the
+     * controller's automatic tangent fallback. A callback sees a precomputed command: target
+     * mutation takes effect on the next update. Calling [stop] or [startPath] from a callback
+     * cancels the remaining callbacks and command of this update. Recursive updates are rejected.
+     * Callback/output failures attempt neutral output and propagate, without replaying the marker.
      *
      * @param targetState The desired target position, heading, and velocity sample from the path.
      * @param dtSeconds Elapsed time since the last controller update in seconds.
      */
     fun update(targetState: PathPoint, dtSeconds: Double) {
+        check(!updating) { "HolonomicPathFollower.update must not be called recursively" }
+        updating = true
+        var neutralAttempted = false
         try {
+            val updateRevision = revision
             val currentPose = drivetrain.getEstimatedPose()
-            
-            val path = currentPath
-            if (path != null) {
-                val currentDist = targetState.distanceMeters
-                val eventsSize = path.events.size
-                for (i in 0 until eventsSize) {
-                    val event = path.events[i]
-                    if (currentDist >= event.triggerDistanceMeters && !triggeredEvents.contains(event.eventName)) {
-                        triggeredEvents.add(event.eventName)
-                        onEventTriggered?.invoke(event.eventName)
-                    }
-                }
+            val targetPose = targetState.pose
+            val currentDist = targetState.distanceMeters
+            if (!currentPose.x.isFinite() || !currentPose.y.isFinite() ||
+                !currentPose.heading.rawRadians.isFinite() ||
+                !targetPose.x.isFinite() || !targetPose.y.isFinite() ||
+                !targetPose.heading.rawRadians.isFinite() ||
+                !(targetPose.x - currentPose.x).isFinite() || !(targetPose.y - currentPose.y).isFinite() ||
+                !targetState.velocityMps.isFinite() || !targetState.curvature.isFinite() ||
+                targetState.tangentRadians.isInfinite() || !currentDist.isFinite() || currentDist < 0.0 ||
+                !dtSeconds.isFinite() || dtSeconds <= 0.0
+            ) {
+                neutralAttempted = true
+                stop()
+                return
             }
-            
-            val chassisSpeeds = driveController.calculate(
-                currentPose = currentPose,
-                targetPose = targetState.pose,
+
+            driveController.calculateInto(
+                out = chassisSpeeds,
+                currentX = currentPose.x,
+                currentY = currentPose.y,
+                currentHeadingRad = currentPose.heading.radians,
+                targetX = targetPose.x,
+                targetY = targetPose.y,
                 targetVelocityMps = targetState.velocityMps,
-                targetHeading = targetState.pose.heading,
+                targetHeadingRad = targetPose.heading.radians,
                 dtSeconds = dtSeconds,
                 pathTangentRadians = targetState.tangentRadians,
                 curvature = targetState.curvature
             )
+
+            // No list scans or per-marker bookkeeping allocations in the loop. Consume before
+            // invoking external code, and abandon this update if its owner changes the lifecycle.
+            while (nextEvent < events.size && currentDist >= events[nextEvent].triggerDistanceMeters) {
+                val event = events[nextEvent++]
+                onEventTriggered?.invoke(event.eventName)
+                if (revision != updateRevision) return
+            }
 
             drivetrain.setChassisSpeeds(
                 vx = chassisSpeeds.vxMetersPerSecond,
                 vy = chassisSpeeds.vyMetersPerSecond,
                 omega = chassisSpeeds.omegaRadiansPerSecond
             )
-        } catch (e: Throwable) {
-            System.err.println("HolonomicPathFollower FATAL ERROR: ${e.message}")
-            try {
-                stop()
-            } catch (stopFailure: Throwable) {
-                e.addSuppressed(stopFailure)
-            }
-            throw e
+        } catch (failure: Throwable) {
+            if (neutralAttempted) throw failure
+            stopAndRethrow(failure)
+        } finally {
+            updating = false
         }
     }
 
     /**
-     * Halts all chassis movement.
+     * Requests zero chassis velocity, clears PID history, and cancels an in-flight update.
+     * Marker progress is retained for a temporary pause; a later explicit [update] may resume.
+     * This is not an enable/fault latch or a guarantee that physical hardware has stopped.
      */
     fun stop() {
+        revision++
+        resetControllers()
         drivetrain.setChassisSpeeds(0.0, 0.0, 0.0)
+    }
+
+    private fun resetControllers() {
+        xController.reset()
+        yController.reset()
+        thetaController.reset()
+    }
+
+    private fun stopAndRethrow(failure: Throwable): Nothing {
+        try {
+            stop()
+        } catch (stopFailure: Throwable) {
+            if (stopFailure !== failure) failure.addSuppressed(stopFailure)
+        }
+        throw failure
     }
 }

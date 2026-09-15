@@ -33,7 +33,7 @@ import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.areslib.math.coordinate.CoordinateTransformers
-import com.ares.analytics.viewmodel.field.FieldDocumentMapper
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.ares.analytics.viewmodel.field.FieldImageLoader
 import com.areslib.state.RobotFieldDocument
 import kotlin.math.cos
@@ -82,6 +82,8 @@ fun FieldCanvas(
     prismPulseWidthUs: Double? = null,
     autoGoalMode: Boolean = false,
     robotDimensions: RobotDimensions = RobotDimensions.defaultFor(league),
+    fieldOverlay: (androidx.compose.ui.graphics.drawscope.DrawScope.(Float, Float, Double, Double) -> Unit)? = null,
+    showAllianceStations: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var localFieldImage by remember { mutableStateOf<ImageBitmap?>(null) }
@@ -329,10 +331,11 @@ fun FieldCanvas(
                 if (showHeatmap) HeatmapOverlay.drawHeatmap(this, actualPath, fieldWidthM, fieldHeightM, league)
 
                 drawFieldGrid(w, h, fieldWidthM, fieldHeightM, league, showCostmap = showCostmap)
-                drawFtcAllianceStations(w, h, fieldWidthM, fieldHeightM, league, activeConfig)
+                if (showAllianceStations) drawFtcAllianceStations(w, h, fieldWidthM, fieldHeightM, league, activeConfig)
                 if (league == League.FTC) drawCoordinateAxes(w, h, fieldWidthM, fieldHeightM, league, textMeasurer)
 
                 drawCustomObstacles(currentActiveObstacles, w, h, fieldWidthM, fieldHeightM, league, showCostmap = showCostmap)
+                fieldOverlay?.invoke(this, w, h, fieldWidthM, fieldHeightM)
                 drawGamePieces(currentActiveGamePieces, w, h, fieldWidthM, fieldHeightM, league)
                 drawAprilTags(currentActiveAprilTags, w, h, fieldWidthM, fieldHeightM, league, textMeasurer)
                 drawFieldWaypoints(currentActiveFieldWaypoints, selectedFieldWaypointId, w, h, fieldWidthM, fieldHeightM, league, textMeasurer)

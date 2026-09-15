@@ -15,10 +15,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Coalesces raw telemetry into UI-rate latest-value updates without changing lossless ingestion.
+ * Coalesces raw telemetry into UI-rate latest-value updates without changing the recording path.
  *
- * Robot logging and analytical services continue to consume [TelemetryStore.updates] at source
- * rate. Compose widgets consume this fan-out, so hundreds of same-topic samples cannot queue
+ * Durable recording uses a separate queue. [TelemetryStore.updates] is a bounded, best-effort
+ * source-rate bus; Compose widgets consume this further-coalesced fan-out, so same-topic bursts cannot queue
  * thousands of redundant main-thread callbacks ahead of keyboard events and rendering.
  */
 internal class UiTelemetryFanout(

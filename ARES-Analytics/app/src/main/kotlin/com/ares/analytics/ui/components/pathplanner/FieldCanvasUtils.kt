@@ -18,7 +18,7 @@ enum class EditorMode {
     SELECT, ADD_WAYPOINT, DRAW_POLYGON, DRAW_CIRCLE, DRAW_RECTANGLE, PLACE_GAME_PIECE, PLACE_APRILTAG, PLACE_FIELD_WAYPOINT, ERASER
 }
 
-// Precomputed Cache Data Structures for zero-allocation rendering performance
+// Reusable paths and effects reduce rendering allocations.
 
 class PathCacheHolder {
     var splinePoints: List<Waypoint> = emptyList()
@@ -128,22 +128,7 @@ fun getRobotCoordFromScreen(
     panOffset: Offset,
     viewRotationDeg: Float = 0f
 ): Waypoint {
-    var sx = screenOffset.x; var sy = screenOffset.y
-    // Reverse view rotation around canvas center
-    if (viewRotationDeg != 0f) {
-        val cx = w / 2f; val cy = h / 2f
-        val rad = Math.toRadians(-viewRotationDeg.toDouble()) // negative to reverse
-        val cosR = kotlin.math.cos(rad).toFloat()
-        val sinR = kotlin.math.sin(rad).toFloat()
-        val dx = sx - cx; val dy = sy - cy
-        sx = cx + dx * cosR - dy * sinR
-        sy = cy + dx * sinR + dy * cosR
-    }
-    // Reverse pan & zoom
-    val baseOffset = Offset(
-        x = (sx - panOffset.x) / zoomScale,
-        y = (sy - panOffset.y) / zoomScale
-    )
+    val baseOffset = getBaseCanvasFromScreen(screenOffset, w, h, zoomScale, panOffset, viewRotationDeg)
     return getRobotCoordBase(baseOffset, w, h, fieldWidthM, fieldHeightM, league)
 }
 
@@ -298,9 +283,7 @@ fun DrawScope.drawCoordinateAxes(
     val textLayoutY = textMeasurer.measure("Y", textStyle)
 
     drawText(
-        textMeasurer = textMeasurer,
-        text = "X",
-        style = textStyle,
+        textLayoutResult = textLayoutX,
         topLeft = Offset(
             xAxisOffset.x + arrowSize * kotlin.math.cos(xAngle).toFloat(),
             xAxisOffset.y + arrowSize * kotlin.math.sin(xAngle).toFloat() - textLayoutX.size.height / 2f
@@ -308,9 +291,7 @@ fun DrawScope.drawCoordinateAxes(
     )
 
     drawText(
-        textMeasurer = textMeasurer,
-        text = "Y",
-        style = textStyle,
+        textLayoutResult = textLayoutY,
         topLeft = Offset(
             yAxisOffset.x + arrowSize * kotlin.math.cos(yAngle).toFloat() - textLayoutY.size.width / 2f,
             yAxisOffset.y + arrowSize * kotlin.math.sin(yAngle).toFloat()

@@ -2,229 +2,189 @@ package com.ares.analytics.viewmodel.sysid
 
 import com.ares.analytics.service.AlignedDataRow
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.service.SysIdService
 import com.ares.analytics.service.AutoTunerService
 import com.ares.analytics.service.TuningApplyPhase
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.viewmodel.SysIdState
+import com.areslib.control.assist.SysIdMechanism
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.*
-import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.withContext
+import java.util.TreeMap
 
-/** Collects live or imported SysId samples and normalizes them into regression-ready rows. */
+/** Collects complete live samples; publishes bounded previews and a full snapshot at completion. */
 class SysIdDataCollector(
     private val nt4ClientService: Nt4ClientService,
-    private val sysIdService: SysIdService,
     private val autoTunerService: AutoTunerService,
     private val _state: MutableStateFlow<SysIdState>,
     private val scope: CoroutineScope,
     private val regressionSolver: SysIdRegressionSolver,
+    private val maxSamples: Int = 20_000,
+    private val previewLimit: Int = 1_000,
+    private val analysisDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val onRoutineCompleted: suspend () -> Unit = {}
 ) {
-    private val dataBuffer = ConcurrentHashMap<Long, DoubleArray>()
+    init { require(maxSamples > 0 && previewLimit > 0 && previewLimit <= maxSamples) }
+    private val lock = Any()
+    private val assembler = SysIdSampleAssembler()
+    private val rows = TreeMap<Long, DoubleArray>()
+    private var collectorJob: Job? = null
+    private var analysisJob: Job? = null
+    private var runKind: String? = null
+    private var runSession: String? = null
+    private var runMechanism: SysIdMechanism? = null
+    private var failed = false
+    private var generation = 0L
+    private var lastPreviewMs: Long? = null
+    private data class Completed(val generation: Long, val kind: String, val rows: List<DoubleArray>,
+        val samples: List<AlignedDataRow>, val mechanism: SysIdMechanism)
 
-    fun startCollecting() {
-        // Collect live streaming data from the robot
-        scope.launch {
+    fun startCollecting() = synchronized(lock) {
+        if (collectorJob?.isActive == true) return@synchronized
+        collectorJob = scope.launch {
             nt4ClientService.telemetryFlow.collect { frame ->
                 when {
-                    frame.key == "SysId/Status" -> {
-                        val status = frame.stringValue ?: ""
-                        val wasRunning = _state.value.isRoutineRunning
-                        val isRunning = status.isNotEmpty() && status != "NONE"
-                        val prevCalibration = _state.value.activeCalibration
-
-                        _state.update {
-                            it.copy(
-                                isRoutineRunning = isRunning,
-                                activeCalibration = if (isRunning) status else it.activeCalibration
-                            )
-                        }
-
-                        if (wasRunning && !isRunning) {
-                            onRoutineCompleted()
-                            // Routine/Calibration just completed!
-                            val finalCalibration = prevCalibration
-                            _state.update { it.copy(isLoading = false) }
-                            if (finalCalibration == "PINPOINT_SPIN" || finalCalibration == "TRACK_WIDTH_SPIN" ||
-                                finalCalibration == "VISION_CALIBRATION" || finalCalibration == "LINEAR_DRIVE") {
-                                regressionSolver.runCalibrationAnalysis(finalCalibration, _state.value.liveCalibrationData)
-                            } else {
-                                val samples = _state.value.liveSamples
-                                if (samples.isNotEmpty()) {
-                                    val summary = sysIdService.analyzeRawData(samples)
-                                    val recommendation = autoTunerService.analyzeSamples(
-                                        mechanism = _state.value.selectedMechanism,
-                                        samples = samples,
-                                        source = "live-nt4"
-                                    )
-                                    _state.update { it.copy(summary = summary, tuningRecommendation = recommendation) }
-                                    if (recommendation != null &&
-                                        autoTunerService.applyState.value.phase == TuningApplyPhase.APPLIED_AWAITING_VALIDATION
-                                    ) {
-                                        autoTunerService.validateOrRollback(recommendation)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    frame.key.startsWith("SysId/Data/") -> {
-                        val idx = frame.key.removePrefix("SysId/Data/").toIntOrNull()
-                        if (idx != null) {
-                            val t = frame.timestampMs
-                            val arr = dataBuffer.getOrPut(t) { DoubleArray(7) }
-                            if (idx in arr.indices) {
-                                arr[idx] = frame.value
-                            }
-                            val expectedMaxIdx = when (_state.value.activeCalibration) {
-                                "PINPOINT_SPIN", "VISION_CALIBRATION" -> 3
-                                "LINEAR_DRIVE" -> 4
-                                "TRACK_WIDTH_SPIN" -> 6
-                                else -> 4
-                            }
-
-                            if (idx == expectedMaxIdx) {
-                                val completedArr = dataBuffer[t]
-                                if (completedArr != null) {
-                                    val sample = AlignedDataRow(
-                                        timestampMs = completedArr[0].toLong(),
-                                        voltage = completedArr[1],
-                                        velocity = completedArr[3],
-                                        accel = completedArr[4]
-                                    )
-                                    _state.update {
-                                        it.copy(
-                                            liveSamples = it.liveSamples + sample,
-                                            liveCalibrationData = it.liveCalibrationData + listOf(completedArr.clone())
-                                        )
-                                    }
-                                    if (dataBuffer.size > 500) {
-                                        val minT = dataBuffer.keys.minOrNull() ?: 0L
-                                        dataBuffer.remove(minT)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    frame.key == "SysId/Data" -> {
-                        val stringVal = frame.stringValue
-                        if (stringVal != null) {
-                            val parts = stringVal.split("|").mapNotNull { it.toDoubleOrNull() }
-                            if (parts.size >= 5) {
-                                val sample = AlignedDataRow(
-                                    timestampMs = parts[0].toLong(),
-                                    voltage = parts[1],
-                                    velocity = parts[3],
-                                    accel = parts[4]
-                                )
-                                _state.update { it.copy(liveSamples = it.liveSamples + sample) }
-                            }
-                        }
+                    frame.key == "SysId/Status" -> handleStatus(frame)
+                    frame.key == "SysId/Data" || frame.key.startsWith("SysId/Data/") -> {
+                        val stopGeneration = synchronized(lock) { if (acceptData(frame)) generation else null }
+                        if (stopGeneration != null) requestStop(stopGeneration)
                     }
                 }
             }
         }
     }
 
-    fun clearBuffer() {
-        dataBuffer.clear()
+    /** Called before requesting a new routine; invalidates analysis awaiting a stop callback. */
+    fun clearBuffer() = synchronized(lock) {
+        generation++
+        analysisJob?.cancel(); analysisJob = null
+        autoTunerService.publishRecommendation(null)
+        assembler.clear(); rows.clear()
+        runKind = null; runSession = null; runMechanism = null; failed = false; lastPreviewMs = null
+        _state.update { it.copy(liveSamples=emptyList(), liveCalibrationData=emptyList(), summary=null, tuningRecommendation=null) }
     }
 
-    fun parseLogFile(fileContent: String): List<AlignedDataRow> {
-        val rows = mutableListOf<AlignedDataRow>()
-        val lines = fileContent.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }
+    private fun acceptData(frame: TelemetryFrame): Boolean {
+        val state = _state.value
+        if (failed || !state.isRobotConnected || !state.isRoutineRunning || nt4ClientService.isReplayActive.value) return false
+        val kind = if (isGeometricCalibration(state.activeCalibration)) state.activeCalibration else "SYSID"
+        if (runKind != null && runKind != kind) return fail("Calibration kind changed during collection; start a new run")
+        if (runSession != null && runSession != frame.sessionId) return fail("Telemetry session changed during collection; start a new run")
+        if (runMechanism != null && runMechanism != state.selectedMechanism) return fail("Mechanism changed during collection; start a new run")
+        runKind = kind; runSession = frame.sessionId; runMechanism = state.selectedMechanism
+        val row = assembler.accept(frame, kind) ?: return false
+        val time = row[0].toLong()
+        val existing = rows[time]
+        if (existing != null) {
+            if (!existing.contentEquals(row)) return fail("Conflicting SysId samples share a timestamp; collect a new run")
+            return false
+        }
+        if (rows.size == maxSamples) return fail("SysId exceeded $maxSamples samples; run stopped without fitting truncated data")
+        rows[time] = row
+        val previousPreview = lastPreviewMs
+        if (rows.size == 1 || previousPreview == null || frame.timestampMs - previousPreview >= 100) {
+            lastPreviewMs = frame.timestampMs
+            if (!isGeometricCalibration(kind)) {
+                val preview = rows.descendingMap().values.take(previewLimit).asReversed().map(::motorSample)
+                _state.update { it.copy(liveSamples=preview) }
+            }
+        }
+        return false
+    }
 
-        if (lines.none()) return emptyList()
-        val firstLine = lines.first()
-        if (firstLine.startsWith("{")) {
-            // JSONL Format
-            for (line in lines) {
-                try {
-                    val element = Json.parseToJsonElement(line).jsonObject
+    private fun fail(message: String): Boolean {
+        failed = true
+        analysisJob?.cancel(); analysisJob = null
+        autoTunerService.publishRecommendation(null)
+        assembler.clear()
+        _state.update { it.copy(errorMessage=message, isRoutineRunning=false, isLoading=false,
+            summary=null, tuningRecommendation=null, recommendedPinpointXOffsetMm=null,
+            recommendedPinpointYOffsetMm=null, recommendedTrackWidthMeters=null,
+            recommendedVisionStdDevsX=null, recommendedVisionStdDevsY=null,
+            recommendedVisionStdDevsHeading=null, recommendedTicksPerMeter=null) }
+        return true
+    }
 
-                    // Scenario A: Check if the log contains the flattened SysId/Data array directly
-                    val sysIdData = element["SysId/Data"] ?: element["SysId_Data"] ?: element["sysid_data"]
-                    if (sysIdData != null) {
-                        val arr = sysIdData.jsonArray.mapNotNull { it.jsonPrimitive.doubleOrNull }
-                        if (arr.size >= 5) {
-                            rows.add(AlignedDataRow(
-                                timestampMs = arr[0].toLong(),
-                                voltage = arr[1],
-                                velocity = arr[3],
-                                accel = arr[4]
-                            ))
-                            continue
+    private suspend fun handleStatus(frame: TelemetryFrame) {
+        val status = frame.stringValue ?: return
+        val completed = synchronized(lock) {
+            if (failed || !_state.value.isRobotConnected || nt4ClientService.isReplayActive.value) return@synchronized null
+            if (runSession != null && runSession != frame.sessionId) return@synchronized null
+            if (status != "NONE") {
+                if (status != "QUASISTATIC" && status != "DYNAMIC" && !isGeometricCalibration(status)) return@synchronized null
+                // A late status must not revive a locally stopped/disarmed run.
+                if (_state.value.isRoutineRunning || _state.value.isLoading) {
+                    _state.update { it.copy(isRoutineRunning=true, activeCalibration=status) }
+                }
+                return@synchronized null
+            }
+            val kind = runKind ?: if (_state.value.isRoutineRunning || _state.value.isLoading) {
+                if (isGeometricCalibration(_state.value.activeCalibration)) _state.value.activeCalibration else "SYSID"
+            } else return@synchronized null
+            val snapshot = rows.values.toList() // Transfer ownership; publication below copies mutable arrays.
+            val samples = if (isGeometricCalibration(kind)) emptyList() else snapshot.map(::motorSample)
+            val result = Completed(generation, kind, snapshot, samples, runMechanism ?: _state.value.selectedMechanism)
+            runKind = null; runSession = null; runMechanism = null; rows.clear(); assembler.clear(); lastPreviewMs = null
+            _state.update { it.copy(isRoutineRunning=false, isLoading=false,
+                liveSamples=samples,
+                liveCalibrationData=if (isGeometricCalibration(kind)) snapshot.map { row -> row.clone() } else emptyList()) }
+            result
+        } ?: return
+        if (!requestStop(completed.generation)) return
+        synchronized(lock) {
+            if (completed.generation != generation || completed.mechanism != _state.value.selectedMechanism) return
+            if (isGeometricCalibration(completed.kind)) {
+                regressionSolver.runCalibrationAnalysis(completed.kind, completed.rows)
+            } else if (completed.rows.isNotEmpty()) {
+                analysisJob?.cancel()
+                analysisJob = scope.launch {
+                    val analysis = withContext(analysisDispatcher) {
+                        autoTunerService.computeSampleAnalysis(completed.mechanism, completed.samples, "live-nt4")
+                    }
+                    val published = synchronized(lock) {
+                        if (completed.generation != generation || completed.mechanism != _state.value.selectedMechanism) {
+                            false
+                        } else {
+                            autoTunerService.publishRecommendation(analysis.recommendation)
+                            _state.update { it.copy(summary=analysis.summary, tuningRecommendation=analysis.recommendation) }
+                            true
                         }
                     }
-
-                    // Scenario B: Check for individual fields
-                    val t = element["TimestampMs"]?.jsonPrimitive?.longOrNull
-                        ?: element["timestamp"]?.jsonPrimitive?.longOrNull
-                        ?: element["time"]?.jsonPrimitive?.longOrNull
-                        ?: continue
-                    val volt = element["voltage"]?.jsonPrimitive?.doubleOrNull
-                        ?: element["Voltage"]?.jsonPrimitive?.doubleOrNull
-                        ?: element["Drive/Voltage"]?.jsonPrimitive?.doubleOrNull
-                        ?: continue
-                    val vel = element["velocity"]?.jsonPrimitive?.doubleOrNull
-                        ?: element["Velocity"]?.jsonPrimitive?.doubleOrNull
-                        ?: element["Drive/Velocity"]?.jsonPrimitive?.doubleOrNull
-                        ?: continue
-                    val accel = element["acceleration"]?.jsonPrimitive?.doubleOrNull
-                        ?: element["Acceleration"]?.jsonPrimitive?.doubleOrNull
-                        ?: element["Drive/Acceleration"]?.jsonPrimitive?.doubleOrNull
-                        ?: 0.0
-
-                    rows.add(AlignedDataRow(t, volt, vel, accel))
-                } catch (_: Exception) {
-                    // Skip an individual malformed JSON row and continue collecting usable samples.
-                }
-            }
-        } else {
-            // CSV Format
-            val header = firstLine.split(",").map { it.trim().removeSurrounding("\"").lowercase() }
-            val tCol = header.indexOfFirst { it.contains("time") || it == "t" || it == "ts" }
-            val voltCol = header.indexOfFirst { it.contains("volt") || it == "v" || it == "u" }
-            val velCol = header.indexOfFirst { it.contains("vel") || it.contains("speed") || it == "omega" }
-            val accelCol = header.indexOfFirst { it.contains("accel") || it == "a" }
-
-            if (voltCol != -1 && velCol != -1) {
-                var index = 0
-                for (line in lines.drop(1)) {
-                    try {
-                        val cols = line.split(",").map { it.trim().removeSurrounding("\"") }
-                        val t = if (tCol != -1 && tCol < cols.size) cols[tCol].toLongOrNull() ?: index.toLong() else index.toLong()
-                        val volt = cols[voltCol].toDoubleOrNull() ?: continue
-                        val vel = cols[velCol].toDoubleOrNull() ?: continue
-                        val accel = if (accelCol != -1 && accelCol < cols.size) cols[accelCol].toDoubleOrNull() ?: 0.0 else 0.0
-
-                        rows.add(AlignedDataRow(t, volt, vel, accel))
-                        index++
-                    } catch (_: Exception) {
-                        // Skip an individual malformed CSV row and continue collecting usable samples.
+                    val recommendation = analysis.recommendation
+                    if (published && recommendation != null &&
+                        autoTunerService.applyState.value.phase == TuningApplyPhase.APPLIED_AWAITING_VALIDATION) {
+                        autoTunerService.validateOrRollback(recommendation)
                     }
                 }
+            } else {
+                autoTunerService.publishRecommendation(null)
+                _state.update { it.copy(errorMessage="No complete SysId samples were collected", summary=null, tuningRecommendation=null) }
             }
         }
-
-        // If acceleration is missing (all 0.0), approximate as numerical derivative
-        if (rows.isNotEmpty() && rows.all { it.accel == 0.0 }) {
-            val approxRows = mutableListOf<AlignedDataRow>()
-            val sorted = rows.sortedBy { it.timestampMs }
-            for (i in 0 until sorted.size) {
-                val current = sorted[i]
-                val accel = if (i == 0) 0.0 else {
-                    val prev = sorted[i - 1]
-                    val dt = (current.timestampMs - prev.timestampMs) / 1000.0
-                    if (dt > 1e-4) (current.velocity - prev.velocity) / dt else 0.0
-                }
-                approxRows.add(current.copy(accel = accel))
-            }
-            return approxRows
-        }
-
-        return rows
     }
+
+    private suspend fun requestStop(expectedGeneration: Long): Boolean {
+        if (synchronized(lock) { generation != expectedGeneration }) return false
+        return try {
+            onRoutineCompleted()
+            true
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            synchronized(lock) {
+                if (generation == expectedGeneration) {
+                    _state.update { it.copy(errorMessage="Could not complete SysId stop: ${error.message}", isRoutineRunning=false, isLoading=false) }
+                }
+            }
+            false
+        }
+    }
+
+    private fun motorSample(row: DoubleArray) = AlignedDataRow(row[0].toLong(), row[1], row[3], row[4])
 }

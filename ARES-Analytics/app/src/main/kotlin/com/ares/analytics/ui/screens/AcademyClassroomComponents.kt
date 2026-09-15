@@ -14,8 +14,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.service.AcademyLearningAssignment
-import com.ares.analytics.ui.help.LearningCatalog
+import com.ares.analytics.domain.learning.AcademyLearningAssignment
+import com.ares.analytics.domain.learning.LearningCatalog
 import com.ares.analytics.ui.theme.*
 import java.io.File
 import com.ares.analytics.ui.util.DesktopFileChoosers

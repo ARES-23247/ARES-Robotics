@@ -33,7 +33,7 @@ class RoutineLightingPreviewTest {
 
             val indicatorField = indicators.controlLoops.single().targetFieldId
             val prismField = prism.controlLoops.single().targetFieldId
-            val preview = RoutineLightingPreviewModel.load(project.path).at(
+            val preview = RoutineLightingPreviewModel.load(project.path).compile(
                 actions = listOf(
                     RoutinePreviewAction(
                         0.0,
@@ -54,8 +54,7 @@ class RoutineLightingPreviewTest {
                         mapOf("value" to "FTC_TIMER"),
                     ),
                 ),
-                timeSeconds = 1.0,
-            )
+            ).at(1.0)
 
             assertEquals(IndicatorLightColor.CYAN.position, preview.indicators.single().position)
             assertEquals(PrismPwmPreset.FTC_TIMER.pulseWidthUs.toDouble(), preview.prismPulseWidthUs)

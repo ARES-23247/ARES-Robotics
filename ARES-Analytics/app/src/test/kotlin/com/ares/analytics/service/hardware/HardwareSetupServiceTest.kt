@@ -36,11 +36,11 @@ class HardwareSetupServiceTest {
             val beforeReview = service.inspect(root.path, League.FTC)
             assertTrue(beforeReview.simulationVerification.verified)
             kotlin.test.assertFailsWith<IllegalArgumentException> {
-                service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest())
+                service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest(beforeReview))
             }
-            service.saveReview(root.path, League.FTC, completeReviewRequest())
+            service.saveReview(root.path, League.FTC, completeReviewRequest(beforeReview))
 
-            val validated = service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest())
+            val validated = service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest(beforeReview))
             assertEquals("Mentor One", validated.physicalValidation?.validatedBy)
             assertEquals(validated.inventoryHash, validated.physicalValidation?.inventoryHash)
             assertEquals(1_800_000_000_000L, validated.physicalValidation?.recordedAtEpochMillis)
@@ -76,6 +76,7 @@ class HardwareSetupServiceTest {
                 root.path,
                 League.FTC,
                 HardwareReviewRequest(
+                    expectedInventoryHash = initial.inventoryHash,
                     reviewerName = "Student Driver",
                     wiringMatched = true,
                     addressesChecked = true,
@@ -123,6 +124,10 @@ class HardwareSetupServiceTest {
             val snapshot = service.inspect(root.path, League.FTC)
             assertTrue(snapshot.errorIssues.any { it.message.contains("is claimed by") })
             assertTrue(!snapshot.canReview)
+            val plan = snapshot.commissioningPlan()
+            assertTrue(!plan.ftcDiagnosticAvailable)
+            assertTrue(!plan.clipboardText.contains("A / Cross"))
+            assertTrue(plan.clipboardText.contains(requireNotNull(plan.ftcDiagnosticBlockReason)))
             assertTrue(service.deploymentBlockReason(root.path, League.FTC)!!.contains("blocking issue"))
         } finally {
             root.deleteRecursively()
@@ -164,6 +169,8 @@ class HardwareSetupServiceTest {
             assertTrue(!plan.ftcDiagnosticAvailable)
             assertTrue(plan.ftcDiagnosticBlockReason!!.contains("exactly one"))
             assertEquals(listOf("fl", "fr", "rl"), plan.ftcMotorChecks.map { it.hardwareMapName })
+            assertTrue(!plan.clipboardText.contains("A / Cross"))
+            assertTrue(plan.clipboardText.contains(requireNotNull(plan.ftcDiagnosticBlockReason)))
         } finally {
             root.deleteRecursively()
         }
@@ -259,6 +266,187 @@ class HardwareSetupServiceTest {
         }
     }
 
+    @Test
+    fun `diagnostic rejects duplicated motor names even without precomputed inventory errors`() {
+        val root = Files.createTempDirectory("ares-duplicate-motor-diagnostic").toFile()
+        try {
+            seedDrivebase(root)
+            val snapshot = HardwareSetupService().inspect(root.path, League.FTC)
+            val duplicated = snapshot.copy(items = snapshot.items.map { item ->
+                if (item.roleKey == "FRONT_RIGHT_DRIVE") item.copy(address = "fl") else item
+            })
+            assertTrue(duplicated.errorIssues.isEmpty())
+            val plan = duplicated.commissioningPlan()
+            assertTrue(!plan.ftcDiagnosticAvailable)
+            assertTrue(!plan.clipboardText.contains("A / Cross"))
+            assertTrue(plan.clipboardText.contains(requireNotNull(plan.ftcDiagnosticBlockReason)))
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
+    fun `invalid subsystem evidence blocks diagnostic instructions for an otherwise complete drivebase`() {
+        val root = Files.createTempDirectory("ares-invalid-subsystem-diagnostic").toFile()
+        try {
+            seedDrivebase(root)
+            java.io.File(root, ".ares/subsystems/broken.aressubsystem").apply {
+                parentFile.mkdirs()
+                writeText("not a subsystem document")
+            }
+            val snapshot = HardwareSetupService().inspect(root.path, League.FTC)
+            assertTrue(snapshot.errorIssues.isNotEmpty())
+            val plan = snapshot.commissioningPlan()
+            assertEquals(4, plan.ftcMotorChecks.size)
+            assertTrue(!plan.ftcDiagnosticAvailable)
+            assertTrue(!plan.clipboardText.contains("A / Cross"))
+            assertTrue(plan.clipboardText.contains(requireNotNull(plan.ftcDiagnosticBlockReason)))
+        } finally { root.deleteRecursively() }
+    }
+
+    private fun withInvalidReviewedProject(check: (java.io.File, HardwareSetupService, HardwareSetupSnapshot) -> Unit) {
+        val root = Files.createTempDirectory("ares-invalid-reviewed-hardware").toFile()
+        try {
+            seedDrivebase(root)
+            SubsystemProjectRepository().save(root.path, lift("arm"))
+            val service = HardwareSetupService()
+            val displayed = service.inspect(root.path, League.FTC)
+            val reviewed = service.saveReview(root.path, League.FTC, completeReviewRequest(displayed))
+            val valid = service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest(reviewed))
+            assertTrue(valid.physicalValidation != null)
+            java.io.File(root, ".ares/subsystems/broken.aressubsystem").writeText("invalid subsystem")
+            val invalid = service.inspect(root.path, League.FTC)
+            assertEquals(valid.inventoryHash, invalid.inventoryHash)
+            assertEquals(HardwareReviewStatus.CURRENT, invalid.reviewStatus)
+            assertTrue(invalid.errorIssues.isNotEmpty())
+            check(root, service, invalid)
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
+    fun `current fingerprints do not enable the physical evidence form when inventory has errors`() =
+        withInvalidReviewedProject { _, _, snapshot ->
+            val state = com.ares.analytics.viewmodel.hardware.HardwareSetupState(
+                loading = false, snapshot = snapshot,
+                physicalValidatorName = "Mentor One", physicalEvidenceSummary = completePhysicalRequest(snapshot).evidenceSummary,
+                directionsAndPolarityTested = true, unitsAndSensorsTested = true, disabledNeutralTested = true,
+                limitsAndCurrentTested = true, faultRecoveryTested = true,
+            )
+            assertTrue(!snapshot.readyForPhysicalValidation)
+            assertTrue(!state.canSavePhysicalValidation)
+            assertEquals(null, snapshot.physicalValidation)
+        }
+
+    @Test
+    fun `service rejects new physical evidence for an invalid inventory without writing a record`() =
+        withInvalidReviewedProject { root, service, snapshot ->
+            val directory = java.io.File(root, ".ares/evidence/hardware/physical")
+            val before = directory.listFiles().orEmpty().associate { it.name to it.readText() }
+            kotlin.test.assertFailsWith<IllegalArgumentException> {
+                service.savePhysicalValidation(root.path, League.FTC, completePhysicalRequest(snapshot))
+            }
+            assertEquals(before, directory.listFiles().orEmpty().associate { it.name to it.readText() })
+        }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun `commissioning UI refreshes eligibility when errors change under the same inventory hash`() = kotlinx.coroutines.test.runTest {
+        val root = Files.createTempDirectory("ares-commissioning-cache").toFile()
+        val scene = androidx.compose.ui.ImageComposeScene(10, 10, coroutineContext = kotlinx.coroutines.test.StandardTestDispatcher(testScheduler))
+        try {
+            seedDrivebase(root)
+            val selected = androidx.compose.runtime.mutableStateOf(HardwareSetupService().inspect(root.path, League.FTC))
+            var observed: HardwareCommissioningPlan? = null
+            scene.setContent {
+                val plan = com.ares.analytics.ui.screens.rememberCommissioningPlan(selected.value)
+                androidx.compose.runtime.SideEffect { observed = plan }
+            }
+            fun pump() {
+                repeat(2) {
+                    testScheduler.runCurrent()
+                    scene.render(testScheduler.currentTime * 1_000_000L).close()
+                }
+                testScheduler.runCurrent()
+            }
+            pump()
+            assertTrue(requireNotNull(observed).ftcDiagnosticAvailable)
+            val originalHash = selected.value.inventoryHash
+            selected.value = selected.value.copy(issues = listOf(HardwareInventoryIssue(HardwareIssueSeverity.ERROR, "Unreadable subsystem")))
+            assertEquals(originalHash, selected.value.inventoryHash)
+            pump()
+            assertTrue(!requireNotNull(observed).ftcDiagnosticAvailable)
+            assertTrue(requireNotNull(observed).clipboardText.contains("Unreadable subsystem"))
+        } finally {
+            scene.close()
+            testScheduler.runCurrent()
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `follower commissioning retains read-only details without proposing an independent pulse`() {
+        val root = Files.createTempDirectory("ares-follower-commissioning").toFile()
+        try {
+            seedDrivebase(root)
+            SubsystemProjectRepository().save(root.path, SubsystemTemplates.create(
+                SubsystemTemplate.DUAL_MOTOR_FOLLOWER, "pair", "Pair", SubsystemPlatform.FTC,
+            ))
+            val checks = HardwareSetupService().inspect(root.path, League.FTC).commissioningPlan().subsystemChecks
+            assertTrue(checks.any { it.followerOnly })
+            assertTrue(checks.filter { it.followerOnly }.all { it.pulseProposal == null })
+            assertTrue(checks.any { !it.followerOnly && it.pulseProposal != null })
+        } finally { root.deleteRecursively() }
+    }
+
+    private fun frcSensor(template: SubsystemTemplate, id: String, channel: Int, secondary: Int? = null) =
+        SubsystemTemplates.create(template, id, id.replaceFirstChar { it.uppercase() }, SubsystemPlatform.FRC).let { document ->
+            document.copy(hardware = document.hardware.map { device ->
+                device.copy(connection = device.connection.copy(channel = channel, secondaryChannel = secondary))
+            })
+        }
+
+    @Test
+    fun `FRC absolute encoder reports DIO and may share a number with an analog sensor`() {
+        val root = Files.createTempDirectory("ares-frc-encoder-address").toFile()
+        try {
+            val repository = SubsystemProjectRepository()
+            repository.save(root.path, frcSensor(SubsystemTemplate.ABSOLUTE_ENCODER_SENSOR, "absolute", 0))
+            repository.save(root.path, frcSensor(SubsystemTemplate.POTENTIOMETER_SENSOR, "analog", 0))
+            val snapshot = HardwareSetupService().inspect(root.path, League.FRC)
+            val encoder = snapshot.items.single { it.roleKey == "ABSOLUTE_ENCODER" }
+            assertEquals(HardwareAddressKind.DIO, encoder.addressKind)
+            assertEquals("0", encoder.address)
+            assertTrue(!snapshot.commissioningPlan().clipboardText.contains("Configure Robot"))
+            assertTrue(snapshot.errorIssues.none { it.message.contains("is claimed by") })
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
+    fun `FRC absolute encoder and digital input cannot claim the same channel`() {
+        val root = Files.createTempDirectory("ares-frc-dio-collision").toFile()
+        try {
+            val repository = SubsystemProjectRepository()
+            repository.save(root.path, frcSensor(SubsystemTemplate.ABSOLUTE_ENCODER_SENSOR, "absolute", 2))
+            repository.save(root.path, frcSensor(SubsystemTemplate.LIMIT_SWITCH_SENSOR, "limit", 2))
+            val snapshot = HardwareSetupService().inspect(root.path, League.FRC)
+            assertTrue(snapshot.errorIssues.any { it.message.contains("is claimed by") })
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
+    fun `FRC quadrature encoder reserves both digital input channels independently`() {
+        val root = Files.createTempDirectory("ares-frc-quadrature-collision").toFile()
+        try {
+            val repository = SubsystemProjectRepository()
+            repository.save(root.path, frcSensor(SubsystemTemplate.QUADRATURE_ENCODER_SENSOR, "quadrature", 2, 3))
+            for (channel in listOf(2, 3)) {
+                repository.save(root.path, frcSensor(SubsystemTemplate.LIMIT_SWITCH_SENSOR, "limit", channel))
+                val snapshot = HardwareSetupService().inspect(root.path, League.FRC)
+                assertTrue(snapshot.errorIssues.any { it.message.contains("is claimed by") }, "DIO $channel must be reserved")
+            }
+            repository.save(root.path, frcSensor(SubsystemTemplate.LIMIT_SWITCH_SENSOR, "limit", 4))
+            assertTrue(HardwareSetupService().inspect(root.path, League.FRC).errorIssues.none { it.message.contains("is claimed by") })
+        } finally { root.deleteRecursively() }
+    }
+
     private fun seedDrivebase(root: java.io.File, includeLogicalWheelModule: Boolean = false) {
         val base = defaultDrivebase("team1-robot", DrivebaseKind.FTC_MECANUM, League.FTC)
         DrivebaseProjectRepository().saveReviewed(
@@ -297,7 +485,8 @@ class HardwareSetupServiceTest {
         )
     }
 
-    private fun completeReviewRequest() = HardwareReviewRequest(
+    private fun completeReviewRequest(snapshot: HardwareSetupSnapshot) = HardwareReviewRequest(
+        expectedInventoryHash = snapshot.inventoryHash,
         reviewerName = "Student Driver",
         wiringMatched = true,
         addressesChecked = true,
@@ -306,7 +495,8 @@ class HardwareSetupServiceTest {
         limitsChecked = true,
     )
 
-    private fun completePhysicalRequest() = HardwarePhysicalValidationRequest(
+    private fun completePhysicalRequest(snapshot: HardwareSetupSnapshot) = HardwarePhysicalValidationRequest(
+        expectedInventoryHash = snapshot.inventoryHash,
         validatedBy = "Mentor One",
         evidenceSummary = "Robot on blocks: direction, sensors, neutral, limits, current, and fault recovery all matched the written procedure.",
         directionsAndPolarityTested = true,

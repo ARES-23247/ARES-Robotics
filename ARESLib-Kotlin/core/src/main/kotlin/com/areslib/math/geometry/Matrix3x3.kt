@@ -3,7 +3,9 @@ package com.areslib.math.geometry
 /**
  * Mutable 3x3 Double Precision Matrix Scratchpad.
  *
- * Optimized for 100% Zero-GC memory compliance in 3-DOF EKF covariance update loops ($\mathbf{P}_k, \mathbf{Q}, \mathbf{R}, \mathbf{S}, \mathbf{K}$).
+ * Provides allocation-free mutators for 3-DOF EKF covariance scratchpads
+ * ($\mathbf{P}_k, \mathbf{Q}, \mathbf{R}, \mathbf{S}, \mathbf{K}$).
+ * Value-returning operators, [transpose] and [inverse] allocate a new result.
  *
  * ### Mathematical Formulations:
  * 1. **Matrix Determinant $\det(\mathbf{A})$**:
@@ -143,20 +145,21 @@ data class Matrix3x3(
         val c02 = a10 * a21 - a11 * a20
         val det = a00 * c00 - a01 * c01 + a02 * c02
         if (!det.isFinite() || kotlin.math.abs(det) <= 1e-15) return Matrix3x3()
-        val invDet = (1.0 / det) / scale
+        // Divide each cofactor before undoing normalization. A shared reciprocal
+        // 1 / (det * scale) can overflow even when every inverse entry is finite.
 
         return Matrix3x3(
-             c00 * invDet,
-            -(a01 * a22 - a02 * a21) * invDet,
-             (a01 * a12 - a02 * a11) * invDet,
+             (c00 / det) / scale,
+            (-(a01 * a22 - a02 * a21) / det) / scale,
+             ((a01 * a12 - a02 * a11) / det) / scale,
             
-            -c01 * invDet,
-             (a00 * a22 - a02 * a20) * invDet,
-            -(a00 * a12 - a02 * a10) * invDet,
+            (-c01 / det) / scale,
+             ((a00 * a22 - a02 * a20) / det) / scale,
+            (-(a00 * a12 - a02 * a10) / det) / scale,
             
-             c02 * invDet,
-            -(a00 * a21 - a01 * a20) * invDet,
-             (a00 * a11 - a01 * a10) * invDet
+             (c02 / det) / scale,
+            (-(a00 * a21 - a01 * a20) / det) / scale,
+             ((a00 * a11 - a01 * a10) / det) / scale
         )
     }
 

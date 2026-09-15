@@ -8,18 +8,15 @@ import com.areslib.state.Alliance
 /**
  * Converts driver intent into season drivetrain commands without touching hardware directly.
  *
- * Each axis is deadband-rescaled, exponent-shaped, and passed through a first-order EMA. Command
- * parameters follow ARES field axes: +X forward, +Y left, and CCW-positive rotation. The gamepad
- * adapter maps negated left-stick Y to field X and negated left-stick X to field Y. Blue
+ * Each axis is deadband-rescaled, exponent-shaped, and passed through a first-order EMA. Explicit field commands use +X/+Y field axes and CCW-positive rotation. The gamepad
+ * adapter maps forward to Red +Y and right to Red +X, away from the alliance wall. Blue
  * alliance negates both field-relative translation axes but never rotation. Robot-relative driving
  * is not alliance mirrored. Instances retain smoothing history and belong to one robot.
  */
 class AresDriveController(private val base: FtcMecanumRobot) {
-    private fun processAxis(input: Double): Double {
-        val boundedInput = if (input.isFinite()) input.coerceIn(-1.0, 1.0) else 0.0
+    private fun processAxis(input: Double, exponent: Double): Double {
+        val boundedInput = input.coerceIn(-1.0, 1.0)
         val deadzoned = InputMath.applyDeadband(boundedInput, DEFAULT_DEADZONE)
-        val exponent = base.store.state.tuning.driver.deadbandExponent
-            .let { if (it > 0.0) it else DEFAULT_CURVE_EXPONENT }
         return InputMath.applyCurve(deadzoned, exponent)
     }
 
@@ -34,43 +31,49 @@ class AresDriveController(private val base: FtcMecanumRobot) {
         smoothRot = smoothRot * EMA_RETENTION + rot * EMA_ALPHA
     }
 
+    /** One immutable state snapshot and no residual smoothed command after an invalid input frame. */
+    private fun updateInputs(x: Double, y: Double, rotation: Double): Alliance {
+        val state = base.store.state
+        val configuredExponent = state.tuning.driver.deadbandExponent
+        val exponent = if (configuredExponent.isFinite() && configuredExponent > 0.0)
+            configuredExponent else DEFAULT_CURVE_EXPONENT
+        if (!x.isFinite() || !y.isFinite() || !rotation.isFinite()) {
+            smoothX = 0.0
+            smoothY = 0.0
+            smoothRot = 0.0
+        } else {
+            smoothTransition(processAxis(x, exponent), processAxis(y, exponent), processAxis(rotation, exponent))
+        }
+        return state.drive.alliance
+    }
+
     /** Drives from normalized field-relative axes after shaping and alliance transformation. */
     fun driveFieldCentric(x: Double, y: Double, rotation: Double) {
-        val px = processAxis(x)
-        val py = processAxis(y)
-        val prot = processAxis(rotation)
-        smoothTransition(px, py, prot)
-
-        // Blue changes the driver station perspective by 180 degrees: mirror X and Y together.
-        base.driveFieldCentric(mirrorXForBlue(), mirrorYForBlue(), smoothRot)
+        val alliance = updateInputs(x, y, rotation)
+        val direction = if (alliance == Alliance.BLUE) -1.0 else 1.0
+        base.driveFieldCentric(direction * smoothX, direction * smoothY, smoothRot)
     }
     /** Drives from normalized robot-relative axes; alliance does not affect this frame. */
     fun driveRobotCentric(x: Double, y: Double, rotation: Double) {
-        val px = processAxis(x)
-        val py = processAxis(y)
-        val prot = processAxis(rotation)
-        smoothTransition(px, py, prot)
-
+        updateInputs(x, y, rotation)
         base.driveRobotCentric(smoothX, smoothY, smoothRot)
     }
 
     /**
      * Reads normalized FTC gamepad axes and commands the frame selected by
-     * [FtcMecanumRobot.teleopDriveFrame]. Input shaping uses robot-style forward/left axes;
-     * field-relative commands map forward to Red +Y and right to Red +X, away from the alliance wall.
+     * [FtcMecanumRobot.teleopDriveFrame]. Field-relative forward maps to Red +Y and right to Red +X;
      * CCW rotation is -rightStickX. Alliance mirroring applies only to field-relative
      * translation; robot-relative controls retain the robot's physical forward/left axes.
      */
     fun driveWithGamepad(driver: com.areslib.telemetry.AresGamepad, useHeadingLock: Boolean = true) {
-        val px = processAxis(-driver.leftStickY.value.toDouble())
-        val py = processAxis(-driver.leftStickX.value.toDouble())
-        val prot = processAxis(-driver.rightStickX.value.toDouble())
-        smoothTransition(px, py, prot)
+        val alliance = updateInputs(-driver.leftStickY.value.toDouble(),
+            -driver.leftStickX.value.toDouble(), -driver.rightStickX.value.toDouble())
+        val direction = if (alliance == Alliance.BLUE) -1.0 else 1.0
 
         when (base.teleopDriveFrame) {
             FtcTeleopDriveFrame.FIELD_RELATIVE -> {
                 base.mecanumDrive.driveFieldRelativeNormalized(
-                    -mirrorYForBlue(), mirrorXForBlue(), smoothRot, useHeadingLock
+                    -direction * smoothY, direction * smoothX, smoothRot, useHeadingLock
                 )
             }
             FtcTeleopDriveFrame.ROBOT_RELATIVE -> {
@@ -78,14 +81,6 @@ class AresDriveController(private val base: FtcMecanumRobot) {
             }
         }
     }
-
-    /** Blue mirrors both field-relative translation axes for the driver's perspective. */
-    private fun mirrorXForBlue(): Double =
-        if (base.store.state.drive.alliance == Alliance.BLUE) -smoothX else smoothX
-
-    /** See [mirrorXForBlue]; rotation is never alliance-mirrored. */
-    private fun mirrorYForBlue(): Double =
-        if (base.store.state.drive.alliance == Alliance.BLUE) -smoothY else smoothY
 
     /** Requests ARESLib target-space alignment to a specific AprilTag ID. */
     fun alignToTag(tagId: Int) {

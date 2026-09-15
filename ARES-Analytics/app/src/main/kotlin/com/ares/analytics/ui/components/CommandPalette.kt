@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.components
 
+import com.ares.analytics.domain.navigation.NavigationTarget
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

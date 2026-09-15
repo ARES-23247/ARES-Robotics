@@ -36,6 +36,11 @@ class FRCCowlHardwareIO(
     private val cowlPosition = motor.position
     private val cowlCurrent = motor.statorCurrent
 
+    // Retain argument groups; the Phoenix list overload avoids per-refresh vararg arrays.
+    private val resetMotors = arrayOf(motor)
+    private val positionSignals = listOf<BaseStatusSignal>(cowlPosition)
+    private val currentSignals = listOf<BaseStatusSignal>(cowlCurrent)
+
     init {
         motor.optimizeBusUtilization()
         setUpdateFrequencies(50.0, cowlPosition)
@@ -70,14 +75,14 @@ class FRCCowlHardwareIO(
     }
 
     override fun refresh() {
-        if (anyTalonResetOccurred(motor)) {
+        if (anyDeviceResetOccurred(resetMotors) { it.hasResetOccurred() }) {
             resetDetected = true
             homed = false
         }
-        val positionRefreshOk = BaseStatusSignal.refreshAll(cowlPosition).isOK
+        val positionRefreshOk = BaseStatusSignal.refreshAll(positionSignals).isOK
         cachedAngleValid = homed && positionRefreshOk &&
             cowlPosition.valueAsDouble.isFinite()
-        cachedCurrentValid = BaseStatusSignal.refreshAll(cowlCurrent).isOK &&
+        cachedCurrentValid = BaseStatusSignal.refreshAll(currentSignals).isOK &&
             cowlCurrent.valueAsDouble.isFinite() && cowlCurrent.valueAsDouble >= 0.0
     }
 

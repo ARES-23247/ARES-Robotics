@@ -1,12 +1,15 @@
 package com.areslib.frc.vision
 
 import com.areslib.action.RobotAction
+import com.areslib.frc.FrcLimelightIO
+import com.areslib.hardware.drive.SwerveHardwareIO
 import com.areslib.hardware.vision.VisionIO
+import com.areslib.hardware.vision.VisionRecoveryConsensus
+import com.areslib.hardware.vision.VisionFrameGate
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.hardware.vision.VisionOutlierFilter
 import com.areslib.Store
 import com.areslib.subsystem.VisionTracker
-import com.areslib.telemetry.RobotStatusTracker
 import com.areslib.state.VisionMeasurement
 import com.areslib.state.VisionSolverType
 import com.areslib.math.geometry.Pose2d
@@ -38,7 +41,7 @@ import com.areslib.math.wrapAngle
 class FrcVisionTracker(
     private val store: Store,
     val visionIO: VisionIO?,
-    private val swerveIO: com.areslib.hardware.drive.SwerveHardwareIO?,
+    private val swerveIO: SwerveHardwareIO?,
     private val isSimulation: Boolean,
     // Phoenix 6 uses its own monotonic timebase for vision rewind. Supplying an FPGA
     // timestamp directly can place the observation in the wrong estimator epoch.
@@ -51,22 +54,29 @@ class FrcVisionTracker(
     val visionInputs = VisionIOInputs()
 
     private var _lastVisionStatus: String = "INIT"
-    private val recentSourceIds = arrayOfNulls<String>(8)
-    private val recentFrameIds = LongArray(8) { Long.MIN_VALUE }
-    private val recentTimestampsMs = LongArray(8) { Long.MIN_VALUE }
-    private var recoveryCount = 0
-    private var recoveryX = 0.0
-    private var recoveryY = 0.0
-    private var recoverySin = 0.0
-    private var recoveryCos = 0.0
+    private val frameGate = VisionFrameGate(1_000L)
+    private var updating = false
+    private var lastRecoveryUpdateMs = 0L
+    private val freshMeasurements = ArrayList<VisionMeasurement>(8)
+    private var stationaryTracking = false
+    private val recoveryConsensus = VisionRecoveryConsensus()
     private var stationarySinceMs = 0L
     private var recoveryStartedMs = 0L
     private val historicalPose = DoubleArray(3)
+    private var fallbackTimeSampled = false
+    private var fallbackTimeSeconds = Double.NaN
 
     /** Allows calibration to observe camera frames without contaminating odometry-only routes. */
     var fusionEnabled: Boolean = true
+        set(value) {
+            if (field != value) {
+                resetRecovery()
+                stationaryTracking = false
+                field = value
+            }
+        }
 
-    /** Human-readable status string describing active vision filter state (`"ACCEPTED"`, `"REJECTED_FAR"`, `"REJECTED_AMBIGUOUS"`, `"NO TARGET"`, `"OFFLINE"`). */
+    /** Human-readable filter/IO state, including `REJECTED_TIMESTAMP` when no usable estimator time is available. */
     override val lastVisionStatus: String
         get() = _lastVisionStatus
 
@@ -77,136 +87,183 @@ class FrcVisionTracker(
     /**
      * Executes 50Hz vision update: passes chassis gyro orientation to camera, reads AprilTag measurements, filters outliers, and feeds observations to CTRE swerve pose estimator.
      *
-     * @param timestampMs System timestamp in milliseconds ($ms$).
+     * @param timestampMs Current RobotClock time in milliseconds ($ms$).
      */
     override fun update(timestampMs: Long) {
+        check(!updating) { "Vision tracker update is not reentrant" }
+        updating = true
+        try {
+            updateFrame(timestampMs)
+        } catch (failure: Throwable) {
+            clearInputs()
+            resetRecovery()
+            stationaryTracking = false
+            publishStatus("IO_ERROR")
+            throw failure
+        } finally {
+            updating = false
+        }
+    }
+
+    private fun clearInputs() {
+        visionInputs.isConnected = false
+        visionInputs.measurements = emptyList()
+        visionInputs.cameraPoses = emptyList()
+        freshMeasurements.clear()
+    }
+
+    private fun publishStatus(status: String) {
+        _lastVisionStatus = status
+        com.areslib.telemetry.RobotStatusTracker.visionConnected = isConnected
+        com.areslib.telemetry.RobotStatusTracker.visionStatus = status
+    }
+
+    private fun updateFrame(timestampMs: Long) {
+        fallbackTimeSampled = false
+        fallbackTimeSeconds = Double.NaN
+        if (!frameGate.beginUpdate(timestampMs)) {
+            resetRecovery()
+            stationaryTracking = false
+        }
+        val recoveryAge = timestampMs - lastRecoveryUpdateMs
+        if (recoveryConsensus.sampleCount > 0L && (recoveryAge < 0L || recoveryAge > 1_000L)) resetRecovery()
+        clearInputs()
 
         visionIO?.let { io ->
             val drive = store.state.drive
             val disabled = isDisabledProvider()
             // MegaTag2 needs the field-relative estimator heading. Raw Pigeon yaw can
             // differ after CTRE resetPose() applies an odometry heading offset.
-            val yaw = Math.toDegrees(drive.poseEstimator.estimatedPoseHeading)
-            val driveSignalsValid = drive.measuredMotionValid && drive.imuMeasurementsValid &&
-                yaw.isFinite()
+            val yaw = Math.toDegrees(wrapAngle(drive.poseEstimator.estimatedPoseHeading))
+            val yawRate = Math.toDegrees(drive.measuredAngularVelocityRadiansPerSecond)
+            val measuredLinearSpeed = kotlin.math.hypot(
+                drive.measuredFieldXVelocityMetersPerSecond, drive.measuredFieldYVelocityMetersPerSecond)
+            val driveSignalsValid = VisionOutlierFilter.isDriveObservationValid(drive) &&
+                yaw.isFinite() && yawRate.isFinite() && measuredLinearSpeed.isFinite()
             io.setImuMode(if (disabled) DISABLED_IMU_MODE else ENABLED_IMU_MODE)
             if (driveSignalsValid) {
                 io.setOrientation(
                     yawDegrees = yaw,
-                    yawRateDegPerSec = Math.toDegrees(drive.measuredAngularVelocityRadiansPerSecond),
+                    yawRateDegPerSec = yawRate,
                     pitchDegrees = drive.pitchDegrees,
                     pitchRateDegPerSec = 0.0,
                     rollDegrees = drive.rollDegrees,
                     rollRateDegPerSec = 0.0,
-                    linearVelocityMps = Math.hypot(
-                        drive.measuredFieldXVelocityMetersPerSecond,
-                        drive.measuredFieldYVelocityMetersPerSecond
-                    )
+                    linearVelocityMps = measuredLinearSpeed
                 )
             }
             io.updateInputs(visionInputs)
-            if (!driveSignalsValid) {
-                stationarySinceMs = 0L
+            if (!visionInputs.isConnected) {
+                clearInputs()
                 resetRecovery()
-                _lastVisionStatus = "REJECTED_DRIVE_SIGNALS"
-                RobotStatusTracker.visionConnected = visionInputs.isConnected
+                stationaryTracking = false
+                publishStatus("OFFLINE")
+                return
+            }
+            if (!driveSignalsValid) {
+                stationaryTracking = false
+                resetRecovery()
+                publishStatus("REJECTED_DRIVE_SIGNALS")
                 return@let
             }
+            val velocityThreshold = store.state.tuning.recovery.stolenRobotVelocityThreshold
+            val angularThreshold = store.state.tuning.recovery.stolenRobotAngularVelocityThreshold
+            val stationary = velocityThreshold.isFinite() && velocityThreshold > 0.0 &&
+                angularThreshold.isFinite() && angularThreshold > 0.0 && measuredLinearSpeed < velocityThreshold &&
+                kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) < angularThreshold
+            if (!stationary) stationaryTracking = false
+            else if (!stationaryTracking) {
+                stationarySinceMs = timestampMs
+                stationaryTracking = true
+            }
+            val recoveryAllowed = fusionEnabled && (disabled ||
+                (stationaryTracking && timestampMs - stationarySinceMs >= 500L))
             if (visionInputs.measurements.isNotEmpty()) {
                 var acceptedCount = 0
                 var rejectedCount = 0
-                var staleCount = 0
                 var recoverySnapped = false
                 var residualRejected = false
-                val measuredLinearSpeed = kotlin.math.hypot(
-                    drive.measuredFieldXVelocityMetersPerSecond,
-                    drive.measuredFieldYVelocityMetersPerSecond
-                )
-                val stationary = measuredLinearSpeed < store.state.tuning.recovery.stolenRobotVelocityThreshold &&
-                    kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) <
-                    store.state.tuning.recovery.stolenRobotAngularVelocityThreshold
-                stationarySinceMs = when {
-                    !stationary -> 0L
-                    stationarySinceMs == 0L -> timestampMs
-                    else -> stationarySinceMs
-                }
-                val recoveryAllowed = fusionEnabled && (disabled ||
-                    (stationary && timestampMs - stationarySinceMs >= 500L))
+                var timestampRejected = false
                 if (!recoveryAllowed) resetRecovery()
-                for (measurement in visionInputs.measurements) {
-                    if (!isFreshFrame(measurement, timestampMs)) {
-                        staleCount++
+                for (i in visionInputs.measurements.indices) {
+                    val measurement = visionInputs.measurements[i]
+                    if (frameGate.accept(measurement)) freshMeasurements.add(measurement)
+                }
+                if (freshMeasurements.isEmpty()) {
+                    publishStatus(if (fusionEnabled) "STALE_FRAME" else "FUSION_DISABLED")
+                    return
+                }
+                for (i in freshMeasurements.indices) {
+                    val measurement = freshMeasurements[i]
+                    // Calibration still publishes fresh observations below. It does not need
+                    // vendor clock conversion, history queries or a second physical filter.
+                    if (!fusionEnabled) continue
+                    val distance = measurementRange(measurement)
+                    if (recoveryAllowed && considerRecovery(measurement, timestampMs, drive, distance)) {
+                        recoverySnapped = true
+                        acceptedCount++
                         continue
                     }
-                if (recoveryAllowed && considerRecovery(measurement, timestampMs, drive)) {
-                    recoverySnapped = true
-                    acceptedCount++
-                    continue
-                }
-                // Distance-based outlier rejection: skip fusion for far/ambiguous tags.
-                // Use full euclidean target-space distance; tag-normal depth (z) alone would
-                // let an off-axis robot at (x=5, z=1) pass the 6 m filter.
-                val ts = measurement.robotPoseTargetSpace
-                val targetSpaceDistance = kotlin.math.hypot(kotlin.math.hypot(ts.x, ts.y), ts.z)
-                val distance = when {
-                    measurement.averageTagDistanceMeters >= 0.0 -> measurement.averageTagDistanceMeters
-                    targetSpaceDistance > MIN_VALID_TARGET_RANGE_METERS -> targetSpaceDistance
-                    else -> Double.NaN
-                }
-                val filterConfig = store.state.vision.filterConfig
-                val timestampSec = measurementTimestampSeconds(measurement, timestampMs)
-                val hasHistoricalPose = try {
-                    swerveIO?.samplePoseAt(timestampSec, historicalPose) == true
-                } catch (_: Throwable) {
-                    false
-                }
-                val referenceX = if (hasHistoricalPose) historicalPose[0] else drive.poseEstimator.estimatedPoseX
-                val referenceY = if (hasHistoricalPose) historicalPose[1] else drive.poseEstimator.estimatedPoseY
-                val referenceHeading = if (hasHistoricalPose) historicalPose[2] else drive.poseEstimator.estimatedPoseHeading
-                val translationResidual = kotlin.math.hypot(
-                    measurement.targetPose.x - referenceX,
-                    measurement.targetPose.y - referenceY
-                )
-                val passesNormalResidualGate = translationResidual <= MAX_NORMAL_FUSION_RESIDUAL_METERS
-                val passesCommonFilter = VisionOutlierFilter.isValid(
-                    config = filterConfig,
-                    measurement = measurement,
-                    robotHeadingRad = referenceHeading,
-                    robotPoseX = referenceX,
-                    robotPoseY = referenceY,
-                    angularVelocityRadPerSec = drive.measuredAngularVelocityRadiansPerSecond,
-                    linearAccelXG = drive.xAccelerationG,
-                    linearAccelYG = drive.yAccelerationG,
-                    linearAccelZG = drive.zAccelerationG
-                )
-                if (fusionEnabled && !isSimulation && swerveIO != null && distance < MAX_TARGET_RANGE_METERS &&
-                    passesCommonFilter && passesNormalResidualGate) {
-                    try {
-                        val pose = measurement.targetPose.toPose2d()
-                        val stdDevX = validStdDevOrFallback(measurement.stdDevXMeters, 0.7)
-                        val stdDevY = validStdDevOrFallback(measurement.stdDevYMeters, 0.7)
-                        val headingFallback = if (measurement.solverType == VisionSolverType.MEGATAG2) 1.0e6 else 0.35
-                        val stdDevHeading = validStdDevOrFallback(measurement.stdDevHeadingRadians, headingFallback)
-                        swerveIO.addVisionMeasurement(
-                            pose,
-                            timestampSec,
-                            stdDevX,
-                            stdDevY,
-                            stdDevHeading
-                        )
-                        acceptedCount++
-                    } catch (e: Throwable) {
-                        System.err.println("FrcSwerveRobot: Failed to feed vision to SwerveDrivetrain: ${e.message}")
+                    // Distance-based outlier rejection: skip fusion for far/ambiguous tags.
+                    // Use full euclidean target-space distance; tag-normal depth (z) alone would
+                    // let an off-axis robot at (x=5, z=1) pass the 6 m filter.
+                    val filterConfig = store.state.vision.filterConfig
+                    val timestampSec = if (swerveIO != null) {
+                        measurementTimestampSeconds(measurement, timestampMs)
+                    } else Double.NaN
+                    if (swerveIO != null && !timestampSec.isFinite()) {
                         rejectedCount++
+                        timestampRejected = true
+                        continue
                     }
-                } else if (!distance.isFinite() || distance >= MAX_TARGET_RANGE_METERS ||
-                    !passesCommonFilter || !passesNormalResidualGate) {
-                    rejectedCount++
-                    residualRejected = residualRejected || !passesNormalResidualGate
-                }
+                    val hasHistoricalPose = sampleHistoricalPose(timestampSec)
+                    val referenceX = if (hasHistoricalPose) historicalPose[0] else drive.poseEstimator.estimatedPoseX
+                    val referenceY = if (hasHistoricalPose) historicalPose[1] else drive.poseEstimator.estimatedPoseY
+                    val referenceHeading = if (hasHistoricalPose) historicalPose[2] else drive.poseEstimator.estimatedPoseHeading
+                    val translationResidual = kotlin.math.hypot(
+                        measurement.targetPose.x - referenceX,
+                        measurement.targetPose.y - referenceY
+                    )
+                    val passesNormalResidualGate = translationResidual <= MAX_NORMAL_FUSION_RESIDUAL_METERS
+                    val passesCommonFilter = VisionOutlierFilter.isValid(
+                        config = filterConfig,
+                        measurement = measurement,
+                        robotHeadingRad = referenceHeading,
+                        robotPoseX = referenceX,
+                        robotPoseY = referenceY,
+                        angularVelocityRadPerSec = drive.measuredAngularVelocityRadiansPerSecond,
+                        linearAccelXG = drive.xAccelerationG,
+                        linearAccelYG = drive.yAccelerationG,
+                        linearAccelZG = drive.zAccelerationG
+                    )
+                    if (fusionEnabled && !isSimulation && swerveIO != null && distance < MAX_TARGET_RANGE_METERS &&
+                        passesCommonFilter && passesNormalResidualGate) {
+                        try {
+                            val pose = measurement.targetPose.toPose2d()
+                            val stdDevX = validStdDevOrFallback(measurement.stdDevXMeters, 0.7)
+                            val stdDevY = validStdDevOrFallback(measurement.stdDevYMeters, 0.7)
+                            val headingFallback = if (measurement.solverType == VisionSolverType.MEGATAG2) 1.0e6 else 0.35
+                            val stdDevHeading = validStdDevOrFallback(measurement.stdDevHeadingRadians, headingFallback)
+                            swerveIO.addVisionMeasurement(
+                                pose,
+                                timestampSec,
+                                stdDevX,
+                                stdDevY,
+                                stdDevHeading
+                            )
+                            acceptedCount++
+                        } catch (e: Throwable) {
+                            System.err.println("FrcSwerveRobot: Failed to feed vision to SwerveDrivetrain: ${e.message}")
+                            rejectedCount++
+                        }
+                    } else if (!distance.isFinite() || distance >= MAX_TARGET_RANGE_METERS ||
+                        !passesCommonFilter || !passesNormalResidualGate) {
+                        rejectedCount++
+                        residualRejected = residualRejected || !passesNormalResidualGate
+                    }
                 }
                 store.dispatch(RobotAction.VisionMeasurementsReceived(
-                    visionInputs.measurements,
+                    freshMeasurements,
                     timestampMs,
                     null,
                     // The accepted measurement above is already consumed by CTRE's
@@ -217,24 +274,32 @@ class FrcVisionTracker(
                 _lastVisionStatus = when {
                     !fusionEnabled -> "FUSION_DISABLED"
                     recoverySnapped -> "RESEED_SNAP"
-                    acceptedCount > 0 || (isSimulation && rejectedCount == 0 && staleCount == 0) -> "ACCEPTED"
-                    staleCount == visionInputs.measurements.size -> "STALE_FRAME"
+                    acceptedCount > 0 || (isSimulation && rejectedCount == 0) -> "ACCEPTED"
+                    timestampRejected -> "REJECTED_TIMESTAMP"
                     rejectedCount > 0 -> if (residualRejected) "REJECTED_RESIDUAL" else "REJECTED_FILTERED"
                     else -> "NO TARGET"
                 }
             } else {
+                resetRecovery()
                 _lastVisionStatus = "NO TARGET"
             }
-            RobotStatusTracker.visionConnected = visionInputs.isConnected
+            publishStatus(_lastVisionStatus)
         } ?: run {
-            RobotStatusTracker.visionConnected = false
-            _lastVisionStatus = "OFFLINE"
+            resetRecovery()
+            stationaryTracking = false
+            publishStatus("OFFLINE")
         }
     }
 
     private fun validStdDevOrFallback(value: Double, fallback: Double): Double =
         if (value.isFinite() && value > 0.0) value else fallback
 
+    /**
+     * Prefer the camera's converted native capture time. Otherwise subtract its RobotClock
+     * age from one estimator-clock snapshot shared by this update. Failed/nonfinite snapshots
+     * stay unavailable for the whole batch; a later update may retry. No latency is subtracted
+     * again from an already converted native capture timestamp.
+     */
     private fun measurementTimestampSeconds(measurement: VisionMeasurement, nowMs: Long): Double {
         if (measurement.captureTimestampMicros > 0L) {
             val converted = try {
@@ -244,14 +309,46 @@ class FrcVisionTracker(
             }
             if (converted.isFinite()) return converted
         }
+        if (!fallbackTimeSampled) {
+            fallbackTimeSampled = true
+            fallbackTimeSeconds = try {
+                estimatorTimeSecondsProvider()
+            } catch (_: Throwable) {
+                Double.NaN
+            }
+        }
         val latencyMs = (nowMs - measurement.timestampMs).coerceIn(0L, 1_000L)
-        return estimatorTimeSecondsProvider() - latencyMs / 1_000.0
+        return fallbackTimeSeconds - latencyMs / 1_000.0
+    }
+
+    /** Missing, failed or incomplete history uses the caller's current valid drive estimate. */
+    private fun sampleHistoricalPose(timestampSeconds: Double): Boolean {
+        val io = swerveIO ?: return false
+        // Never credit values left by a previous sample if an alternate IO writes only part
+        // of the output. The concrete CTRE adapter already writes all three finite values.
+        historicalPose[0] = Double.NaN
+        historicalPose[1] = Double.NaN
+        historicalPose[2] = Double.NaN
+        return try {
+            io.samplePoseAt(timestampSeconds, historicalPose) &&
+                historicalPose[0].isFinite() && historicalPose[1].isFinite() && historicalPose[2].isFinite()
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    private fun measurementRange(measurement: VisionMeasurement): Double {
+        if (measurement.averageTagDistanceMeters >= 0.0) return measurement.averageTagDistanceMeters
+        val target = measurement.robotPoseTargetSpace
+        val distance = kotlin.math.hypot(kotlin.math.hypot(target.x, target.y), target.z)
+        return if (distance > MIN_VALID_TARGET_RANGE_METERS) distance else Double.NaN
     }
 
     private fun considerRecovery(
         measurement: VisionMeasurement,
         timestampMs: Long,
-        drive: com.areslib.state.DriveState
+        drive: com.areslib.state.DriveState,
+        targetRange: Double
     ): Boolean {
         if (!measurement.hasRecoveryPose || swerveIO == null) {
             resetRecovery()
@@ -259,29 +356,10 @@ class FrcVisionTracker(
         }
         val candidate3d = measurement.recoveryPose
         val filterConfig = store.state.vision.filterConfig
-        val targetSpace = measurement.robotPoseTargetSpace
-        val targetSpaceRange = kotlin.math.sqrt(
-            targetSpace.x * targetSpace.x + targetSpace.y * targetSpace.y + targetSpace.z * targetSpace.z
-        )
-        val targetRange = when {
-            measurement.averageTagDistanceMeters >= 0.0 -> measurement.averageTagDistanceMeters
-            targetSpaceRange > MIN_VALID_TARGET_RANGE_METERS -> targetSpaceRange
-            else -> Double.NaN
-        }
-        val dynamicZ = if (drive.zAccelerationG == 0.0) 0.0 else drive.zAccelerationG - 1.0
-        val shockMagnitude = kotlin.math.sqrt(
-            drive.xAccelerationG * drive.xAccelerationG +
-                drive.yAccelerationG * drive.yAccelerationG + dynamicZ * dynamicZ
-        )
-        val plausible = (!measurement.recoveryAmbiguityAvailable ||
-            (measurement.recoveryAmbiguity.isFinite() &&
-                measurement.recoveryAmbiguity <= filterConfig.maxAmbiguity)) &&
-            (filterConfig.allowedTagIds.isEmpty() || measurement.tagId in filterConfig.allowedTagIds) &&
-            candidate3d.x.isFinite() && candidate3d.y.isFinite() && candidate3d.rotation.z.isFinite() &&
-            targetRange.isFinite() && targetRange <= MAX_TARGET_RANGE_METERS &&
-            kotlin.math.abs(drive.measuredAngularVelocityRadiansPerSecond) <= filterConfig.maxAngularVelocityRadPerSec &&
-            shockMagnitude.isFinite() && shockMagnitude <= filterConfig.maxAccelerationG &&
-            VisionOutlierFilter.isPoseWithinFieldBounds(filterConfig, candidate3d)
+        val plausible = targetRange.isFinite() && targetRange <= MAX_TARGET_RANGE_METERS &&
+            VisionOutlierFilter.isValidForRecovery(filterConfig, measurement, true,
+                drive.measuredAngularVelocityRadiansPerSecond, drive.xAccelerationG,
+                drive.yAccelerationG, drive.zAccelerationG)
         if (!plausible) {
             resetRecovery()
             return false
@@ -295,31 +373,18 @@ class FrcVisionTracker(
             return false
         }
 
-        if (recoveryCount > 0) {
-            val meanX = recoveryX / recoveryCount
-            val meanY = recoveryY / recoveryCount
-            val meanHeading = kotlin.math.atan2(recoverySin, recoveryCos)
-            if (kotlin.math.hypot(candidate3d.x - meanX, candidate3d.y - meanY) > 0.35 ||
-                kotlin.math.abs(wrapAngle(candidate3d.rotation.z - meanHeading)) > Math.toRadians(20.0)) {
-                resetRecovery()
-            }
+        val requiredSamples = VisionRecoveryConsensus.requiredSamples(
+            store.state.tuning.recovery.stolenRobotRejectionThreshold, singleTag = measurement.tagCount == 1)
+        if (requiredSamples == 0L || !recoveryConsensus.add(candidate3d.x, candidate3d.y, candidate3d.rotation.z)) {
+            resetRecovery()
+            return false
         }
+        if (recoveryConsensus.sampleCount == 1L) recoveryStartedMs = timestampMs
+        lastRecoveryUpdateMs = timestampMs
+        if (recoveryConsensus.sampleCount < requiredSamples || timestampMs - recoveryStartedMs < MIN_RECOVERY_CONSENSUS_MS) return false
 
-        recoveryX += candidate3d.x
-        recoveryY += candidate3d.y
-        recoverySin += kotlin.math.sin(candidate3d.rotation.z)
-        recoveryCos += kotlin.math.cos(candidate3d.rotation.z)
-        if (recoveryCount == 0) recoveryStartedMs = timestampMs
-        recoveryCount++
-        val baseRequired = store.state.tuning.recovery.stolenRobotRejectionThreshold.toInt().coerceAtLeast(1)
-        val required = if (measurement.tagCount >= 2) baseRequired else baseRequired * 2
-        if (recoveryCount < required || timestampMs - recoveryStartedMs < MIN_RECOVERY_CONSENSUS_MS) return false
-
-        val snapPose = Pose2d(
-            recoveryX / recoveryCount,
-            recoveryY / recoveryCount,
-            Rotation2d(kotlin.math.atan2(recoverySin, recoveryCos))
-        )
+        val snapPose = Pose2d(recoveryConsensus.meanX, recoveryConsensus.meanY,
+            Rotation2d(recoveryConsensus.meanHeadingRad))
         swerveIO.seedPose(snapPose)
         store.dispatch(
             RobotAction.PoseUpdate(
@@ -345,44 +410,9 @@ class FrcVisionTracker(
     }
 
     private fun resetRecovery() {
-        recoveryCount = 0
-        recoveryX = 0.0
-        recoveryY = 0.0
-        recoverySin = 0.0
-        recoveryCos = 0.0
+        recoveryConsensus.clear()
+        lastRecoveryUpdateMs = 0L
         recoveryStartedMs = 0L
-    }
-
-    private fun isFreshFrame(measurement: VisionMeasurement, nowMs: Long): Boolean {
-        if (measurement.timestampMs <= 0L || measurement.timestampMs > nowMs + 50L ||
-            nowMs - measurement.timestampMs > 1_000L) {
-            return false
-        }
-
-        val sourceId = measurement.sourceId.ifEmpty { "default" }
-        var emptySlot = -1
-        for (i in recentSourceIds.indices) {
-            val existing = recentSourceIds[i]
-            if (existing == sourceId) {
-                val duplicate = if (measurement.frameId != 0L) {
-                    measurement.frameId == recentFrameIds[i] ||
-                        measurement.timestampMs <= recentTimestampsMs[i]
-                } else {
-                    measurement.timestampMs <= recentTimestampsMs[i]
-                }
-                if (duplicate) return false
-                recentFrameIds[i] = measurement.frameId
-                recentTimestampsMs[i] = measurement.timestampMs
-                return true
-            }
-            if (existing == null && emptySlot == -1) emptySlot = i
-        }
-
-        val slot = if (emptySlot >= 0) emptySlot else sourceId.hashCode().and(Int.MAX_VALUE) % recentSourceIds.size
-        recentSourceIds[slot] = sourceId
-        recentFrameIds[slot] = measurement.frameId
-        recentTimestampsMs[slot] = measurement.timestampMs
-        return true
     }
 
     private companion object {
@@ -394,4 +424,3 @@ class FrcVisionTracker(
         const val ENABLED_IMU_MODE = 4
     }
 }
-

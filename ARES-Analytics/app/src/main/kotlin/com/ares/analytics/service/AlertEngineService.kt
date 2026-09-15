@@ -7,10 +7,9 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.League
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import java.io.File
-import java.util.UUID
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.IdentityHashMap
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -21,8 +20,8 @@ import java.util.concurrent.ConcurrentHashMap
  * upon fault detection.
  *
  * ### Diagnostic Failure Equations & Thresholds:
- * - **1.0s Moving Average Current Window ($N = 20$ samples):**
- *   $$\bar{I}_{\text{avg}} = \frac{1}{N} \sum_{i=1}^{N} I_i \quad (N = 20 \text{ samples at } 20\text{ Hz})$$
+ * - **1.0s sample-average current window (at most 512 retained samples):**
+ *   $$\bar{I}_{\text{avg}} = \frac{1}{N} \sum_{i=1}^{N} I_i$$
  *
  * - **Motor Mechanical Binding / Loose Screw Stall:**
  *   $$\text{Stall} \iff |P| > 0.35 \;\land\; |\omega| < 5.0\text{ ticks/s} \;\land\; \bar{I}_{\text{avg}} > 5.0\text{ Amps}$$
@@ -44,12 +43,11 @@ import java.util.concurrent.ConcurrentHashMap
  *   One scheduler/GC outlier is retained for analysis but does not interrupt the driver.
  *
  * ### Physical Units & Guarantees:
- * - **Power ($P$):** Normalized motor duty cycle $[-1.0, 1.0]$ or Volts ($V$)
+ * - **Power ($P$):** Normalized motor duty cycle $[-1.0, 1.0]$
  * - **Current ($I$):** Amperes ($A$)
- * - **Velocity ($\omega$):** Encoder ticks/s or meters per second ($m/s$)
+ * - **Velocity ($\omega$):** Encoder ticks/s (legacy MotorIO topics)
  * - **Temperature ($T$):** Degrees Celsius ($^\circ\text{C}$)
  * - **Loop Latency ($t_{\text{loop}}$):** Milliseconds ($ms$)
- * - **Control Flow:** Zero nested `if` statements enforced via clean, argument-less `when` expressions.
  *
  * @param databaseService DuckDB persistent logging service for historical run analytics.
  * @param nt4ClientService Active NetworkTables NT4 websocket streaming client.
@@ -61,21 +59,38 @@ import java.util.concurrent.ConcurrentHashMap
 class AlertEngineService(
     private val databaseService: DatabaseService,
     private val nt4ClientService: Nt4ClientService,
-    private val thresholdsPath: String = AppDataPaths.file("thresholds.json").path
+    private val thresholdsPath: String = AppDataPaths.file("thresholds.json").path,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    audioPlayer: suspend () -> Unit = JavaSoundAlertTone()::play,
 ) {
-    private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
     /** Rules are indexed by transport-normalized topic while preserving the configured key in alerts. */
     private val rules = ConcurrentHashMap<String, ThresholdRule>()
-    /** Last values are isolated per recording so a new session cannot inherit stale hardware state. */
-    private val recentValues = ConcurrentHashMap<String, ConcurrentHashMap<String, Double>>()
-    /** One-second current windows, isolated by session and motor. */
-    private val currentBuffers = ConcurrentHashMap<String, ArrayDeque<TimedCurrentSample>>()
-    /** One-second loop-overrun windows, isolated by recording session. */
-    private val loopTimeBuffers = ConcurrentHashMap<String, ArrayDeque<TimedLoopSample>>()
+    /** Fixed-size loop evidence, isolated by recording and actual source key. */
+    private val loopTimeBuffers = ConcurrentHashMap<RuleIdentity, LoopOverrunWindow>()
     private val motorNames = listOf("fl", "fr", "rl", "rr", "bl", "br")
+    private val motorRoutes = buildMap {
+        motorNames.forEach { motor ->
+            put("Hardware/Motors/$motor/Power", motor to MotorFeedbackSignal.POWER)
+            put("Hardware/Motors/$motor/Velocity", motor to MotorFeedbackSignal.VELOCITY)
+            put("Hardware/Motors/$motor/CurrentAmps", motor to MotorFeedbackSignal.CURRENT)
+        }
+    }
+    private val motorTemperatureKeys = motorNames.mapTo(HashSet()) { "Hardware/Motors/$it/TempC" }
+    // These keys belong to locally derived diagnoses, never independent incoming measurements.
+    private val motorDiagnosticKeys = buildSet {
+        motorNames.forEach { motor ->
+            add("Hardware/Motors/$motor/Stall")
+            add("Hardware/Motors/$motor/Disconnected")
+        }
+    }
+    private data class MotorBinding(val state: MotorDiagnosticState, val stall: ThresholdRule, val disconnected: ThresholdRule)
+    private val motorDiagnostics = HashMap<RuleIdentity, MotorBinding>()
 
-    private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private val audioNotifier = AlertAudioNotifier()
+    private val serviceScope = CoroutineScope(dispatcher + SupervisorJob())
+    private val audioNotifier = AlertAudioNotifier(dispatcher = dispatcher, play = audioPlayer)
+    private val persistence = AlertPersistenceWriter(serviceScope, databaseService::insertAlert)
+    val persistenceStatus: StateFlow<AlertPersistenceStatus> = persistence.status
+    @Volatile private var disposed = false
 
     // Active alert state: AlertId -> AlertRecord
     private val _alerts = MutableStateFlow<Map<String, AlertRecord>>(emptyMap())
@@ -93,22 +108,30 @@ class AlertEngineService(
         .distinctUntilChanged()
         .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
 
+    private val transitionMutex = Mutex()
+    private data class RuleIdentity(val sessionId: String, val key: String)
+    // Guard occurrence chronology, including healthy samples that do not create a record.
+    private val lastEvaluationTimes = HashMap<RuleIdentity, Long>()
+    private data class SourceOrder(val timestampUs: Long, val sampleOrder: Long)
+    private val lastSourceOrders = HashMap<RuleIdentity, SourceOrder>()
+    private var evaluationTargetEpoch: Long? = null
     private var engineJob: Job? = null
     private val platformThresholds = PlatformAlertThresholds()
 
+    val configurationWarning: String?
+
     init {
-        loadRules()
+        configurationWarning = loadRules()
         startEngine()
     }
 
-    private fun loadRules() {
-        val file = File(thresholdsPath)
+    private fun loadRules(): String? {
         val defaultRules = listOf(
             ThresholdRule(TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey, "Low Battery Voltage (<10.5V)", minValue = 10.5, audibleAlert = true),
             ThresholdRule("Drive/EKF_Drift_X", "High EKF X Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
             ThresholdRule("Drive/EKF_Drift_Y", "High EKF Y Drift (>0.20m)", maxValue = 0.20, audibleAlert = true),
-            ThresholdRule(TelemetryMetricCatalog.LOOP_TIME.canonicalKey, "Robot Loop Time Spike (>25ms)", maxValue = 25.0, audibleAlert = false),
-            ThresholdRule("Hardware/I2C/Timeouts", "WARNING: FTC I2C / Lynx Bus Timeout!", maxValue = 0.5, audibleAlert = true)
+            ThresholdRule(TelemetryMetricCatalog.LOOP_TIME.canonicalKey, "Robot Loop Time Spike (>25ms)", maxValue = LoopOverrunWindow.MODERATE_THRESHOLD_MS, audibleAlert = false),
+            ScalarDiagnosticRules.defaultRule(ScalarDiagnosticKind.I2C_TIMEOUTS, ScalarDiagnosticRules.I2C_KEY)
         )
 
         val motorRules = motorNames.flatMap { motor ->
@@ -120,43 +143,78 @@ class AlertEngineService(
 
         val allDefaults = defaultRules + motorRules
 
-        when {
-            !file.exists() -> {
-                file.parentFile?.mkdirs()
-                file.writeText(json.encodeToString(allDefaults))
-                allDefaults.forEach(::registerRule)
-            }
-            else -> {
-                runCatching {
-                    val loaded = json.decodeFromString<List<ThresholdRule>>(file.readText())
-                    loaded.forEach(::registerRule)
-                }.onFailure {
-                    allDefaults.forEach(::registerRule)
-                }
-            }
-        }
+        val loaded = AlertRuleConfiguration.load(thresholdsPath, allDefaults)
+        loaded.rules.forEach(::registerRule)
+        return loaded.warning
     }
 
     /**
      * Starts the non-blocking telemetry evaluation coroutine collector.
      */
     fun startEngine() {
+        if (disposed) return
         engineJob?.cancel()
 
-        engineJob = serviceScope.launch {
-            nt4ClientService.telemetryFlow.collect { frame ->
-                val normalizedKey = normalizeTopic(frame.key)
-                recentValues.getOrPut(frame.sessionId) { ConcurrentHashMap() }[normalizedKey] = frame.value
-                evaluateFrame(frame)
-                evaluateCompositeRules(frame, normalizedKey)
+        val store = nt4ClientService.telemetryStore
+        val retained = IdentityHashMap<TelemetryPublication, Boolean>()
+        store.publications.replayCache.forEach { retained[it] = true }
+        engineJob = serviceScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            coroutineScope {
+                launch(start = CoroutineStart.UNDISPATCHED) {
+                    store.targetEpochs.collect {
+                        transitionMutex.withLock { selectTargetEpoch(store.currentTargetEpoch()) }
+                    }
+                }
+                store.publications.collect { publication ->
+                    transitionMutex.withLock {
+                        ensureActive()
+                        val epoch = store.currentTargetEpoch()
+                        selectTargetEpoch(epoch)
+                        val frame = publication.frame
+                        if (publication.targetEpoch != epoch || retained.containsKey(publication)) return@withLock
+                        val key = normalizeTopic(frame.key)
+                        if (key in motorDiagnosticKeys) return@withLock
+                        val scalarKind = ScalarDiagnosticRules.kind(key)
+                        if (!rules.containsKey(key) && !isDiagnosticSignal(key, scalarKind)) return@withLock
+                        val identity = RuleIdentity(frame.sessionId, key)
+                        val previous = lastSourceOrders[identity]
+                        if (previous != null && (frame.timestampUs < previous.timestampUs ||
+                            (frame.timestampUs == previous.timestampUs && frame.sampleOrder <= previous.sampleOrder))) return@withLock
+                        lastSourceOrders[identity] = SourceOrder(frame.timestampUs, frame.sampleOrder)
+                        motorRoutes[key]?.let { evaluateMotorFrame(frame, it) }
+                        if (key in motorTemperatureKeys) rules.getOrPut(key) {
+                            ThresholdRule(key, "WARNING: Motor overheating (>70°C)!", maxValue = 70.0, audibleAlert = true)
+                        }
+                        if (frame.stringValue != null || !frame.value.isFinite()) return@withLock
+                        if (scalarKind != null) {
+                            if (!ScalarDiagnosticRules.accepts(scalarKind, frame.value)) return@withLock
+                            rules.getOrPut(key) { ScalarDiagnosticRules.defaultRule(scalarKind, key) }
+                        }
+                        evaluateFrame(frame, key)
+                        evaluateLoopFrame(frame, key, identity)
+                    }
+                }
             }
         }
     }
 
-    /** Selects platform-correct live safety thresholds without rewriting saved user rules. */
-    fun configureRobotContext(league: League, xrpBrownoutThresholdVolts: Double? = null) {
-        platformThresholds.configure(league, xrpBrownoutThresholdVolts)
-        _alerts.update { it.filterValues { alert -> normalizeTopic(alert.ruleKey) != TelemetryMetricCatalog.BATTERY_VOLTAGE.canonicalKey } }
+    /** Called while holding transitionMutex. Old persisted evidence remains in the database. */
+    private fun selectTargetEpoch(epoch: Long) {
+        if (evaluationTargetEpoch == epoch) return
+        audioNotifier.stop()
+        evaluationTargetEpoch = epoch
+        motorDiagnostics.clear()
+        loopTimeBuffers.clear()
+        lastEvaluationTimes.clear()
+        lastSourceOrders.clear()
+        _alerts.value = emptyMap()
+    }
+
+    /** Serialize policy changes with evaluation; only fresh observations or target resets change evidence. */
+    suspend fun configureRobotContext(league: League, xrpBrownoutThresholdVolts: Double? = null) {
+        transitionMutex.withLock {
+            if (!disposed) platformThresholds.configure(league, xrpBrownoutThresholdVolts)
+        }
     }
 
     /**
@@ -164,17 +222,32 @@ class AlertEngineService(
      */
     fun stop() {
         engineJob?.cancel()
+        audioNotifier.stop()
     }
 
     /**
-     * Final teardown — cancels the process-lifetime [serviceScope] (which also cancels
-     * [engineJob] and any in-flight audible-alert coroutines). Use from
-     * [com.ares.analytics.di.ServiceRegistry] shutdown; [stop] is for pause/restart since
+     * Immediate teardown — cancels [serviceScope], queued writes, [engineJob] and audio.
+     * Normal application owners must use [disposeAndJoin] before closing storage.
+     * This method is for emergency/disposable owners; [stop] supports pause/restart since
      * it leaves [serviceScope] reusable.
      */
     fun dispose() {
+        disposed = true
+        audioNotifier.close()
         engineJob?.cancel()
+        persistence.close()
         serviceScope.cancel()
+    }
+
+    /** Stop evaluation, drain accepted alert updates, then join before the database closes. */
+    suspend fun disposeAndJoin(timeoutMs: Long = 5_000L): Boolean {
+        require(timeoutMs > 0)
+        transitionMutex.withLock { disposed = true }
+        audioNotifier.close()
+        engineJob?.cancelAndJoin()
+        if (!persistence.finish(timeoutMs)) return false
+        serviceScope.coroutineContext[Job]?.cancelAndJoin()
+        return true
     }
 
     /**
@@ -182,190 +255,66 @@ class AlertEngineService(
      *
      * @param frame Incoming telemetry frame containing topic key and double value.
      */
-    private suspend fun evaluateFrame(frame: TelemetryFrame) {
-        val normalizedKey = normalizeTopic(frame.key)
+    private suspend fun evaluateFrame(frame: TelemetryFrame, normalizedKey: String) {
         // Loop timing needs temporal evidence; evaluating its ordinary max rule here would create
         // an intrusive banner for a single harmless scheduler/GC sample.
-        if (normalizedKey in TelemetryMetricCatalog.LOOP_TIME.keys ||
-            frame.key.trimStart('/') in TelemetryMetricCatalog.LOOP_TIME.keys
-        ) return
-        val rule = platformThresholds.effectiveRule(normalizedKey, rules[normalizedKey] ?: return)
+        if (normalizedKey in TelemetryMetricCatalog.LOOP_TIME.keys) return
         val value = frame.value
+        if (normalizedKey in TelemetryMetricCatalog.BATTERY_VOLTAGE.keys && value < 0.0) return
+        val rule = platformThresholds.effectiveRule(normalizedKey, rules[normalizedKey] ?: return)
 
-        val minVal = rule.minValue
-        val maxVal = rule.maxValue
-        val violatesMin = minVal != null && value < minVal
-        val violatesMax = maxVal != null && value > maxVal
-        val isViolating = violatesMin || violatesMax
-
-        // Atomic lookup-and-update: the find + compute + commit happens inside a single
-        // _alerts.update lambda so a concurrent triage/clear/resolve cannot interleave and
-        // clobber a just-added or just-triaged alert.
-        val outcome = commitAlertTransition { current ->
-            val existingAlert = current.values.firstOrNull {
-                it.sessionId == frame.sessionId && normalizeTopic(it.ruleKey) == normalizeTopic(rule.key) && !it.triaged
-            }
-            when {
-                isViolating && existingAlert == null -> AlertOutcome(
-                    alert = AlertRecord(
-                        alertId = UUID.randomUUID().toString(),
-                        sessionId = frame.sessionId,
-                        ruleKey = rule.key,
-                        triggerTimestampMs = frame.timestampMs,
-                        peakValue = value,
-                        triaged = false
-                    ),
-                    shouldBeep = rule.audibleAlert
-                )
-                isViolating && existingAlert?.resolveTimestampMs != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        resolveTimestampMs = null,
-                        durationMs = 0L,
-                        peakValue = maxOf(existingAlert.peakValue, value)
-                    ),
-                    shouldBeep = rule.audibleAlert
-                )
-                isViolating && existingAlert != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        peakValue = if (rule.maxValue != null) maxOf(existingAlert.peakValue, value) else minOf(existingAlert.peakValue, value)
-                    ),
-                    shouldBeep = false
-                )
-                !isViolating && existingAlert?.resolveTimestampMs == null && existingAlert != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        resolveTimestampMs = frame.timestampMs,
-                        durationMs = frame.timestampMs - existingAlert.triggerTimestampMs
-                    ),
-                    shouldBeep = false
-                )
-                else -> null
-            }
-        } ?: return
-        persistAlert(outcome.alert)
-        if (outcome.shouldBeep) triggerAudibleAlert()
+        evaluateRuleState(rule.key, AlertRuleSemantics.violates(value, rule), value, frame.timestampMs, frame.sessionId, rule)
     }
 
-    /**
-     * Multi-signal composite diagnostic evaluation (Stalls, Cable Disconnects, Over-Temp, CAN Errors, Vision Latency).
-     *
-     * @param frame Current telemetry frame being processed.
-     */
-    private suspend fun evaluateCompositeRules(frame: TelemetryFrame, normalizedFrameKey: String) {
-        if (!isCompositeSignal(normalizedFrameKey)) return
+    /** Loop diagnostics require temporal evidence; scalar source rules have already run once. */
+    private suspend fun evaluateLoopFrame(frame: TelemetryFrame, normalizedFrameKey: String, sourceIdentity: RuleIdentity) {
         val ts = frame.timestampMs
         val sessionId = frame.sessionId
-        val sessionValues = recentValues[sessionId] ?: return
-
-        // 1. Motor Stalling & Disconnect Check across all motors using 1.0-second moving average
-        if (normalizedFrameKey.startsWith("Hardware/Motors/")) motorNames.forEach { m ->
-            val pwr = kotlin.math.abs(sessionValues["Hardware/Motors/$m/Power"] ?: sessionValues["Hardware/Motors/$m/Voltage"] ?: 0.0)
-            val vel = kotlin.math.abs(sessionValues["Hardware/Motors/$m/Velocity"] ?: 0.0)
-            val currentKey = "Hardware/Motors/$m/CurrentAmps"
-            val current = sessionValues[currentKey] ?: 0.0
-
-            val bufferKey = "$sessionId\u0000$m"
-            val buf = currentBuffers.getOrPut(bufferKey) { ArrayDeque() }
-            if (normalizedFrameKey == currentKey) {
-                buf.addLast(TimedCurrentSample(ts, current))
-            }
-            while (buf.isNotEmpty() && ts - buf.first().timestampMs > CURRENT_WINDOW_MS) {
-                buf.removeFirst()
-            }
-            val hasCurrentSample = buf.isNotEmpty()
-            val avgCurrent = if (hasCurrentSample) buf.sumOf { it.amps } / buf.size else 0.0
-
-            val stallKey = "Hardware/Motors/$m/Stall"
-            val disconnectKey = "Hardware/Motors/$m/Disconnected"
-
-            val isStalled = hasCurrentSample && pwr > 0.35 && vel < 5.0 && avgCurrent > 5.0
-            val stallRule = rules.getOrPut(stallKey) { ThresholdRule(stallKey, "CRITICAL: Motor '$m' Mechanical Binding / Stall!", maxValue = 0.5, audibleAlert = true) }
-            evaluateRuleState(stallKey, isStalled, if (isStalled) 1.0 else 0.0, ts, sessionId, stallRule)
-
-            val isDisconnected = hasCurrentSample && pwr > 0.35 && vel < 5.0 && avgCurrent < 0.1 && avgCurrent >= 0.0
-            val disconnectRule = rules.getOrPut(disconnectKey) { ThresholdRule(disconnectKey, "WARNING: Motor '$m' Cable Disconnected!", maxValue = 0.5, audibleAlert = true) }
-            evaluateRuleState(disconnectKey, isDisconnected, if (isDisconnected) 1.0 else 0.0, ts, sessionId, disconnectRule)
-        }
-
-        // 2. CAN Bus Utilization & Error Check
-        if ((normalizedFrameKey.startsWith("Diagnostics/CANBus/") && normalizedFrameKey.endsWith("/Utilization")) ||
-            normalizedFrameKey == "Hardware/CAN/Utilization" || normalizedFrameKey == "CAN/Utilization"
-        ) {
-        val canEntry = sessionValues.entries
-            .filter { it.key.startsWith("Diagnostics/CANBus/") && it.key.endsWith("/Utilization") }
-            .maxByOrNull { it.value }
-        val canKey = canEntry?.key ?: "Diagnostics/CANBus/Utilization"
-        val canUtil = canEntry?.value
-            ?: sessionValues["Hardware/CAN/Utilization"]
-            ?: sessionValues["CAN/Utilization"]
-            ?: 0.0
-        val canThreshold = if (canUtil <= 1.5) 0.85 else 85.0
-        val isCanHigh = canUtil > canThreshold
-        val canRule = rules.getOrPut(canKey) {
-            ThresholdRule(canKey, "CRITICAL: CAN Bus Utilization High!", maxValue = canThreshold, audibleAlert = true)
-        }
-        evaluateRuleState(canKey, isCanHigh, canUtil, ts, sessionId, canRule)
-        }
-
-        // 3. FTC I2C / Lynx Timeout Check
-        if (normalizedFrameKey == "Hardware/I2C/Timeouts") {
-        val i2cTimeouts = sessionValues["Hardware/I2C/Timeouts"] ?: 0.0
-        val isI2cError = i2cTimeouts > 0.0
-        val i2cRule = rules.getOrPut("Hardware/I2C/Timeouts") { ThresholdRule("Hardware/I2C/Timeouts", "WARNING: FTC I2C / Lynx Bus Timeout!", maxValue = 0.5, audibleAlert = true) }
-        evaluateRuleState("Hardware/I2C/Timeouts", isI2cError, i2cTimeouts, ts, sessionId, i2cRule)
-        }
-
-        // 4. Over-Temperature Thermal Alert (>70C)
-        if (normalizedFrameKey.startsWith("Hardware/Motors/")) motorNames.forEach { m ->
-            val tempC = sessionValues["Hardware/Motors/$m/TempC"] ?: 0.0
-            val isOverheat = tempC > 70.0
-            val tempKey = "Hardware/Motors/$m/TempC"
-            val tempRule = rules.getOrPut(tempKey) { ThresholdRule(tempKey, "WARNING: Motor '$m' Overheating (>70°C)!", maxValue = 70.0, audibleAlert = true) }
-            evaluateRuleState(tempKey, isOverheat, tempC, ts, sessionId, tempRule)
-        }
-
-        // 5. Limelight Vision Frame Rate Stale Alert (<5 FPS)
-        if (normalizedFrameKey == "Vision/Limelight/FPS") {
-        val limelightFps = sessionValues["Vision/Limelight/FPS"] ?: 30.0
-        val isVisionStale = limelightFps < 5.0
-        val visionRule = rules.getOrPut("Vision/Limelight/FPS") { ThresholdRule("Vision/Limelight/FPS", "WARNING: Limelight Camera Frame Rate Low (<5 FPS)!", minValue = 5.0, audibleAlert = false) }
-        evaluateRuleState("Vision/Limelight/FPS", isVisionStale, limelightFps, ts, sessionId, visionRule)
-        }
-
-        // 6. Control Loop Latency Alert (>25ms)
+        // Loop aliases retain source provenance and cannot resolve or count for one another.
         if (normalizedFrameKey in TelemetryMetricCatalog.LOOP_TIME.keys) {
-        val loopMs = frame.value
-        val loopBuffer = loopTimeBuffers.getOrPut(sessionId) { ArrayDeque() }
-        loopBuffer.addLast(TimedLoopSample(ts, loopMs))
-        while (loopBuffer.isNotEmpty() && ts - loopBuffer.first().timestampMs > LOOP_OVERRUN_WINDOW_MS) {
-            loopBuffer.removeFirst()
-        }
-        val overrunCount = loopBuffer.count { it.durationMs > LOOP_OVERRUN_THRESHOLD_MS }
-        val peakLoopMs = loopBuffer.maxOfOrNull { it.durationMs } ?: loopMs
-        val isLoopSlow = loopMs >= LOOP_SEVERE_THRESHOLD_MS || overrunCount >= LOOP_OVERRUN_SAMPLE_COUNT
-        val loopKey = TelemetryMetricCatalog.LOOP_TIME.canonicalKey
-        val loopRule = rules.getOrPut(loopKey) {
-            ThresholdRule(
-                loopKey,
-                "WARNING: Repeated Control Loop Overruns (3 samples >25ms in 1s)!",
-                maxValue = LOOP_OVERRUN_THRESHOLD_MS,
-                audibleAlert = false,
-            )
-        }
-        evaluateRuleState(loopKey, isLoopSlow, if (isLoopSlow) peakLoopMs else loopMs, ts, sessionId, loopRule)
+            val loopKey = normalizedFrameKey
+            val loopRule = rules.getOrPut(loopKey) {
+                rules[TelemetryMetricCatalog.LOOP_TIME.canonicalKey]?.copy(key = loopKey)
+                    ?: ThresholdRule(
+                        loopKey,
+                        "WARNING: Repeated Control Loop Overruns (3 samples >25ms in 1s)!",
+                        maxValue = LoopOverrunWindow.MODERATE_THRESHOLD_MS,
+                        audibleAlert = false,
+                    )
+            }
+            // Accepted loop configurations are the fixed policy or explicitly boundless/disabled.
+            if (loopRule.maxValue == null) return
+            val window = loopTimeBuffers.getOrPut(sourceIdentity) { LoopOverrunWindow() }
+            if (!window.accept(frame.timestampUs, frame.value)) return
+            evaluateRuleState(loopRule.key, window.isSlow, window.peakMs, ts, sessionId, loopRule)
         }
     }
 
-    private fun isCompositeSignal(key: String): Boolean =
-        key.startsWith("Hardware/Motors/") ||
-            key.startsWith("Diagnostics/CANBus/") ||
-            key == "Hardware/CAN/Utilization" ||
-            key == "CAN/Utilization" ||
-            key == "Hardware/I2C/Timeouts" ||
-            key == "Vision/Limelight/FPS" ||
+    private suspend fun evaluateMotorFrame(frame: TelemetryFrame, route: Pair<String, MotorFeedbackSignal>) {
+        val binding = motorDiagnostics.getOrPut(RuleIdentity(frame.sessionId, route.first)) {
+            val stallKey = "Hardware/Motors/${route.first}/Stall"
+            val disconnectedKey = "Hardware/Motors/${route.first}/Disconnected"
+            MotorBinding(MotorDiagnosticState(),
+                rules.getOrPut(stallKey) { ThresholdRule(stallKey, "CRITICAL: Motor '${route.first}' Mechanical Binding / Stall!", maxValue = 0.5, audibleAlert = true) },
+                rules.getOrPut(disconnectedKey) { ThresholdRule(disconnectedKey, "WARNING: Motor '${route.first}' Cable Disconnected!", maxValue = 0.5, audibleAlert = true) })
+        }
+        val value = if (frame.stringValue == null) frame.value else Double.NaN
+        if (!binding.state.accept(route.second, frame.timestampUs, value) || !binding.state.hasEvidence) return
+        val state = binding.state
+        val stallValue = if (state.isStalled) 1.0 else 0.0
+        val disconnectedValue = if (state.isDisconnected) 1.0 else 0.0
+        evaluateRuleState(binding.stall.key, AlertRuleSemantics.violates(stallValue, binding.stall), stallValue,
+            state.timestampUs / 1_000L, frame.sessionId, binding.stall)
+        evaluateRuleState(binding.disconnected.key, AlertRuleSemantics.violates(disconnectedValue, binding.disconnected), disconnectedValue,
+            state.timestampUs / 1_000L, frame.sessionId, binding.disconnected)
+    }
+
+    private fun isDiagnosticSignal(key: String, scalarKind: ScalarDiagnosticKind?): Boolean =
+        key in motorRoutes || key in motorTemperatureKeys || scalarKind != null ||
             key in TelemetryMetricCatalog.LOOP_TIME.keys
 
     /**
-     * Pure zero-nested helper to transition custom alert state. Lookup + update are atomic.
+     * Transition one rule under transitionMutex, then enqueue persistence without waiting for IO.
      */
     private suspend fun evaluateRuleState(
         key: String,
@@ -375,78 +324,22 @@ class AlertEngineService(
         sessionId: String,
         rule: ThresholdRule
     ) {
-        val outcome = commitAlertTransition { current ->
-            val existingAlert = current.values.firstOrNull {
-                it.sessionId == sessionId && normalizeTopic(it.ruleKey) == normalizeTopic(key) && !it.triaged
-            }
-            when {
-                isViolating && existingAlert == null -> AlertOutcome(
-                    alert = AlertRecord(
-                        alertId = UUID.randomUUID().toString(),
-                        sessionId = sessionId,
-                        ruleKey = key,
-                        triggerTimestampMs = ts,
-                        peakValue = value,
-                        triaged = false
-                    ),
-                    shouldBeep = rule.audibleAlert
-                )
-                isViolating && existingAlert?.resolveTimestampMs != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        resolveTimestampMs = null,
-                        durationMs = 0L,
-                        peakValue = maxOf(existingAlert.peakValue, value)
-                    ),
-                    shouldBeep = rule.audibleAlert
-                )
-                !isViolating && existingAlert?.resolveTimestampMs == null && existingAlert != null -> AlertOutcome(
-                    alert = existingAlert.copy(
-                        resolveTimestampMs = ts,
-                        durationMs = ts - existingAlert.triggerTimestampMs
-                    ),
-                    shouldBeep = false
-                )
-                else -> null
-            }
+        currentCoroutineContext().ensureActive()
+        if (evaluationTargetEpoch != nt4ClientService.telemetryStore.currentTargetEpoch()) return
+        if (!value.isFinite() || ts < 0L) return
+        val identity = RuleIdentity(sessionId, normalizeTopic(key))
+        val previousTime = lastEvaluationTimes[identity]
+        if (previousTime != null && ts < previousTime) return
+        lastEvaluationTimes[identity] = ts
+        val outcome = commitAlertTransition(_alerts) { current ->
+            alertTransition(current, rule, key, sessionId, ts, value, isViolating)
         } ?: return
         persistAlert(outcome.alert)
-        if (outcome.shouldBeep) triggerAudibleAlert()
+        currentCoroutineContext().ensureActive()
+        if (outcome.shouldBeep && evaluationTargetEpoch == nt4ClientService.telemetryStore.currentTargetEpoch()) triggerAudibleAlert()
     }
 
-    /**
-     * The result of computing an alert transition inside the atomic [commitAlertTransition]
-     * lambda: the new [alert] to store and whether an audible beep should fire after commit.
-     */
-    private class AlertOutcome(val alert: AlertRecord, val shouldBeep: Boolean)
-
-    private data class TimedCurrentSample(val timestampMs: Long, val amps: Double)
-    private data class TimedLoopSample(val timestampMs: Long, val durationMs: Double)
-
-    /**
-     * Atomically applies an alert transition. [compute] receives the current snapshot and
-     * returns the new [AlertRecord] to put (plus beep intent), or null for no-op. The
-     * lookup + map mutation happen inside a single [MutableStateFlow.update] CAS loop so
-     * concurrent mutators (evaluate / triage / clear) cannot interleave.
-     */
-    private inline fun commitAlertTransition(compute: (Map<String, AlertRecord>) -> AlertOutcome?): AlertOutcome? {
-        var outcome: AlertOutcome? = null
-        _alerts.update { current ->
-            val result = compute(current)
-            if (result != null) {
-                outcome = result
-                current.toMutableMap().apply { put(result.alert.alertId, result.alert) }
-            } else {
-                current
-            }
-        }
-        return outcome
-    }
-
-    private suspend fun persistAlert(alert: AlertRecord) {
-        if (alert.sessionId != "live-telemetry") {
-            databaseService.insertAlert(alert)
-        }
-    }
+    private fun persistAlert(alert: AlertRecord) = persistence.submit(alert)
 
     /**
      * Marks an active alert as triaged/acknowledged by the driver or pit crew.
@@ -454,19 +347,24 @@ class AlertEngineService(
      * @param alertId Unique UUID string of the target alert.
      */
     suspend fun triageAlert(alertId: String) {
-        val triaged = commitAlertTransition { current ->
-            val alert = current[alertId] ?: return@commitAlertTransition null
-            AlertOutcome(alert = alert.copy(triaged = true), shouldBeep = false)
-        } ?: return
-        persistAlert(triaged.alert)
+        transitionMutex.withLock {
+            if (disposed) return@withLock
+            val triaged = commitAlertTransition(_alerts) { current ->
+                val alert = current[alertId] ?: return@commitAlertTransition null
+                AlertOutcome(alert = alert.copy(triaged = true), shouldBeep = false)
+            } ?: return
+            persistAlert(triaged.alert)
+        }
     }
 
     /**
      * Clears all triaged and resolved alerts from the active alert banner queue.
      */
     suspend fun clearAllResolvedAlerts() {
-        _alerts.update { current ->
-            current.filterValues { !it.triaged || it.resolveTimestampMs == null }
+        transitionMutex.withLock {
+            _alerts.update { current ->
+                current.filterValues { !it.triaged || it.resolveTimestampMs == null }
+            }
         }
     }
 
@@ -489,11 +387,4 @@ class AlertEngineService(
 
     private fun normalizeTopic(key: String): String = TelemetryMetricCatalog.normalizeTopic(key)
 
-    private companion object {
-        const val CURRENT_WINDOW_MS = 1_000L
-        const val LOOP_OVERRUN_WINDOW_MS = 1_000L
-        const val LOOP_OVERRUN_THRESHOLD_MS = 25.0
-        const val LOOP_SEVERE_THRESHOLD_MS = 100.0
-        const val LOOP_OVERRUN_SAMPLE_COUNT = 3
-    }
 }

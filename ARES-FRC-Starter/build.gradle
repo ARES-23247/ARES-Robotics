@@ -67,6 +67,7 @@ dependencies {
     implementation platform("org.aresfirst.ares:ares-bom:$aresVersion")
     implementation 'org.aresfirst.ares:core'
     implementation 'org.aresfirst.ares:frc-runtime'
+    implementation 'com.google.code.gson:gson:2.14.0'
     aresCodegen platform("org.aresfirst.ares:ares-bom:$aresVersion")
     aresCodegen 'org.aresfirst.ares:codegen'
     aresCodegen 'com.google.code.gson:gson:2.14.0'
@@ -122,6 +123,9 @@ test {
     }
     testLogging { events 'passed', 'skipped', 'failed' }
 }
+
+// Native NT/HAL tests need the same extracted desktop libraries and loader paths as simulation.
+wpi.java.configureTestTasks(test)
 
 def generatedProject = file("${generatedMain}/org/aresfirst/starter/frc/generated/GeneratedAresProject.kt")
 def starterSource = file('src/main/kotlin/org/aresfirst/starter/frc/generated/subsystems')

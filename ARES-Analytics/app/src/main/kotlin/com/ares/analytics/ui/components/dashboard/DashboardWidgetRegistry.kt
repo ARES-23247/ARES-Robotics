@@ -49,6 +49,9 @@ data class DashboardWidgetRenderContext(
     val onSelectCompareSession: (String?) -> Unit,
     val onOpenKeybindings: () -> Unit,
     val onUpdateProperties: (WidgetConfig, Map<String, String>) -> Unit,
+    val controllerHealth: ControllerHealthObservation? = null,
+    val fullscreenWidgetId: String? = null,
+    val onToggleWidgetFullscreen: (String) -> Unit = {},
 ) {
     val liveServices: DashboardLiveWidgetServices
         get() = requireServiceGroup(DashboardWidgetServiceGroup.LIVE, services.live)
@@ -120,6 +123,10 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
                 databaseService = context.analysisServices.databaseService,
                 replayStartTimestampMs = context.replaySessionStartMs,
                 liveTransportConnected = context.isRobotLinkConnected,
+                isFullscreen = context.fullscreenWidgetId == widget.id,
+                onToggleFullscreen = if (context.dashboardState.isLayoutEditing) null else {
+                    { context.onToggleWidgetFullscreen(widget.id) }
+                },
                 league = context.workspace.league,
                 projectPath = context.workspace.projectPath,
                 robotDimensions = RobotDimensions(
@@ -148,6 +155,10 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
                 currentFrame = context.replayFrame,
                 properties = widget.properties,
                 onPropertiesChanged = { context.onUpdateProperties(widget, it) },
+                isFullscreen = context.fullscreenWidgetId == widget.id,
+                onToggleFullscreen = if (context.dashboardState.isLayoutEditing) null else {
+                    { context.onToggleWidgetFullscreen(widget.id) }
+                },
                 modifier = modifier,
             )
         },
@@ -239,6 +250,8 @@ object DashboardWidgetRegistry : DashboardWidgetCatalog {
                 league = context.workspace.league,
                 isRobotLinkConnected = context.isRobotLinkConnected,
                 xrpBrownoutThresholdVolts = context.xrpBrownoutThresholdVolts,
+                controllerHealth = context.controllerHealth,
+                replaySelected = context.dashboardState.primarySessionId != null || context.replayFrame != null,
                 modifier = modifier,
             )
         },

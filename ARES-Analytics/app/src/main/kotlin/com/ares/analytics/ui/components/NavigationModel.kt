@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.components
 
+import com.ares.analytics.domain.navigation.NavigationTarget
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Book
@@ -23,32 +25,32 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.SettingsInputComponent
 import androidx.compose.ui.graphics.vector.ImageVector
 
-enum class NavigationTarget(val label: String, val icon: ImageVector) {
-    DASHBOARD("Dashboard", Icons.Default.Speed),
-    IMPORT_CENTER("Log Imports", Icons.Default.FolderOpen),
-    CLOUD("Cloud Sync", Icons.Default.Cloud),
-    PATH_PLANNER("Auto Builder", Icons.Default.Route),
-    FIELD_EDITOR("Field Editor", Icons.Default.Layers),
-    ACADEMY("Help & Learn", Icons.Default.School),
-    KDOC_VIEWER("Developer Reference", Icons.Default.Book),
-    PIT_DIAGNOSTICS("Pit Self-Test", Icons.Default.Build),
-    MATCH_STRATEGY("Strategy Preview", Icons.Default.Analytics),
-    GUIDED_RUN_ANALYSIS("Guided Run Review", Icons.Default.Analytics),
-    RUN_HISTORY("Run History", Icons.Default.TableChart),
-    DATABASE_VIEWER("Database", Icons.Default.Storage),
-    CONTROLS("TeleOp Controls", Icons.Default.SportsEsports),
-    TUNING("Tuning", Icons.Default.Tune),
-    ROBOT_STUDIO("Robot Studio", Icons.Default.PrecisionManufacturing),
-    HARDWARE_STUDIO("Hardware Studio", Icons.Default.Build),
-    PROJECT_IDENTITY("Project Identity", Icons.Default.Person),
-    HARDWARE_SETUP("Hardware Setup", Icons.Default.Build),
-    DRIVEBASE_BUILDER("Drivebase Builder", Icons.Default.Settings),
-    SUBSYSTEM_GEN("Subsystem Builder", Icons.Default.Construction),
-    SUPERSTRUCTURE_STUDIO("Superstructure Studio", Icons.Default.Layers),
-    PROJECT_BACKUP("Project History", Icons.Default.CloudUpload),
-    INTEGRATIONS("Integrations", Icons.Default.SettingsInputComponent),
-    PROFILE("Profile", Icons.Default.Person),
-    ADMIN("Admin Panel", Icons.Default.SupervisorAccount)
+val NavigationTarget.icon: ImageVector get() = when (this) {
+    NavigationTarget.DASHBOARD -> Icons.Default.Speed
+    NavigationTarget.IMPORT_CENTER -> Icons.Default.FolderOpen
+    NavigationTarget.CLOUD -> Icons.Default.Cloud
+    NavigationTarget.PATH_PLANNER -> Icons.Default.Route
+    NavigationTarget.FIELD_EDITOR -> Icons.Default.Layers
+    NavigationTarget.ACADEMY -> Icons.Default.School
+    NavigationTarget.KDOC_VIEWER -> Icons.Default.Book
+    NavigationTarget.PIT_DIAGNOSTICS -> Icons.Default.Build
+    NavigationTarget.MATCH_STRATEGY -> Icons.Default.Analytics
+    NavigationTarget.GUIDED_RUN_ANALYSIS -> Icons.Default.Analytics
+    NavigationTarget.RUN_HISTORY -> Icons.Default.TableChart
+    NavigationTarget.DATABASE_VIEWER -> Icons.Default.Storage
+    NavigationTarget.CONTROLS -> Icons.Default.SportsEsports
+    NavigationTarget.TUNING -> Icons.Default.Tune
+    NavigationTarget.ROBOT_STUDIO -> Icons.Default.PrecisionManufacturing
+    NavigationTarget.HARDWARE_STUDIO -> Icons.Default.Build
+    NavigationTarget.PROJECT_IDENTITY -> Icons.Default.Person
+    NavigationTarget.HARDWARE_SETUP -> Icons.Default.Build
+    NavigationTarget.DRIVEBASE_BUILDER -> Icons.Default.Settings
+    NavigationTarget.SUBSYSTEM_GEN -> Icons.Default.Construction
+    NavigationTarget.SUPERSTRUCTURE_STUDIO -> Icons.Default.Layers
+    NavigationTarget.PROJECT_BACKUP -> Icons.Default.CloudUpload
+    NavigationTarget.INTEGRATIONS -> Icons.Default.SettingsInputComponent
+    NavigationTarget.PROFILE -> Icons.Default.Person
+    NavigationTarget.ADMIN -> Icons.Default.SupervisorAccount
 }
 
 enum class NavigationSection(val label: String, val icon: ImageVector) {

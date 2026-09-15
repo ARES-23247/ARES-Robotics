@@ -4,9 +4,14 @@ import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.tuning.*
 import com.ares.analytics.util.Sha256
+import com.ares.analytics.service.resolveExistingPath
+import com.ares.analytics.service.writeFileAtomically
+import com.ares.analytics.service.project.persistence.AtomicProjectFileWriter
+import com.ares.analytics.service.project.persistence.ProjectDocumentWriteLocks
+import com.ares.analytics.service.project.persistence.ProjectMutationTransaction
+import com.google.gson.GsonBuilder
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 
 data class TuningWorkspaceDocuments(
     val catalog: List<TuningParameterDeclaration>,
@@ -23,6 +28,7 @@ data class ReviewedTuningHistory(
 )
 
 class TuningProfileRepository {
+    internal var beforeCanonicalReplace: () -> Unit = {}
     fun evidenceErrors(projectPath: String, changes: List<TuningProfileChange>): List<String> =
         runCatching { validateEvidence(projectPath, changes) }.exceptionOrNull()?.message?.let(::listOf).orEmpty()
 
@@ -62,8 +68,11 @@ class TuningProfileRepository {
         require(profiles.map { it.projectId }.distinct().size <= 1) {
             "Every tuning profile must target the same robot project."
         }
-        val resolvableProfiles = if (allowUnknownAssignments) profiles.map { profile ->
-            profile.copy(values = profile.values.filter { assignment -> declarations.any { it.uid == assignment.parameterUid } })
+        val resolvableProfiles = if (allowUnknownAssignments) {
+            val declaredUids = declarations.mapTo(hashSetOf()) { it.uid }
+            profiles.map { profile ->
+                profile.copy(values = profile.values.filter { it.parameterUid in declaredUids })
+            }
         } else profiles
         resolveTuningProfiles(resolvableProfiles, declarations)
         TuningWorkspaceDocuments(declarations, profiles)
@@ -74,10 +83,10 @@ class TuningProfileRepository {
         declarations: Collection<TuningParameterDeclaration>,
     ): TuningProfileDocument {
         val profile = runCatching {
-            com.google.gson.GsonBuilder().create().fromJson(text, TuningProfileDocument::class.java)
+            gson.fromJson(text, TuningProfileDocument::class.java)
         }.getOrElse { throw IllegalArgumentException("Invalid tuning profile: ${it.message}", it) }
         val blockingIssues = validateTuningProfileDocument(profile, declarations).filterNot { issue ->
-            issue.path.matches(Regex("values\\[\\d+].parameterUid")) && issue.message.startsWith("Unknown parameter '")
+            issue.path.matches(unknownAssignmentPath) && issue.message.startsWith("Unknown parameter '")
         }
         require(blockingIssues.isEmpty()) { blockingIssues.joinToString("; ") { "${it.path}: ${it.message}" } }
         return profile
@@ -92,8 +101,40 @@ class TuningProfileRepository {
         reviewedBy: String,
         reviewSummary: String
     ): TuningProfileDocument {
+        val root = File(projectPath).toPath().toRealPath().toFile()
+        require(root.isDirectory) { "Project directory is missing." }
+        val lockTarget = ownedPath(root, ".ares/.project-mutation-transaction")
+        return ProjectDocumentWriteLocks.withLock(lockTarget) {
+            ownedPath(root, ".ares/recovery/transactions")
+            ProjectMutationTransaction.recover(root)
+            promoteLocked(root, current, expectedContentHash, declarations, changes, reviewedBy, reviewSummary)
+        }
+    }
+
+    private fun promoteLocked(
+        projectRoot: File,
+        current: TuningProfileDocument,
+        expectedContentHash: String,
+        declarations: List<TuningParameterDeclaration>,
+        changes: List<TuningProfileChange>,
+        reviewedBy: String,
+        reviewSummary: String,
+    ): TuningProfileDocument {
+        val projectPath = projectRoot.path
         require(changes.isNotEmpty()) { "Review at least one change before promotion." }
         require(reviewedBy.isNotBlank() && reviewSummary.isNotBlank()) { "Reviewer and review summary are required." }
+        require(TuningProfileDocumentCodec.contentHash(current, declarations) == expectedContentHash) {
+            "The reviewed profile does not match its revision. Reload and review a fresh diff."
+        }
+        require(changes.map { it.parameterUid }.distinct().size == changes.size) { "Review each parameter only once." }
+        val catalog = declarations.associateBy { it.uid }
+        changes.forEach { change ->
+            val declaration = requireNotNull(catalog[change.parameterUid]) { "Unknown tuning parameter ${change.parameterUid}." }
+            require(change.key == declaration.key && change.policy == declaration.applyPolicy && change.owner == declaration.owner()) {
+                "${declaration.displayName}: declaration changed after review. Reload the proposal."
+            }
+            require(declaration.applyPolicy != TuningApplyPolicy.READ_ONLY_VENDOR) { "${declaration.displayName} is vendor-owned and read-only." }
+        }
         validateEvidence(projectPath, changes)
         val file = profileFile(projectPath, current, declarations)
         require(file.isFile) { "Canonical profile is missing. Create it through project setup before promotion." }
@@ -104,8 +145,7 @@ class TuningProfileRepository {
         changes.forEach { change ->
             byUid[change.parameterUid] = TuningAssignment(change.parameterUid, change.after)
         }
-        val historyDir = File(projectPath, ".ares/history/tuning/${current.uid}")
-        historyDir.mkdirs()
+        val historyRelative = ".ares/history/tuning/${current.uid}"
         val proposal = disk.copy(
             uid = "${disk.uid}.proposal",
             profileId = "${disk.profileId}-proposal",
@@ -118,10 +158,9 @@ class TuningProfileRepository {
         )
         val proposalText = TuningProfileDocumentCodec.encode(proposal, declarations)
         val proposalHash = TuningProfileDocumentCodec.contentHash(proposal, declarations)
-        val proposalRelative = ".ares/history/tuning/${current.uid}/proposals/$proposalHash.arestuning"
-        val proposalFile = File(projectPath, proposalRelative)
+        val proposalRelative = "$historyRelative/proposals/$proposalHash.arestuning"
+        val proposalFile = ownedPath(projectRoot, proposalRelative)
         if (proposalFile.exists()) require(proposalFile.readText() == proposalText) { "Immutable proposal snapshot hash collision." }
-        else atomicWrite(proposalFile, proposalText)
         val evidencePairs = changes.mapNotNull { change ->
             val path = change.provenance.evidencePath
             val hash = change.provenance.evidenceSha256
@@ -140,18 +179,30 @@ class TuningProfileRepository {
         )
         val encoded = TuningProfileDocumentCodec.encode(promoted, declarations)
         val afterHash = TuningProfileDocumentCodec.contentHash(promoted, declarations)
-        Files.copy(file.toPath(), File(historyDir, "${diskHash.take(16)}.arestuning").toPath(), StandardCopyOption.REPLACE_EXISTING)
-        writeHistory(File(historyDir, "${afterHash.take(16)}.review.txt"), ReviewedTuningHistory(current.uid, diskHash, afterHash, reviewedBy, reviewSummary, changes))
-        atomicWrite(file, encoded)
-        return promoted
+        val backup = ownedPath(projectRoot, "$historyRelative/${diskHash.take(16)}.arestuning")
+        val history = ownedPath(projectRoot, "$historyRelative/${afterHash.take(16)}.review.txt")
+        if (backup.exists()) require(TuningProfileDocumentCodec.contentHash(
+            TuningProfileDocumentCodec.decode(backup.readText(), declarations), declarations) == diskHash) {
+            "Immutable canonical backup hash collision."
+        }
+        // Snapshot only the four touched files, not an ever-growing history directory. The outer
+        // project lock covers the revision check as well as this recoverable multi-file commit.
+        return ProjectMutationTransaction.run(projectRoot, "promote-tuning",
+            listOf(file, proposalFile, backup, history).map { it.relativeTo(projectRoot).invariantSeparatorsPath }) {
+            if (!proposalFile.exists()) AtomicProjectFileWriter.write(proposalFile, proposalText, replaceExisting = false)
+            if (!backup.exists()) AtomicProjectFileWriter.write(backup, file.readBytes(), replaceExisting = false)
+            writeHistory(history, ReviewedTuningHistory(current.uid, diskHash, afterHash, reviewedBy, reviewSummary, changes))
+            writeFileAtomically(file, beforeReplace = { _, _ -> beforeCanonicalReplace() }) { it.writeText(encoded) }
+            promoted
+        }
     }
 
     fun reviewToken(profile: TuningProfileDocument, declarations: List<TuningParameterDeclaration>, changes: List<TuningProfileChange>, reviewedBy: String, reviewSummary: String): String {
         val hash = TuningProfileDocumentCodec.contentHash(profile, declarations)
-        val canonical = "$hash|$reviewedBy|$reviewSummary|" + changes.joinToString("|") {
-            "${it.parameterUid}:${it.before?.displayValue()}->${it.after.displayValue()}:${it.provenance.source}:${it.provenance.note}:${it.provenance.evidencePath}:${it.provenance.evidenceSha256}"
-        }
-        return Sha256.hex(canonical).take(16)
+        // Typed JSON binds exact numeric values and field boundaries; display formatting is lossy
+        // and delimiter concatenation lets text move between independently reviewed fields.
+        val canonical = gson.toJson(listOf(hash, declarations.sortedBy { it.uid }, changes, reviewedBy, reviewSummary))
+        return Sha256.hex(canonical)
     }
 
     private fun profileFile(
@@ -159,22 +210,25 @@ class TuningProfileRepository {
         profile: TuningProfileDocument,
         declarations: List<TuningParameterDeclaration>
     ): File {
-        val directory = File(projectPath, ".ares/tuning")
+        val root = File(projectPath)
+        val directory = ownedPath(root, ".ares/tuning")
         val matches = directory.listFiles { file -> file.extension == "arestuning" }
             ?.filter { file ->
+                ownedPath(root, file.relativeTo(root).invariantSeparatorsPath)
                 runCatching { TuningProfileDocumentCodec.decode(file.readText(), declarations) }
                     .getOrNull()?.let { it.uid == profile.uid } == true
             }.orEmpty()
         require(matches.size <= 1) { "Multiple canonical files claim profile UID ${profile.uid}. Resolve the duplicate before promotion." }
-        return matches.singleOrNull() ?: File(directory, "${profile.uid}.arestuning")
+        return matches.singleOrNull() ?: ownedPath(root, ".ares/tuning/${profile.uid}.arestuning")
     }
 
     private fun validateEvidence(projectPath: String, changes: List<TuningProfileChange>) {
-        val projectRoot = File(projectPath).canonicalFile.toPath()
+        val projectRoot = File(projectPath).toPath().toRealPath()
         changes.filter { change ->
             change.policy == TuningApplyPolicy.CALIBRATION_ONLY ||
                 change.provenance.source.contains("live", ignoreCase = true) ||
-                change.provenance.source.contains("autotuner", ignoreCase = true)
+                change.provenance.source.contains("autotuner", ignoreCase = true) ||
+                change.provenance.evidencePath != null || change.provenance.evidenceSha256 != null
         }.forEach { change ->
             val relative = change.provenance.evidencePath
             val expectedHash = change.provenance.evidenceSha256
@@ -182,7 +236,11 @@ class TuningProfileRepository {
                 "${change.displayName}: live/calibration promotion requires a project evidence file and SHA-256."
             }
             require(expectedHash.matches(Regex("[a-fA-F0-9]{64}"))) { "${change.displayName}: evidence SHA-256 is malformed." }
-            val evidence = projectRoot.resolve(relative).normalize()
+            require(!relative.startsWith('/') && '\\' !in relative && ':' !in relative &&
+                relative.split('/').none { it.isBlank() || it == "." || it == ".." }) {
+                "${change.displayName}: evidence must use a project-relative path."
+            }
+            val evidence = resolveExistingPath(projectRoot.resolve(relative))
             require(evidence.startsWith(projectRoot)) { "${change.displayName}: evidence must stay inside the project." }
             require(Files.isRegularFile(evidence)) { "${change.displayName}: evidence file is missing: $relative" }
             val actual = Sha256.fileHex(evidence.toFile())
@@ -203,11 +261,20 @@ class TuningProfileRepository {
     }
 
     private fun atomicWrite(target: File, content: String) {
-        target.parentFile.mkdirs()
-        val temp = File(target.parentFile, ".${target.name}.tmp")
-        temp.writeText(content)
-        runCatching { Files.move(temp.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING) }
-            .getOrElse { Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING) }
+        writeFileAtomically(target) { it.writeText(content) }
+    }
+
+    private fun ownedPath(root: File, relative: String): File {
+        val path = root.toPath().resolve(relative).normalize()
+        require(path.startsWith(root.toPath()) && resolveExistingPath(path) == path) {
+            "Canonical tuning and its history must not be redirected through filesystem aliases."
+        }
+        return path.toFile()
+    }
+
+    private companion object {
+        val gson = GsonBuilder().serializeNulls().create()
+        val unknownAssignmentPath = Regex("values\\[\\d+].parameterUid")
     }
 
 }

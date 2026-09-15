@@ -207,6 +207,13 @@ private fun ProjectSelection(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        ProjectModeCard(
+            title = "Explore BIOBUZZ",
+            description = "Create a separate robot with a four-ball intake, shooter, and dynamic field in Dashboard Local Sim.",
+            selected = mode == ProjectSetupMode.EXPLORE_BIOBUZZ,
+            onClick = { onModeChange(ProjectSetupMode.EXPLORE_BIOBUZZ) },
+            modifier = Modifier.fillMaxWidth(),
+        )
         if (mode.createsProject) {
             if (mode == ProjectSetupMode.CREATE_NEW) LeagueSelector(league, onLeagueChange)
             if (mode == ProjectSetupMode.CREATE_NEW) {
@@ -243,16 +250,16 @@ private fun ProjectSelection(
             Card(colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated), border = androidx.compose.foundation.BorderStroke(1.dp, AresBorder)) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        if (mode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
-                            "Verified example: $templateName · built with ARES $templateVersion"
+                        if (mode.isExample) {
+                            "Verified example: $templateName · version $templateVersion"
                         } else {
                             "Verified starter: $templateName $templateVersion"
                         },
                         color = AresTextPrimary, fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        if (mode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
-                            "The installer keeps the reviewed Lightbot example unchanged and creates a separate editable copy in the folder you choose. Studio never edits its packaged example or the ARES source checkout."
+                        if (mode.isExample) {
+                            "The installer keeps the reviewed example unchanged and creates a separate editable copy in the folder you choose. Studio never edits its packaged example or the ARES source checkout."
                         } else {
                             "The official installer includes this exact, SHA-256-verified starter. ARES can create it offline; the network is only a recovery fallback for source builds."
                         },
@@ -260,7 +267,7 @@ private fun ProjectSelection(
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
-                        if (mode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
+                        if (mode.isExample) {
                             "SIMULATION ONLY UNTIL REVIEWED — Explore, change, build, and simulate this copy. It is not evidence that any physical robot wiring, directions, limits, or calibration were validated."
                         } else {
                             "SIMULATION FIRST — This generic starter contains no Team 23247 season mechanisms or calibration. Build and simulation are supported; complete Hardware Setup and the commissioning checklist before physical deployment."

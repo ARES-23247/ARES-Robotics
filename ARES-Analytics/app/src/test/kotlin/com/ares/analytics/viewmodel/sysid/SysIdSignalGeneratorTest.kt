@@ -1,7 +1,7 @@
 package com.ares.analytics.viewmodel.sysid
 
-import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.Nt4ClientService
+import com.ares.analytics.service.TelemetryStore
 import com.ares.analytics.viewmodel.CalibrationArmPhase
 import com.ares.analytics.viewmodel.SysIdState
 import com.areslib.control.assist.SysIdMechanism
@@ -11,8 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import java.io.File
-import kotlin.test.AfterTest
+import org.mockito.Mockito
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -21,15 +20,10 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SysIdSignalGeneratorTest {
-    private val databaseFile = File.createTempFile("sysid-arm", ".duckdb")
-    private val database = DatabaseService(databaseFile.absolutePath)
-    private val nt4 = Nt4ClientService(database)
-
-    @AfterTest
-    fun close() = runTest {
-        nt4.stop()
-        database.close()
-        databaseFile.delete()
+    private val nt4 = Mockito.mock(Nt4ClientService::class.java).also {
+        Mockito.`when`(it.isConnected).thenReturn(MutableStateFlow(true))
+        Mockito.`when`(it.isReplayActive).thenReturn(MutableStateFlow(false))
+        Mockito.`when`(it.telemetryStore).thenReturn(TelemetryStore())
     }
 
     @Test

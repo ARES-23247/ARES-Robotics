@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.Nt4ClientService
-import com.areslib.telemetry.schema.HardwareTopology
 import com.areslib.telemetry.schema.TopologyNode
 import com.areslib.telemetry.schema.TopologyNodeType
 import com.ares.analytics.ui.components.core.AresCard
@@ -35,14 +34,6 @@ import com.ares.analytics.ui.theme.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-enum class TopologyCategoryFilter(val displayName: String) {
-    ALL("All"),
-    CONTROLLERS("Controllers"),
-    MOTORS("Motors"),
-    SERVOS("Servos"),
-    SENSORS("Sensors"),
-    VISION("Vision & IMU")
-}
 private val prettyJson = Json { prettyPrint = true }
 
 @Composable
@@ -58,26 +49,13 @@ fun HardwareTopologyCard(
     val liveTopology by nt4ClientService.latestTopology.collectAsState()
     val isConnected by nt4ClientService.isConnected.collectAsState()
 
-    var historicalTopology by remember { mutableStateOf<HardwareTopology?>(null) }
+    val selection = rememberHardwareTopologySelection(liveTopology, databaseService, sessionId)
+    val topology = selection.topology
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(TopologyCategoryFilter.ALL) }
-    var copyFeedback by remember { mutableStateOf<String?>(null) }
-
-    // Load from DB if historical session is chosen
-    LaunchedEffect(sessionId) {
-        if (sessionId != null && sessionId != "live-telemetry") {
-            val summary = databaseService.getSessionSummary(sessionId)
-            historicalTopology = databaseService.getTopology(summary?.robotId ?: "")
-        } else {
-            historicalTopology = null
-        }
-    }
-
-    val topology = if (sessionId != null && sessionId != "live-telemetry") {
-        historicalTopology
-    } else {
-        liveTopology ?: historicalTopology
-    }
+    var copyFeedback by remember { mutableStateOf<Pair<String, Any>?>(null) }
+    val readings = rememberTopologyReadings(nt4ClientService, topology?.nodes.orEmpty(),
+        enabled = isConnected && !selection.cached && topology != null)
 
     AresCard(modifier = modifier) {
         CardHeader(
@@ -85,11 +63,15 @@ fun HardwareTopologyCard(
             icon = Icons.Default.Hub,
             iconTint = AresCyan,
             statusText = when {
-                topology != null -> "${topology.nodes.size} Devices"
+                selection.loading -> "Loading..."
+                selection.failed -> "Unavailable"
+                topology != null -> "${topology.nodes.size} " + if (selection.cached) "Cached Devices" else "Devices"
+                selection.cached -> "No cached map"
                 isConnected -> "Listening..."
                 else -> "Offline"
             },
             statusColor = when {
+                selection.failed -> AresError
                 topology != null -> AresGreen
                 isConnected -> AresGold
                 else -> AresTextTertiary
@@ -104,7 +86,7 @@ fun HardwareTopologyCard(
                             onClick = {
                                 val jsonStr = prettyJson.encodeToString(topology)
                                 clipboardManager.setText(AnnotatedString(jsonStr))
-                                copyFeedback = "JSON Copied!"
+                                copyFeedback = "JSON Copied!" to Any()
                             },
                             modifier = Modifier.size(28.dp)
                         ) {
@@ -112,18 +94,9 @@ fun HardwareTopologyCard(
                         }
                         IconButton(
                             onClick = {
-                                val mdTable = buildString {
-                                    appendLine("# Hardware Map: ${topology.robotId}")
-                                    appendLine("| Name | Type | Bus / Port | ID | Connection |")
-                                    appendLine("| :--- | :--- | :--- | :--- | :--- |")
-                                    topology.nodes.forEach { n ->
-                                        val busOrPort = n.canBus ?: n.port?.let { "Port $it" } ?: "—"
-                                        val idStr = n.canId?.let { "CAN $it" } ?: "—"
-                                        appendLine("| ${n.displayName} | ${n.type.name} | $busOrPort | $idStr | ${n.connectionType ?: "Internal"} |")
-                                    }
-                                }
+                                val mdTable = topologyMarkdown(topology)
                                 clipboardManager.setText(AnnotatedString(mdTable))
-                                copyFeedback = "Markdown Copied!"
+                                copyFeedback = "Markdown Copied!" to Any()
                             },
                             modifier = Modifier.size(28.dp)
                         ) {
@@ -142,7 +115,7 @@ fun HardwareTopologyCard(
                 copyFeedback = null
             }
             Text(
-                text = copyFeedback ?: "",
+                text = copyFeedback?.first ?: "",
                 color = AresCyan,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
@@ -167,13 +140,20 @@ fun HardwareTopologyCard(
                         modifier = Modifier.size(36.dp)
                     )
                     Text(
-                        text = if (isConnected) "Awaiting Topology/HardwareMap broadcast..." else "No hardware topology available for this session.",
+                        text = when {
+                            selection.failed -> "Unable to load saved hardware topology."
+                            selection.loading -> "Loading saved hardware topology..."
+                            selection.cached -> "No cached hardware topology available for this robot."
+                            isConnected -> "Awaiting Topology/HardwareMap broadcast..."
+                            else -> "No hardware topology available for this session."
+                        },
                         color = AresTextSecondary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Hardware maps publish automatically when robot code registers devices.",
+                        text = if (selection.cached) "Saved maps reflect the latest cached hardware for the session robot."
+                            else "Hardware maps publish automatically when robot code registers devices.",
                         color = AresTextTertiary,
                         fontSize = 11.sp
                     )
@@ -191,7 +171,7 @@ fun HardwareTopologyCard(
                     onValueChange = { searchQuery = it },
                     placeholder = { Text("Search node, CAN ID, or port...", fontSize = 11.sp, color = AresTextTertiary) },
                     singleLine = true,
-                    modifier = Modifier.weight(1f).height(42.dp),
+                    modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = AresCyan,
                         unfocusedBorderColor = AresBorder,
@@ -209,7 +189,7 @@ fun HardwareTopologyCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
             ) {
-                items(TopologyCategoryFilter.values()) { cat ->
+                items(TopologyCategoryFilter.entries) { cat ->
                     val isSelected = selectedCategory == cat
                     Box(
                         modifier = Modifier
@@ -229,108 +209,22 @@ fun HardwareTopologyCard(
                 }
             }
 
-            // Filter nodes
-            val filteredNodes = remember(topology, searchQuery, selectedCategory) {
-                topology.nodes.filter { node ->
-                    val matchesSearch = searchQuery.isBlank() ||
-                        node.displayName.contains(searchQuery, ignoreCase = true) ||
-                        node.id.contains(searchQuery, ignoreCase = true) ||
-                        node.canId?.toString()?.contains(searchQuery) == true ||
-                        node.port?.toString()?.contains(searchQuery) == true
-
-                    val matchesCategory = when (selectedCategory) {
-                        TopologyCategoryFilter.ALL -> true
-                        TopologyCategoryFilter.CONTROLLERS -> node.type in listOf(
-                            TopologyNodeType.ROBORIO, TopologyNodeType.CONTROL_HUB,
-                            TopologyNodeType.EXPANSION_HUB, TopologyNodeType.CANIVORE,
-                            TopologyNodeType.SRS_HUB, TopologyNodeType.POWER_DISTRIBUTION
-                        )
-                        TopologyCategoryFilter.MOTORS -> node.type in listOf(
-                            TopologyNodeType.MOTOR, TopologyNodeType.CAN_MOTOR_CONTROLLER
-                        )
-                        TopologyCategoryFilter.SERVOS -> node.type == TopologyNodeType.SERVO
-                        TopologyCategoryFilter.SENSORS -> node.type in listOf(
-                            TopologyNodeType.COLOR_SENSOR, TopologyNodeType.DISTANCE_SENSOR,
-                            TopologyNodeType.BEAM_BREAK, TopologyNodeType.ANALOG_SENSOR,
-                            TopologyNodeType.CAN_CODER
-                        )
-                        TopologyCategoryFilter.VISION -> node.type in listOf(
-                            TopologyNodeType.CAMERA, TopologyNodeType.ODOMETRY_COMPUTER,
-                            TopologyNodeType.IMU, TopologyNodeType.PIGEON_IMU
-                        )
-                    }
-
-                    matchesSearch && matchesCategory
-                }
+            val rows = remember(topology, searchQuery, selectedCategory) {
+                topologyDisplayRows(topology.nodes, searchQuery, selectedCategory)
             }
-
-            // Hierarchy Grouping: Controllers & standalone roots
-            val rootControllers = remember(filteredNodes) {
-                val controllerTypes = setOf(
-                    TopologyNodeType.ROBORIO, TopologyNodeType.CONTROL_HUB,
-                    TopologyNodeType.EXPANSION_HUB, TopologyNodeType.CANIVORE,
-                    TopologyNodeType.SRS_HUB, TopologyNodeType.POWER_DISTRIBUTION
-                )
-                filteredNodes.filter { it.type in controllerTypes || it.parentId == null }
-            }
-
-            val childNodesByParent = remember(topology.nodes) {
-                topology.nodes.filter { it.parentId != null }.groupBy { it.parentId!! }
-            }
-
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                if (filteredNodes.isEmpty()) {
+                if (rows.isEmpty()) {
                     item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
+                        Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                             Text("No hardware nodes match current filter.", color = AresTextTertiary, fontSize = 11.sp)
                         }
                     }
-                } else if (searchQuery.isNotBlank() || selectedCategory != TopologyCategoryFilter.ALL) {
-                    // Flat display when searching / filtering
-                    items(filteredNodes) { node ->
-                        TopologyNodeRow(
-                            node = node,
-                            nt4ClientService = nt4ClientService,
-                            isChild = false
-                        )
-                    }
                 } else {
-                    // Hierarchical tree display
-                    rootControllers.forEach { root ->
-                        item(key = root.id) {
-                            TopologyNodeRow(
-                                node = root,
-                                nt4ClientService = nt4ClientService,
-                                isChild = false
-                            )
-                        }
-
-                        val children = childNodesByParent[root.id].orEmpty()
-                        items(children, key = { it.id }) { child ->
-                            TopologyNodeRow(
-                                node = child,
-                                nt4ClientService = nt4ClientService,
-                                isChild = true
-                            )
-                        }
-                    }
-
-                    // Orphans / unparented non-controller devices if any
-                    val orphans = filteredNodes.filter { 
-                        it.parentId != null && rootControllers.none { r -> r.id == it.parentId } 
-                    }
-                    items(orphans, key = { it.id }) { orphan ->
-                        TopologyNodeRow(
-                            node = orphan,
-                            nt4ClientService = nt4ClientService,
-                            isChild = false
-                        )
+                    items(rows, key = { it.node.id }) { row ->
+                        TopologyNodeRow(row.node, readings[row.node.id], row.depth)
                     }
                 }
             }
@@ -341,21 +235,18 @@ fun HardwareTopologyCard(
 @Composable
 private fun TopologyNodeRow(
     node: TopologyNode,
-    nt4ClientService: Nt4ClientService,
-    isChild: Boolean
+    reading: TopologyMotorReading?,
+    depth: Int,
 ) {
-    // Check if live telemetry matches this node
-    val latestValues = nt4ClientService.latestValues
-    val currentAmps = latestValues["Hardware/Motors/${node.displayName}/CurrentAmps"]?.value
-        ?: latestValues["Hardware/Motors/${node.id}/CurrentAmps"]?.value
-    val velocity = latestValues["Hardware/Motors/${node.displayName}/Velocity"]?.value
-        ?: latestValues["Hardware/Motors/${node.id}/Velocity"]?.value
+    val isChild = depth > 0
+    val currentAmps = reading?.currentAmps
+    val velocity = reading?.velocity
     val connType = node.connectionType
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = if (isChild) 20.dp else 0.dp)
+            .padding(start = (depth.coerceIn(0, 8) * 20).dp)
             .clip(RoundedCornerShape(6.dp))
             .background(if (isChild) AresSurface.copy(alpha = 0.5f) else AresSurface)
             .border(1.dp, if (isChild) AresBorder.copy(alpha = 0.6f) else AresBorder, RoundedCornerShape(6.dp))
@@ -442,7 +333,7 @@ private fun TopologyNodeRow(
             Column(horizontalAlignment = Alignment.End) {
                 if (currentAmps != null) {
                     Text(
-                        text = String.format("%.2f A", currentAmps),
+                        text = topologyCurrentText(currentAmps),
                         fontSize = 10.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
@@ -451,7 +342,7 @@ private fun TopologyNodeRow(
                 }
                 if (velocity != null) {
                     Text(
-                        text = String.format("%.1f rad/s", velocity),
+                        text = topologyVelocityText(velocity),
                         fontSize = 9.sp,
                         fontFamily = FontFamily.Monospace,
                         color = AresTextSecondary

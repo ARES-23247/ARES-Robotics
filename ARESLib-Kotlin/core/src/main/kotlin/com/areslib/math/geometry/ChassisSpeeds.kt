@@ -16,8 +16,8 @@ package com.areslib.math.geometry
  * - $\omega$: Angular velocity in radians per second ($rad/s$). **CCW-positive**.
  * - Heading $(\theta)$: Robot heading in radians ($rad$), **CCW-positive** ($0 = +X$, $\frac{\pi}{2} = +Y$).
  *
- * ### Zero-GC Guarantee:
- * Value-oriented primitive fields with minimal allocation overhead during high-frequency control loops.
+ * Factory methods return independently owned values. Internal loop callers can reuse an output
+ * container through [discretizeInto] rather than allocating a result for every sample.
  *
  * @property vxMetersPerSecond Linear velocity along X-axis in meters per second ($m/s$).
  * @property vyMetersPerSecond Linear velocity along Y-axis in meters per second ($m/s$).
@@ -69,10 +69,26 @@ data class ChassisSpeeds(
             omegaRadiansPerSecond: Double,
             dtSeconds: Double
         ): ChassisSpeeds {
+            return ChassisSpeeds().also {
+                discretizeInto(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond, dtSeconds, it)
+            }
+        }
+
+        /** Writes inverse-SE(2) discretization into caller-owned storage, clearing invalid output. */
+        internal fun discretizeInto(
+            vxMetersPerSecond: Double,
+            vyMetersPerSecond: Double,
+            omegaRadiansPerSecond: Double,
+            dtSeconds: Double,
+            out: ChassisSpeeds
+        ) {
+            out.vxMetersPerSecond = 0.0
+            out.vyMetersPerSecond = 0.0
+            out.omegaRadiansPerSecond = 0.0
             if (!vxMetersPerSecond.isFinite() || !vyMetersPerSecond.isFinite() ||
                 !omegaRadiansPerSecond.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0
             ) {
-                return ChassisSpeeds()
+                return
             }
 
             val dTheta = omegaRadiansPerSecond * dtSeconds
@@ -88,7 +104,10 @@ data class ChassisSpeeds(
             // desired (vx * dt, vy * dt, omega * dt) pose increment.
             val discVx = halfThetaByTanHalfTheta * vxMetersPerSecond + halfTheta * vyMetersPerSecond
             val discVy = -halfTheta * vxMetersPerSecond + halfThetaByTanHalfTheta * vyMetersPerSecond
-            return ChassisSpeeds(discVx, discVy, omegaRadiansPerSecond)
+            if (!discVx.isFinite() || !discVy.isFinite()) return
+            out.vxMetersPerSecond = discVx
+            out.vyMetersPerSecond = discVy
+            out.omegaRadiansPerSecond = omegaRadiansPerSecond
         }
     }
 }

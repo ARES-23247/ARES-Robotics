@@ -1,7 +1,9 @@
 package com.ares.analytics.viewmodel.field
 
-import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.service.SimulatorPoseFrameSnapshot
+import com.ares.analytics.service.*
+import com.ares.analytics.shared.models.TelemetryFrame
+import kotlinx.coroutines.flow.Flow
+
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.viewmodel.FieldViewerState
 import com.ares.analytics.viewmodel.LivePoseState
@@ -12,415 +14,252 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Filters the global telemetry bus before field state reduction touches any Compose-facing state. */
-internal fun isFieldViewerTopic(key: String): Boolean = when (key) {
+private val FIELD_POSE_SCALAR_TOPICS = setOf(
     "ARES/TruePose/0", "ARES/TruePose/1", "ARES/TruePose/2",
     "ARES/EstimatedPose/0", "ARES/EstimatedPose/1", "ARES/EstimatedPose/2",
     "Drive/Pose_X", "Drive/Pose_Y", "Drive/Pose_Heading", "Drive/Drive_Heading",
     "Drive/Odom_X", "Drive/Odom_Y", "Drive/Odom_Heading",
-    "Vision/HasTarget", "Vision/Pose_X", "Vision/Pose_Y", "Vision/Pose_Heading",
-    "ARES/GamePieces/Count" -> true
-    else -> key.startsWith("ARES/SimulatorPoseFrame/") ||
-        key.startsWith("ARES/GamePiecesFrame/") ||
-        key.startsWith("Vision/PoseArray/") ||
-        key.startsWith("AdvantageScope/VisionPose/") ||
-        key.startsWith("ARES/GamePieces/")
-}
+)
+private val VISION_COORDINATE_TOPICS = listOf("Vision/Pose_X", "Vision/Pose_Y", "Vision/Pose_Heading")
+private val FIELD_LATCHED_TOPICS = FIELD_POSE_SCALAR_TOPICS + "Vision/HasTarget" + VISION_COORDINATE_TOPICS +
+    org.ares.biobuzz.BiobuzzTelemetry.TOPIC
 
-/** Stages one atomic typed game-piece frame and commits only at its final sequence element. */
+/** Shared topic selection for cached scalar subscriptions and raw array-fragment filtering. */
+internal fun isFieldViewerTopic(key: String): Boolean =
+    key in FIELD_LATCHED_TOPICS || key == "ARES/GamePieces/Count" ||
+        key.startsWith("ARES/SimulatorPoseFrame/") || key.startsWith("ARES/GamePiecesFrame/") ||
+        key.startsWith("Vision/PoseArray/") || key.startsWith("AdvantageScope/VisionPose/") ||
+        key.startsWith("ARES/GamePieces/")
+
+/** Strict ordered fallback for flattened replay/scalar frames; each frame needs its own complete header. */
 internal class GamePieceFrameAccumulator {
     private var values = DoubleArray(0)
-    private var count = -1
-    var hasSeenFrame: Boolean = false
+    private var nextIndex = 0
+    @Volatile var hasSeenFrame: Boolean = false
         private set
 
-    fun reset() {
-        values = DoubleArray(0)
-        count = -1
+    @Synchronized fun reset() {
+        nextIndex = 0
         hasSeenFrame = false
     }
 
-    fun accept(key: String, value: Double): Map<Int, GamePiece>? {
-        val index = key.removePrefix(PREFIX).toIntOrNull() ?: return null
+    @Synchronized fun accept(key: String, value: Double): Map<Int, GamePiece>? {
+        if (!key.startsWith(GamePieceTelemetry.PREFIX)) return null
         hasSeenFrame = true
-        when (index) {
-            0 -> {
-                if (value != VERSION) reset()
-                return null
-            }
-            1 -> {
-                val nextCount = value.toInt()
-                if (!value.isFinite() || nextCount < 0 || nextCount > MAX_PIECES || nextCount.toDouble() != value) {
-                    reset()
-                    return null
-                }
-                count = nextCount
-                val required = HEADER_WIDTH + count * RECORD_WIDTH + SEQUENCE_WIDTH
-                if (values.size != required) values = DoubleArray(required)
-                values[0] = VERSION
-                values[1] = value
-                return null
-            }
+        val index = key.removePrefix(GamePieceTelemetry.PREFIX).toIntOrNull()
+        if (index == 0) {
+            nextIndex = if (value == GamePieceTelemetry.VERSION) 1 else 0
+            return null
         }
-        if (count < 0 || index !in values.indices) return null
+        if (index == null || index != nextIndex || nextIndex == 0 || !value.isFinite()) {
+            nextIndex = 0
+            return null
+        }
+        if (index == 1) {
+            val count = GamePieceTelemetry.count(value)
+            if (count == null) { nextIndex = 0; return null }
+            val size = GamePieceTelemetry.requiredSize(count)
+            if (values.size != size) values = DoubleArray(size)
+            values[0] = GamePieceTelemetry.VERSION
+            values[1] = value
+            nextIndex = 2
+            return null
+        }
         values[index] = value
-        if (index != values.lastIndex) return null
-
-        val decoded = linkedMapOf<Int, GamePiece>()
-        for (recordIndex in 0 until count) {
-            val base = HEADER_WIDTH + recordIndex * RECORD_WIDTH
-            val instanceKey = values[base + 0].toLong()
-            val typeKey = values[base + 1].toLong()
-            val shape = if (values[base + 7].toInt() == SHAPE_BOX) "box" else "circle"
-            var mapKey = (instanceKey xor (instanceKey ushr 32)).toInt()
-            while (mapKey in decoded) mapKey++
-            decoded[mapKey] = GamePiece(
-                id = "sim-$instanceKey",
-                name = "Simulated ${shape.replaceFirstChar(Char::uppercase)}",
-                x = values[base + 2],
-                y = values[base + 3],
-                type = "Simulated ${shape.replaceFirstChar(Char::uppercase)}",
-                typeId = "sim-type-$typeKey",
-                rotationRadians = values[base + 4],
-                widthMeters = values[base + 5].takeIf { it.isFinite() && it > 0.0 },
-                heightMeters = values[base + 6].takeIf { it.isFinite() && it > 0.0 },
-                simulationShape = shape,
-                colorRgb = values[base + 8].toInt().coerceIn(0, 0xFFFFFF),
-            )
+        if (index == values.lastIndex) {
+            nextIndex = 0
+            return GamePieceTelemetry.decodeScalars(values)?.pieces
         }
-        return decoded
+        nextIndex++
+        return null
     }
 
-    private companion object {
-        const val PREFIX = "ARES/GamePiecesFrame/"
-        const val VERSION = 2.0
-        const val HEADER_WIDTH = 2
-        const val RECORD_WIDTH = 9
-        const val SEQUENCE_WIDTH = 1
-        const val SHAPE_BOX = 1
-        const val MAX_PIECES = 10_000
+    companion object {
+        fun decodeSnapshot(frame: Map<String, Double>, strings: Map<String, String> = emptyMap()): Map<Int, GamePiece>? =
+            GamePieceTelemetry.decodeSnapshot(frame, strings)
     }
 }
 
-internal fun isFieldPoseTopic(key: String): Boolean = when (key) {
-    "ARES/TruePose/0", "ARES/TruePose/1", "ARES/TruePose/2",
-    "ARES/EstimatedPose/0", "ARES/EstimatedPose/1", "ARES/EstimatedPose/2",
-    "Drive/Pose_X", "Drive/Pose_Y", "Drive/Pose_Heading", "Drive/Drive_Heading",
-    "Drive/Odom_X", "Drive/Odom_Y", "Drive/Odom_Heading" -> true
-    else -> key.startsWith("ARES/SimulatorPoseFrame/")
-}
+internal fun isFieldPoseTopic(key: String): Boolean =
+    key in FIELD_POSE_SCALAR_TOPICS || key.startsWith("ARES/SimulatorPoseFrame/")
 
-/**
- * Stages the packed simulator pose frame and preserves scalar compatibility for physical robots.
- *
- * NT4 suppresses unchanged scalar values, so no coordinate or heading can safely mark the end of a
- * frame. Current simulators therefore publish `ARES/SimulatorPoseFrame`, whose changing sequence
- * is element 9. Once that packed source appears, legacy pose scalars are ignored and Compose state
- * changes exactly once after all nine pose values have arrived.
- */
-internal class FieldPoseFrameAccumulator {
-    private var trueX: Double? = null
-    private var trueY: Double? = null
-    private var trueHeading: Double? = null
-    private var ekfX: Double? = null
-    private var ekfY: Double? = null
-    private var ekfHeading: Double? = null
-    private var odomX: Double? = null
-    private var odomY: Double? = null
-    private var odomHeading: Double? = null
-    private var hasCompleteTruePose = false
-    private var hasSeenEstimatedPose = false
-    private var hasSeenPackedFrame = false
-    private var hasSeenAtomicPackedFrame = false
-
-    @Synchronized
-    fun reset() {
-        trueX = null
-        trueY = null
-        trueHeading = null
-        ekfX = null
-        ekfY = null
-        ekfHeading = null
-        odomX = null
-        odomY = null
-        odomHeading = null
-        hasCompleteTruePose = false
-        hasSeenEstimatedPose = false
-        hasSeenPackedFrame = false
-        hasSeenAtomicPackedFrame = false
-    }
-
-    /** Accepts the packed parent value as one immutable sample, bypassing lossy scalar fan-out. */
-    @Synchronized
-    fun accept(frame: SimulatorPoseFrameSnapshot) {
-        trueX = frame.trueX
-        trueY = frame.trueY
-        trueHeading = frame.trueHeading
-        ekfX = frame.ekfX
-        ekfY = frame.ekfY
-        ekfHeading = frame.ekfHeading
-        odomX = frame.odomX
-        odomY = frame.odomY
-        odomHeading = frame.odomHeading
-        hasCompleteTruePose = true
-        hasSeenEstimatedPose = true
-        hasSeenPackedFrame = true
-        hasSeenAtomicPackedFrame = true
-    }
-
-    /** Returns true only when the staged values form the next safe Compose render snapshot. */
-    @Synchronized
-    fun accept(key: String, value: Double): Boolean {
-        if (key.startsWith(SIMULATOR_POSE_FRAME_PREFIX)) {
-            if (hasSeenAtomicPackedFrame) return false
-            val index = key.substringAfterLast('/').toIntOrNull() ?: return false
-            hasSeenPackedFrame = true
-            when (index) {
-                0 -> trueX = value
-                1 -> trueY = value
-                2 -> trueHeading = value
-                3 -> ekfX = value
-                4 -> ekfY = value
-                5 -> ekfHeading = value
-                6 -> odomX = value
-                7 -> odomY = value
-                8 -> odomHeading = value
-                9 -> {
-                    hasCompleteTruePose = true
-                    hasSeenEstimatedPose = true
-                    return true
-                }
-            }
-            return false
-        }
-
-        if (hasSeenPackedFrame) return false
-
-        return when (key) {
-            "ARES/TruePose/0" -> true.also {
-                trueX = value
-                hasCompleteTruePose = true
-            }
-            "ARES/TruePose/1" -> true.also {
-                trueY = value
-                hasCompleteTruePose = true
-            }
-            "ARES/TruePose/2" -> true.also {
-                trueHeading = value
-                hasCompleteTruePose = true
-            }
-            "ARES/EstimatedPose/0" -> true.also {
-                ekfX = value
-                hasSeenEstimatedPose = true
-            }
-            "ARES/EstimatedPose/1" -> true.also {
-                ekfY = value
-                hasSeenEstimatedPose = true
-            }
-            "ARES/EstimatedPose/2" -> true.also {
-                ekfHeading = value
-                hasSeenEstimatedPose = true
-            }
-            "Drive/Pose_X" -> if (hasCompleteTruePose && hasSeenEstimatedPose) {
-                false
-            } else {
-                true.also { ekfX = value }
-            }
-            "Drive/Pose_Y" -> if (hasCompleteTruePose && hasSeenEstimatedPose) {
-                false
-            } else {
-                true.also { ekfY = value }
-            }
-            "Drive/Pose_Heading", "Drive/Drive_Heading" -> if (hasCompleteTruePose && hasSeenEstimatedPose) {
-                false
-            } else {
-                true.also { ekfHeading = value }
-            }
-            "Drive/Odom_X" -> true.also { odomX = value }
-            "Drive/Odom_Y" -> true.also { odomY = value }
-            "Drive/Odom_Heading" -> true.also { odomHeading = value }
-            else -> false
-        }
-    }
-
-    @Synchronized
-    fun snapshot(current: LivePoseState): LivePoseState = current.copy(
-        trueX = trueX ?: current.trueX,
-        trueY = trueY ?: current.trueY,
-        simHeading = trueHeading ?: current.simHeading,
-        trueHeading = trueHeading ?: current.trueHeading,
-        hasTruePoseData = hasCompleteTruePose || current.hasTruePoseData,
-        ekfX = ekfX ?: current.ekfX,
-        ekfY = ekfY ?: current.ekfY,
-        ekfHeading = ekfHeading ?: current.ekfHeading,
-        odomX = odomX ?: current.odomX,
-        odomY = odomY ?: current.odomY,
-        odomHeading = odomHeading ?: current.odomHeading,
-    )
-
-    private companion object {
-        const val SIMULATOR_POSE_FRAME_PREFIX = "ARES/SimulatorPoseFrame/"
-    }
-}
-
-/** Reduces normalized NT4 topic updates into the field viewer's live-pose state. */
+/** Reduces current source snapshots under one monitor, independent of collector delivery order. */
 class FieldTopicSubscriber(
     private val nt4ClientService: Nt4ClientService,
-    private val scope: CoroutineScope,
-    private val stateFlow: MutableStateFlow<FieldViewerState>,
+    scope: CoroutineScope,
+    @Suppress("UNUSED_PARAMETER") stateFlow: MutableStateFlow<FieldViewerState>,
     private val livePoseFlow: MutableStateFlow<LivePoseState>,
-    private val processingDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    processingDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
+    // The store reuses these observer objects across view recreation. Scalar coordinates
+    // are latched NT4 values, so startup and overflow recovery cannot depend on the raw replay cache.
+    private val latchedTopics = FIELD_LATCHED_TOPICS.associateWith(nt4ClientService.telemetryStore::observe)
+    private val reductionLock = Any()
     private val poseAccumulator = FieldPoseFrameAccumulator()
+    private val visionAccumulator = VisionPoseAccumulator()
     private val gamePieceAccumulator = GamePieceFrameAccumulator()
+    private val legacyAccumulator = LegacyGamePieceAccumulator()
+    private var epoch = Long.MIN_VALUE
+    private var replay = false
+    private var connected: Boolean? = null
+    private var appliedPose: SimulatorPoseFrameSnapshot? = null
+    private var appliedGame: GamePieceFrameSnapshot? = null
+    private var appliedLegacy: LegacyGamePieceSnapshot? = null
+    private var appliedVision: VisionPoseArraySnapshot? = null
+    private var appliedTarget: VisionTargetSnapshot? = null
+    private var typedPieces: Map<Int, GamePiece> = emptyMap()
+    private var disconnectedParents: List<Any> = emptyList()
+    private var lighting: RobotLightingTelemetryState? = null
+    private var indicators: Map<String, Double> = emptyMap()
+    private var prisms: Map<String, Double> = emptyMap()
+    private var biobuzz: org.ares.biobuzz.BiobuzzFrame? = null
+
+    private fun reset() {
+        poseAccumulator.reset(); visionAccumulator.reset()
+        gamePieceAccumulator.reset(); legacyAccumulator.reset()
+        appliedPose = null; appliedGame = null; appliedLegacy = null
+        appliedVision = null; appliedTarget = null; typedPieces = emptyMap()
+        biobuzz = null
+    }
+
+    private fun allowed(parent: Any, targetEpoch: Long): Boolean =
+        targetEpoch == epoch && disconnectedParents.none { it === parent }
+
+    private fun restoreVisionCoordinates() {
+        for (key in VISION_COORDINATE_TOPICS) {
+            latchedTopics.getValue(key).value?.takeIf(nt4ClientService::isCurrentFieldUpdate)
+                ?.let(visionAccumulator::accept)
+        }
+    }
+
+    private fun synchronizeParents() {
+        val target = nt4ClientService.visionTargetFrame.value?.takeIf { allowed(it, it.targetEpoch) }
+        if (target !== appliedTarget) {
+            appliedTarget = target
+            if (target != null) {
+                visionAccumulator.accept(target)
+                if (target.hasTarget) restoreVisionCoordinates()
+                // A target-loss generation can clear a parent accepted by an earlier callback.
+                appliedVision = null
+            }
+        }
+        val pose = nt4ClientService.simulatorPoseFrame.value?.takeIf { allowed(it, it.targetEpoch) }
+        if (pose !== appliedPose) {
+            if (pose == null) poseAccumulator.reset() else poseAccumulator.accept(pose)
+            appliedPose = pose
+        }
+        val game = nt4ClientService.gamePieceFrame.value?.takeIf { allowed(it, it.targetEpoch) }
+        if (game !== appliedGame) {
+            appliedGame = game
+            typedPieces = game?.pieces.orEmpty()
+        }
+        val legacy = nt4ClientService.legacyGamePieceFrame.value?.takeIf { allowed(it, it.targetEpoch) }
+        if (legacy !== appliedLegacy) {
+            if (legacy == null) legacyAccumulator.reset() else legacyAccumulator.accept(legacy)
+            appliedLegacy = legacy
+        }
+        val vision = nt4ClientService.visionPoseArrayFrame.value?.takeIf { allowed(it, it.targetEpoch) }
+        if (vision !== appliedVision) {
+            if (vision == null) visionAccumulator.clearParent() else visionAccumulator.accept(vision)
+            appliedVision = vision
+        }
+    }
+
+    private fun reduceFrame(frame: TelemetryFrame) {
+        if (!nt4ClientService.isCurrentFieldUpdate(frame) || disconnectedParents.any { it === frame }) return
+        val key = frame.key
+        val value = if (frame.stringValue == null) frame.value else Double.NaN
+        when {
+            key == org.ares.biobuzz.BiobuzzTelemetry.TOPIC -> {
+                biobuzz = org.ares.biobuzz.BiobuzzTelemetry.decode(frame.stringValue)
+            }
+            isFieldPoseTopic(key) -> poseAccumulator.accept(key, value)
+            key.startsWith("Vision/") || key.startsWith("AdvantageScope/VisionPose/") -> {
+                if (key == "Vision/HasTarget" && appliedTarget != null) return
+                if (nt4ClientService.hasReceivedVisionPoseArray &&
+                    (key.startsWith("Vision/PoseArray/") || key.startsWith("AdvantageScope/VisionPose/"))) return
+                visionAccumulator.accept(frame)
+                if (key == "Vision/HasTarget" && frame.stringValue == null && frame.value == 1.0) restoreVisionCoordinates()
+            }
+            appliedGame != null -> return
+            key.startsWith(GamePieceTelemetry.PREFIX) -> {
+                // Even an invalid first header owns this source; legacy must not stand in for it.
+                gamePieceAccumulator.accept(key, value)?.let { typedPieces = it }
+            }
+            !gamePieceAccumulator.hasSeenFrame -> {
+                if (key != "ARES/GamePieces/Count" && appliedLegacy?.hasParent == true) return
+                legacyAccumulator.accept(frame)
+            }
+        }
+    }
+
+    private fun refresh(frame: TelemetryFrame? = null) = synchronized(reductionLock) {
+        val nextEpoch = nt4ClientService.telemetryStore.currentTargetEpoch()
+        val nextReplay = nt4ClientService.isReplayActive.value
+        val nextConnected = nt4ClientService.isConnected.value
+        val disconnected = connected == true && !nextConnected
+        val resetRequired = epoch != nextEpoch || replay != nextReplay || disconnected
+        if (epoch != nextEpoch) {
+            reset()
+            disconnectedParents = emptyList()
+        } else if (replay != nextReplay || disconnected) {
+            reset()
+            if (disconnected) disconnectedParents = listOfNotNull(
+                nt4ClientService.simulatorPoseFrame.value, nt4ClientService.gamePieceFrame.value,
+                nt4ClientService.legacyGamePieceFrame.value, nt4ClientService.visionPoseArrayFrame.value,
+                nt4ClientService.visionTargetFrame.value,
+            ) + latchedTopics.values.mapNotNull { it.value }
+        }
+        epoch = nextEpoch; replay = nextReplay; connected = nextConnected
+        if (!replay) {
+            synchronizeParents()
+            if (resetRequired && !disconnected) {
+                for (topic in latchedTopics.values) topic.value?.let(::reduceFrame)
+            }
+            if (frame != null) reduceFrame(frame)
+        }
+        val latestLighting = nt4ClientService.robotLighting.value
+        if (lighting !== latestLighting) {
+            lighting = latestLighting
+            indicators = latestLighting.indicatorOutputs
+            prisms = latestLighting.prismOutputs
+        }
+        val pieces = if (replay) emptyMap() else appliedGame?.pieces
+            ?: if (gamePieceAccumulator.hasSeenFrame) typedPieces else legacyAccumulator.snapshot()
+        livePoseFlow.update { previous ->
+            val current = visionAccumulator.snapshot(poseAccumulator.snapshot(previous))
+            val lights = if (replay) emptyMap() else indicators
+            val prismOutputs = if (replay) emptyMap() else prisms
+            val game = if (replay) null else biobuzz
+            if (current.isConnected == nextConnected && current.liveGamePieces == pieces &&
+                current.indicatorLights == lights && current.prismLights == prismOutputs &&
+                current.biobuzz == game) current
+            else current.copy(isConnected = nextConnected, liveGamePieces = pieces,
+                indicatorLights = lights, prismLights = prismOutputs, biobuzz = game)
+        }
+    }
 
     init {
-        scope.launch {
-            nt4ClientService.isConnected.collect { connected ->
-                if (!connected) {
-                    poseAccumulator.reset()
-                    gamePieceAccumulator.reset()
-                }
-                livePoseFlow.update { currentState ->
-                    currentState.copy(
-                        isConnected = connected,
-                        hasTruePoseData = if (connected) currentState.hasTruePoseData else false,
-                        visionHasTarget = if (connected) currentState.visionHasTarget else false,
-                        visionX = if (connected && currentState.visionHasTarget) currentState.visionX else null,
-                        visionY = if (connected && currentState.visionHasTarget) currentState.visionY else null,
-                        visionHeading = if (connected && currentState.visionHasTarget) currentState.visionHeading else null,
-                        visionPoses = if (connected && currentState.visionHasTarget) currentState.visionPoses else emptyMap(),
-                        liveGamePieces = if (connected) currentState.liveGamePieces else emptyMap()
-                    )
-                }
-            }
+        // Signals always reconcile current values, not an old callback payload. No owner/UI
+        // dispatcher callback can reset accumulators after a newer source was already applied.
+        fun <T> observe(flow: Flow<T>) {
+            scope.launch(processingDispatcher) { flow.collect { refresh() } }
         }
-
-        // Live simulator poses arrive atomically through simulatorPoseFrame, while replay persists
-        // and emits the ten flattened array elements. Reset source ownership at each mode boundary
-        // so live frames cannot overwrite rewind and replay frames are not rejected as legacy data.
-        scope.launch {
-            nt4ClientService.isReplayActive.collect {
-                poseAccumulator.reset()
-            }
+        observe(nt4ClientService.isConnected)
+        observe(nt4ClientService.isReplayActive)
+        observe(nt4ClientService.telemetryStore.targetEpochs)
+        observe(nt4ClientService.simulatorPoseFrame)
+        observe(nt4ClientService.gamePieceFrame)
+        observe(nt4ClientService.legacyGamePieceFrame)
+        observe(nt4ClientService.visionTargetFrame)
+        observe(nt4ClientService.visionPoseArrayFrame)
+        observe(nt4ClientService.robotLighting)
+        for (topic in latchedTopics.values) {
+            scope.launch(processingDispatcher) { topic.collect { refresh(it) } }
         }
-
-        // The parent double[] is decoded before it is flattened onto the lossy global telemetry
-        // bus. Consuming this StateFlow prevents startup bursts from dropping one array element
-        // and committing a new sequence marker with an older staged coordinate.
-        scope.launch(processingDispatcher) {
-            nt4ClientService.simulatorPoseFrame.collect { frame ->
-                if (frame != null) {
-                    poseAccumulator.accept(frame)
-                    livePoseFlow.update(poseAccumulator::snapshot)
-                }
-            }
-        }
-
-        // Lighting is normalized once at the NT4 service boundary. Field rendering and the
-        // dashboard therefore consume the same typed snapshot for generated and legacy robots.
-        scope.launch(processingDispatcher) {
-            nt4ClientService.robotLighting.collect { lighting ->
-                livePoseFlow.update { current ->
-                    current.copy(
-                        indicatorLights = lighting.indicatorOutputs,
-                        prismLights = lighting.prismOutputs,
-                    )
-                }
-            }
-        }
-
-        // The global bus can exceed tens of thousands of frames per second when tuning schemas are
-        // announced. Reduce only field-owned topics, and never do that work on Compose's UI thread.
         scope.launch(processingDispatcher) {
             nt4ClientService.telemetryFlow.collect { frame ->
-                val key = frame.key
-                if (!isFieldViewerTopic(key)) return@collect
-                val value = frame.value
-
-                if (isFieldPoseTopic(key)) {
-                    if (poseAccumulator.accept(key, value)) {
-                        livePoseFlow.update(poseAccumulator::snapshot)
-                    }
-                    return@collect
-                }
-
-                if (key.startsWith("ARES/GamePiecesFrame/")) {
-                    gamePieceAccumulator.accept(key, value)?.let { pieces ->
-                        livePoseFlow.update { current -> current.copy(liveGamePieces = pieces) }
-                    }
-                    return@collect
-                }
-
-                livePoseFlow.update { current ->
-                    var next = current
-
-                    when (key) {
-                        "Vision/HasTarget" -> {
-                            val hasTarget = value > 0.5
-                            next = next.copy(visionHasTarget = hasTarget)
-                            if (!hasTarget) {
-                                next = next.copy(
-                                    visionX = null,
-                                    visionY = null,
-                                    visionHeading = null,
-                                    visionPoses = if (next.visionPoses.isNotEmpty()) emptyMap() else next.visionPoses
-                                )
-                            }
-                        }
-                        "Vision/Pose_X" -> if (next.visionHasTarget) next = next.copy(visionX = value)
-                        "Vision/Pose_Y" -> if (next.visionHasTarget) next = next.copy(visionY = value)
-                        "Vision/Pose_Heading" -> if (next.visionHasTarget) next = next.copy(visionHeading = value)
-                    }
-
-                    val isVisionPoseElement = key.startsWith("Vision/PoseArray/") ||
-                        key.startsWith("AdvantageScope/VisionPose/")
-                    when {
-                        !isVisionPoseElement -> Unit
-                        !next.visionHasTarget -> {
-                            if (next.visionPoses.isNotEmpty()) next = next.copy(visionPoses = emptyMap())
-                        }
-
-                        else -> key.substringAfterLast("/").toIntOrNull()
-                            ?.takeIf { next.visionPoses[it] != value }
-                            ?.let { index ->
-                                next = next.copy(visionPoses = next.visionPoses + (index to value))
-                            }
-                    }
-
-                    if (!gamePieceAccumulator.hasSeenFrame && key == "ARES/GamePieces/Count") {
-                        val count = value.toInt().coerceAtLeast(0)
-                        val retained = next.liveGamePieces.filterKeys { it in 0 until count }
-                        if (retained.size != next.liveGamePieces.size) {
-                            next = next.copy(liveGamePieces = retained)
-                        }
-                    } else if (!gamePieceAccumulator.hasSeenFrame && key.startsWith("ARES/GamePieces/")) {
-                        val arrayIdx = key.substringAfterLast("/").toIntOrNull()
-                        if (arrayIdx != null) {
-                            val pieceIdx = arrayIdx / 7
-                            val attributeIdx = arrayIdx % 7
-                            val currentPiece = next.liveGamePieces[pieceIdx] ?: GamePiece(
-                                id = pieceIdx.toString(),
-                                name = "Piece $pieceIdx",
-                                x = 0.0,
-                                y = 0.0,
-                                type = "Decode (Ball)"
-                            )
-                            val updatedPiece = when (attributeIdx) {
-                                0 -> currentPiece.copy(x = value)
-                                1 -> currentPiece.copy(y = value)
-                                else -> currentPiece
-                            }
-
-                            val newPieces = next.liveGamePieces.toMutableMap()
-                            newPieces[pieceIdx] = updatedPiece
-                            next = next.copy(liveGamePieces = newPieces)
-                        }
-                    }
-
-                    next
-                }
-
+                if (frame.key !in FIELD_LATCHED_TOPICS && isFieldViewerTopic(frame.key)) refresh(frame)
             }
         }
     }

@@ -29,8 +29,12 @@ def init_wifi(mode, ssid):
         interface = network.WLAN(network.AP_IF)
         interface.config(essid=ssid, password=_wifi_password(False))
         interface.active(True)
-        while not interface.active():
+        remaining = 150
+        while not interface.active() and remaining > 0:
+            remaining -= 1
             time.sleep(0.1)
+        if not interface.active():
+            raise RuntimeError("Timed out starting the configured Wi-Fi access point")
     elif mode == "STATION":
         interface = network.WLAN(network.STA_IF)
         interface.active(True)
@@ -43,12 +47,15 @@ def init_wifi(mode, ssid):
             raise RuntimeError("Timed out joining the configured Wi-Fi network")
     else:
         raise RuntimeError("Unsupported generated Wi-Fi mode: " + str(mode))
-    print("[Wi-Fi]", mode, "active. SSID:", ssid, "IP:", interface.ifconfig()[0])
-    return True
+    address = interface.ifconfig()[0]
+    if not isinstance(address, str) or not address.strip() or address == "0.0.0.0":
+        raise RuntimeError("Configured Wi-Fi interface has no usable IPv4 address")
+    print("[Wi-Fi]", mode, "active. SSID:", ssid, "IP:", address)
+    return address
 
 def main():
     print("=== ARES Robotics - XRP MicroPython Controller ===")
-    init_wifi(PROJECT["wifi_mode"], PROJECT["wifi_ssid"])
+    link_host = init_wifi(PROJECT["wifi_mode"], PROJECT["wifi_ssid"])
 
     try:
         from XRPLib.defaults import board as xrp_board, drivetrain as xrp_drivetrain, imu as xrp_imu
@@ -73,6 +80,7 @@ def main():
         use_otos=PROJECT["use_otos"],
         drivetrain_io=differential_io,
         motors=mecanum_motors,
+        link_host=link_host,
         link_port=PROJECT["link_port"],
         deadman_timeout_ms=PROJECT["deadman_timeout_ms"],
         brownout_threshold_volts=PROJECT["brownout_threshold_volts"],
@@ -90,22 +98,26 @@ def main():
         max_linear_speed=PROJECT["max_linear_speed_mps"],
     )
     try:
-        robot.start_server()
+        if not robot.start_server():
+            raise RuntimeError("XRP controller could not bind its control link port")
 
         robot.set_subsystems(create_subsystems(create_xrp_hardware))
         robot.set_autonomous_routines(create_autonomous_routines(robot.handle_action), DEFAULT_AUTONOMOUS_ID)
 
         print("[Robot] Ready for ARES Studio Driver Station connection.")
 
-        # 50Hz main loop (20ms)
-        loop_period_sec = 0.02
+        # ticks_diff handles MicroPython's counter wrap. Wall time has only whole
+        # seconds on embedded ports and cannot schedule or measure this 20ms loop.
+        loop_period_us = 20000
+        previous_start = None
         while True:
-            start_time = time.time()
-            robot.step(dt=loop_period_sec)
-            elapsed = time.time() - start_time
-            sleep_time = loop_period_sec - elapsed
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+            start_time = time.ticks_us()
+            period_us = loop_period_us if previous_start is None else max(0, time.ticks_diff(start_time, previous_start))
+            previous_start = start_time
+            robot.step(dt=period_us / 1000000.0)
+            remaining_us = loop_period_us - time.ticks_diff(time.ticks_us(), start_time)
+            if remaining_us > 0:
+                time.sleep_us(remaining_us)
     finally:
         robot.shutdown()
 

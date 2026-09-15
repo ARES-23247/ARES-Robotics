@@ -4,9 +4,49 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
+import kotlinx.coroutines.runBlocking
 import kotlin.test.assertEquals
 
 class FrameBatcherTest {
+    @get:Rule val temporary = TemporaryFolder()
+
+    private fun database() = DatabaseService(temporary.root.resolve("frames.duckdb").absolutePath)
+    private fun frame(time: Long, key: String = "Drive/X") = TelemetryFrame(time, "session", key, 1.0)
+
+    @Test
+    fun `batch size must be positive`() {
+        val database = database()
+        try {
+            for (size in listOf(0, -1, Int.MIN_VALUE)) {
+                assertFailsWith<IllegalArgumentException> { FrameBatcher(database, size) }
+            }
+        } finally { database.close() }
+    }
+
+    @Test
+    fun `failed transform does not alter accepted frame statistics`() = runBlocking {
+        val database = database()
+        try {
+            val batcher = FrameBatcher(database, 2) { key ->
+                require(key != "bad") { "rejected key" }
+                key
+            }
+            batcher.add(frame(100))
+            for (time in listOf(0L, 200L)) {
+                assertFailsWith<IllegalArgumentException> { batcher.add(frame(time, "bad")) }
+                assertEquals(100, batcher.minTimestamp)
+                assertEquals(100, batcher.maxTimestamp)
+                assertEquals(1, batcher.frameCount)
+            }
+            batcher.flush()
+            assertEquals(1, database.countTelemetryFrames("session"))
+        } finally { database.close() }
+    }
+
+
 
     @Test
     fun `batch threshold flush and final flush preserve bounds count and transformed keys`() = runTest {

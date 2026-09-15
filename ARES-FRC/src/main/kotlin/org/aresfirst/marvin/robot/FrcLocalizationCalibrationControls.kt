@@ -38,8 +38,10 @@ class FrcLocalizationCalibrationControls(
         }
         if (rising(2, controller.xButton)) session.markStart(timestampMs())
         if (rising(3, controller.yButton)) session.markEnd(timestampMs())
-        if (rising(4, controller.backButton && !homingComboPressed)) session.zeroTruth()
-        if (rising(5, controller.startButton && !homingComboPressed)) session.seedPoseToTruth(timestampMs())
+        // Track physical edges even while homing suppresses their calibration actions.
+        // Releasing the combo must not turn a still-held button into a new command.
+        if (rising(4, controller.backButton) && !homingComboPressed) session.zeroTruth()
+        if (rising(5, controller.startButton) && !homingComboPressed) session.seedPoseToTruth(timestampMs())
         if (rising(6, controller.leftBumperButton)) session.adjustTruth(deltaHeading = -Math.toRadians(5.0))
         if (rising(7, controller.rightBumperButton)) session.adjustTruth(deltaHeading = Math.toRadians(5.0))
         if (rising(8, pov == 0)) session.adjustTruth(deltaY = 0.05)
@@ -47,11 +49,15 @@ class FrcLocalizationCalibrationControls(
         if (rising(10, pov == 270)) session.adjustTruth(deltaX = -0.05)
         if (rising(11, pov == 90)) session.adjustTruth(deltaX = 0.05)
 
-        session.periodic(timestampMs())
+        val driverNeutral = kotlin.math.abs(controller.leftX) <= 0.03 &&
+            kotlin.math.abs(controller.leftY) <= 0.03 && kotlin.math.abs(controller.rightX) <= 0.03
+        session.periodic(timestampMs(), driverNeutral)
 
         telemetry.putString("Calibration/Localization/TestType", session.testType.name)
         telemetry.putNumber("Calibration/Localization/RunId", session.runId.toDouble())
-        telemetry.putBoolean("Calibration/Localization/Recording", session.continuousRecording)
+        telemetry.putBoolean("Calibration/Localization/Recording", session.continuousRecording && session.stationaryReady)
+        telemetry.putBoolean("Calibration/Localization/Stationary", session.stationaryReady)
+        telemetry.putBoolean("Calibration/Localization/ActionPending", session.actionPending)
         telemetry.putNumber("Calibration/Localization/TruthX", session.truthX)
         telemetry.putNumber("Calibration/Localization/TruthY", session.truthY)
         telemetry.putNumber("Calibration/Localization/TruthHeadingRad", session.truthHeading)

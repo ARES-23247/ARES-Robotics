@@ -1,0 +1,565 @@
+{
+  "schemaVersion": 2,
+  "revision": 0,
+  "id": "ftc-2026-2027-biobuzz",
+  "name": "BIOBUZZ 2026-2027",
+  "gameYear": "2026-2027",
+  "fieldType": "ftc",
+  "widthMeters": 3.6576,
+  "heightMeters": 3.6576,
+  "xAxisDirection": "up",
+  "yAxisDirection": "left",
+  "redDriverStation": "north",
+  "blueDriverStation": "south",
+  "allianceSymmetry": "rotational",
+  "obstacles": [
+    {
+      "id": "biobuzz-frame--1",
+      "name": "Hive frame foot",
+      "x": 0,
+      "y": -0.6,
+      "width": 0.9895,
+      "height": 0.0508,
+      "isBlocking": true,
+      "color": "#8A919A",
+      "locked": true
+    },
+    {
+      "id": "biobuzz-frame-1",
+      "name": "Hive frame foot",
+      "x": 0,
+      "y": 0.6,
+      "width": 0.9895,
+      "height": 0.0508,
+      "isBlocking": true,
+      "color": "#8A919A",
+      "locked": true
+    },
+    {
+      "id": "biobuzz-flower-support-0",
+      "name": "Flower 1 rear support",
+      "x": 1.790216,
+      "y": 0.5941695,
+      "width": 0.0254,
+      "height": 0.15,
+      "isBlocking": true,
+      "color": "#D9B14F",
+      "locked": true
+    },
+    {
+      "id": "biobuzz-flower-support-1",
+      "name": "Flower 2 rear support",
+      "x": -0.5941695,
+      "y": 1.790216,
+      "width": 0.15,
+      "height": 0.0254,
+      "isBlocking": true,
+      "color": "#D9B14F",
+      "locked": true
+    },
+    {
+      "id": "biobuzz-flower-support-2",
+      "name": "Flower 3 rear support",
+      "x": -1.790216,
+      "y": -0.5941695,
+      "width": 0.0254,
+      "height": 0.15,
+      "isBlocking": true,
+      "color": "#D9B14F",
+      "locked": true
+    },
+    {
+      "id": "biobuzz-flower-support-3",
+      "name": "Flower 4 rear support",
+      "x": 0.5941695,
+      "y": -1.790216,
+      "width": 0.15,
+      "height": 0.0254,
+      "isBlocking": true,
+      "color": "#D9B14F",
+      "locked": true
+    }
+  ],
+  "apriltags": [],
+  "elementTypes": [
+    {
+      "id": "biobuzz-pollen",
+      "name": "Pollen",
+      "shape": "sphere",
+      "width": 0.07112,
+      "height": 0.07112,
+      "depth": 0.07112,
+      "diameter": 0.07112,
+      "color": "#F4CF38",
+      "massKg": 0.02494758035,
+      "movable": true,
+      "friction": 0.45,
+      "restitution": 0.35
+    },
+    {
+      "id": "biobuzz-red-nectar",
+      "name": "Red nectar",
+      "shape": "sphere",
+      "width": 0.09144,
+      "height": 0.09144,
+      "depth": 0.09144,
+      "diameter": 0.09144,
+      "color": "#EF5350",
+      "massKg": 0.04127690567,
+      "movable": true,
+      "friction": 0.45,
+      "restitution": 0.35
+    },
+    {
+      "id": "biobuzz-blue-nectar",
+      "name": "Blue nectar",
+      "shape": "sphere",
+      "width": 0.09144,
+      "height": 0.09144,
+      "depth": 0.09144,
+      "diameter": 0.09144,
+      "color": "#4285F4",
+      "massKg": 0.04127690567,
+      "movable": true,
+      "friction": 0.45,
+      "restitution": 0.35
+    }
+  ],
+  "elements": [
+    {
+      "id": "flower-0-pollen-0",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 1 preload 1",
+      "x": 1.728216,
+      "y": 0.5941695
+    },
+    {
+      "id": "flower-0-pollen-1",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 1 preload 2",
+      "x": 1.728216,
+      "y": 0.5941695
+    },
+    {
+      "id": "flower-0-pollen-2",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 1 preload 3",
+      "x": 1.728216,
+      "y": 0.5941695
+    },
+    {
+      "id": "flower-0-pollen-3",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 1 preload 4",
+      "x": 1.728216,
+      "y": 0.5941695
+    },
+    {
+      "id": "flower-1-pollen-0",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 2 preload 1",
+      "x": -0.5941695,
+      "y": 1.728216
+    },
+    {
+      "id": "flower-1-pollen-1",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 2 preload 2",
+      "x": -0.5941695,
+      "y": 1.728216
+    },
+    {
+      "id": "flower-1-pollen-2",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 2 preload 3",
+      "x": -0.5941695,
+      "y": 1.728216
+    },
+    {
+      "id": "flower-1-pollen-3",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 2 preload 4",
+      "x": -0.5941695,
+      "y": 1.728216
+    },
+    {
+      "id": "flower-2-pollen-0",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 3 preload 1",
+      "x": -1.728216,
+      "y": -0.5941695
+    },
+    {
+      "id": "flower-2-pollen-1",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 3 preload 2",
+      "x": -1.728216,
+      "y": -0.5941695
+    },
+    {
+      "id": "flower-2-pollen-2",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 3 preload 3",
+      "x": -1.728216,
+      "y": -0.5941695
+    },
+    {
+      "id": "flower-2-pollen-3",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 3 preload 4",
+      "x": -1.728216,
+      "y": -0.5941695
+    },
+    {
+      "id": "flower-3-pollen-0",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 4 preload 1",
+      "x": 0.5941695,
+      "y": -1.728216
+    },
+    {
+      "id": "flower-3-pollen-1",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 4 preload 2",
+      "x": 0.5941695,
+      "y": -1.728216
+    },
+    {
+      "id": "flower-3-pollen-2",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 4 preload 3",
+      "x": 0.5941695,
+      "y": -1.728216
+    },
+    {
+      "id": "flower-3-pollen-3",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Flower 4 preload 4",
+      "x": 0.5941695,
+      "y": -1.728216
+    },
+    {
+      "id": "garden--1-0",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Garden pollen",
+      "x": -1.75956,
+      "y": 1.75956
+    },
+    {
+      "id": "garden--1-1",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Garden pollen",
+      "x": -1.75956,
+      "y": 1.686154
+    },
+    {
+      "id": "garden--1-2",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Garden pollen",
+      "x": -1.75956,
+      "y": 1.612748
+    },
+    {
+      "id": "garden--1-3",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Garden pollen",
+      "x": -1.75956,
+      "y": 1.539342
+    },
+    {
+      "id": "garden-1-0",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Garden pollen",
+      "x": 1.75956,
+      "y": -1.75956
+    },
+    {
+      "id": "garden-1-1",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Garden pollen",
+      "x": 1.75956,
+      "y": -1.686154
+    },
+    {
+      "id": "garden-1-2",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Garden pollen",
+      "x": 1.75956,
+      "y": -1.612748
+    },
+    {
+      "id": "garden-1-3",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Garden pollen",
+      "x": 1.75956,
+      "y": -1.539342
+    },
+    {
+      "id": "preload-True-0",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": 0.7,
+      "y": 1.75
+    },
+    {
+      "id": "preload-True-1",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": 0.7749999999999999,
+      "y": 1.75
+    },
+    {
+      "id": "preload-True-2",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": 0.85,
+      "y": 1.75
+    },
+    {
+      "id": "preload-True-3",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": 0.9249999999999999,
+      "y": 1.75
+    },
+    {
+      "id": "preload-True-4",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": 1.0,
+      "y": 1.75
+    },
+    {
+      "id": "preload-True-5",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": 1.075,
+      "y": 1.75
+    },
+    {
+      "id": "preload-True-6",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": 1.15,
+      "y": 1.75
+    },
+    {
+      "id": "preload-True-7",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": 1.225,
+      "y": 1.75
+    },
+    {
+      "id": "hive-True-0",
+      "elementTypeId": "biobuzz-red-nectar",
+      "name": "Upward cell nectar",
+      "x": -0.34,
+      "y": 0.23185000000000003
+    },
+    {
+      "id": "hive-True-1",
+      "elementTypeId": "biobuzz-red-nectar",
+      "name": "Upward cell nectar",
+      "x": -0.34,
+      "y": 0.32385
+    },
+    {
+      "id": "hive-True-2",
+      "elementTypeId": "biobuzz-red-nectar",
+      "name": "Upward cell nectar",
+      "x": -0.34,
+      "y": 0.41585000000000005
+    },
+    {
+      "id": "preload-False-0",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": -0.7,
+      "y": -1.75
+    },
+    {
+      "id": "preload-False-1",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": -0.7749999999999999,
+      "y": -1.75
+    },
+    {
+      "id": "preload-False-2",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": -0.85,
+      "y": -1.75
+    },
+    {
+      "id": "preload-False-3",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": -0.9249999999999999,
+      "y": -1.75
+    },
+    {
+      "id": "preload-False-4",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": -1.0,
+      "y": -1.75
+    },
+    {
+      "id": "preload-False-5",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": -1.075,
+      "y": -1.75
+    },
+    {
+      "id": "preload-False-6",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": -1.15,
+      "y": -1.75
+    },
+    {
+      "id": "preload-False-7",
+      "elementTypeId": "biobuzz-pollen",
+      "name": "Robot preload",
+      "x": -1.225,
+      "y": -1.75
+    },
+    {
+      "id": "hive-False-0",
+      "elementTypeId": "biobuzz-blue-nectar",
+      "name": "Upward cell nectar",
+      "x": 0.34,
+      "y": -0.41585000000000005
+    },
+    {
+      "id": "hive-False-1",
+      "elementTypeId": "biobuzz-blue-nectar",
+      "name": "Upward cell nectar",
+      "x": 0.34,
+      "y": -0.32385
+    },
+    {
+      "id": "hive-False-2",
+      "elementTypeId": "biobuzz-blue-nectar",
+      "name": "Upward cell nectar",
+      "x": 0.34,
+      "y": -0.23185000000000003
+    },
+    {
+      "id": "reserve-red-0",
+      "elementTypeId": "biobuzz-red-nectar",
+      "name": "Red human player reserve",
+      "x": 1.15,
+      "y": 1.65
+    },
+    {
+      "id": "reserve-red-1",
+      "elementTypeId": "biobuzz-red-nectar",
+      "name": "Red human player reserve",
+      "x": 1.15,
+      "y": 1.65
+    },
+    {
+      "id": "reserve-red-2",
+      "elementTypeId": "biobuzz-red-nectar",
+      "name": "Red human player reserve",
+      "x": 1.15,
+      "y": 1.65
+    },
+    {
+      "id": "reserve-red-3",
+      "elementTypeId": "biobuzz-red-nectar",
+      "name": "Red human player reserve",
+      "x": 1.15,
+      "y": 1.65
+    },
+    {
+      "id": "reserve-red-4",
+      "elementTypeId": "biobuzz-red-nectar",
+      "name": "Red human player reserve",
+      "x": 1.15,
+      "y": 1.65
+    },
+    {
+      "id": "reserve-blue-0",
+      "elementTypeId": "biobuzz-blue-nectar",
+      "name": "Blue human player reserve",
+      "x": -1.15,
+      "y": -1.65
+    },
+    {
+      "id": "reserve-blue-1",
+      "elementTypeId": "biobuzz-blue-nectar",
+      "name": "Blue human player reserve",
+      "x": -1.15,
+      "y": -1.65
+    },
+    {
+      "id": "reserve-blue-2",
+      "elementTypeId": "biobuzz-blue-nectar",
+      "name": "Blue human player reserve",
+      "x": -1.15,
+      "y": -1.65
+    },
+    {
+      "id": "reserve-blue-3",
+      "elementTypeId": "biobuzz-blue-nectar",
+      "name": "Blue human player reserve",
+      "x": -1.15,
+      "y": -1.65
+    },
+    {
+      "id": "reserve-blue-4",
+      "elementTypeId": "biobuzz-blue-nectar",
+      "name": "Blue human player reserve",
+      "x": -1.15,
+      "y": -1.65
+    }
+  ],
+  "fieldWaypoints": [
+    {
+      "id": "biobuzz-flower-0",
+      "name": "Flower 1",
+      "x": 1.728216,
+      "y": 0.5941695
+    },
+    {
+      "id": "biobuzz-flower-1",
+      "name": "Flower 2",
+      "x": -0.5941695,
+      "y": 1.728216
+    },
+    {
+      "id": "biobuzz-flower-2",
+      "name": "Flower 3",
+      "x": -1.728216,
+      "y": -0.5941695
+    },
+    {
+      "id": "biobuzz-flower-3",
+      "name": "Flower 4",
+      "x": 0.5941695,
+      "y": -1.728216
+    },
+    {
+      "id": "biobuzz-hive-red",
+      "name": "Red hive pivot",
+      "x": 0,
+      "y": 0.32385
+    },
+    {
+      "id": "biobuzz-hive-blue",
+      "name": "Blue hive pivot",
+      "x": 0,
+      "y": -0.32385
+    }
+  ],
+  "image": {
+    "imagePath": "classpath:field-presets/ftc/2026-2027-biobuzz.png",
+    "rotationDegrees": 0,
+    "ftcCoordinateSystem": "square"
+  }
+}

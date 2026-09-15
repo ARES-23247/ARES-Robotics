@@ -33,6 +33,7 @@ fun AlertPanel(
     modifier: Modifier = Modifier
 ) {
     val alerts by alertEngineService.alerts.collectAsState()
+    val persistence by alertEngineService.persistenceStatus.collectAsState()
     val scope = rememberCoroutineScope()
 
     Column(
@@ -78,6 +79,19 @@ fun AlertPanel(
 
         HorizontalDivider(color = AresBorder, thickness = 1.dp)
 
+        alertEngineService.configurationWarning?.let { warning ->
+            Text(warning, color = AresGold, style = MaterialTheme.typography.bodyMedium)
+        }
+
+        if (persistence.pending > 0 && (persistence.failed || persistence.stopped)) {
+            Text(
+                if (persistence.stopped) "${persistence.pending} alerts remain unsaved."
+                else "Saving ${persistence.pending} alerts failed. Retrying; keep Studio open.",
+                color = AresGold,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+
         if (alerts.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -85,7 +99,7 @@ fun AlertPanel(
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Text("All systems nominal.", color = AresTextTertiary, style = MaterialTheme.typography.bodyMedium)
+                Text("No alerts observed.", color = AresTextTertiary, style = MaterialTheme.typography.bodyMedium)
             }
         } else {
             LazyColumn(

@@ -45,26 +45,52 @@ object AutoTuningSafetyPolicy {
         SysIdMechanism.FLYWHEEL, SysIdMechanism.CUSTOM -> MechanismGainEnvelope(3.0, 0.001, 3.0, 2.0, 12.0, 25.0, 3.0)
     }
 
-    fun assessData(mechanism: SysIdMechanism, samples: List<AlignedDataRow>): AutoTuningDataQuality {
-        val finite = samples.filter { it.voltage.isFinite() && it.velocity.isFinite() && it.accel.isFinite() }
-            .sortedBy { it.timestampMs }
+    fun assessData(mechanism: SysIdMechanism, samples: List<AlignedDataRow>): AutoTuningDataQuality =
+        assessPreparedData(mechanism, PreparedSysIdData.from(samples))
+
+    internal fun assessPreparedData(mechanism: SysIdMechanism, prepared: PreparedSysIdData): AutoTuningDataQuality {
+        val finite = prepared.rows
         val blockers = mutableListOf<String>()
         val warnings = mutableListOf<String>()
-        val finiteRatio = if (samples.isEmpty()) 0.0 else finite.size.toDouble() / samples.size
-        val periods = finite.zipWithNext { first, second -> second.timestampMs - first.timestampMs }
-            .filter { it > 0L }
-            .sorted()
-        val medianPeriod = if (periods.isEmpty()) 0.0 else periods[periods.size / 2].toDouble()
-        val maximumGap = periods.maxOrNull() ?: 0L
+        val finiteRatio = if (prepared.originalCount == 0) 0.0 else prepared.finiteSampleCount.toDouble() / prepared.originalCount
+        val periods = LongArray(maxOf(0, finite.size - 1))
+        var periodCount = 0
+        var maximumGap = 0L
+        var duplicateTime = false
+        var minVoltage = Double.POSITIVE_INFINITY
+        var maxVoltage = Double.NEGATIVE_INFINITY
+        var minVelocity = Double.POSITIVE_INFINITY
+        var maxVelocity = Double.NEGATIVE_INFINITY
+        for (i in finite.indices) {
+            val row = finite[i]
+            minVoltage = minOf(minVoltage, row.voltage); maxVoltage = maxOf(maxVoltage, row.voltage)
+            minVelocity = minOf(minVelocity, row.velocity); maxVelocity = maxOf(maxVelocity, row.velocity)
+            if (i > 0) {
+                val period = row.timestampMs - finite[i - 1].timestampMs
+                if (period == 0L) duplicateTime = true else {
+                    periods[periodCount++] = period
+                    maximumGap = maxOf(maximumGap, period)
+                }
+            }
+        }
+        periods.sort(0, periodCount)
+        val medianPeriod = when {
+            periodCount == 0 -> 0.0
+            periodCount % 2 == 1 -> periods[periodCount / 2].toDouble()
+            else -> periods[periodCount / 2 - 1] / 2.0 + periods[periodCount / 2] / 2.0
+        }
         val duration = if (finite.size > 1) finite.last().timestampMs - finite.first().timestampMs else 0L
-        val voltageSpan = finite.maxOfOrNull { it.voltage }?.minus(finite.minOfOrNull { it.voltage } ?: 0.0) ?: 0.0
-        val velocitySpan = finite.maxOfOrNull { it.velocity }?.minus(finite.minOfOrNull { it.velocity } ?: 0.0) ?: 0.0
-        val uniqueTimestamps = finite.asSequence().map { it.timestampMs }.distinct().count()
+        val voltageDifference = if (finite.isEmpty()) 0.0 else maxVoltage - minVoltage
+        val velocityDifference = if (finite.isEmpty()) 0.0 else maxVelocity - minVelocity
+        if (!voltageDifference.isFinite() || !velocityDifference.isFinite()) blockers += "Sample range exceeds finite analysis limits."
+        val voltageSpan = if (voltageDifference.isFinite()) voltageDifference else Double.MAX_VALUE
+        val velocitySpan = if (velocityDifference.isFinite()) velocityDifference else Double.MAX_VALUE
+        if (prepared.invalidTimestampCount > 0) blockers += "Sample timestamps must be nonnegative and within the supported timestamp domain."
 
         if (finite.size < MIN_SAMPLES) blockers += "At least $MIN_SAMPLES finite samples are required."
-        if (finiteRatio < MIN_FINITE_RATIO) blockers += "More than ${(100.0 * (1.0 - MIN_FINITE_RATIO)).toInt()}% of samples are non-finite."
+        if (finiteRatio < MIN_FINITE_RATIO) blockers += "More than ${kotlin.math.round(100.0 * (1.0 - MIN_FINITE_RATIO)).toInt()}% of samples are non-finite."
         if (duration < MIN_DURATION_MS) blockers += "The characterized interval is shorter than ${MIN_DURATION_MS}ms."
-        if (uniqueTimestamps != finite.size) blockers += "Sample timestamps must be unique."
+        if (duplicateTime) blockers += "Sample timestamps must be unique."
         if (voltageSpan < MIN_VOLTAGE_SPAN) blockers += "Voltage excitation span is below ${MIN_VOLTAGE_SPAN}V."
         if (velocitySpan < MIN_VELOCITY_SPAN) blockers += "Velocity excitation is too small for identification."
         if (medianPeriod <= 0.0) blockers += "A positive sample period could not be established."
@@ -73,8 +99,8 @@ object AutoTuningSafetyPolicy {
             blockers += "A ${maximumGap}ms telemetry gap exceeds ${MAX_GAP_MULTIPLIER.toInt()}x the median period."
         }
 
-        val hasPositive = finite.any { it.velocity > DIRECTION_THRESHOLD }
-        val hasNegative = finite.any { it.velocity < -DIRECTION_THRESHOLD }
+        val hasPositive = maxVelocity > DIRECTION_THRESHOLD
+        val hasNegative = minVelocity < -DIRECTION_THRESHOLD
         if (mechanism == SysIdMechanism.FLYWHEEL) {
             if (!hasPositive) blockers += "Flywheel characterization never reached positive velocity."
             if (hasNegative) warnings += "Flywheel data contains reverse motion; one-direction characterization is recommended."

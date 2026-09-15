@@ -6,12 +6,14 @@ This directory contains team 23247's Kotlin season code. It is not an empty FTC 
 
 | Package | Responsibility |
 |---|---|
-| `config` | Canonical hardware-map names and robot-specific constants |
+| `config` | Season runtime policy; hardware identities come from canonical `.ares` descriptors |
 | `dsl` | Team adapters over ARESLib's TeleOp and mecanum autonomous DSLs; season state extension |
-| `hardware` | FTC SDK implementations of mechanism IO interfaces; cached reads and safe writes |
 | `opmodes` | `@TeleOp`/`@Autonomous` entry points, team robot facade, and persistent auto-to-TeleOp state |
 | `opmodes.robot` | Drive, superstructure, and telemetry controllers used by the facade |
-| `subsystems` | Redux-aware subsystem lifecycle implementations |
+
+Lightbot's subsystem state, IO, hardware adapters and registration are generated under
+`TeamCode/build/generated/ares` from `.ares/subsystems`. The drivetrain configuration and
+canonical tuning are generated under `TeamCode/build/generated/ares/drivebase`.
 
 Start with `opmodes/ARESMecanumTeleOp.kt` for a driver-control example, `opmodes/ARESAuto.kt` for autonomous, and `opmodes/AresRobot.kt` for hardware composition. The detailed lifecycle contract is in the repository's [architecture guide](../../../../../../../../docs/ARCHITECTURE.md).
 
@@ -43,7 +45,10 @@ Do not copy an FTC sample's direct motor-write loop into a competition OpMode. D
 
 ## Adding a season mechanism
 
-A mechanism normally needs:
+For Lightbot's GUI-owned project, add or edit the canonical `.aressubsystem` document first,
+then preview and verify the generated code. Do not create a competing hand-maintained copy of
+its hardware or state. When a capability requires a hand-authored extension, explicitly declare
+its ownership and registration. Such an extension normally needs:
 
 1. An IO interface or shared ARESLib interface.
 2. An FTC hardware implementation with cached sensor fields.
@@ -77,7 +82,7 @@ separate, and refuses to silently overwrite code that a person may have customiz
 - Robot Controller drive names are `fl`, `fr`, `rl`, and `rr`.
 - Use `RobotClock` for debounce and elapsed time.
 
-From the repository root, run `.\gradlew.bat :TeamCode:testDebugUnitTest` in PowerShell.
+From `ARES-FTC/`, run `.\gradlew.bat :TeamCode:testDebugUnitTest` in PowerShell.
 
 ## Control Hub Android compatibility
 

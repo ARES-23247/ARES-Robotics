@@ -38,6 +38,17 @@ class ClassifyCiPathsTest(unittest.TestCase):
         result = MODULE.classify_paths(["ARESLib-Kotlin/core/src/main/kotlin/Clock.kt"])
         self.assertTrue(all(result.values()))
 
+    def test_readiness_runtime_schema_generator_and_regressions_keep_consumer_integration(self):
+        for path in (
+            "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/runtime/GeneratedProjectRuntime.kt",
+            "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDocument.kt",
+            "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemLifecycleRenderer.kt",
+            "ARESLib-Kotlin/codegen/src/test/resources/readiness/ScoringRobot.kt.txt",
+            "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/RobotReadinessMathTest.kt",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(all(MODULE.classify_paths([path]).values()))
+
     def test_xrp_change_covers_python_and_studio_template_consumer(self):
         result = MODULE.classify_paths(["ARES-XRP-Starter/tools/ares_project.py"])
         self.assertTrue(result["xrp_starter"])
@@ -98,7 +109,7 @@ class ClassifyCiPathsTest(unittest.TestCase):
                 self.assertTrue(result[key])
                 self.assertTrue(result["analytics_app"])
                 self.assertTrue(result["packages"])
-                self.assertFalse(result["ftc"])
+                self.assertEqual(result["ftc"], product == "ARES-FTC-Starter")
                 self.assertFalse(result["frc"])
 
     def test_lightbot_is_packaged_but_frc_season_is_not(self):
@@ -108,6 +119,20 @@ class ClassifyCiPathsTest(unittest.TestCase):
         self.assertFalse(frc["packages"])
         self.assertTrue(ftc["autos"])
         self.assertTrue(frc["autos"])
+
+    def test_biobuzz_overlay_runs_robot_and_dashboard_consumers(self):
+        for path in (
+            "ARES-FTC/biobuzz/shared/src/main/kotlin/org/ares/biobuzz/BiobuzzTelemetry.kt",
+            "ARES-FTC/biobuzz/shared/src/main/resources/field-presets/ftc/2026-2027-biobuzz.json",
+            "ARES-FTC/biobuzz/simulator/src/main/kotlin/org/ares/biobuzz/BiobuzzSimulation.kt",
+            "ARES-FTC/biobuzz/.ares/tuning/simulation.arestuning",
+        ):
+            with self.subTest(path=path):
+                result = MODULE.classify_paths([path])
+                for key in ("ftc", "analytics_app", "dashboard", "packages"):
+                    self.assertTrue(result[key], key)
+                for key in ("lib", "frc", "analytics_gateway", "full"):
+                    self.assertFalse(result[key], key)
 
     def test_mixed_changes_union_the_affected_products(self):
         result = MODULE.classify_paths(["ARES-FRC/src/Robot.kt",

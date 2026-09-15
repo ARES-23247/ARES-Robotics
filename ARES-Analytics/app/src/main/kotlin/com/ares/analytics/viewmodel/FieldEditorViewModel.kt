@@ -8,7 +8,7 @@ import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.writeFileAtomically
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.util.Sha256
-import com.ares.analytics.viewmodel.field.FieldDocumentMapper
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.ares.analytics.service.project.persistence.FieldDocumentStore
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
@@ -86,6 +86,7 @@ data class FieldEditorState(
 }
 
 sealed class FieldEditorIntent {
+    data object LoadBiobuzzPreset : FieldEditorIntent()
     data class LoadConfig(val projectPath: String?, val league: League) : FieldEditorIntent()
     object SaveDocument : FieldEditorIntent()
     data class ImportFieldImage(val imageFile: File, val projectPath: String?, val league: League) : FieldEditorIntent()
@@ -178,6 +179,7 @@ class FieldEditorViewModel(
 
     fun onIntent(intent: FieldEditorIntent) {
         when (intent) {
+            FieldEditorIntent.LoadBiobuzzPreset -> loadBiobuzzPreset()
             is FieldEditorIntent.LoadConfig -> load(intent.projectPath, intent.league)
             is FieldEditorIntent.ImportFieldImage -> importFieldImage(intent)
             FieldEditorIntent.ClearFieldImage -> applyEdit {
@@ -337,6 +339,7 @@ class FieldEditorViewModel(
         _state.value = withValidation(
             transformed.copy(
                 document = document,
+                aprilTagImportPreview = null,
                 isDirty = true,
                 saveStatus = "Unsaved changes",
                 canUndo = history.canUndo,
@@ -344,6 +347,25 @@ class FieldEditorViewModel(
             )
         )
         scheduleSave(document)
+    }
+
+    private fun loadBiobuzzPreset() {
+        if (activeLeague != League.FTC || _state.value.isLoading) return
+        val document = org.ares.biobuzz.BiobuzzField.document()
+        val bitmap = FieldImageLoader.load("", League.FTC, document.image?.imagePath).getOrThrow()
+        applyEdit { current ->
+            current.copy(
+                document = document.copy(revision = current.document?.revision ?: 0L),
+                fieldImage = bitmap,
+                fieldImageConfig = FieldDocumentMapper.image(document),
+                obstacles = FieldDocumentMapper.obstacles(document),
+                gamePieces = FieldDocumentMapper.gamePieces(document),
+                gamePieceTypes = FieldDocumentMapper.gamePieceTypes(document),
+                aprilTags = FieldDocumentMapper.aprilTags(document),
+                fieldWaypoints = FieldDocumentMapper.fieldWaypoints(document),
+                selectedElementIds = emptySet(),
+            )
+        }
     }
 
     private fun updateGamePieceTypes(types: List<GamePieceType>) {
@@ -432,7 +454,8 @@ class FieldEditorViewModel(
 
     private fun restoreSnapshot(snapshot: FieldEditorSnapshot, previousSelection: Set<String>) {
         val current = snapshot.applyTo(_state.value)
-        val base = current.document ?: FieldDocumentMapper.newDocument(activeLeague, current.fieldImageConfig)
+        val base = (current.document ?: FieldDocumentMapper.newDocument(activeLeague, current.fieldImageConfig))
+            .copy(revision = _state.value.document?.revision ?: 0L)
         val document = FieldDocumentMapper.withEditorData(
             base = base,
             league = activeLeague,
@@ -447,6 +470,7 @@ class FieldEditorViewModel(
         _state.value = withValidation(
             current.copy(
                 document = document,
+                aprilTagImportPreview = null,
                 selectedElementIds = validSelection,
                 isDirty = true,
                 saveStatus = "Unsaved changes",
@@ -705,7 +729,9 @@ class FieldEditorViewModel(
             RobotFieldValidator.validate(
                 config = document,
                 requiredFieldType = requiredFieldType,
-                requireAprilTags = requiredFieldType == FieldType.FTC,
+                // The reviewed BIOBUZZ layout has no AprilTags. Keep normal FTC layout
+                // requirements and validation of any authored tags; do not invent vision targets.
+                requireAprilTags = requiredFieldType == FieldType.FTC && document.id != "ftc-2026-2027-biobuzz",
             )
         }.orEmpty()
 
@@ -806,9 +832,10 @@ class FieldEditorViewModel(
     }
 
     private fun previewAprilTagMap(intent: FieldEditorIntent.PreviewAprilTagMap) {
-        activeProjectPath = intent.projectPath ?: activeProjectPath
-        activeLeague = intent.league
         try {
+            require(intent.league == activeLeague && (intent.projectPath == null || intent.projectPath == activeProjectPath)) {
+                "Load the target project and league before importing AprilTags"
+            }
             val preview = FieldAprilTagTransfer.decode(
                 content = intent.content,
                 fileName = intent.fileName,
@@ -834,6 +861,8 @@ class FieldEditorViewModel(
 
     private fun applyAprilTagImport(replaceExisting: Boolean) {
         val preview = _state.value.aprilTagImportPreview ?: return
+        // Applying a no-op import must still consume its preview, without adding an undo entry.
+        _state.update { it.copy(aprilTagImportPreview = null) }
         applyEdit { state ->
             val tags = if (replaceExisting) {
                 preview.tags
@@ -843,13 +872,10 @@ class FieldEditorViewModel(
             }
             state.copy(
                 aprilTags = tags,
-                aprilTagImportPreview = null,
-                fieldImageConfig = if (
-                    replaceExisting && preview.fieldLengthMeters != null && preview.fieldWidthMeters != null
-                ) {
+                fieldImageConfig = if (replaceExisting) {
                     state.fieldImageConfig.copy(
-                        widthMeters = preview.fieldLengthMeters,
-                        heightMeters = preview.fieldWidthMeters,
+                        widthMeters = preview.fieldLengthMeters ?: state.fieldImageConfig.widthMeters,
+                        heightMeters = preview.fieldWidthMeters ?: state.fieldImageConfig.heightMeters,
                     )
                 } else {
                     state.fieldImageConfig

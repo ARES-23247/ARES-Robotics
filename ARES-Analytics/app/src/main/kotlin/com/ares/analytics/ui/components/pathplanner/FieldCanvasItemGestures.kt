@@ -12,9 +12,7 @@ import com.ares.analytics.shared.FieldWaypoint
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.shared.models.League
-import kotlin.math.cos
 import kotlin.math.pow
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** Secondary field-item gestures kept separate from drag and placement state. */
@@ -40,24 +38,10 @@ internal fun Modifier.fieldCanvasItemGestures(
             onDoubleTap = { offset ->
                 if (editorMode != EditorMode.SELECT) return@detectTapGestures
 
-                val clickCoord = getRobotCoordFromScreen(
-                    offset,
-                    size.width.toFloat(),
-                    size.height.toFloat(),
-                    fieldWidthM,
-                    fieldHeightM,
-                    league,
-                    zoomScale,
-                    panOffset,
-                )
-                val hitObstacle = currentActiveObstacles.find { it.contains(clickCoord) }
-                if (hitObstacle != null) {
-                    onItemDoubleTapped?.invoke(hitObstacle.id, "Obstacle")
-                } else {
-                    currentActiveAprilTags
-                        .find { clickCoord.distanceTo(it.x, it.y) < 0.3 }
-                        ?.let { onItemDoubleTapped?.invoke(it.id, "AprilTag") }
-                }
+                findFieldItemAtScreen(
+                    offset, size.width.toFloat(), size.height.toFloat(), fieldWidthM, fieldHeightM,
+                    league, zoomScale, panOffset, viewRotation, currentActiveObstacles, currentActiveAprilTags,
+                )?.let { (type, id) -> onItemDoubleTapped?.invoke(id, type) }
             },
         )
     }
@@ -89,41 +73,37 @@ internal fun Modifier.fieldCanvasItemGestures(
                     continue
                 }
 
-                val clickCoord = getRobotCoordFromScreen(
-                    offset,
-                    width,
-                    height,
-                    fieldWidthM,
-                    fieldHeightM,
-                    league,
-                    zoomScale,
-                    panOffset,
+                val target = findFieldItemAtScreen(
+                    offset, width, height, fieldWidthM, fieldHeightM, league, zoomScale, panOffset,
+                    viewRotation, currentActiveObstacles, currentActiveAprilTags, currentActiveGamePieces,
+                    currentActiveFieldWaypoints,
                 )
-                val target = currentActiveObstacles.find { it.contains(clickCoord) }
-                    ?.let { "Obstacle" to it.id }
-                    ?: currentActiveAprilTags.find { clickCoord.distanceTo(it.x, it.y) < 0.3 }
-                        ?.let { "AprilTag" to it.id }
-                    ?: currentActiveGamePieces.find { clickCoord.distanceTo(it.x, it.y) < 0.2 }
-                        ?.let { "GamePiece" to it.id }
-                    ?: currentActiveFieldWaypoints.find { clickCoord.distanceTo(it.x, it.y) < 0.3 }
-                        ?.let { "FieldWaypoint" to it.id }
 
                 target?.let { (type, id) -> onOpenContextMenu(offset, type, -1, id) }
             }
         }
     }
 
-private fun Waypoint.distanceTo(x: Double, y: Double): Double =
-    sqrt((this.x - x).pow(2) + (this.y - y).pow(2))
-
-private fun Obstacle.contains(point: Waypoint): Boolean = when (this) {
-    is Obstacle.Circle -> point.distanceTo(centerX, centerY) <= radius
-    is Obstacle.Rectangle -> {
-        val dx = point.x - centerX
-        val dy = point.y - centerY
-        val radians = Math.toRadians(-rotation)
-        kotlin.math.abs(dx * cos(radians) - dy * sin(radians)) <= width / 2.0 &&
-            kotlin.math.abs(dx * sin(radians) + dy * cos(radians)) <= height / 2.0
-    }
-    is Obstacle.Polygon -> vertices.any { point.distanceTo(it.x, it.y) < 0.3 }
+/** Shared screen-space item lookup for double-click and context-menu gestures. */
+internal fun findFieldItemAtScreen(
+    offset: Offset,
+    width: Float,
+    height: Float,
+    fieldWidthM: Double,
+    fieldHeightM: Double,
+    league: League,
+    zoomScale: Float,
+    panOffset: Offset,
+    viewRotation: Float,
+    obstacles: List<Obstacle>,
+    aprilTags: List<AprilTagPlacement>,
+    gamePieces: List<GamePiece> = emptyList(),
+    fieldWaypoints: List<FieldWaypoint> = emptyList(),
+): Pair<String, String>? {
+    val point = getRobotCoordFromScreen(offset, width, height, fieldWidthM, fieldHeightM,
+        league, zoomScale, panOffset, viewRotation)
+    return obstacles.find { it.containsFieldPoint(point) }?.let { "Obstacle" to it.id }
+        ?: aprilTags.find { point.distanceTo(it.x, it.y) < 0.3 }?.let { "AprilTag" to it.id }
+        ?: gamePieces.find { point.distanceTo(it.x, it.y) < 0.2 }?.let { "GamePiece" to it.id }
+        ?: fieldWaypoints.find { point.distanceTo(it.x, it.y) < 0.3 }?.let { "FieldWaypoint" to it.id }
 }

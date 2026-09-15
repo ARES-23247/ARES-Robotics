@@ -1,6 +1,8 @@
 package com.areslib.tuning
 
 import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.schema.TuningAcknowledgement
+import com.areslib.telemetry.schema.TuningAcknowledgementCodec
 import com.areslib.util.RobotClock
 import java.nio.file.Path
 
@@ -10,6 +12,9 @@ import java.nio.file.Path
  * It publishes only known typed parameters, applies policy through [TypedTuningRuntime], and may
  * persist only an explicitly robot-local experimental overlay. It never reflects over Redux state,
  * writes canonical project profiles, or accepts unknown topic paths.
+ * Local saves run on an owned worker, coalescing pending snapshots. Inspect
+ * [localOverlayPersistenceFailure] for save failures; close after stopping updates to drain saves.
+ * Update, metadata publication, and close belong to one serialized robot lifecycle owner.
  */
 class TuningManager(
     private val runtime: TypedTuningRuntime,
@@ -21,9 +26,19 @@ class TuningManager(
     private val isConsumerSupported: (parameterUid: String) -> Boolean,
     private val localProjectRoot: Path? = null,
     private val localOverlayFile: Path? = null,
-) {
+) : AutoCloseable {
     private var lastUpdateTimestamp = 0L
+    private var hasUpdateTimestamp = false
+    private var metadataPublished = false
     private var overlayDirty = false
+    // Per-owner persistence boundary; tests can hold disk I/O without touching a robot filesystem.
+    internal var writeLocalOverlay: (Path, Path, TuningProfileDocument) -> Unit = LocalTuningOverlayStore::writeAtomically
+    private var overlayWriter: TuningOverlayWriter? = null
+    private var closed = false
+
+    /** Latest local disk failure, cleared after a successful write; consumer acceptance is separate. */
+    val localOverlayPersistenceFailure: Throwable? get() = overlayWriter?.failure
+    private val topics = Array(runtime.metadata.declarations.size) { ParameterTopics(runtime.metadata.declarations[it]) }
     private val lastRequestNonce = LongArray(runtime.metadata.declarations.size) { -1L }
 
     init {
@@ -34,12 +49,14 @@ class TuningManager(
     }
 
     fun publishMetadataAndValues() {
+        check(!closed) { "Tuning manager is closed" }
         telemetry.putNumber(TuningTopics.SCHEMA_VERSION_TOPIC, TuningTopics.SCHEMA_VERSION.toDouble())
         telemetry.putString("${TuningTopics.ROOT}/ProjectId", runtime.metadata.projectId)
         telemetry.putString("${TuningTopics.ROOT}/DrivebaseUid", runtime.metadata.drivebaseUid.orEmpty())
         telemetry.putString("${TuningTopics.ROOT}/CanonicalProfileUid", runtime.metadata.canonicalProfileUid)
-        runtime.metadata.declarations.forEach { declaration ->
-            val root = parameterRoot(declaration.uid)
+        topics.forEach { topic ->
+            val declaration = topic.declaration
+            val root = topic.root
             telemetry.putString("$root/Key", declaration.key)
             telemetry.putString("$root/ComponentUid", declaration.componentUid)
             telemetry.putString("$root/DisplayName", declaration.displayName)
@@ -54,87 +71,139 @@ class TuningManager(
             publishValue("$root/Default", declaration.defaultValue)
             publishValue("$root/Canonical", requireNotNull(runtime.canonicalValue(declaration.uid)))
             val current = requireNotNull(runtime.value(declaration.uid))
-            publishValue("$root/Current", current)
-            publishValue("$root/Requested", current)
-            telemetry.putNumber("$root/RequestNonce", -1.0)
-            telemetry.putNumber("$root/ProcessedNonce", -1.0)
-            telemetry.putString("$root/LastResult", "IDLE")
-        }
-    }
-
-    /** Polls declared values only. Unknown topics are never enumerated or dispatched. */
-    fun update(timestampMs: Long = RobotClock.currentTimeMillis()) {
-        if (timestampMs - lastUpdateTimestamp < 500L) return
-        lastUpdateTimestamp = timestampMs
-        val context = contextProvider()
-        runtime.metadata.declarations.forEachIndexed { index, declaration ->
-            val current = requireNotNull(runtime.value(declaration.uid))
-            val root = parameterRoot(declaration.uid)
-            val nonceValue = telemetry.getNumber("$root/RequestNonce", lastRequestNonce[index].toDouble())
-            // NT4 carries numbers as doubles. Restrict nonces to the exactly representable integer
-            // range so reconnect/replay ordering can never alias two distinct Long values.
-            val nonce = nonceValue.takeIf {
-                it.isFinite() && it % 1.0 == 0.0 && it in 0.0..MAX_SAFE_DOUBLE_INTEGER
-            }?.toLong()
-            if (nonce != null && nonce > lastRequestNonce[index]) {
-                lastRequestNonce[index] = nonce
-                val candidate = readValue("$root/Requested", declaration.type, current)
-                val consumerSupported = isConsumerSupported(declaration.uid)
-                val result = if (consumerSupported) {
-                    runtime.apply(declaration.uid, candidate, context)
-                } else {
-                    TuningUpdateResult.CONSUMER_REJECTED
-                }
-                if (result == TuningUpdateResult.APPLIED) {
-                    try {
-                        if (onApplied(declaration.uid, candidate)) {
-                            overlayDirty = true
-                            telemetry.putString("$root/LastResult", result.name)
-                        } else {
-                            runtime.restoreAfterFailedApply(declaration.uid, current)
-                            telemetry.putString("$root/LastResult", TuningUpdateResult.CONSUMER_REJECTED.name)
-                        }
-                    } catch (failure: Exception) {
-                        runtime.restoreAfterFailedApply(declaration.uid, current)
-                        telemetry.putString("$root/LastResult", TuningUpdateResult.APPLY_CALLBACK_FAILED.name)
-                        publishValue("$root/Current", current)
-                        telemetry.putNumber("$root/ProcessedNonce", nonce.toDouble())
-                        throw failure
-                    }
-                } else {
-                    telemetry.putString("$root/LastResult", result.name)
-                }
-                publishValue("$root/Current", requireNotNull(runtime.value(declaration.uid)))
-                // Publish this last: dashboards treat the matching processed nonce as the atomic
-                // acknowledgement that Current and LastResult belong to their request.
-                telemetry.putNumber("$root/ProcessedNonce", nonce.toDouble())
+            publishValue(topic.current, current)
+            // Metadata refresh must not overwrite a dashboard proposal or erase its acknowledgement.
+            if (!metadataPublished) {
+                publishValue(topic.requested, current)
+                telemetry.putNumber(topic.requestNonce, -1.0)
+                telemetry.putNumber(topic.processedNonce, -1.0)
+                telemetry.putString(topic.lastResult, "IDLE")
+                telemetry.putString(topic.acknowledgement, "")
             }
         }
-        if (overlayDirty) persistLocalOverlay()
+        metadataPublished = true
+    }
+
+    /**
+     * Polls declared nonces at most every 500 ms. The first call may poll immediately; a clock
+     * rewind rebases the interval without applying requests. Idle polls allocate no topic strings
+     * and do not query apply context. Every proposal checks fresh arm/disable state separately.
+     */
+    fun update(timestampMs: Long = RobotClock.currentTimeMillis()) {
+        if (closed) return
+        if (hasUpdateTimestamp) {
+            if (timestampMs < lastUpdateTimestamp) {
+                lastUpdateTimestamp = timestampMs
+                return
+            }
+            val elapsed = timestampMs - lastUpdateTimestamp
+            // Ordered subtraction overflow represents a forward interval longer than the throttle.
+            if (elapsed >= 0L && elapsed < 500L) return
+        }
+        lastUpdateTimestamp = timestampMs
+        hasUpdateTimestamp = true
+        for (index in topics.indices) {
+            val topic = topics[index]
+            val declaration = topic.declaration
+            val nonceValue = telemetry.getNumber(topic.requestNonce, lastRequestNonce[index].toDouble())
+            // NT4 carries numbers as doubles. Restrict nonces to the exactly representable integer
+            // range so reconnect/replay ordering can never alias two distinct Long values.
+            // Keep rejection and conversion primitive: nullable takeIf/toLong boxes on a poll
+            // unless the JIT happens to eliminate both wrappers in its current call profile.
+            if (!nonceValue.isFinite() || nonceValue < 0.0 || nonceValue > MAX_SAFE_DOUBLE_INTEGER ||
+                nonceValue % 1.0 != 0.0) continue
+            val nonce = nonceValue.toLong()
+            if (nonce > lastRequestNonce[index]) {
+                lastRequestNonce[index] = nonce
+                val current = requireNotNull(runtime.value(declaration.uid))
+                val candidate = readValue(topic.requested, declaration.type)
+                val consumerSupported = isConsumerSupported(declaration.uid)
+                var result = when {
+                    !consumerSupported -> TuningUpdateResult.CONSUMER_REJECTED
+                    candidate == null -> TuningUpdateResult.INVALID_VALUE
+                    else -> runtime.apply(declaration.uid, candidate, contextProvider())
+                }
+                if (result == TuningUpdateResult.APPLIED) {
+                    val accepted = try {
+                        onApplied(declaration.uid, requireNotNull(candidate))
+                    } catch (failure: Exception) {
+                        runtime.restoreAfterFailedApply(declaration.uid, current)
+                        try {
+                            acknowledge(topic, TuningUpdateResult.APPLY_CALLBACK_FAILED, current, nonce)
+                        } catch (diagnosticFailure: Exception) {
+                            if (diagnosticFailure !== failure) failure.addSuppressed(diagnosticFailure)
+                        }
+                        throw failure
+                    }
+                    if (accepted) overlayDirty = true else {
+                        runtime.restoreAfterFailedApply(declaration.uid, current)
+                        result = TuningUpdateResult.CONSUMER_REJECTED
+                    }
+                }
+                // A transport failure after a successful consumer commit must not roll back only
+                // the tuning store and leave it inconsistent with the controller's actual value.
+                acknowledge(topic, result, requireNotNull(runtime.value(declaration.uid)), nonce)
+            }
+        }
+        if (overlayDirty) persistLocalOverlay() else overlayWriter?.retry()
+    }
+
+    private fun acknowledge(topic: ParameterTopics, result: TuningUpdateResult, current: TuningValue, nonce: Long) {
+        telemetry.putString(topic.lastResult, result.name)
+        publishValue(topic.current, current)
+        // Keep legacy scalar diagnostics. NT4 servers may batch these in a different order.
+        telemetry.putNumber(topic.processedNonce, nonce.toDouble())
+        telemetry.putString(topic.acknowledgement, TuningAcknowledgementCodec.encode(TuningAcknowledgement(nonce, result.name)))
     }
 
     private fun persistLocalOverlay() {
-        val projectRoot = localProjectRoot ?: return
+        val projectRoot = localProjectRoot ?: run { overlayDirty = false; return }
         val output = localOverlayFile ?: return
         val overlay = runtime.localOverlay(
             uid = "local.${runtime.metadata.projectId}.runtime",
             profileId = "runtime-experiment",
             displayName = "Runtime experiment",
         )
-        LocalTuningOverlayStore.writeAtomically(projectRoot, output, overlay)
+        val writer = overlayWriter ?: TuningOverlayWriter { writeLocalOverlay(projectRoot, output, it) }
+            .also { overlayWriter = it }
+        writer.submit(overlay)
         overlayDirty = false
     }
 
-    private fun readValue(topic: String, type: TuningParameterType, current: TuningValue): TuningValue = when (type) {
-        TuningParameterType.DOUBLE -> TuningValue(doubleValue = telemetry.getNumber(topic, requireNotNull(current.doubleValue)))
+    /**
+     * Stop polling before close. Drains accepted local changes, including a commit whose telemetry
+     * acknowledgement failed. Robot owners must neutralize hardware before waiting for disk I/O.
+     */
+    override fun close() {
+        if (closed) return
+        closed = true
+        try {
+            if (overlayDirty) persistLocalOverlay()
+        } finally {
+            overlayWriter?.close()
+        }
+    }
+
+    private fun readValue(topic: String, type: TuningParameterType): TuningValue? = when (type) {
+        TuningParameterType.DOUBLE -> TuningValue(doubleValue = telemetry.getNumber(topic, Double.NaN))
         TuningParameterType.INT -> {
-            val currentValue = requireNotNull(current.intValue)
-            val value = telemetry.getNumber(topic, currentValue.toDouble())
-            if (!value.isFinite() || value % 1.0 != 0.0 || value !in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble()) current
+            val value = telemetry.getNumber(topic, Double.NaN)
+            if (!value.isFinite() || value % 1.0 != 0.0 || value !in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble()) null
             else TuningValue(intValue = value.toInt())
         }
-        TuningParameterType.BOOLEAN -> TuningValue(booleanValue = telemetry.getBoolean(topic, requireNotNull(current.booleanValue)))
-        TuningParameterType.TEXT, TuningParameterType.ENUM -> TuningValue(textValue = telemetry.getString(topic, requireNotNull(current.textValue)))
+        // Two different defaults distinguish missing/incompatible data from a legitimate false
+        // or sentinel-valued string without extending the platform-neutral telemetry API.
+        TuningParameterType.BOOLEAN -> when {
+            telemetry.getBoolean(topic, false) -> TuningValue(booleanValue = true)
+            !telemetry.getBoolean(topic, true) -> TuningValue(booleanValue = false)
+            else -> null
+        }
+        TuningParameterType.TEXT, TuningParameterType.ENUM -> {
+            val value = telemetry.getString(topic, ABSENT_TEXT)
+            if (value != ABSENT_TEXT || telemetry.getString(topic, SECOND_ABSENT_TEXT) == ABSENT_TEXT) {
+                TuningValue(textValue = value)
+            } else null
+        }
     }
 
     private fun publishValue(topic: String, value: TuningValue) {
@@ -146,9 +215,19 @@ class TuningManager(
         }
     }
 
-    private fun parameterRoot(uid: String): String = "${TuningTopics.ROOT}/Parameters/$uid"
+    private class ParameterTopics(val declaration: TuningParameterDeclaration) {
+        val root = "${TuningTopics.ROOT}/Parameters/${declaration.uid}"
+        val current = "$root/Current"
+        val requested = "$root/Requested"
+        val requestNonce = "$root/RequestNonce"
+        val processedNonce = "$root/ProcessedNonce"
+        val lastResult = "$root/LastResult"
+        val acknowledgement = "$root/Acknowledgement"
+    }
 
     private companion object {
         const val MAX_SAFE_DOUBLE_INTEGER: Double = 9_007_199_254_740_991.0
+        private const val ABSENT_TEXT: String = "\u0000"
+        private const val SECOND_ABSENT_TEXT: String = "\u0001"
     }
 }

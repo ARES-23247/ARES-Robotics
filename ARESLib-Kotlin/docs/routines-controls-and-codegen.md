@@ -16,6 +16,16 @@ The shared schema supports actions, drive goals, waits, conditions, parallel gro
 groups, deadlines, routine calls, repeats, and branches. Validation rejects missing capabilities,
 recursive calls, invalid timing, and incompatible exclusive resource use before a robot starts.
 
+Compilation validates every reachable called routine before task factories run. Factories return
+fresh, unstarted tasks; they must not reuse an active task or perform hardware work. One compilation
+owns callback and timeout cleanup for its complete task tree, including unselected branches and
+queued work cancelled before initialization. Runtime wrappers preserve child failures, cancellation,
+deadlines and cleanup actions. Use `RoutineManager` from the existing robot loop, and call its
+`cancelAll` hook on disable/stop. Custom tasks remain responsible for private child lifecycles.
+
+Typed numeric arguments and their defaults pass the same finite-value and range checks; bounds
+must be finite and ordered. A declared empty `otherwise` branch still counts as a declaration.
+
 ## Canonical project files
 
 Robot repositories keep human-edited inputs under `.ares/`:
@@ -70,12 +80,20 @@ on disable, stop, and every mode transition; they do not run during INIT or auto
 bindings that create discrete subsystem tasks must use on-change emission with a positive epsilon
 so ordinary joystick noise cannot flood a task queue.
 
+`GeneratedProjectDefinition` is reusable metadata. Its `createControls` factory creates a fresh
+`GeneratedProjectControls` for each host, pairing controller bindings with an emitter that owns
+the same drive-axis state. Hosts never share mutable drive values. Cancellation attempts every
+port, direct-task cleanup action, and routine even if an earlier callback fails; the first failure
+is then rethrown with later failures suppressed. Stable source metadata and active-port counts are
+cached at initialization for telemetry reads.
+
 ## Deterministic Kotlin generation
 
 `AresProjectCodegenCli` validates all canonical documents and writes a deterministic Kotlin source
 file containing the catalog contract, routines, autonomous entries, controller profiles, and
-binding factories. Generated Kotlin is intentionally checked in: FTC and FRC builds stay hermetic
-at an event, and reviewers can see exactly what will be compiled onto the robot.
+binding factories. Generated robot plumbing belongs under the product's `build/generated/ares/`
+outputs. Checked-in `.ares` documents own that plumbing; hand-authored extensions remain separate.
+Generation and verification run locally without a connected robot.
 
 Each season repository exposes two Gradle tasks:
 
@@ -83,7 +101,7 @@ Each season repository exposes two Gradle tasks:
 # Regenerate disposable output after a GUI/document edit
 .\gradlew.bat generateAresProject
 
-# Fail if canonical input is invalid or disposable output does not regenerate deterministically
+# Validate canonical input and generated wiring before robot compilation
 .\gradlew.bat verifyAresProject
 ```
 

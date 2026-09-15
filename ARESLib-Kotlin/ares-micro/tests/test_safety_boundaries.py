@@ -41,6 +41,7 @@ class SafetyBoundariesTest(unittest.TestCase):
         server._recv_buffer = json.dumps(dict(protocol=PROTOCOL, type="control", sessionId="test",
             sequence=sequence, requestRevision=revision, command="START_TELEOP", armed=True,
             driveFrame=[0.4, 0, 0])) + "\n"
+        server._recv_buffer = server._recv_buffer.encode("utf-8")
         server._process_buffer()
 
     def assert_neutral(self):
@@ -105,6 +106,7 @@ class SafetyBoundariesTest(unittest.TestCase):
                 self.robot.faulted = False
                 self.control(5, 4)
                 self.robot.mode = "TELEOP"
+                self.robot.telemetry.is_connected = True
                 with mock.patch.object(self.robot.telemetry, method, side_effect=RuntimeError("fault")):
                     self.robot.step()
                 self.assert_neutral()

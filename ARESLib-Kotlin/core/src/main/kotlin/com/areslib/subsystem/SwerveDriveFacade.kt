@@ -15,6 +15,7 @@ class SwerveDriveFacade(store: Store) : HolonomicDriveFacade(store) {
      * with exactly 0.0 speed. This resists pushes from opponent robots.
      */
     fun brake() {
+        resetHoldControllers()
         store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.X_BRAKE))
     }
 }

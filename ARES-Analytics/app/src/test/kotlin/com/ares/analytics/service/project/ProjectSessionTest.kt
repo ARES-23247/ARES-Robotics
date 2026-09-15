@@ -194,7 +194,7 @@ class ProjectSessionTest {
         val snapshot = AresProjectDocuments().load(root.path, ControllerInputPlatform.FTC)
         val messages = snapshot.diagnostics.map { it.message }
 
-        assertTrue(messages.any { it.contains("authoringModel") })
+        assertTrue(messages.any { it.contains("Unsupported project metadata schema 3") })
         assertFalse(messages.any { it.contains("Canonical .ares/project.json is required") })
     }
 

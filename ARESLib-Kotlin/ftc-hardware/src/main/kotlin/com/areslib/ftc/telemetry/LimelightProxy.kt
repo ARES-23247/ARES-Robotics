@@ -2,19 +2,18 @@ package com.areslib.ftc.telemetry
 
 import com.areslib.util.RobotClock
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ExecutorCompletionService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Configuration schema for a single Limelight camera. */
@@ -30,11 +29,12 @@ data class LimelightConfig(
  *
  * Each accepted client consumes one per-camera permit and one process-wide permit. A connection
  * uses exactly two copy workers (one per direction); there is no third waiter thread. Listener,
- * worker, socket, and queued-task counts are therefore bounded by constructor limits. All reads use
+ * worker, socket, and queued-task counts are bounded by constructor limits. The copy pool's queue
+ * holds at most twice the global connection limit, including canceled tasks awaiting removal. All reads use
  * a finite idle timeout, and [stop] closes every listener and active socket before joining pools.
  */
 class LimelightProxy(
-    private val cameras: List<LimelightConfig> = listOf(
+    cameras: List<LimelightConfig> = listOf(
         LimelightConfig("Front", "172.29.0.1", 0)
     ),
     private val maxConnectionsPerCamera: Int = DEFAULT_CONNECTIONS_PER_CAMERA,
@@ -43,6 +43,10 @@ class LimelightProxy(
     private val socketIdleTimeoutMs: Int = DEFAULT_IDLE_TIMEOUT_MS,
     private val stopTimeoutMs: Long = DEFAULT_STOP_TIMEOUT_MS
 ) {
+    private val cameras = cameras.also {
+        require(it.isNotEmpty()) { "At least one Limelight camera is required" }
+        require(it.size <= MAX_CAMERAS) { "At most $MAX_CAMERAS Limelight cameras are supported" }
+    }.toList()
     private var acceptExecutor: ExecutorService? = null
     private var copyExecutor: ExecutorService? = null
     private val forwarders = mutableListOf<TCPForwarder>()
@@ -55,8 +59,6 @@ class LimelightProxy(
     internal val peakClientCount: Int get() = peakClientCounter.get()
 
     init {
-        require(cameras.isNotEmpty()) { "At least one Limelight camera is required" }
-        require(cameras.size <= MAX_CAMERAS) { "At most $MAX_CAMERAS Limelight cameras are supported" }
         require(maxConnectionsPerCamera in 1..MAX_CONNECTIONS_PER_CAMERA) {
             "maxConnectionsPerCamera must be between 1 and $MAX_CONNECTIONS_PER_CAMERA"
         }
@@ -68,6 +70,18 @@ class LimelightProxy(
         }
         require(stopTimeoutMs in 1L..MAX_STOP_TIMEOUT_MS) {
             "stopTimeoutMs must be between 1 and $MAX_STOP_TIMEOUT_MS"
+        }
+        for ((index, camera) in this.cameras.withIndex()) {
+            require(camera.targetIp.isNotBlank()) { "Camera target must not be blank" }
+            require(camera.localPortOffset in MIN_PORT_OFFSET..MAX_PORT_OFFSET &&
+                camera.targetPortOffset in MIN_PORT_OFFSET..MAX_PORT_OFFSET) {
+                "Each camera must address eight ports within 1..65535"
+            }
+            for (previous in 0 until index) {
+                require(kotlin.math.abs(camera.localPortOffset - this.cameras[previous].localPortOffset) >= FORWARDED_PORT_COUNT) {
+                    "Camera listener port ranges must not overlap"
+                }
+            }
         }
     }
 
@@ -111,7 +125,10 @@ class LimelightProxy(
         return DEFAULT_LIMELIGHT_IP
     }
 
-    /** Starts all configured camera tunnels. Repeated calls while running are no-ops. */
+    /**
+     * Binds every configured listener before accepting clients. Binding failure rolls back all
+     * listeners and propagates to the caller. Repeated calls while running are no-ops.
+     */
     @Synchronized
     fun start() {
         if (acceptExecutor?.isShutdown == false) return
@@ -119,7 +136,9 @@ class LimelightProxy(
         val listeners = Executors.newFixedThreadPool(listenerCount) { task ->
             Thread(task, "LimelightProxy-Acceptor").apply { isDaemon = true }
         }
-        val workers = Executors.newFixedThreadPool(maxConnectionsGlobal * COPY_DIRECTIONS) { task ->
+        val workerCount = maxConnectionsGlobal * COPY_DIRECTIONS
+        val workers = ThreadPoolExecutor(workerCount, workerCount, 0L, TimeUnit.MILLISECONDS,
+            ArrayBlockingQueue(workerCount)) { task ->
             Thread(task, "LimelightProxy-Copy").apply { isDaemon = true }
         }
         acceptExecutor = listeners
@@ -141,42 +160,27 @@ class LimelightProxy(
                     camera.targetIp
                 }
                 repeat(FORWARDED_PORT_COUNT) { offset ->
-                    startForwarder(
+                    forwarders.add(TCPForwarder(
                         localBase + offset,
                         targetIp,
                         remoteBase + offset,
                         cameraConnections,
-                        listeners,
                         workers
-                    )
+                    ))
                 }
             }
+            forwarders.forEach { listeners.execute(it) }
         } catch (failure: Throwable) {
             stop()
             throw failure
         }
     }
 
-    private fun startForwarder(
-        localPort: Int,
-        remoteHost: String,
-        remotePort: Int,
-        cameraConnections: Semaphore,
-        listeners: ExecutorService,
-        workers: ExecutorService
-    ) {
-        val forwarder = TCPForwarder(
-            localPort,
-            remoteHost,
-            remotePort,
-            cameraConnections,
-            workers
-        )
-        forwarders.add(forwarder)
-        listeners.submit(forwarder)
-    }
-
-    /** Closes all sockets immediately and joins the bounded pools within [stopTimeoutMs]. */
+    /**
+     * Closes listeners and registered pairs before waiting for the pools against a shared
+     * [RobotClock] deadline of [stopTimeoutMs]. A frozen or rewound replay clock does not provide
+     * a wall-time bound across these separate waits; this proxy is intended for the live clock.
+     */
     @Synchronized
     fun stop() {
         forwarders.forEach(TCPForwarder::stop)
@@ -213,16 +217,13 @@ class LimelightProxy(
         private val cameraConnections: Semaphore,
         private val workers: ExecutorService
     ) : Runnable {
-        @Volatile private var serverSocket: ServerSocket? = null
+        private val serverSocket = ServerSocket(localPort)
         @Volatile private var running = true
 
         override fun run() {
             try {
-                if (!running) return
-                val listener = ServerSocket(localPort)
-                serverSocket = listener
                 while (running) {
-                    val client = listener.accept()
+                    val client = serverSocket.accept()
                     if (!running) {
                         client.close()
                         break
@@ -232,37 +233,36 @@ class LimelightProxy(
             } catch (_: IOException) {
                 // Normal path when stop closes the listener.
             } finally {
-                try { serverSocket?.close() } catch (_: IOException) {}
-                serverSocket = null
+                try { serverSocket.close() } catch (_: IOException) {}
             }
         }
 
         private fun acceptClient(client: Socket) {
-            if (!globalConnections.tryAcquire()) {
-                closeQuietly(client)
-                return
+            // Stop excludes registration, then closes every registered pair. Network connect
+            // stays outside this short lock so shutdown can close a connecting socket.
+            val connection = synchronized(this) {
+                if (!running || !globalConnections.tryAcquire()) {
+                    closeQuietly(client)
+                    return
+                }
+                if (!cameraConnections.tryAcquire()) {
+                    globalConnections.release()
+                    closeQuietly(client)
+                    return
+                }
+                ProxiedConnection(client, Socket(), cameraConnections)
             }
-            if (!cameraConnections.tryAcquire()) {
-                globalConnections.release()
-                closeQuietly(client)
-                return
-            }
-
-            val remote = Socket()
-            val connection = ProxiedConnection(client, remote, cameraConnections)
             try {
-                client.soTimeout = socketIdleTimeoutMs
-                remote.soTimeout = socketIdleTimeoutMs
-                remote.connect(InetSocketAddress(remoteHost, remotePort), CONNECT_TIMEOUT_MS)
+                connection.connect(remoteHost, remotePort)
                 connection.start(workers)
             } catch (_: Throwable) {
-                connection.abortBeforeStart()
+                connection.abort()
             }
         }
 
-        fun stop() {
+        @Synchronized fun stop() {
             running = false
-            try { serverSocket?.close() } catch (_: IOException) {}
+            try { serverSocket.close() } catch (_: IOException) {}
         }
     }
 
@@ -272,7 +272,8 @@ class LimelightProxy(
         private val cameraConnections: Semaphore
     ) {
         private val directionsRemaining = AtomicInteger(COPY_DIRECTIONS)
-        private val released = AtomicBoolean(false)
+        private val toRemote = CopyDirection(client, remote)
+        private val toClient = CopyDirection(remote, client)
 
         init {
             activeConnections.add(this)
@@ -280,52 +281,60 @@ class LimelightProxy(
             peakClientCounter.getAndUpdate { previous -> maxOf(previous, active) }
         }
 
+        fun connect(host: String, port: Int) {
+            client.soTimeout = socketIdleTimeoutMs
+            remote.soTimeout = socketIdleTimeoutMs
+            remote.connect(InetSocketAddress(host, port), CONNECT_TIMEOUT_MS)
+        }
+
         fun start(workers: ExecutorService) {
-            val clientIn = client.getInputStream()
-            val clientOut = client.getOutputStream()
-            val remoteIn = remote.getInputStream()
-            val remoteOut = remote.getOutputStream()
-            var submitted = 0
             try {
-                workers.submit { pump(clientIn, remoteOut) }
-                submitted++
-                workers.submit { pump(remoteIn, clientOut) }
-                submitted++
+                workers.execute(toRemote)
+                workers.execute(toClient)
             } catch (_: RejectedExecutionException) {
                 abort()
-                repeat(COPY_DIRECTIONS - submitted) { directionComplete() }
             }
         }
 
-        private fun pump(input: InputStream, output: OutputStream) {
-            val buffer = ByteArray(COPY_BUFFER_BYTES)
-            try {
-                while (!Thread.currentThread().isInterrupted) {
-                    val count = input.read(buffer)
-                    if (count < 0) break
-                    output.write(buffer, 0, count)
-                    output.flush()
+        private inner class CopyDirection(private val source: Socket, private val destination: Socket) : Runnable {
+            // A discarded queued task releases ownership; a running task keeps it until exit.
+            private val state = AtomicInteger(0) // pending=0, running=1, complete=2
+
+            fun cancelPending() {
+                if (state.compareAndSet(0, 2)) directionComplete()
+            }
+
+            override fun run() {
+                if (!state.compareAndSet(0, 1)) return
+                try {
+                    val input = source.getInputStream()
+                    val output = destination.getOutputStream()
+                    val buffer = ByteArray(COPY_BUFFER_BYTES)
+                    while (!Thread.currentThread().isInterrupted) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        output.write(buffer, 0, count)
+                        output.flush()
+                    }
+                } catch (_: IOException) {
+                    // Disconnect, idle timeout, or stop closed the pair.
+                } finally {
+                    abort()
+                    state.set(2)
+                    directionComplete()
                 }
-            } catch (_: IOException) {
-                // Disconnect, idle timeout, or stop closed the pair.
-            } finally {
-                abort()
-                directionComplete()
             }
-        }
-
-        fun abortBeforeStart() {
-            abort()
-            repeat(COPY_DIRECTIONS) { directionComplete() }
         }
 
         fun abort() {
             closeQuietly(client)
             closeQuietly(remote)
+            toRemote.cancelPending()
+            toClient.cancelPending()
         }
 
         private fun directionComplete() {
-            if (directionsRemaining.decrementAndGet() == 0 && released.compareAndSet(false, true)) {
+            if (directionsRemaining.decrementAndGet() == 0) {
                 activeConnections.remove(this)
                 activeClientCounter.decrementAndGet()
                 cameraConnections.release()
@@ -340,6 +349,8 @@ class LimelightProxy(
 
     private companion object {
         const val FORWARDED_PORT_COUNT = 8
+        private const val MIN_PORT_OFFSET = 1 - 5800
+        private const val MAX_PORT_OFFSET = 65535 - (FORWARDED_PORT_COUNT - 1) - 5800
         const val COPY_DIRECTIONS = 2
         const val COPY_BUFFER_BYTES = 8_192
         const val MAX_CAMERAS = 4

@@ -28,7 +28,9 @@ try {
 }
 $outputRootPath = [System.IO.Path]::GetFullPath($OutputRoot)
 $workspacePath = [System.IO.Path]::GetFullPath($workspaceRoot)
-if ($outputRootPath.StartsWith($workspacePath, [System.StringComparison]::OrdinalIgnoreCase)) {
+$workspacePrefix = $workspacePath.TrimEnd([char[]]'\/') + [System.IO.Path]::DirectorySeparatorChar
+if ($outputRootPath.TrimEnd([char[]]'\/').Equals($workspacePath.TrimEnd([char[]]'\/'), [System.StringComparison]::OrdinalIgnoreCase) -or
+    $outputRootPath.StartsWith($workspacePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw 'Starter mirrors must be exported outside the source workspace or into an isolated CI temporary directory.'
 }
 
@@ -38,15 +40,17 @@ $templates = @(
     @{ Name = 'ARES-FTC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FTC-Starter' },
     @{ Name = 'ARES-FRC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FRC-Starter' },
     @{ Name = 'ARES-XRP-Starter'; Source = Join-Path $workspaceRoot 'ARES-XRP-Starter' },
-    @{ Name = 'ARES-Lightbot-Example'; Source = Join-Path $workspaceRoot 'ARES-FTC' }
+    @{ Name = 'ARES-Lightbot-Example'; Source = Join-Path $workspaceRoot 'ARES-FTC' },
+    @{ Name = 'ARES-BIOBUZZ-Example'; Source = Join-Path $workspaceRoot 'ARES-FTC-Starter'; Overlay = Join-Path $workspaceRoot 'ARES-FTC/biobuzz' }
 )
 $ftcRuntimeRelativePath = 'TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
 $ftcRuntimeSource = Join-Path $workspaceRoot 'templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
+$biobuzzFieldSource = Join-Path $workspaceRoot 'ARES-FTC/biobuzz/shared/src/main/resources/field-presets/ftc/2026-2027-biobuzz.json'
 $xrpRuntimeSource = Join-Path $workspaceRoot 'ARESLib-Kotlin/ares-micro/ares_micro'
 
 function Get-RelativeFileHashes([string]$Root) {
     $result = [ordered]@{}
-    Get-ChildItem -LiteralPath $Root -Recurse -File | ForEach-Object {
+    Get-ChildItem -LiteralPath $Root -Recurse -File -Force | ForEach-Object {
         $relative = [System.IO.Path]::GetRelativePath($Root, $_.FullName).Replace('\', '/')
         $segments = $relative.Split('/')
         if ($excludedFiles -contains $_.Name -or ($segments | Where-Object { $excludedDirectories -contains $_ })) { return }
@@ -58,10 +62,12 @@ function Get-RelativeFileHashes([string]$Root) {
 function Get-TrackedRelativeFileHashes([string]$Root) {
     $result = [ordered]@{}
     $rootRelativeToWorkspace = [System.IO.Path]::GetRelativePath($workspaceRoot, $Root).Replace('\', '/')
-    $trackedFiles = @(git -C $workspaceRoot ls-files -- $rootRelativeToWorkspace)
+    # NUL-delimited output preserves spaces and Unicode without Git's quoted-path encoding.
+    $trackedOutput = @(git -C $workspaceRoot ls-files -z -- $rootRelativeToWorkspace)
     if ($LASTEXITCODE -ne 0) {
         throw "Unable to enumerate tracked starter files under $rootRelativeToWorkspace."
     }
+    $trackedFiles = ($trackedOutput -join "`n").Split([char]0, [System.StringSplitOptions]::RemoveEmptyEntries)
     foreach ($trackedPath in $trackedFiles | Sort-Object) {
         $fullPath = Join-Path $workspaceRoot $trackedPath
         if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
@@ -84,25 +90,46 @@ foreach ($template in $templates) {
     # simulator logs, IDE state, caches, and other local files must never leak
     # into an installer or public starter archive.
     $sourceHashes = Get-TrackedRelativeFileHashes $template.Source
+    $overlayHashes = @{}
+    if ($template.Name -eq 'ARES-Lightbot-Example') {
+        foreach ($key in @($sourceHashes.Keys)) {
+            if ($key.StartsWith('biobuzz/')) { $sourceHashes.Remove($key) }
+        }
+    }
+    if ($template.Overlay) {
+        $overlayHashes = Get-TrackedRelativeFileHashes $template.Overlay
+        foreach ($key in $overlayHashes.Keys) { $sourceHashes[$key] = $overlayHashes[$key] }
+    }
+    if ($template.Name -eq 'ARES-BIOBUZZ-Example') {
+        $sourceHashes['TeamCode/src/main/assets/paths/field.json'] = (Get-FileHash -Algorithm SHA256 -LiteralPath $biobuzzFieldSource).Hash.ToLowerInvariant()
+    }
     $sourceHashes['release/ares-versions.properties'] = $standaloneReleaseManifestHash
     $sourceHashes['build-logic/ares-versioning.gradle'] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $workspaceRoot 'build-logic/ares-versioning.gradle')).Hash.ToLowerInvariant()
-    if ($template.Name -eq 'ARES-FTC-Starter' -or $template.Name -eq 'ARES-Lightbot-Example') {
+    if ($template.Name -in @('ARES-FTC-Starter', 'ARES-Lightbot-Example', 'ARES-BIOBUZZ-Example')) {
         $sourceHashes[$ftcRuntimeRelativePath] = (Get-FileHash -Algorithm SHA256 -LiteralPath $ftcRuntimeSource).Hash.ToLowerInvariant()
     }
     if ($template.Name -eq 'ARES-XRP-Starter') {
-        Get-ChildItem -LiteralPath $xrpRuntimeSource -Recurse -File |
-            Where-Object { $_.FullName -notmatch '[\\/]__pycache__[\\/]' -and $_.Extension -ne '.pyc' } |
-            ForEach-Object {
-                $runtimeRelative = [System.IO.Path]::GetRelativePath($xrpRuntimeSource, $_.FullName).Replace('\', '/')
-                $sourceHashes["lib/ares_micro/$runtimeRelative"] = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
-            }
+        $runtimeHashes = Get-TrackedRelativeFileHashes $xrpRuntimeSource
+        foreach ($runtimeRelative in $runtimeHashes.Keys) {
+            if ($runtimeRelative.Split('/') -contains '__pycache__' -or $runtimeRelative.EndsWith('.pyc')) { continue }
+            $sourceHashes["lib/ares_micro/$runtimeRelative"] = $runtimeHashes[$runtimeRelative]
+        }
     }
 
     if ($Check) {
         if (-not (Test-Path -LiteralPath $destination)) { throw "Missing generated mirror: $destination" }
         $destinationHashes = Get-RelativeFileHashes $destination
-        $difference = Compare-Object $sourceHashes.GetEnumerator() $destinationHashes.GetEnumerator() -Property Name, Value
-        if ($difference) { throw "$($template.Name) mirror differs from canonical template.`n$($difference | Out-String)" }
+        # Compare actual keyed hashes, not dictionary-enumerator objects. Comparing
+        # those objects does not compare their entries and allowed modified mirrors to pass.
+        $differences = [System.Collections.Generic.List[string]]::new()
+        foreach ($relative in $sourceHashes.Keys) {
+            if (-not $destinationHashes.Contains($relative)) { $differences.Add("Missing: $relative") }
+            elseif ($sourceHashes[$relative] -ne $destinationHashes[$relative]) { $differences.Add("Changed: $relative") }
+        }
+        foreach ($relative in $destinationHashes.Keys) {
+            if (-not $sourceHashes.Contains($relative)) { $differences.Add("Unexpected: $relative") }
+        }
+        if ($differences.Count -gt 0) { throw "$($template.Name) mirror differs from canonical template.`n$($differences -join "`n")" }
         Write-Host "verified $($template.Name)" -ForegroundColor Green
         continue
     }
@@ -114,10 +141,14 @@ foreach ($template in $templates) {
     foreach ($entry in $sourceHashes.Keys) {
         $source = if ($entry -eq 'build-logic/ares-versioning.gradle') {
             Join-Path $workspaceRoot $entry
-        } elseif (($template.Name -eq 'ARES-FTC-Starter' -or $template.Name -eq 'ARES-Lightbot-Example') -and $entry -eq $ftcRuntimeRelativePath) {
+        } elseif ($template.Name -in @('ARES-FTC-Starter', 'ARES-Lightbot-Example', 'ARES-BIOBUZZ-Example') -and $entry -eq $ftcRuntimeRelativePath) {
             $ftcRuntimeSource
         } elseif ($template.Name -eq 'ARES-XRP-Starter' -and $entry.StartsWith('lib/ares_micro/')) {
             Join-Path $xrpRuntimeSource $entry.Substring('lib/ares_micro/'.Length)
+        } elseif ($template.Name -eq 'ARES-BIOBUZZ-Example' -and $entry -eq 'TeamCode/src/main/assets/paths/field.json') {
+            $biobuzzFieldSource
+        } elseif ($overlayHashes.Contains($entry)) {
+            Join-Path $template.Overlay $entry
         } else {
             Join-Path $template.Source $entry
         }

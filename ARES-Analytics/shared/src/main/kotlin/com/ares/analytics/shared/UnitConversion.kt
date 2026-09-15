@@ -56,26 +56,32 @@ enum class RobotUnit(val symbol: String, val category: UnitCategory, val factorT
 
 /** Conversion and conservative topic-name inference used by telemetry charts. */
 object UnitConversion {
+    private val camelWordBoundary = Regex("([a-z0-9])([A-Z])")
+    private val ampereWord = Regex("(?i)(^|[^a-z0-9])amp(?:ere)?s?($|[^a-z0-9])")
+    private val cartesianAxes = setOf(
+        "x", "y", "z", "pose_x", "pose_y", "pose_z", "position_x", "position_y", "position_z"
+    )
+
     /** Converts [value] between units of the same [UnitCategory]. */
     fun convert(value: Double, from: RobotUnit, to: RobotUnit): Double {
         if (from.category != to.category) throw IllegalArgumentException("Cannot convert from ${from.category} to ${to.category}")
+        if (from == to) return value
 
         if (from.category == UnitCategory.TEMPERATURE) {
             val celsius = when (from) {
                 RobotUnit.CELSIUS -> value
-                RobotUnit.FAHRENHEIT -> (value - 32.0) * 5.0 / 9.0
+                RobotUnit.FAHRENHEIT -> (value - 32.0) * (5.0 / 9.0)
                 RobotUnit.KELVIN -> value - 273.15
                 else -> value
             }
             return when (to) {
                 RobotUnit.CELSIUS -> celsius
-                RobotUnit.FAHRENHEIT -> celsius * 9.0 / 5.0 + 32.0
+                RobotUnit.FAHRENHEIT -> celsius * (9.0 / 5.0) + 32.0
                 RobotUnit.KELVIN -> celsius + 273.15
                 else -> celsius
             }
         }
-        val baseValue = value * from.factorToBase
-        return baseValue / to.factorToBase
+        return value * (from.factorToBase / to.factorToBase)
     }
 
     /** Infers a display unit from a telemetry key, or returns `null` when the key is ambiguous. */
@@ -85,15 +91,16 @@ object UnitConversion {
         val isAngular = lowerKey.contains("rot") ||
             lowerKey.contains("ang") ||
             lowerKey.contains("omega")
-        val isCartesianAxis = leaf in setOf(
-            "x", "y", "z",
-            "pose_x", "pose_y", "pose_z",
-            "position_x", "position_y", "position_z",
-        )
+        val isCartesianAxis = leaf in cartesianAxes
+        val hasAmpereWord = lowerKey.contains("amp") &&
+            ampereWord.containsMatchIn(camelWordBoundary.replace(key, "$1 $2"))
         return when {
+            lowerKey.contains("millivolt") -> RobotUnit.MILLIVOLT
+            lowerKey.contains("milliamp") -> RobotUnit.MILLIAMPERE
             lowerKey.contains("voltage") || lowerKey.contains("volt") -> RobotUnit.VOLT
-            lowerKey.contains("current") || lowerKey.contains("amp") -> RobotUnit.AMPERE
+            lowerKey.contains("current") || hasAmpereWord -> RobotUnit.AMPERE
             lowerKey.contains("fahrenheit") -> RobotUnit.FAHRENHEIT
+            lowerKey.contains("kelvin") -> RobotUnit.KELVIN
             lowerKey.contains("temp") || lowerKey.contains("celsius") -> RobotUnit.CELSIUS
             lowerKey.contains("rpm") -> RobotUnit.RPM
             (lowerKey.contains("velocity") || lowerKey.contains("vel")) && isAngular -> RobotUnit.RAD_PER_SEC

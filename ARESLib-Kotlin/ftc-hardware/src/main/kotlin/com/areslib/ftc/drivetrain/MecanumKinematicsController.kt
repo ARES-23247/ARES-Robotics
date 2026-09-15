@@ -43,32 +43,66 @@ class MecanumKinematicsController(
     var kinematics = MecanumKinematics(0.45, 0.45)
         private set
 
+    private val initialMaxWheelSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
+    private var trackWidth = 0.45
+    private var wheelBase = 0.45
+
     /**
-     * Updates kinematics geometry parameters and motor controller gains from a new [TuningState] snapshot.
-     *
-     * @param currentTuning Desired tuning parameters snapshot from Redux state.
+     * Validates all consumed tuning before applying it. Null motor gains restore construction defaults;
+     * kV <= 1e-4 restores the construction speed limit. Unchanged geometry reuses its solver.
+     * Rejection neutralizes and requires valid tuning followed by explicit neutral recovery.
      */
     fun updateTuning(currentTuning: TuningState) {
-        val driveTuning = currentTuning.drive
-        kinematics = MecanumKinematics(driveTuning.trackWidthMeters, driveTuning.wheelBaseMeters)
-        mecanumIO.kS = driveTuning.driveFeedforward.kS
-        mecanumIO.kV = driveTuning.driveFeedforward.kV
-        mecanumIO.kA = driveTuning.driveFeedforward.kA
-        mecanumIO.slewRateLimit = driveTuning.driveSlewRateLimit
-        mecanumIO.ticksPerMeter = driveTuning.ftc.ticksPerMeter
-        if (driveTuning.driveFeedforward.kV > 1e-4) {
-            mecanumIO.maxWheelSpeedMetersPerSecond = 1.0 / driveTuning.driveFeedforward.kV
-        }
-        val gains = driveTuning.ftc.motorGains
-        if (gains != null) {
-            mecanumIO.updateMotorGains(gains.kP, gains.kI, gains.kD)
-        }
+        try {
+            mecanumIO.requireOpenForTuning()
+            val tuning = currentTuning.drive
+            val width = tuning.trackWidthMeters
+            val length = tuning.wheelBaseMeters
+            val feedforward = tuning.driveFeedforward
+            val slew = tuning.driveSlewRateLimit
+            val gains = tuning.ftc.motorGains
+            require(width.isFinite() && width > 0.0 && length.isFinite() && length > 0.0) {
+                "Mecanum dimensions must be finite and positive"
+            }
+            require(feedforward.kS.isFinite() && feedforward.kV.isFinite() && feedforward.kV >= 0.0 &&
+                feedforward.kA.isFinite()) { "Drive feedforward must be finite with nonnegative kV" }
+            require(slew == null || slew.isFinite() && slew > 0.0) { "Slew rate must be null or finite and positive" }
+            require(tuning.ftc.ticksPerMeter.isFinite() && tuning.ftc.ticksPerMeter > 1e-9) {
+                "Encoder resolution must be finite and greater than 1e-9 ticks per meter"
+            }
+            require(gains == null || MecanumNativeConfiguration.valid(gains.kP, gains.kI, gains.kD, gains.kF)) {
+                "Motor gains must be finite"
+            }
+            val nextKinematics = if (width == trackWidth && length == wheelBase) kinematics
+                else MecanumKinematics(width, length)
+            val maxSpeed = if (feedforward.kV > 1e-4) 1.0 / feedforward.kV else initialMaxWheelSpeed
+            val maxAngularSpeed = maxSpeed / nextKinematics.k
+            require(maxSpeed.isFinite() && maxSpeed > 0.0 && maxAngularSpeed.isFinite() && maxAngularSpeed > 0.0) {
+                "Derived drive limits must be finite and positive"
+            }
 
-        val maxSpeed = mecanumIO.maxWheelSpeedMetersPerSecond
-        val maxAngularSpeed = maxSpeed / kinematics.k
-        drive.maxSpeedMps = maxSpeed
-        mecanumDrive.maxSpeedMps = maxSpeed
-        mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
+            // Validate the entire consumed proposal before hardware writes. A rejected SDK update
+            // leaves the previous software settings intact; native failure still inhibits output.
+            if (gains == null) mecanumIO.restoreInitialMotorGains()
+            else mecanumIO.updateMotorGains(gains.kP, gains.kI, gains.kD, gains.kF)
+            kinematics = nextKinematics
+            trackWidth = width
+            wheelBase = length
+            mecanumIO.kS = feedforward.kS
+            mecanumIO.kV = feedforward.kV
+            mecanumIO.kA = feedforward.kA
+            mecanumIO.slewRateLimit = slew
+            mecanumIO.ticksPerMeter = tuning.ftc.ticksPerMeter
+            mecanumIO.maxWheelSpeedMetersPerSecond = maxSpeed
+            drive.maxSpeedMps = maxSpeed
+            drive.maxAngularSpeedRadiansPerSecond = maxAngularSpeed
+            mecanumDrive.maxSpeedMps = maxSpeed
+            mecanumDrive.maxAngularSpeedRps = maxAngularSpeed
+            mecanumIO.acceptTuningConfiguration()
+        } catch (failure: Exception) {
+            mecanumIO.rejectTuningConfiguration()
+            throw failure
+        }
     }
 
     /**

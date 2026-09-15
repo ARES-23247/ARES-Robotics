@@ -19,10 +19,7 @@ internal object FieldAprilTagTransfer {
         val decoded = when {
             fileName.endsWith(".fmap", ignoreCase = true) ->
                 AprilTagMapCodec.decodeLimelightFmapForField(content, field)
-            else -> runCatching { AprilTagMapCodec.decodeWpilib(content) }
-                .recoverCatching { AprilTagMapCodec.decodeAresField(content) }
-                .recoverCatching { AprilTagMapCodec.decodeLimelightFmapForField(content, field) }
-                .getOrThrow()
+            else -> AprilTagMapCodec.decodeForField(content, field)
         }
         val placements = decoded.tags.map { tag ->
             AprilTagPlacement(
@@ -64,6 +61,6 @@ internal object FieldAprilTagTransfer {
 
     fun encode(document: RobotFieldConfig, format: AprilTagExportFormat): String = when (format) {
         AprilTagExportFormat.LIMELIGHT_FMAP -> AprilTagMapCodec.encodeLimelightFmap(document)
-        AprilTagExportFormat.WPILIB_JSON -> AprilTagMapCodec.encodeWpilib(document)
+        AprilTagExportFormat.WPILIB_JSON -> AprilTagMapCodec.encodeWpilibForField(document)
     }
 }

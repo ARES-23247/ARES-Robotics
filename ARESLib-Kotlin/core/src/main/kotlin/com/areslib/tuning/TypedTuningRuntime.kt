@@ -1,10 +1,13 @@
 package com.areslib.tuning
 
 import com.google.gson.GsonBuilder
-import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.channels.FileChannel
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
+import java.util.Collections
 
 enum class TuningUpdateResult {
     APPLIED, UNKNOWN_PARAMETER, INVALID_VALUE, SESSION_NOT_ARMED, ROBOT_MUST_BE_DISABLED,
@@ -37,22 +40,45 @@ data class TuningMetadataSnapshot(
 /**
  * Policy-aware typed tuning store. It never writes the canonical checked-in profile.
  * Values are indexed once; periodic typed reads allocate nothing.
+ * Construction validates the initial values and owns snapshots of declaration/metadata lists.
  */
 class TypedTuningRuntime(
     declarations: List<TuningParameterDeclaration>,
     canonicalValues: Map<String, TuningValue>,
-    val metadata: TuningMetadataSnapshot,
+    metadata: TuningMetadataSnapshot,
 ) {
-    private val declarations = declarations.sortedBy { it.uid }.toTypedArray()
+    private val declarations = declarations.sortedBy { it.uid }.map(::snapshotDeclaration).toTypedArray()
+    val metadata: TuningMetadataSnapshot = metadata.copy(
+        declarations = Collections.unmodifiableList(metadata.declarations.map(::snapshotDeclaration)),
+        profileUids = Collections.unmodifiableList(metadata.profileUids.toList()),
+    )
     private val indices = this.declarations.mapIndexed { index, declaration -> declaration.uid to index }.toMap()
     private val values = Array(this.declarations.size) { index ->
         canonicalValues[this.declarations[index].uid] ?: this.declarations[index].defaultValue
     }
-    private val canonicalValues = values.copyOf()
+    private val canonicalSnapshot = values.copyOf()
     private val locallyChanged = BooleanArray(this.declarations.size)
 
+    init {
+        val declarationIssues = validateTuningParameterDeclarations(this.declarations.toList())
+        require(declarationIssues.isEmpty()) { "Invalid tuning declarations: $declarationIssues" }
+        require(this.metadata.declarations.size == this.declarations.size &&
+            this.metadata.declarations.associateBy { it.uid } == this.declarations.associateBy { it.uid }) {
+            "Tuning metadata must describe exactly the runtime declarations"
+        }
+        require(canonicalValues.keys.all(indices::containsKey)) { "Canonical values contain an unknown tuning parameter" }
+        val initialProfile = TuningProfileDocument(
+            uid = this.metadata.canonicalProfileUid, profileId = "runtime-initial", displayName = "Runtime initial values",
+            description = "Validated initial tuning values", projectId = this.metadata.projectId,
+            drivebaseUid = this.metadata.drivebaseUid, authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
+            values = this.declarations.indices.map { TuningAssignment(this.declarations[it].uid, values[it]) },
+        )
+        val valueIssues = validateTuningProfileDocument(initialProfile, this.declarations.toList())
+        require(valueIssues.isEmpty()) { "Invalid initial tuning values: $valueIssues" }
+    }
+
     fun value(parameterUid: String): TuningValue? = indices[parameterUid]?.let(values::get)
-    fun canonicalValue(parameterUid: String): TuningValue? = indices[parameterUid]?.let(canonicalValues::get)
+    fun canonicalValue(parameterUid: String): TuningValue? = indices[parameterUid]?.let(canonicalSnapshot::get)
     fun double(parameterUid: String): Double = requireNotNull(value(parameterUid)?.doubleValue) { "'$parameterUid' is not a double parameter" }
     fun int(parameterUid: String): Int = requireNotNull(value(parameterUid)?.intValue) { "'$parameterUid' is not an integer parameter" }
     fun boolean(parameterUid: String): Boolean = requireNotNull(value(parameterUid)?.booleanValue) { "'$parameterUid' is not a boolean parameter" }
@@ -89,7 +115,7 @@ class TypedTuningRuntime(
         }
         if (policyResult != null) return policyResult
         values[index] = candidate
-        locallyChanged[index] = true
+        locallyChanged[index] = candidate != canonicalSnapshot[index]
         return TuningUpdateResult.APPLIED
     }
 
@@ -97,7 +123,7 @@ class TypedTuningRuntime(
     internal fun restoreAfterFailedApply(parameterUid: String, previous: TuningValue) {
         val index = requireNotNull(indices[parameterUid]) { "Unknown tuning parameter '$parameterUid'" }
         values[index] = previous
-        locallyChanged[index] = previous != canonicalValues[index]
+        locallyChanged[index] = previous != canonicalSnapshot[index]
     }
 
     /** Creates an experimental overlay only; callers choose an explicit robot-local path. */
@@ -116,6 +142,9 @@ class TypedTuningRuntime(
         )
 }
 
+private fun snapshotDeclaration(declaration: TuningParameterDeclaration): TuningParameterDeclaration =
+    declaration.copy(enumOptions = Collections.unmodifiableList(declaration.enumOptions.toList()))
+
 /** Persists only LOCAL_EXPERIMENTAL overlays, atomically, outside canonical `.ares/tuning`. */
 object LocalTuningOverlayStore {
     private val gson = GsonBuilder().setPrettyPrinting().create()
@@ -128,17 +157,37 @@ object LocalTuningOverlayStore {
         require(normalizedOutput.startsWith(allowedRoot) && normalizedOutput.toString().endsWith(".arestuning")) {
             "Runtime overlays must stay under .ares/local/tuning and use .arestuning"
         }
-        Files.createDirectories(normalizedOutput.parent)
-        val temporary = Files.createTempFile(normalizedOutput.parent, ".${normalizedOutput.fileName}.", ".tmp")
+        // Resolve the caller's project-root alias once, then check every child before creating the
+        // next directory. Resolving allowedRoot alone would bless a link into canonical profiles.
+        val realRoot = normalizedRoot.toRealPath()
+        var parent = realRoot
+        for (segment in normalizedRoot.relativize(normalizedOutput.parent)) {
+            parent = parent.resolve(segment)
+            try { Files.createDirectory(parent) } catch (_: FileAlreadyExistsException) { }
+            require(Files.isDirectory(parent) && parent.toRealPath() == parent) {
+                "Runtime overlay directories must not redirect outside their project-local path"
+            }
+        }
+        val destination = parent.resolve(normalizedOutput.fileName)
+        require(!Files.isSymbolicLink(destination) && !Files.isDirectory(destination) &&
+            (!Files.exists(destination) || destination.toRealPath() == destination)) {
+            "Runtime overlay destination must be an ordinary local file"
+        }
+        val temporary = Files.createTempFile(parent, ".${normalizedOutput.fileName}.", ".tmp")
+        var primaryFailure: Throwable? = null
         try {
             Files.writeString(temporary, gson.toJson(profile.copy(values = profile.values.sortedBy { it.parameterUid })))
-            try {
-                Files.move(temporary, normalizedOutput, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(temporary, normalizedOutput, StandardCopyOption.REPLACE_EXISTING)
-            }
+            FileChannel.open(temporary, StandardOpenOption.WRITE).use { it.force(true) }
+            // Unsupported atomic replacement is a failed save, not permission to risk old bytes.
+            Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } catch (failure: Throwable) {
+            primaryFailure = failure
+            throw failure
         } finally {
-            Files.deleteIfExists(temporary)
+            try { Files.deleteIfExists(temporary) } catch (cleanup: Throwable) {
+                if (primaryFailure == null) throw cleanup
+                if (primaryFailure !== cleanup) primaryFailure.addSuppressed(cleanup)
+            }
         }
     }
 }

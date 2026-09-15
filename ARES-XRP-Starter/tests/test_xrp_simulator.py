@@ -1,6 +1,7 @@
 import importlib.util
 import hashlib
 import json
+import math
 import pathlib
 import tempfile
 import unittest
@@ -16,6 +17,8 @@ class XrpSimulatorIntegrationTest(unittest.TestCase):
         simulator = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(simulator)
         robot, motors = simulator.create_simulated_robot()
+        self.addCleanup(robot.shutdown)
+        initial_pose = (robot.drivetrain.x, robot.drivetrain.y, robot.drivetrain.heading)
 
         robot.telemetry.get_command = lambda: "START_TELEOP"
         robot.telemetry.get_drive_frame = lambda: (0.4, 0.0, 0.0)
@@ -24,12 +27,19 @@ class XrpSimulatorIntegrationTest(unittest.TestCase):
         robot.telemetry.now_ms = lambda: 0
         robot.telemetry.elapsed_ms = lambda _started: 20
         robot.step(0.02)
+        self.assertTrue(all(motor.effort > 0.0 for motor in motors))
+        self.assertFalse(robot.faulted)
         for motor in motors:
-            motor.advance(0.1)
+            motor.advance(0.02)
         robot.step(0.02)
 
         self.assertEqual(robot.mode, robot.STATE_TELEOP)
-        self.assertGreater(robot.drivetrain.x, simulator.AUTONOMOUS_ROUTINES[simulator.DEFAULT_AUTONOMOUS_ID]["starting_pose"]["xMeters"])
+        self.assertAlmostEqual(robot.drivetrain.x, initial_pose[0] + math.cos(initial_pose[2]) * 0.4 * 0.02)
+        self.assertAlmostEqual(robot.drivetrain.y, initial_pose[1] + math.sin(initial_pose[2]) * 0.4 * 0.02)
+        self.assertAlmostEqual(robot.drivetrain.heading, initial_pose[2])
+        self.assertAlmostEqual(robot.drivetrain.vx, 0.4)
+        self.assertAlmostEqual(robot.drivetrain.omega, 0.0)
+        self.assertFalse(robot.faulted)
 
     def test_simulator_robot_neutralizes_after_control_lease_loss(self):
         path = ROOT / "simulator" / "xrp_simulator.py"
@@ -37,18 +47,30 @@ class XrpSimulatorIntegrationTest(unittest.TestCase):
         simulator = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(simulator)
         robot, motors = simulator.create_simulated_robot()
-        frames = iter(((0.5, 0.0, 0.0), None))
+        self.addCleanup(robot.shutdown)
+        frames = iter(((0.5, 0.0, 0.0), None, (0.5, 0.0, 0.0), (0.5, 0.0, 0.0)))
+        commands = iter(("START_TELEOP", None, None, "START_TELEOP"))
 
-        robot.telemetry.get_command = lambda: "START_TELEOP"
+        robot.telemetry.get_command = lambda: next(commands)
         robot.telemetry.get_drive_frame = lambda: next(frames)
         robot.telemetry.poll = lambda: None
         robot.telemetry.publish_pose_frame = lambda **_values: None
         robot.telemetry.now_ms = lambda: 0
         robot.telemetry.elapsed_ms = lambda _started: 20
         robot.step(0.02)
+        self.assertTrue(all(motor.effort > 0.0 for motor in motors))
+        self.assertEqual(robot.mode, robot.STATE_TELEOP)
         robot.step(0.02)
 
         self.assertTrue(all(motor.effort == 0.0 for motor in motors))
+        self.assertEqual(robot.mode, robot.STATE_DISABLED)
+        robot.step(0.02)
+        self.assertTrue(all(motor.effort == 0.0 for motor in motors), "Returning control values cannot restart the robot")
+        self.assertEqual(robot.mode, robot.STATE_DISABLED)
+        robot.step(0.02)
+        self.assertTrue(all(motor.effort > 0.0 for motor in motors))
+        self.assertEqual(robot.mode, robot.STATE_TELEOP)
+        self.assertFalse(robot.faulted)
 
     def test_canonical_field_obstacle_stops_robot_before_penetration(self):
         module = load_simulator_module("ares_xrp_simulator_collision_test")
@@ -71,6 +93,7 @@ class XrpSimulatorIntegrationTest(unittest.TestCase):
 
             constrained = collision.constrain((0.0, 0.0, 0.0), (0.30, 0.0, 0.0))
 
+            self.assertGreater(constrained[0], 0.069, "Clear space before the obstacle must remain traversable")
             self.assertLess(constrained[0], 0.07)
             self.assertFalse(collision.collides(constrained))
 

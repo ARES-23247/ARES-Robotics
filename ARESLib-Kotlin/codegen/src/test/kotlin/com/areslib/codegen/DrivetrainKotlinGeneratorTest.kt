@@ -14,6 +14,25 @@ import org.junit.jupiter.api.Test
 
 class DrivetrainKotlinGeneratorTest {
     @Test
+    fun `all drivebase entry points reject invalid Kotlin package segments`() {
+        val document = runtimeReadyMecanumDocument()
+        val profile = canonicalProfile(document)
+        for (name in listOf("org.when", "org.__", "org..example", "org.example; bad")) {
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                DrivetrainKotlinGenerator.generate(document, listOf(profile), name)
+            }
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                DrivetrainKotlinGenerator.generateFtcMecanumRuntime(document, listOf(profile), name)
+            }
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                DrivetrainKotlinGenerator.generateProjectTuning(
+                    profile.projectId, profile.uid, document.uid, document.parameters, listOf(profile), name,
+                )
+            }
+        }
+    }
+
+    @Test
     fun `generation exposes direct drivebase and project constants deterministically`() {
         val drivetrain = mecanumDocument()
         val vision = TuningParameterDeclaration(

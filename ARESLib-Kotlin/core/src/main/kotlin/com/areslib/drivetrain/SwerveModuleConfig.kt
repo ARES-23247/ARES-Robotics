@@ -28,10 +28,37 @@ data class SwerveModuleConfig(
     val encoderInverted: Boolean = false,
     val offsetRotations: Double = 0.0
 ) {
-    /** Helper getter for FRC CAN ID (parses string to Int). */
-    val driveCanId: Int get() = driveId.toIntOrNull() ?: 0
-    val steerCanId: Int get() = steerId.toIntOrNull() ?: 0
-    val encoderCanId: Int get() = encoderId.toIntOrNull() ?: 0
+    init {
+        require(name.isNotBlank()) { "Module name must not be blank" }
+        require(driveId.isNotBlank() && steerId.isNotBlank() && encoderId.isNotBlank()) {
+            "Module hardware identifiers must not be blank"
+        }
+        require(positionXMeters.isFinite() && positionYMeters.isFinite() && offsetRotations.isFinite()) {
+            "Module geometry and calibration must be finite"
+        }
+    }
+
+    /**
+     * Nonnegative numeric CAN identity for hardware setup. FTC hardware names are retained verbatim but
+     * reject CAN access. Vendor-specific ID limits and bus/device collisions require platform validation.
+     */
+    val driveCanId: Int get() {
+        val parsedDriveCanId = driveId.toIntOrNull() ?: -1
+        require(parsedDriveCanId >= 0) { "Drive identifier is not a nonnegative CAN ID: $driveId" }
+        return parsedDriveCanId
+    }
+    /** See [driveCanId]. */
+    val steerCanId: Int get() {
+        val parsedSteerCanId = steerId.toIntOrNull() ?: -1
+        require(parsedSteerCanId >= 0) { "Steer identifier is not a nonnegative CAN ID: $steerId" }
+        return parsedSteerCanId
+    }
+    /** See [driveCanId]. */
+    val encoderCanId: Int get() {
+        val parsedEncoderCanId = encoderId.toIntOrNull() ?: -1
+        require(parsedEncoderCanId >= 0) { "Encoder identifier is not a nonnegative CAN ID: $encoderId" }
+        return parsedEncoderCanId
+    }
 
     /** Secondary constructor accepting integer CAN IDs for FRC convenience. */
     constructor(
@@ -47,9 +74,9 @@ data class SwerveModuleConfig(
         offsetRotations: Double = 0.0
     ) : this(
         name = name,
-        driveId = driveCanId.toString(),
-        steerId = steerCanId.toString(),
-        encoderId = encoderCanId.toString(),
+        driveId = driveCanId.also { require(it >= 0) { "Drive CAN ID must be nonnegative" } }.toString(),
+        steerId = steerCanId.also { require(it >= 0) { "Steer CAN ID must be nonnegative" } }.toString(),
+        encoderId = encoderCanId.also { require(it >= 0) { "Encoder CAN ID must be nonnegative" } }.toString(),
         positionXMeters = positionXMeters,
         positionYMeters = positionYMeters,
         driveInverted = driveInverted,

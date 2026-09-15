@@ -23,7 +23,7 @@ import com.areslib.project.validateAresProjectMetadata
 
 /** Validates the complete typed project before any source is rendered. */
 internal fun validateKotlinProjectCodegenRequest(request: KotlinProjectCodegenRequest) {
-    require(request.packageName.split('.').all { it.isKotlinIdentifier() }) {
+    require(request.packageName.isKotlinPackageName()) {
         "Generated package '${request.packageName}' is not a valid Kotlin package"
     }
     require(request.objectName.isKotlinIdentifier()) { "Generated object name is not a valid Kotlin identifier" }
@@ -53,6 +53,9 @@ internal fun validateKotlinProjectCodegenRequest(request: KotlinProjectCodegenRe
     require(request.subsystemActions.isEmpty() || !request.subsystemRegistryFqn.isNullOrBlank()) {
         "Generated subsystem actions require a subsystem registry FQN"
     }
+    request.subsystemRegistryFqn?.let { registryFqn ->
+        require(registryFqn.isKotlinQualifiedName()) { "Invalid subsystem registry FQN '$registryFqn'" }
+    }
     request.subsystemActions.forEach { capability ->
         require(request.catalog.actions.singleOrNull { it == capability.descriptor } != null) {
             "Subsystem action '${capability.descriptor.key}' is missing or differs in the merged catalog"
@@ -62,7 +65,7 @@ internal fun validateKotlinProjectCodegenRequest(request: KotlinProjectCodegenRe
         "An action cannot be implemented by both subsystem and orchestration registries"
     }
     request.generatedActionRegistryBindings.forEach { (actionKey, registryFqn) ->
-        require(registryFqn.matches(GENERATED_REGISTRY_FQN)) {
+        require(registryFqn.isKotlinQualifiedName()) {
             "Generated action '$actionKey' has invalid registry FQN '$registryFqn'"
         }
         val descriptor = request.catalog.actions.singleOrNull { it.key == actionKey }
@@ -274,5 +277,4 @@ private fun stepSupportsAutonomous(
 internal fun exclusiveResourceKeys(descriptor: ActionDescriptor): List<String> =
     descriptor.resources.filter { it.access == ResourceAccess.EXCLUSIVE }.map { it.resourceKey }
 
-private val GENERATED_REGISTRY_FQN = Regex("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+")
 internal val ANALOG_SOURCE_KINDS = setOf(ControlSourceKind.AXIS_VALUE, ControlSourceKind.AXIS_ZONE)

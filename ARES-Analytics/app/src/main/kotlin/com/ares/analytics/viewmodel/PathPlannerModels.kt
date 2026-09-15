@@ -92,7 +92,7 @@ data class PathPlannerState(
     val previewActions: List<RoutinePreviewAction> = emptyList(),
     val isPlaying: Boolean = false,
     val playbackTime: Double = 0.0,
-    /** Non-null when one routine has multiple possible timelines and preview is suppressed. */
+    /** Non-null when invalid steps, ambiguous control flow, or generation failure suppress preview. */
     val routinePreviewWarning: String? = null,
     val capabilityStatus: String = "Select a project to discover robot actions",
     val activeLeague: League = League.FTC,
@@ -131,6 +131,7 @@ sealed class PathPlannerIntent {
     data object PreviousTourStep : PathPlannerIntent()
     data object DismissTour : PathPlannerIntent()
 
+    data class ImportBiobuzzAuto(val projectPath: String?, val zipPath: String) : PathPlannerIntent()
     data class LoadRoutine(val projectPath: String?, val documentId: String) : PathPlannerIntent()
     data class SaveRoutine(val projectPath: String?) : PathPlannerIntent()
     data class SaveAndGenerateRoutine(val projectPath: String?, val league: League) : PathPlannerIntent()

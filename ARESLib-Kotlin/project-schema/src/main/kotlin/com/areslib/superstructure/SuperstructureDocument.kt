@@ -18,7 +18,6 @@ const val ARES_SUPERSTRUCTURE_SCHEMA_VERSION: Int = 3
 
 enum class SuperstructureTargetMode { CONSTANT, DYNAMIC_LUT, PASS_THROUGH }
 enum class TransitionTriggerKind { ACTION_REQUEST, SENSOR_CONDITION_AUTO, TIME_ELAPSED }
-enum class LutInterpolationMethod { LINEAR, STEP, SMOOTH_COSINE }
 enum class SuperstructureDisabledPolicy {
     /** Enter the declared neutral disabled state and reject requests until the robot is enabled. */
     FORCE_SAFE_AND_REJECT_REQUESTS,
@@ -33,40 +32,6 @@ enum class SuperstructurePortHealthRequirement {
     FRESH_VALID,
     /** Fresh/valid plus configuration, homing, calibration, current, and output-fault health. */
     CONTROL_READY,
-}
-
-data class LutControlPoint(val inputX: Double, val outputY: Double)
-
-data class SuperstructureDynamicLut(
-    val lutId: String,
-    val displayName: String = "",
-    val inputUnit: String = "",
-    val outputUnit: String = "",
-    val interpolation: LutInterpolationMethod = LutInterpolationMethod.LINEAR,
-    val controlPoints: List<LutControlPoint> = emptyList(),
-) {
-    /** Samples a validated, sorted LUT without allocating. */
-    fun sample(x: Double): Double {
-        if (!x.isFinite() || controlPoints.isEmpty()) return Double.NaN
-        if (controlPoints.size == 1 || x <= controlPoints.first().inputX) return controlPoints.first().outputY
-        if (x >= controlPoints.last().inputX) return controlPoints.last().outputY
-        for (index in 0 until controlPoints.size - 1) {
-            val lower = controlPoints[index]
-            val upper = controlPoints[index + 1]
-            if (x <= upper.inputX) {
-                val ratio = (x - lower.inputX) / (upper.inputX - lower.inputX)
-                return when (interpolation) {
-                    LutInterpolationMethod.STEP -> lower.outputY
-                    LutInterpolationMethod.LINEAR -> lower.outputY + ratio * (upper.outputY - lower.outputY)
-                    LutInterpolationMethod.SMOOTH_COSINE -> {
-                        val factor = (1.0 - kotlin.math.cos(ratio * kotlin.math.PI)) / 2.0
-                        lower.outputY + factor * (upper.outputY - lower.outputY)
-                    }
-                }
-            }
-        }
-        return controlPoints.last().outputY
-    }
 }
 
 /** A stable typed port reference. Code-facing IDs may be renamed without breaking this link. */
@@ -89,6 +54,7 @@ data class TransitionGuard(
     val expectedBooleanValue: Boolean? = null,
     val expectedStringValue: String? = null,
     val tolerance: Double = 1e-4,
+    /** Optional age limit that tightens the source descriptor lease, including VALUE_ONLY guards. */
     val maxStalenessMs: Long? = null,
 )
 

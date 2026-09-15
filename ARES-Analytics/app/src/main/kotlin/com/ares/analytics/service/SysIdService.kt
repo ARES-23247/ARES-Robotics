@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.CalculatedSummary
-import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.TransientClassification
+import com.ares.analytics.service.db.AnalysisTelemetryGroup
 import org.apache.commons.math3.transform.DftNormalization
 import org.apache.commons.math3.transform.FastFourierTransformer
 import org.apache.commons.math3.transform.TransformType
@@ -19,8 +19,7 @@ import kotlin.math.sign
  * ### Mathematical Regressions:
  * 1. **Electromechanical Voltage Model**:
  *    $$V(t) = k_S \cdot \operatorname{sgn}(v(t)) + k_V \cdot v(t) + k_A \cdot a(t)$$
- * 2. **OLS Matrix Solution**:
- *    $$\mathbf{Y} = \mathbf{X} \boldsymbol{\beta} \implies \boldsymbol{\beta} = (\mathbf{X}^T \mathbf{X})^{-1} \mathbf{X}^T \mathbf{Y}$$
+ * 2. **OLS Solution**: column-scaled compact SVD with a relative singular-value rank check.
  * 3. **Direction-Change Filtering**:
  *    Cleanses zero-crossing transients by excluding telemetry samples recorded within $\pm 50\text{ ms}$ of velocity sign changes ($\operatorname{sgn}(v)$).
  *
@@ -34,7 +33,7 @@ import kotlin.math.sign
  * - Resonance Frequency: Hertz ($Hz$)
  *
  * ### Thread Safety & Performance Guarantees:
- * Performs linear algebra calculations using EJML `SimpleMatrix` on background coroutines (`Dispatchers.IO`).
+ * Numerical methods are synchronous. Callers own dispatching expensive analysis off the UI thread.
  *
  * @param databaseService Primary DuckDB telemetry repository.
  *
@@ -58,164 +57,147 @@ class SysIdService(private val databaseService: DatabaseService) {
         velocityKey: String,
         accelerationKey: String
     ): CalculatedSummary {
-        // Fetch each channel server-side (key-filtered) instead of loading the whole
-        // session three times and filtering in memory (AUDIT H13).
-        val voltages = databaseService.getTelemetryForKey(sessionId, voltageKey)
-        val velocities = databaseService.getTelemetryForKey(sessionId, velocityKey)
-        val accelerations = databaseService.getTelemetryForKey(sessionId, accelerationKey)
+        // All three channels share one bounded source snapshot. Never fit a truncated prefix.
+        val input = databaseService.getAnalysisTelemetry(sessionId, listOf(
+            AnalysisTelemetryGroup("SysId", listOf(voltageKey, velocityKey, accelerationKey)),
+        )).getValue("SysId")
+        check(input.complete) { "SysId input unavailable: ${input.status} (${input.sourceRows} source rows)" }
+        val sources = input.frames.groupBy { it.key }
+        val voltages = sources[voltageKey.trimStart('/')].orEmpty()
+        val velocities = sources[velocityKey.trimStart('/')].orEmpty()
+        val accelerations = sources[accelerationKey.trimStart('/')].orEmpty()
 
         if (voltages.isEmpty() || velocities.isEmpty() || accelerations.isEmpty()) {
             return CalculatedSummary()
         }
 
-        // Align independently sampled channels by bounded nearest-neighbor matching.
-        val alignedData = mutableListOf<AlignedDataRow>()
-
-        // Identify direction change timestamps (sign of velocity changes)
-        val directionChanges = mutableListOf<Long>()
-        var lastSign = 0.0
-        val sortedVelocities = velocities.sortedBy { it.timestampMs }
-        for (v in sortedVelocities) {
-            val currentSign = sign(v.value)
-            if (currentSign != 0.0 && lastSign != 0.0 && currentSign != lastSign) {
-                directionChanges.add(v.timestampMs)
-            }
-            if (currentSign != 0.0) lastSign = currentSign
-        }
-        val sortedVoltages = voltages.sortedBy { it.timestampMs }
-        val sortedAccels = accelerations.sortedBy { it.timestampMs }
-        var voltageIdx = 0
-        var accelIdx = 0
-        var directionChangeIdx = 0
-
-        for (v in sortedVelocities) {
-            val t = v.timestampMs
-
-            // Apply direction change cleansing: skip data points within ±50ms of a sign change
-            while (directionChangeIdx < directionChanges.size - 1 &&
-                directionChanges[directionChangeIdx + 1] <= t
-            ) {
-                directionChangeIdx++
-            }
-            val isNearDirectionChange =
-                (directionChangeIdx < directionChanges.size && abs(directionChanges[directionChangeIdx] - t) <= 50) ||
-                    (directionChangeIdx + 1 < directionChanges.size &&
-                        abs(directionChanges[directionChangeIdx + 1] - t) <= 50)
-            if (isNearDirectionChange) continue
-            while (voltageIdx < sortedVoltages.size - 1 &&
-                abs(sortedVoltages[voltageIdx + 1].timestampMs - t) <= abs(sortedVoltages[voltageIdx].timestampMs - t)
-            ) {
-                voltageIdx++
-            }
-            val voltageFrame = sortedVoltages[voltageIdx]
-            if (abs(voltageFrame.timestampMs - t) > MAX_ALIGNMENT_DELTA_MS) continue
-
-            // Move accelIdx forward to find nearest neighbor in O(N + M)
-            while (accelIdx < sortedAccels.size - 1 &&
-                abs(sortedAccels[accelIdx + 1].timestampMs - t) <= abs(sortedAccels[accelIdx].timestampMs - t)
-            ) {
-                accelIdx++
-            }
-            val accelFrame = sortedAccels[accelIdx]
-            if (abs(accelFrame.timestampMs - t) > MAX_ALIGNMENT_DELTA_MS) continue
-
-            if (voltageFrame.value.isFinite() && v.value.isFinite() && accelFrame.value.isFinite()) {
-                alignedData.add(AlignedDataRow(t, voltageFrame.value, v.value, accelFrame.value))
-            }
-        }
-
-        return analyzeRawData(alignedData)
+        return analyzeRawData(RecordedSysIdInputs.align(voltages, velocities, accelerations))
     }
 
-    fun analyzeRawData(alignedData: List<AlignedDataRow>): CalculatedSummary {
-        val finiteData = alignedData.filter {
-            it.voltage.isFinite() && it.velocity.isFinite() && it.accel.isFinite()
-        }
+    fun analyzeRawData(alignedData: List<AlignedDataRow>): CalculatedSummary =
+        analyzePreparedData(PreparedSysIdData.from(alignedData))
+
+    internal fun analyzePreparedData(prepared: PreparedSysIdData): CalculatedSummary {
+        val finiteData = prepared.rows
         val validData = finiteData.filter { abs(it.velocity) > MIN_SYSID_VELOCITY }
         if (validData.size < 10) {
             return CalculatedSummary()
         }
 
-        // Solve OLS: V = kS * sgn(v) + kV * v + kA * a
-        // Construct matrices
+        val fallback = CalculatedSummary(transientClassification = classifyTransient(finiteData))
+        var velocityScale = 0.0
+        var accelerationScale = 0.0
+        var voltageScale = 0.0
+        for (row in validData) {
+            velocityScale = maxOf(velocityScale, abs(row.velocity))
+            accelerationScale = maxOf(accelerationScale, abs(row.accel))
+            voltageScale = maxOf(voltageScale, abs(row.voltage))
+        }
+        if (accelerationScale == 0.0 || voltageScale == 0.0) return fallback
+        // Normalize units before assessing rank. A missing excitation cannot identify a gain.
         val n = validData.size
         val X = SimpleMatrix(n, 3)
-        val y = SimpleMatrix(n, 1)
+        val y = DoubleArray(n)
 
         for (i in 0 until n) {
             val row = validData[i]
-            X.setRow(i, 0, sign(row.velocity), row.velocity, row.accel)
-            y.set(i, 0, row.voltage)
+            X.set(i, 0, sign(row.velocity))
+            X.set(i, 1, row.velocity / velocityScale)
+            X.set(i, 2, row.accel / accelerationScale)
+            y[i] = row.voltage / voltageScale
         }
 
         return try {
-            val beta = X.pseudoInverse().mult(y)
-            val kS = beta.get(0, 0)
-            val kV = beta.get(1, 0)
-            val kA = beta.get(2, 0)
-            if (!kS.isFinite() || !kV.isFinite() || !kA.isFinite()) return CalculatedSummary()
+            val decomposition = X.svd(true)
+            val singular = decomposition.singularValues
+            val largest = singular.maxOrNull() ?: return fallback
+            if (singular.size != 3 || !largest.isFinite() || largest <= 0.0 ||
+                singular.any { !it.isFinite() || it <= largest * 1e-10 }) return fallback
+            val u = decomposition.u
+            val v = decomposition.v
+            val beta = DoubleArray(3)
+            for (column in 0..2) {
+                var projection = 0.0
+                for (i in 0 until n) projection += u.get(i, column) * y[i]
+                val weight = projection / singular[column]
+                for (j in 0..2) beta[j] += v.get(j, column) * weight
+            }
+            val kS = beta[0] * voltageScale
+            val kV = rescaleGain(beta[1], voltageScale, velocityScale)
+            val kA = rescaleGain(beta[2], voltageScale, accelerationScale)
+            if (!kS.isFinite() || !kV.isFinite() || !kA.isFinite()) return fallback
 
             // Compute R-squared
-            val yMean = validData.map { it.voltage }.average()
+            val yMean = y.average()
             var ssTot = 0.0
             var ssRes = 0.0
             for (i in 0 until n) {
-                val actual = y.get(i, 0)
-                val predicted = kS * sign(validData[i].velocity) + kV * validData[i].velocity + kA * validData[i].accel
+                val actual = y[i]
+                val predicted = beta[0] * X.get(i, 0) + beta[1] * X.get(i, 1) + beta[2] * X.get(i, 2)
                 ssTot += (actual - yMean) * (actual - yMean)
                 ssRes += (actual - predicted) * (actual - predicted)
             }
             val rSquared = if (ssTot > 0) 1.0 - (ssRes / ssTot) else 0.0
-
-            // Classify transient response
-            val transientClassification = classifyTransient(finiteData)
+            if (!rSquared.isFinite()) return fallback
 
             CalculatedSummary(
                 kS = kS,
                 kV = kV,
                 kA = kA,
                 rSquared = rSquared,
-                transientClassification = transientClassification
+                transientClassification = fallback.transientClassification
             )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            CalculatedSummary()
+        } catch (_: Exception) {
+            fallback
         }
+    }
+
+    /** Binary scaling keeps a finite physical coefficient even if the units ratio overflows. */
+    private fun rescaleGain(coefficient: Double, numerator: Double, denominator: Double): Double {
+        val coefficientExponent = Math.getExponent(coefficient)
+        val numeratorExponent = Math.getExponent(numerator)
+        val denominatorExponent = Math.getExponent(denominator)
+        val mantissa = Math.scalb(coefficient, -coefficientExponent) * Math.scalb(numerator, -numeratorExponent) /
+            Math.scalb(denominator, -denominatorExponent)
+        return Math.scalb(mantissa, coefficientExponent + numeratorExponent - denominatorExponent)
     }
 
     private fun classifyTransient(data: List<AlignedDataRow>): TransientClassification {
         // Find a step-like voltage increase (e.g. from < 1.0 to > 6.0)
         var stepStartIdx = -1
         for (i in 1 until data.size) {
-            if (data[i - 1].voltage < 1.0 && data[i].voltage > 6.0) {
+            if (abs(data[i - 1].voltage) < 1.0 && abs(data[i].voltage) > 6.0) {
                 stepStartIdx = i
                 break
             }
         }
         if (stepStartIdx == -1) return TransientClassification.UNKNOWN
 
-        // Trace velocity after step
-        val transientPoints = data.subList(stepStartIdx, minOf(stepStartIdx + 30, data.size))
-        if (transientPoints.isEmpty()) return TransientClassification.UNKNOWN
-        // Find steady state velocity (average of last 10 points)
-        val steadyStateVel = if (transientPoints.size > 10) {
-            transientPoints.takeLast(10).map { it.velocity }.average()
+        // Scale before averaging and comparing to avoid overflow and temporary lists.
+        val end = minOf(stepStartIdx + 30, data.size)
+        val tailStart = maxOf(stepStartIdx, end - 10)
+        var scale = 0.0
+        for (i in stepStartIdx until end) scale = maxOf(scale, abs(data[i].velocity))
+        if (scale == 0.0) return TransientClassification.UNKNOWN
+        var steady = 0.0
+        if (end - stepStartIdx > 10) {
+            for (i in tailStart until end) steady += (data[i].velocity / scale) / (end - tailStart)
         } else {
-            transientPoints.last().velocity
+            steady = data[end - 1].velocity / scale
         }
-
-        if (!steadyStateVel.isFinite() || abs(steadyStateVel) <= 1e-6) {
-            return TransientClassification.UNKNOWN
+        if (abs(steady) * scale <= 1e-6) return TransientClassification.UNKNOWN
+        var peakProgress = Double.NEGATIVE_INFINITY
+        var tailMin = Double.POSITIVE_INFINITY
+        var tailMax = Double.NEGATIVE_INFINITY
+        for (i in stepStartIdx until end) {
+            val velocity = data[i].velocity / scale
+            peakProgress = maxOf(peakProgress, velocity / steady)
+            if (i >= tailStart) {
+                tailMin = minOf(tailMin, velocity)
+                tailMax = maxOf(tailMax, velocity)
+            }
         }
-        // Normalize by the signed final response so negative-going steps classify the
-        // same way as positive ones. The old `maxVel - average(last 10)` test could
-        // never be negative because a maximum is always at least that subset's mean,
-        // making OVERDAMPED unreachable.
-        val normalizedResponse = transientPoints.map { it.velocity / steadyStateVel }
-        val peakProgress = normalizedResponse.maxOrNull() ?: return TransientClassification.UNKNOWN
-        val tail = transientPoints.takeLast(minOf(10, transientPoints.size)).map { it.velocity }
-        val tailDriftRatio = ((tail.maxOrNull() ?: steadyStateVel) - (tail.minOrNull() ?: steadyStateVel)) /
-            abs(steadyStateVel)
+        val tailDriftRatio = (tailMax - tailMin) / abs(steady)
         return when {
             peakProgress > 1.05 -> TransientClassification.UNDERDAMPED
             tailDriftRatio > 0.10 -> TransientClassification.OVERDAMPED
@@ -237,32 +219,41 @@ class SysIdService(private val databaseService: DatabaseService) {
         val n = values.size
         val nextPow2 = nextPowerOfTwo(n)
         val padded = DoubleArray(nextPow2)
-        val mean = values.average()
+        val scale = values.maxOf { abs(it) }
+        var mean = 0.0
+        if (scale > 0.0) {
+            for (value in values) mean += value / scale
+            mean /= n
+        }
         var windowSum = 0.0
         for (i in values.indices) {
             val window = 0.5 * (1.0 - kotlin.math.cos(2.0 * kotlin.math.PI * i / (n - 1)))
-            padded[i] = (values[i] - mean) * window
+            padded[i] = (if (scale > 0.0) values[i] / scale - mean else 0.0) * window
             windowSum += window
         }
         val transformer = FastFourierTransformer(DftNormalization.STANDARD)
         val complex = transformer.transform(padded, TransformType.FORWARD)
 
-        // Magnitudes of first half
+        // One-sided amplitudes include DC and Nyquist once; interior bins combine both sides.
         val half = nextPow2 / 2
-        val frequencies = DoubleArray(half)
-        val magnitudes = DoubleArray(half)
+        val frequencies = DoubleArray(half + 1)
+        val magnitudes = DoubleArray(half + 1)
 
-        for (i in 0 until half) {
-            frequencies[i] = i * sampleRateHz / nextPow2
-            magnitudes[i] = if (windowSum > 0.0) 2.0 * complex[i].abs() / windowSum else 0.0
+        for (i in 0..half) {
+            frequencies[i] = (i.toDouble() / nextPow2) * sampleRateHz
+            val factor = if (i == 0 || i == half) 1.0 else 2.0
+            magnitudes[i] = (factor * complex[i].abs() / windowSum) * scale
+            if (!magnitudes[i].isFinite()) return FftResult(emptyDoubleArray(), emptyDoubleArray(), 0.0)
         }
 
-        // Find dominant frequency (excluding DC component at index 0)
+        // Select the peak from the windowed transform, before endpoint amplitude scaling.
+        // Doubling interior bins can otherwise promote Hann leakage beside Nyquist.
         var maxMag = 0.0
         var dominantFreq = 0.0
-        for (i in 1 until half) {
-            if (magnitudes[i] > maxMag) {
-                maxMag = magnitudes[i]
+        for (i in 1..half) {
+            val magnitude = complex[i].abs()
+            if (magnitude > maxMag) {
+                maxMag = magnitude
                 dominantFreq = frequencies[i]
             }
         }
@@ -279,7 +270,6 @@ class SysIdService(private val databaseService: DatabaseService) {
     private fun emptyDoubleArray() = DoubleArray(0)
 
     private companion object {
-        const val MAX_ALIGNMENT_DELTA_MS = 50L
         const val MIN_SYSID_VELOCITY = 1e-4
         const val MAX_FFT_SAMPLES = 1 shl 20
     }

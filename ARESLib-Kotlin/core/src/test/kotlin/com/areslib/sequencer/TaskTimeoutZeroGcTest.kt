@@ -4,15 +4,20 @@ import com.sun.management.ThreadMXBean
 import java.lang.management.ManagementFactory
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeTrue
 
 class TaskTimeoutZeroGcTest {
+    @Volatile private var escaped: ByteArray? = null
+
+    private fun allocationBean(): ThreadMXBean {
+        val bean = ManagementFactory.getThreadMXBean() as? ThreadMXBean
+        assumeTrue(bean != null && bean.isThreadAllocatedMemorySupported)
+        return requireNotNull(bean).apply { isThreadAllocatedMemoryEnabled = true }
+    }
+
     @Test
     fun `steady state watchdog scan allocates no per-task snapshots`() {
-        val allocationBean = ManagementFactory.getThreadMXBean() as? ThreadMXBean ?: return
-        if (!allocationBean.isThreadAllocatedMemorySupported) return
-        if (!allocationBean.isThreadAllocatedMemoryEnabled) {
-            allocationBean.isThreadAllocatedMemoryEnabled = true
-        }
+        val allocationBean = allocationBean()
         val tasks = Array(8) { index ->
             object : Task {
                 override val name = "allocation-probe-$index"
@@ -34,6 +39,7 @@ class TaskTimeoutZeroGcTest {
             val before = allocationBean.getThreadAllocatedBytes(threadId)
             repeat(10_000) { TaskTimeoutManager.runWatchdogCheck(1L) }
             val allocatedBytes = allocationBean.getThreadAllocatedBytes(threadId) - before
+            println("[Timeout audit] 10000 watchdog scans over 8 active tasks allocated $allocatedBytes bytes")
 
             assertTrue(
                 allocatedBytes <= 256L,
@@ -48,5 +54,17 @@ class TaskTimeoutZeroGcTest {
             }
             com.areslib.util.RobotClock.useSystemTime()
         }
+    }
+
+    @Test
+    fun `allocation counter detects escaped arrays`() {
+        val bean = allocationBean()
+        val id = Thread.currentThread().id
+        repeat(2000) { escaped = ByteArray(32) }
+        val before = bean.getThreadAllocatedBytes(id)
+        repeat(1000) { escaped = ByteArray(32) }
+        val allocated = bean.getThreadAllocatedBytes(id) - before
+        println("[Timeout audit] Escaped allocation calibration: $allocated bytes")
+        assertTrue(allocated >= 48000L)
     }
 }

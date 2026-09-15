@@ -39,3 +39,23 @@ Generated direct constants and typed runtime access use the same resolved canoni
 constructors, Redux initial state, controllers, physical IO, and simulator setup must consume this
 single source so the first periodic update cannot replace constructor defaults with different Redux
 defaults.
+
+## Live request and acknowledgement transport
+
+Parameters use `Tuning/Parameters/<declaration UID>/...` topics. Studio enqueues the typed
+`Requested` value followed by its numeric `RequestNonce` in one NT4 binary frame on the same ready
+connection. A full outgoing queue accepts neither update. Each request must still pass the robot's
+policy, armed-session and compiled-consumer checks; a successful enqueue alone is not an apply.
+
+The robot publishes `Acknowledgement` as one string using the shared `TuningAcknowledgementCodec`:
+`1|nonce|RESULT_CODE`. Nonces are canonical decimal integers in 0 through 9,007,199,254,740,991;
+result codes are bounded uppercase identifiers. The initial empty string means no result yet.
+The version, nonce and result are decoded together, so delayed or reordered scalar topics cannot
+associate a new nonce with an old `APPLIED` result. Metadata refresh preserves the last acknowledgement.
+
+`Current`, `ProcessedNonce` and `LastResult` remain available for diagnostics and older consumers.
+Their publication order does not guarantee delivery order through an NT4 server. Studio verifies
+an experimental apply only from a matching atomic acknowledgement on the original connection.
+An older robot providing only scalar acknowledgements leaves the result unknown and needs updated
+robot code before Studio can verify live-test results. Canonical profiles are never changed by a
+live request, rejected request, timeout or reconnection.

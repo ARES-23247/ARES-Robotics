@@ -8,6 +8,8 @@ import com.areslib.hardware.drive.SwerveHardwareIO
  * Calibration is deliberately denied unless all four readings are finite, inside the physical
  * one-rotation absolute-sensor envelope, and recent. ARESLib's cached encoder-validity signal
  * proves that the latest coordinated CTRE refresh succeeded before the values are accepted.
+ * Freshness includes both sensor latency at acquisition and elapsed time in this cache.
+ * Record and copy belong to the same robot loop; neither method performs a hardware refresh.
  */
 internal class SwerveOffsetCalibrationSampleCache(
     private val maxAgeMs: Long = 100L
@@ -15,6 +17,7 @@ internal class SwerveOffsetCalibrationSampleCache(
     private val scratch = DoubleArray(MODULE_COUNT)
     private val cached = DoubleArray(MODULE_COUNT)
     private var sampleTimestampMs = Long.MIN_VALUE
+    private var sampleLatencyMs = Double.POSITIVE_INFINITY
 
     fun record(io: SwerveHardwareIO, timestampMs: Long) {
         scratch.fill(Double.NaN)
@@ -30,6 +33,7 @@ internal class SwerveOffsetCalibrationSampleCache(
             }
             scratch.copyInto(cached)
             sampleTimestampMs = timestampMs
+            sampleLatencyMs = latencyMs
         } catch (_: Exception) {
             invalidate()
         }
@@ -38,9 +42,11 @@ internal class SwerveOffsetCalibrationSampleCache(
     fun copyFresh(nowMs: Long, out: DoubleArray): Boolean {
         require(out.size >= MODULE_COUNT) { "Swerve offset output must contain four modules" }
         val ageMs = nowMs - sampleTimestampMs
-        if (sampleTimestampMs == Long.MIN_VALUE || ageMs < 0L || ageMs > maxAgeMs || !isPlausible(cached)) {
+        if (sampleTimestampMs == Long.MIN_VALUE || nowMs < sampleTimestampMs ||
+            ageMs < 0L || ageMs > maxAgeMs || sampleLatencyMs > maxAgeMs - ageMs) {
             return false
         }
+        // Only record mutates the owned values, and it validates before publishing the timestamp.
         cached.copyInto(out)
         return true
     }

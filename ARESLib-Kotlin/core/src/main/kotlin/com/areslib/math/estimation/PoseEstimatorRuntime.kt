@@ -35,7 +35,8 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
     private var estimator = createWorkspace(initialState)
     private val visionController = StoreVisionMeasurementProcessor()
 
-    fun prepare(state: RobotState, action: RobotAction): PreparedStoreAction {
+    /** Null means the original action needs no estimator middleware or preparation allocation. */
+    fun prepare(state: RobotState, action: RobotAction): PreparedStoreAction? {
         return when (action) {
             is RobotAction.DriveHardwareUpdate -> PreparedStoreAction(
                 publicAction = action,
@@ -60,7 +61,7 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
                     )
                 )
             }
-            else -> PreparedStoreAction(action)
+            else -> null
         }
     }
 
@@ -121,6 +122,15 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
                 history = newHistory,
                 isBeached = false,
                 lastUnbeachedTimeMs = action.timestampMs,
+                recoveryActive = true,
+                stationarySinceMs = 0L,
+                stationaryDwellActive = false,
+                lastInnovationX = 0.0,
+                lastInnovationY = 0.0,
+                lastInnovationTheta = 0.0,
+                lastNormalizedInnovationSquared = 0.0,
+                lastMeasurementAccepted = false,
+                lastRejectionReason = null,
                 lastKalmanGain = DoubleArray(9)
             ).also { it.lastObservationTimestampMs = action.timestampMs }
             return estimator.reduxSnapshot()
@@ -187,8 +197,10 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
     private fun observationDtSeconds(timestampMs: Long): Double? {
         val history = estimator.history
         if (history.isEmpty()) return 0.02
-        val deltaMs = timestampMs - history[history.size - 1].timestampMs
-        if (deltaMs <= 0L) return null
+        val previousTimestamp = history[history.size - 1].timestampMs
+        if (timestampMs <= previousTimestamp) return null
+        val deltaMs = timestampMs - previousTimestamp
+        if (deltaMs < 0L) return 0.1 // A forward interval beyond Long range reaches the existing cap.
         return (deltaMs / 1_000.0).coerceIn(0.001, 0.1)
     }
 
@@ -214,6 +226,8 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
             lastUnbeachedTimeMs = snapshot.lastUnbeachedTimeMs,
             gyroBiasRadPerSec = snapshot.gyroBiasRadPerSec,
             stationarySinceMs = snapshot.stationarySinceMs,
+            stationaryDwellActive = snapshot.stationaryDwellActive,
+            recoveryActive = snapshot.recoveryActive,
             lastInnovationX = snapshot.lastInnovationX,
             lastInnovationY = snapshot.lastInnovationY,
             lastInnovationTheta = snapshot.lastInnovationTheta,

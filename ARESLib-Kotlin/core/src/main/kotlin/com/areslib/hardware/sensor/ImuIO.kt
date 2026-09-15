@@ -21,19 +21,18 @@ data class ImuInputs(
  * Pure abstraction for reading a gyroscope / IMU.
  */
 interface ImuIO : SubsystemIO {
+    /** Convenience publisher; timing-sensitive owners should retain an [ImuTelemetryPublisher]. */
     override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) {
         val inputs = ImuInputs()
         updateInputs(inputs)
-        telemetry.putNumber("$prefix/HeadingRad", inputs.headingRadians)
-        telemetry.putNumber("$prefix/PitchRad", inputs.pitchRadians)
-        telemetry.putNumber("$prefix/RollRad", inputs.rollRadians)
-        telemetry.putNumber("$prefix/YawVelocityRadPerSec", inputs.yawVelocityRadPerSec)
-        telemetry.putNumber("$prefix/PitchVelocityRadPerSec", inputs.pitchVelocityRadPerSec)
-        telemetry.putNumber("$prefix/RollVelocityRadPerSec", inputs.rollVelocityRadPerSec)
+        publishImuSnapshot(telemetry, inputs, "$prefix/HeadingRad", "$prefix/PitchRad",
+            "$prefix/RollRad", "$prefix/YawVelocityRadPerSec", "$prefix/PitchVelocityRadPerSec",
+            "$prefix/RollVelocityRadPerSec")
     }
 
     /**
-     * Poll the latest IMU signals into the inputs structure.
+     * Copies the latest coherent cached IMU signals into caller-owned storage.
+     * Hardware sampling belongs to refresh/background polling; do not retain [inputs].
      */
     fun updateInputs(inputs: ImuInputs)
     

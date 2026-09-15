@@ -5,7 +5,7 @@ import com.ares.analytics.service.AresProjectGenerator
 import com.ares.analytics.service.SubsystemDesignAssistant
 import com.ares.analytics.service.SubsystemDesignProposal
 import com.ares.analytics.service.sanitizeSubsystemDesignCandidate
-import com.ares.analytics.service.writeFileAtomically
+import com.ares.analytics.viewmodel.subsystem.ensureXrpExtensionScaffold
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.AresProjectDocuments
@@ -64,11 +64,12 @@ import java.io.File
 class SubsystemGeneratorViewModel(
     projectPath: String,
     private val league: League,
-    private val documents: AresProjectDocuments = AresProjectDocuments(),
+    private val documents: com.ares.analytics.service.project.ProjectDocumentGateway = AresProjectDocuments(),
     private val projectGenerator: AresProjectGenerator? = null,
     private val designAssistant: SubsystemDesignAssistant? = null,
     private val checkpointRecorder: ProjectCheckpointRecorder = ProjectCheckpointRecorder.NONE,
     private val projectSession: ProjectSession? = null,
+    loadOnStart: Boolean = true,
 ) : AutoCloseable {
     private val reviewGson = GsonBuilder().setPrettyPrinting().create()
     private val platform = when (league) {
@@ -84,7 +85,8 @@ class SubsystemGeneratorViewModel(
     private val previewPlanner = SubsystemBuilderPreviewPlanner(league, platform, basePackage)
     private val persistence = SubsystemProjectPersistence(documents, projectSession)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private var aiProposalGeneration = 0L
+    private val aiProposalGeneration = java.util.concurrent.atomic.AtomicLong()
+    private val reloadGeneration = java.util.concurrent.atomic.AtomicLong()
     private val _state = MutableStateFlow(SubsystemGeneratorState(projectPath, league))
     val state: StateFlow<SubsystemGeneratorState> = _state.asStateFlow()
 
@@ -102,14 +104,31 @@ class SubsystemGeneratorViewModel(
                 }
             }
         }
-        reload()
+        if (loadOnStart) reload()
     }
 
-    fun reload() {
-        aiProposalGeneration++
+    fun reloadAsync(): kotlinx.coroutines.Job {
         val current = _state.value
+        val generation = reloadGeneration.incrementAndGet()
+        return scope.launch(Dispatchers.IO) { reload(current, generation) }
+    }
+
+    private fun blockDraftReplacement(): Boolean {
+        if (!_state.value.projectLoaded) {
+            _state.update { it.copy(status = "Load the project successfully before adding a subsystem.") }
+            return true
+        }
+        if (!_state.value.dirty) return false
+        _state.update { it.copy(status = "Save or reload the current draft before adding another subsystem.") }
+        return true
+    }
+
+    fun reload() = reload(_state.value, reloadGeneration.incrementAndGet())
+
+    private fun reload(current: SubsystemGeneratorState, generation: Long) {
+        aiProposalGeneration.incrementAndGet()
         if (current.projectPath.isBlank()) {
-            _state.value = current.copy(loadError = "Choose a robot project directory to edit subsystems.")
+            commitReload(generation, current, current.copy(loadError = "Choose a robot project directory to edit subsystems."))
             return
         }
         val target = when (league) {
@@ -127,11 +146,13 @@ class SubsystemGeneratorViewModel(
                 val projectProblems = snapshot.diagnostics.filter {
                     it.kind == ProjectDocumentKind.SUBSYSTEM || it.kind == ProjectDocumentKind.PROJECT_METADATA
                 }.map { SubsystemProblem(SubsystemProblemSeverity.WARNING, "project:${it.file.name}", it.message) }
-                _state.value = current.copy(
+                if (generation != reloadGeneration.get()) return@onSuccess
+                commitReload(generation, current, current.copy(
                     xrpControllerModel = snapshot.query.metadata
                         ?.takeIf { it.league == AresLeague.XRP }
                         ?.requireXrpRuntimeOptions()
                         ?.controllerModel,
+                    projectLoaded = true,
                     documents = matching,
                     selectedDocumentId = first?.documentId,
                     draft = first?.let(::SubsystemEditorDraft),
@@ -147,16 +168,28 @@ class SubsystemGeneratorViewModel(
                     aiProposalInProgress = false,
                     aiProposal = null,
                     aiProposalError = null,
-                ).revalidated(projectProblems)
+                ).revalidated(projectProblems))
             }
             .onFailure { error ->
-                _state.value = current.copy(loadError = error.message ?: "Subsystem documents could not be loaded.")
+                if (generation == reloadGeneration.get())
+                    commitReload(generation, current, current.copy(loadError = error.message ?: "Subsystem documents could not be loaded."))
             }
     }
 
+    private fun commitReload(generation: Long, expected: SubsystemGeneratorState, loaded: SubsystemGeneratorState) {
+        _state.update { latest ->
+            val comparable = latest.copy(generationPhase = expected.generationPhase,
+                generationMessage = expected.generationMessage, generatedContentHash = expected.generatedContentHash)
+            val initialLoad = !latest.projectLoaded && latest.draft == null
+            if (generation != reloadGeneration.get() || (!initialLoad && comparable != expected)) latest else loaded.copy(generationPhase = latest.generationPhase,
+                generationMessage = latest.generationMessage, generatedContentHash = latest.generatedContentHash)
+        }
+    }
+
     fun newSubsystem(template: SubsystemTemplate = _state.value.selectedTemplate) {
+        if (blockDraftReplacement()) return
         require(template.supportsPlatform(platform)) { "${template.name} is not supported for $platform projects" }
-        aiProposalGeneration++
+        aiProposalGeneration.incrementAndGet()
         val used = _state.value.documents.mapTo(hashSetOf()) { it.documentId }
         var suffix = 1
         var id = "new-subsystem"
@@ -282,7 +315,8 @@ class SubsystemGeneratorViewModel(
     }
 
     fun registerHandAuthoredSubsystem() {
-        aiProposalGeneration++
+        if (blockDraftReplacement()) return
+        aiProposalGeneration.incrementAndGet()
         val used = _state.value.documents.mapTo(hashSetOf()) { it.documentId }
         var suffix = 1
         var id = "existing-subsystem"
@@ -365,7 +399,7 @@ class SubsystemGeneratorViewModel(
         _state.update { current ->
             if (current.dirty) return@update current.copy(status = "Save or reload the current draft before switching subsystems.")
             val document = current.documents.firstOrNull { it.documentId == documentId } ?: return@update current
-            aiProposalGeneration++
+            aiProposalGeneration.incrementAndGet()
             current.copy(
                 selectedDocumentId = document.documentId,
                 draft = SubsystemEditorDraft(document),
@@ -385,7 +419,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun edit(transform: (SubsystemDocument) -> SubsystemDocument) {
-        aiProposalGeneration++
+        aiProposalGeneration.incrementAndGet()
         _state.update { current ->
             val draft = current.draft ?: return@update current
             current.copy(
@@ -400,7 +434,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun undo() = _state.update { current ->
-        aiProposalGeneration++
+        aiProposalGeneration.incrementAndGet()
         val draft = current.draft ?: return@update current
         current.copy(
             draft = draft.undo(),
@@ -413,7 +447,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun redo() = _state.update { current ->
-        aiProposalGeneration++
+        aiProposalGeneration.incrementAndGet()
         val draft = current.draft ?: return@update current
         current.copy(
             draft = draft.redo(),
@@ -441,7 +475,7 @@ class SubsystemGeneratorViewModel(
         _state.update {
             it.copy(aiProposalInProgress = true, aiProposal = null, aiProposalError = null)
         }
-        val requestGeneration = ++aiProposalGeneration
+        val requestGeneration = aiProposalGeneration.incrementAndGet()
         scope.launch {
             runCatching {
                 val rawProposal = assistant.propose(base, request)
@@ -463,7 +497,7 @@ class SubsystemGeneratorViewModel(
             }
                 .onSuccess { review ->
                     _state.update { current ->
-                        if (requestGeneration != aiProposalGeneration) {
+                        if (requestGeneration != aiProposalGeneration.get()) {
                             current
                         } else if (current.draft?.document != base) {
                             current.copy(
@@ -477,7 +511,7 @@ class SubsystemGeneratorViewModel(
                 }
                 .onFailure { error ->
                     _state.update {
-                        if (requestGeneration != aiProposalGeneration) it else it.copy(
+                        if (requestGeneration != aiProposalGeneration.get()) it else it.copy(
                             aiProposalInProgress = false,
                             aiProposal = null,
                             aiProposalError = error.message ?: "Gemini could not create a subsystem proposal.",
@@ -746,7 +780,7 @@ class SubsystemGeneratorViewModel(
                         draft = SubsystemEditorDraft(persisted),
                         dirty = false,
                         projectRevision = persistence.currentRevision(state.projectRevision),
-                        status = "Saved revision ${persisted.revision} (${saved.contentHash.take(12)}…).",
+                        status = "Saved revision ${persisted.revision} (${saved.contentHash.take(12)}â€¦).",
                     ).revalidated()
                 }
                 if (generateAfterSave) projectGenerator?.generateAresProject(current.projectPath, current.league)
@@ -854,7 +888,7 @@ class SubsystemGeneratorViewModel(
                 recovery.recoveryPath,
             )
         }.onSuccess { restored ->
-            aiProposalGeneration++
+            aiProposalGeneration.incrementAndGet()
             _state.update {
                 SubsystemRemovalStateTransitions.restoreDocument(
                     current = it,
@@ -895,7 +929,7 @@ class SubsystemGeneratorViewModel(
         message: String,
         recovery: SubsystemRecoveryNotice? = null,
     ) {
-        aiProposalGeneration++
+        aiProposalGeneration.incrementAndGet()
         _state.update { current ->
             SubsystemRemovalStateTransitions.removeDocument(
                 current = current,
@@ -945,58 +979,6 @@ class SubsystemGeneratorViewModel(
     override fun close() = scope.cancel()
 
     private companion object {
-        fun ensureXrpExtensionScaffold(projectPath: String, document: SubsystemDocument) {
-            if (document.platform != SubsystemPlatform.XRP ||
-                document.implementation.kind != SubsystemImplementationKind.HAND_AUTHORED
-            ) return
-            val relative = document.implementation.sourceFiles.singleOrNull()
-                ?: error("An XRP extension must declare exactly one USER-OWNED Python source file")
-            val root = File(projectPath).canonicalFile
-            val target = File(root, relative).canonicalFile
-            require(target.toPath().startsWith(root.toPath()) && target.extension == "py") {
-                "The XRP extension source must be a project-relative Python file"
-            }
-            if (target.exists()) return
-            writeFileAtomically(target) { temporary ->
-                temporary.writeText(
-                    """\
-                    |\"\"\"USER-OWNED XRP subsystem extension. Studio will never overwrite this file.\"\"\"
-                    |
-                    |class UserSubsystem:
-                    |    def __init__(self, hardware_factory):
-                    |        self.hardware_factory = hardware_factory
-                    |        self.document_id = ${document.documentId.quotedPython()}
-                    |        self.capability_action_keys = ()
-                    |        self.faulted = False
-                    |
-                    |    def periodic(self, dt):
-                    |        pass
-                    |
-                    |    def stop(self):
-                    |        pass
-                    |
-                    |    def recover_neutral(self):
-                    |        self.stop()
-                    |        self.faulted = False
-                    |        return True
-                    |
-                    |    def handle_action(self, action_key, arguments):
-                    |        raise ValueError(\"Unsupported action: \" + action_key)
-                    |
-                    |
-                    |def create_subsystem(hardware_factory):
-                    |    return UserSubsystem(hardware_factory)
-                    |
-                    |
-                    |def create_simulated_subsystem(hardware_factory):
-                    |    return UserSubsystem(hardware_factory)
-                    |""".trimMargin(),
-                )
-            }
-        }
-
-        fun String.quotedPython(): String = "'" + replace("\\", "\\\\").replace("'", "\\'") + "'"
-
         fun uniqueId(base: String, used: List<String>): String {
             if (base !in used) return base
             var suffix = 2

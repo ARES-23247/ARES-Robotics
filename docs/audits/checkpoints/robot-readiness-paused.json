@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "status": "paused at explicit user request",
+  "date": "2026-09-14",
+  "checkpointComplete": false,
+  "automaticResume": false,
+  "applicationGoal": "old objective remains paused; available API cannot replace objective",
+  "branch": "codex/robot-loop-math-audit",
+  "relativeWorktree": ".codex-validation/audit-pass191",
+  "source": {
+    "baseCommit": "779fb0a274b68fcac08132c6b69bc3375ce59c1e",
+    "sourceCommit": "1cef6f040dd84e329f74d95d87d60d4568a496df",
+    "librarySourceTree": "6d49e143e3a919569c5b3d933b8a8200adeb9a36",
+    "candidate": "19.0.1-rc.6d49e143e3a9",
+    "sourceFrozen": true,
+    "productionSourcesChanged": false
+  },
+  "sourceFileSha256": {
+    ".github/workflows/monorepo-ci.yml": "42419b9f92e859d8b448d585d93a9c4dd4d0856207785cffd3dc26131654a267",
+    "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/GeneratedRobotReadinessTest.kt": "9b7097a486033b95d4e2518ed6ba7b7a311019074d8242f72c52eaf4f3af34b8",
+    "ARESLib-Kotlin/codegen/src/test/resources/readiness/ScoringRobot.kt.txt": "0636a75ff8621c33d313ce51227f34af6b4eb4f4579c1439299065c2f67a6c6b",
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/RobotReadinessMathTest.kt": "2bdcc01ca7d0ba62bbc5c86fb863de9299a1560ba6396a15fc6bfda30b40e02e",
+    "ARES-XRP-Starter/tests/test_robot_readiness.py": "f9f25bc88fb28e91736c82dad2d69ab120c8242a965104e4fcd96ac2740924c2",
+    "docs/audits/README.md": "bf22c5fd6c3c07cc076379b2e9f2ce7434609065bff843ed81946b3450565459",
+    "docs/audits/RESUME.md": "bee809dba7be49300002d73ca04c4716ae6555ec6aae8f3a0dc2a837e386c44a",
+    "docs/audits/ROBOT_READINESS_GOAL.md": "5f1df64c00a2b08ed2b9230f9faafd03b172c34d69385689101eb5febe408fff",
+    "release/ares-versions.properties": "ef81c3b6146947a675a8ffd49299ef659838aa9504dce859ddc944f35c7447c8",
+    "scripts/tests/test_classify_ci_paths.py": "28c279ad6bf21b622ea64042cb8ea7912fcca5a2d67a24a3d16e503d9aa86a49",
+    "release/ares-source-tree.txt": "df2d9bc10f8ac72df15f964f2580e8c83540d6f298680b92100c8378bdd0dfec"
+  },
+  "priorCheckpoint": "docs/audits/checkpoints/pass277.json",
+  "readinessFixtures": {
+    "ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.RobotReadinessMathTest.xml": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "a8c6aad1278be740e4c1865e11d8c16db25a25a2825c25b55ba5133ffcbded02",
+      "cases": [
+        "delayed noisy vision reduces realistic odometry drift against analytic trajectories()",
+        "wheel kinematics agree with physical basis and rigid body motion()",
+        "estimation follows known straight clockwise and counterclockwise trajectories()",
+        "EKF covariance and correction agree with independent scalar Bayesian posteriors()"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.GeneratedRobotReadinessTest.xml": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ae0133c7bde975232a81413b892c8d39272868bae1338c3f1823d3b5a6c8d98c",
+      "cases": [
+        "FTC generated scoring robot readiness()",
+        "FRC generated scoring robot readiness()"
+      ]
+    }
+  },
+  "otherPassingChecks": {
+    "xrpStarter": 121,
+    "microRuntime": 130,
+    "ciRouting": 28
+  },
+  "performance": {
+    "ftc": {
+      "platform": "FTC",
+      "environment": "desktop JVM simulated IO",
+      "os": "Windows 11",
+      "architecture": "amd64",
+      "javaVersion": "17.0.12",
+      "clock": "System.nanoTime",
+      "boundary": "cached simulated sensor refresh, generated Redux/tasks/superstructure, mecanum+EKF workload, generated controller output",
+      "excludes": "physical bus/controller, network transport, calibrated plant physics and mock-clock publication",
+      "warmupCycles": 3000,
+      "samples": 10000,
+      "nominalBudgetMs": 20.0,
+      "loop": {
+        "p50Ms": 0.004,
+        "p95Ms": 0.0079,
+        "p99Ms": 0.022,
+        "maxMs": 0.6961
+      },
+      "sensorToOutput": {
+        "p50Ms": 0.0039,
+        "p95Ms": 0.0077,
+        "p99Ms": 0.0218,
+        "maxMs": 0.6956
+      },
+      "executionOver10ms": 0,
+      "executionOver20ms": 0,
+      "allocatedBytes": 10630648,
+      "allocatedBytesPerCycle": 1063.0648,
+      "observedJvmGcCollectionsDuringUnpacedSamples": 0,
+      "observedJvmGcCollectionMs": 0,
+      "pacedSamples": 200,
+      "pacedPeriod": {
+        "p50Ms": 15.9457,
+        "p95Ms": 31.4968,
+        "p99Ms": 31.9858,
+        "maxMs": 32.0068
+      },
+      "pacedIntervalsOver20ms": 59,
+      "schedulerLateness": {
+        "p50Ms": 7.6761,
+        "p95Ms": 14.8601,
+        "p99Ms": 15.5651,
+        "maxMs": 16.2702
+      },
+      "scheduledStartsMissedByWholePeriod": 0,
+      "sensorToOutputBudget": "must fit within one loop budget; physical acquisition latency is unmeasured",
+      "scenarioChecks": "passed"
+    },
+    "frc": {
+      "platform": "FRC",
+      "environment": "desktop JVM simulated IO",
+      "os": "Windows 11",
+      "architecture": "amd64",
+      "javaVersion": "17.0.12",
+      "clock": "System.nanoTime",
+      "boundary": "cached simulated sensor refresh, generated Redux/tasks/superstructure, mecanum+EKF workload, generated controller output",
+      "excludes": "physical bus/controller, network transport, calibrated plant physics and mock-clock publication",
+      "warmupCycles": 3000,
+      "samples": 10000,
+      "nominalBudgetMs": 20.0,
+      "loop": {
+        "p50Ms": 0.004,
+        "p95Ms": 0.0069,
+        "p99Ms": 0.0136,
+        "maxMs": 0.2687
+      },
+      "sensorToOutput": {
+        "p50Ms": 0.0039,
+        "p95Ms": 0.0068,
+        "p99Ms": 0.0135,
+        "maxMs": 0.2678
+      },
+      "executionOver10ms": 0,
+      "executionOver20ms": 0,
+      "allocatedBytes": 10480000,
+      "allocatedBytesPerCycle": 1048.0,
+      "observedJvmGcCollectionsDuringUnpacedSamples": 0,
+      "observedJvmGcCollectionMs": 0,
+      "pacedSamples": 200,
+      "pacedPeriod": {
+        "p50Ms": 15.9623,
+        "p95Ms": 31.6559,
+        "p99Ms": 32.0476,
+        "maxMs": 32.204
+      },
+      "pacedIntervalsOver20ms": 58,
+      "schedulerLateness": {
+        "p50Ms": 7.5162,
+        "p95Ms": 14.7825,
+        "p99Ms": 15.5793,
+        "maxMs": 15.696
+      },
+      "scheduledStartsMissedByWholePeriod": 0,
+      "sensorToOutputBudget": "must fit within one loop budget; physical acquisition latency is unmeasured",
+      "scenarioChecks": "passed"
+    },
+    "xrp": {
+      "platform": "XRP",
+      "environment": "desktop CPython simulated IO",
+      "os": "Windows",
+      "pythonVersion": "3.14.2",
+      "clock": "time.perf_counter_ns",
+      "nominalBudgetMs": 20,
+      "boundary": "SimMotor advance, XrpRobot.step, generated starter subsystems, odometry, field constraint, motor outputs",
+      "excludes": "Pico/MicroPython, physical IO, network transport and telemetry serialization",
+      "warmupCycles": 1000,
+      "samples": 5000,
+      "loop": {
+        "p50Ms": 0.5287,
+        "p95Ms": 0.8381,
+        "p99Ms": 1.012,
+        "maxMs": 1.9526
+      },
+      "sensorToOutput": {
+        "p50Ms": 0.524,
+        "p95Ms": 0.8236,
+        "p99Ms": 0.9994,
+        "maxMs": 1.9442
+      },
+      "executionOver20ms": 0,
+      "tracedSeparateCycles": 1000,
+      "tracedRetainedBytes": 8968,
+      "tracedPeakBytes": 13216,
+      "totalAllocatedBytes": null,
+      "pacedSamples": 100,
+      "pacedPeriod": {
+        "p50Ms": 20.025,
+        "p95Ms": 20.2891,
+        "p99Ms": 20.4343,
+        "maxMs": 20.4343
+      },
+      "schedulerLateness": {
+        "p50Ms": 0.2657,
+        "p95Ms": 0.5081,
+        "p99Ms": 0.5411,
+        "maxMs": 0.5796
+      },
+      "pacedIntervalsOver20ms": 61,
+      "scheduledStartsMissedByWholePeriod": 0,
+      "scenarioChecks": "passed"
+    }
+  },
+  "performanceScope": "Desktop observations only; final assessment and target hardware checkpoint remain pending",
+  "fullLibrary": {
+    "status": "interrupted by user pause, not a failing test verdict",
+    "session": 29411,
+    "terminalExitCode": 1,
+    "candidatePublished": false
+  },
+  "consumerValidation": "Not started against new candidate; preserve prior pass277 results",
+  "policy": {
+    "guidance": "passed",
+    "documentLinks": "passed before pause documentation",
+    "overall": "blocked at missing FTC starter19.0.0 archive; existing protected migration limitation"
+  },
+  "localEvidenceDirectory": "ARESLib-Kotlin/build/robot-readiness",
+  "localEvidenceSha256": {
+    "readiness-focused-4.log": "07bbf8045f0566c0c93b55295699b1990b59def60d5700190f1577b8176c6ebe",
+    "library-full.log": "c41c3031f2a378882ca3a069aee3e63e97cca9008e23d46fabea538959d817a8",
+    "xrp-verify.log": "70294437d16e12f036c96c1085d35296c4e5c05b31b56615486d0d6016d43cce",
+    "micro-full.log": "ef54d0bf04054c027aad1f916f864e37120d09d8254eaae48ad5609d89e6b383",
+    "ci-routing-final.log": "5525db9da496f155328c42c6ed7b30b262de1b966d32c8dba82568415c6ff63d",
+    "policy.log": "31c7598e85b870f7b05484ffaf9c4f495c172943efcebdecdfde23fd989b6b67"
+  },
+  "remaining": [
+    "full library/API/source-size and local candidate",
+    "dependency-ordered consumers",
+    "Studio gate and compilation evidence",
+    "final performance assessment and hardware checklist",
+    "scoped ledger refresh and final readiness report"
+  ]
+}

@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.channels.OverlappingFileLockException
 import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 
 /** Operational logging modes with deliberately different fidelity and storage budgets. */
@@ -149,7 +148,7 @@ internal object LogStorageGovernance {
         val candidates = directory.listFiles { file ->
             file.isFile && file.name.startsWith("ares_log_") &&
                 file.name.endsWith(ACTIVE_SUFFIX, ignoreCase = true) &&
-                nowMs - file.lastModified() >= staleAfterMs
+                isStale(file.lastModified(), nowMs, staleAfterMs)
         }.orEmpty()
 
         for (candidate in candidates) {
@@ -173,47 +172,51 @@ internal object LogStorageGovernance {
             val bytes = candidate.length()
             val quarantine = uniqueQuarantineTarget(candidate, nowMs)
             try {
-                Files.move(candidate.toPath(), quarantine.toPath(), StandardCopyOption.ATOMIC_MOVE)
+                // ATOMIC_MOVE may replace an existing target even without REPLACE_EXISTING.
+                // A competing recovery must never overwrite previously quarantined evidence.
+                Files.move(candidate.toPath(), quarantine.toPath())
                 quarantinedFiles++
                 quarantinedBytes += bytes
             } catch (_: Exception) {
-                try {
-                    Files.move(candidate.toPath(), quarantine.toPath())
-                    quarantinedFiles++
-                    quarantinedBytes += bytes
-                } catch (_: Exception) {
-                    // A concurrent writer or filesystem policy won the race; leave the file intact.
-                }
+                // A collision or filesystem failure is retried by a later recovery pass.
             }
         }
         return LogRecoveryResult(quarantinedFiles, quarantinedBytes)
     }
 
-    /** Deletes oldest completed ARES telemetry logs until every configured budget is satisfied. */
+    /**
+     * Tries each oldest completed log at most once, stopping at the retention floor or budgets.
+     * Failed deletions remain in the count and byte totals. Results describe this pass's snapshot;
+     * other processes may change the directory concurrently, and budgets are best effort.
+     */
     @JvmStatic
     fun enforceRetention(directory: File, policy: LoggingPolicy): LogRetentionResult {
         if (!directory.isDirectory) return LogRetentionResult()
-        val files = completedTelemetryFiles(directory).sortedBy(File::lastModified).toMutableList()
-        var totalBytes = files.sumOf(File::length)
+        val files = completedTelemetryFiles(directory).map { file ->
+            CompletedLog(file, file.lastModified(), file.length())
+        }.sortedWith(compareBy<CompletedLog> { it.lastModifiedMs }.thenBy { it.file.name })
+        var remainingFiles = files.size
+        var totalBytes = files.sumOf { it.bytes }
         var deletedFiles = 0
         var deletedBytes = 0L
         var estimatedUsableSpace = directory.usableSpace
 
-        fun overBudget(): Boolean = files.size > policy.maxCompletedFiles ||
+        fun overBudget(): Boolean = remainingFiles > policy.maxCompletedFiles ||
             totalBytes > policy.maxDirectoryBytes ||
             (policy.minFreeSpaceBytes > 0L && estimatedUsableSpace < policy.minFreeSpaceBytes)
 
-        while (files.size > policy.minRetainedFiles && overBudget()) {
-            val oldest = files.removeAt(0)
-            val bytes = oldest.length()
-            if (oldest.delete()) {
+        for (oldest in files) {
+            if (remainingFiles <= policy.minRetainedFiles || !overBudget()) break
+            val bytes = oldest.bytes
+            if (oldest.file.delete()) {
                 deletedFiles++
+                remainingFiles--
                 deletedBytes += bytes
                 totalBytes -= bytes
                 estimatedUsableSpace += bytes
             }
         }
-        return LogRetentionResult(deletedFiles, deletedBytes, files.size, totalBytes)
+        return LogRetentionResult(deletedFiles, deletedBytes, remainingFiles, totalBytes)
     }
 
     /** Completed files owned by [ARESDataLogger], excluding active and abandoned reservations. */
@@ -225,7 +228,7 @@ internal object LogStorageGovernance {
     }.orEmpty().toList()
 
     private fun uniqueQuarantineTarget(active: File, nowMs: Long): File {
-        val base = active.name.removeSuffix(ACTIVE_SUFFIX)
+        val base = active.name.dropLast(ACTIVE_SUFFIX.length)
         var target = File(active.parentFile, "$base.$nowMs$ABANDONED_SUFFIX")
         var suffix = 1
         while (target.exists()) {
@@ -233,5 +236,14 @@ internal object LogStorageGovernance {
             suffix++
         }
         return target
+    }
+
+    private data class CompletedLog(val file: File, val lastModifiedMs: Long, val bytes: Long)
+
+    private fun isStale(lastModifiedMs: Long, nowMs: Long, staleAfterMs: Long): Boolean {
+        if (nowMs < lastModifiedMs) return false
+        val ageMs = nowMs - lastModifiedMs
+        // With ordered endpoints, negative subtraction means the age exceeds Long.MAX_VALUE.
+        return ageMs < 0L || ageMs >= staleAfterMs
     }
 }

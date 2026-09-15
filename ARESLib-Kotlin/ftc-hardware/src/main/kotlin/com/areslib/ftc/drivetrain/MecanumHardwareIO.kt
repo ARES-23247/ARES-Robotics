@@ -145,26 +145,64 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
 
     private val speedBuffer = DoubleArray(4)
     private val powerBuffer = DoubleArray(4)
+    private var tuningConfigurationValid = true
+
+    internal fun requireOpenForTuning() = motorCluster.requireOpen()
+
+    internal fun acceptTuningConfiguration() { tuningConfigurationValid = true }
+
+    internal fun rejectTuningConfiguration() {
+        tuningConfigurationValid = false
+        feedforward.reset()
+        motorCluster.latchOutputFault()
+    }
+
+    internal fun restoreInitialMotorGains() {
+        requireOpenForTuning()
+        require(MecanumNativeConfiguration.valid(motorKp ?: 0.0, motorKi ?: 0.0, motorKd ?: 0.0, motorKf)) {
+            "Construction motor gains must be finite"
+        }
+        if (useClosedLoopVelocity) configureNativeGains(0.0, 0.0, 0.0, restore = true)
+        else feedforward.restoreMotorGains(motorKp, motorKi, motorKd)
+    }
 
     init {
         hardwareRegistry.registerDevice("Drivetrain/Mecanum", this)
     }
 
     /**
-     * Dynamically updates motor PID gains across velocity controllers.
+     * Updates the active velocity controller. Native mode preserves each channel's accepted F.
+     * Changed native gains require neutral first; failed updates latch output until repaired and recovered.
      * 
      * @param kp Proportional gain $K_p$.
      * @param ki Integral gain $K_i$.
      * @param kd Derivative gain $K_d$.
      */
     fun updateMotorGains(kp: Double, ki: Double, kd: Double) {
-        feedforward.updateMotorGains(kp, ki, kd)
+        if (useClosedLoopVelocity) configureNativeGains(kp, ki, kd)
+        else feedforward.updateMotorGains(kp, ki, kd)
+    }
+
+    /** Updates native PIDF; software velocity feedback uses PID and the separate chassis feedforward. */
+    fun updateMotorGains(kp: Double, ki: Double, kd: Double, kf: Double) {
+        if (useClosedLoopVelocity) configureNativeGains(kp, ki, kd, kf)
+        else feedforward.updateMotorGains(kp, ki, kd)
+    }
+
+    private fun configureNativeGains(kp: Double, ki: Double, kd: Double, kf: Double? = null, restore: Boolean = false) {
+        try {
+            if (motorCluster.updateNativeGains(kp, ki, kd, kf, restore)) feedforward.reset()
+        } catch (failure: Exception) {
+            feedforward.reset()
+            throw failure
+        }
     }
 
     /**
      * Releases motor hardware cluster resources upon OpMode completion.
      */
     override fun close() {
+        feedforward.reset()
         motorCluster.close()
     }
 
@@ -179,11 +217,19 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      * Safely halts all 4 drivetrain motors by setting zero target power.
      */
     override fun safe() {
+        feedforward.reset()
         motorCluster.safe()
     }
 
     /** Attempts neutral on every drive motor and clears the output fault only after full success. */
-    fun recoverWithNeutral(): Boolean = motorCluster.recoverWithNeutral()
+    fun recoverWithNeutral(): Boolean {
+        feedforward.reset()
+        if (!tuningConfigurationValid) {
+            motorCluster.safe()
+            return false
+        }
+        return motorCluster.recoverWithNeutral()
+    }
 
     /**
      * Solves inverse kinematics for chassis speeds and updates physical motor outputs.
@@ -205,7 +251,20 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         val rawForward = driveState.xVelocityMetersPerSecond
         val rawLeft = driveState.yVelocityMetersPerSecond
 
+        if (!rawForward.isFinite() || !rawLeft.isFinite() || !omega.isFinite() ||
+            !maxSpeed.isFinite() || maxSpeed <= 0.0) {
+            feedforward.reset()
+            motorCluster.latchOutputFault()
+            return
+        }
+
         kinematics.toWheelSpeeds(rawForward, rawLeft, omega, speedBuffer)
+        if (!speedBuffer[0].isFinite() || !speedBuffer[1].isFinite() ||
+            !speedBuffer[2].isFinite() || !speedBuffer[3].isFinite()) {
+            feedforward.reset()
+            motorCluster.latchOutputFault()
+            return
+        }
         com.areslib.kinematics.MecanumKinematics.normalize(speedBuffer, maxSpeed)
 
         apply(
@@ -229,13 +288,19 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
         val inputsValid = speeds.size >= 4 &&
             speeds[0].isFinite() && speeds[1].isFinite() && speeds[2].isFinite() && speeds[3].isFinite() &&
             batteryVolts.isFinite() && batteryVolts > 0.0 && dtSeconds.isFinite() && dtSeconds > 0.0 &&
-            powerScale.isFinite()
+            powerScale.isFinite() && powerScale in 0.0..1.0
         if (!inputsValid) {
+            feedforward.reset()
             motorCluster.applyPowerScale(0.0)
             motorCluster.latchOutputFault()
             return
         }
         motorCluster.applyPowerScale(powerScale)
+        if (powerScale == 0.0 || motorCluster.outputFaultLatched) {
+            feedforward.reset()
+            motorCluster.safe()
+            return
+        }
         feedforward.calculateMotorPowers(
             speeds = speeds,
             maxWheelSpeedMps = maxWheelSpeedMetersPerSecond,
@@ -249,6 +314,13 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
             rrVel = rrIO.velocity,
             outputPowers = powerBuffer
         )
+
+        if (!feedforward.lastCalculationValid) {
+            // Missing startup/stale feedback can recover with fresh observations. Preserve any
+            // existing hardware fault, but do not invent a permanent fault for an unavailable sample.
+            motorCluster.safe()
+            return
+        }
 
         motorCluster.setMotorPowers(powerBuffer[0], powerBuffer[1], powerBuffer[2], powerBuffer[3])
     }
@@ -276,6 +348,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      * @param scale Master power scale factor.
      */
     fun applyPowerScale(scale: Double) {
+        if (!scale.isFinite() || scale <= 0.0 || scale > 1.0) feedforward.reset()
         motorCluster.applyPowerScale(scale)
     }
 
@@ -288,6 +361,7 @@ class MecanumHardwareIO @kotlin.jvm.JvmOverloads constructor(
      * @param rr Rear-right motor power.
      */
     fun setMotorPowers(fl: Double, fr: Double, rl: Double, rr: Double) {
+        feedforward.reset()
         motorCluster.setMotorPowers(fl, fr, rl, rr)
     }
 

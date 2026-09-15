@@ -19,6 +19,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Missing import commit $($entry.Import)." }
         git cat-file -e "$($entry.Source)^{commit}"
         if ($LASTEXITCODE -ne 0) { throw "Missing source history $($entry.Source)." }
+        git merge-base --is-ancestor $entry.Import HEAD
+        if ($LASTEXITCODE -ne 0) { throw "$($entry.Path) import commit is not an ancestor of HEAD." }
         git merge-base --is-ancestor $entry.Source HEAD
         if ($LASTEXITCODE -ne 0) { throw "$($entry.Path) source history is not an ancestor of HEAD." }
 

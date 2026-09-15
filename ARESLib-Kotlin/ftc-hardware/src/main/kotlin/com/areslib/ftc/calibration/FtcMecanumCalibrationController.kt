@@ -1,13 +1,14 @@
 package com.areslib.ftc.calibration
 
+import com.areslib.ftc.calibration.FtcCalibrationFeedback.validDriveFeedback
 import com.areslib.control.assist.SysIdManager
 import com.areslib.control.assist.SysIdMechanism
 import com.areslib.control.assist.SysIdRoutine
 import com.areslib.ftc.drivetrain.MecanumHardwareIO
 import com.areslib.ftc.drivetrain.PinpointIO
+import com.areslib.ftc.core.retainFtcFailure
 import com.areslib.ftc.telemetry.FtcTelemetryManager
 import com.areslib.ftc.vision.FtcVisionTracker
-import com.areslib.hardware.sensor.ImuInputs
 import com.areslib.Store
 import com.areslib.util.RobotClock
 import com.areslib.hardware.actuator.FlywheelIO
@@ -32,7 +33,7 @@ import com.areslib.control.assist.SysIdMechanismIO
  * - Time: Milliseconds ($ms$) or seconds ($s$).
  *
  * ### Zero-GC Guarantee:
- * Pre-allocates constant buffers (e.g., [EMPTY_SYSID_DATA]) and updates primitive metrics arrays in-place to avoid dynamic heap allocations inside 50Hz update loops.
+ * Pre-allocates constant buffers (e.g., [calibrationTelemetry.emptyData]) and updates primitive metrics arrays in-place to avoid dynamic heap allocations inside 50Hz update loops.
  *
  * @see SysIdManager
  * @see MecanumHardwareIO
@@ -84,12 +85,10 @@ class FtcMecanumCalibrationController {
     var activeCalibration = "NONE"
         private set
     private var calibrationStartTimeMs = 0L
-    private val EMPTY_SYSID_DATA = DoubleArray(0)
-    private val sysIdData = DoubleArray(5)
-    private val pinpointData = DoubleArray(5)
-    private val trackWidthData = DoubleArray(7)
-    private val visionData = DoubleArray(5)
-    private val linearData = DoubleArray(5)
+    private var lastCalibrationTimeMs = 0L
+    private var calibrationStallActive = false
+    private var calibrationStallStartMs = 0L
+    private val calibrationTelemetry = FtcCalibrationTelemetry(this)
 
     /**
      * Enables the calibration control surface for this OpMode only.
@@ -127,13 +126,18 @@ class FtcMecanumCalibrationController {
         try {
             stopAndNeutral(mecanumIO)
         } catch (failure: Throwable) {
-            firstFailure = failure
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         try {
             telemetryManager.nt4.putBoolean("SysId/ModeEnabled", false)
             telemetryManager.nt4.putBoolean("SysId/Armed", false)
+            telemetryManager.dataLoggingTelemetry.putString("SysId/Status", "NONE")
+            telemetryManager.dataLoggingTelemetry.putDoubleArray("SysId/Data", calibrationTelemetry.emptyData)
+            telemetryManager.nt4.putString("SysId/Status", "NONE")
+            telemetryManager.nt4.putDoubleArray("SysId/Data", calibrationTelemetry.emptyData)
+            telemetryManager.nt4.update()
         } catch (failure: Throwable) {
-            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         firstFailure?.let { throw it }
     }
@@ -210,9 +214,9 @@ class FtcMecanumCalibrationController {
             if (command.isNotBlank()) {
                 println("[ARES Calibration] Received command: $command")
             }
-            activeCalibration = "NONE"
-            sysIdManager.stop()
-            flywheelSysIdAdapter?.stop()
+            // A new mechanism must never inherit the previous mechanism's energized outputs.
+            stopAndNeutral(mecanumIO)
+            lastCalibrationTimeMs = nowMs
 
             when {
                 command == STOP_COMMAND -> {
@@ -246,21 +250,25 @@ class FtcMecanumCalibrationController {
                         val routine = enumValues<SysIdRoutine>().firstOrNull {
                             it.name == routineStr && it != SysIdRoutine.NONE
                         }
-                        if (mechanism == null || routine == null) {
+                        val supported = mechanism == SysIdMechanism.LINEAR || mechanism == SysIdMechanism.ANGULAR ||
+                            mechanism == SysIdMechanism.FLYWHEEL && flywheelIO != null
+                        if (mechanism == null || routine == null || !supported) {
                             networkArmed = false
                             stopAndNeutral(mecanumIO)
                             neutralizedDuringInputPass = true
                             telemetryManager.nt4.putBoolean("SysId/Armed", false)
-                            telemetryManager.nt4.putString("SysId/Error", "INVALID_COMMAND")
+                            telemetryManager.nt4.putString("SysId/Error",
+                                if (mechanism != null && routine != null && !supported) "UNSUPPORTED_SYSID_MECHANISM"
+                                else "INVALID_COMMAND")
                         } else {
-                            val pose = store.state.drive.poseEstimator.estimatedPose
+                            val pose = store.state.drive.poseEstimator
                             sysIdManager.start(
                                 mechanism = mechanism,
                                 routine = routine,
                                 timestampMs = RobotClock.currentTimeMillis(),
-                                x = pose.x,
-                                y = pose.y,
-                                heading = pose.heading.radians
+                                x = pose.estimatedPoseX,
+                                y = pose.estimatedPoseY,
+                                heading = pose.estimatedPoseHeading
                             )
                         }
                     } else {
@@ -312,22 +320,51 @@ class FtcMecanumCalibrationController {
             return false
         }
 
-        val pose = store.state.drive.poseEstimator.estimatedPose
+        val drive = store.state.drive
+        val pose = drive.poseEstimator
         val timestamp = RobotClock.currentTimeMillis()
 
         if (sysIdManager.isActive()) {
+            if (!batteryVoltage.isFinite() || batteryVoltage <= 0.0) {
+                stopAndNeutral(mecanumIO)
+                telemetryManager.nt4.putString("SysId/Error", "SYSID_INVALID_SUPPLY")
+                return true
+            }
+            // FtcPowerManager distributes its global limit to every registered motor.
+            // Characterization requires full power for flywheel and drivetrain alike.
+            if (!fullSysIdPower(mecanumIO.flIO.powerScale) || !fullSysIdPower(mecanumIO.frIO.powerScale) ||
+                !fullSysIdPower(mecanumIO.rlIO.powerScale) || !fullSysIdPower(mecanumIO.rrIO.powerScale)) {
+                stopAndNeutral(mecanumIO)
+                telemetryManager.nt4.putString("SysId/Error", "SYSID_REQUIRES_FULL_POWER")
+                return true
+            }
             if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR || sysIdManager.activeMechanism == SysIdMechanism.ANGULAR) {
-                if (!sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                // The configured limit is per motor. Any invalid cache propagates NaN and aborts.
+                val currentAmps = maxOf(
+                    maxOf(sysIdCurrent(mecanumIO.flIO), sysIdCurrent(mecanumIO.frIO)),
+                    maxOf(sysIdCurrent(mecanumIO.rlIO), sysIdCurrent(mecanumIO.rrIO)))
+                val validMotion = validDriveFeedback(drive, timestamp)
+                if (!validMotion || !sysIdManager.checkSafety(pose.estimatedPoseX, pose.estimatedPoseY,
+                        pose.estimatedPoseHeading, timestamp, currentAmps)) {
                     sysIdManager.stop()
                     mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
+                    telemetryManager.nt4.putString("SysId/Error",
+                        if (!validMotion) "INVALID_DRIVE_MEASUREMENT" else "SYSID_ABORTED")
                 } else {
                     val velocity = if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
-                        store.state.drive.xVelocityMetersPerSecond
+                        // Velocities and heading belong to the same odometry observation frame.
+                        drive.measuredFieldXVelocityMetersPerSecond * kotlin.math.cos(drive.odometryHeading) +
+                            drive.measuredFieldYVelocityMetersPerSecond * kotlin.math.sin(drive.odometryHeading)
                     } else {
-                        store.state.drive.angularVelocityRadiansPerSecond
+                        drive.measuredAngularVelocityRadiansPerSecond
                     }
 
                     val voltage = sysIdManager.update(timestamp, velocity)
+                    if (kotlin.math.abs(voltage) > batteryVoltage) {
+                        stopAndNeutral(mecanumIO)
+                        telemetryManager.nt4.putString("SysId/Error", "SYSID_INSUFFICIENT_SUPPLY")
+                        return true
+                    }
                     val power = (voltage / batteryVoltage).coerceIn(-1.0, 1.0)
 
                     if (sysIdManager.activeMechanism == SysIdMechanism.LINEAR) {
@@ -335,32 +372,60 @@ class FtcMecanumCalibrationController {
                     } else {
                         mecanumIO.setMotorPowers(-power, power, -power, power)
                     }
+                    calibrationTelemetry.captureSysIdSample(timestamp, velocity)
                 }
             } else {
                 val adapter = flywheelSysIdAdapter
+                val currentAmps = flywheelIO?.let { sysIdCurrent(it) } ?: Double.NaN
                 if (adapter == null || !adapter.measurementValid ||
-                    !sysIdManager.checkSafety(pose.x, pose.y, pose.heading.radians, timestamp)) {
+                    !sysIdManager.checkSafety(pose.estimatedPoseX, pose.estimatedPoseY,
+                        pose.estimatedPoseHeading, timestamp, currentAmps)) {
                     sysIdManager.stop()
                     adapter?.stop()
-                    telemetryManager.nt4.putString("SysId/Error", if (adapter == null) "NO_FLYWHEEL_ADAPTER" else "INVALID_FLYWHEEL_MEASUREMENT")
+                    telemetryManager.nt4.putString("SysId/Error", when {
+                        adapter == null -> "NO_FLYWHEEL_ADAPTER"
+                        !currentAmps.isFinite() -> "INVALID_FLYWHEEL_CURRENT"
+                        !adapter.measurementValid -> "INVALID_FLYWHEEL_MEASUREMENT"
+                        else -> "SYSID_ABORTED"
+                    })
                 } else {
                     val measuredVelocity = customSysIdVelocityProvider?.invoke() ?: adapter.velocity
                     val voltage = sysIdManager.update(timestamp, measuredVelocity)
+                    if (kotlin.math.abs(voltage) > batteryVoltage) {
+                        stopAndNeutral(mecanumIO)
+                        telemetryManager.nt4.putString("SysId/Error", "SYSID_INSUFFICIENT_SUPPLY")
+                        return true
+                    }
                     adapter.setCharacterizationVoltage(voltage)
+                    calibrationTelemetry.captureSysIdSample(timestamp, measuredVelocity)
                 }
             }
             return true
         } else if (activeCalibration != "NONE") {
-            val elapsedSec = (timestamp - calibrationStartTimeMs) / 1000.0
-            val timeoutSec = if (activeCalibration == "LINEAR_DRIVE") 3.0 else 5.0
+            val elapsedMs = timestamp - calibrationStartTimeMs
+            val timeoutMs = if (activeCalibration == "LINEAR_DRIVE") 3000L else 5000L
+            if (timestamp < calibrationStartTimeMs || timestamp < lastCalibrationTimeMs || elapsedMs < 0L) {
+                stopAndNeutral(mecanumIO)
+                telemetryManager.nt4.putString("SysId/Error", "CALIBRATION_CLOCK_INVALID")
+                return true
+            }
+            lastCalibrationTimeMs = timestamp
 
-            if (elapsedSec > timeoutSec) {
+            if (elapsedMs > timeoutMs) {
                 stopAndNeutral(mecanumIO)
                 // SysId/Command is dashboard-owned input. Publishing a local STOP here would
                 // claim the topic on the custom NT4 server and reject every later client command.
                 telemetryManager.nt4.putString(STATUS_TOPIC, "NONE")
                 onResetTuning()
             } else {
+                // Vision collection is stationary; moving routines also require trustworthy drive feedback.
+                val safetyError = if (activeCalibration == "VISION_CALIBRATION") null else
+                    empiricalDriveSafetyError(drive, timestamp, batteryVoltage, mecanumIO)
+                if (safetyError != null) {
+                    stopAndNeutral(mecanumIO)
+                    telemetryManager.nt4.putString("SysId/Error", safetyError)
+                    return true
+                }
                 when (activeCalibration) {
                     "PINPOINT_SPIN", "TRACK_WIDTH_SPIN" -> {
                         mecanumIO.setMotorPowers(-0.25, 0.25, -0.25, 0.25)
@@ -380,6 +445,43 @@ class FtcMecanumCalibrationController {
         // a persistent pre-arm Redux drive command cannot be reapplied by normal kinematics.
         return true
     }
+
+    /** Consume one cached current value and its freshness contract; never poll hardware here. */
+    private fun sysIdCurrent(source: com.areslib.hardware.CurrentSourceIO): Double {
+        val reading = source.currentAmps
+        return if (source.isCurrentReadingValid(reading)) reading else Double.NaN
+    }
+
+    private fun fullSysIdPower(scale: Double): Boolean = scale.isFinite() && scale in 0.999..1.0
+
+    private fun empiricalDriveSafetyError(drive: com.areslib.state.DriveState, timestamp: Long,
+                                          batteryVoltage: Double, io: MecanumHardwareIO): String? {
+        if (!batteryVoltage.isFinite() || batteryVoltage <= 0.0) return "CALIBRATION_INVALID_SUPPLY"
+        if (!validDriveFeedback(drive, timestamp)) return "INVALID_DRIVE_MEASUREMENT"
+        if ((activeCalibration == "LINEAR_DRIVE" || activeCalibration == "TRACK_WIDTH_SPIN") &&
+            (!io.flIO.position.isFinite() || !io.frIO.position.isFinite() ||
+                !io.rlIO.position.isFinite() || !io.rrIO.position.isFinite())) return "INVALID_ENCODER_MEASUREMENT"
+        if (!validPowerScale(io.flIO.powerScale) || !validPowerScale(io.frIO.powerScale) ||
+            !validPowerScale(io.rlIO.powerScale) || !validPowerScale(io.rrIO.powerScale)) return "CALIBRATION_INVALID_POWER_SCALE"
+        val limit = sysIdManager.maxCurrentAmps
+        val timeout = sysIdManager.stallTimeoutMs
+        if (!limit.isFinite() || limit <= 0.0 || timeout < 0L) return "CALIBRATION_INVALID_CURRENT_LIMIT"
+        val current = maxOf(maxOf(sysIdCurrent(io.flIO), sysIdCurrent(io.frIO)),
+            maxOf(sysIdCurrent(io.rlIO), sysIdCurrent(io.rrIO)))
+        if (!current.isFinite()) return "CALIBRATION_INVALID_CURRENT"
+        if (current >= limit) {
+            if (!calibrationStallActive) {
+                calibrationStallActive = true
+                calibrationStallStartMs = timestamp
+            }
+            if (timestamp - calibrationStallStartMs >= timeout) return "CALIBRATION_OVERCURRENT"
+        } else {
+            calibrationStallActive = false
+        }
+        return null
+    }
+
+    private fun validPowerScale(scale: Double): Boolean = scale.isFinite() && scale in 0.0..1.0
 
     /**
      * Publishes high-frequency calibration data streams (`"SysId/Data"`, `"SysId/Status"`) to NetworkTables and local disk logs.
@@ -401,135 +503,31 @@ class FtcMecanumCalibrationController {
         ticksPerMeterSetting: Double,
         defaultTicksPerMeter: Double
     ) {
-        telemetryManager.nt4.putBoolean("SysId/ModeEnabled", modeEnabled)
-        telemetryManager.nt4.putBoolean("SysId/Armed", networkArmed)
-        telemetryManager.nt4.putString("SysId/SupportedMechanisms", supportedMechanismsTelemetry)
-        val dataLogging = telemetryManager.dataLoggingTelemetry
-        if (sysIdManager.isActive()) {
-            dataLogging.putString("SysId/Status", sysIdManager.activeRoutine.name)
-            telemetryManager.nt4.putString("SysId/Status", sysIdManager.activeRoutine.name)
-            val pose = store.state.drive.poseEstimator.estimatedPose
-            val position = when (sysIdManager.activeMechanism) {
-                SysIdMechanism.LINEAR -> {
-                    val dx = pose.x - sysIdManager.startX
-                    val dy = pose.y - sysIdManager.startY
-                    kotlin.math.sqrt(dx * dx + dy * dy)
-                }
-                SysIdMechanism.ANGULAR -> sysIdManager.accumulatedHeadingChange
-                SysIdMechanism.FLYWHEEL, SysIdMechanism.ELEVATOR, SysIdMechanism.ARM, SysIdMechanism.CUSTOM -> sysIdManager.accumulatedPosition
-            }
-
-            val velocity = when (sysIdManager.activeMechanism) {
-                SysIdMechanism.LINEAR -> store.state.drive.xVelocityMetersPerSecond
-                SysIdMechanism.ANGULAR -> store.state.drive.angularVelocityRadiansPerSecond
-                SysIdMechanism.FLYWHEEL, SysIdMechanism.ELEVATOR, SysIdMechanism.ARM, SysIdMechanism.CUSTOM ->
-                    customSysIdVelocityProvider?.invoke() ?: flywheelSysIdAdapter?.velocity ?: 0.0
-            }
-
-            sysIdData[0] = timestamp.toDouble()
-            sysIdData[1] = sysIdManager.currentVoltage
-            sysIdData[2] = position
-            sysIdData[3] = velocity
-            sysIdData[4] = sysIdManager.calculatedAcceleration
-            dataLogging.putDoubleArray("SysId/Data", sysIdData)
-            telemetryManager.nt4.putDoubleArray("SysId/Data", sysIdData)
-        } else if (activeCalibration != "NONE") {
-            dataLogging.putString("SysId/Status", activeCalibration)
-            telemetryManager.nt4.putString("SysId/Status", activeCalibration)
-            val pose = store.state.drive.poseEstimator.estimatedPose
-            when (activeCalibration) {
-                "PINPOINT_SPIN" -> {
-                    pinpointData[0] = timestamp.toDouble()
-                    pinpointData[1] = pose.x
-                    pinpointData[2] = pose.y
-                    pinpointData[3] = pose.heading.radians
-                    pinpointData[4] = 0.0
-                    dataLogging.putDoubleArray("SysId/Data", pinpointData)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", pinpointData)
-                }
-                "TRACK_WIDTH_SPIN" -> {
-                    val currentTicks = store.state.tuning.drive.ftc.ticksPerMeter
-                    val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeterSetting.takeIf { it > 0.0 } ?: defaultTicksPerMeter
-
-                    val flPosMeters = mecanumIO.flIO.position / ticks
-                    val frPosMeters = mecanumIO.frIO.position / ticks
-                    val rlPosMeters = mecanumIO.rlIO.position / ticks
-                    val rrPosMeters = mecanumIO.rrIO.position / ticks
-                    // The robot loop already cached this heading; never trigger a second IMU hardware read here.
-                    val imuHeading = store.state.drive.odometryHeading
-                    trackWidthData[0] = timestamp.toDouble()
-                    trackWidthData[1] = flPosMeters
-                    trackWidthData[2] = frPosMeters
-                    trackWidthData[3] = rlPosMeters
-                    trackWidthData[4] = rrPosMeters
-                    trackWidthData[5] = imuHeading
-                    trackWidthData[6] = store.state.tuning.drive.wheelBaseMeters
-                    dataLogging.putDoubleArray("SysId/Data", trackWidthData)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", trackWidthData)
-                }
-                "VISION_CALIBRATION" -> {
-                    val lastLL = visionTracker.lastLimelightPose
-                    val tagX = lastLL?.x ?: 0.0
-                    val tagY = lastLL?.y ?: 0.0
-                    val tagHeading = lastLL?.heading?.radians ?: 0.0
-                    visionData[0] = timestamp.toDouble()
-                    visionData[1] = tagX
-                    visionData[2] = tagY
-                    visionData[3] = tagHeading
-                    visionData[4] = 0.0
-                    dataLogging.putDoubleArray("SysId/Data", visionData)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", visionData)
-                }
-                "LINEAR_DRIVE" -> {
-                    val currentTicks = store.state.tuning.drive.ftc.ticksPerMeter
-                    val ticks = if (currentTicks > 0.0) currentTicks else ticksPerMeterSetting.takeIf { it > 0.0 } ?: defaultTicksPerMeter
-
-                    val flPosMeters = mecanumIO.flIO.position / ticks
-                    val frPosMeters = mecanumIO.frIO.position / ticks
-                    val rlPosMeters = mecanumIO.rlIO.position / ticks
-                    val rrPosMeters = mecanumIO.rrIO.position / ticks
-                    val avgDisplacement = (flPosMeters + frPosMeters + rlPosMeters + rrPosMeters) / 4.0
-
-                    linearData[0] = timestamp.toDouble()
-                    linearData[1] = avgDisplacement
-                    linearData[2] = ticks
-                    linearData[3] = 0.0
-                    linearData[4] = 0.0
-                    dataLogging.putDoubleArray("SysId/Data", linearData)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", linearData)
-                }
-                else -> {
-                    dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
-                    telemetryManager.nt4.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
-                }
-            }
-        } else {
-            dataLogging.putString("SysId/Status", "NONE")
-            dataLogging.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
-            telemetryManager.nt4.putString("SysId/Status", "NONE")
-            telemetryManager.nt4.putDoubleArray("SysId/Data", EMPTY_SYSID_DATA)
-        }
-        // Calibration streams are safety/control feedback and must not wait for telemetry throttling.
-        telemetryManager.nt4.update()
+        calibrationTelemetry.publishRobotTelemetry(
+            timestamp, store, telemetryManager, mecanumIO, visionTracker,
+            ticksPerMeterSetting, defaultTicksPerMeter, supportedMechanismsTelemetry,
+        )
     }
 
     private fun stopAndNeutral(mecanumIO: MecanumHardwareIO) {
         activeCalibration = "NONE"
+        calibrationStallActive = false
+        calibrationTelemetry.invalidateSample()
         var firstFailure: Throwable? = null
         try {
             sysIdManager.stop()
         } catch (failure: Throwable) {
-            firstFailure = failure
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         try {
             flywheelSysIdAdapter?.stop()
         } catch (failure: Throwable) {
-            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         try {
             mecanumIO.setMotorPowers(0.0, 0.0, 0.0, 0.0)
         } catch (failure: Throwable) {
-            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            firstFailure = retainFtcFailure(firstFailure, failure)
         }
         firstFailure?.let { throw it }
     }

@@ -1,8 +1,5 @@
 package com.ares.analytics.service
 
-import java.util.ArrayDeque
-import java.util.concurrent.atomic.AtomicLong
-
 data class DatabaseMetricsSnapshot(
     val queryCount: Long = 0,
     val writeCount: Long = 0,
@@ -11,42 +8,63 @@ data class DatabaseMetricsSnapshot(
     val maxQueryMs: Double = 0.0
 )
 
-/** Low-overhead rolling latency tracker shared by the DuckDB repository and health UI. */
+/**
+ * Coherent database metrics. Counts, mean and maximum cover the lifetime of this tracker;
+ * nearest-rank p95 covers the latest 512 reads. Recording uses primitive storage without boxing.
+ */
 class DatabaseMetrics(private val clock: MonotonicClock = SystemMonotonicClock) {
-    private val queryCount = AtomicLong()
-    private val writeCount = AtomicLong()
-    private val queryTotalNanos = AtomicLong()
-    private val queryMaxNanos = AtomicLong()
-    private val recentQueryNanos = ArrayDeque<Long>(ROLLING_SAMPLE_COUNT)
+    private val lock = Any()
+    private var queryCount = 0L
+    private var writeCount = 0L
+    private var meanQueryNanos = 0.0
+    private var maxQueryNanos = 0L
+    private val recentQueryNanos = LongArray(ROLLING_SAMPLE_COUNT)
+    private var recentCount = 0
+    private var nextSlot = 0
 
     fun recordRead(elapsedNanos: Long) {
         val elapsed = elapsedNanos.coerceAtLeast(0)
-        queryCount.incrementAndGet()
-        queryTotalNanos.addAndGet(elapsed)
-        queryMaxNanos.accumulateAndGet(elapsed, ::maxOf)
-        synchronized(recentQueryNanos) {
-            recentQueryNanos.addLast(elapsed)
-            if (recentQueryNanos.size > ROLLING_SAMPLE_COUNT) recentQueryNanos.removeFirst()
+        synchronized(lock) {
+            if (queryCount < Long.MAX_VALUE) queryCount += 1
+            // Online mean avoids overflowing an accumulated Long nanosecond total.
+            meanQueryNanos += (elapsed.toDouble() - meanQueryNanos) / queryCount.toDouble()
+            maxQueryNanos = maxOf(maxQueryNanos, elapsed)
+            recentQueryNanos[nextSlot] = elapsed
+            nextSlot = (nextSlot + 1) % ROLLING_SAMPLE_COUNT
+            if (recentCount < ROLLING_SAMPLE_COUNT) recentCount += 1
         }
     }
 
+    /** Write latency is not currently exposed; retain the argument for caller compatibility. */
+    @Suppress("UNUSED_PARAMETER")
     fun recordWrite(elapsedNanos: Long) {
-        elapsedNanos.coerceAtLeast(0)
-        writeCount.incrementAndGet()
+        synchronized(lock) { if (writeCount < Long.MAX_VALUE) writeCount += 1 }
     }
 
     internal fun nowNanos(): Long = clock.nowNanos()
 
     fun snapshot(): DatabaseMetricsSnapshot {
-        val count = queryCount.get()
-        val sorted = synchronized(recentQueryNanos) { recentQueryNanos.sorted() }
-        val p95 = if (sorted.isEmpty()) 0L else sorted[((sorted.size - 1) * 0.95).toInt()]
+        val count: Long
+        val writes: Long
+        val mean: Double
+        val maximum: Long
+        val sorted: LongArray
+        synchronized(lock) {
+            count = queryCount
+            writes = writeCount
+            mean = meanQueryNanos
+            maximum = maxQueryNanos
+            sorted = recentQueryNanos.copyOf(recentCount)
+        }
+        // Sort the owned snapshot outside the recording lock.
+        sorted.sort()
+        val p95 = if (sorted.isEmpty()) 0L else sorted[(sorted.size * 95 + 99) / 100 - 1]
         return DatabaseMetricsSnapshot(
             queryCount = count,
-            writeCount = writeCount.get(),
-            averageQueryMs = if (count == 0L) 0.0 else queryTotalNanos.get() / count / 1_000_000.0,
+            writeCount = writes,
+            averageQueryMs = mean / 1_000_000.0,
             p95QueryMs = p95 / 1_000_000.0,
-            maxQueryMs = queryMaxNanos.get() / 1_000_000.0
+            maxQueryMs = maximum / 1_000_000.0
         )
     }
 

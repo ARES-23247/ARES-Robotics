@@ -6,14 +6,6 @@ import kotlin.math.hypot
 import kotlin.math.pow
 import kotlin.math.sign
 
-private const val ANALOG_DEFAULT_FIRST_UPDATE_SECONDS = 0.02
-private const val ANALOG_MAX_SLEW_DT_SECONDS = 0.2
-
-/** Primitive gamepad-axis source. Its [Float] return avoids boxed values in the robot loop. */
-fun interface GamepadAxisSource {
-    fun read(state: GamepadState): Float
-}
-
 /**
  * A declarative, command-based wrapper for [GamepadState].
  * 
@@ -125,30 +117,46 @@ class AresGamepad {
     /**
      * Updates the internal state of the gamepad and triggers any bound actions.
      * This method is allocation-free and should be called in the hot path.
+     * All controls are sampled from one owned copy before any callback runs. Calls to [update]
+     * and [prime] belong to one loop owner and must not be invoked recursively from bindings.
      * 
      * @param newState The latest polled gamepad state.
      */
     fun update(newState: GamepadState) {
-        previousState.copyFrom(currentState)
+        val reusable = previousState
+        previousState = currentState
+        currentState = reusable
         currentState.copyFrom(newState)
 
         val timestampMs = RobotClock.currentTimeMillis()
-        leftStick.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
-        rightStick.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
-        leftStickX.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
-        leftStickY.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
-        rightStickX.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
-        rightStickY.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
-        leftTrigger.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
-        rightTrigger.updateValue(newState, timestampMs, notifyConsumer = true, resetSlew = false)
+        leftStick.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        rightStick.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        leftStickX.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        leftStickY.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        rightStickX.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        rightStickY.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        leftTrigger.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        rightTrigger.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        for (i in allButtons.indices) {
+            val button = allButtons[i]
+            button.isPressed = button.stateSelector(currentState)
+        }
+
+        leftStick.notifyConsumer()
+        rightStick.notifyConsumer()
+        leftStickX.notifyConsumer()
+        leftStickY.notifyConsumer()
+        rightStickX.notifyConsumer()
+        rightStickY.notifyConsumer()
+        leftTrigger.notifyConsumer()
+        rightTrigger.notifyConsumer()
         
         // Iterate through all bindable buttons and trigger actions if transitions occurred
         // Using a standard loop to avoid allocations (iterator object creation) on the hot path
         for (i in allButtons.indices) {
             val button = allButtons[i]
             val wasPressed = button.stateSelector(previousState)
-            val isPressed = button.stateSelector(currentState)
-            button.isPressed = isPressed
+            val isPressed = button.isPressed
 
             // Inputs held during INIT are deliberately quarantined until they are released. This
             // prevents both edge and level bindings from energizing hardware as Play is pressed.
@@ -266,7 +274,10 @@ class AresGamepad {
         }
     }
 
-    /** One continuously sampled analog input with deadband, curvature, and slew shaping. */
+    /**
+     * One continuously sampled analog input with deadband, curvature, and slew shaping.
+     * Nonfinite input immediately clears the output and slew history to neutral.
+     */
     class BindableAxis(
         private val valueSource: GamepadAxisSource,
     ) {
@@ -280,7 +291,8 @@ class AresGamepad {
         private var curveExponent: Double = 1.0
         private var slewRateLimit: Double = 0.0 // 0.0 means disabled
         private var lastSlewValue: Double = 0.0
-        private var lastUpdateTimeMs: Long = Long.MIN_VALUE
+        private var lastUpdateTimeMs: Long = 0L
+        private var hasSlewTimestamp = false
         private var axisConsumer: AxisConsumer? = null
 
         fun label(@Suppress("UNUSED_PARAMETER") description: String) {
@@ -347,15 +359,12 @@ class AresGamepad {
             }
 
             // 3. Slew rate limiter
-            val finalVal = if (resetSlew) {
+            val finalVal = if (!selected.isFinite()) {
+                0.0
+            } else if (resetSlew) {
                 afterCurve
             } else if (slewRateLimit > 0.0) {
-                val dt = if (lastUpdateTimeMs == Long.MIN_VALUE) {
-                    ANALOG_DEFAULT_FIRST_UPDATE_SECONDS
-                } else {
-                    ((timestampMs - lastUpdateTimeMs).coerceAtLeast(0L) / 1_000.0)
-                        .coerceAtMost(ANALOG_MAX_SLEW_DT_SECONDS)
-                }
+                val dt = slewIntervalSeconds(timestampMs, lastUpdateTimeMs, hasSlewTimestamp)
                 val maxDelta = slewRateLimit * dt
                 val delta = (afterCurve - lastSlewValue).coerceIn(-maxDelta, maxDelta)
                 lastSlewValue + delta
@@ -365,14 +374,21 @@ class AresGamepad {
 
             lastSlewValue = finalVal
             lastUpdateTimeMs = timestampMs
+            hasSlewTimestamp = true
             shapedValue = finalVal
 
             if (notifyConsumer) axisConsumer?.accept(finalVal)
         }
 
+        internal fun notifyConsumer() {
+            axisConsumer?.accept(shapedValue)
+        }
     }
 
-    /** Two continuously sampled analog axes with radial deadband and curve shaping. */
+    /**
+     * Two continuously sampled analog axes with radial deadband and curve shaping.
+     * A nonfinite component invalidates the pair and immediately clears output and slew history.
+     */
     class BindableStick(
         private val xSource: GamepadAxisSource,
         private val ySource: GamepadAxisSource,
@@ -392,7 +408,8 @@ class AresGamepad {
         private var slewRateLimit: Double = 0.0
         private var lastSlewX: Double = 0.0
         private var lastSlewY: Double = 0.0
-        private var lastUpdateTimeMs: Long = Long.MIN_VALUE
+        private var lastUpdateTimeMs: Long = 0L
+        private var hasSlewTimestamp = false
         private var stickConsumer: StickConsumer? = null
 
         fun label(@Suppress("UNUSED_PARAMETER") description: String) {
@@ -419,7 +436,7 @@ class AresGamepad {
 
         /**
          * Configures a radial maximum rate of change in stick-deflection units per second.
-         * The vector direction is preserved while its change in magnitude is limited.
+         * Bounds the Euclidean distance traveled by the output vector, including direction changes.
          */
         fun withSlewRateLimit(unitsPerSecond: Double): BindableStick {
             require(unitsPerSecond.isFinite() && unitsPerSecond >= 0.0) {
@@ -443,54 +460,27 @@ class AresGamepad {
         ) {
             val selectedX = xSource.read(state).toDouble()
             val selectedY = ySource.read(state).toDouble()
-            var rawX = if (selectedX.isFinite()) selectedX.coerceIn(-1.0, 1.0) else 0.0
-            var rawY = if (selectedY.isFinite()) selectedY.coerceIn(-1.0, 1.0) else 0.0
+            val valid = selectedX.isFinite() && selectedY.isFinite()
+            val rawX = if (valid) selectedX.coerceIn(-1.0, 1.0) else 0.0
+            val rawY = if (valid) selectedY.coerceIn(-1.0, 1.0) else 0.0
             val rawMagnitude = hypot(rawX, rawY)
-            if (rawMagnitude > 1.0) {
-                rawX /= rawMagnitude
-                rawY /= rawMagnitude
-            }
-            x = rawX.toFloat()
-            y = rawY.toFloat()
+            val normalization = if (rawMagnitude > 1.0) 1.0 / rawMagnitude else 1.0
+            x = (rawX * normalization).toFloat()
+            y = (rawY * normalization).toFloat()
 
-            // 1. Radial deadband
-            val magnitude = hypot(rawX, rawY)
-            var dbX = if (magnitude < deadbandThreshold) {
-                0.0
-            } else if (deadbandThreshold > 0.0 && magnitude > 0.0) {
-                val scaledMagnitude = (magnitude - deadbandThreshold) / (1.0 - deadbandThreshold)
-                (rawX / magnitude) * scaledMagnitude
-            } else {
-                rawX
-            }
-
-            var dbY = if (magnitude < deadbandThreshold) {
-                0.0
-            } else if (deadbandThreshold > 0.0 && magnitude > 0.0) {
-                val scaledMagnitude = (magnitude - deadbandThreshold) / (1.0 - deadbandThreshold)
-                (rawY / magnitude) * scaledMagnitude
-            } else {
-                rawY
-            }
-
-            // 2. Exponential curve
-            if (curveExponent != 1.0) {
-                val curMag = hypot(dbX, dbY)
-                if (curMag > 0.0) {
-                    val shapedMag = curMag.pow(curveExponent)
-                    dbX = (dbX / curMag) * shapedMag
-                    dbY = (dbY / curMag) * shapedMag
-                }
-            }
+            // Shape the scalar radius once. Recomputing hypot after normalization can round a
+            // saturated radius below one and erase full-scale input with a near-one deadband.
+            val magnitude = rawMagnitude.coerceAtMost(1.0)
+            val afterDeadband = if (magnitude <= deadbandThreshold) 0.0 else
+                (magnitude - deadbandThreshold) / (1.0 - deadbandThreshold)
+            val shapedMagnitude = if (curveExponent == 1.0) afterDeadband else afterDeadband.pow(curveExponent)
+            val scaleToRadius = if (rawMagnitude > 0.0) shapedMagnitude / rawMagnitude else 0.0
+            var dbX = rawX * scaleToRadius
+            var dbY = rawY * scaleToRadius
 
             // 3. Slew rate limiter
-            if (!resetSlew && slewRateLimit > 0.0) {
-                val dt = if (lastUpdateTimeMs == Long.MIN_VALUE) {
-                    ANALOG_DEFAULT_FIRST_UPDATE_SECONDS
-                } else {
-                    ((timestampMs - lastUpdateTimeMs).coerceAtLeast(0L) / 1_000.0)
-                        .coerceAtMost(ANALOG_MAX_SLEW_DT_SECONDS)
-                }
+            if (valid && !resetSlew && slewRateLimit > 0.0) {
+                val dt = slewIntervalSeconds(timestampMs, lastUpdateTimeMs, hasSlewTimestamp)
                 val maxDelta = slewRateLimit * dt
                 val dx = dbX - lastSlewX
                 val dy = dbY - lastSlewY
@@ -505,11 +495,15 @@ class AresGamepad {
             lastSlewX = dbX
             lastSlewY = dbY
             lastUpdateTimeMs = timestampMs
+            hasSlewTimestamp = true
 
             shapedX = dbX
             shapedY = dbY
             if (notifyConsumer) stickConsumer?.accept(dbX, dbY)
         }
 
+        internal fun notifyConsumer() {
+            stickConsumer?.accept(shapedX, shapedY)
+        }
     }
 }

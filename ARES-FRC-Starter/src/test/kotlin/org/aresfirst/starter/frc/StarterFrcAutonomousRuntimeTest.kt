@@ -55,9 +55,12 @@ class StarterFrcAutonomousRuntimeTest {
     fun `opposite alliance mirrors FRC pose exactly once`() {
         val authored = entry("drive", authoredAlliance = RoutineAlliance.BLUE)
         val source = RoutinePose(2.0, 1.0, 0.25)
+        val field = com.areslib.state.RobotFieldConfig(fieldType = com.areslib.state.FieldType.FRC,
+            widthMeters = CoordinateTestValues.FIELD_LENGTH, heightMeters = 8.21055,
+            allianceSymmetry = com.areslib.math.coordinate.FieldSymmetry.MIRRORED)
 
-        val unchanged = transformStarterFrcPose(source, authored, Alliance.BLUE)
-        val mirrored = transformStarterFrcPose(source, authored, Alliance.RED)
+        val unchanged = transformStarterFrcPose(source, authored, Alliance.BLUE, field)
+        val mirrored = transformStarterFrcPose(source, authored, Alliance.RED, field)
 
         assertEquals(2.0, unchanged.x, 1e-12)
         assertEquals(1.0, unchanged.y, 1e-12)
@@ -69,6 +72,7 @@ class StarterFrcAutonomousRuntimeTest {
                 RoutinePose(mirrored.x, mirrored.y, mirrored.heading.radians),
                 authored.copy(authoredAlliance = RoutineAlliance.RED),
                 Alliance.BLUE,
+                field,
             ).x,
             1e-9,
         )

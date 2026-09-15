@@ -56,6 +56,18 @@ models remain visible in Robot Studio and fail before a process starts; Studio n
 generic drivetrain. The two products retain independent OpMode/TimedRobot lifecycles, fields,
 power behavior, vendor APIs, and physics implementations.
 
+Studio's `domain` packages hold learning contracts, progress records, navigation identities,
+field-document mapping, and control-coverage rules. They have no dependency on Compose,
+view models, or services. Services may use these contracts but must not import the `ui` or
+`viewmodel` packages; `StudioDependencyBoundaryTest` enforces that direction. Icons and
+screen-specific adapters remain in `ui`.
+
+The file chooser loads directory listings and metadata on an IO dispatcher, cancels superseded
+navigation, and publishes only the latest result. Filesystem approval checks also run off the
+AWT thread. Subsystem workspace loading follows the same IO boundary and preserves drafts
+edited while a reload was in flight. Adding or switching subsystems requires saving or explicitly
+reloading the current dirty draft.
+
 ### `gateway`
 
 A small Ktor/Netty service for authenticated pit-forensics requests and the ARES-managed Google

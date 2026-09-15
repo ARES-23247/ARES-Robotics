@@ -9,7 +9,6 @@ import org.msgpack.core.MessageBufferPacker
 import org.msgpack.core.MessagePack
 import org.msgpack.core.MessageUnpacker
 import java.io.IOException
-import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.util.Collections
@@ -66,86 +65,17 @@ class NT4Server(
 
     /** One transport-owned slot per connection; reuse is delayed until its socket queue drains. */
     private inner class ConnectionSendState {
-        val slot = OwnedSendSlot()
+        val slot = NT4OwnedSendSlot(INITIAL_OWNED_SEND_CAPACITY, MAX_DECODED_FRAME_BYTES) {
+            ownedSendBufferAllocations.incrementAndGet()
+        }
 
         /**
          * Returns the send slot once the transport has drained. Java-WebSocket reports no
          * buffered data only after a frame is fully handed to the kernel, so this is the sole
          * reuse gate; there is no additional in-flight protocol.
          */
-        fun acquireIfDrained(conn: WebSocket): OwnedSendSlot? =
+        fun acquireIfDrained(conn: WebSocket): NT4OwnedSendSlot? =
             if (conn.hasBufferedData()) null else slot
-    }
-
-    private inner class OwnedSendSlot {
-        val output = ReusableByteArrayOutputStream(
-            INITIAL_OWNED_SEND_CAPACITY,
-            MAX_DECODED_FRAME_BYTES
-        ) { ownedSendBufferAllocations.incrementAndGet() }
-        val messagePacker: org.msgpack.core.MessagePacker = try {
-            MessagePack.newDefaultPacker(output)
-        } catch (_: Throwable) {
-            MessagePack.PackerConfig().newPacker(output)
-        }
-        private var sendBuffer = ByteBuffer.wrap(output.backingArray())
-
-        fun reset() {
-            output.reset()
-        }
-
-        fun finish(): ByteBuffer {
-            messagePacker.flush()
-            if (sendBuffer.array() !== output.backingArray()) {
-                sendBuffer = ByteBuffer.wrap(output.backingArray())
-            }
-            sendBuffer.clear()
-            sendBuffer.limit(output.size())
-            return sendBuffer
-        }
-    }
-
-    private class ReusableByteArrayOutputStream(
-        initialCapacity: Int,
-        private val maxCapacity: Int,
-        private val onAllocation: () -> Unit
-    ) : OutputStream() {
-        private var storage = ByteArray(initialCapacity).also { onAllocation() }
-        private var count = 0
-
-        override fun write(value: Int) {
-            ensureCapacity(count + 1)
-            storage[count++] = value.toByte()
-        }
-
-        override fun write(source: ByteArray, offset: Int, length: Int) {
-            if (offset < 0 || length < 0 || offset > source.size - length) {
-                throw IndexOutOfBoundsException()
-            }
-            ensureCapacity(count + length)
-            source.copyInto(storage, destinationOffset = count, startIndex = offset, endIndex = offset + length)
-            count += length
-        }
-
-        fun reset() {
-            count = 0
-        }
-
-        fun size(): Int = count
-        fun backingArray(): ByteArray = storage
-
-        private fun ensureCapacity(required: Int) {
-            if (required <= storage.size) return
-            if (required > maxCapacity) throw IOException("NT4 encoded frame exceeds $maxCapacity bytes")
-            var capacity = storage.size
-            while (capacity < required) {
-                capacity = (capacity * 2).coerceAtMost(maxCapacity)
-                if (capacity < required && capacity == maxCapacity) {
-                    throw IOException("NT4 encoded frame exceeds $maxCapacity bytes")
-                }
-            }
-            storage = storage.copyOf(capacity)
-            onAllocation()
-        }
     }
 
     override fun onOpen(conn: WebSocket, handshake: org.java_websocket.handshake.ClientHandshake) {
@@ -491,7 +421,7 @@ class NT4Server(
     }
 
     private fun encodeOwnedEntries(
-        slot: OwnedSendSlot,
+        slot: NT4OwnedSendSlot,
         timestamp: Long,
         entries: List<NT4Entry>,
         startIndex: Int,
@@ -516,48 +446,7 @@ class NT4Server(
         dataType: Int,
         dataValue: Any
     ) {
-        when (NT4Value.fromId(dataType)) {
-            NT4Type.BOOLEAN -> targetPacker.packBoolean(dataValue as Boolean)
-            NT4Type.DOUBLE -> targetPacker.packDouble((dataValue as Number).toDouble())
-            NT4Type.INT -> targetPacker.packLong((dataValue as Number).toLong())
-            NT4Type.FLOAT -> targetPacker.packFloat((dataValue as Number).toFloat())
-            NT4Type.STRING -> targetPacker.packString(dataValue.toString())
-            NT4Type.BOOLEAN_ARRAY -> {
-                val arr = dataValue as BooleanArray
-                targetPacker.packArrayHeader(arr.size)
-                for (b in arr) targetPacker.packBoolean(b)
-            }
-            NT4Type.DOUBLE_ARRAY -> {
-                val arr = dataValue as DoubleArray
-                targetPacker.packArrayHeader(arr.size)
-                for (d in arr) targetPacker.packDouble(d)
-            }
-            NT4Type.INT_ARRAY -> {
-                val arr = dataValue as LongArray
-                targetPacker.packArrayHeader(arr.size)
-                for (l in arr) targetPacker.packLong(l)
-            }
-            NT4Type.FLOAT_ARRAY -> {
-                val arr = dataValue as FloatArray
-                targetPacker.packArrayHeader(arr.size)
-                for (f in arr) targetPacker.packFloat(f)
-            }
-            NT4Type.STRING_ARRAY -> {
-                @Suppress("UNCHECKED_CAST")
-                val arr = dataValue as Array<String>
-                targetPacker.packArrayHeader(arr.size)
-                for (s in arr) targetPacker.packString(s)
-            }
-            else -> {
-                if (dataType == 5 || dataType == 7 || dataType == 8) {
-                    val bytes = dataValue as? ByteArray ?: ByteArray(0)
-                    targetPacker.packBinaryHeader(bytes.size)
-                    targetPacker.writePayload(bytes)
-                } else {
-                    targetPacker.packNil()
-                }
-            }
-        }
+        NT4BinaryValueEncoder.pack(targetPacker, dataType, dataValue)
     }
 
     /**
@@ -968,8 +857,7 @@ class NT4Server(
         @JvmStatic
         fun publishTopic(topic: String, value: Any) {
             val s = serverInstance ?: return
-            val cleanTopic = if (topic.startsWith("/")) topic.substring(1) else topic
-            s.putTopic(cleanTopic, value)
+            s.putTopic(topic, value)
         }
 
         @JvmStatic
@@ -1020,7 +908,7 @@ class NT4Server(
             val v = entry?.value?.getAsObject()
             return when (v) {
                 is DoubleArray -> v
-                is FloatArray -> v.map { it.toDouble() }.toDoubleArray()
+                is FloatArray -> DoubleArray(v.size) { v[it].toDouble() }
                 else -> defaultValue
             }
         }
@@ -1028,7 +916,8 @@ class NT4Server(
         /**
          * Copies a retained double-array value into caller-owned storage without allocating.
          *
-         * @return source element count, or `-1` when the topic has no published double-array value.
+         * @return source element count, `-1` when no value is published, or `-2` for a published
+         * value of the wrong type. Control receivers must distinguish invalid input from absence.
          * Callers must reject a count larger than [destination] because only the fitting prefix is
          * copied.
          */
@@ -1037,20 +926,13 @@ class NT4Server(
             if (serverInstance == null) return -1
             val entry = getEntryFlexible(topic) ?: return -1
             if (!entry.hasValue) return -1
-            val source = (entry.value as? NT4Value.DoubleArrayVal)?.borrowedArray() ?: return -1
+            val source = (entry.value as? NT4Value.DoubleArrayVal)?.borrowedArray() ?: return -2
             source.copyInto(destination, endIndex = minOf(source.size, destination.size))
             return source.size
         }
 
         private fun getEntryFlexible(topic: String): NT4Entry? {
-            var entry = entries[topic]
-            if (entry == null) {
-                entry = entries["/$topic"]
-            }
-            if (entry == null && topic.startsWith("/")) {
-                entry = entries[topic.substring(1)]
-            }
-            return entry
+            return entries[topic.trimStart('/')]?.takeIf { it.hasValue }
         }
     }
 }

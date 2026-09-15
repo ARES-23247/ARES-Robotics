@@ -70,7 +70,7 @@ object FtcButtonIndex {
  *
  * Stick axes retain the FTC SDK sign convention (pushing a stick forward is normally negative),
  * while triggers remain in `[0, 1]`. Values outside their documented range, NaN, and infinities
- * become zero. A gamepad whose `id` is `-1` is unassociated, so the entire frame is published as a
+ * read as zero and are marked unavailable. A gamepad whose `id` is `-1` is unassociated, so the frame is published as a
  * disconnected neutral sample.
  *
  * [extendedButtons] is deliberately separate from the SDK object. FTC SDK versions and controller
@@ -102,6 +102,9 @@ class FtcInputFrameAdapter(
         frame: InputFrame,
         sampleTimeNanos: Long = RobotClock.nanoTime(),
     ) {
+        if (frame.axisCapacity < FtcAxisIndex.COUNT || frame.buttonCapacity < FtcButtonIndex.COUNT) {
+            frame.beginSample(connected = false, sampleTimeNanos = sampleTimeNanos)
+        }
         require(frame.axisCapacity >= FtcAxisIndex.COUNT) {
             "FTC input frame requires at least ${FtcAxisIndex.COUNT} axes"
         }
@@ -167,10 +170,10 @@ class FtcInputFrameAdapter(
     }
 
     private fun validStick(value: Float): Double =
-        if (value.isFinite() && value >= -1.0f && value <= 1.0f) value.toDouble() else 0.0
+        if (value.isFinite() && value >= -1.0f && value <= 1.0f) value.toDouble() else Double.NaN
 
     private fun validTrigger(value: Float): Double =
-        if (value.isFinite() && value >= 0.0f && value <= 1.0f) value.toDouble() else 0.0
+        if (value.isFinite() && value >= 0.0f && value <= 1.0f) value.toDouble() else Double.NaN
 
     private companion object {
         const val UNASSOCIATED_GAMEPAD_ID: Int = -1

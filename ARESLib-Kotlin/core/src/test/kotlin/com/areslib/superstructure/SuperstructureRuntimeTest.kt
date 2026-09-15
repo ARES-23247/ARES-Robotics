@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Test
 
 class SuperstructureRuntimeTest {
@@ -272,6 +273,25 @@ class SuperstructureRuntimeTest {
     }
 
     @Test
+    fun `guard max age can tighten the descriptor feedback lease`() {
+        val base = document()
+        val guarded = base.copy(transitions = base.transitions.map { edge ->
+            if (edge.transitionId == "activate") edge.copy(debounceMs = 0L,
+                guards = edge.guards.map { it.copy(maxStalenessMs = 5L) }) else edge
+        })
+        val binding = FakeBinding(feedbackTimestampMs = 100L)
+        val runtime = SuperstructureRuntime(guarded, binding)
+        val store = store(FakeMechanismState(measured = 1.0))
+        runtime.readSensors(store, 100L)
+        store.dispatch(SuperstructureRuntime.requestAction(store.state, ID, "STOW", "machine.activate", 110L))
+        runtime.readSensors(store, 110L)
+        assertEquals("STOW", machine(store).currentStateId, "Descriptor-fresh feedback may still exceed the guard limit")
+        binding.feedbackTimestampMs = 108L
+        runtime.readSensors(store, 112L)
+        assertEquals("ACTIVE", machine(store).currentStateId)
+    }
+
+    @Test
     fun `unhealthy port enters its declared latched fallback before requests`() {
         val healthPolicy = SuperstructureHealthFallbackPolicy(
             policyId = "arm-feedback",
@@ -350,6 +370,86 @@ class SuperstructureRuntimeTest {
     }
 
     @Test
+    fun `multiple targets for one subsystem compose without overwriting earlier fields`() {
+        val base = document()
+        val twoTargets = base.copy(states = base.states.map { preset ->
+            preset.copy(subsystemTargets = preset.subsystemTargets + SuperstructureSubsystemTarget(
+                target = SuperstructureFieldReference(MECHANISM_ID, "target2"), constantDoubleValue = 0.0,
+            ))
+        })
+        val runtime = SuperstructureRuntime(twoTargets, FakeBinding())
+        val store = store(FakeMechanismState(target = 0.6, target2 = 0.4, measured = 1.0))
+        runtime.readSensors(store, 1L)
+        assertEquals(0.0, mechanism(store).target)
+        assertEquals(0.0, mechanism(store).target2)
+        dispatch(store, SuperstructureRuntime.requestTask(ID, "STOW", "machine.activate"), 2L)
+        runtime.readSensors(store, 2L)
+        runtime.readSensors(store, 22L)
+        assertEquals("ACTIVE", machine(store).currentStateId)
+        assertEquals(0.75, mechanism(store).target)
+        assertEquals(0.0, mechanism(store).target2)
+        assertEquals(1.0, mechanism(store).measured)
+    }
+
+    @Test
+    fun `string target changes are applied even when their hashes collide`() {
+        assertEquals("Aa".hashCode(), "BB".hashCode())
+        val base = document()
+        val stringTargets = base.copy(states = base.states.map { preset ->
+            preset.copy(subsystemTargets = listOf(SuperstructureSubsystemTarget(
+                target = SuperstructureFieldReference(MECHANISM_ID, "stringTarget"),
+                targetMode = if (preset.stateId == "STOW") SuperstructureTargetMode.PASS_THROUGH else SuperstructureTargetMode.CONSTANT,
+                source = if (preset.stateId == "STOW") SuperstructureFieldReference(MECHANISM_ID, "stringSource") else null,
+                constantStringValue = if (preset.stateId == "STOW") null else "safe",
+            )))
+        })
+        val binding = FakeBinding()
+        val runtime = SuperstructureRuntime(stringTargets, binding)
+        val store = store(FakeMechanismState(stringSource = "Aa"))
+        runtime.readSensors(store, 1L)
+        assertEquals("Aa", mechanism(store).stringTarget)
+        store.dispatch(RobotAction.UpdateNamedSubsystemState(MECHANISM_ID, mechanism(store).copy(stringSource = "BB")))
+        runtime.readSensors(store, 2L)
+        assertEquals("BB", mechanism(store).stringTarget)
+        runtime.readSensors(store, 3L)
+        assertEquals(2, binding.createdTargetTasks)
+    }
+
+    @Test
+    fun `ordered timestamp overflow cannot postpone state or pending request deadlines`() {
+        val base = document()
+        val timed = base.copy(states = base.states.map { preset ->
+            if (preset.stateId == "STOW") preset.copy(timeoutSeconds = 0.01, timeoutTargetStateId = "FAULT") else preset
+        })
+        for (definition in listOf(base, timed)) {
+            val runtime = SuperstructureRuntime(definition, FakeBinding())
+            val store = store()
+            runtime.readSensors(store, -1L)
+            if (definition === base) {
+                store.dispatch(SuperstructureRuntime.requestAction(store.state, ID, "STOW", "machine.activate", -1L))
+            }
+            runtime.readSensors(store, Long.MAX_VALUE)
+            assertEquals("FAULT", machine(store).currentStateId)
+            assertTrue(machine(store).isFaulted)
+        }
+    }
+
+    @Test
+    fun `rewinding the clock restarts an in-progress guard debounce`() {
+        val runtime = SuperstructureRuntime(document(), FakeBinding())
+        val store = store(FakeMechanismState(measured = 1.0))
+        runtime.readSensors(store, Long.MAX_VALUE - 10L)
+        store.dispatch(SuperstructureRuntime.requestAction(store.state, ID, "STOW", "machine.activate", Long.MAX_VALUE - 10L))
+        runtime.readSensors(store, Long.MAX_VALUE - 10L)
+        runtime.readSensors(store, Long.MIN_VALUE + 100L)
+        assertEquals("STOW", machine(store).currentStateId)
+        runtime.readSensors(store, Long.MIN_VALUE + 119L)
+        assertEquals("STOW", machine(store).currentStateId)
+        runtime.readSensors(store, Long.MIN_VALUE + 120L)
+        assertEquals("ACTIVE", machine(store).currentStateId)
+    }
+
+    @Test
     fun `lifecycle actions execute exit before entry exactly once per transition`() {
         val lifecycleDocument = document().copy(
             states = document().states.map { preset ->
@@ -398,11 +498,61 @@ class SuperstructureRuntimeTest {
     }
 
     @Test
-    fun `steady state evaluation remains allocation free after warmup`() {
+    fun `failed lifecycle preparation releases every prepared task even if cleanup throws`() {
+        val base = document()
+        val definition = base.copy(states = base.states.map { preset ->
+            if (preset.stateId == "STOW") preset.copy(onEntryActionKeys = listOf("prepare.first", "prepare.second", "missing.action")) else preset
+        })
+        for (throwOnMissing in listOf(false, true)) {
+            val binding = FakeBinding(unavailableLifecycleAction = "missing.action",
+                throwOnMissingLifecycleAction = throwOnMissing, failedLifecycleCleanupAction = "prepare.first")
+            val runtime = SuperstructureRuntime(definition, binding)
+            val store = store()
+            assertDoesNotThrow { runtime.readSensors(store, 1L) }
+            assertEquals("FAULT", machine(store).currentStateId)
+            assertEquals(listOf("prepare.first", "prepare.second"), binding.releasedLifecycleActions)
+            assertTrue(binding.executedLifecycleActions.isEmpty())
+        }
+    }
+
+    @Test
+    fun `target cleanup failure releases later tasks and applies the fault preset`() {
+        val base = document()
+        val definition = base.copy(states = base.states.map { preset ->
+            preset.copy(subsystemTargets = preset.subsystemTargets + SuperstructureSubsystemTarget(
+                target = SuperstructureFieldReference(MECHANISM_ID, "target2"), constantDoubleValue = 0.0,
+            ))
+        })
+        val released = mutableListOf<String>()
+        var throwOnce = true
+        val binding = FakeBinding(targetCleanup = { field ->
+            released += field
+            if (throwOnce) { throwOnce = false; error("first target cleanup failed") }
+        })
+        val runtime = SuperstructureRuntime(definition, binding)
+        val store = store(FakeMechanismState(target = 0.6, target2 = 0.4))
+        assertDoesNotThrow { runtime.readSensors(store, 1L) }
+        assertEquals("FAULT", machine(store).currentStateId)
+        assertEquals(listOf("target", "target2"), released.take(2))
+        assertEquals(binding.createdTargetTasks, released.size)
+        assertEquals(0.0, mechanism(store).target)
+        assertEquals(0.0, mechanism(store).target2)
+    }
+
+    @Test
+    fun `steady state evaluation remains allocation free after warmup`() = assertAllocationFree(unhealthy = false)
+
+    @Test
+    fun `persistent health fault evaluation remains allocation free after warmup`() = assertAllocationFree(unhealthy = true)
+
+    private fun assertAllocationFree(unhealthy: Boolean) {
         val bean = ManagementFactory.getThreadMXBean() as? ThreadMXBean ?: return
         if (!bean.isThreadAllocatedMemorySupported) return
         if (!bean.isThreadAllocatedMemoryEnabled) bean.isThreadAllocatedMemoryEnabled = true
-        val runtime = SuperstructureRuntime(document(), FakeBinding())
+        val definition = if (unhealthy) document().copy(healthFallbacks = listOf(
+            SuperstructureHealthFallbackPolicy("arm-feedback", SuperstructureFieldReference(MECHANISM_ID, "measured"), "FAULT"),
+        )) else document()
+        val runtime = SuperstructureRuntime(definition, FakeBinding(healthBits = if (unhealthy) 0 else SuperstructurePortHealthBits.CONTROL_READY_MASK))
         val store = store()
         runtime.readSensors(store, 1L)
         repeat(2_000) { runtime.readSensors(store, 2L + it) }
@@ -505,18 +655,25 @@ class SuperstructureRuntimeTest {
         val target: Double = 0.0,
         val target2: Double = 0.0,
         val measured: Double = 0.0,
+        val stringTarget: String = "",
+        val stringSource: String = "",
     ) : SubsystemState
 
     private class FakeBinding(
         private val rejectTargets: Boolean = false,
         private val rejectedFieldId: String? = null,
         private val unavailableLifecycleAction: String? = null,
+        private val throwOnMissingLifecycleAction: Boolean = false,
+        private val failedLifecycleCleanupAction: String? = null,
+        private val targetCleanup: ((String) -> Unit)? = null,
         var enabled: Boolean = true,
         var healthBits: Int = SuperstructurePortHealthBits.CONTROL_READY_MASK,
+        var feedbackTimestampMs: Long? = null,
     ) : SuperstructureRuntimeBinding {
         var createdTargetTasks = 0
         var dispatchedTargetTasks = 0
         val executedLifecycleActions = mutableListOf<String>()
+        val releasedLifecycleActions = mutableListOf<String>()
 
         override fun isRobotEnabled(): Boolean = enabled
 
@@ -525,13 +682,15 @@ class SuperstructureRuntimeTest {
             fieldUid == "target" -> TARGET_PORT
             fieldUid == "target2" -> TARGET_2_PORT
             fieldUid == "measured" -> MEASURED_PORT
+            fieldUid == "stringTarget" -> 4
+            fieldUid == "stringSource" -> 5
             else -> -1
         }
 
         override fun portType(port: Int): SubsystemValueType? =
             if (port == TARGET_PORT || port == TARGET_2_PORT) {
                 SubsystemValueType.DOUBLE
-            } else null
+            } else if (port == 4 || port == 5) SubsystemValueType.STRING else null
 
         override fun readNumeric(port: Int, state: RobotState): Double {
             val snapshot = state.superstructure.subsystems[MECHANISM_ID] as? FakeMechanismState
@@ -546,9 +705,21 @@ class SuperstructureRuntimeTest {
 
         override fun readBoolean(port: Int, state: RobotState): Boolean? = null
 
-        override fun readString(port: Int, state: RobotState): String? = null
+        override fun readString(port: Int, state: RobotState): String? {
+            val current = state.superstructure.subsystems[MECHANISM_ID] as? FakeMechanismState ?: return null
+            return when (port) {
+                4 -> current.stringTarget
+                5 -> current.stringSource
+                else -> null
+            }
+        }
 
-        override fun readHealthBits(port: Int, state: RobotState, nowMs: Long): Int = healthBits
+        override fun readHealthBits(port: Int, state: RobotState, nowMs: Long, maximumAgeMs: Long): Int {
+            val timestamp = feedbackTimestampMs ?: return healthBits
+            val age = nowMs - timestamp
+            return if (nowMs >= timestamp && age >= 0L && age <= maximumAgeMs) healthBits
+                else healthBits and SuperstructurePortHealthBits.FRESH.inv()
+        }
 
         override fun createDoubleTargetTask(
             port: Int,
@@ -562,7 +733,7 @@ class SuperstructureRuntimeTest {
             if (rejectTargets || fieldId == rejectedFieldId
             ) return null
             createdTargetTasks++
-            return StateActionTask(name = "Set fake mechanism", actionFactory = { state ->
+            val task = StateActionTask(name = "Set fake mechanism", actionFactory = { state ->
                 dispatchedTargetTasks++
                 val current = state.superstructure.subsystems.getValue(MECHANISM_ID) as FakeMechanismState
                 val next = when (fieldId) {
@@ -571,16 +742,33 @@ class SuperstructureRuntimeTest {
                 }
                 RobotAction.UpdateNamedSubsystemState(MECHANISM_ID, next)
             })
+            val cleanup = targetCleanup ?: return task
+            return object : Task by task {
+                override fun releaseRuntimeState() {
+                    task.releaseRuntimeState()
+                    cleanup(fieldId)
+                }
+            }
         }
 
         override fun createIntTargetTask(port: Int, value: Int): Task? = null
 
         override fun createBooleanTargetTask(port: Int, value: Boolean): Task? = null
 
-        override fun createStringTargetTask(port: Int, value: String): Task? = null
+        override fun createStringTargetTask(port: Int, value: String): Task? {
+            if (port != 4) return null
+            createdTargetTasks++
+            return StateActionTask(name = "Set string target", actionFactory = { state ->
+                val current = state.superstructure.subsystems.getValue(MECHANISM_ID) as FakeMechanismState
+                RobotAction.UpdateNamedSubsystemState(MECHANISM_ID, current.copy(stringTarget = value))
+            })
+        }
 
         override fun createLifecycleActionTask(actionKey: String, timestampMs: Long): Task? {
-            if (actionKey == unavailableLifecycleAction) return null
+            if (actionKey == unavailableLifecycleAction) {
+                if (throwOnMissingLifecycleAction) error("Lifecycle factory failed for $actionKey")
+                return null
+            }
             return object : Task {
                 override val name: String = "Lifecycle($actionKey)"
 
@@ -591,6 +779,11 @@ class SuperstructureRuntimeTest {
                 }
 
                 override fun isCompleted(state: RobotState, elapsedMs: Long): Boolean = true
+                override fun releaseRuntimeState() {
+                    super.releaseRuntimeState()
+                    releasedLifecycleActions += actionKey
+                    if (actionKey == failedLifecycleCleanupAction) error("Lifecycle cleanup failed for $actionKey")
+                }
             }
         }
 

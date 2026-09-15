@@ -1,0 +1,427 @@
+{
+  "schemaVersion": 2,
+  "documentId": "driver",
+  "revision": 1,
+  "name": "BIOBUZZ drive, intake and shooter",
+  "description": "Robot Builder-generated controls. A/J intake; B/L hive flywheel; X/U flower flywheel; RT/Shift feeds one ball per press. Dashboard Q/E operate red/blue human loaders.",
+  "controllers": [
+    {
+      "slot": "driver",
+      "displayName": "Driver",
+      "profileId": "ftc-driver",
+      "devicePort": 0
+    }
+  ],
+  "bindings": [
+    {
+      "bindingId": "drive-forward",
+      "displayName": "Drive forward/back",
+      "source": {
+        "kind": "AXIS_VALUE",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "left_stick_y"
+        ],
+        "transform": {
+          "inputMinimum": -1.0,
+          "inputCenter": 0.0,
+          "inputMaximum": 1.0,
+          "outputMinimum": -1.0,
+          "outputMaximum": 1.0,
+          "deadband": 0.05,
+          "exponent": 1.0,
+          "inverted": true
+        },
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.075
+      },
+      "event": "VALUE",
+      "target": {
+        "kind": "DRIVE",
+        "key": "vx",
+        "arguments": {},
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": {
+        "emitOnlyOnChange": false,
+        "changeEpsilon": 1e-06,
+        "rearmNeutralThreshold": 0.05,
+        "valueArgumentKey": "value"
+      },
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "drive-strafe",
+      "displayName": "Strafe left/right",
+      "source": {
+        "kind": "AXIS_VALUE",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "left_stick_x"
+        ],
+        "transform": {
+          "inputMinimum": -1.0,
+          "inputCenter": 0.0,
+          "inputMaximum": 1.0,
+          "outputMinimum": -1.0,
+          "outputMaximum": 1.0,
+          "deadband": 0.05,
+          "exponent": 1.0,
+          "inverted": true
+        },
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.075
+      },
+      "event": "VALUE",
+      "target": {
+        "kind": "DRIVE",
+        "key": "vy",
+        "arguments": {},
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": {
+        "emitOnlyOnChange": false,
+        "changeEpsilon": 1e-06,
+        "rearmNeutralThreshold": 0.05,
+        "valueArgumentKey": "value"
+      },
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "drive-rotate",
+      "displayName": "Rotate",
+      "source": {
+        "kind": "AXIS_VALUE",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "right_stick_x"
+        ],
+        "transform": {
+          "inputMinimum": -1.0,
+          "inputCenter": 0.0,
+          "inputMaximum": 1.0,
+          "outputMinimum": -1.0,
+          "outputMaximum": 1.0,
+          "deadband": 0.05,
+          "exponent": 1.0,
+          "inverted": true
+        },
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.075
+      },
+      "event": "VALUE",
+      "target": {
+        "kind": "DRIVE",
+        "key": "omega",
+        "arguments": {},
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": {
+        "emitOnlyOnChange": false,
+        "changeEpsilon": 1e-06,
+        "rearmNeutralThreshold": 0.05,
+        "valueArgumentKey": "value"
+      },
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "recover-drive-neutral",
+      "displayName": "Recover drive after a fault",
+      "source": {
+        "kind": "CHORD",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "back",
+          "start"
+        ],
+        "transform": null,
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.15
+      },
+      "event": "PRESS",
+      "target": {
+        "kind": "ACTION",
+        "key": "drivetrain.recoverNeutral",
+        "arguments": {},
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.1,
+        "releaseDebounceSeconds": 0.1,
+        "cooldownSeconds": 1.0
+      },
+      "analogPolicy": null,
+      "priority": 100,
+      "suppressConstituentBindings": true,
+      "enabled": true
+    },
+    {
+      "bindingId": "a-press",
+      "displayName": "A press intakeVoltage",
+      "source": {
+        "kind": "BUTTON",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "a"
+        ],
+        "transform": null,
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.15
+      },
+      "event": "PRESS",
+      "target": {
+        "kind": "ACTION",
+        "key": "subsystem.biobuzz-intake.set.intakeVoltage",
+        "arguments": {
+          "value": "12.0"
+        },
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "a-release",
+      "displayName": "A release intakeVoltage",
+      "source": {
+        "kind": "BUTTON",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "a"
+        ],
+        "transform": null,
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.15
+      },
+      "event": "RELEASE",
+      "target": {
+        "kind": "ACTION",
+        "key": "subsystem.biobuzz-intake.set.intakeVoltage",
+        "arguments": {
+          "value": "0.0"
+        },
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "b-press",
+      "displayName": "B press flywheelVoltage",
+      "source": {
+        "kind": "BUTTON",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "b"
+        ],
+        "transform": null,
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.15
+      },
+      "event": "PRESS",
+      "target": {
+        "kind": "ACTION",
+        "key": "subsystem.biobuzz-shooter.set.flywheelVoltage",
+        "arguments": {
+          "value": "12.0"
+        },
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "b-release",
+      "displayName": "B release flywheelVoltage",
+      "source": {
+        "kind": "BUTTON",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "b"
+        ],
+        "transform": null,
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.15
+      },
+      "event": "RELEASE",
+      "target": {
+        "kind": "ACTION",
+        "key": "subsystem.biobuzz-shooter.set.flywheelVoltage",
+        "arguments": {
+          "value": "0.0"
+        },
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "x-press",
+      "displayName": "X press flywheelVoltage",
+      "source": {
+        "kind": "BUTTON",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "x"
+        ],
+        "transform": null,
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.15
+      },
+      "event": "PRESS",
+      "target": {
+        "kind": "ACTION",
+        "key": "subsystem.biobuzz-shooter.set.flywheelVoltage",
+        "arguments": {
+          "value": "6.372413793103449"
+        },
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "x-release",
+      "displayName": "X release flywheelVoltage",
+      "source": {
+        "kind": "BUTTON",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "x"
+        ],
+        "transform": null,
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.15
+      },
+      "event": "RELEASE",
+      "target": {
+        "kind": "ACTION",
+        "key": "subsystem.biobuzz-shooter.set.flywheelVoltage",
+        "arguments": {
+          "value": "0.0"
+        },
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": null,
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    },
+    {
+      "bindingId": "feed-ball",
+      "displayName": "Feed shooter",
+      "source": {
+        "kind": "AXIS_VALUE",
+        "controllerSlot": "driver",
+        "controlIds": [
+          "right_trigger"
+        ],
+        "transform": {
+          "inputMinimum": 0.0,
+          "inputCenter": 0.0,
+          "inputMaximum": 1.0,
+          "outputMinimum": 0.0,
+          "outputMaximum": 12.0,
+          "deadband": 0.05,
+          "exponent": 1.0,
+          "inverted": false
+        },
+        "thresholdDirection": "ABOVE",
+        "zoneHysteresis": 0.0,
+        "chordWindowSeconds": 0.075
+      },
+      "event": "VALUE",
+      "target": {
+        "kind": "ACTION",
+        "key": "subsystem.biobuzz-shooter.set.transferVoltage",
+        "arguments": {},
+        "routinePolicy": "IGNORE_IF_RUNNING"
+      },
+      "timing": {
+        "pressDebounceSeconds": 0.0,
+        "releaseDebounceSeconds": 0.0,
+        "cooldownSeconds": 0.0
+      },
+      "analogPolicy": {
+        "emitOnlyOnChange": true,
+        "changeEpsilon": 0.05,
+        "rearmNeutralThreshold": 0.05,
+        "valueArgumentKey": "value"
+      },
+      "priority": 0,
+      "suppressConstituentBindings": false,
+      "enabled": true
+    }
+  ]
+}

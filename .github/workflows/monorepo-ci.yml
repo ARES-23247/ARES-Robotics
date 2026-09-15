@@ -74,6 +74,31 @@ jobs:
           -ParesVersion=${{ steps.identity.outputs.version }}
           --no-parallel --no-daemon --console=plain
 
+      - name: Retain robot-readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: robot-readiness-evidence
+          path: |
+            ARESLib-Kotlin/codegen/build/reports/robot-readiness/*.json
+            ARESLib-Kotlin/codegen/build/test-results/test/TEST-*Readiness*.xml
+            ARESLib-Kotlin/core/build/test-results/test/TEST-*Readiness*.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Test robot log dashboard in Chromium
+        shell: bash
+        run: |
+          browser_tools="$RUNNER_TEMP/ares-log-browser"
+          npm install --prefix "$browser_tools" --no-save --no-package-lock --no-audit --no-fund playwright@1.62.1
+          "$browser_tools/node_modules/.bin/playwright" install --with-deps chromium
+          NODE_PATH="$browser_tools/node_modules" node --test scripts/test_log_manager_dashboard.cjs
+
       - uses: actions/upload-artifact@v7
         with:
           name: ares-validation-repository
@@ -115,6 +140,34 @@ jobs:
           fi
           ./gradlew :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug \
             "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
+      - name: Export BioBuzz from the canonical starter and season overlay
+        shell: pwsh
+        run: ./scripts/export-starter-mirrors.ps1 -OutputRoot "$env:RUNNER_TEMP/biobuzz-consumer"
+      - name: Test generated BioBuzz robot, field simulation, and APK
+        shell: bash
+        env:
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+          CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
+        run: |
+          dependency_args=()
+          if [[ "$CANDIDATE_RESULT" == "success" ]]; then
+            dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
+            dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
+          fi
+          cd "$RUNNER_TEMP/biobuzz-consumer/ARES-BIOBUZZ-Example"
+          bash ./gradlew generateAresProject :TeamCode:verifyAresProject \
+            :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug \
+            "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: biobuzz-consumer-evidence
+          path: |
+            ${{ runner.temp }}/biobuzz-consumer/ARES-BIOBUZZ-Example/TeamCode/build/test-results/**
+            ${{ runner.temp }}/biobuzz-consumer/ARES-BIOBUZZ-Example/simulator/build/test-results/**
+            ${{ runner.temp }}/biobuzz-consumer/ARES-BIOBUZZ-Example/TeamCode/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 7
       - uses: actions/upload-artifact@v7
         with:
           name: lightbot-debug-apk
@@ -245,6 +298,14 @@ jobs:
       - name: Test the reusable MicroPython runtime
         working-directory: ARESLib-Kotlin/ares-micro
         run: python -m unittest discover -s tests -v
+      - name: Retain XRP host readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: xrp-host-readiness-evidence
+          path: ARES-XRP-Starter/build/reports/robot-readiness/*.json
+          if-no-files-found: warn
+          retention-days: 14
 
   analytics:
     name: Studio, gateway, and analytics

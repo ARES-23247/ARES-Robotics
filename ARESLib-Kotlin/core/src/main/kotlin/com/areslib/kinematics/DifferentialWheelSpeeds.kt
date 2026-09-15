@@ -25,11 +25,11 @@ data class DifferentialWheelSpeeds(
     fun normalize(maxSpeedMetersPerSecond: Double): DifferentialWheelSpeeds {
         val maxMagnitude = maxOf(abs(leftMetersPerSecond), abs(rightMetersPerSecond))
         val scale = wheelSpeedScale(maxMagnitude, maxSpeedMetersPerSecond)
-        if (scale == 0.0) return DifferentialWheelSpeeds()
+        if (scale.isNaN()) return DifferentialWheelSpeeds()
         if (scale < 1.0) {
             return DifferentialWheelSpeeds(
-                leftMetersPerSecond * scale,
-                rightMetersPerSecond * scale,
+                scaledWheelSpeed(leftMetersPerSecond, maxMagnitude, maxSpeedMetersPerSecond, scale),
+                scaledWheelSpeed(rightMetersPerSecond, maxMagnitude, maxSpeedMetersPerSecond, scale),
             )
         }
         return this

@@ -11,7 +11,7 @@
     {"parameterUid":"ftc.drive.ticks-per-meter","value":{"doubleValue":2000.0}},
     {"parameterUid":"ftc.drive.closed-loop-velocity","value":{"booleanValue":true}},
     {"parameterUid":"ftc.drive.feedforward.ks","value":{"doubleValue":0.0}},
-    {"parameterUid":"ftc.drive.feedforward.kv","value":{"doubleValue":12.0}},
+    {"parameterUid":"ftc.drive.feedforward.kv","value":{"doubleValue":1.0}},
     {"parameterUid":"ftc.drive.feedforward.ka","value":{"doubleValue":0.0}},
     {"parameterUid":"ftc.drive.motor.kp","value":{"doubleValue":0.0}},
     {"parameterUid":"ftc.drive.motor.ki","value":{"doubleValue":0.0}},

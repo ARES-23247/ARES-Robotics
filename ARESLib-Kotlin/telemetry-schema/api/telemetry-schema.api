@@ -190,3 +190,22 @@ public final class com/areslib/telemetry/schema/TopologyNodeType$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class com/areslib/telemetry/schema/TuningAcknowledgement {
+	public fun <init> (JLjava/lang/String;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (JLjava/lang/String;)Lcom/areslib/telemetry/schema/TuningAcknowledgement;
+	public static synthetic fun copy$default (Lcom/areslib/telemetry/schema/TuningAcknowledgement;JLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/telemetry/schema/TuningAcknowledgement;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNonce ()J
+	public final fun getResult ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/telemetry/schema/TuningAcknowledgementCodec {
+	public static final field INSTANCE Lcom/areslib/telemetry/schema/TuningAcknowledgementCodec;
+	public final fun decode (Ljava/lang/String;)Lcom/areslib/telemetry/schema/TuningAcknowledgement;
+	public final fun encode (Lcom/areslib/telemetry/schema/TuningAcknowledgement;)Ljava/lang/String;
+}
+

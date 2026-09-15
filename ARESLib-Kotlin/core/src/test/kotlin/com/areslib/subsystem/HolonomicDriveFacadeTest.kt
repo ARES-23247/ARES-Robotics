@@ -119,18 +119,28 @@ class HolonomicDriveFacadeTest {
     fun testFollowPath() {
         val store = Store(RobotState(), ::rootReducer)
         val facade = MecanumDriveFacade(store)
-
-        val path = Path(
-            points = listOf(
-                PathPoint(pose = Pose2d(1.0, 2.0, Rotation2d.fromDegrees(90.0)), velocityMps = 0.0, distanceMeters = 0.0)
-            )
-        )
-
-        facade.followPath(path)
-
-        // Should update EKF pose to starting point of the path
-        assertEquals(1.0, store.state.drive.poseEstimator.estimatedPose.x, 1e-6)
-        assertEquals(2.0, store.state.drive.poseEstimator.estimatedPose.y, 1e-6)
-        assertEquals(Math.PI / 2.0, store.state.drive.poseEstimator.estimatedPose.heading.radians, 1e-6)
+        val follower = com.areslib.pathing.HolonomicPathFollower(DriveSubsystem(store))
+        val executor = com.areslib.sequencer.TaskExecutor()
+        facade.configurePathFollowing(follower, executor::addTask)
+        val path = Path(points = listOf(
+            PathPoint(pose = Pose2d(1.0, 2.0, Rotation2d.fromDegrees(90.0)), velocityMps = 0.0, distanceMeters = 0.0)
+        ))
+        try {
+            com.areslib.util.RobotClock.useMockTime(100L)
+            facade.followPath(path)
+            assertEquals(Pose2d(), facade.pose, "Scheduling must not replace the actual estimator pose")
+            executor.update(store.state, 100L).forEach(store::dispatch)
+            assertEquals(path, store.state.pathState.activePath)
+            com.areslib.util.RobotClock.useMockTime(120L)
+            executor.update(store.state, 120L).forEach(store::dispatch)
+            assertTrue(store.state.drive.xVelocityMetersPerSecond > 0.0)
+            assertTrue(store.state.drive.yVelocityMetersPerSecond > 0.0)
+            assertEquals(Pose2d(), facade.pose)
+        } finally {
+            try { executor.cancelAll(store.state).forEach(store::dispatch) }
+            finally { com.areslib.util.RobotClock.useSystemTime() }
+        }
+        assertEquals(0.0, store.state.drive.xVelocityMetersPerSecond)
+        assertEquals(0.0, store.state.drive.yVelocityMetersPerSecond)
     }
 }

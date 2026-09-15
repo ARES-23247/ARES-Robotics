@@ -17,11 +17,19 @@ class SimulatedFlywheelIO(
     private val faultTimeline: SimulationFaultTimeline = SimulationFaultTimeline(emptyList()),
 ) : FlywheelIO {
     private var lastHealthyVelocityRpm = 0.0
+    private val modelKv = sim.flywheelSim.run { ke + frictionCoeff * resistance / kt }
     var lastWriteAccepted: Boolean = true
         private set
 
     override fun setVelocityRpm(rpm: Double, maxEffortScale: Double) {
         if (!beginWrite()) return
+        val measuredRpm = sim.flywheelSim.velocityRpm
+        if (!measuredRpm.isFinite() || active(DEVICE_TARGET, SimulationFaultKind.INVALID_INPUT) ||
+            active(DEVICE_TARGET, SimulationFaultKind.STALE_INPUT) || active(DEVICE_TARGET, SimulationFaultKind.FROZEN_INPUT)) {
+            lastWriteAccepted = false
+            sim.simFlywheelVoltage = 0.0
+            return
+        }
         val target = rpm.takeIf { it.isFinite() }?.coerceIn(0.0, 6000.0) ?: 0.0
         val requestedScale = maxEffortScale.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 0.0
         val effortScale = if (active(POWER_TARGET, SimulationFaultKind.BROWNOUT)) {
@@ -34,13 +42,11 @@ class SimulatedFlywheelIO(
             return
         }
         val targetRadPerSecond = target * 2.0 * Math.PI / 60.0
-        val model = sim.flywheelSim
         // At steady state, electrical torque balances viscous friction. Supplying that model-matched
         // voltage eliminates the large target droop of a P-only controller; feedback corrects
         // transient/model error and the effort cap mirrors the real brownout/current budget path.
-        val modelKv = model.ke + model.frictionCoeff * model.resistance / model.kt
         val feedforwardVolts = targetRadPerSecond * modelKv
-        val error = target - sim.flywheelSim.velocityRpm
+        val error = target - measuredRpm
         val voltageLimit = 12.0 * effortScale
         sim.simFlywheelVoltage = (feedforwardVolts + error * VELOCITY_KP_VOLTS_PER_RPM)
             .coerceIn(-voltageLimit, voltageLimit)

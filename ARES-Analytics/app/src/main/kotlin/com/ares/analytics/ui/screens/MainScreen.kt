@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.screens
 
+import com.ares.analytics.ui.components.icon
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
@@ -21,7 +23,7 @@ import com.ares.analytics.service.isLoopbackDriveControlHost
 import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.ui.components.QuickNavigationMenu
 import com.ares.analytics.ui.components.SectionNavigationBar
 import com.ares.analytics.ui.components.Sidebar
@@ -42,7 +44,7 @@ import com.ares.analytics.ui.components.dashboard.LocalSimulatorLaunchRequest
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import com.ares.analytics.ui.components.dashboard.localSimulatorLaunchRequest
 import com.ares.analytics.ui.components.terminal.TerminalDrawer
-import com.ares.analytics.ui.help.LearningCatalog
+import com.ares.analytics.domain.learning.LearningCatalog
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.*
 import com.ares.analytics.viewmodel.drivebase.DrivebaseBuilderViewModel
@@ -255,8 +257,12 @@ fun MainScreen(services: ServiceRegistry) {
     } else {
         isLocalSimOnline
     }
+    val dashboardWindowFocused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
+    LaunchedEffect(dashboardWindowFocused) {
+        if (!dashboardWindowFocused) services.keyboardDriveState.disarm()
+    }
     val localSimulatorControlAuthorized =
-        activeNav == NavigationTarget.DASHBOARD &&
+        dashboardWindowFocused && activeNav == NavigationTarget.DASHBOARD &&
             targetSelection == TargetSelection.LOCAL_SIM &&
             isRobotLinkConnected &&
             (currentConfig.league == League.XRP || isLoopbackDriveControlHost(services.nt4ClientService.serverIp))
@@ -625,6 +631,10 @@ fun MainScreen(services: ServiceRegistry) {
                             },
                             onCreate = {
                                 requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
+                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                            },
+                            onExploreBiobuzz = {
+                                requestedProjectSetupMode = ProjectSetupMode.EXPLORE_BIOBUZZ
                                 mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                             },
                             onExploreDemo = {

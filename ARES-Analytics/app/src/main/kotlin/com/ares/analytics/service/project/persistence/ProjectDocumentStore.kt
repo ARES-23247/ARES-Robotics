@@ -1,5 +1,10 @@
 package com.ares.analytics.service.project.persistence
 
+import com.ares.analytics.service.forceDirectoryIfSupported
+import com.ares.analytics.service.publishPreparedFileExclusively
+import com.ares.analytics.service.resolveExistingPath
+import com.ares.analytics.service.writeAndForceFile
+import com.ares.analytics.util.Sha256
 import com.areslib.project.schema.ProjectDocumentId
 import com.areslib.project.schema.ProjectDocumentKind
 import java.io.File
@@ -76,7 +81,8 @@ abstract class VersionedProjectDocumentStore<T>(
     protected abstract fun sameContent(previous: T, draft: T): Boolean
 
     fun list(projectPath: String): ProjectDocumentListing<T> {
-        val directory = projectDirectory(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val directory = projectDirectory(paths)
         if (!directory.isDirectory) return ProjectDocumentListing(emptyList(), emptyList())
 
         val decodedDocuments = mutableListOf<Pair<File, T>>()
@@ -85,7 +91,7 @@ abstract class VersionedProjectDocumentStore<T>(
             file.isFile && file.name.endsWith(".$extension", ignoreCase = true)
         }.orEmpty().sortedBy { it.name.lowercase() }.forEach { file ->
             runCatching {
-                decode(file.readText()).also { document -> ProjectDocumentId(documentId(document)) }
+                decode(paths.check(file).readText()).also { document -> ProjectDocumentId(documentId(document)) }
             }
                 .onSuccess { document -> decodedDocuments += file to document }
                 .onFailure { error ->
@@ -131,7 +137,8 @@ abstract class VersionedProjectDocumentStore<T>(
 
     fun load(projectPath: String, rawDocumentId: String): T {
         val id = ProjectDocumentId(rawDocumentId)
-        val file = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val file = currentFile(paths, id)
         require(file.isFile) { "${kind.displayName} '${id.value}' does not exist" }
         return decode(file.readText()).also { document ->
             require(documentId(document) == id.value) {
@@ -144,7 +151,8 @@ abstract class VersionedProjectDocumentStore<T>(
         // Encode first so validation fails before any directory or file is changed.
         val validatedDraft = decode(encode(draft))
         val id = ProjectDocumentId(documentId(validatedDraft))
-        val currentFile = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths, id)
         return ProjectDocumentWriteLocks.withLock(currentFile) {
         val previous = currentFile.takeIf(File::isFile)?.let { file ->
             decode(file.readText()).also { document ->
@@ -153,20 +161,24 @@ abstract class VersionedProjectDocumentStore<T>(
                 }
             }
         }
+        val previousHash = previous?.let(::contentHash)
         val normalized = when {
             previous == null -> withRevision(validatedDraft, revision = 1, parentHash = null)
             sameContent(previous, validatedDraft) -> previous
-            else -> withRevision(validatedDraft, revision(previous) + 1, contentHash(previous))
+            else -> withRevision(validatedDraft, revision(previous) + 1, previousHash)
         }
         val encoded = encode(normalized)
-        val hash = contentHash(normalized)
-        val historyFile = File(
-            historyDirectory(projectPath, id),
-            "${revision(normalized).toString().padStart(4, '0')}-${hash.take(12)}.$extension"
-        )
-        val createdRevision = !historyFile.exists()
-
-        if (createdRevision) AtomicProjectFileWriter.write(historyFile, encoded, replaceExisting = false)
+        val hash = if (normalized === previous) requireNotNull(previousHash) else contentHash(normalized)
+        val directory = historyDirectory(paths, id)
+        if (previous != null && normalized !== previous) {
+            val parentHash = requireNotNull(previousHash)
+            ensureHistoryCheckpoint(
+                paths.check(File(directory, historyFileName(revision(previous), parentHash, extension))),
+                encode(previous), parentHash, ::decode, ::contentHash,
+            )
+        }
+        val historyFile = paths.check(File(directory, historyFileName(revision(normalized), hash, extension)))
+        val createdRevision = ensureHistoryCheckpoint(historyFile, encoded, hash, ::decode, ::contentHash)
         if (previous != normalized || !currentFile.exists()) {
             AtomicProjectFileWriter.write(currentFile, encoded, replaceExisting = true)
         }
@@ -180,7 +192,8 @@ abstract class VersionedProjectDocumentStore<T>(
      */
     fun removalPlan(projectPath: String, rawDocumentId: String): ProjectDocumentRemovalPlan {
         val id = ProjectDocumentId(rawDocumentId)
-        val currentFile = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths, id)
         require(currentFile.isFile) { "${kind.displayName} '${id.value}' does not exist" }
         return ProjectDocumentWriteLocks.withLock(currentFile) {
             val document = decode(currentFile.readText()).also { loaded ->
@@ -195,17 +208,18 @@ abstract class VersionedProjectDocumentStore<T>(
                 revision = revision(document),
                 contentHash = hash,
                 currentFile = currentFile,
-                recoveryFile = File(
-                    recoveryDirectory(projectPath, id),
+                recoveryFile = paths.check(File(
+                    recoveryDirectory(paths, id),
                     "${revision(document).toString().padStart(4, '0')}-${hash.take(12)}.$extension",
-                ),
+                )),
             )
         }
     }
 
     /**
-     * Atomically moves the reviewed canonical file into `.ares/recovery`. History is retained and
-     * no source file is touched. A stale hash fails before any filesystem mutation.
+     * Publishes the reviewed canonical file into `.ares/recovery` before removing its current name.
+     * History is retained and no source file is touched. A crash may retain both copies; a stale
+     * hash fails before any filesystem mutation.
      */
     fun remove(
         projectPath: String,
@@ -214,7 +228,8 @@ abstract class VersionedProjectDocumentStore<T>(
     ): RemovedProjectDocument {
         require(expectedContentHash.matches(Regex("[a-f0-9]{64}"))) { "Invalid removal confirmation hash" }
         val id = ProjectDocumentId(rawDocumentId)
-        val currentFile = currentFile(projectPath, id)
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths, id)
         return ProjectDocumentWriteLocks.withLock(currentFile) {
             require(currentFile.isFile) { "${kind.displayName} '${id.value}' no longer exists" }
             val document = decode(currentFile.readText()).also { loaded ->
@@ -226,10 +241,10 @@ abstract class VersionedProjectDocumentStore<T>(
             require(currentHash == expectedContentHash) {
                 "${kind.displayName.capitalizeForMessage()} '${id.value}' changed after review. Review the removal again."
             }
-            val recoveryFile = File(
-                recoveryDirectory(projectPath, id),
+            val recoveryFile = paths.check(File(
+                recoveryDirectory(paths, id),
                 "${revision(document).toString().padStart(4, '0')}-${currentHash.take(12)}.$extension",
-            )
+            ))
             recoveryFile.parentFile.mkdirs()
             if (recoveryFile.exists()) {
                 require(Files.mismatch(currentFile.toPath(), recoveryFile.toPath()) == -1L) {
@@ -263,9 +278,10 @@ abstract class VersionedProjectDocumentStore<T>(
     ): T {
         require(expectedContentHash.matches(Regex("[a-f0-9]{64}"))) { "Invalid recovery confirmation hash" }
         val id = ProjectDocumentId(rawDocumentId)
-        val currentFile = currentFile(projectPath, id)
-        val recoveryRoot = recoveryDirectory(projectPath, id).canonicalFile
-        val recoveryFile = resolveProjectPath(projectPath, rawRecoveryPath).canonicalFile
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths, id)
+        val recoveryRoot = recoveryDirectory(paths, id).canonicalFile
+        val recoveryFile = paths.resolve(rawRecoveryPath)
         require(
             recoveryFile.parentFile == recoveryRoot &&
                 recoveryFile.name.endsWith(".$extension", ignoreCase = true)
@@ -292,82 +308,72 @@ abstract class VersionedProjectDocumentStore<T>(
 
     fun listRevisions(projectPath: String, rawDocumentId: String): List<ProjectRevisionSummary> {
         val id = ProjectDocumentId(rawDocumentId)
-        val diagnostics = mutableListOf<ProjectDocumentDiagnostic>()
-        val revisions = historyDirectory(projectPath, id)
-            .listFiles { file -> file.isFile && file.name.endsWith(".$extension", ignoreCase = true) }
-            .orEmpty()
-            .mapNotNull { file ->
-                runCatching { decode(file.readText()) }
-                    .onFailure { error ->
-                        diagnostics += ProjectDocumentDiagnostic(
-                            kind,
-                            file,
-                            error.message ?: "Revision could not be decoded"
-                        )
-                    }
-                    .getOrNull()
-                    ?.let { document ->
-                        ProjectRevisionSummary(
-                            revision(document),
-                            contentHash(document),
-                            displayName(document),
-                            file
-                        )
-                    }
-            }
-        // History corruption is a recovery problem rather than an ignorable list entry.
-        require(diagnostics.isEmpty()) {
-            diagnostics.joinToString("; ") { "${it.file.name}: ${it.message}" }
+        val revisions = mutableListOf<ProjectRevisionSummary>()
+        scanHistory(projectPath, id) { document, hash, file ->
+            revisions += ProjectRevisionSummary(revision(document), hash, displayName(document), file)
         }
-        return revisions.sortedWith(
-            compareByDescending<ProjectRevisionSummary> { it.revision }
-                .thenByDescending { it.contentHash }
-        )
+        return revisions.distinctBy { it.revision to it.contentHash }
+            .sortedWith(compareByDescending<ProjectRevisionSummary> { it.revision }.thenByDescending { it.contentHash })
     }
 
-    /** Restores historical content as a new revision while retaining a linear parent chain. */
-    fun restore(
-        projectPath: String,
-        rawDocumentId: String,
-        requestedHash: String
-    ): SavedProjectRevision<T> {
+    /** Decode each checkpoint once; keep the selected immutable document instead of reading it again. */
+    private fun scanHistory(projectPath: String, id: ProjectDocumentId, accept: (T, String, File) -> Unit) {
+        val paths = ProjectPathOwnership(projectPath)
+        val diagnostics = mutableListOf<ProjectDocumentDiagnostic>()
+        historyDirectory(paths, id)
+            .listFiles { file -> file.isFile && file.name.endsWith(".$extension", ignoreCase = true) }
+            .orEmpty().forEach { file ->
+                runCatching {
+                    val raw = paths.check(file).readText()
+                    val document = decode(raw)
+                    require(documentId(document) == id.value) {
+                        "History file '${file.name}' declares '${documentId(document)}', not '${id.value}'"
+                    }
+                    val hash = contentHash(document)
+                    validateHistoryFileName(file, revision(document), hash, raw, extension)
+                    accept(document, hash, file)
+                }.onFailure { error ->
+                    diagnostics += ProjectDocumentDiagnostic(kind, file, error.message ?: "Revision could not be decoded")
+                }
+            }
+        require(diagnostics.isEmpty()) { diagnostics.joinToString("; ") { "${it.file.name}: ${it.message}" } }
+    }
+
+    /** Restores the selected historical content as a new revision with the current linear parent chain. */
+    fun restore(projectPath: String, rawDocumentId: String, requestedHash: String): SavedProjectRevision<T> {
         val id = ProjectDocumentId(rawDocumentId)
         require(requestedHash.matches(Regex("[a-f0-9]{64}"))) { "Invalid revision hash" }
-        val historicalFile = listRevisions(projectPath, id.value)
-            .firstOrNull { it.contentHash == requestedHash }
-            ?.file
-            ?: error("Revision $requestedHash was not found for '${id.value}'")
-        val historical = decode(historicalFile.readText())
+        var selected: T? = null
+        scanHistory(projectPath, id) { document, hash, _ ->
+            if (hash == requestedHash && selected == null) selected = document
+        }
+        val historical = selected ?: error("Revision $requestedHash was not found for '${id.value}'")
         val current = load(projectPath, id.value)
-        return save(
-            projectPath,
-            withRevision(historical, revision(current), contentHash(current))
-        )
+        return save(projectPath, withRevision(historical, revision(current), contentHash(current)))
     }
 
-    private fun projectDirectory(projectPath: String): File =
-        resolveProjectPath(projectPath, ".ares/$directoryName")
+    private fun projectDirectory(paths: ProjectPathOwnership): File = paths.resolve(".ares/$directoryName")
 
-    private fun historyDirectory(projectPath: String, id: ProjectDocumentId): File =
-        resolveProjectPath(projectPath, ".ares/history/$historyName/${id.value}")
+    private fun historyDirectory(paths: ProjectPathOwnership, id: ProjectDocumentId): File =
+        paths.resolve(".ares/history/$historyName/${id.value}")
 
-    private fun recoveryDirectory(projectPath: String, id: ProjectDocumentId): File =
-        resolveProjectPath(projectPath, ".ares/recovery/$historyName/${id.value}")
+    private fun recoveryDirectory(paths: ProjectPathOwnership, id: ProjectDocumentId): File =
+        paths.resolve(".ares/recovery/$historyName/${id.value}")
 
-    private fun currentFile(projectPath: String, id: ProjectDocumentId): File =
-        File(projectDirectory(projectPath), "${id.value}.$extension")
+    private fun currentFile(paths: ProjectPathOwnership, id: ProjectDocumentId): File =
+        paths.check(File(projectDirectory(paths), "${id.value}.$extension"))
 }
 
 private fun String.capitalizeForMessage(): String = replaceFirstChar { character ->
     if (character.isLowerCase()) character.titlecase() else character.toString()
 }
 
-private fun moveWithoutReplacement(source: File, destination: File) {
-    try {
-        Files.move(source.toPath(), destination.toPath(), StandardCopyOption.ATOMIC_MOVE)
-    } catch (_: AtomicMoveNotSupportedException) {
-        Files.move(source.toPath(), destination.toPath())
-    }
+internal fun moveWithoutReplacement(source: File, destination: File) {
+    // A crash between publication and deletion retains both copies. Existing destinations are
+    // never replaced, and a failed publication leaves the original source available for recovery.
+    publishPreparedFileExclusively(source.toPath(), destination.toPath())
+    Files.delete(source.toPath())
+    forceDirectoryIfSupported(source.parentFile.toPath())
 }
 
 /** Crash-safe store for a project-wide singleton document such as a generated catalog. */
@@ -385,7 +391,8 @@ internal abstract class SingletonProjectDocumentStore<T>(
     protected abstract fun sameContent(previous: T, draft: T): Boolean
 
     fun load(projectPath: String): Result<T> {
-        val file = currentFile(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val file = currentFile(paths)
         if (!file.isFile) return Result.failure(
             NoSuchElementException("${kind.displayName} does not exist at ${file.path}")
         )
@@ -394,22 +401,28 @@ internal abstract class SingletonProjectDocumentStore<T>(
 
     fun save(projectPath: String, draft: T): SavedProjectRevision<T> {
         val validatedDraft = decode(encode(draft))
-        val currentFile = currentFile(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val currentFile = currentFile(paths)
         return ProjectDocumentWriteLocks.withLock(currentFile) {
         val previous = currentFile.takeIf(File::isFile)?.let { decode(it.readText()) }
+        val previousHash = previous?.let(::contentHash)
         val normalized = when {
             previous == null -> withRevision(validatedDraft, 1)
             sameContent(previous, validatedDraft) -> previous
             else -> withRevision(validatedDraft, revision(previous) + 1)
         }
         val encoded = encode(normalized)
-        val hash = contentHash(normalized)
-        val historyFile = File(
-            historyDirectory(projectPath),
-            "${revision(normalized).toString().padStart(4, '0')}-${hash.take(12)}.$extension"
-        )
-        val createdRevision = !historyFile.exists()
-        if (createdRevision) AtomicProjectFileWriter.write(historyFile, encoded, replaceExisting = false)
+        val hash = if (normalized === previous) requireNotNull(previousHash) else contentHash(normalized)
+        val directory = historyDirectory(paths)
+        if (previous != null && normalized !== previous) {
+            val parentHash = requireNotNull(previousHash)
+            ensureHistoryCheckpoint(
+                paths.check(File(directory, historyFileName(revision(previous), parentHash, extension))),
+                encode(previous), parentHash, ::decode, ::contentHash,
+            )
+        }
+        val historyFile = paths.check(File(directory, historyFileName(revision(normalized), hash, extension)))
+        val createdRevision = ensureHistoryCheckpoint(historyFile, encoded, hash, ::decode, ::contentHash)
         if (previous != normalized || !currentFile.exists()) {
             AtomicProjectFileWriter.write(currentFile, encoded, replaceExisting = true)
         }
@@ -417,107 +430,86 @@ internal abstract class SingletonProjectDocumentStore<T>(
         }
     }
 
-    fun listRevisions(projectPath: String): List<ProjectRevisionSummary> = historyDirectory(projectPath)
-        .listFiles { file -> file.isFile && file.name.endsWith(".$extension", ignoreCase = true) }
-        .orEmpty()
-        .map { file ->
-            val document = decode(file.readText())
-            ProjectRevisionSummary(
-                revision(document),
-                contentHash(document),
-                kind.displayName,
-                file
-            )
+    fun listRevisions(projectPath: String): List<ProjectRevisionSummary> {
+        val revisions = mutableListOf<ProjectRevisionSummary>()
+        scanHistory(projectPath) { document, hash, file ->
+            revisions += ProjectRevisionSummary(revision(document), hash, kind.displayName, file)
         }
-        .sortedWith(
-            compareByDescending<ProjectRevisionSummary> { it.revision }
-                .thenByDescending { it.contentHash }
-        )
+        return revisions.distinctBy { it.revision to it.contentHash }
+            .sortedWith(compareByDescending<ProjectRevisionSummary> { it.revision }.thenByDescending { it.contentHash })
+    }
 
-    fun restore(projectPath: String, requestedHash: String): SavedProjectRevision<T> {
+    private fun scanHistory(projectPath: String, accept: (T, String, File) -> Unit) {
+        val paths = ProjectPathOwnership(projectPath)
+        historyDirectory(paths)
+            .listFiles { file -> file.isFile && file.name.endsWith(".$extension", ignoreCase = true) }
+            .orEmpty().forEach { file ->
+                val raw = paths.check(file).readText()
+                val document = decode(raw)
+                val hash = contentHash(document)
+                validateHistoryFileName(file, revision(document), hash, raw, extension)
+                accept(document, hash, file)
+            }
+    }
+
+    fun restore(
+        projectPath: String,
+        requestedHash: String,
+        validateSelected: (T) -> Unit = {},
+    ): SavedProjectRevision<T> {
         require(requestedHash.matches(Regex("[a-f0-9]{64}"))) { "Invalid revision hash" }
-        val historicalFile = listRevisions(projectPath)
-            .firstOrNull { it.contentHash == requestedHash }
-            ?.file
-            ?: error("Revision $requestedHash was not found for ${kind.displayName}")
-        val historical = decode(historicalFile.readText())
+        var selected: T? = null
+        scanHistory(projectPath) { document, hash, _ ->
+            if (hash == requestedHash && selected == null) selected = document
+        }
+        val historical = selected ?: error("Revision $requestedHash was not found for ${kind.displayName}")
+        validateSelected(historical)
         val current = load(projectPath).getOrThrow()
         return save(projectPath, withRevision(historical, revision(current)))
     }
 
     fun diagnostic(projectPath: String): ProjectDocumentDiagnostic? {
-        val file = currentFile(projectPath)
+        val paths = ProjectPathOwnership(projectPath)
+        val file = currentFile(paths)
         if (!file.isFile) return null
-        return load(projectPath).exceptionOrNull()?.let { error ->
+        return runCatching { decode(file.readText()) }.exceptionOrNull()?.let { error ->
             ProjectDocumentDiagnostic(kind, file, error.message ?: "Document could not be decoded")
         }
     }
 
-    private fun currentFile(projectPath: String): File = resolveProjectPath(projectPath, ".ares/$fileName")
-    private fun historyDirectory(projectPath: String): File =
-        resolveProjectPath(projectPath, ".ares/history/$historyName")
+    private fun currentFile(paths: ProjectPathOwnership): File = paths.resolve(".ares/$fileName")
+    private fun historyDirectory(paths: ProjectPathOwnership): File = paths.resolve(".ares/history/$historyName")
 }
 
-internal fun requireProjectRoot(projectPath: String): File {
-    require(projectPath.isNotBlank()) { "Choose a project directory" }
-    val root = File(projectPath).canonicalFile
-    require(root.isDirectory) { "Project directory does not exist: ${root.path}" }
-    return root
-}
+private fun historyFileName(revision: Int, hash: String, extension: String): String =
+    "${revision.toString().padStart(4, '0')}-${hash.take(12)}.$extension"
 
-/** Resolves through existing symlinks and rejects any target that escapes the chosen repository. */
-internal fun resolveProjectPath(projectPath: String, relativePath: String): File {
-    val root = requireProjectRoot(projectPath)
-    val target = File(root, relativePath).canonicalFile
-    require(target.toPath().startsWith(root.toPath())) {
-        "Project document path escapes the selected repository"
-    }
-    return target
-}
-
-/** Serializes revision allocation and current-file replacement for each canonical document. */
-internal object ProjectDocumentWriteLocks {
-    private val locks = java.util.concurrent.ConcurrentHashMap<String, Any>()
-
-    fun <T> withLock(file: File, block: () -> T): T {
-        val lock = locks.computeIfAbsent(file.canonicalPath) { Any() }
-        return synchronized(lock) { block() }
+private fun validateHistoryFileName(file: File, revision: Int, hash: String, raw: String, extension: String) {
+    val canonical = historyFileName(revision, hash, extension)
+    // A codec can normalize older/defaulted fields while decoding. Preserve checkpoints whose
+    // original serialized bytes match the name, including text line-ending normalization.
+    require(file.name.equals(canonical, ignoreCase = true) ||
+        file.name.equals(historyFileName(revision, Sha256.hex(raw), extension), ignoreCase = true) ||
+        file.name.equals(historyFileName(revision, Sha256.hex(raw.replace("\r\n", "\n")), extension), ignoreCase = true)) {
+        "History file '${file.name}' does not match its revision and content hash"
     }
 }
 
-internal object AtomicProjectFileWriter {
-    fun write(file: File, content: String, replaceExisting: Boolean) {
-        write(file, content.toByteArray(Charsets.UTF_8), replaceExisting)
-    }
-
-    /** Writes recovery evidence byte-for-byte so even malformed text remains recoverable. */
-    fun write(file: File, content: ByteArray, replaceExisting: Boolean) {
-        file.parentFile.mkdirs()
-        val temporary = Files.createTempFile(file.parentFile.toPath(), ".${file.name}.", ".tmp")
-        try {
-            Files.write(temporary, content)
-            val atomicOptions = if (replaceExisting) {
-                arrayOf<java.nio.file.CopyOption>(
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING
-                )
-            } else {
-                arrayOf<java.nio.file.CopyOption>(StandardCopyOption.ATOMIC_MOVE)
-            }
-            try {
-                Files.move(temporary, file.toPath(), *atomicOptions)
-            } catch (_: AtomicMoveNotSupportedException) {
-                val fallback = if (replaceExisting) {
-                    arrayOf<java.nio.file.CopyOption>(StandardCopyOption.REPLACE_EXISTING)
-                } else {
-                    emptyArray<java.nio.file.CopyOption>()
-                }
-                Files.move(temporary, file.toPath(), *fallback)
-            }
-        } finally {
-            Files.deleteIfExists(temporary)
+internal fun <T> ensureHistoryCheckpoint(
+    file: File,
+    encoded: String,
+    expectedHash: String,
+    decode: (String) -> T,
+    hashOf: (T) -> String,
+): Boolean {
+    if (Files.exists(file.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+        require(file.isFile && hashOf(decode(file.readText())) == expectedHash) {
+            "History checkpoint '${file.name}' already exists with invalid or different content"
         }
+        return false
     }
+    AtomicProjectFileWriter.write(file, encoded, replaceExisting = false)
+    return true
 }
 
 private val ProjectDocumentKind.displayName: String

@@ -24,7 +24,16 @@ internal fun String.isUsableSubsystemKotlinIdentifier(): Boolean =
 
 internal fun String.isSafeSubsystemProjectRelativePath(): Boolean =
     isNotBlank() && '/' in this && !startsWith('/') && '\\' !in this &&
-        split('/').none { it.isBlank() || it == "." || it == ".." }
+        none { it.code < 32 || it.code == 127 || it in ":<>\"|?*" } &&
+        split('/').none { it.isBlank() || it == "." || it == ".." || it.endsWith('.') || it.endsWith(' ') }
 
 internal fun String.isSafeSubsystemProjectRelativeKotlinPath(): Boolean =
     isSafeSubsystemProjectRelativePath() && endsWith(".kt")
+
+/** Duplicate keys in first repeated-occurrence order, without an intermediate filtered list. */
+internal fun duplicateSubsystemIds(ids: Iterable<String>): Set<String> {
+    val seen = hashSetOf<String>()
+    val duplicates = linkedSetOf<String>()
+    for (id in ids) if (!seen.add(id)) duplicates.add(id)
+    return duplicates
+}

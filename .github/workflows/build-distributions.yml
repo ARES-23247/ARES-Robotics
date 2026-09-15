@@ -10,16 +10,16 @@ permissions:
   contents: read
 
 env:
-  ARES_VERSION: 17.0.9
-  STUDIO_VERSION: 7.0.10
-  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.10/ARES-FTC-Starter-17.0.9.zip
-  FTC_STARTER_SHA256: 896547b0ff9ca10e06e28e144f340f5b1cc65246389e7b164694eb912f6d2152
-  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.10/ARES-FRC-Starter-17.0.9.zip
-  FRC_STARTER_SHA256: 2f67b925cebb8fc36c2e002e23ac74e3ad239c8ac7922d220b34c979c7bd84f2
-  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.10/ARES-XRP-Starter-3.0.9.zip
-  XRP_STARTER_SHA256: 3d7521483e119702d2b77c0069224f62d88c9fe5768934b575c0637d2ecca644
-  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.10/ARES-Lightbot-Example-3.0.9.zip
-  LIGHTBOT_EXAMPLE_SHA256: 5feeb93332eef1982d3ce95ce45203d51732e45c663f271c7ea664223681bed4
+  ARES_VERSION: 19.0.4
+  STUDIO_VERSION: 7.0.56
+  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.56/ARES-FTC-Starter-19.0.3.zip
+  FTC_STARTER_SHA256: 0b09e5dd30db203bf071ce0d8f6edbca6e3ff1c8234bab30adcfb4d29c18d95a
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.56/ARES-FRC-Starter-19.0.3.zip
+  FRC_STARTER_SHA256: 5c4e28890ce090a4e440526575891b2c4f7a3f37acb04cd0ed92fb5b23687b82
+  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.56/ARES-XRP-Starter-3.0.57.zip
+  XRP_STARTER_SHA256: 8fb7b5d578f52279a5d8951452a9120fbcadc2498011de3f5c3a927ddcbbe921
+  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.56/ARES-Lightbot-Example-3.0.58.zip
+  LIGHTBOT_EXAMPLE_SHA256: 96a2e9059f7693bb2fc65c60337e9e5e3ecf8fa2ebfc73d4ccb3fb0a59b28ac1
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
@@ -223,17 +223,21 @@ jobs:
           name: package-validation-repository
           path: .release-validation
 
-      - name: Export canonical mirrors and create reviewed archives
+      - name: Prepare the pinned installer archives
         shell: pwsh
         run: |
-          $mirrors = Join-Path $env:RUNNER_TEMP 'ares-starter-mirrors'
           $archives = Join-Path $env:RUNNER_TEMP 'ares-official-templates'
           New-Item -ItemType Directory -Force -Path $archives | Out-Null
-          .\scripts\export-starter-mirrors.ps1 -OutputRoot $mirrors
-          .\scripts\export-starter-mirrors.ps1 -OutputRoot $mirrors -Check
-          Compress-Archive -Path "$mirrors\ARES-FTC-Starter\*" -DestinationPath "$archives\ftc.zip"
-          Compress-Archive -Path "$mirrors\ARES-FRC-Starter\*" -DestinationPath "$archives\frc.zip"
-          Compress-Archive -Path "$mirrors\ARES-XRP-Starter\*" -DestinationPath "$archives\xrp.zip"
+          $release = ConvertFrom-StringData (Get-Content -Raw release/ares-versions.properties)
+          $expected = ConvertFrom-StringData (Get-Content -Raw release/starter-artifacts.properties)
+          $bundled = 'ARES-Analytics/app/src/main/resources/project-templates'
+          foreach ($league in @('ftc', 'frc', 'xrp')) {
+            $version = $release["${league}StarterVersion"]
+            $source = Join-Path $bundled "ARES-$($league.ToUpperInvariant())-Starter-$version.zip"
+            $actual = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $expected["${league}StarterSha256"]) { throw "$league starter hash changed: $actual" }
+            Copy-Item -LiteralPath $source -Destination (Join-Path $archives "$league.zip")
+          }
 
       - name: Create, generate, test, simulate, and package fresh FTC, FRC, and XRP projects
         shell: pwsh

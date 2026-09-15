@@ -33,7 +33,7 @@ import org.aresfirst.marvin.sim.applyTo
 
 /** Returns false when any real mechanism adapter reports failed or reset configuration. */
 internal fun mechanismsConfigured(
-    vararg devices: org.aresfirst.marvin.hardware.FrcMechanismConfigurationStatus
+    devices: Array<out org.aresfirst.marvin.hardware.FrcMechanismConfigurationStatus>
 ): Boolean {
     for (device in devices) {
         if (!device.configurationValid) return false
@@ -43,7 +43,7 @@ internal fun mechanismsConfigured(
 
 /** Returns false until every relative-only position mechanism has a deliberate safe zero. */
 internal fun mechanismsHomed(
-    vararg devices: org.aresfirst.marvin.hardware.FrcMechanismHomingStatus
+    devices: Array<out org.aresfirst.marvin.hardware.FrcMechanismHomingStatus>
 ): Boolean {
     for (device in devices) {
         if (!device.homed) return false
@@ -122,6 +122,7 @@ internal fun loadFrcFieldContract(bytes: ByteArray): FrcFieldContract? = FrcFiel
 class ARESRobot : TimedRobot() {
 
     private val hardwareRegistry = HardwareRegistry()
+    private var closeStarted = false
     private lateinit var robot: FrcSwerveRobot
     private var sim: Dyn4jSimulation? = null
     private var dashboardDriveInput: FrcDashboardDriveInput? = null
@@ -159,6 +160,10 @@ class ARESRobot : TimedRobot() {
 
     /** Constructs IO, the composed reducer/store, subsystem lifecycle, and mode controllers. */
     override fun robotInit() {
+        initializeFrcRobot(initialize = { initializeRobot() }, cleanup = { close() })
+    }
+
+    private fun initializeRobot() {
         edu.wpi.first.wpilibj.Threads.setCurrentThreadPriority(true, 10)
 
         val isReal = RobotBase.isReal()
@@ -196,6 +201,12 @@ class ARESRobot : TimedRobot() {
         val feederIO = hardware.feederIO
         val floorIO = hardware.floorIO
         val climberIO = hardware.climberIO
+
+        // Preserve teardown ownership before casts, topology registration or robot construction.
+        // Devices registered below close once by identity, even when retained here as closeables.
+        hardwareRegistry.retainFrcHardware(
+            swerveIO, visionIO, flywheelIO, cowlIO, intakeIO, feederIO, floorIO, climberIO,
+        )
 
         val mechanismConfigurationDevices = listOf(
             flywheelIO, cowlIO, intakeIO, feederIO, floorIO, climberIO
@@ -526,12 +537,14 @@ class ARESRobot : TimedRobot() {
     }
 
     override fun disabledInit() {
-        cancelGeneratedControls("FRC disabled")
-        if (::autoOrchestrator.isInitialized) autoOrchestrator.stop()
-        if (::sysIdController.isInitialized) sysIdController.stop()
-        if (::mechanismCommissioning.isInitialized) mechanismCommissioning.stopForDisable()
-        controller.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0)
-        coPilotController.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0)
+        runFrcDisableCleanup(
+            cancelControls = { cancelGeneratedControls("FRC disabled") },
+            stopAuto = { if (::autoOrchestrator.isInitialized) autoOrchestrator.stop() },
+            stopSysId = { if (::sysIdController.isInitialized) sysIdController.stop() },
+            inhibitMechanisms = { if (::mechanismCommissioning.isInitialized) mechanismCommissioning.stopForDisable() },
+            stopDriverRumble = { controller.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0) },
+            stopOperatorRumble = { coPilotController.setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.0) },
+        )
     }
 
     override fun disabledPeriodic() {
@@ -660,31 +673,31 @@ class ARESRobot : TimedRobot() {
         }
     }
 
+    @Synchronized
     override fun close() {
-        var failure: Throwable? = null
-        fun capture(error: Throwable) {
-            failure?.addSuppressed(error) ?: run { failure = error }
-        }
+        if (closeStarted) return
+        closeStarted = true
+        val failures = FrcCleanupFailures()
         try {
             cancelGeneratedControls("FRC robot closing")
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
         try {
             if (::autoOrchestrator.isInitialized) autoOrchestrator.stop()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
         try {
             if (::sysIdController.isInitialized) sysIdController.stop()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
         try {
             localizationVisionTracker?.fusionEnabled = true
             localizationCalibration?.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         } finally {
             localizationVisionTracker = null
             localizationCalibration = null
@@ -696,35 +709,35 @@ class ARESRobot : TimedRobot() {
                 hardwareRegistry.closeAll()
             }
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
         try {
             dashboardDriveInput?.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         } finally {
             dashboardDriveInput = null
         }
         try {
             sim?.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         } finally {
             sim = null
         }
         try {
             powerDistribution?.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         } finally {
             powerDistribution = null
         }
         try {
             super.close()
         } catch (error: Throwable) {
-            capture(error)
+            failures.capture(error)
         }
-        failure?.let { throw it }
+        failures.throwIfAny()
     }
 
     // ── Simulation ──

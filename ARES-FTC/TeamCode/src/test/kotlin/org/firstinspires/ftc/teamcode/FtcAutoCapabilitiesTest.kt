@@ -16,6 +16,8 @@ import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
 import org.junit.Before
 import org.junit.Test
 
@@ -29,13 +31,78 @@ class FtcAutoCapabilitiesTest {
         FtcAutoCapabilities.registerDriveRecovery { shouldRecover }
         val key = FtcAutoCapabilities.DRIVE_RECOVER_NEUTRAL.key
         val rejected = requireNotNull(NamedCommands.create(key, 0L))
-        rejected.initialize(com.areslib.state.RobotState())
-        assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(rejected))
+        try {
+            rejected.initialize(com.areslib.state.RobotState())
+            assertEquals(TaskStatus.FAILED, TaskStateMachine.getStatus(rejected))
+        } finally {
+            rejected.reset()
+        }
 
         shouldRecover = true
         val recovered = requireNotNull(NamedCommands.create(key, 1L))
-        recovered.initialize(com.areslib.state.RobotState())
-        assertTrue(recovered.isCompleted(com.areslib.state.RobotState(), 0L))
+        try {
+            recovered.initialize(com.areslib.state.RobotState())
+            assertTrue(recovered.isCompleted(com.areslib.state.RobotState(), 0L))
+        } finally {
+            recovered.reset()
+        }
+    }
+
+    @Test
+    fun `recovery factories are lazy independent and retain exclusive drive ownership`() {
+        var calls = 0
+        FtcAutoCapabilities.registerDriveRecovery { calls++; true }
+        val descriptor = FtcAutoCapabilities.DRIVE_RECOVER_NEUTRAL
+        assertEquals(listOf(descriptor), NamedCommands.catalog())
+        assertEquals(com.areslib.sequencer.TaskResources.DRIVE, descriptor.requiredResources)
+        val first = requireNotNull(NamedCommands.create(descriptor.key, 0L))
+        val second = requireNotNull(NamedCommands.create(descriptor.key, 1L))
+        val state = com.areslib.state.RobotState()
+        try {
+            assertNotSame(first, second)
+            assertEquals(0, calls)
+            assertEquals(descriptor.requiredResources, first.requiredResources)
+            assertEquals(descriptor.displayName, first.name)
+            assertTrue(first.initialize(state).isEmpty())
+            repeat(10) {
+                assertTrue(first.isCompleted(state, it.toLong()))
+                assertTrue(first.execute(state, it.toLong()).isEmpty())
+            }
+            assertEquals(1, calls)
+            assertFalse(second.isCompleted(state, 0L))
+            first.end(state, false)
+            first.releaseRuntimeState()
+            assertFalse(first.isCompleted(state, 0L))
+            assertEquals(TaskStatus.COMPLETED, TaskStateMachine.getStatus(first))
+            second.initialize(state)
+            assertEquals(2, calls)
+        } finally {
+            first.reset()
+            second.reset()
+        }
+    }
+
+    @Test
+    fun `recovery callback failure propagates without successful completion`() {
+        val failure = IllegalStateException("neutral write failed")
+        FtcAutoCapabilities.registerDriveRecovery { throw failure }
+        val task = requireNotNull(NamedCommands.create(FtcAutoCapabilities.DRIVE_RECOVER_NEUTRAL.key, 0L))
+        val state = com.areslib.state.RobotState()
+        try {
+            val observed = runCatching { task.initialize(state) }.exceptionOrNull()
+            org.junit.Assert.assertSame(failure, observed)
+            assertFalse(task.isCompleted(state, 0L))
+        } finally {
+            task.reset()
+        }
+    }
+
+    @Test
+    fun `runtime policy matches generated metadata and reuses immutable options`() {
+        val options = org.firstinspires.ftc.teamcode.config.AresRuntimePolicy.options
+        assertEquals(GeneratedAresProject.RuntimeOptions.FTC_HUB_COMMAND_TRANSPORT, options.hubCommandTransport.name)
+        assertEquals(GeneratedAresProject.RuntimeOptions.FTC_LIMELIGHT_PROXY_ENABLED, options.limelightProxyEnabled)
+        org.junit.Assert.assertSame(options, org.firstinspires.ftc.teamcode.config.AresRuntimePolicy.options)
     }
 
     @Test

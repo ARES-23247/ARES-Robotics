@@ -1,8 +1,8 @@
 package com.areslib.xrp.hardware
 
 import com.areslib.kinematics.DifferentialDriveKinematics
-import com.areslib.kinematics.DifferentialWheelSpeeds
 import com.areslib.math.geometry.ChassisSpeeds
+import kotlin.math.abs
 
 /**
  * High-level hardware IO contract for an XRP Differential Drivetrain.
@@ -13,26 +13,41 @@ interface XrpDifferentialHardwareIO {
     val kinematics: DifferentialDriveKinematics
     val wheelRadiusMeters: Double
 
+    /** Invalid paired commands neutralize together. Write failures attempt both stops and propagate. */
     fun setPowers(leftPower: Double, rightPower: Double) {
-        leftMotor.effort = leftPower.coerceIn(-1.0, 1.0)
-        rightMotor.effort = rightPower.coerceIn(-1.0, 1.0)
+        val valid = leftPower.isFinite() && rightPower.isFinite()
+        neutralizeOnFailure {
+            leftMotor.effort = if (valid) leftPower.coerceIn(-1.0, 1.0) else 0.0
+            rightMotor.effort = if (valid) rightPower.coerceIn(-1.0, 1.0) else 0.0
+        }
     }
 
+    /**
+     * Preserves wheel ratios when saturating. This default allocates scratch; the standard
+     * implementation reuses its own buffer. Enable/freshness/fault-latch ownership stays in
+     * the robot controller and concrete motor adapters, outside this raw IO contract.
+     */
     fun drive(chassisSpeeds: ChassisSpeeds, maxLinearSpeedMps: Double = 0.85) {
-        val wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds)
-        val leftPower = if (maxLinearSpeedMps > 0.0) wheelSpeeds.leftMetersPerSecond / maxLinearSpeedMps else 0.0
-        val rightPower = if (maxLinearSpeedMps > 0.0) wheelSpeeds.rightMetersPerSecond / maxLinearSpeedMps else 0.0
-        setPowers(leftPower, rightPower)
+        applyDifferentialDrive(this, chassisSpeeds, maxLinearSpeedMps, DoubleArray(2))
     }
 
+    /** Attempts both motor stops even if one fails, retaining the original failure. */
     fun stop() {
-        leftMotor.stop()
-        rightMotor.stop()
+        var failure: Throwable? = null
+        try { leftMotor.stop() } catch (caught: Throwable) { failure = caught }
+        try { rightMotor.stop() } catch (caught: Throwable) {
+            if (failure == null) throw caught
+            if (caught !== failure) failure.addSuppressed(caught)
+        }
+        if (failure != null) throw failure
     }
 
+    /** Refreshes each motor once; incomplete feedback refresh attempts both neutral outputs. */
     fun update() {
-        leftMotor.update()
-        rightMotor.update()
+        neutralizeOnFailure {
+            leftMotor.update()
+            rightMotor.update()
+        }
     }
 
     fun getWheelDistances(): Pair<Double, Double> {
@@ -49,7 +64,41 @@ open class StandardXrpDifferentialHardwareIO(
     override val leftMotor: XrpMotorIO = XrpMotorDouble(1),
     override val rightMotor: XrpMotorIO = XrpMotorDouble(2),
     trackWidthMeters: Double = 0.155,
-    override val wheelRadiusMeters: Double = 0.030
+    wheelRadiusMeters: Double = 0.030
 ) : XrpDifferentialHardwareIO {
+    override val wheelRadiusMeters: Double = wheelRadiusMeters.also { radius ->
+        require(radius.isFinite() && radius > 0.0) {
+            "wheelRadiusMeters must be finite and positive"
+        }
+    }
     override val kinematics: DifferentialDriveKinematics = DifferentialDriveKinematics(trackWidthMeters)
+    private val wheelSpeeds = DoubleArray(2)
+
+    /** Single-owner periodic drive path using preallocated wheel scratch. */
+    override fun drive(chassisSpeeds: ChassisSpeeds, maxLinearSpeedMps: Double) {
+        applyDifferentialDrive(this, chassisSpeeds, maxLinearSpeedMps, wheelSpeeds)
+    }
+}
+
+private fun applyDifferentialDrive(io: XrpDifferentialHardwareIO, speeds: ChassisSpeeds, maximum: Double, output: DoubleArray) {
+    val vx = speeds.vxMetersPerSecond
+    val vy = speeds.vyMetersPerSecond
+    val omega = speeds.omegaRadiansPerSecond
+    if (!maximum.isFinite() || maximum <= 0.0 || !vx.isFinite() || !vy.isFinite() || !omega.isFinite()) {
+        io.setPowers(0.0, 0.0)
+        return
+    }
+    io.kinematics.toWheelSpeeds(vx, omega, output)
+    // Divide directly into power units so subnormal speed bounds cannot quantize a valid ratio.
+    val divisor = maxOf(maximum, maxOf(abs(output[0]), abs(output[1])))
+    io.setPowers(output[0] / divisor, output[1] / divisor)
+}
+
+private inline fun XrpDifferentialHardwareIO.neutralizeOnFailure(operation: () -> Unit) {
+    try { operation() } catch (failure: Throwable) {
+        try { stop() } catch (cleanup: Throwable) {
+            if (cleanup !== failure) failure.addSuppressed(cleanup)
+        }
+        throw failure
+    }
 }

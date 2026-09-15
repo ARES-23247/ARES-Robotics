@@ -48,7 +48,7 @@ class FtcMotor(motor: DcMotorEx) : MotorIO, AutoCloseable {
     /** Resets the physical encoder count position to zero. */
     override fun resetEncoder() = delegate.resetEncoder()
 
-    /** Unregisters motor from bulk data reader thread. */
+    /** Neutralizes output, inhibits later writes and unregisters this motor's polling. */
     override fun close() = delegate.close()
     
     companion object {
@@ -66,7 +66,7 @@ class FtcMotor(motor: DcMotorEx) : MotorIO, AutoCloseable {
  * @see MotorIO
  * @see RevCRServoController
  */
-class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null) : MotorIO {
+class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null) : MotorIO, AutoCloseable {
     private val delegate = RevCRServoController(crServo, externalEncoder)
     override var powerScale: Double
         get() = delegate.powerScale
@@ -82,6 +82,9 @@ class FtcCRServo(crServo: CRServo, externalEncoder: MotorIO? = null) : MotorIO {
 
     /** Resets external encoder position reference if present. */
     override fun resetEncoder() = delegate.resetEncoder()
+
+    /** Neutralizes this actuator without closing its independently owned feedback sensor. */
+    override fun close() = delegate.close()
 }
 
 /**
@@ -210,6 +213,9 @@ class FtcServo(servo: Servo) : ServoIO {
  */
 class FtcImu(imu: IMU) : ImuIO, AutoCloseable {
     private val delegate = RevImuController(imu)
+
+    override fun logTelemetry(telemetry: com.areslib.telemetry.ITelemetry, prefix: String) =
+        delegate.logTelemetry(telemetry, prefix)
 
     /** Updates IMU orientation inputs into [ImuInputs] buffer. */
     override fun updateInputs(inputs: ImuInputs) = delegate.updateInputs(inputs)

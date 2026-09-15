@@ -10,6 +10,10 @@ import com.ares.analytics.service.nt4.Nt4InboundRouter
 import com.ares.analytics.service.nt4.Nt4OutboundPublisher
 import com.ares.analytics.service.nt4.Nt4TargetIdentity
 import com.ares.analytics.service.nt4.Nt4Topic
+import com.ares.analytics.service.tuning.TuningTransport
+import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningParameterType
+import com.areslib.tuning.TuningValue
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.*
@@ -17,231 +21,6 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.sync.withLock
 import kotlin.math.hypot
-
-internal const val SIMULATOR_POSE_FRAME_TOPIC = "ARES/SimulatorPoseFrame"
-internal const val SIMULATOR_POSE_FRAME_VALUE_COUNT = 10
-internal const val DRIVE_INPUT_ACK_TOPIC = "ARES/Control/DriveInputAck"
-internal const val DRIVE_INPUT_ACK_VALUE_COUNT = 9
-internal const val MECANUM_MOTOR_FRAME_TOPIC = "Hardware/Motors/MecanumFrame"
-internal const val MECANUM_MOTOR_FRAME_VALUE_COUNT = 13
-
-/** One immutable, same-cycle simulator localization sample decoded from the packed NT4 topic. */
-data class SimulatorPoseFrameSnapshot(
-    val trueX: Double,
-    val trueY: Double,
-    val trueHeading: Double,
-    val ekfX: Double,
-    val ekfY: Double,
-    val ekfHeading: Double,
-    val odomX: Double,
-    val odomY: Double,
-    val odomHeading: Double,
-    val sequence: Long,
-    val timestampMs: Long,
-    val timestampUs: Long,
-)
-
-/** Latest fail-closed simulator receiver state for the desktop-owned drive-frame lease. */
-data class DriveInputAcknowledgement(
-    val version: Double,
-    val statusCode: Int,
-    val acceptedSession: Long,
-    val acceptedSequence: Long,
-    val leaseAgeMs: Long,
-    val appliedVx: Double,
-    val appliedVy: Double,
-    val appliedOmega: Double,
-    val rejectedFrameCount: Long,
-    val timestampMs: Long,
-)
-
-internal fun decodeDriveInputAcknowledgement(value: Any?, timestampMs: Long): DriveInputAcknowledgement? {
-    val size = when (value) {
-        is JsonArray -> value.size
-        is List<*> -> value.size
-        is DoubleArray -> value.size
-        is FloatArray -> value.size
-        is Array<*> -> value.size
-        else -> return null
-    }
-    if (size != DRIVE_INPUT_ACK_VALUE_COUNT) return null
-
-    fun numberAt(index: Int): Double? {
-        val element = when (value) {
-            is JsonArray -> value[index]
-            is List<*> -> value[index]
-            is DoubleArray -> value[index]
-            is FloatArray -> value[index]
-            is Array<*> -> value[index]
-            else -> null
-        }
-        return when (element) {
-            is JsonPrimitive -> element.doubleOrNull
-            is Number -> element.toDouble()
-            else -> null
-        }?.takeIf(Double::isFinite)
-    }
-
-    val version = numberAt(0) ?: return null
-    val statusValue = numberAt(1) ?: return null
-    val sessionValue = numberAt(2) ?: return null
-    val sequenceValue = numberAt(3) ?: return null
-    val ageValue = numberAt(4) ?: return null
-    val rejectedValue = numberAt(8) ?: return null
-    val statusCode = statusValue.toInt()
-    val acceptedSession = sessionValue.toLong()
-    val acceptedSequence = sequenceValue.toLong()
-    val leaseAgeMs = ageValue.toLong()
-    val rejectedFrameCount = rejectedValue.toLong()
-    if (statusCode.toDouble() != statusValue || acceptedSession.toDouble() != sessionValue ||
-        acceptedSequence.toDouble() != sequenceValue || leaseAgeMs.toDouble() != ageValue ||
-        rejectedFrameCount.toDouble() != rejectedValue
-    ) return null
-
-    return DriveInputAcknowledgement(
-        version = version,
-        statusCode = statusCode,
-        acceptedSession = acceptedSession,
-        acceptedSequence = acceptedSequence,
-        leaseAgeMs = leaseAgeMs,
-        appliedVx = numberAt(5) ?: return null,
-        appliedVy = numberAt(6) ?: return null,
-        appliedOmega = numberAt(7) ?: return null,
-        rejectedFrameCount = rejectedFrameCount,
-        timestampMs = timestampMs,
-    )
-}
-
-/** One complete, same-tick mecanum simulator observation in FL, FR, RL, RR order. */
-data class MecanumMotorFrameSnapshot(
-    val flPower: Double,
-    val frPower: Double,
-    val rlPower: Double,
-    val rrPower: Double,
-    val flVelocity: Double,
-    val frVelocity: Double,
-    val rlVelocity: Double,
-    val rrVelocity: Double,
-    val flCurrentAmps: Double,
-    val frCurrentAmps: Double,
-    val rlCurrentAmps: Double,
-    val rrCurrentAmps: Double,
-    val sequence: Long,
-    val timestampMs: Long,
-)
-
-internal fun decodeMecanumMotorFrame(value: Any?, timestampMs: Long): MecanumMotorFrameSnapshot? {
-    val size = when (value) {
-        is JsonArray -> value.size
-        is List<*> -> value.size
-        is DoubleArray -> value.size
-        is FloatArray -> value.size
-        is Array<*> -> value.size
-        else -> return null
-    }
-    if (size != MECANUM_MOTOR_FRAME_VALUE_COUNT) return null
-
-    fun numberAt(index: Int): Double? {
-        val element = when (value) {
-            is JsonArray -> value[index]
-            is List<*> -> value[index]
-            is DoubleArray -> value[index]
-            is FloatArray -> value[index]
-            is Array<*> -> value[index]
-            else -> null
-        }
-        return when (element) {
-            is JsonPrimitive -> element.doubleOrNull
-            is Number -> element.toDouble()
-            else -> null
-        }?.takeIf(Double::isFinite)
-    }
-
-    val flPower = numberAt(0) ?: return null
-    val frPower = numberAt(1) ?: return null
-    val rlPower = numberAt(2) ?: return null
-    val rrPower = numberAt(3) ?: return null
-    val flVelocity = numberAt(4) ?: return null
-    val frVelocity = numberAt(5) ?: return null
-    val rlVelocity = numberAt(6) ?: return null
-    val rrVelocity = numberAt(7) ?: return null
-    val flCurrentAmps = numberAt(8) ?: return null
-    val frCurrentAmps = numberAt(9) ?: return null
-    val rlCurrentAmps = numberAt(10) ?: return null
-    val rrCurrentAmps = numberAt(11) ?: return null
-    val sequenceValue = numberAt(12) ?: return null
-    val sequence = sequenceValue.toLong()
-    if (sequence < 0L || sequence.toDouble() != sequenceValue) return null
-    return MecanumMotorFrameSnapshot(
-        flPower = flPower, frPower = frPower, rlPower = rlPower, rrPower = rrPower,
-        flVelocity = flVelocity, frVelocity = frVelocity, rlVelocity = rlVelocity, rrVelocity = rrVelocity,
-        flCurrentAmps = flCurrentAmps, frCurrentAmps = frCurrentAmps,
-        rlCurrentAmps = rlCurrentAmps, rrCurrentAmps = rrCurrentAmps,
-        sequence = sequence,
-        timestampMs = timestampMs,
-    )
-}
-
-/** Decodes without retaining any producer- or MessagePack-owned array storage. */
-internal fun decodeSimulatorPoseFrame(
-    value: Any?,
-    timestampMs: Long,
-    timestampUs: Long,
-): SimulatorPoseFrameSnapshot? {
-    val size = when (value) {
-        is JsonArray -> value.size
-        is List<*> -> value.size
-        is DoubleArray -> value.size
-        is FloatArray -> value.size
-        is Array<*> -> value.size
-        else -> return null
-    }
-    if (size != SIMULATOR_POSE_FRAME_VALUE_COUNT) return null
-
-    fun numberAt(index: Int): Double? {
-        val element = when (value) {
-            is JsonArray -> value[index]
-            is List<*> -> value[index]
-            is DoubleArray -> value[index]
-            is FloatArray -> value[index]
-            is Array<*> -> value[index]
-            else -> null
-        }
-        return when (element) {
-            is JsonPrimitive -> element.doubleOrNull
-            is Number -> element.toDouble()
-            else -> null
-        }?.takeIf(Double::isFinite)
-    }
-
-    val trueX = numberAt(0) ?: return null
-    val trueY = numberAt(1) ?: return null
-    val trueHeading = numberAt(2) ?: return null
-    val ekfX = numberAt(3) ?: return null
-    val ekfY = numberAt(4) ?: return null
-    val ekfHeading = numberAt(5) ?: return null
-    val odomX = numberAt(6) ?: return null
-    val odomY = numberAt(7) ?: return null
-    val odomHeading = numberAt(8) ?: return null
-    val sequenceValue = numberAt(9) ?: return null
-    val sequence = sequenceValue.toLong()
-    if (sequence < 0L || sequence.toDouble() != sequenceValue) return null
-
-    return SimulatorPoseFrameSnapshot(
-        trueX = trueX,
-        trueY = trueY,
-        trueHeading = trueHeading,
-        ekfX = ekfX,
-        ekfY = ekfY,
-        ekfHeading = ekfHeading,
-        odomX = odomX,
-        odomY = odomY,
-        odomHeading = odomHeading,
-        sequence = sequence,
-        timestampMs = timestampMs,
-        timestampUs = timestampUs,
-    )
-}
 
 /**
  * High-performance **NetworkTables NT4 WebSocket Streaming Client**.
@@ -281,9 +60,18 @@ open class Nt4ClientService(
     open val telemetryFlow: SharedFlow<TelemetryFrame> = telemetryStore.updates
     /** UI-rate latest values; raw logging and analysis continue to use [telemetryFlow]. */
     open val uiTelemetryFlow: SharedFlow<TelemetryFrame> = uiTelemetryFanout.updates
+    @Volatile internal var hasReceivedSimulatorPoseFrame = false
+        private set
     private val _simulatorPoseFrame = MutableStateFlow<SimulatorPoseFrameSnapshot?>(null)
     /** Latest packed simulator pose, kept atomic and independent of the lossy telemetry fan-out. */
     val simulatorPoseFrame: StateFlow<SimulatorPoseFrameSnapshot?> = _simulatorPoseFrame.asStateFlow()
+    private val fieldArrays = FieldArrayTelemetryState(telemetryStore, isReplayActive, ::coerceTelemetryValue)
+    internal val visionPoseArrayFrame: StateFlow<VisionPoseArraySnapshot?> = fieldArrays.visionPoseArrayFrame
+    internal val visionTargetFrame: StateFlow<VisionTargetSnapshot?> = fieldArrays.visionTargetFrame
+    internal val hasReceivedVisionPoseArray: Boolean get() = fieldArrays.hasReceivedVisionPoseArray
+    internal val legacyGamePieceFrame: StateFlow<LegacyGamePieceSnapshot?> = fieldArrays.legacyGamePieceFrame
+    private val _gamePieceFrame = MutableStateFlow<GamePieceFrameSnapshot?>(null)
+    internal val gamePieceFrame: StateFlow<GamePieceFrameSnapshot?> = _gamePieceFrame.asStateFlow()
     private val _driveInputAcknowledgement = MutableStateFlow<DriveInputAcknowledgement?>(null)
     /** Packed receiver feedback bypasses general telemetry fan-out to avoid a 50 Hz UI storm. */
     val driveInputAcknowledgement: StateFlow<DriveInputAcknowledgement?> =
@@ -319,14 +107,6 @@ open class Nt4ClientService(
         onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.SUSPEND
     )
     val consoleFlow: SharedFlow<ConsoleMessage> = _consoleFlow.asSharedFlow()
-
-    /**
-     * Injects a replay frame into the telemetry flow so dashboard widgets consume
-     * replay data identically to live data. Called by the replay integration layer.
-     */
-    suspend fun emitReplayFrame(frame: TelemetryFrame) {
-        telemetryStore.accept(frame)
-    }
 
     /** Accepts normalized telemetry from a non-NT4 platform transport such as the XRP link. */
     suspend fun acceptExternalLiveTelemetry(key: String, value: Double, stringValue: String? = null) {
@@ -390,6 +170,33 @@ open class Nt4ClientService(
         get() = connectionLifecycle.serverIp
 
     fun connectionMetrics(): Nt4ConnectionMetrics = connectionLifecycle.metrics()
+
+    val tuningConnectionId: Long? get() = outboundPublisher.tuningConnectionId
+    internal val controlConnectionEpoch: Long get() = outboundPublisher.connectionGeneration
+
+    /** A successful enqueue is still experimental until the robot acknowledges this nonce. */
+    suspend fun publishTuningRequest(
+        declaration: TuningParameterDeclaration,
+        value: TuningValue,
+        nonce: Long,
+        expectedConnection: Long,
+    ): Boolean {
+        require(when (declaration.type) {
+            TuningParameterType.DOUBLE -> value.doubleValue != null
+            TuningParameterType.INT -> value.intValue != null
+            TuningParameterType.BOOLEAN -> value.booleanValue != null
+            TuningParameterType.TEXT, TuningParameterType.ENUM -> value.textValue != null
+        }) { "Tuning value does not match its declared type" }
+        val requested = TuningTransport.requested(declaration)
+        val commit = TuningTransport.requestNonce(declaration)
+        if (!outboundPublisher.publishTuningRequest(requested, commit, value, nonce, expectedConnection)) return false
+        val now = System.currentTimeMillis()
+        val sessionId = _currentSession.value?.sessionId ?: "live-telemetry"
+        val numeric = value.doubleValue ?: value.intValue?.toDouble() ?: if (value.booleanValue == true) 1.0 else 0.0
+        telemetryStore.accept(TelemetryFrame(now, sessionId, requested, numeric, stringValue = value.textValue))
+        telemetryStore.accept(TelemetryFrame(now, sessionId, commit, nonce.toDouble()))
+        return true
+    }
 
     internal val topicMap: ConcurrentHashMap<Int, Nt4Topic>
         get() = inboundRouter.topicMap
@@ -461,11 +268,14 @@ open class Nt4ClientService(
     private fun liveReceiptTimestampUs(): Long =
         liveTimelineEpochUs + (System.nanoTime() - liveTimelineMonotonicOriginNs) / 1_000L
 
-    internal fun clearLiveTargetState() {
+    internal fun clearLiveTargetState() = synchronized(fieldArrays.lock) {
+        hasReceivedSimulatorPoseFrame = false
         inboundRouter.clear()
         val nextTargetEpoch = telemetryStore.clear()
         uiTelemetryFanout.reset(nextTargetEpoch)
         _simulatorPoseFrame.value = null
+        _gamePieceFrame.value = null
+        fieldArrays.reset()
         _driveInputAcknowledgement.value = null
         _mecanumMotorFrame.value = null
         _robotLighting.value = RobotLightingTelemetryState()
@@ -512,10 +322,18 @@ open class Nt4ClientService(
     /**
      * Terminal desktop-shutdown boundary. Unlike [stop], this permanently rejects later starts
      * from Compose effects that may observe simulator/process state while the window is closing.
+     * Always joins the owned telemetry workers, including on cancellation or failed persistence.
+     * A failed flush retains its retry data for an explicit later persistence attempt.
      */
     suspend fun disposeAndJoin(): Boolean {
         disposed.set(true)
-        return stop()
+        try {
+            return stop()
+        } finally {
+            withContext(NonCancellable) {
+                serviceScope.coroutineContext[Job]?.cancelAndJoin()
+            }
+        }
     }
 
     suspend fun publishFrame(frame: TelemetryFrame) {
@@ -598,10 +416,29 @@ open class Nt4ClientService(
 
         inboundRouter.markDiscovered(normalizedName, ntTopic.type)
 
+        val lengthUpdate = fieldArrays.accept(normalizedName, valueElement, timestampUs)
+
         if (normalizedName == SIMULATOR_POSE_FRAME_TOPIC && !isReplayActive.value) {
-            decodeSimulatorPoseFrame(valueElement, timestampMs, timestampUs)?.let { frame ->
-                logSimulatorPoseDivergence(frame)
-                _simulatorPoseFrame.value = frame
+            val targetEpoch = telemetryStore.currentTargetEpoch()
+            val frame = decodeSimulatorPoseFrame(valueElement, timestampMs, timestampUs, targetEpoch)
+            if (targetEpoch == telemetryStore.currentTargetEpoch() && !isReplayActive.value) {
+                // Even a rejected parent owns this source: its valid-looking scalar prefix must
+                // never be reconstructed as an accepted frame. Retain only the last valid parent.
+                hasReceivedSimulatorPoseFrame = true
+                if (frame != null) {
+                    logSimulatorPoseDivergence(frame)
+                    _simulatorPoseFrame.value = frame
+                }
+            }
+        }
+
+        if (normalizedName == GamePieceTelemetry.TOPIC && !isReplayActive.value) {
+            val targetEpoch = telemetryStore.currentTargetEpoch()
+            val decoded = GamePieceTelemetry.decodePacked(valueElement)
+            if (targetEpoch == telemetryStore.currentTargetEpoch() && !isReplayActive.value) {
+                _gamePieceFrame.value = GamePieceFrameSnapshot(
+                    decoded?.pieces.orEmpty(), decoded?.sequence, timestampUs, targetEpoch,
+                )
             }
         }
 
@@ -678,6 +515,11 @@ open class Nt4ClientService(
         }
 
         val liveReceiptUs = liveReceiptTimestampUs()
+        suspend fun recordLength() {
+            lengthUpdate?.let {
+                recordIncomingFrame(it.topic, it.length.toDouble(), null, timestampMs, timestampUs, liveReceiptUs)
+            }
+        }
 
         if (valueElement is JsonArray || valueElement is List<*> || valueElement is DoubleArray || valueElement is FloatArray || valueElement is Array<*>) {
             val size = when (valueElement) {
@@ -690,6 +532,7 @@ open class Nt4ClientService(
             }
             if (size > MAX_INCOMING_ARRAY_ELEMENTS) {
                 println("[Nt4ClientService] Rejected oversized array topic $normalizedName ($size elements)")
+                recordLength()
                 return
             }
 
@@ -709,41 +552,28 @@ open class Nt4ClientService(
                 val (doubleValue, stringValue) = coerceTelemetryValue(element)
                 sb.setLength(baseLen)
                 val frameKey = sb.append(idx).toString()
-                val frame = sessionMutex.withLock {
-                    val sessionId = _currentSession.value?.sessionId ?: LIVE_SESSION_ID
-                    TelemetryFrame(
-                        timestampMs = timestampMs,
-                        sessionId = sessionId,
-                        key = frameKey,
-                        value = doubleValue,
-                        stringValue = stringValue,
-                        timestampUs = timestampUs
-                    ).also { sourceFrame ->
-                        pendingFrames.send(
-                            if (sessionId == LIVE_SESSION_ID) {
-                                sourceFrame.copy(
-                                    timestampMs = liveReceiptUs / 1_000L,
-                                    timestampUs = liveReceiptUs
-                                )
-                            } else {
-                                sourceFrame
-                            }
-                        )
-                    }
-                }
-                telemetryStore.accept(frame, notifyConsumers = !isReplayActive.value)
+                recordIncomingFrame(frameKey, doubleValue, stringValue, timestampMs, timestampUs, liveReceiptUs)
             }
+            recordLength()
             return
         }
 
         // Extract double value and string value
         val (doubleValue, stringValue) = coerceTelemetryValue(valueElement)
+        recordIncomingFrame(normalizedName, doubleValue, stringValue, timestampMs, timestampUs, liveReceiptUs)
+        recordLength()
+    }
+
+    private suspend fun recordIncomingFrame(
+        key: String, doubleValue: Double, stringValue: String?,
+        timestampMs: Long, timestampUs: Long, liveReceiptUs: Long,
+    ) {
         val frame = sessionMutex.withLock {
             val sessionId = _currentSession.value?.sessionId ?: LIVE_SESSION_ID
             TelemetryFrame(
                 timestampMs = timestampMs,
                 sessionId = sessionId,
-                key = normalizedName,
+                key = key,
                 value = doubleValue,
                 stringValue = stringValue,
                 timestampUs = timestampUs

@@ -8,31 +8,62 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URLEncoder
 import java.net.URL
+import java.net.ServerSocket
+import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.net.Socket
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
 import java.util.UUID
+import java.util.concurrent.Callable
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.ThreadPoolExecutor
+import fi.iki.elonen.NanoHTTPD
 
 class LogManagerServerTest {
+    private lateinit var previousSocketFactory: NanoHTTPD.ServerSocketFactory
+    private var ownsServer = false
+    private val port: Int get() = LogManagerServer.listeningPort.also { check(it > 0) }
 
     @BeforeEach
     fun setUp() {
+        assertFalse(LogManagerServer.isAlive, "Another fixture owns the in-process log server")
+        previousSocketFactory = LogManagerServer.serverSocketFactory
+        // Bind directly to port zero instead of reserving and releasing a port before startup.
+        // This keeps these tests isolated from simulators using production port 5002.
+        LogManagerServer.serverSocketFactory = NanoHTTPD.ServerSocketFactory {
+            object : ServerSocket() {
+                override fun bind(endpoint: SocketAddress?, backlog: Int) {
+                    super.bind(InetSocketAddress("127.0.0.1", 0), backlog)
+                }
+            }
+        }
+        ownsServer = true
         LogManagerServer.configureDeleteToken(null)
         LogManagerServer.startServer()
+        assertTrue(LogManagerServer.isAlive, "Log server could not bind its ephemeral loopback test port")
     }
 
     @AfterEach
     fun tearDown() {
-        LogManagerServer.configureDeleteToken(null)
-        LogManagerServer.stop()
+        if (!ownsServer) return
+        try {
+            LogManagerServer.configureDeleteToken(null)
+        } finally {
+            try {
+                LogManagerServer.stop()
+            } finally {
+                LogManagerServer.serverSocketFactory = previousSocketFactory
+                ownsServer = false
+            }
+        }
     }
 
     @Test
     fun testServerEndpoints() {
-        if (!LogManagerServer.isAlive) {
-            System.err.println("WARNING: LogManagerServer is not alive (port 5002 likely already bound). Skipping endpoint assertions.")
-            return
-        }
 
         // Test root endpoint (Dashboard)
         val conn = awaitGet("/")
@@ -50,7 +81,7 @@ class LogManagerServerTest {
     private fun awaitGet(path: String): HttpURLConnection {
         var lastFailure: Exception? = null
         repeat(100) {
-            val connection = URL("http://127.0.0.1:5002$path").openConnection() as HttpURLConnection
+            val connection = URL("http://127.0.0.1:$port$path").openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.connectTimeout = 250
             connection.readTimeout = 1_000
@@ -68,7 +99,6 @@ class LogManagerServerTest {
 
     @Test
     fun `delete is disabled by default and requires configured bearer token`() {
-        if (!LogManagerServer.isAlive) return
         val disabled = deleteConnection("missing.jsonl")
         assertEquals(403, disabled.responseCode)
 
@@ -90,7 +120,6 @@ class LogManagerServerTest {
 
     @Test
     fun `old active log remains hidden and protected while completed sibling works`() {
-        if (!LogManagerServer.isAlive) return
 
         val stem = "log-server-active-${UUID.randomUUID()}"
         val completed = File(RobotLogEnvironment.logDirectory, "$stem.csv")
@@ -112,7 +141,7 @@ class LogManagerServerTest {
             var listing = ""
             var listingPollsRemaining = 50
             while (!listing.contains(completed.name) && listingPollsRemaining > 0) {
-                val listConnection = URL("http://localhost:5002/api/logs").openConnection() as HttpURLConnection
+                val listConnection = URL("http://127.0.0.1:$port/api/logs").openConnection() as HttpURLConnection
                 assertEquals(200, listConnection.responseCode)
                 listing = listConnection.inputStream.bufferedReader().use { it.readText() }
                 listConnection.disconnect()
@@ -147,16 +176,62 @@ class LogManagerServerTest {
         }
     }
 
+    @Test
+    fun `concurrent starts retain one usable listener and support restart`() {
+        LogManagerServer.stop()
+        val pool = Executors.newFixedThreadPool(4)
+        val start = CountDownLatch(1)
+        try {
+            val futures = (1..8).map { pool.submit(Callable { start.await(); LogManagerServer.startServer() }) }
+            start.countDown()
+            futures.forEach { it.get(5, TimeUnit.SECONDS) }
+            assertTrue(LogManagerServer.isAlive)
+            val first = awaitGet("/api/logs")
+            try { assertEquals(200, first.responseCode); first.inputStream.close() } finally { first.disconnect() }
+            LogManagerServer.stop()
+            LogManagerServer.startServer()
+            val restarted = awaitGet("/api/logs")
+            try { assertEquals(200, restarted.responseCode); restarted.inputStream.close() } finally { restarted.disconnect() }
+        } finally { pool.shutdownNow() }
+    }
+
+    @Test
+    fun `restart after listener failure closes the previous connection workers`() {
+        val oldWorkers = LogManagerServer.javaClass.getDeclaredField("requestWorkers")
+            .apply { isAccessible = true }.get(LogManagerServer) as LogServerWorkers
+        val pool = LogServerWorkers::class.java.getDeclaredField("executor")
+            .apply { isAccessible = true }.get(oldWorkers) as ThreadPoolExecutor
+        try {
+            Socket("127.0.0.1", port).use {
+                val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+                while (pool.activeCount != 1 && System.nanoTime() - deadline < 0) Thread.sleep(5)
+                assertEquals(1, pool.activeCount)
+                (NanoHTTPD::class.java.getDeclaredField("myServerSocket").apply { isAccessible = true }
+                    .get(LogManagerServer) as ServerSocket).close()
+                (NanoHTTPD::class.java.getDeclaredField("myThread").apply { isAccessible = true }
+                    .get(LogManagerServer) as Thread).join(2000)
+                assertFalse(LogManagerServer.isAlive)
+                LogManagerServer.startServer()
+                assertTrue(LogManagerServer.isAlive)
+                assertTrue(pool.isShutdown, "A replacement listener must not orphan the old worker pool")
+                assertTrue(pool.awaitTermination(2, TimeUnit.SECONDS))
+                val connection = awaitGet("/api/logs")
+                try { assertEquals(200, connection.responseCode); connection.inputStream.close() }
+                finally { connection.disconnect() }
+            }
+        } finally { oldWorkers.closeAll() }
+    }
+
     private fun downloadConnection(fileName: String): HttpURLConnection {
         val encodedName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.name())
-        return (URL("http://localhost:5002/api/download?file=$encodedName").openConnection() as HttpURLConnection).apply {
+        return (URL("http://127.0.0.1:$port/api/download?file=$encodedName").openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
         }
     }
 
     private fun deleteConnection(fileName: String, token: String? = null): HttpURLConnection {
         val encodedName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.name())
-        val connection = URL("http://localhost:5002/api/delete?file=$encodedName").openConnection() as HttpURLConnection
+        val connection = URL("http://127.0.0.1:$port/api/delete?file=$encodedName").openConnection() as HttpURLConnection
         connection.requestMethod = "POST"
         connection.doOutput = true
         if (token != null) connection.setRequestProperty("Authorization", "Bearer $token")

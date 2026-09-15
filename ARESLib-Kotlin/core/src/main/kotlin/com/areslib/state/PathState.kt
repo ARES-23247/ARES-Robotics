@@ -4,6 +4,8 @@ import com.areslib.pathing.Path
 
 /**
  * Holds state for active path tracking, chaining, and detour events.
+ * Path references retain shared ownership of their lists and mutable point payloads. Callers
+ * must keep those values stable while any state snapshot or follower retains the path.
  */
 data class PathState(
     val activePath: Path? = null,

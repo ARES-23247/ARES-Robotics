@@ -13,6 +13,10 @@ interface DcMotorSimple : HardwareDevice {
  * Mock representation of an FTC [DcMotor].
  */
 interface DcMotor : DcMotorSimple {
+    /** Minimal SDK metadata boundary; fixtures using encoder units must supply a motor type. */
+    val motorType: com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType
+        get() = throw UnsupportedOperationException("Motor type metadata is not configured in this fixture")
+
     enum class ZeroPowerBehavior {
         BRAKE,
         FLOAT
@@ -36,6 +40,8 @@ interface DcMotorEx : DcMotor {
     var velocity: Double
     fun getCurrent(unit: org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit): Double
     fun setPIDFCoefficients(mode: DcMotor.RunMode, pidfCoefficients: PIDFCoefficients) {}
+    /** Default fixture coefficients; stateful motor doubles may override both PIDF methods. */
+    fun getPIDFCoefficients(mode: DcMotor.RunMode): PIDFCoefficients = PIDFCoefficients()
 }
 
 /**

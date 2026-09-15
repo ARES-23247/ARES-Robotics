@@ -3,6 +3,13 @@
 import math
 
 
+from .control_math import EMPTY, TrapezoidProfile, feedforward, number as _number
+
+
+def _wrap_delta(value, period):
+    return (value + period / 2.0) % period - period / 2.0
+
+
 class MockXrpDevice:
     """Deterministic simulator/test device with the same read/write boundary as physical adapters."""
 
@@ -24,7 +31,7 @@ class MockXrpDevice:
 
 
 class GeneratedXrpSubsystem:
-    """Small fail-closed controller whose complete behavior comes from one descriptor."""
+    """Mechanism state, IO, and control for generated XRP subsystem descriptors."""
 
     def __init__(self, descriptor, hardware_factory):
         self.descriptor = descriptor
@@ -35,53 +42,121 @@ class GeneratedXrpSubsystem:
         self.configured = True
         self._integral = {}
         self._previous_error = {}
+        self._derivative = {}
+        self._bang_bang = {}
+        self._fields = {field["fieldId"]: field for field in descriptor.get("stateFields", [])}
+        self._hardware = tuple(descriptor.get("hardware", []))
+        self._loops = tuple(descriptor.get("controlLoops", []))
+        self._outputs = [0.0] * len(self._loops)
+        self._profiles = {loop["loopId"]: TrapezoidProfile() for loop in self._loops
+                          if loop["strategy"] == "PROFILED_POSITION_PID"}
+        self._read_groups = []
+        available_measurements = set()
+        self._reset_control()
         for field in descriptor.get("stateFields", []):
             default_key = {
                 "DOUBLE": "defaultNumber", "BOOLEAN": "defaultBoolean",
                 "INT": "defaultInt", "STRING": "defaultText",
             }[field["type"]]
             self.state[field["fieldId"]] = field.get(default_key)
-        for device in descriptor.get("hardware", []):
+        for device in self._hardware:
             try:
-                self.devices[device["hardwareId"]] = hardware_factory(device)
+                adapter = hardware_factory(device)
+                if adapter is None:
+                    raise ValueError("XRP hardware factory returned no adapter")
+                self.devices[device["hardwareId"]] = adapter
+                groups = {}
+                for measurement in device.get("measurements", []):
+                    groups.setdefault(measurement["source"], []).append(measurement)
+                self._read_groups.append((adapter, tuple(groups.items())))
+                for measurement in device.get("measurements", []):
+                    available_measurements.add(measurement["fieldId"])
             except Exception:
                 if device.get("required", True):
                     self.configured = False
                     self.faulted = True
+        for loop in self._loops:
+            if (loop["actuatorId"] not in self.devices
+                    or (loop["strategy"] not in ("DIRECT", "SERVO_POSITION")
+                        and loop.get("measurementFieldId") not in available_measurements)):
+                self.configured = False
+                self.faulted = True
+        hardware_by_id = {device["hardwareId"]: device for device in self._hardware}
+        for loop in self._loops:
+            model = loop.get("feedforward", EMPTY)
+            kind = model.get("kind", "NONE")
+            if kind == "NONE":
+                continue
+            actuator = hardware_by_id.get(loop["actuatorId"], EMPTY)
+            references = [model.get("velocityFieldId"), model.get("accelerationFieldId")]
+            if kind == "ARM":
+                references.append(model.get("gravityAngleFieldId"))
+                if model.get("gravityAngleFieldId") is None:
+                    self.configured = False
+            if kind == "TWO_DOF_ARM":
+                linkage = descriptor.get("linkage", EMPTY)
+                references.extend((linkage.get("joint1AngleFieldId"), linkage.get("joint2AngleFieldId")))
+                if not linkage.get("enabled") or any(ref is None for ref in references[-2:]):
+                    self.configured = False
+            if (loop["strategy"] not in ("POSITION_PID", "VELOCITY_PID", "PROFILED_POSITION_PID")
+                    or actuator.get("kind") != "MOTOR"):
+                self.configured = False
+            for reference in references:
+                if reference is None:
+                    continue
+                field = self._fields.get(reference, EMPTY)
+                if (field.get("type") not in ("DOUBLE", "INT") or
+                        field.get("role") == "MEASUREMENT" and reference not in available_measurements):
+                    self.configured = False
+            if not self.configured:
+                self.faulted = True
         self.stop()
 
     def set_target(self, field_id, value):
-        field = next((item for item in self.descriptor.get("stateFields", []) if item["fieldId"] == field_id), None)
+        field = self._fields.get(field_id)
         if field is None or field.get("role") not in ("TARGET", "CONFIGURATION"):
             raise ValueError("Unknown XRP subsystem target: " + field_id)
-        if isinstance(value, float) and not math.isfinite(value):
-            raise ValueError("XRP subsystem targets must be finite")
+        self._validate_value(field, value)
+        self.state[field_id] = value
+
+    def _validate_value(self, field, value):
+        kind = field["type"]
+        if ((kind == "DOUBLE" and type(value) not in (int, float))
+                or (kind == "INT" and type(value) is not int)
+                or (kind == "BOOLEAN" and type(value) is not bool)
+                or (kind == "STRING" and not isinstance(value, str))):
+            raise ValueError("XRP target does not match its declared type")
+        if kind in ("DOUBLE", "INT"):
+            _number(value)
         minimum, maximum = field.get("minimum"), field.get("maximum")
+        if minimum is not None:
+            _number(minimum)
+        if maximum is not None:
+            _number(maximum)
         if minimum is not None and value < minimum or maximum is not None and value > maximum:
             raise ValueError("XRP subsystem target is outside its declared limits")
-        self.state[field_id] = value
 
     def periodic(self, dt=0.02):
         if self.faulted or not self.configured:
             self.stop()
             return
         try:
-            for device in self.descriptor.get("hardware", []):
-                adapter = self.devices.get(device["hardwareId"])
-                if adapter is None:
-                    continue
-                for measurement in device.get("measurements", []):
-                    raw = adapter.read(measurement["source"])
-                    value = raw * measurement.get("scale", 1.0) + measurement.get("offset", 0.0)
-                    if isinstance(value, float) and not math.isfinite(value):
-                        raise ValueError("non-finite XRP feedback")
-                    minimum, maximum = measurement.get("validMinimum"), measurement.get("validMaximum")
-                    if minimum is not None and value < minimum or maximum is not None and value > maximum:
-                        raise ValueError("XRP feedback outside declared validity bounds")
-                    self.state[measurement["fieldId"]] = value
-            for loop in self.descriptor.get("controlLoops", []):
-                output = self._calculate(loop, dt)
-                self.devices[loop["actuatorId"]].write(output)
+            if _number(dt) <= 0:
+                raise ValueError("XRP subsystem period must be positive")
+            for adapter, groups in self._read_groups:
+                for source, measurements in groups:
+                    raw = adapter.read(source)
+                    for measurement in measurements:
+                        value = _number(raw * measurement.get("scale", 1.0) + measurement.get("offset", 0.0))
+                        minimum, maximum = measurement.get("validMinimum"), measurement.get("validMaximum")
+                        if minimum is not None and value < minimum or maximum is not None and value > maximum:
+                            raise ValueError("XRP feedback outside declared validity bounds")
+                        self.state[measurement["fieldId"]] = value
+            # Validate every controller result before issuing any nonzero output.
+            for index, loop in enumerate(self._loops):
+                self._outputs[index] = self._calculate(loop, dt)
+            for index, loop in enumerate(self._loops):
+                self.devices[loop["actuatorId"]].write(self._outputs[index])
         except Exception:
             self.faulted = True
             try:
@@ -98,42 +173,113 @@ class GeneratedXrpSubsystem:
         return not self.faulted
 
     def stop(self):
+        self._reset_control()
         failed = False
-        for device in self.descriptor.get("hardware", []):
+        for device in self._hardware:
             neutral = device.get("safeOutput")
             adapter = self.devices.get(device["hardwareId"])
             if neutral is None or adapter is None:
                 continue
             try:
-                adapter.write(neutral)
+                adapter.write(_number(neutral))
             except Exception:
                 failed = True
         if failed:
             self.faulted = True
             raise OSError("XRP subsystem neutral write failed")
 
+    def _reset_control(self):
+        for loop in self._loops:
+            key = loop["loopId"]
+            self._integral[key] = 0.0
+            self._previous_error[key] = None
+            self._derivative[key] = 0.0
+            self._bang_bang[key] = 0.0
+            profile = self._profiles.get(key)
+            if profile is not None:
+                profile.reset()
+
     def _calculate(self, loop, dt):
-        target = float(self.state[loop["targetFieldId"]])
+        target_value = self.state[loop["targetFieldId"]]
+        self._validate_value(self._fields[loop["targetFieldId"]], target_value)
+        target = _number(float(target_value))
+        minimum_output = _number(loop.get("minimumOutput", -12.0))
+        maximum_output = _number(loop.get("maximumOutput", 12.0))
+        if minimum_output >= maximum_output:
+            raise ValueError("XRP controller minimum output must be below maximum")
         strategy = loop["strategy"]
+        if strategy not in ("DIRECT", "SERVO_POSITION", "POSITION_PID", "VELOCITY_PID", "PROFILED_POSITION_PID", "BANG_BANG"):
+            raise ValueError("Unknown XRP control strategy: " + str(strategy))
         if strategy in ("DIRECT", "SERVO_POSITION"):
             output = target
         else:
-            measurement = float(self.state[loop["measurementFieldId"]])
-            error = target - measurement
-            continuous = loop.get("continuousInput", {})
+            measurement = _number(self.state[loop["measurementFieldId"]])
+            error = _number(target - measurement)
+            continuous = loop.get("continuousInput", EMPTY)
+            period = None
             if continuous.get("enabled"):
-                minimum, maximum = continuous["minimumInput"], continuous["maximumInput"]
+                if strategy not in ("POSITION_PID", "PROFILED_POSITION_PID"):
+                    raise ValueError("Continuous input requires position control")
+                minimum = _number(continuous.get("minimumInput", -math.pi))
+                maximum = _number(continuous.get("maximumInput", math.pi))
                 period = maximum - minimum
-                error = (error + period / 2.0) % period - period / 2.0
+                if period <= 0 or abs(period - 2.0 * math.pi) > 1e-4:
+                    raise ValueError("Continuous XRP angle input must span one turn")
+                error = _wrap_delta(error, period)
             key = loop["loopId"]
-            self._integral[key] = self._integral.get(key, 0.0) + error * dt
-            derivative = (error - self._previous_error.get(key, error)) / dt if dt > 0 else 0.0
-            self._previous_error[key] = error
+            desired_velocity = target if strategy == "VELOCITY_PID" else 0.0
+            desired_acceleration = 0.0
+            if strategy == "PROFILED_POSITION_PID":
+                profile = self._profiles[key]
+                constraints = loop.get("motionProfile", EMPTY)
+                profile.advance(dt, measurement, target, constraints.get("maximumVelocity", 1.0),
+                                constraints.get("maximumAcceleration", 2.0), period)
+                error = _number(profile.position - measurement)
+                if period is not None:
+                    error = _wrap_delta(error, period)
+                desired_velocity, desired_acceleration = profile.velocity, profile.acceleration
             if strategy == "BANG_BANG":
-                output = loop.get("maximumOutput", 1.0) if error > loop.get("tolerance", 0.0) else 0.0
+                tolerance = _number(loop.get("tolerance", 0.0))
+                hysteresis = _number(loop.get("hysteresis", 0.0))
+                if tolerance < 0 or hysteresis < 0:
+                    raise ValueError("Bang-bang tolerance and hysteresis must be nonnegative")
+                output = self._bang_bang[key]
+                if output > 0 and error <= tolerance or output < 0 and error >= -tolerance:
+                    output = 0.0
+                elif output == 0:
+                    if error > tolerance + hysteresis:
+                        output = max(0.0, maximum_output)
+                    elif error < -tolerance - hysteresis:
+                        output = min(0.0, minimum_output)
+                self._bang_bang[key] = output
+                # Neutral is zero even when the active output interval excludes it.
+                return output
             else:
-                output = loop.get("kP", 0.0) * error + loop.get("kI", 0.0) * self._integral[key] + loop.get("kD", 0.0) * derivative
-        return max(loop.get("minimumOutput", -1.0), min(loop.get("maximumOutput", 1.0), output))
+                kp, ki, kd = _number(loop.get("kP", 0.0)), _number(loop.get("kI", 0.0)), _number(loop.get("kD", 0.0))
+                tau = _number(loop.get("derivativeFilterTimeConstantSeconds", 0.02))
+                if tau < 0:
+                    raise ValueError("Derivative filter time must be nonnegative")
+                previous = self._previous_error[key]
+                derivative = 0.0
+                if kd != 0 and previous is not None:
+                    delta = error - previous
+                    if period is not None:
+                        delta = _wrap_delta(delta, period)
+                    raw_derivative = _number(delta / dt)
+                    old_derivative = self._derivative[key]
+                    derivative = _number(old_derivative + dt / (tau + dt) * (raw_derivative - old_derivative))
+                self._previous_error[key] = error
+                self._derivative[key] = derivative
+                candidate = _number(self._integral[key] + error * dt) if ki != 0 else 0.0
+                compensation = feedforward(loop, self.state, self.descriptor.get("linkage", EMPTY), desired_velocity, desired_acceleration)
+                output = _number(kp * error + ki * candidate + kd * derivative + compensation)
+                bounded = max(minimum_output, min(maximum_output, output))
+                # Integrate only when unsaturated or when the integral change moves
+                # output back toward its allowed range, including negative kI.
+                if output == bounded or (output - bounded) * (ki * error) <= 0:
+                    self._integral[key] = candidate
+                return bounded
+        return max(minimum_output, min(maximum_output, _number(output)))
 
 
 def mock_hardware_factory(device):

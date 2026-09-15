@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -19,7 +19,8 @@ data class DashboardHealthSnapshot(
     val ingestFramesPerSecond: Double = 0.0,
     val activeTopics: Int = 0,
     val bufferedFrames: Long = 0,
-    val droppedFrames: Long = 0,
+    /** Null until dashboard fan-out loss is measured. Robot logging has its own counter. */
+    val droppedFrames: Long? = null,
     val databaseP95Ms: Double = 0.0,
     val databaseMaxMs: Double = 0.0,
     val databaseQueries: Long = 0,
@@ -42,22 +43,24 @@ internal data class RobotLoggingHealthSnapshot(
     val currentFileBytes: Long,
     val completedBytes: Long,
     val droppedFrames: Long,
-    val prunedFiles: Long
+    val prunedFiles: Long,
+    val byteCountersAvailable: Boolean
 )
 
 internal fun readRobotLoggingHealth(store: TelemetryStore): RobotLoggingHealthSnapshot {
-    fun longValue(key: String): Long = store.latest(key)?.value
-        ?.takeIf(Double::isFinite)
-        ?.coerceAtLeast(0.0)
-        ?.toLong()
-        ?: 0L
+    fun longValue(value: Double?): Long = value?.takeIf(Double::isFinite)
+        ?.coerceAtLeast(0.0)?.toLong() ?: 0L
+    val currentBytes = store.latest("Diagnostics/Logging/CurrentFileBytes")?.value
+    val completedBytes = store.latest("Diagnostics/Logging/CompletedBytes")?.value
     return RobotLoggingHealthSnapshot(
         profile = store.latest("Diagnostics/Logging/Profile")?.stringValue ?: "UNKNOWN",
-        queueDepth = longValue("Diagnostics/Logging/QueueDepth").coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
-        currentFileBytes = longValue("Diagnostics/Logging/CurrentFileBytes"),
-        completedBytes = longValue("Diagnostics/Logging/CompletedBytes"),
-        droppedFrames = longValue("Diagnostics/Logging/DroppedFrames"),
-        prunedFiles = longValue("Diagnostics/Logging/PrunedFiles")
+        queueDepth = longValue(store.latest("Diagnostics/Logging/QueueDepth")?.value)
+            .coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+        currentFileBytes = longValue(currentBytes),
+        completedBytes = longValue(completedBytes),
+        droppedFrames = longValue(store.latest("Diagnostics/Logging/DroppedFrames")?.value),
+        prunedFiles = longValue(store.latest("Diagnostics/Logging/PrunedFiles")?.value),
+        byteCountersAvailable = currentBytes?.isFinite() == true && completedBytes?.isFinite() == true
     )
 }
 
@@ -67,36 +70,44 @@ class DashboardHealthService(
     private val databaseMetrics: DatabaseMetrics,
     private val nt4ClientService: Nt4ClientService,
     private val replayEngineService: ReplayEngineService,
-    private val clock: MonotonicClock = SystemMonotonicClock
+    private val clock: MonotonicClock = SystemMonotonicClock,
+    samplerDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val scope = CoroutineScope(samplerDispatcher + SupervisorJob())
     private val mutableHealth = MutableStateFlow(DashboardHealthSnapshot())
     val health: StateFlow<DashboardHealthSnapshot> = mutableHealth.asStateFlow()
-    private var samplerJob: Job? = null
 
     init {
-        samplerJob = scope.launch {
-            var previousFrames = 0L
-            var previousRobotLogBytes = 0L
-            var previousSampleNanos = clock.nowNanos()
+        scope.launch {
+            val ingestCounter = DashboardCounterRate()
+            val robotLogCounter = DashboardCounterRate()
+            fun sampleRobotBytes(logging: RobotLoggingHealthSnapshot, now: Long, epoch: Long): Double {
+                if (!logging.byteCountersAvailable) {
+                    robotLogCounter.reset()
+                    return 0.0
+                }
+                val total = logging.currentFileBytes.toULong() + logging.completedBytes.toULong()
+                return robotLogCounter.sample(total, now, epoch)
+            }
+            val initialNanos = clock.nowNanos()
+            val initialEpoch = telemetryStore.currentTargetEpoch()
+            ingestCounter.sample(telemetryStore.snapshotMetrics().acceptedFrames.coerceAtLeast(0).toULong(),
+                initialNanos, initialEpoch)
+            sampleRobotBytes(readRobotLoggingHealth(telemetryStore), initialNanos, initialEpoch)
             while (isActive) {
                 delay(SAMPLE_INTERVAL_MS)
                 val now = clock.nowNanos()
+                val epoch = telemetryStore.currentTargetEpoch()
                 val telemetry = telemetryStore.snapshotMetrics()
-                val elapsedSeconds = ((now - previousSampleNanos) / 1_000_000_000.0).coerceAtLeast(0.001)
-                val ingestRate = (telemetry.acceptedFrames - previousFrames).coerceAtLeast(0L) / elapsedSeconds
-                previousFrames = telemetry.acceptedFrames
-                previousSampleNanos = now
-
+                val ingestRate = ingestCounter.sample(telemetry.acceptedFrames.coerceAtLeast(0).toULong(), now, epoch)
                 val database = databaseMetrics.snapshot()
                 val connection = nt4ClientService.connectionMetrics()
                 val replay = replayEngineService.cacheMetrics.value
                 val robotLogging = readRobotLoggingHealth(telemetryStore)
-                val robotLogBytes = robotLogging.currentFileBytes + robotLogging.completedBytes
-                val robotLogRate = (robotLogBytes - previousRobotLogBytes).coerceAtLeast(0L) / elapsedSeconds
-                previousRobotLogBytes = robotLogBytes
-                val cacheLookups = replay.windowLoads + replay.prefetchHits
-                val hitRatio = if (cacheLookups == 0L) 0.0 else replay.prefetchHits.toDouble() / cacheLookups
+                val robotLogRate = sampleRobotBytes(robotLogging, now, epoch)
+                // Every installed prefetch increments windowLoads too: hits are a subset.
+                val hitRatio = if (replay.windowLoads <= 0L) 0.0 else
+                    (replay.prefetchHits.toDouble() / replay.windowLoads.toDouble()).coerceIn(0.0, 1.0)
                 val status = when {
                     replay.truncatedWindows > 0 || database.p95QueryMs >= CRITICAL_QUERY_P95_MS ||
                         robotLogging.queueDepth >= CRITICAL_LOG_QUEUE_DEPTH -> DashboardHealthStatus.CRITICAL
@@ -110,7 +121,7 @@ class DashboardHealthService(
                     ingestFramesPerSecond = ingestRate,
                     activeTopics = telemetry.activeTopics,
                     bufferedFrames = telemetry.bufferedFrames,
-                    droppedFrames = 0,
+                    droppedFrames = null,
                     databaseP95Ms = database.p95QueryMs,
                     databaseMaxMs = database.maxQueryMs,
                     databaseQueries = database.queryCount,
@@ -131,7 +142,6 @@ class DashboardHealthService(
     }
 
     fun dispose() {
-        samplerJob?.cancel()
         scope.cancel()
     }
 

@@ -90,20 +90,8 @@ internal class TelemetryRepository(
     }
 
     private fun insertTelemetryFrames(targetConn: Connection, frames: List<TelemetryFrame>) {
-        val previousAutoCommit = targetConn.autoCommit
-        if (previousAutoCommit) targetConn.autoCommit = false
-        try {
-            // Both persistent imports and the ephemeral live timeline are append-only. The schema
-            // includes sample_order in its identity, so repeated source timestamps remain distinct
-            // without INSERT OR REPLACE. Using the native Appender avoids thousands of parsed JDBC
-            // transactions during dense simulator sessions.
+        withDuckDbAppenderTransaction(targetConn) {
             insertTelemetryFramesAppender(targetConn, frames)
-            if (previousAutoCommit) targetConn.commit()
-        } catch (e: Exception) {
-            if (previousAutoCommit) runCatching { targetConn.rollback() }
-            throw e
-        } finally {
-            if (previousAutoCommit) targetConn.autoCommit = true
         }
     }
 
@@ -117,8 +105,7 @@ internal class TelemetryRepository(
      */
     private fun insertTelemetryFramesAppender(targetConn: Connection, frames: List<TelemetryFrame>) {
         val duckConn = targetConn.unwrap(DuckDBConnection::class.java)
-        val appender = duckConn.createAppender(DuckDBConnection.DEFAULT_SCHEMA, "telemetry_frames")
-        try {
+        duckConn.createAppender(DuckDBConnection.DEFAULT_SCHEMA, "telemetry_frames").use { appender ->
             for (frame in frames) {
                 appender.beginRow()
                 appender.append(frame.timestampMs)
@@ -133,8 +120,6 @@ internal class TelemetryRepository(
                 appender.endRow()
             }
             appender.flush()
-        } finally {
-            appender.close()
             // CHECKPOINT intentionally NOT run per batch — a per-batch WAL fsync dominated
             // import time. Checkpointing is now caller/timer-controlled by
             // [DatabaseTransactionCoordinator.checkpoint]
@@ -637,49 +622,8 @@ internal class TelemetryRepository(
         )
     }
 
-    suspend fun getTelemetryDensity(sessionId: String, buckets: Int = 100): List<Float> = withDbLock {
-        val activeConn = if (sessionId == "live-telemetry") ephemeralConn else conn
-        var minTime = 0L
-        var maxTime = 0L
-        activeConn.prepareStatement("SELECT MIN(timestamp_ms), MAX(timestamp_ms) FROM telemetry_frames WHERE session_id = ?").use { ps ->
-            ps.setString(1, sessionId)
-            ps.executeQuery().use { rs ->
-                if (rs.next()) {
-                    minTime = rs.getLong(1)
-                    maxTime = rs.getLong(2)
-                }
-            }
-        }
-
-        if (minTime == maxTime || maxTime == 0L) {
-            return@withDbLock List(buckets) { 0f }
-        }
-        val duration = maxTime - minTime
-        val bucketSize = duration.toDouble() / buckets
-        val bucketCounts = LongArray(buckets)
-        activeConn.prepareStatement("""
-            SELECT CAST((timestamp_ms - ?) / ? AS INTEGER) as bucket_idx, COUNT(*) as cnt
-            FROM telemetry_frames
-            WHERE session_id = ?
-            GROUP BY bucket_idx
-        """.trimIndent()).use { ps ->
-            ps.setLong(1, minTime)
-            ps.setDouble(2, bucketSize)
-            ps.setString(3, sessionId)
-            ps.executeQuery().use { rs ->
-                while (rs.next()) {
-                    val idx = rs.getInt(1).coerceIn(0, buckets - 1)
-                    val cnt = rs.getLong(2)
-                    bucketCounts[idx] += cnt
-                }
-            }
-        }
-        val maxCount = bucketCounts.maxOrNull() ?: 1L
-        if (maxCount == 0L) {
-             return@withDbLock List(buckets) { 0f }
-        }
-
-        bucketCounts.map { it.toFloat() / maxCount }
+    suspend fun getTelemetryDensity(sessionId: String, buckets: Int = 100): List<Float> = withReadLock {
+        loadTelemetryDensity(readConnectionFor(sessionId), sessionId, buckets)
     }
 
 }

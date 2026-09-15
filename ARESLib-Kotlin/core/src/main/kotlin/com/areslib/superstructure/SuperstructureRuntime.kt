@@ -8,87 +8,11 @@ import com.areslib.sequencer.Task
 import com.areslib.sequencer.TaskExecutor
 import com.areslib.sequencer.TaskResources
 import com.areslib.state.RobotState
-import com.areslib.state.SubsystemState
 import com.areslib.subsystem.InterlockComparison
 import com.areslib.subsystem.Subsystem
 import com.areslib.subsystem.SubsystemValueType
 import com.areslib.util.RobotClock
 import kotlin.math.abs
-
-/**
- * Observable immutable state for one generated superstructure state machine.
- *
- * The runtime's transition cursor and pending request are published through Redux so replay,
- * telemetry, and simulator snapshots never share hidden mutable transition state.
- */
-data class SuperstructureRuntimeState(
-    val currentStateId: String,
-    val previousStateId: String = currentStateId,
-    val stateEntryTimestampMs: Long = Long.MIN_VALUE,
-    val pendingActionKey: String? = null,
-    val pendingActionTimestampMs: Long = 0L,
-    val requestSequence: Long = 0L,
-    val handledRequestSequence: Long = 0L,
-    val candidateTransitionId: String? = null,
-    val candidateSinceMs: Long = 0L,
-    val lastAppliedTargetHash: Long = Long.MIN_VALUE,
-    val isFaulted: Boolean = false,
-    val faultReason: String? = null,
-    val lastRejectionReason: String? = null,
-    /** True while the robot is disabled; generated subsystem controllers still own output neutral. */
-    val isDisabled: Boolean = false,
-    /** Monotonic event identity incremented for every accepted state transition. */
-    val transitionSequence: Long = 0L,
-    /** Last transition whose exit/entry action group was submitted to the lifecycle executor. */
-    val lifecycleSequenceScheduled: Long = -1L,
-    /** Last submitted transition whose lifecycle action group completed successfully. */
-    val lifecycleSequenceCompleted: Long = -1L,
-    val lastLifecycleError: String? = null,
-) : SubsystemState
-
-/**
- * Generated typed boundary between the generic state-machine evaluator and generated subsystem
- * state/action plumbing. Implementations must read only immutable cached Redux fields.
- */
-interface SuperstructureRuntimeBinding {
-    /** Cached lifecycle state supplied by the robot facade; no hardware access is permitted here. */
-    fun isRobotEnabled(): Boolean
-    /** Resolves stable descriptor UIDs once during construction; hot paths use only primitive slots. */
-    fun resolvePort(subsystemUid: String, fieldUid: String): Int
-    fun portType(port: Int): SubsystemValueType?
-    fun readNumeric(port: Int, state: RobotState): Double
-    fun readBoolean(port: Int, state: RobotState): Boolean?
-    fun readString(port: Int, state: RobotState): String?
-    /** Returns [SuperstructurePortHealthBits] without allocating or reading hardware. */
-    fun readHealthBits(port: Int, state: RobotState, nowMs: Long): Int
-    fun createDoubleTargetTask(port: Int, value: Double): Task?
-    fun createIntTargetTask(port: Int, value: Int): Task?
-    fun createBooleanTargetTask(port: Int, value: Boolean): Task?
-    fun createStringTargetTask(port: Int, value: String): Task?
-    /** Resolves a parameterless project-catalog action without executing it directly. */
-    fun createLifecycleActionTask(actionKey: String, timestampMs: Long): Task?
-}
-
-/** Primitive cached-port health flags used by generated bindings. */
-object SuperstructurePortHealthBits {
-    const val VALID: Int = 1
-    const val FRESH: Int = 1 shl 1
-    const val CONFIGURED: Int = 1 shl 2
-    const val HOMED: Int = 1 shl 3
-    const val CALIBRATED: Int = 1 shl 4
-    const val CURRENT_VALID: Int = 1 shl 5
-    const val OUTPUT_HEALTHY: Int = 1 shl 6
-
-    const val FRESH_VALID_MASK: Int = VALID or FRESH
-    const val CONTROL_READY_MASK: Int = FRESH_VALID_MASK or CONFIGURED or HOMED or CALIBRATED or
-        CURRENT_VALID or OUTPUT_HEALTHY
-
-    fun requiredMask(requirement: SuperstructurePortHealthRequirement): Int = when (requirement) {
-        SuperstructurePortHealthRequirement.VALUE_ONLY -> 0
-        SuperstructurePortHealthRequirement.FRESH_VALID -> FRESH_VALID_MASK
-        SuperstructurePortHealthRequirement.CONTROL_READY -> CONTROL_READY_MASK
-    }
-}
 
 /**
  * Deterministic superstructure coordinator generated from a validated project document.
@@ -128,6 +52,7 @@ class SuperstructureRuntime(
     private data class CompiledHealthFallback(
         val definition: SuperstructureHealthFallbackPolicy,
         val sourcePort: Int,
+        val rejectionReason: String = "Health policy '${definition.policyId}' rejected ${definition.source.subsystemUid}.${definition.source.fieldUid}",
     )
 
     private val statesById = document.states.associate { preset ->
@@ -171,6 +96,12 @@ class SuperstructureRuntime(
     private val intTargets = IntArray(maximumTargetCount)
     private val booleanTargets = BooleanArray(maximumTargetCount)
     private val stringTargets = arrayOfNulls<String>(maximumTargetCount)
+    private val appliedDoubleTargets = DoubleArray(maximumTargetCount)
+    private val appliedIntTargets = IntArray(maximumTargetCount)
+    private val appliedBooleanTargets = BooleanArray(maximumTargetCount)
+    private val appliedStringTargets = arrayOfNulls<String>(maximumTargetCount)
+    private var appliedPreset: CompiledState? = null
+    private var resolvedTargetsChanged = true
     private val targetTypes = arrayOfNulls<SubsystemValueType>(maximumTargetCount)
     private val targetTasks = arrayOfNulls<Task>(maximumTargetCount)
     private val targetActions = arrayOfNulls<List<RobotAction>>(maximumTargetCount)
@@ -180,6 +111,8 @@ class SuperstructureRuntime(
     private var lifecycleFailureReason: String? = null
     private var failedGuardIndex: Int = -1
     private var resolvedTargetHash = FNV_OFFSET
+    private var hasTimestamp = false
+    private var lastTimestampMs = 0L
 
     private fun resolvePort(reference: SuperstructureFieldReference): Int =
         binding.resolvePort(reference.subsystemUid, reference.fieldUid).also { port ->
@@ -198,6 +131,16 @@ class SuperstructureRuntime(
         if (next.stateEntryTimestampMs == Long.MIN_VALUE) {
             next = next.copy(stateEntryTimestampMs = timestampMs)
         }
+        if (hasTimestamp && timestampMs < lastTimestampMs) {
+            // Replay/clock rewinds start fresh duration windows; elapsed time cannot span epochs.
+            next = next.copy(
+                stateEntryTimestampMs = timestampMs,
+                pendingActionTimestampMs = if (next.pendingActionKey != null) timestampMs else 0L,
+                candidateSinceMs = if (next.candidateTransitionId != null) timestampMs else 0L,
+            )
+        }
+        lastTimestampMs = timestampMs
+        hasTimestamp = true
         if (!binding.isRobotEnabled()) {
             if (lifecycleExecutor.size > 0) {
                 dispatchAll(store, lifecycleExecutor.cancelAll(store.state))
@@ -230,7 +173,7 @@ class SuperstructureRuntime(
         val activePreset = statesById.getValue(next.currentStateId)
         if (!resolveTargets(activePreset, store.state, timestampMs)) {
             next = enterFault(next, timestampMs, "A required cached target source is missing or invalid")
-        } else if (resolvedTargetHash != next.lastAppliedTargetHash) {
+        } else if (resolvedTargetsChanged || resolvedTargetHash != next.lastAppliedTargetHash) {
             if (applyResolvedTargets(activePreset, store)) {
                 next = next.copy(lastAppliedTargetHash = resolvedTargetHash)
             } else {
@@ -313,7 +256,7 @@ class SuperstructureRuntime(
     ): SuperstructureRuntimeState {
         val policy = fallback.definition
         val faulted = policy.latchFault || policy.fallbackStateId == document.faultStateId
-        val reason = "Health policy '${policy.policyId}' rejected ${policy.source.subsystemUid}.${policy.source.fieldUid}"
+        val reason = fallback.rejectionReason
         if (initial.currentStateId == policy.fallbackStateId && initial.isFaulted == faulted) {
             if (initial.pendingActionKey == null && initial.requestSequence == initial.handledRequestSequence) return initial
             return initial.copy(
@@ -333,9 +276,11 @@ class SuperstructureRuntime(
         requirement: SuperstructurePortHealthRequirement,
         state: RobotState,
         nowMs: Long,
+        maximumAgeMs: Long? = null,
     ): Boolean {
-        val mask = SuperstructurePortHealthBits.requiredMask(requirement)
-        return mask == 0 || binding.readHealthBits(port, state, nowMs) and mask == mask
+        val mask = SuperstructurePortHealthBits.requiredMask(requirement) or
+            if (maximumAgeMs != null) SuperstructurePortHealthBits.FRESH else 0
+        return mask == 0 || binding.readHealthBits(port, state, nowMs, maximumAgeMs ?: Long.MAX_VALUE) and mask == mask
     }
 
     private fun consumeRequest(
@@ -381,7 +326,7 @@ class SuperstructureRuntime(
             return advanceDebounce(ready, compiledEdge, nowMs)
         }
         val timeoutMs = edge.timeoutSeconds?.secondsToMillis()
-        if (timeoutMs != null && nowMs - state.pendingActionTimestampMs >= timeoutMs) {
+        if (timeoutMs != null && elapsedMillis(nowMs, state.pendingActionTimestampMs) >= timeoutMs) {
             return enterState(
                 state,
                 requireNotNull(edge.timeoutTargetStateId),
@@ -414,7 +359,7 @@ class SuperstructureRuntime(
         val timeoutTarget = preset.timeoutTargetStateId
         if (stateTimeoutMs != null && timeoutTarget != null &&
             (timeoutTarget == document.faultStateId) == faultOnly &&
-            nowMs - initial.stateEntryTimestampMs >= stateTimeoutMs
+            elapsedMillis(nowMs, initial.stateEntryTimestampMs) >= stateTimeoutMs
         ) {
             return enterState(
                 initial,
@@ -437,7 +382,7 @@ class SuperstructureRuntime(
                 TransitionTriggerKind.ACTION_REQUEST -> Unit
                 TransitionTriggerKind.TIME_ELAPSED -> {
                     val elapsedMs = requireNotNull(edge.timeoutSeconds).secondsToMillis()
-                    if (nowMs - initial.stateEntryTimestampMs >= elapsedMs) {
+                    if (elapsedMillis(nowMs, initial.stateEntryTimestampMs) >= elapsedMs) {
                         return advanceDebounce(initial, compiledEdge, nowMs)
                     }
                 }
@@ -470,7 +415,7 @@ class SuperstructureRuntime(
         if (state.candidateTransitionId != edge.transitionId) {
             return state.copy(candidateTransitionId = edge.transitionId, candidateSinceMs = nowMs)
         }
-        return if (nowMs - state.candidateSinceMs >= edge.debounceMs) {
+        return if (elapsedMillis(nowMs, state.candidateSinceMs) >= edge.debounceMs) {
             enterState(state, edge.targetStateId, nowMs, reason = reason)
         } else state
     }
@@ -517,27 +462,40 @@ class SuperstructureRuntime(
             )
         }
         val tasks = ArrayList<Task>(keys.size)
-        for (index in keys.indices) {
-            val key = keys[index]
-            val task = binding.createLifecycleActionTask(key, timestampMs)
-                ?: return if (state.currentStateId == document.faultStateId && state.isFaulted) {
-                    state.copy(
-                        lifecycleSequenceScheduled = state.transitionSequence,
-                        lifecycleSequenceCompleted = state.transitionSequence,
-                        lastLifecycleError = "Lifecycle action '$key' is unavailable at runtime",
-                    )
-                } else enterFault(state, timestampMs, "Lifecycle action '$key' is unavailable at runtime")
-            tasks.add(task)
-        }
-        val sequence = state.transitionSequence
-        val group = SequentialTaskGroup(tasks)
-            .onComplete { completedLifecycleSequence = sequence }
-            .onFail {
-                failedLifecycleSequence = sequence
-                lifecycleFailureReason = "Lifecycle actions failed for transition sequence $sequence"
+        var submitted = false
+        var preparedGroup: Task? = null
+        try {
+            for (index in keys.indices) {
+                val key = keys[index]
+                tasks.add(checkNotNull(binding.createLifecycleActionTask(key, timestampMs)) {
+                    "Lifecycle action '$key' is unavailable at runtime"
+                })
             }
-        lifecycleExecutor.addTask(group)
-        return state.copy(lifecycleSequenceScheduled = sequence, lastLifecycleError = null)
+            val sequence = state.transitionSequence
+            val group = SequentialTaskGroup(tasks)
+            preparedGroup = group
+            group.onComplete { completedLifecycleSequence = sequence }
+                .onFail {
+                    failedLifecycleSequence = sequence
+                    lifecycleFailureReason = "Lifecycle actions failed for transition sequence $sequence"
+                }
+            lifecycleExecutor.addTask(group)
+            submitted = true
+            return state.copy(lifecycleSequenceScheduled = sequence, lastLifecycleError = null)
+        } catch (failure: RuntimeException) {
+            val reason = failure.message ?: "Lifecycle action preparation failed"
+            return if (state.currentStateId == document.faultStateId && state.isFaulted) state.copy(
+                lifecycleSequenceScheduled = state.transitionSequence,
+                lifecycleSequenceCompleted = state.transitionSequence, lastLifecycleError = reason,
+            ) else enterFault(state, timestampMs, reason)
+        } finally {
+            if (!submitted) {
+                try { preparedGroup?.releaseRuntimeState() } catch (_: Throwable) { /* Already failing closed. */ }
+            }
+            if (!submitted) for (index in tasks.indices) {
+                try { tasks[index].releaseRuntimeState() } catch (_: Throwable) { /* Already failing closed. */ }
+            }
+        }
     }
 
     private fun dispatchAll(store: Store, actions: List<RobotAction>) {
@@ -576,7 +534,7 @@ class SuperstructureRuntime(
         while (guardIndex < edge.definition.guards.size) {
             val guard = edge.definition.guards[guardIndex]
             val port = edge.guardPorts[guardIndex]
-            if (!portHealthy(port, guard.source.healthRequirement, state, nowMs)) {
+            if (!portHealthy(port, guard.source.healthRequirement, state, nowMs, guard.maxStalenessMs)) {
                 failedGuardIndex = guardIndex
                 return false
             }
@@ -618,11 +576,13 @@ class SuperstructureRuntime(
     }
 
     /**
-     * Resolves every target into preallocated primitive buffers and stores an exact deterministic
-     * fingerprint in [resolvedTargetHash]. False means a required source was missing or non-finite.
+     * Resolves targets into preallocated buffers, compares their exact values with the last applied
+     * preset, and records a diagnostic fingerprint. Hash collisions never suppress changed targets.
+     * False means a required source was missing or non-finite.
      */
     private fun resolveTargets(preset: CompiledState, state: RobotState, nowMs: Long): Boolean {
         var hash = FNV_OFFSET
+        resolvedTargetsChanged = preset !== appliedPreset
         for (index in preset.targets.indices) {
             val compiledTarget = preset.targets[index]
             val target = compiledTarget.definition
@@ -667,6 +627,7 @@ class SuperstructureRuntime(
                         interlockIndex++
                     }
                     doubleTargets[index] = value
+                    if (value.toBits() != appliedDoubleTargets[index].toBits()) resolvedTargetsChanged = true
                     hash = mix(hash, value.toBits())
                 }
                 SubsystemValueType.INT -> {
@@ -684,6 +645,7 @@ class SuperstructureRuntime(
                         SuperstructureTargetMode.DYNAMIC_LUT -> null
                     } ?: return false
                     intTargets[index] = value
+                    if (value != appliedIntTargets[index]) resolvedTargetsChanged = true
                     hash = mix(hash, value.toLong())
                 }
                 SubsystemValueType.BOOLEAN -> {
@@ -696,6 +658,7 @@ class SuperstructureRuntime(
                         SuperstructureTargetMode.DYNAMIC_LUT -> null
                     } ?: return false
                     booleanTargets[index] = value
+                    if (value != appliedBooleanTargets[index]) resolvedTargetsChanged = true
                     hash = mix(hash, if (value) 1L else 0L)
                 }
                 SubsystemValueType.STRING -> {
@@ -708,6 +671,7 @@ class SuperstructureRuntime(
                         SuperstructureTargetMode.DYNAMIC_LUT -> null
                     } ?: return false
                     stringTargets[index] = value
+                    if (value != appliedStringTargets[index]) resolvedTargetsChanged = true
                     hash = mix(hash, value.hashCode().toLong())
                 }
             }
@@ -717,7 +681,8 @@ class SuperstructureRuntime(
     }
 
     private fun applyResolvedTargets(preset: CompiledState, store: Store): Boolean {
-        return try {
+        var applied = false
+        try {
             for (index in preset.targets.indices) {
                 val target = preset.targets[index]
                 val task = when (targetTypes[index]) {
@@ -741,25 +706,45 @@ class SuperstructureRuntime(
                 } ?: return false
                 targetTasks[index] = task
             }
-            // Initialize the complete preset before dispatching anything. A bad adapter cannot
-            // partially apply a multi-subsystem state and leave the mechanism in a mixed posture.
+            // Project each named-subsystem replacement before initializing the next task. Otherwise
+            // two fields of one subsystem both copy the original snapshot and the last write wins.
+            // Keep this projection private until every task has initialized successfully.
+            var projectedState = store.state
             for (index in preset.targets.indices) {
-                targetActions[index] = requireNotNull(targetTasks[index]).initialize(store.state)
+                val actions = requireNotNull(targetTasks[index]).initialize(projectedState)
+                targetActions[index] = actions
+                for (actionIndex in actions.indices) {
+                    val action = actions[actionIndex] as? RobotAction.UpdateNamedSubsystemState ?: return false
+                    if (index < preset.targets.lastIndex) {
+                        projectedState = projectedState.copy(superstructure = projectedState.superstructure.copy(
+                            subsystems = projectedState.superstructure.subsystems + (action.subsystemId to action.state),
+                        ))
+                    }
+                }
             }
             for (index in preset.targets.indices) {
                 val actions = requireNotNull(targetActions[index])
                 for (actionIndex in actions.indices) store.dispatch(actions[actionIndex])
             }
-            true
+            for (index in preset.targets.indices) {
+                appliedDoubleTargets[index] = doubleTargets[index]
+                appliedIntTargets[index] = intTargets[index]
+                appliedBooleanTargets[index] = booleanTargets[index]
+                appliedStringTargets[index] = stringTargets[index]
+            }
+            appliedPreset = preset
+            applied = true
         } catch (_: RuntimeException) {
-            false
+            applied = false
         } finally {
             for (index in preset.targets.indices) {
-                targetTasks[index]?.releaseRuntimeState()
+                val task = targetTasks[index]
                 targetTasks[index] = null
                 targetActions[index] = null
+                try { task?.releaseRuntimeState() } catch (_: Throwable) { applied = false }
             }
         }
+        return applied
     }
 
     companion object {
@@ -820,6 +805,11 @@ class SuperstructureRuntime(
         }
 
         private fun mix(hash: Long, value: Long): Long = (hash xor value) * FNV_PRIME
+        private fun elapsedMillis(nowMs: Long, sinceMs: Long): Long {
+            if (nowMs < sinceMs) return 0L
+            val elapsed = nowMs - sinceMs
+            return if (elapsed < 0L) Long.MAX_VALUE else elapsed
+        }
         private fun Double.secondsToMillis(): Long = (this * 1000.0).toLong()
     }
 }

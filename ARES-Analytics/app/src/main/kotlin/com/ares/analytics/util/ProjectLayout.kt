@@ -2,9 +2,13 @@ package com.ares.analytics.util
 
 import com.ares.analytics.shared.models.League
 import java.io.File
+import java.io.IOException
+import java.nio.file.Path
+import java.nio.file.Files
+import java.nio.file.LinkOption
 
 /**
- * Resolves files owned by an FTC or FRC robot project.
+ * Resolves files owned by an FTC, FRC or XRP robot project.
  *
  * FTC workspaces may point either at the Android project root (which contains
  * `TeamCode`) or directly at a desktop/simulator module. FRC deploy assets have
@@ -33,17 +37,31 @@ internal object ProjectLayout {
 
     /** Resolves a portable field-image path inside the robot asset root. */
     fun fieldImageFile(projectPath: String, league: League, configuredPath: String?): File {
-        val assets = assetsDirectory(projectPath, league).canonicalFile
+        val assets = resolveExistingParents(assetsDirectory(projectPath, league).toPath())
         val relative = configuredPath?.trim()?.takeIf(String::isNotEmpty) ?: "field_image.png"
         require(!File(relative).isAbsolute) { "Field image path must be relative to the robot asset folder" }
-        val image = File(assets, relative).canonicalFile
-        require(image.toPath().startsWith(assets.toPath())) {
+        val image = resolveExistingParents(assets.resolve(relative))
+        require(image.startsWith(assets)) {
             "Field image path escapes the robot asset folder"
         }
-        return image
+        return image.toFile()
     }
 
-    /** Returns null only when [projectPath] is a usable robot source repository. */
+    /** Resolve links in existing ancestors while still permitting a not-yet-created image path. */
+    private fun resolveExistingParents(path: Path): Path {
+        val absolute = path.toAbsolutePath().normalize()
+        var existing = absolute
+        val missing = ArrayDeque<Path>()
+        while (!Files.exists(existing, LinkOption.NOFOLLOW_LINKS)) {
+            missing.addFirst(existing.fileName)
+            existing = existing.parent ?: throw IOException("Cannot resolve path root: $path")
+        }
+        var resolved = existing.toRealPath()
+        for (part in missing) resolved = resolved.resolve(part)
+        return resolved.normalize()
+    }
+
+    /** Returns null when the folder exists and contains league-appropriate source files. */
     fun validationError(projectPath: String, league: League): String? {
         if (projectPath.isBlank()) return "Choose the robot repository folder."
         val root = File(projectPath)
@@ -70,10 +88,29 @@ internal object ProjectLayout {
                 root,
             )
         }
-        return sourceRoots.any { sourceRoot ->
-            sourceRoot.isDirectory && sourceRoot.walkTopDown().any { file ->
-                file.isFile && (file.extension == "kt" || file.extension == "java" || file.extension == "py")
+        val visited = HashSet<Path>()
+        val pending = ArrayDeque<File>()
+        for (sourceRoot in sourceRoots) {
+            pending.addLast(sourceRoot)
+            while (pending.isNotEmpty()) {
+                val directory = pending.removeLast()
+                if (!directory.isDirectory) continue
+                val realPath = try {
+                    directory.toPath().toRealPath()
+                } catch (_: IOException) {
+                    continue
+                }
+                if (!visited.add(realPath)) continue
+                val files = directory.listFiles() ?: continue
+                for (file in files) {
+                    if (file.isDirectory) pending.addLast(file)
+                    else if (file.isFile && when (league) {
+                        League.XRP -> file.extension == "py"
+                        League.FTC, League.FRC -> file.extension == "kt" || file.extension == "java"
+                    }) return true
+                }
             }
         }
+        return false
     }
 }

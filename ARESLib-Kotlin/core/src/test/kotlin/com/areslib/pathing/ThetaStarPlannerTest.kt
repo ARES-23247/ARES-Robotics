@@ -5,6 +5,31 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class ThetaStarPlannerTest {
+    @Test
+    fun `diagonal fallback cannot pass between occupied orthogonal neighbors`() {
+        val map = Costmap(5.0, 5.0, 1.0, Translation2d())
+        map.setObstacle(3, 1)
+        map.setObstacle(1, 3)
+        map.inflate(0.0)
+        assertTrue(map.isCellTraversable(1, 1))
+        assertTrue(map.isCellTraversable(2, 2))
+        val path = ThetaStarPlanner.plan(map, Translation2d(1.0, 1.0), Translation2d(2.0, 2.0))
+        for (i in 1 until path.size) {
+            assertTrue(com.areslib.pathing.planner.LineOfSightChecker.lineOfSight(map,
+                path[i - 1].x.toInt(), path[i - 1].y.toInt(), path[i].x.toInt(), path[i].y.toInt()))
+        }
+    }
+
+    @Test
+    fun `same cell shortcut still validates bounds and occupancy`() {
+        val map = Costmap(3.0, 3.0, 1.0, Translation2d())
+        map.setObstacle(1, 1)
+        map.inflate(0.0)
+        for (point in listOf(Translation2d(-2.0, -2.0), Translation2d(1.0, 1.0))) {
+            assertTrue(ThetaStarPlanner.plan(map, point, point).isEmpty())
+        }
+    }
+
 
     @Test
     fun testOpenFieldPathfinding() {

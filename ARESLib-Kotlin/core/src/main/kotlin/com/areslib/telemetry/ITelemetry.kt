@@ -78,10 +78,14 @@ private val scratchPose3dArray = object : ThreadLocal<DoubleArray>() {
  * Logs a 2D field pose as `[xMeters, yMeters, headingRadians]` using a thread-local buffer.
  */
 fun ITelemetry.logPoseArray2d(key: String, pose: Pose2d) {
+    logPoseArray2d(key, pose.x, pose.y, pose.heading.radians)
+}
+
+internal fun ITelemetry.logPoseArray2d(key: String, x: Double, y: Double, headingRadians: Double) {
     val arr = scratchPose2dArray.get()!!
-    arr[0] = pose.x
-    arr[1] = pose.y
-    arr[2] = pose.heading.radians
+    arr[0] = x
+    arr[1] = y
+    arr[2] = headingRadians
     putDoubleArray(key, arr)
 }
 
@@ -109,34 +113,11 @@ fun ITelemetry.logPose3d(key: String, pose: Pose2d) {
 }
 
 /**
- * Extension to log gamepad state without code duplication.
+ * Logs all six axes and 35 buttons using the same mapping as shared state publication.
+ * Stable prefixes reuse topic strings; at most 16 prefixes are cached per publishing thread.
  */
 fun ITelemetry.logGamepad(prefix: String, gamepad: GamepadState) {
-    putNumber("$prefix/LeftStick_X", gamepad.leftStickX.toDouble())
-    putNumber("$prefix/LeftStick_Y", gamepad.leftStickY.toDouble())
-    putNumber("$prefix/RightStick_X", gamepad.rightStickX.toDouble())
-    putNumber("$prefix/RightStick_Y", gamepad.rightStickY.toDouble())
-    putNumber("$prefix/LeftTrigger", gamepad.leftTrigger.toDouble())
-    putNumber("$prefix/RightTrigger", gamepad.rightTrigger.toDouble())
-    putBoolean("$prefix/A", gamepad.a)
-    putBoolean("$prefix/B", gamepad.b)
-    putBoolean("$prefix/X", gamepad.x)
-    putBoolean("$prefix/Y", gamepad.y)
-    putBoolean("$prefix/DpadUp", gamepad.dpadUp)
-    putBoolean("$prefix/DpadDown", gamepad.dpadDown)
-    putBoolean("$prefix/DpadLeft", gamepad.dpadLeft)
-    putBoolean("$prefix/DpadRight", gamepad.dpadRight)
-    putBoolean("$prefix/LeftBumper", gamepad.leftBumper)
-    putBoolean("$prefix/RightBumper", gamepad.rightBumper)
-    putBoolean("$prefix/C", gamepad.c)
-    putBoolean("$prefix/Z", gamepad.z)
-    putBoolean("$prefix/M1", gamepad.m1)
-    putBoolean("$prefix/M2", gamepad.m2)
-    putBoolean("$prefix/M3", gamepad.m3)
-    putBoolean("$prefix/M4", gamepad.m4)
-    putBoolean("$prefix/Touchpad", gamepad.touchpad)
-    putBoolean("$prefix/Share", gamepad.share)
-    putBoolean("$prefix/Options", gamepad.options)
+    GamepadTelemetry.publish(this, GamepadTelemetry.cachedTopics(prefix), gamepad)
 }
 
 /**

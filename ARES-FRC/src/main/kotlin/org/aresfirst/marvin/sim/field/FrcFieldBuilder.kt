@@ -10,6 +10,8 @@ object FrcFieldBuilder {
 
     /** Adds only an axis-aligned boundary of [width] by [height] meters. */
     fun buildWorldWalls(world: World<Body>, width: Double, height: Double) {
+        require(width.isFinite() && width > 0.0) { "Field width must be finite and positive" }
+        require(height.isFinite() && height > 0.0) { "Field height must be finite and positive" }
         addWall(world, width / 2.0, height, width, 0.1)   // Top
         addWall(world, width / 2.0, 0.0, width, 0.1)      // Bottom
         addWall(world, 0.0, height / 2.0, 0.1, height)     // Left

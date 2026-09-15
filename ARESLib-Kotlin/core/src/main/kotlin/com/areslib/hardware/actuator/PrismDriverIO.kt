@@ -105,6 +105,7 @@ enum class PrismPwmPreset(val pulseWidthUs: Int) {
 /**
  * Hardware IO interface for the goBILDA Prism RGB LED Driver (SKU 3118-2855-0001).
  * Supports both PWM (Servo pulse width 500–2500µs) and I²C (Address 0x38) modes.
+ * Position and hue helpers clamp finite ratios to 0..1 and select solid off for nonfinite inputs.
  */
 interface PrismDriverIO : SubsystemIO {
     /** Current commanded pulse width in microseconds (500 to 2500). */
@@ -116,10 +117,9 @@ interface PrismDriverIO : SubsystemIO {
     /** Sets the Prism driver to a raw pulse width in microseconds (500–2500µs). */
     fun setPulseWidthUs(pulseWidthUs: Int)
 
-    /** Sets the Prism driver using normalized servo position (0.0 to 1.0). */
+    /** Clamps finite positions to 0..1; nonfinite inputs select the explicit solid-off preset. */
     fun setPosition(position: Double) {
-        val clamped = position.coerceIn(0.0, 1.0)
-        setPulseWidthUs((500 + clamped * 2000).toInt())
+        setPulseWidthUs(prismRatioToPulse(position, 500, 2000))
     }
 
     /** Sets the Prism driver to a predefined PWM preset. */
@@ -127,28 +127,28 @@ interface PrismDriverIO : SubsystemIO {
 
     /** Continuously adjusts Sine Wave hue (hueRatio 0.0 to 1.0 maps to 700µs - 949µs). */
     fun setSineWaveHue(hueRatio: Double) {
-        val clamped = hueRatio.coerceIn(0.0, 1.0)
-        setPulseWidthUs((700 + clamped * 249.0).toInt())
+        setPulseWidthUs(prismRatioToPulse(hueRatio, 700, 249))
     }
 
     /** Continuously adjusts Sparkle hue (hueRatio 0.0 to 1.0 maps to 620µs - 699µs). */
     fun setSparkleHue(hueRatio: Double) {
-        val clamped = hueRatio.coerceIn(0.0, 1.0)
-        setPulseWidthUs((620 + clamped * 79.0).toInt())
+        setPulseWidthUs(prismRatioToPulse(hueRatio, 620, 79))
     }
 
     /** Continuously adjusts Pulse hue (hueRatio 0.0 to 1.0 maps to 1950µs - 2199µs). */
     fun setPulseHue(hueRatio: Double) {
-        val clamped = hueRatio.coerceIn(0.0, 1.0)
-        setPulseWidthUs((1950 + clamped * 249.0).toInt())
+        setPulseWidthUs(prismRatioToPulse(hueRatio, 1950, 249))
     }
 
     /** Continuously adjusts Solid Color hue (hueRatio 0.0 to 1.0 maps to 1100µs - 1899µs). */
     fun setSolidColorHue(hueRatio: Double) {
-        val clamped = hueRatio.coerceIn(0.0, 1.0)
-        setPulseWidthUs((1100 + clamped * 799.0).toInt())
+        setPulseWidthUs(prismRatioToPulse(hueRatio, 1100, 799))
     }
 
     /** Sets solid color by RGB (0-255). */
     fun setSolidColorRgb(r: Int, g: Int, b: Int)
 }
+
+private fun prismRatioToPulse(ratio: Double, startUs: Int, spanUs: Int): Int =
+    if (ratio.isFinite()) (startUs + ratio.coerceIn(0.0, 1.0) * spanUs).toInt()
+    else PrismPwmPreset.SOLID_OFF.pulseWidthUs
