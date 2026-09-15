@@ -19,6 +19,7 @@ $versions = @{
     'ARES-FRC-Starter' = $releaseProperties['frcStarterVersion']
     'ARES-XRP-Starter' = $releaseProperties['xrpStarterVersion']
     'ARES-Lightbot-Example' = $releaseProperties['lightbotExampleVersion']
+    'ARES-BIOBUZZ-Example' = $releaseProperties['biobuzzExampleVersion']
 }
 if ($versions.Values | Where-Object { -not $_ -or $_ -notmatch '^\d+\.\d+\.\d+$' }) {
     throw 'Project-template archive versions must be explicit MAJOR.MINOR.PATCH values.'

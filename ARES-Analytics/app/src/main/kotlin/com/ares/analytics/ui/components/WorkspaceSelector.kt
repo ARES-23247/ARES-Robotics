@@ -56,6 +56,7 @@ internal fun WorkspaceSelector(
     onRemove: (WorkspaceConfig) -> Unit,
     onCreate: () -> Unit,
     onExploreDemo: () -> Unit,
+    onExploreBiobuzz: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -183,6 +184,11 @@ internal fun WorkspaceSelector(
                     expanded = false
                     onExploreDemo()
                 },
+            )
+            DropdownMenuItem(
+                text = { Column { Text("Explore BIOBUZZ", color = AresTextPrimary, fontWeight = FontWeight.Bold)
+                    Text("Four-ball robot and dynamic competition field", color = AresTextSecondary, fontSize = 11.sp) } },
+                onClick = { expanded = false; onExploreBiobuzz() },
             )
         }
     }

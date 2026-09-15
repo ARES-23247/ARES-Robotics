@@ -61,4 +61,13 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         bundledResourcePath = "/project-templates/ARES-Lightbot-Example-${BuildConfig.LIGHTBOT_EXAMPLE_VERSION}.zip",
         deploymentPolicy = RobotProjectDeploymentPolicy.SIMULATION_ONLY_REFERENCE,
     ),
+    RobotProjectTemplate(
+        id = "ares-biobuzz-example-${BuildConfig.BIOBUZZ_EXAMPLE_VERSION}",
+        displayName = "BIOBUZZ Bot", league = League.FTC,
+        artifactVersion = BuildConfig.BIOBUZZ_EXAMPLE_VERSION, aresVersion = BuildConfig.ARES_VERSION,
+        revision = "schema5-biobuzz-v1", archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/ARES-BIOBUZZ-Example-${BuildConfig.BIOBUZZ_EXAMPLE_VERSION}.zip",
+        archiveSha256 = BuildConfig.BIOBUZZ_EXAMPLE_SHA256, kind = RobotProjectTemplateKind.BIOBUZZ_EXAMPLE,
+        bundledResourcePath = "/project-templates/ARES-BIOBUZZ-Example-${BuildConfig.BIOBUZZ_EXAMPLE_VERSION}.zip",
+        deploymentPolicy = RobotProjectDeploymentPolicy.SIMULATION_ONLY_REFERENCE,
+    ),
 )

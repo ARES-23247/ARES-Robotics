@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 11,
+  "documentId": "biobuzz-intake",
+  "uid": "biobuzz-intake",
+  "displayName": "BIOBUZZ Intake",
+  "kotlinTypeName": "BiobuzzIntake",
+  "description": "Robot Builder example: four-ball collector with cached feedback and bounded voltage.",
+  "platform": "FTC",
+  "revision": 1,
+  "hardware": [
+    {
+      "hardwareId": "intake",
+      "uid": "intake",
+      "displayName": "Intake",
+      "kind": "MOTOR",
+      "connection": {
+        "hardwareMapName": "intake"
+      },
+      "measurements": [
+        {
+          "fieldId": "intakePosition",
+          "source": "MOTOR_POSITION_NATIVE"
+        },
+        {
+          "fieldId": "intakeVelocity",
+          "source": "MOTOR_VELOCITY_NATIVE_PER_SECOND"
+        },
+        {
+          "fieldId": "intakeCurrent",
+          "source": "MOTOR_CURRENT_AMPS"
+        }
+      ],
+      "required": true,
+      "safeOutput": 0.0
+    }
+  ],
+  "stateFields": [
+    {
+      "fieldId": "intakeVoltage",
+      "uid": "intake",
+      "displayName": "Intake",
+      "description": "Accepted intake intent",
+      "type": "DOUBLE",
+      "role": "TARGET",
+      "defaultNumber": 0.0,
+      "minimum": 0.0,
+      "maximum": 12.0,
+      "unit": "V"
+    },
+    {
+      "fieldId": "intakePosition",
+      "uid": "intakePosition",
+      "displayName": "Intake Position",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "ticks",
+      "defaultNumber": 0.0
+    },
+    {
+      "fieldId": "intakeVelocity",
+      "uid": "intakeVelocity",
+      "displayName": "Intake Velocity",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "ticks/s",
+      "defaultNumber": 0.0
+    },
+    {
+      "fieldId": "intakeCurrent",
+      "uid": "intakeCurrent",
+      "displayName": "Intake Current",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "A",
+      "defaultNumber": 0.0
+    }
+  ],
+  "controlLoops": [
+    {
+      "loopId": "intakeOutput",
+      "uid": "intakeOutput",
+      "displayName": "Intake output",
+      "description": "Binary reference mechanism with scaled voltage output.",
+      "strategy": "DIRECT",
+      "actuatorId": "intake",
+      "targetFieldId": "intakeVoltage",
+      "feedforward": {
+        "kind": "NONE"
+      },
+      "minimumOutput": 0.0,
+      "maximumOutput": 12.0
+    }
+  ],
+  "tuningParameters": [],
+  "implementation": {
+    "kind": "DECLARATIVE_GENERATED",
+    "ownership": "GENERATED_DO_NOT_EDIT",
+    "simulation": {
+      "support": "GENERATED_MOCK",
+      "interaction": {
+        "role": "INTAKE_COLLECTOR",
+        "triggerActuatorId": "intake",
+        "triggerThreshold": 1.0,
+        "storageCapacity": 4,
+        "intakeDistanceMeters": 0.27,
+        "captureRadiusMeters": 0.14,
+        "launchSpeedMps": 5.8,
+        "launchElevationDeg": 60.0
+      }
+    },
+    "teaching": {
+      "level": "BEGINNER",
+      "summary": "Robot Builder example: four-ball collector with cached feedback and bounded voltage.",
+      "documentationPath": "docs/BIOBUZZ.md",
+      "concepts": [
+        "Generated Redux targets",
+        "Cached motor feedback",
+        "Safe applied outputs",
+        "Controller bindings"
+      ]
+    }
+  },
+  "capabilityActionKeys": [],
+  "requiredAtStartup": true,
+  "generateMockIo": true,
+  "generateTest": true,
+  "safety": {
+    "homing": {
+      "method": "NONE"
+    },
+    "feedbackTimeoutMs": 100,
+    "requiresCurrentMonitoring": true,
+    "requiresConfigurationHealth": true,
+    "latchOutputFaults": true,
+    "requiresExplicitNeutralRecovery": true
+  },
+  "template": "SIMPLE_ACTUATOR",
+  "autonomousResourceKey": "biobuzz-intake"
+}

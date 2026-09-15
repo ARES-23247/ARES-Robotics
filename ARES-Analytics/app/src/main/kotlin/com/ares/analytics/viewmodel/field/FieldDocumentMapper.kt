@@ -158,14 +158,21 @@ internal object FieldDocumentMapper {
     fun gamePieces(document: RobotFieldConfig): List<GamePiece> {
         val types = document.elementTypes.associateBy { it.id }
         return document.elements.map { element ->
+            val type = types[element.elementTypeId]
+            val round = type?.shape in setOf("circle", "sphere", "cylinder")
+            val width = if (round) type?.diameter ?: type?.width else type?.width
             GamePiece(
                 id = element.id,
                 name = element.name.ifBlank { element.id },
                 x = element.x,
                 y = element.y,
-                type = types[element.elementTypeId]?.name ?: element.elementTypeId,
+                type = type?.name ?: element.elementTypeId,
                 typeId = element.elementTypeId,
-                locked = element.locked
+                locked = element.locked,
+                widthMeters = width,
+                heightMeters = if (round) width else type?.height,
+                simulationShape = type?.shape,
+                colorRgb = type?.color?.removePrefix("#")?.toLongOrNull(16)?.and(0xFFFFFF)?.toInt(),
             )
         }
     }

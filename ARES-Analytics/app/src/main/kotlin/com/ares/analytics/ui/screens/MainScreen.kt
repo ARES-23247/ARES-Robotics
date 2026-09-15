@@ -255,8 +255,12 @@ fun MainScreen(services: ServiceRegistry) {
     } else {
         isLocalSimOnline
     }
+    val dashboardWindowFocused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
+    LaunchedEffect(dashboardWindowFocused) {
+        if (!dashboardWindowFocused) services.keyboardDriveState.disarm()
+    }
     val localSimulatorControlAuthorized =
-        activeNav == NavigationTarget.DASHBOARD &&
+        dashboardWindowFocused && activeNav == NavigationTarget.DASHBOARD &&
             targetSelection == TargetSelection.LOCAL_SIM &&
             isRobotLinkConnected &&
             (currentConfig.league == League.XRP || isLoopbackDriveControlHost(services.nt4ClientService.serverIp))
@@ -625,6 +629,10 @@ fun MainScreen(services: ServiceRegistry) {
                             },
                             onCreate = {
                                 requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
+                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                            },
+                            onExploreBiobuzz = {
+                                requestedProjectSetupMode = ProjectSetupMode.EXPLORE_BIOBUZZ
                                 mainViewModel.onIntent(MainIntent.AddNewWorkspace)
                             },
                             onExploreDemo = {

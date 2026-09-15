@@ -140,6 +140,34 @@ jobs:
           fi
           ./gradlew :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug \
             "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
+      - name: Export BioBuzz from the canonical starter and season overlay
+        shell: pwsh
+        run: ./scripts/export-starter-mirrors.ps1 -OutputRoot "$env:RUNNER_TEMP/biobuzz-consumer"
+      - name: Test generated BioBuzz robot, field simulation, and APK
+        shell: bash
+        env:
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
+          CANDIDATE_VERSION: ${{ needs.candidate.outputs.version }}
+        run: |
+          dependency_args=()
+          if [[ "$CANDIDATE_RESULT" == "success" ]]; then
+            dependency_args+=("-ParesVersion=$CANDIDATE_VERSION")
+            dependency_args+=("-ParesRepository=file://${GITHUB_WORKSPACE}/.release-validation")
+          fi
+          cd "$RUNNER_TEMP/biobuzz-consumer/ARES-BIOBUZZ-Example"
+          bash ./gradlew generateAresProject :TeamCode:verifyAresProject \
+            :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug \
+            "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: biobuzz-consumer-evidence
+          path: |
+            ${{ runner.temp }}/biobuzz-consumer/ARES-BIOBUZZ-Example/TeamCode/build/test-results/**
+            ${{ runner.temp }}/biobuzz-consumer/ARES-BIOBUZZ-Example/simulator/build/test-results/**
+            ${{ runner.temp }}/biobuzz-consumer/ARES-BIOBUZZ-Example/TeamCode/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 7
       - uses: actions/upload-artifact@v7
         with:
           name: lightbot-debug-apk

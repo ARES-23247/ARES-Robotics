@@ -30,6 +30,8 @@ val bundledAresVersion = requiredReleaseProperty("aresVersion")
 val ftcStarterVersion = requiredReleaseProperty("ftcStarterVersion")
 val frcStarterVersion = requiredReleaseProperty("frcStarterVersion")
 val xrpStarterVersion = requiredReleaseProperty("xrpStarterVersion")
+val biobuzzExampleVersion = requiredReleaseProperty("biobuzzExampleVersion")
+val biobuzzExampleSha256 = requiredStarterArtifact("biobuzzExampleSha256")
 val lightbotExampleVersion = requiredReleaseProperty("lightbotExampleVersion")
 val ftcStarterSha256 = requiredStarterArtifact("ftcStarterSha256")
 val frcStarterSha256 = requiredStarterArtifact("frcStarterSha256")
@@ -89,6 +91,8 @@ plugins {
 
 dependencies {
     val aresVersion = rootProject.extra["aresVersion"] as String
+
+    // Bundled field practice uses the same contact engine as the FTC desktop simulator.
 
     // Compose Desktop
     implementation(compose.desktop.currentOs)
@@ -241,6 +245,8 @@ tasks.register("generateBuildConfig") {
             |    const val FTC_STARTER_VERSION = "$ftcVersion"
             |    const val FRC_STARTER_VERSION = "$frcVersion"
             |    const val XRP_STARTER_VERSION = "$xrpVersion"
+            |    const val BIOBUZZ_EXAMPLE_VERSION = "$biobuzzExampleVersion"
+            |    const val BIOBUZZ_EXAMPLE_SHA256 = "$biobuzzExampleSha256"
             |    const val LIGHTBOT_EXAMPLE_VERSION = "$lightbotVersion"
             |    const val FTC_STARTER_SHA256 = "$ftcHash"
             |    const val FRC_STARTER_SHA256 = "$frcHash"
@@ -300,6 +306,8 @@ tasks.named("check") {
 sourceSets {
     main {
         kotlin.srcDir(generatedBuildConfigDir)
+        kotlin.srcDir(rootProject.file("../ARES-FTC/biobuzz/shared/src/main/kotlin"))
+        resources.srcDir(rootProject.file("../ARES-FTC/biobuzz/shared/src/main/resources"))
     }
 }
 

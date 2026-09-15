@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 11,
+  "documentId": "biobuzz-shooter",
+  "uid": "biobuzz-shooter",
+  "displayName": "BIOBUZZ Shooter",
+  "kotlinTypeName": "BiobuzzShooter",
+  "description": "Robot Builder example: flywheel and feeder with independent voltage targets; lower flywheel voltage gives a flower shot.",
+  "platform": "FTC",
+  "revision": 1,
+  "hardware": [
+    {
+      "hardwareId": "flywheel",
+      "uid": "flywheel",
+      "displayName": "Flywheel",
+      "kind": "MOTOR",
+      "connection": {
+        "hardwareMapName": "flywheel"
+      },
+      "measurements": [
+        {
+          "fieldId": "flywheelPosition",
+          "source": "MOTOR_POSITION_NATIVE"
+        },
+        {
+          "fieldId": "flywheelVelocity",
+          "source": "MOTOR_VELOCITY_NATIVE_PER_SECOND"
+        },
+        {
+          "fieldId": "flywheelCurrent",
+          "source": "MOTOR_CURRENT_AMPS"
+        }
+      ],
+      "required": true,
+      "safeOutput": 0.0
+    },
+    {
+      "hardwareId": "transfer",
+      "uid": "transfer",
+      "displayName": "Transfer",
+      "kind": "MOTOR",
+      "connection": {
+        "hardwareMapName": "transfer"
+      },
+      "measurements": [
+        {
+          "fieldId": "transferPosition",
+          "source": "MOTOR_POSITION_NATIVE"
+        },
+        {
+          "fieldId": "transferVelocity",
+          "source": "MOTOR_VELOCITY_NATIVE_PER_SECOND"
+        },
+        {
+          "fieldId": "transferCurrent",
+          "source": "MOTOR_CURRENT_AMPS"
+        }
+      ],
+      "required": true,
+      "safeOutput": 0.0
+    }
+  ],
+  "stateFields": [
+    {
+      "fieldId": "flywheelVoltage",
+      "uid": "flywheel",
+      "displayName": "Flywheel",
+      "description": "Accepted flywheel intent",
+      "type": "DOUBLE",
+      "role": "TARGET",
+      "defaultNumber": 0.0,
+      "minimum": 0.0,
+      "maximum": 12.0,
+      "unit": "V"
+    },
+    {
+      "fieldId": "transferVoltage",
+      "uid": "transfer",
+      "displayName": "Transfer",
+      "description": "Accepted transfer intent",
+      "type": "DOUBLE",
+      "role": "TARGET",
+      "defaultNumber": 0.0,
+      "minimum": 0.0,
+      "maximum": 12.0,
+      "unit": "V"
+    },
+    {
+      "fieldId": "flywheelPosition",
+      "uid": "flywheelPosition",
+      "displayName": "Flywheel Position",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "ticks",
+      "defaultNumber": 0.0
+    },
+    {
+      "fieldId": "flywheelVelocity",
+      "uid": "flywheelVelocity",
+      "displayName": "Flywheel Velocity",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "ticks/s",
+      "defaultNumber": 0.0
+    },
+    {
+      "fieldId": "flywheelCurrent",
+      "uid": "flywheelCurrent",
+      "displayName": "Flywheel Current",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "A",
+      "defaultNumber": 0.0
+    },
+    {
+      "fieldId": "transferPosition",
+      "uid": "transferPosition",
+      "displayName": "Transfer Position",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "ticks",
+      "defaultNumber": 0.0
+    },
+    {
+      "fieldId": "transferVelocity",
+      "uid": "transferVelocity",
+      "displayName": "Transfer Velocity",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "ticks/s",
+      "defaultNumber": 0.0
+    },
+    {
+      "fieldId": "transferCurrent",
+      "uid": "transferCurrent",
+      "displayName": "Transfer Current",
+      "type": "DOUBLE",
+      "role": "MEASUREMENT",
+      "unit": "A",
+      "defaultNumber": 0.0
+    }
+  ],
+  "controlLoops": [
+    {
+      "loopId": "flywheelOutput",
+      "uid": "flywheelOutput",
+      "displayName": "Flywheel output",
+      "description": "Binary reference mechanism with scaled voltage output.",
+      "strategy": "DIRECT",
+      "actuatorId": "flywheel",
+      "targetFieldId": "flywheelVoltage",
+      "feedforward": {
+        "kind": "NONE"
+      },
+      "minimumOutput": 0.0,
+      "maximumOutput": 12.0
+    },
+    {
+      "loopId": "transferOutput",
+      "uid": "transferOutput",
+      "displayName": "Transfer output",
+      "description": "Binary reference mechanism with scaled voltage output.",
+      "strategy": "DIRECT",
+      "actuatorId": "transfer",
+      "targetFieldId": "transferVoltage",
+      "feedforward": {
+        "kind": "NONE"
+      },
+      "minimumOutput": 0.0,
+      "maximumOutput": 12.0
+    }
+  ],
+  "tuningParameters": [],
+  "implementation": {
+    "kind": "DECLARATIVE_GENERATED",
+    "ownership": "GENERATED_DO_NOT_EDIT",
+    "simulation": {
+      "support": "GENERATED_MOCK",
+      "interaction": {
+        "role": "PROJECTILE_LAUNCHER",
+        "triggerActuatorId": "transfer",
+        "triggerThreshold": 1.0,
+        "storageCapacity": 4,
+        "intakeDistanceMeters": 0.27,
+        "captureRadiusMeters": 0.14,
+        "launchSpeedMps": 5.8,
+        "launchElevationDeg": 60.0
+      }
+    },
+    "teaching": {
+      "level": "BEGINNER",
+      "summary": "Robot Builder example: flywheel and feeder with independent voltage targets; lower flywheel voltage gives a flower shot.",
+      "documentationPath": "docs/BIOBUZZ.md",
+      "concepts": [
+        "Generated Redux targets",
+        "Cached motor feedback",
+        "Safe applied outputs",
+        "Controller bindings"
+      ]
+    }
+  },
+  "capabilityActionKeys": [],
+  "requiredAtStartup": true,
+  "generateMockIo": true,
+  "generateTest": true,
+  "safety": {
+    "homing": {
+      "method": "NONE"
+    },
+    "feedbackTimeoutMs": 100,
+    "requiresCurrentMonitoring": true,
+    "requiresConfigurationHealth": true,
+    "latchOutputFaults": true,
+    "requiresExplicitNeutralRecovery": true
+  },
+  "template": "SIMPLE_ACTUATOR",
+  "autonomousResourceKey": "biobuzz-shooter"
+}

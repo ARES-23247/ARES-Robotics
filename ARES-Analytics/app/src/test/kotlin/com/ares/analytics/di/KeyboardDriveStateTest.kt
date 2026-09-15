@@ -21,6 +21,7 @@ class KeyboardDriveStateTest {
             isQPressed = true
             isJPressed = true
             isShiftPressed = true
+            isSpacePressed = true
         }
         state.releaseAll()
         assertTrue(state.enabled)
@@ -28,6 +29,7 @@ class KeyboardDriveStateTest {
         assertFalse(state.isQPressed)
         assertFalse(state.isJPressed)
         assertFalse(state.isShiftPressed)
+        assertFalse(state.isSpacePressed)
 
         state.disarm()
         assertFalse(state.enabled)

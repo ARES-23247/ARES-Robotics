@@ -413,6 +413,9 @@ class KeyboardDriveState {
     // Trigger (Shift)
     var isShiftPressed by androidx.compose.runtime.mutableStateOf(false)
 
+    // Hold Space for fine keyboard positioning; mechanism buttons keep their normal meaning.
+    var isSpacePressed by androidx.compose.runtime.mutableStateOf(false)
+
     fun releaseAll() {
         isWPressed = false
         isSPressed = false
@@ -429,6 +432,7 @@ class KeyboardDriveState {
         isQPressed = false
         isEPressed = false
         isShiftPressed = false
+        isSpacePressed = false
     }
 
     fun disarm() {

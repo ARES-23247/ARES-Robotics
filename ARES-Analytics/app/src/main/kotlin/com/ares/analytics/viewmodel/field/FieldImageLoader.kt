@@ -10,6 +10,12 @@ import org.jetbrains.skia.Image
 internal object FieldImageLoader {
     fun load(projectPath: String, league: League, configuredPath: String?): Result<ImageBitmap?> = runCatching {
         val displayPath = configuredPath?.trim()?.takeIf(String::isNotEmpty) ?: return@runCatching null
+        if (displayPath == "classpath:field-presets/ftc/2026-2027-biobuzz.png") {
+            val bytes = requireNotNull(javaClass.classLoader.getResourceAsStream(displayPath.removePrefix("classpath:"))) {
+                "Bundled BIOBUZZ field image is missing."
+            }.use { it.readBytes() }
+            return@runCatching Image.makeFromEncoded(bytes).toComposeImageBitmap()
+        }
         val imageFile = ProjectLayout.fieldImageFile(projectPath, league, displayPath)
         require(imageFile.isFile) {
             "Field image '$displayPath' was not found in the robot assets folder."

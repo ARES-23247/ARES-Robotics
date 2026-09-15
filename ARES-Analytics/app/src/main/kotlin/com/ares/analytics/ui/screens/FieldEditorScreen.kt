@@ -71,21 +71,33 @@ import com.ares.analytics.viewmodel.field.AprilTagMapPresetCatalog
 fun FieldEditorScreen(
     viewModel: FieldEditorViewModel,
     league: League,
-    projectPath: String? = null
+    projectPath: String? = null,
 ) {
-    val state by viewModel.state.collectAsState()
-
     LaunchedEffect(projectPath, league) {
         viewModel.onIntent(FieldEditorIntent.LoadConfig(projectPath, league))
     }
+    val state by viewModel.state.collectAsState()
     val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
     var obstaclesCollapsed by remember { mutableStateOf(false) }
     var gamePiecesCollapsed by remember { mutableStateOf(false) }
     var showGamePieceCatalog by remember { mutableStateOf(false) }
     var aprilTagsCollapsed by remember { mutableStateOf(false) }
     var seasonMapMenuExpanded by remember { mutableStateOf(false) }
     var waypointsCollapsed by remember { mutableStateOf(false) }
+    var confirmBiobuzz by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    if (confirmBiobuzz) {
+        AlertDialog(
+            onDismissRequest = { confirmBiobuzz = false },
+            title = { Text("Load BIOBUZZ field?") },
+            text = { Text("Replace this field layout and image with the bundled BIOBUZZ preset. This change can be undone. Run it from Dashboard → Local Sim.") },
+            confirmButton = { TextButton(onClick = {
+                confirmBiobuzz = false
+                viewModel.onIntent(FieldEditorIntent.LoadBiobuzzPreset)
+            }) { Text("Load field") } },
+            dismissButton = { TextButton(onClick = { confirmBiobuzz = false }) { Text("Cancel") } },
+        )
+    }
 
     if (showGamePieceCatalog) {
         GamePieceCatalogDialog(
@@ -136,6 +148,13 @@ fun FieldEditorScreen(
                 modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                if (league == League.FTC) {
+                    Text("BIOBUZZ 2026–2027", color = AresGold, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { confirmBiobuzz = true }, enabled = !state.isLoading) { Text("Load field") }
+
+                    }
+                }
                 FieldImageSettingsSection(
                     config = state.fieldImageConfig,
                     league = league,

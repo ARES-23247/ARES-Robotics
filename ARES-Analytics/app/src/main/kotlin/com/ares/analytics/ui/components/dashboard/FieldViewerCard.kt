@@ -33,6 +33,7 @@ import com.ares.analytics.viewmodel.field.toReplayPoseState
 import com.ares.analytics.viewmodel.field.loadReplayFieldTrace
 import com.ares.analytics.viewmodel.field.loadRobotLightingPlacements
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
+import com.ares.analytics.ui.components.biobuzz.drawBiobuzz
 import androidx.compose.material.icons.filled.SwapHoriz
 
 private fun waypointOrNull(x: Double?, y: Double?, headingRad: Double?): Waypoint? {
@@ -69,6 +70,7 @@ fun FieldViewerCard(
     onPropertiesChanged: (Map<String, String>) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
     val scope = rememberCoroutineScope()
     val viewModel = remember(nt4ClientService) { FieldViewerViewModel(nt4ClientService, scope) }
     val state by viewModel.state.collectAsState()
@@ -76,6 +78,7 @@ fun FieldViewerCard(
     val liveState = remember(currentFrame?.sequence, observedLiveState) {
         currentFrame?.toReplayPoseState() ?: observedLiveState
     }
+    val biobuzz = liveState.biobuzz?.state
     val isLiveConnected = liveTransportConnected ?: liveState.isConnected
     val lightingPlacements by produceState(initialValue = emptyMap(), projectPath) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -322,6 +325,13 @@ fun FieldViewerCard(
                     }
                 }
             }
+            if (biobuzz != null) {
+                Text("BIOBUZZ · Inventory ${biobuzz.inventory.size}/4 · " +
+                    biobuzz.hives.joinToString(" · ") { "${if (it.red) "Red" else "Blue"} hive: cell ${it.upward + 1}, ${it.contents.size} balls, ${it.tips} tips" },
+                    color = AresGold, fontSize = 11.sp)
+                Text("J: intake · L: hive shot / U: flower shot · Shift: feed · Space: slow drive · P = pollen · N = nectar", color = AresTextSecondary, fontSize = 10.sp)
+                Text("Human player: Q red (${biobuzz.redReserve}) · E blue (${biobuzz.blueReserve})", color = AresTextSecondary, fontSize = 10.sp)
+            }
             HorizontalDivider(color = AresBorder)
             Box(
                 modifier = Modifier
@@ -348,7 +358,16 @@ fun FieldViewerCard(
                     showEkfPose = showEkfPose,
                     showOdomPose = showOdomPose,
                     showVisionPoses = showVisionPoses,
-                    gamePieces = liveState.liveGamePieces.values.toList(),
+                    gamePieces = if (biobuzz == null) liveState.liveGamePieces.values.toList() else biobuzz.balls
+                        .filter { it.location == org.ares.biobuzz.BallLocation.FLOOR || it.location == org.ares.biobuzz.BallLocation.AIR }
+                        .map { b -> com.ares.analytics.shared.GamePiece(b.id, b.kind.name, b.x, b.y,
+                            typeId = b.kind.typeId, widthMeters = b.kind.diameter, heightMeters = b.kind.diameter,
+                            simulationShape = "circle", colorRgb = b.kind.color) },
+                    showAllianceStations = biobuzz == null,
+                    fieldWaypoints = if (biobuzz == null) null else emptyList(),
+                    fieldOverlay = if (biobuzz == null) null else { w, h, fw, fh ->
+                        drawBiobuzz(biobuzz, textMeasurer, w, h, fw, fh)
+                    },
                     showPathControls = false,
                     showObstacleControls = false,
                     showToolbar = false,

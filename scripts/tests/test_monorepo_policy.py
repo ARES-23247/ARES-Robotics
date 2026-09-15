@@ -29,9 +29,9 @@ class MonorepoPolicyTest(unittest.TestCase):
         # These dependencies have their own real test suites. Isolate this policy's behavior.
         self.write('scripts/verify_agent_guidance.py', 'pass\n')
         self.write('scripts/verify-doc-links.ps1', '$global:LASTEXITCODE = 0\n')
-        self.write('release/ares-versions.properties', '\n'.join(f'{k}=1.0.0' for k in ('aresVersion','studioVersion','ftcStarterVersion','frcStarterVersion','xrpStarterVersion','lightbotExampleVersion'))+'\ngithubMavenRepository=https://example.invalid/maven\n')
+        self.write('release/ares-versions.properties', '\n'.join(f'{k}=1.0.0' for k in ('aresVersion','studioVersion','ftcStarterVersion','frcStarterVersion','xrpStarterVersion','lightbotExampleVersion','biobuzzExampleVersion'))+'\ngithubMavenRepository=https://example.invalid/maven\n')
         pins=[]
-        for name,key in [('ARES-FTC-Starter','ftcStarterSha256'),('ARES-FRC-Starter','frcStarterSha256'),('ARES-XRP-Starter','xrpStarterSha256'),('ARES-Lightbot-Example','lightbotExampleSha256')]:
+        for name,key in [('ARES-FTC-Starter','ftcStarterSha256'),('ARES-FRC-Starter','frcStarterSha256'),('ARES-XRP-Starter','xrpStarterSha256'),('ARES-Lightbot-Example','lightbotExampleSha256'),('ARES-BIOBUZZ-Example','biobuzzExampleSha256')]:
             self.write(f'ARES-Analytics/app/src/main/resources/project-templates/{name}-1.0.0.zip', 'fixture archive')
             pins.append(f'{key}={hashlib.sha256(b"fixture archive").hexdigest()}')
         self.write('release/starter-artifacts.properties','\n'.join(pins)+'\n')
@@ -69,6 +69,10 @@ class MonorepoPolicyTest(unittest.TestCase):
 
     def test_healthy_fixture_passes(self):
         self.verify(True)
+
+    def test_biobuzz_archive_must_match_its_pin(self):
+        self.write('ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.0.0.zip', 'changed archive')
+        self.verify(False, 'Bundled BIOBUZZ example archive hash')
 
     def test_ignored_validation_checkout_is_not_product_source(self):
         self.write('.tmp/export/build.gradle.kts','repositories { mavenLocal() }\n')

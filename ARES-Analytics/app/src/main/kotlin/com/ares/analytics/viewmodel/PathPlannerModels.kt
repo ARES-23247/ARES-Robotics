@@ -131,6 +131,7 @@ sealed class PathPlannerIntent {
     data object PreviousTourStep : PathPlannerIntent()
     data object DismissTour : PathPlannerIntent()
 
+    data class ImportBiobuzzAuto(val projectPath: String?, val zipPath: String) : PathPlannerIntent()
     data class LoadRoutine(val projectPath: String?, val documentId: String) : PathPlannerIntent()
     data class SaveRoutine(val projectPath: String?) : PathPlannerIntent()
     data class SaveAndGenerateRoutine(val projectPath: String?, val league: League) : PathPlannerIntent()

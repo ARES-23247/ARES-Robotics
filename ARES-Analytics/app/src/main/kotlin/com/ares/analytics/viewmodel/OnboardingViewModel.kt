@@ -33,7 +33,8 @@ enum class OnboardingStep(val number: Int) {
 }
 
 enum class ProjectSetupMode(val createsProject: Boolean) {
-    CREATE_NEW(true), EXPLORE_LIGHTBOT(true), OPEN_EXISTING(false),
+    CREATE_NEW(true), EXPLORE_LIGHTBOT(true), EXPLORE_BIOBUZZ(true), OPEN_EXISTING(false);
+    val isExample: Boolean get() = this == EXPLORE_LIGHTBOT || this == EXPLORE_BIOBUZZ
 }
 
 data class OnboardingFieldErrors(
@@ -173,14 +174,15 @@ class OnboardingViewModel(
                         )
                         when (intent.mode) {
                             ProjectSetupMode.CREATE_NEW -> selected.copy(projectPath = plannedProjectPath(selected))
-                            ProjectSetupMode.EXPLORE_LIGHTBOT -> {
-                                val template = projectTemplateService.templateFor(League.FTC, RobotProjectTemplateKind.EXAMPLE)
+                            ProjectSetupMode.EXPLORE_LIGHTBOT, ProjectSetupMode.EXPLORE_BIOBUZZ -> {
+                                val biobuzz = intent.mode == ProjectSetupMode.EXPLORE_BIOBUZZ
+                                val template = projectTemplateService.templateFor(League.FTC, if (biobuzz) RobotProjectTemplateKind.BIOBUZZ_EXAMPLE else RobotProjectTemplateKind.EXAMPLE)
                                 val lightbot = selected.copy(
-                                    projectFolderName = LIGHTBOT_PROJECT_FOLDER,
+                                    projectFolderName = if (biobuzz) "BIOBUZZ-Example" else LIGHTBOT_PROJECT_FOLDER,
                                     teamId = LIGHTBOT_TEAM_ID,
-                                    seasonId = LIGHTBOT_SEASON_ID,
-                                    robotId = LIGHTBOT_ROBOT_ID,
-                                    robotName = LIGHTBOT_ROBOT_NAME,
+                                    seasonId = if (biobuzz) "2026-2027" else LIGHTBOT_SEASON_ID,
+                                    robotId = if (biobuzz) "BIOBUZZ" else LIGHTBOT_ROBOT_ID,
+                                    robotName = if (biobuzz) "BIOBUZZ Bot" else LIGHTBOT_ROBOT_NAME,
                                     league = League.FTC,
                                     nt4Host = "127.0.0.1",
                                     simulatorCommand = "",
@@ -257,7 +259,7 @@ class OnboardingViewModel(
                 OnboardingIntent.NextStep -> moveNext()
                 OnboardingIntent.PreviousStep -> _state.update {
                     val previous = if (
-                        it.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT &&
+                        it.projectSetupMode.isExample &&
                         it.currentStep == OnboardingStep.REVIEW
                     ) {
                         OnboardingStep.PROJECT
@@ -346,7 +348,7 @@ class OnboardingViewModel(
             return
         }
         val next = if (
-            current.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT &&
+            current.projectSetupMode.isExample &&
             current.currentStep == OnboardingStep.PROJECT
         ) {
             OnboardingStep.REVIEW
@@ -414,7 +416,9 @@ class OnboardingViewModel(
                         seasonId = current.seasonId,
                         robotId = current.robotId,
                         robotName = current.robotName,
-                        templateKind = if (current.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
+                        templateKind = if (current.projectSetupMode == ProjectSetupMode.EXPLORE_BIOBUZZ) {
+                            RobotProjectTemplateKind.BIOBUZZ_EXAMPLE
+                        } else if (current.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
                             RobotProjectTemplateKind.EXAMPLE
                         } else {
                             RobotProjectTemplateKind.GENERIC_STARTER

@@ -31,6 +31,7 @@ data class LivePoseState(
     val visionHeading: Double? = null,
     val visionPoses: Map<Int, Double> = emptyMap(),
     val visionHasTarget: Boolean = false,
+    internal val biobuzz: org.ares.biobuzz.BiobuzzFrame? = null,
     val liveGamePieces: Map<Int, GamePiece> = emptyMap(),
     val isConnected: Boolean = false,
     val indicatorLights: Map<String, Double> = emptyMap(),

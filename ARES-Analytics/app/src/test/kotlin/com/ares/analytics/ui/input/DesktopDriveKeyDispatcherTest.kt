@@ -18,13 +18,15 @@ class DesktopDriveKeyDispatcherTest {
     }
 
     @Test
-    fun `space is not consumed or used as a drive authorization switch`() {
+    fun `space selects slow drive without changing authorization`() {
         val state = KeyboardDriveState().apply { enabled = true }
         applyDesktopDriveKey(state, true, KeyEvent.VK_W, true)
         applyDesktopDriveKey(state, true, KeyEvent.VK_LEFT, true)
 
-        assertFalse(applyDesktopDriveKey(state, true, KeyEvent.VK_SPACE, true))
-        assertFalse(applyDesktopDriveKey(state, true, KeyEvent.VK_SPACE, false))
+        assertTrue(applyDesktopDriveKey(state, true, KeyEvent.VK_SPACE, true))
+        assertTrue(state.isSpacePressed)
+        assertTrue(applyDesktopDriveKey(state, true, KeyEvent.VK_SPACE, false))
+        assertFalse(state.isSpacePressed)
         assertTrue(state.enabled)
         assertTrue(state.isWPressed)
         assertTrue(state.isLeftPressed)

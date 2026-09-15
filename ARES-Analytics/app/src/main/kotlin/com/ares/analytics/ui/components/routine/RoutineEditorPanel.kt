@@ -97,6 +97,7 @@ fun RoutineEditorPanel(
     fun applyReplacement(action: PendingRoutineReplacement) {
         when (action) {
             PendingRoutineReplacement.New -> onIntent(PathPlannerIntent.CreateRoutine())
+            is PendingRoutineReplacement.Import -> onIntent(PathPlannerIntent.ImportBiobuzzAuto(projectPath, action.path))
             is PendingRoutineReplacement.Open -> onIntent(PathPlannerIntent.LoadRoutine(projectPath, action.documentId))
             is PendingRoutineReplacement.Guided -> onIntent(PathPlannerIntent.CreateGuidedFirstRoutine(action.plan))
         }
@@ -200,6 +201,17 @@ fun RoutineEditorPanel(
                     Spacer(Modifier.width(4.dp))
                     Text("New")
                 }
+                OutlinedButton(
+                    enabled = projectPath != null && league == League.FTC && state.generationPhase != AresGenerationPhase.RUNNING,
+                    onClick = {
+                        com.ares.analytics.ui.util.DesktopFileChoosers.chooseOpenFile(
+                            dialogTitle = "Import BIOBUZZ auto",
+                            initialDirectory = projectPath?.let { java.io.File(it) },
+                            filterDescription = "BIOBUZZ auto ZIP",
+                            extensions = listOf("zip"),
+                        )?.let { file -> requestReplacement(PendingRoutineReplacement.Import(file.absolutePath)) }
+                    },
+                ) { Text("Import auto") }
                 Button(
                     onClick = { onIntent(PathPlannerIntent.SaveAndGenerateRoutine(projectPath, league)) },
                     enabled = projectPath != null && !hasErrors && state.generationPhase != AresGenerationPhase.RUNNING,
@@ -409,6 +421,7 @@ fun RoutineEditorPanel(
 
 private sealed interface PendingRoutineReplacement {
     data object New : PendingRoutineReplacement
+    data class Import(val path: String) : PendingRoutineReplacement
     data class Open(val documentId: String) : PendingRoutineReplacement
     data class Guided(val plan: GuidedFirstRoutinePlan) : PendingRoutineReplacement
 }

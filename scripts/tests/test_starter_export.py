@@ -34,13 +34,15 @@ class StarterExportTest(unittest.TestCase):
                         GIT_AUTHOR_NAME='Audit Fixture', GIT_AUTHOR_EMAIL='audit@example.invalid',
                         GIT_COMMITTER_NAME='Audit Fixture', GIT_COMMITTER_EMAIL='audit@example.invalid')
         self.git('init', '--quiet', '--initial-branch=main')
-        self.write('release/ares-versions.properties', 'aresVersion=1.2.3\nstudioVersion=4.5.6\ngithubMavenRepository=https://example.invalid/maven\nftcStarterVersion=1.2.3\nfrcStarterVersion=1.2.3\nxrpStarterVersion=1.2.3\nlightbotExampleVersion=1.2.3\n')
+        self.write('release/ares-versions.properties', 'aresVersion=1.2.3\nstudioVersion=4.5.6\ngithubMavenRepository=https://example.invalid/maven\nftcStarterVersion=1.2.3\nfrcStarterVersion=1.2.3\nxrpStarterVersion=1.2.3\nlightbotExampleVersion=1.2.3\nbiobuzzExampleVersion=1.2.3\n')
         self.write('build-logic/ares-versioning.gradle', '// shared version resolution\n')
         self.write(FTC_RUNTIME, '// canonical FTC runtime\n')
         self.write(RUNTIME + '/__init__.py', '# canonical XRP runtime\n')
         self.write(RUNTIME + '/controller.py', 'VALUE = 1\n')
         for template in ('ARES-FTC-Starter', 'ARES-FRC-Starter', 'ARES-XRP-Starter', 'ARES-FTC'):
             self.write(template + '/main.txt', template + '\n')
+        self.write('ARES-FTC/biobuzz/main.txt', 'BioBuzz overlay\n')
+        self.write('ARES-FTC/biobuzz/shared/src/main/resources/field-presets/ftc/2026-2027-biobuzz.json', '{"id":"biobuzz"}\n')
         self.write('.gitignore', '*.local\n__pycache__/\n')
         self.write('scripts/export-starter-mirrors.ps1', (ROOT / 'scripts/export-starter-mirrors.ps1').read_text())
         self.write('scripts/build-starter-archives.ps1', (ROOT / 'scripts/build-starter-archives.ps1').read_text())
@@ -118,7 +120,7 @@ class StarterExportTest(unittest.TestCase):
                 cwd=self.root, env=self.env, capture_output=True, text=True, timeout=30)
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
             outputs.append({p.name: p.read_bytes() for p in output.glob('*.zip')})
-        self.assertEqual(len(outputs[0]), 4)
+        self.assertEqual(len(outputs[0]), 5)
         self.assertEqual(outputs[0], outputs[1])
         with zipfile.ZipFile(self.root / 'archives-one/ARES-FTC-Starter-1.2.3.zip') as archive:
             prefix = 'ARES-FTC-Starter-1.2.3/'
@@ -129,6 +131,14 @@ class StarterExportTest(unittest.TestCase):
         with zipfile.ZipFile(self.root / 'archives-one/ARES-XRP-Starter-1.2.3.zip') as archive:
             self.assertFalse(any('private.local' in name for name in archive.namelist()))
             self.assertIn('ARES-XRP-Starter-1.2.3/lib/ares_micro/controller.py', archive.namelist())
+        with zipfile.ZipFile(self.root / 'archives-one/ARES-BIOBUZZ-Example-1.2.3.zip') as archive:
+            prefix = 'ARES-BIOBUZZ-Example-1.2.3/'
+            self.assertEqual(archive.read(prefix + 'main.txt'), b'BioBuzz overlay\n')
+            self.assertEqual(archive.read(prefix + 'TeamCode/src/main/assets/paths/field.json'), b'{"id":"biobuzz"}\n')
+            runtime = 'TeamCode/src/main/java/' + FTC_RUNTIME.removeprefix('templates/ftc/runtime/src/main/kotlin/')
+            self.assertEqual(archive.read(prefix + runtime), b'// canonical FTC runtime\n')
+        with zipfile.ZipFile(self.root / 'archives-one/ARES-Lightbot-Example-1.2.3.zip') as archive:
+            self.assertFalse(any('/biobuzz/' in name for name in archive.namelist()))
 
     def test_check_rejects_changed_missing_and_added_files(self):
         self.export()

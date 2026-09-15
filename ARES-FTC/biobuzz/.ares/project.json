@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 5,
+  "projectId": "biobuzz-reference",
+  "identity": {
+    "teamId": "23247",
+    "seasonId": "2026-2027",
+    "robotId": "BIOBUZZ",
+    "displayName": "BIOBUZZ Bot"
+  },
+  "league": "FTC",
+  "coordinateConvention": "CENTER_ORIGIN_CCW",
+  "robotLengthMeters": 0.45,
+  "robotWidthMeters": 0.45,
+  "fieldLengthMeters": 3.6576,
+  "fieldWidthMeters": 3.6576,
+  "authoringModel": "GUI_OWNED",
+  "runtimeOptions": {
+    "ftc": {
+      "hubCommandTransport": "STANDARD_SDK",
+      "limelightProxyEnabled": false
+    }
+  }
+}

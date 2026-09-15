@@ -40,10 +40,12 @@ $templates = @(
     @{ Name = 'ARES-FTC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FTC-Starter' },
     @{ Name = 'ARES-FRC-Starter'; Source = Join-Path $workspaceRoot 'ARES-FRC-Starter' },
     @{ Name = 'ARES-XRP-Starter'; Source = Join-Path $workspaceRoot 'ARES-XRP-Starter' },
-    @{ Name = 'ARES-Lightbot-Example'; Source = Join-Path $workspaceRoot 'ARES-FTC' }
+    @{ Name = 'ARES-Lightbot-Example'; Source = Join-Path $workspaceRoot 'ARES-FTC' },
+    @{ Name = 'ARES-BIOBUZZ-Example'; Source = Join-Path $workspaceRoot 'ARES-FTC-Starter'; Overlay = Join-Path $workspaceRoot 'ARES-FTC/biobuzz' }
 )
 $ftcRuntimeRelativePath = 'TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
 $ftcRuntimeSource = Join-Path $workspaceRoot 'templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt'
+$biobuzzFieldSource = Join-Path $workspaceRoot 'ARES-FTC/biobuzz/shared/src/main/resources/field-presets/ftc/2026-2027-biobuzz.json'
 $xrpRuntimeSource = Join-Path $workspaceRoot 'ARESLib-Kotlin/ares-micro/ares_micro'
 
 function Get-RelativeFileHashes([string]$Root) {
@@ -88,9 +90,22 @@ foreach ($template in $templates) {
     # simulator logs, IDE state, caches, and other local files must never leak
     # into an installer or public starter archive.
     $sourceHashes = Get-TrackedRelativeFileHashes $template.Source
+    $overlayHashes = @{}
+    if ($template.Name -eq 'ARES-Lightbot-Example') {
+        foreach ($key in @($sourceHashes.Keys)) {
+            if ($key.StartsWith('biobuzz/')) { $sourceHashes.Remove($key) }
+        }
+    }
+    if ($template.Overlay) {
+        $overlayHashes = Get-TrackedRelativeFileHashes $template.Overlay
+        foreach ($key in $overlayHashes.Keys) { $sourceHashes[$key] = $overlayHashes[$key] }
+    }
+    if ($template.Name -eq 'ARES-BIOBUZZ-Example') {
+        $sourceHashes['TeamCode/src/main/assets/paths/field.json'] = (Get-FileHash -Algorithm SHA256 -LiteralPath $biobuzzFieldSource).Hash.ToLowerInvariant()
+    }
     $sourceHashes['release/ares-versions.properties'] = $standaloneReleaseManifestHash
     $sourceHashes['build-logic/ares-versioning.gradle'] = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $workspaceRoot 'build-logic/ares-versioning.gradle')).Hash.ToLowerInvariant()
-    if ($template.Name -eq 'ARES-FTC-Starter' -or $template.Name -eq 'ARES-Lightbot-Example') {
+    if ($template.Name -in @('ARES-FTC-Starter', 'ARES-Lightbot-Example', 'ARES-BIOBUZZ-Example')) {
         $sourceHashes[$ftcRuntimeRelativePath] = (Get-FileHash -Algorithm SHA256 -LiteralPath $ftcRuntimeSource).Hash.ToLowerInvariant()
     }
     if ($template.Name -eq 'ARES-XRP-Starter') {
@@ -126,10 +141,14 @@ foreach ($template in $templates) {
     foreach ($entry in $sourceHashes.Keys) {
         $source = if ($entry -eq 'build-logic/ares-versioning.gradle') {
             Join-Path $workspaceRoot $entry
-        } elseif (($template.Name -eq 'ARES-FTC-Starter' -or $template.Name -eq 'ARES-Lightbot-Example') -and $entry -eq $ftcRuntimeRelativePath) {
+        } elseif ($template.Name -in @('ARES-FTC-Starter', 'ARES-Lightbot-Example', 'ARES-BIOBUZZ-Example') -and $entry -eq $ftcRuntimeRelativePath) {
             $ftcRuntimeSource
         } elseif ($template.Name -eq 'ARES-XRP-Starter' -and $entry.StartsWith('lib/ares_micro/')) {
             Join-Path $xrpRuntimeSource $entry.Substring('lib/ares_micro/'.Length)
+        } elseif ($template.Name -eq 'ARES-BIOBUZZ-Example' -and $entry -eq 'TeamCode/src/main/assets/paths/field.json') {
+            $biobuzzFieldSource
+        } elseif ($overlayHashes.Contains($entry)) {
+            Join-Path $template.Overlay $entry
         } else {
             Join-Path $template.Source $entry
         }

@@ -21,7 +21,8 @@ private val FIELD_POSE_SCALAR_TOPICS = setOf(
     "Drive/Odom_X", "Drive/Odom_Y", "Drive/Odom_Heading",
 )
 private val VISION_COORDINATE_TOPICS = listOf("Vision/Pose_X", "Vision/Pose_Y", "Vision/Pose_Heading")
-private val FIELD_LATCHED_TOPICS = FIELD_POSE_SCALAR_TOPICS + "Vision/HasTarget" + VISION_COORDINATE_TOPICS
+private val FIELD_LATCHED_TOPICS = FIELD_POSE_SCALAR_TOPICS + "Vision/HasTarget" + VISION_COORDINATE_TOPICS +
+    org.ares.biobuzz.BiobuzzTelemetry.TOPIC
 
 /** Shared topic selection for cached scalar subscriptions and raw array-fragment filtering. */
 internal fun isFieldViewerTopic(key: String): Boolean =
@@ -90,7 +91,7 @@ class FieldTopicSubscriber(
     private val livePoseFlow: MutableStateFlow<LivePoseState>,
     processingDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
-    // The store reuses these 17 observer objects across view recreation. Scalar coordinates
+    // The store reuses these observer objects across view recreation. Scalar coordinates
     // are latched NT4 values, so startup and overflow recovery cannot depend on the raw replay cache.
     private val latchedTopics = FIELD_LATCHED_TOPICS.associateWith(nt4ClientService.telemetryStore::observe)
     private val reductionLock = Any()
@@ -111,12 +112,14 @@ class FieldTopicSubscriber(
     private var lighting: RobotLightingTelemetryState? = null
     private var indicators: Map<String, Double> = emptyMap()
     private var prisms: Map<String, Double> = emptyMap()
+    private var biobuzz: org.ares.biobuzz.BiobuzzFrame? = null
 
     private fun reset() {
         poseAccumulator.reset(); visionAccumulator.reset()
         gamePieceAccumulator.reset(); legacyAccumulator.reset()
         appliedPose = null; appliedGame = null; appliedLegacy = null
         appliedVision = null; appliedTarget = null; typedPieces = emptyMap()
+        biobuzz = null
     }
 
     private fun allowed(parent: Any, targetEpoch: Long): Boolean =
@@ -167,6 +170,9 @@ class FieldTopicSubscriber(
         val key = frame.key
         val value = if (frame.stringValue == null) frame.value else Double.NaN
         when {
+            key == org.ares.biobuzz.BiobuzzTelemetry.TOPIC -> {
+                biobuzz = org.ares.biobuzz.BiobuzzTelemetry.decode(frame.stringValue)
+            }
             isFieldPoseTopic(key) -> poseAccumulator.accept(key, value)
             key.startsWith("Vision/") || key.startsWith("AdvantageScope/VisionPose/") -> {
                 if (key == "Vision/HasTarget" && appliedTarget != null) return
@@ -224,10 +230,12 @@ class FieldTopicSubscriber(
             val current = visionAccumulator.snapshot(poseAccumulator.snapshot(previous))
             val lights = if (replay) emptyMap() else indicators
             val prismOutputs = if (replay) emptyMap() else prisms
+            val game = if (replay) null else biobuzz
             if (current.isConnected == nextConnected && current.liveGamePieces == pieces &&
-                current.indicatorLights == lights && current.prismLights == prismOutputs) current
+                current.indicatorLights == lights && current.prismLights == prismOutputs &&
+                current.biobuzz == game) current
             else current.copy(isConnected = nextConnected, liveGamePieces = pieces,
-                indicatorLights = lights, prismLights = prismOutputs)
+                indicatorLights = lights, prismLights = prismOutputs, biobuzz = game)
         }
     }
 

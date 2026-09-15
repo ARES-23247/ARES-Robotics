@@ -10,7 +10,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Markdown link verification failed.' }
 $manifest = Join-Path $root 'release/ares-versions.properties'
 if (-not (Test-Path -LiteralPath $manifest)) { throw 'Canonical release manifest is missing.' }
 $release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $manifest)
-foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'xrpStarterVersion', 'lightbotExampleVersion', 'githubMavenRepository')) {
+foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'xrpStarterVersion', 'lightbotExampleVersion', 'biobuzzExampleVersion', 'githubMavenRepository')) {
     if ([string]::IsNullOrWhiteSpace($release[$required])) { throw "Release manifest is missing $required." }
 }
 $aresSourceTreePath = Join-Path $root 'release/ares-source-tree.txt'
@@ -26,7 +26,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the current ARESLib source t
 if ($actualAresTree -ne $expectedAresTree) {
     throw "ARESLib source tree is $actualAresTree, but release/ares-source-tree.txt records $expectedAresTree. Bump aresVersion and update the source-tree identity together."
 }
-foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256', 'xrpStarterSha256', 'lightbotExampleSha256')) {
+foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256', 'xrpStarterSha256', 'lightbotExampleSha256', 'biobuzzExampleSha256')) {
     if ($release.ContainsKey($retiredHash)) {
         throw "$retiredHash must remain outside the standalone dependency manifest."
     }
@@ -50,15 +50,18 @@ foreach ($league in @('ftc', 'frc', 'xrp')) {
         throw "Bundled $displayLeague starter archive hash is $actualHash, expected $expectedHash."
     }
 }
-$lightbotHash = $starterArtifacts['lightbotExampleSha256']
-if ($lightbotHash -notmatch '^[0-9a-fA-F]{64}$') {
-    throw 'Starter artifact manifest has no valid lightbotExampleSha256.'
-}
-$lightbotArchive = Join-Path $root "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-$($release['lightbotExampleVersion']).zip"
-if (-not (Test-Path -LiteralPath $lightbotArchive)) { throw "Bundled Lightbot example archive is missing: $lightbotArchive" }
-$actualLightbotHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $lightbotArchive).Hash
-if ($actualLightbotHash -ne $lightbotHash) {
-    throw "Bundled Lightbot example archive hash is $actualLightbotHash, expected $lightbotHash."
+foreach ($example in @('Lightbot', 'BIOBUZZ')) {
+    $prefix = $example.ToLowerInvariant() + 'Example'
+    $expectedHash = $starterArtifacts["${prefix}Sha256"]
+    if ($expectedHash -notmatch '^[0-9a-fA-F]{64}$') {
+        throw "Starter artifact manifest has no valid ${prefix}Sha256."
+    }
+    $archive = Join-Path $root "ARES-Analytics/app/src/main/resources/project-templates/ARES-$example-Example-$($release["${prefix}Version"]).zip"
+    if (-not (Test-Path -LiteralPath $archive)) { throw "Bundled $example example archive is missing: $archive" }
+    $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash
+    if ($actualHash -ne $expectedHash) {
+        throw "Bundled $example example archive hash is $actualHash, expected $expectedHash."
+    }
 }
 
 $componentProperties = @(

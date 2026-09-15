@@ -272,7 +272,9 @@ fun OnboardingScreen(
                 NavigationButtons(
                     step = state.currentStep,
                     isSaving = state.isSaving,
-                    finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
+                    finishLabel = if (state.projectSetupMode == ProjectSetupMode.EXPLORE_BIOBUZZ) {
+                        "Create BIOBUZZ copy"
+                    } else if (state.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {
                         "Create Lightbot copy"
                     } else {
                         "Create standalone project"

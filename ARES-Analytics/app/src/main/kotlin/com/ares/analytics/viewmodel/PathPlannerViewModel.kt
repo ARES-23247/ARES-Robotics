@@ -278,6 +278,7 @@ class PathPlannerViewModel(
                     }
                     recalculateRoutinePreview()
                 }
+                is PathPlannerIntent.ImportBiobuzzAuto -> importBiobuzzAuto(intent.projectPath, intent.zipPath)
                 is PathPlannerIntent.LoadRoutine -> loadRoutine(intent.projectPath, intent.documentId)
                 is PathPlannerIntent.SaveRoutine -> saveRoutine(intent.projectPath)
                 is PathPlannerIntent.SaveAndGenerateRoutine -> {
@@ -744,6 +745,39 @@ class PathPlannerViewModel(
             }
         }
         return savedSuccessfully
+    }
+
+    private suspend fun importBiobuzzAuto(projectPath: String?, zipPath: String) {
+        val path = loadedPathFor(projectPath, "importing an auto") ?: return
+        val before = _state.value
+        runCatching {
+            require(before.activeLeague == League.FTC) { "Open a BIOBUZZ FTC RobotBuilder project first." }
+            val requiredActions = setOf("subsystem.biobuzz-intake.set.intakeVoltage",
+                "subsystem.biobuzz-shooter.set.flywheelVoltage", "subsystem.biobuzz-shooter.set.transferVoltage")
+            require(before.routineActions.map { it.key }.containsAll(requiredActions)) {
+                "This project needs the BIOBUZZ RobotBuilder intake and shooter actions."
+            }
+            withContext(Dispatchers.IO) {
+                com.ares.analytics.service.project.persistence.BiobuzzAutoBundle.read(File(zipPath))
+            }
+        }.onSuccess { draft ->
+            if (!isLoadedProject(path) || _state.value.routine != before.routine) return@onSuccess
+            val validation = routineEditorValidation(draft.routine, before.capabilityCatalog,
+                before.availableRoutines, before.activeLeague, before.robotDimensions, draft.entry)
+            if (validation.any { it.severity == RoutineValidationSeverity.ERROR }) {
+                _state.update { it.copy(saveStatus = "Auto import failed: " + validation.joinToString { issue -> issue.message }) }
+                return@onSuccess
+            }
+            playbackJob?.cancel()
+            routineProjectPath = path
+            _state.update { it.copy(routine = draft.routine, autonomousEntry = draft.entry,
+                availableInAutonomousSelector = true, routineDirty = true, routineRevisions = emptyList(),
+                routineValidation = validation, isPlaying = false, playbackTime = 0.0,
+                saveStatus = "Imported a new BIOBUZZ auto draft. Review it, then Save & Generate.") }
+            recalculateRoutinePreview()
+        }.onFailure { failure ->
+            if (isLoadedProject(path)) _state.update { it.copy(saveStatus = "Auto import failed: ${failure.message}") }
+        }
     }
 
     private suspend fun restoreRoutine(projectPath: String?, contentHash: String) {

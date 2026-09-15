@@ -33,12 +33,17 @@ def classify_paths(paths: Iterable[str], event_name: str = "pull_request") -> di
         if path.startswith("ARESLib-Kotlin/"):
             result["full"] = True
             result["lib"] = True
+        elif path.startswith("ARES-FTC/biobuzz/"):
+            # The demo overlay is packaged from FTC and its field/telemetry source is
+            # compiled directly into Studio. Either side must validate a changed contract.
+            result["ftc"] = result["analytics_app"] = True
         elif path.startswith("ARES-FTC/"):
             result["ftc"] = True
         elif path.startswith("ARES-FRC/"):
             result["frc"] = True
         elif path.startswith("ARES-FTC-Starter/"):
-            result["ftc_starter"] = True
+            # BioBuzz overlays this base and runs in the FTC consumer job.
+            result["ftc_starter"] = result["ftc"] = True
         elif path.startswith("ARES-FRC-Starter/"):
             result["frc_starter"] = True
         elif path.startswith("ARES-XRP-Starter/"):

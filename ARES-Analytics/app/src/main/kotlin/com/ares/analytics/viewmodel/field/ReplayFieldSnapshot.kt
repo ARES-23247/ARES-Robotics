@@ -50,6 +50,7 @@ internal fun ReplayFrame.toReplayPoseState(): LivePoseState {
         visionPoses = visionPoses,
         visionHasTarget = visionHasTarget,
         liveGamePieces = replayGamePieces(values, stringValues),
+        biobuzz = org.ares.biobuzz.BiobuzzTelemetry.decode(stringValues[org.ares.biobuzz.BiobuzzTelemetry.TOPIC]),
         isConnected = true,
         indicatorLights = lighting.indicatorOutputs,
         prismLights = lighting.prismOutputs,

@@ -175,6 +175,8 @@ internal data class FieldEditorPasteResult(
 }
 
 internal data class FieldEditorSnapshot(
+    val document: com.areslib.state.RobotFieldConfig?,
+    val fieldImage: androidx.compose.ui.graphics.ImageBitmap?,
     val fieldImageConfig: FieldImageConfig,
     val obstacles: List<Obstacle>,
     val gamePieces: List<GamePiece>,
@@ -183,6 +185,8 @@ internal data class FieldEditorSnapshot(
     val fieldWaypoints: List<FieldWaypoint>,
 ) {
     fun applyTo(state: FieldEditorState): FieldEditorState = state.copy(
+        document = document,
+        fieldImage = fieldImage,
         fieldImageConfig = fieldImageConfig,
         obstacles = obstacles,
         gamePieces = gamePieces,
@@ -193,6 +197,8 @@ internal data class FieldEditorSnapshot(
 }
 
 internal fun FieldEditorState.editorSnapshot() = FieldEditorSnapshot(
+    document = document,
+    fieldImage = fieldImage,
     fieldImageConfig = fieldImageConfig,
     obstacles = obstacles,
     gamePieces = gamePieces,

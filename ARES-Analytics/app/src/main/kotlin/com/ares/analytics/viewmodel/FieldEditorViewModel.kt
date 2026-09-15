@@ -86,6 +86,7 @@ data class FieldEditorState(
 }
 
 sealed class FieldEditorIntent {
+    data object LoadBiobuzzPreset : FieldEditorIntent()
     data class LoadConfig(val projectPath: String?, val league: League) : FieldEditorIntent()
     object SaveDocument : FieldEditorIntent()
     data class ImportFieldImage(val imageFile: File, val projectPath: String?, val league: League) : FieldEditorIntent()
@@ -178,6 +179,7 @@ class FieldEditorViewModel(
 
     fun onIntent(intent: FieldEditorIntent) {
         when (intent) {
+            FieldEditorIntent.LoadBiobuzzPreset -> loadBiobuzzPreset()
             is FieldEditorIntent.LoadConfig -> load(intent.projectPath, intent.league)
             is FieldEditorIntent.ImportFieldImage -> importFieldImage(intent)
             FieldEditorIntent.ClearFieldImage -> applyEdit {
@@ -347,6 +349,25 @@ class FieldEditorViewModel(
         scheduleSave(document)
     }
 
+    private fun loadBiobuzzPreset() {
+        if (activeLeague != League.FTC || _state.value.isLoading) return
+        val document = org.ares.biobuzz.BiobuzzField.document()
+        val bitmap = FieldImageLoader.load("", League.FTC, document.image?.imagePath).getOrThrow()
+        applyEdit { current ->
+            current.copy(
+                document = document.copy(revision = current.document?.revision ?: 0L),
+                fieldImage = bitmap,
+                fieldImageConfig = FieldDocumentMapper.image(document),
+                obstacles = FieldDocumentMapper.obstacles(document),
+                gamePieces = FieldDocumentMapper.gamePieces(document),
+                gamePieceTypes = FieldDocumentMapper.gamePieceTypes(document),
+                aprilTags = FieldDocumentMapper.aprilTags(document),
+                fieldWaypoints = FieldDocumentMapper.fieldWaypoints(document),
+                selectedElementIds = emptySet(),
+            )
+        }
+    }
+
     private fun updateGamePieceTypes(types: List<GamePieceType>) {
         val normalized = types.map { it.copy(id = it.id.trim(), name = it.name.trim(), colorHex = it.colorHex.trim()) }
         val error = when {
@@ -433,7 +454,8 @@ class FieldEditorViewModel(
 
     private fun restoreSnapshot(snapshot: FieldEditorSnapshot, previousSelection: Set<String>) {
         val current = snapshot.applyTo(_state.value)
-        val base = current.document ?: FieldDocumentMapper.newDocument(activeLeague, current.fieldImageConfig)
+        val base = (current.document ?: FieldDocumentMapper.newDocument(activeLeague, current.fieldImageConfig))
+            .copy(revision = _state.value.document?.revision ?: 0L)
         val document = FieldDocumentMapper.withEditorData(
             base = base,
             league = activeLeague,
@@ -707,7 +729,9 @@ class FieldEditorViewModel(
             RobotFieldValidator.validate(
                 config = document,
                 requiredFieldType = requiredFieldType,
-                requireAprilTags = requiredFieldType == FieldType.FTC,
+                // The reviewed BIOBUZZ layout has no AprilTags. Keep normal FTC layout
+                // requirements and validation of any authored tags; do not invent vision targets.
+                requireAprilTags = requiredFieldType == FieldType.FTC && document.id != "ftc-2026-2027-biobuzz",
             )
         }.orEmpty()
 

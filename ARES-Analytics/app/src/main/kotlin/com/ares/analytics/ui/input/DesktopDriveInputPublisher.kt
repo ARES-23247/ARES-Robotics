@@ -58,6 +58,7 @@ internal data class DesktopKeyboardDriveSnapshot(
     val isLPressed: Boolean,
     val isUPressed: Boolean,
     val isShiftPressed: Boolean,
+    val isSpacePressed: Boolean = false,
 )
 
 internal fun KeyboardDriveState.driveSnapshot() = DesktopKeyboardDriveSnapshot(
@@ -77,6 +78,7 @@ internal fun KeyboardDriveState.driveSnapshot() = DesktopKeyboardDriveSnapshot(
     isLPressed = isLPressed,
     isUPressed = isUPressed,
     isShiftPressed = isShiftPressed,
+    isSpacePressed = isSpacePressed,
 )
 
 /**
@@ -194,6 +196,7 @@ internal fun desktopDriveIntent(
     val armedSurface = controlSurfaceActive && keyboard.enabled
     val inputActive = armedSurface && (!keyboard.useGamepad || gamepad.connected)
 
+    val keyboardScale = if (keyboard.isSpacePressed) 0.1 else 1.0
     val command = when {
         !inputActive -> DesktopFieldDriveCommand(0.0, 0.0, 0.0)
         keyboard.useGamepad && gamepad.connected -> {
@@ -208,18 +211,18 @@ internal fun desktopDriveIntent(
         else -> mapDesktopFieldCentricDrive(
             league = league,
             forward = when {
-                keyboard.isWPressed || keyboard.isUpPressed -> 1.0
-                keyboard.isSPressed || keyboard.isDownPressed -> -1.0
+                keyboard.isWPressed || keyboard.isUpPressed -> keyboardScale
+                keyboard.isSPressed || keyboard.isDownPressed -> -keyboardScale
                 else -> 0.0
             },
             right = when {
-                keyboard.isDPressed -> 1.0
-                keyboard.isAPressed -> -1.0
+                keyboard.isDPressed -> keyboardScale
+                keyboard.isAPressed -> -keyboardScale
                 else -> 0.0
             },
             counterClockwise = when {
-                keyboard.isLeftPressed -> 1.0
-                keyboard.isRightPressed -> -1.0
+                keyboard.isLeftPressed -> keyboardScale
+                keyboard.isRightPressed -> -keyboardScale
                 else -> 0.0
             },
         )
@@ -388,7 +391,8 @@ internal fun XrpDriveInputPublisher(
                             league = League.XRP,
                             isRedAlliance = true,
                         ) else DesktopDriveIntent(DesktopFieldDriveCommand(0.0, 0.0, 0.0), 0L, 0L)
-                    val command = when {
+                    val keyboardScale = if (keyboard.isSpacePressed) 0.1 else 1.0
+    val command = when {
                         autonomousArmed -> "START_AUTO"
                         teleOpArmed -> "START_TELEOP"
                         request.mode == XrpRequestedMode.INITIALIZE -> "INIT"
