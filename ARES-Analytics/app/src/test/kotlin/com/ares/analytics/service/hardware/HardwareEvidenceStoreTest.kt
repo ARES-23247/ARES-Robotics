@@ -53,8 +53,9 @@ class HardwareEvidenceStoreTest {
                 Files.writeString(target, "other owner", StandardOpenOption.CREATE_NEW)
             }
         }
-        assertEquals("other owner", Files.readString(requireNotNull(record)))
-        assertEquals(1, record!!.parent.toFile().listFiles().orEmpty().size)
+        val resolvedRecord = requireNotNull(record)
+        assertEquals("other owner", Files.readString(resolvedRecord))
+        assertEquals(1, resolvedRecord.parent.toFile().listFiles().orEmpty().size)
     }
 
     @Test

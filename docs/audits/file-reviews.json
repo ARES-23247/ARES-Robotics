@@ -5857,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "b63741419d258205dceaff6f480defbee7c49b08c5221a6e176714fdefabe09a",
+      "sha256": "31230018edaf882098be877531e2590828dc8be1d87f37fdf58ea4d924d39245",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -14835,14 +14835,15 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareEvidenceStoreTest.kt": {
-      "sha256": "95796f1598d0665c63fd76b2451ec40e1f7e302a5cadda7e2ca3b10ab93dcb1a",
+      "sha256": "16e02bb8754417178d73cd778bdf53dbc812b442edd6da969ed09f194db7a76b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 197: Entire five-case store test file reviewed and executed. Complete UTF-8 publication, unsupported/IO-error hard-link fallback, competing destination preservation, pre-publication cleanup and duplicate preservation are checked with actual local files and injected provider failures. No alternate physical filesystem provider is claimed.",
+      "scope": "Pass 197: Entire five-case store test file reviewed and executed. Complete UTF-8 publication, unsupported/IO-error hard-link fallback, competing destination preservation, pre-publication cleanup and duplicate preservation are checked with actual local files and injected provider failures. No alternate physical filesystem provider is claimed. Pass 292 active cleanup: replaced redundant non-null assertion with requireNotNull to eliminate compiler warning.",
       "evidence": [
         "docs/audits/hardware-evidence-storage-audit.md",
         "ARESLib-Kotlin/build/audit-pass197-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass197-verified-evidence/studio-app-summary.json",
+        "docs/audits/pass292-pending-elevation-audit.md"
       ]
     },
     "docs/audits/hardware-evidence-storage-audit.md": {
@@ -15196,13 +15197,14 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityConcurrencyAuditTest.kt": {
-      "sha256": "6841c82992e98f55d1c66130258cfee975e44d6c6fd319010cfd7947df9e8f54",
+      "sha256": "aaf4854ff600fd17dda7f0285b5d7ead0fa37fc87a32f96ea40f06879afe5ba6",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass202: Entire fourteen-case test file authored/read/executed. Uses real files/repositories/session, delegated assembly-time file substitution and bounded queued I/O under one coroutine owner; owned job cancelled/drained/completion-checked before temporary cleanup. Tests assert coherent load/save revisions, stale-write preservation, current draft/validation preservation, duplicate apply rejection, creation binding/ID locking, post-refresh interference, cancellation before dispatch and after commit, and project/load generation guards. Initial nine baseline cases had eight failures and one existing pass; all final cases pass.",
+      "scope": "Pass202: Entire fourteen-case test file authored/read/executed. Uses real files/repositories/session, delegated assembly-time file substitution and bounded queued I/O under one coroutine owner; owned job cancelled/drained/completion-checked before temporary cleanup. Tests assert coherent load/save revisions, stale-write preservation, current draft/validation preservation, duplicate apply rejection, creation binding/ID locking, post-refresh interference, cancellation before dispatch and after commit, and project/load generation guards. Initial nine baseline cases had eight failures and one existing pass; all final cases pass. Pass 292 active cleanup: removed redundant safe call on non-null receiver.",
       "evidence": [
         "docs/audits/project-identity-concurrency-audit.md",
-        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence",
+        "docs/audits/pass292-pending-elevation-audit.md"
       ]
     },
     "docs/audits/project-identity-concurrency-audit.md": {
@@ -28939,6 +28941,1797 @@
       "scope": "Comprehensive Pass 291 pending file elevation, active refactoring, and milestone seal report for all 122 ARES-Analytics governance, gateway, build, and documentation files.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/BrandIdentityTest.kt": {
+      "sha256": "24d3a070ba007922b36888404a0852a1c25fa90188004e4491a8380c80714935",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design \u2022 Simulate \u2022 Operate \u2022 Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/DesktopCoroutineDispatcherTest.kt": {
+      "sha256": "287eb51c8d18316ec2831a68a8853da7915c6df244fa92e16b6c0d065eee39da",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified that Dispatchers.Main executes on the Swing EventQueue dispatch thread (EventQueue.isDispatchThread() == true), ensuring thread confinement and safe Compose Multiplatform desktop rendering.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/DesktopServiceBootstrapTest.kt": {
+      "sha256": "f84888d6492a8cab3fb1810a83b65fdad5215b08369ca5eec5149ccd7614f8d0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified that runDesktopServiceBootstrap leaves the AWT EventQueue dispatch thread during database and background service initialization to avoid blocking Compose startup, and returns continuation execution back to the desktop UI thread.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/DesktopWindowIdentityTest.kt": {
+      "sha256": "f9d9ba7727d3b9b39b9fd8a9ea4fc79b9f76734e9f5b855c9b33397ebe728ab5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified NativeWindowProbe.isExpectedNativeWindow window handle validation contract: accepts only matching native handle owned by the current PID, visible and valid; rejects helper windows owned by current PID, stale 0L handles, hidden windows, invalid handles, and foreign process windows.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/PackagedProjectValidationTest.kt": {
+      "sha256": "50754128f1515e609ac4cf12004768f874c28d7e51585aa631d5bcafc28c0e04",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified packaged project validation against packaged-runtime-project fixture: routine and subsystem codec completeness, schema targets (FTC_CONTROL_HUB, FTC simulator), JGit runtime pack transfer probe validation, and CLI validation command isolation from desktop startup.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/architecture/StudioDependencyBoundaryTest.kt": {
+      "sha256": "62afd4933a3dfd23d85f6e27073377606925ba072fef90e952e6a2a52aea5aee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified architectural dependency boundaries across the codebase: domain package must never import ui, viewmodel, service, or androidx.compose; service package must never import ui or viewmodel, maintaining strict clean architecture and Redux layer separation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopShutdownCoordinatorTest.kt": {
+      "sha256": "8c9ed7987a1b9abd8a4e42400dbf16392f571b3865ca011181e4c46b65cc7721",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified awaitBoundedEmergencyDisposal: ensures emergency cleanup on desktop window loss waits for service disposal completion while strictly enforcing timeout limits to prevent process hangs.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopStartupMachineTest.kt": {
+      "sha256": "234b81c8b136e12e6b0684b36b58abd14b08603b8429da6ac78f21280a798200",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DesktopStartupMachine state transitions (CREATING -> OPENED -> PRESENTED -> SETTLED -> CLOSING -> CLOSED), illegal transition failure with IllegalArgumentException, window loss and recovery accounting, recovery attempt budget reset on SETTLED, idempotent observations, shutdown immunity, and DesktopPresentationPolicy topmost release thresholds and capture request parsing.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopTestControlServerTest.kt": {
+      "sha256": "5eb926358d5672f98f1b2cefc74d86fe22f8674b353e44b88a0ae9a103886a23",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DesktopTestControlServer command parsing (CLICK, WHEEL, KEY, KEY_DOWN, KEY_UP, CAPTURE, CLOSE, PING, TEXT, CHOOSE_PATH), rejection of malformed or unknown commands, non-blocking execution accepting commands during long/modal actions, and socket RST reset tolerance.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopWindowCreationWatchdogTest.kt": {
+      "sha256": "bb69995167a606dc3d802c3e16af57ab4d810082c77d77b69af7d7c8f8f07746",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DesktopWindowCreationWatchdog: enforces bounded 20-second deadline to terminate orphaned windowless processes if presentation never occurs, disarms once window opens, and cancels deadline when watchdog is stopped.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopWindowPresentationControllerTest.kt": {
+      "sha256": "a28baeb8281c6bd41c033435237693e83a90cf8d38c9cd68b1e527e7e617eed8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive test of DesktopWindowPresentationController: normal startup lifecycle, fallback presentation when windowOpened is omitted, native window loss detection and recovery, recovery budget exhaustion terminating safely, topmost release settlement verification, shutdown interception, and termination on unexpected composition disposal.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/di/KeyboardDriveStateTest.kt": {
+      "sha256": "bbf5f325f3a41dfa97dd5652b1d831626ea8e7272979843818ba15733abfbad4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified KeyboardDriveState safety invariants: initial disarmed state, actuator input neutralization on releaseAll() across all keys (W, Q, J, Shift, Space), and complete disarm() disabling control and gamepad flags.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AcademyClassroomPilotTest.kt": {
+      "sha256": "803360b28a34a168774f5068741b3052592b34c97d08484b5847762ab0c2ab5c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified complete classroom pilot integration workflow: offline practice pack installation, log ingestion, deduplication, run comparison alignment (autonomous start, match events), learning progress observation, self-reported reflection recording, and mentor report export with required pedagogical safety disclaimers.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AcademyPracticePackServiceTest.kt": {
+      "sha256": "d936d363b295592ef853237810d0685496227c47053fb2cf3deef1ae6234b365",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified AcademyPracticePackService: idempotent installation under .ares/academy/practice-runs, non-destructive behavior refusing to overwrite modified student files, and precondition validation requiring a valid .ares project directory.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AcademyPracticeWorkflowServiceTest.kt": {
+      "sha256": "39e377f4780f743ec874c41d3fda9a87fe36a94f22d6a600eed2c7204733139d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified AcademyPracticeWorkflowService: single-import deduplication and reuse on retry with synthetic and source tags, multi-robot identity isolation (teamId, seasonId, robotId), and precondition rejection of incomplete workspace identities.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AdbServiceTest.kt": {
+      "sha256": "8d15abf1b63d4c26a5a773927ef35647e774940ba7b3f14f22c33a3a388cdcad",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified AdbService: independent lifecycles for connection status polling ('devices') and streaming logcat ('logcat -v time'), Coroutine Flow emissions, and clean process cancellation and join on shutdownAndJoin().",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AppDataPathsTest.kt": {
+      "sha256": "93c06ef971457f332b0698f3537ca7db8e1b8029ec0e51b27987fd19949411d0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified AppDataPaths.resolveRootDirectory configuration hierarchy (configured JVM property > environment variable > user home fallback ~/.ares-analytics), whitespace trimming, and path traversal rejection on relative paths escaping the root.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoImportServiceTest.kt": {
+      "sha256": "c6adb02c93e163acf2a387a31353374c9a6326f55d9752531fb833990eb375ca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified AutoImportService durable log ingestion: OS-specific ping commands, SHA-256 deduplication and ImportReport generation, content modification detection under identical metadata, UI refresh batching, quarantine flow for malformed logs, scanner lifecycle replacement, shutdown coordination before DuckDB close, subprocess timeouts and output bounding, and archive path traversal protection.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/CliDriverLauncherTest.kt": {
+      "sha256": "cd80c6691411266f807378f3a8b90005de8ec578f6aba5ef29aa584cfff9b1ec",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified CliDriverLauncher: Unix shell escaping handling single quotes and spaces safely, and Gradle init script generation for CLI driver execution injecting target parameters without local ARESLib checkouts.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/CloudArchiveDownloadTest.kt": {
+      "sha256": "cdedae5f9b511a0a5e545f71b222c8533f2ae605a6dac8e697f7e3b5ef797fbb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified withDownloadedCloudArchive atomicity: cleanup of partially written downloads on retry exhaustion, immediate cleanup on coroutine cancellation during download or backoff, and destination file deletion on post-download restore failure.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DSLogDecoderServiceTest.kt": {
+      "sha256": "74f521f7cb15de1bf526ed7714cefba4fbf7f2ff2897363e3f666cd8d3ac1af7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DSLogDecoderService binary parser for FRC Driver Station logs (version 4): CTRE PDP 10-bit current channel bit extraction, atomic ingestion failing closed with 0 committed frames on truncated records, and conversion of voltages, CPU, and trip times for NONE PD types.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DashboardWidgetCatalogTest.kt": {
+      "sha256": "638ba1f8add210661ea7fd1c79fb24b8c9be65fd910c16389de25936ce909f36",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DashboardWidgetRegistry and catalog specifications: preservation of all 38 widget types and default dimensions, property metadata and defaults, type ID formatting validation, zero-error catalog and layout profile validation, capability gating across LIVE/ANALYSIS/REPLAY, and rejection of invalid choice and boolean defaults.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseResourceSettingsTest.kt": {
+      "sha256": "491689c963481c38b4da116fce4049dbd453238c349fac2fb1d2c00c258fc873",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified resolveDuckDbResourceSettings: memory and worker thread auto-scaling based on JVM max heap and available cores, override normalization, and SQL injection defense preventing arbitrary PRAGMA/SET execution.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseServiceIntegrationTest.kt": {
+      "sha256": "de84491173f816370e635374c7bd398376812e3d576391ed522de00e844e5eee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DatabaseService DuckDB integration: live vs persistent telemetry frame routing, null string vs empty string distinction, strict baseline queries, microsecond timestamps and sample ordering, append-only telemetry schema without ART indexes, query row limiting and cell size truncation, write statement rejection, atomic cloud session rollback, atomic Parquet/ZIP export replacement, cascade session deletion, crash recovery of interrupted imports, and multi-tenant workspace filtering.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseViewportQueryTest.kt": {
+      "sha256": "f25f9501a3b9bb3de930c8c2c6da8fe671bfa76ddda3190a5ee0cb92bb2b8ae1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DatabaseService viewport queries: bounded downsampled series retaining narrow extrema spikes with monotonic timestamps, paged key queries, empty key/session handling, deterministic diagnostic decimation retaining exact endpoints, and scalar timestamp gap detection.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DesignAssistantsTest.kt": {
+      "sha256": "a82a3f16470d9fa3f048ea5e9ca11bb9af9323e537e288bc972f01c95ac3ecd3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified AI Design Assistants for drivebase and controls: immutable preservation of repository UID, drivebaseId, canonical profiles, and parameters; controls validation rejecting unknown action keys; review-before-apply safety; one-attempt repair of malformed schemas; and fail-closed handling on unrepairable responses.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/EnvironmentServiceCanonicalIdentityTest.kt": {
+      "sha256": "568c88daf1e5426023e135a8b361b8b415b1cccaae3a57d79cedc1e80e1a4d85",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified EnvironmentService canonical identity reconciliation: authoritative project metadata from .ares/project.json refreshes workspace cache on load and save, ensuring robot project metadata remains the source of truth.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/EnvironmentServicePersistenceTest.kt": {
+      "sha256": "d11c7271c22b022167cf659bf08f8c65baee00ea3eeaa6f38eb450853328eef5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified EnvironmentService atomic persistence: writeSecrets temporary file replacement preserves prior durable state uncorrupted when replacement fails with an IOException.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ExportServiceTest.kt": {
+      "sha256": "2a07f97d97c47f699911a28de4344254222b44a62ae9114aaf9e8b695cdfc68c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified ExportService: CSV list with full metadata headers, CSV table with sample-and-hold forward fill, spreadsheet formula injection neutralization, timestamp boundary enforcement, rejection of implausibly long sessions, lossless round-tripping with decoders preserving microsecond timestamps and sample order, bounded preflight limits, atomic export replace failure preservation, and mixed-type rejection in WPILOG.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GamepadServiceTest.kt": {
+      "sha256": "d13a7c2eb5606d99b6a5fc653ba2aa49ecdfe3c9d711e7ec259c9b8a90ce5022",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified GamepadService state mapping: standard GLFW gamepad mapping preserving raw vendor inputs (up to 24 buttons) and axes, and fallback mapping for raw joysticks without GLFW mapping.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveDestinationTest.kt": {
+      "sha256": "82aec600a86b520ffb79821392e1cb83128cd26636acb92d447316f49efa96d6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified GoogleDriveDestination security: cross-team workspace access prevention, pre-network account subject verification, visible error reporting on revoked permissions, team folder creation, shared folder write permission validation, shared drive ID tracking, serialized concurrent folder creation, and folder reference validation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveServiceIntegrityTest.kt": {
+      "sha256": "c56ccaeab0621a35ba092767b30b42195e6c0c760f10f275dcc259526eb3c4d8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified GoogleDriveService data integrity: version-bracketed media downloads preventing torn reads, snapshot retries on concurrent modification, fail-closed handling on missing versions, optimistic concurrency control via expectedVersion, immutable streaming upload creation (POST+PUT, never PATCH), strict size/SHA-256 validation on download, and duplicate file name rejection.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleOAuthClientConfigTest.kt": {
+      "sha256": "55667aaeaa259948fd44f212a2356e00feffaf64bfc967d6a08302ad96d2862f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified GoogleOAuthClientResolver: prioritization of managed credentials, custom client configuration requirements, fail-closed validation on missing/insecure HTTP brokers, actionable error messages without secret leakage, and numeric loopback redirect URI (http://127.0.0.1:5805/callback).",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GuidedRunAnalysisServiceTest.kt": {
+      "sha256": "640ab9d4edbdbbf8918547348b93eae00fab6037b39987a552485c9e75672346",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified GuidedRunAnalysisService: provenance tracking (imported file vs studio simulator), strict separation of measured evidence from diagnostic hypotheses and interpretation limits, Markdown export with SHA-256 hashes, multi-tenant workspace isolation, and rejection of mismatched summaries.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/HootDecoderServiceTest.kt": {
+      "sha256": "3ca64ef08ebfd487886bd8280f651aac93fbad7b9fbe5c88343a8b954f5096b9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified HootDecoderService: cancellation cleanup immediately purging staged sessions and telemetry frames, bounded subprocess pipe output buffer, microsecond and second timestamp inference, and batch telemetry insertion into DuckDB.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ImportArchiveServiceTest.kt": {
+      "sha256": "140ab8098da7d5e75e434f8dc8b87408071f598b67442c97c1f973856ffaf165",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified ImportArchiveService: loading imported, quarantined, and unreadable reports, atomic requeuing of quarantined runs preserving original evidence, paired retry of Driver Station .dslog and .dsevents companion files, and path traversal rejection outside quarantine.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/LayoutPreferenceServiceTest.kt": {
+      "sha256": "9b0f7bd3649c03d01cb2204aa5b758480685e015c88b664c90c91fd7e762700d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified LayoutPreferenceService: persistence and restart restoration of widget configs, custom sizes, and properties; validation rejecting unknown, overlapping, and out-of-bounds widgets on 12-column grid; profile name path traversal and reserved character sanitization; atomic replacement; built-in profile grid validation; and profile CRUD operations.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/LearningProgressServiceTest.kt": {
+      "sha256": "a1a87056506ef4052fd43fe1858981bb958f5ed3e0e25f31aff182e172220934",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified LearningProgressService: first-mission nudge persistence, practice tracking with CURRENT_LEARNING_CONTENT_VERSION, corrupt/retired v1 document quarantine, active lesson and checkpoint persistence, runtime snapshot observation across all 9 missions, manual completion prevention for runtime-observed checkpoints, reflection notes, scoped resets, mentor report export, and multi-learner isolation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/LogParserServiceTest.kt": {
+      "sha256": "16094ec1d8868ec3fd733ccf0f2a89aaa372c220931f66f148a4ec6f4cb71db2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified LogParserService: Driver Station companion resolution, JSONL/CSV parsing, deduplication and multi-tenant workspace isolation, compressed GZIP streaming decoder with ReplayEngine scrub verification, transactional rollback on multi-file failure, sample order preservation, decompression bomb defense, and cascade deletion of robot actions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ManagedToolchainServiceTest.kt": {
+      "sha256": "043bcfcbfe59df9fe4f471620e68e313a554468ec6d7017d9f3ef43febbf6fcc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified ManagedToolchainService: host Python probe for XRP without Java dependency, FTC Android SDK platform and tools readiness, download URI domain restrictions, private Temurin JDK 21 installation with SHA-256 checksum verification and process environment configuration, and Zip slip directory traversal defense.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ManualLogImportServiceTest.kt": {
+      "sha256": "cf975b8c2f5f7a1801c0122432476c0f9945cb35316292d0c3dccb84d1e0135d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified ManualLogImportService: guided import leaving original source files untouched, archiving verified evidence with import reports, and full deduplication idempotency reusing existing sessions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4ClientServiceTest.kt": {
+      "sha256": "622e6fcedee17261982c8764844c36f53ee2df5efec34241344cfe1793b62826",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive test of Nt4ClientService: packed binary decoding for drive input acknowledgements and mecanum motor frames, loopback drive control restriction, physical command gating, topic announce/unannounce, telemetry flow, receipt time usage for live persistence, console topic routing, binary protocol codec interop, canonical subscription prefixes, atomic drive frame contract validation, exclusive recording session locking, graceful shutdown, and target reset.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4IntegrationDiagnosticTest.kt": {
+      "sha256": "c630b9c9cb6e83abbf664218e351aa37780ba02908dc968cc0cbef38af007e3d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified end-to-end NT4 pipeline diagnostic: ephemeral loopback server startup, multi-topic publication, client connection and WebSocket handshake, active topic discovery, OpMode selection, and latest value verification.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4LiveWireDiagnosticTest.kt": {
+      "sha256": "9adbf2ed5c4c65a5793cb0413571125865146b1bab2d84babf4689c93269655d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified live NT4 wire connectivity diagnostics: WebSocket frames, JSON announcements, MessagePack binary decoding, kinematics and odometry telemetry interception (true pose, estimated pose, odometry), translation error calculations, and heading validation strictly in radians.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthServiceTest.kt": {
+      "sha256": "132de3e5bf476c2ab510e8a89589fe78314d78184f7a78f1a298240bb68d7891",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified OAuthService: persisted auth restoration on token refresh success, failure handling clearing session file, offline startup preserving credentials while unauthenticated, Google Drive folder picker account matching, PKCE exchange without client secrets, broker refresh token exchange, race condition protection on logout, exactly-once callback consumption, and atomic credential replacement.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthTokenStoreTest.kt": {
+      "sha256": "27fb63849e94ac9e0e1a97391242304d3c746414517ef7c2be566102e07f2525",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified FileOAuthTokenStore and PlatformOAuthTokenStore: secure write, read, and delete round-tripping for filesystem token files and platform credential vault delegation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ParquetExporterServiceTest.kt": {
+      "sha256": "0aab44e9a110a6afc85b67db466d238a9be809cad8c25cd69c6d6864d3e28f28",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified ParquetExporterService: exporting telemetry frames to columnar Apache Parquet format, SQL escaping for single quotes in session IDs and folder paths, and restoring exported Parquet into DuckDB with exact numeric and string equality.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RobotDeploymentServiceTest.kt": {
+      "sha256": "e2615017b5d3d4361f3e66d1b80d45337d929b432168c834207f78cc8c7f7bec",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RobotDeploymentService deployment validation: missing project paths fail fast without touching device discovery, and preflight release version alignment checks fail when project version mismatches studio version.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RobotLogDownloaderTest.kt": {
+      "sha256": "b8c167f2a9eae5054ae7736e9d3fd698972c726046fd9d492514cff6f04d7b6a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RobotLogDownloader: HTTP download over local robot server with URL encoding, mtime restoration, SHA-256 digest calculation, oversized response rejection with partial file cleanup, and path traversal validation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RobotLogIngestionServiceTest.kt": {
+      "sha256": "8ed246d8179d9bc2ddf6606b6a256214c4ee413eab051d0612d1e2ad5a5a2ac9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RobotLogIngestionService: pulling logs from robot over HTTP, archiving exact bytes with import reports, DuckDB ingestion, and idempotency preventing duplicate sessions on repeated pulls.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RobotProjectReadinessServiceTest.kt": {
+      "sha256": "85da5f5e90fc0263df53288053fdb4064162e176baf9aa22903b1a2f0700cc74",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RobotProjectReadinessService: distinguishes missing metadata (incomplete setup) from malformed metadata (corrupted/error), and fails closed on non-existent workspace paths.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RunComparisonPerformanceTest.kt": {
+      "sha256": "241cc9800b0f8416390663b09e0ebd79457596af4fa7cb20be51c4ebdb121aaa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RunComparisonService performance benchmark: paired comparison over 1,500 ticks @ 50 Hz (30s match) across 9 channels, verifying bounded execution time (< 5,000ms) and bounded sample points.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RunComparisonServiceTest.kt": {
+      "sha256": "65babb62104c80af39d0f4f28b0b04797cd334a60c79a0407ae4bfaf8b5785ea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RunComparisonService: deterministic alignment on autonomous start / teleop start / annotations, oracle property validation against golden fixtures, metric summary calculations, findings classification, Markdown sanitization, strict same-timestamp derived metric joining, sampleOrder deduplication, and workspace boundary checks.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SessionBundleServiceTest.kt": {
+      "sha256": "a3b8b6db7003ddbc45d730c51c197310ebf34e10516827ea7c12c27b9f2237eb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SessionBundleService: round-trip archiving and extraction of .ares-session.zip bundles across DuckDB databases, preserving summaries, Parquet telemetry, robot actions, annotations, alerts, console messages, diagnostics, and import reports with SHA-256 verification.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SimulatorControlSoakTest.kt": {
+      "sha256": "30d67b20a8045f967dce0a237eebc2f2ccfa0bf6835ae6148dfc2f2d4df65ea2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SimulatorControlSoakTest: 50 Hz control loop cadence (20ms) with zero GC pauses or dropped heartbeats, teleop drive frame leasing and receiver acknowledgement verification, odometry and EKF error bounds, telemetry smoothness and stall detection, and live rewind timeline replay over DuckDB while actively streaming.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SimulatorProcessServiceTest.kt": {
+      "sha256": "a681e4bf051fef49d97fe02ded285b3dc8ddb8c3cdd92f18ca5718545210572d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SimulatorProcessService: lifecycle management (start, running state flow, stop, shutdown), and preflight ARES version compatibility verification before starting subprocesses.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SimulatorRuntimeCleanupTest.kt": {
+      "sha256": "aec720cd5dcf4d5e4b917ec261b152eb9c789caa62e9e2972fa78e74b9d0387e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SimulatorProcessService and SimulatorRuntimeWorkspace: cleanup of owned runtime snapshots on stop, restart, normal exit, or error exit, process tree tracking preventing premature file deletion on Windows, and neighbor directory isolation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SubsystemDesignAssistantTest.kt": {
+      "sha256": "d8eecf3098b9393aa578d46bfce461f67ddc5b00d89ae889110cb507f98d0ce0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemDesignAssistant: proposal sanitization protecting documentId, platform, implementation kind, ownership, and existing hardware UIDs, generating prefix-scoped hardware UIDs, and parsing markdown-fenced JSON responses.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SyncEngineDeleteAtomicityTest.kt": {
+      "sha256": "1e724f02d50f1fac8b1783b2c9243ef4690a8d77309f33e1fa05a3a1d5e5b02c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified removeImmutableCloudObject in SyncEngine: atomic deletion ordering (manifest reference removed before backing object deleted), object retention on manifest failure, orphan cleanup failure reporting, and cancellation propagation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SyncEngineManifestConvergenceTest.kt": {
+      "sha256": "579213dae9ff41d81429abf21a7f143bd490200e471629bebdc8871bdfad3f50",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified robotProfileMutationApplied in SyncEngine: concurrent manifest convergence allowing teammates' profiles while verifying requested additions are published and requested deletions remain absent.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SyncEngineUploadAtomicityTest.kt": {
+      "sha256": "83dcca6df493107d1e20606fbabd91bc5a5e6dc820cfe27523b8d0992da4d1ca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified installImmutableCloudObject in SyncEngine: upload-first atomicity, orphan cleanup on manifest swap failure, lost response reconciliation, and object preservation on ambiguous reconciliation failure.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SysIdServiceTest.kt": {
+      "sha256": "95c9bb00655b7c164a2f6af3d19c12d20c0838a4879e710771aac36c3604c23d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SysIdService: FFT dominant frequency analysis, motor parameter identification (kS, kV, kA) via multi-channel regression with asynchronous sampling, transient classification (underdamped overshoot vs critically damped rise), and insufficient data handling.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/TelemetryStoreTest.kt": {
+      "sha256": "50c25569a7eaaf7028fcc6fd14725b753f455f86f9f87671cf564cc8f6fbe24b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified TelemetryStore: canonical key indexing, ring-buffered history and age/count limits, LRU dynamic topic eviction, lazy observer allocation, and non-blocking backpressure protection (DROP_OLDEST) preventing slow UI consumers from stalling 50 Hz producers.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/UpdateCheckerServiceTest.kt": {
+      "sha256": "ba0aee0573f463859c5653c36d3288dff2b1183facbad584b2bc0187b8f34581",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified UpdateCheckerService: GitHub Releases API query, state transitions (Checking -> UpdateAvailable with Windows installer and checksum assets vs UpToDate), and coroutine disposal.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/VideoSyncServiceTest.kt": {
+      "sha256": "d4b44a1f562ba09bbc618f993d2aa8ccbd9f8cf4638ce0d64d6a52464109007a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified VideoSyncService: video-to-telemetry time offset alignment, normalized progress mapping with clamping at both endpoints, play/pause delegation to ReplayEngine, and video loading state.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/WindowsUpdateServiceTest.kt": {
+      "sha256": "6ead26253237e7ea625b4a73390faf6c4366d951e04cf2214d0ea6a8e4df4723",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified WindowsUpdateService and WindowsUpdateInstaller: staged MSI installer verification against SHA-256 checksum and Authenticode signer thumbprint, deletion on digest or signature mismatch, downgrade attack prevention, install deferral during active recording/simulator/import/delivery activities, and helper process command construction.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/XrpLinkServiceTest.kt": {
+      "sha256": "51dc26534076af0290d0081b58338d1423cf5698285830c1bd3a458409464d8a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated XrpLinkService tests covering thread-safe socket lifecycle, connect cleanup synchronization, robot handshake validation (ares-xrp/1 protocol, project identity, content SHA-256 verification), monotonic telemetry filtering, field configuration negotiation with simulator receipt validation, and fail-closed error handling on project or checksum mismatch.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/commissioning/CommissioningVerificationServiceTest.kt": {
+      "sha256": "0c73894fbf918c8e626e3ff05f5124e8296e698db3627fcde4742ce69ca1847c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated CommissioningVerificationService verification of subsystem configurations: verifies position-controlled mechanisms evaluate deterministic safety scenarios yielding VERIFIED status with controller count > 0 and >= 8 test scenarios, and verifies sensor-only subsystems correctly return NOT_AVAILABLE without false verification labels.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/db/AiSqlQueryGuardTest.kt": {
+      "sha256": "4ba909846babdf0bc0b5afb1e9f82ab2177addef5e12133b2189fc382ce3a165",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AiSqlQueryGuard invariant test cases: verified allowed bounded analysis over documented summary tables (sessions, session_summaries) with GROUP BY, ORDER BY, and LIMIT; verified strict rejection of local file and DuckDB table-scan primitives (read_text, read_blob, read_csv_auto, read_parquet, glob, file paths, unbounded range); verified rejection of CTEs, UNIONs, CROSS JOINs, subqueries, unwhitelisted tables (telemetry_frames, information_schema), multi-statements, and SQL comments.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/db/DatabaseBackupExporterInvariantTest.kt": {
+      "sha256": "101a9864b3ef74303a4f1e7aec97f51746680943cf74e8aea388cb3c38ed4695",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DatabaseBackupExporter invariant test cases across 14 hostile Parquet test vectors (null/negative timestamps, timestamp overflow exceeding MAX_SUPPORTED_TIMESTAMP_MS, inconsistent microseconds, null/negative sample order, null/NaN/Infinity numeric values, null/blank keys); verified native, remapped, and cloud atomic imports reject hostile files transactionally with zero row replacements or metadata corruption.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/drivebase/DrivebaseAuthoringTest.kt": {
+      "sha256": "e490b0b37c0df9680bd7f0a51a8caa2c70747286e4f70f96041e057fe791395d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 26 drivebase authoring test cases covering league catalog filtering (FTC, FRC, XRP), runtime validation blocking cross-league configurations, CTRE swerve import with unit conversions and provenance hashing, read-only vendor file immutability, canonical project identity enforcement, atomic reviewed saves with historical versioning, differential leader-follower inversion, and Pinpoint runtime contract repairs.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/integration/EngineeringNotebookDraftServiceTest.kt": {
+      "sha256": "d02a889e35ca892f4a8d4df238a307cdf9db0a7fda72c13b73765b4eadf7ed6a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated EngineeringNotebookDraftService tests: verified deterministic draft generation without AI dependencies, enforced review gating (always defaulting to DRAFT state), validated fallback to deterministic drafts when AI claims are unsubstantiated or lack evidence citations, verified structured provenance tracking, and verified credential redaction prior to AI processing.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/integration/IntegrationCenterServiceTest.kt": {
+      "sha256": "f1d2326eed3ccb959d27a56b5b4766c11b43f850b08661b8f968b57771bb5b22",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated IntegrationCenterService tests: confirmed approval transitions entry state without premature external publishing, enforced explicit publisher destination selection before submission, verified rejection of unknown publisher IDs, and validated durable event logging for test notifications.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/integration/IntegrationOutboxIntegrationTest.kt": {
+      "sha256": "4675009fccb4b5ac21ee18a2ae2cada7e72da9128c14adf6e4eccffa22a38503",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated IntegrationOutboxIntegrationTest across durable delivery lifecycle: tested persistence across restarts, idempotent retries, lease expiration and recovery, event ID collision fail-closed behavior, simulation evidence isolation preventing outbound external delivery, strictly sequential notebook revisions, transient error backoff, and approved-only publication gating.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/integration/NotebookPublishersTest.kt": {
+      "sha256": "0f078d837ba5d974ca7601fe1f786bd5ee6d3fd02b50d51be86833c34633d601",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated NotebookPublishersTest across Local Markdown, Google Drive, and CMS publishing channels: verified stable YAML frontmatter and SHA-256 content hashes, verified content-addressed Google Drive file reuse, verified CMS HTTP client Bearer authentication and Idempotency-Key headers without token leakage, and verified delivery adapter gating requiring mentor approval.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/integration/NotificationProvidersTest.kt": {
+      "sha256": "ef139a87455fbeed9aeb4f2290d552ace48b23040c93ebe0a44ff9dde38df11e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated NotificationProvidersTest for Zulip and Webhook integration: verified Zulip bot authentication, stream/topic parameter encoding, idempotency headers, HTTP 429 rate limit backoff parsing; verified Webhook HMAC-SHA256 signature calculation over exact request body; enforced TLS endpoint restrictions and credential storage encryption.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/log/CsvLogDecoderTest.kt": {
+      "sha256": "cb1e63f9db2e444be0d1c62a7903b44d952b8f3c644b2ceb2175a0e712109db2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated CsvLogDecoderTest covering native DuckDB and streaming CSV decoding: verified precedence of explicit TimestampUs/TimestampMs over LoopTime, ambiguity rejection on multiple timestamp columns, unitless timestamp header rejection, continuous sample ordering across multi-file session imports, logger _ExtraFieldsJson expansion, RFC 4180 quote/newline/comma handling, atomic rollback on malformed lines, and multi-signal wide format extraction.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/log/JsonlLogDecoderTest.kt": {
+      "sha256": "4c1c25f50aba6416d411176944ed7e8802da830a6e563cc4d5b89d1cbd1bf04a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated JsonlLogDecoderTest: verified transparent coroutine cancellation propagation, non-object line skipping, numeric conversion of booleans, key path normalization, rejection of logs lacking usable telemetry, resource bounds enforcement (max 10,000 action records, 1MB max line length), action timestamp domain checks, schema version integer validation, and multi-signal object parsing.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/log/ParquetLogDecoderTest.kt": {
+      "sha256": "6d8dd2340c8155bb38cdf495c182cc1e215ff9a9cc0912e74b9e9c7dd3af0dd0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ParquetLogDecoderTest: verified native Parquet import remaps rows to target session ID while preserving numeric values and string classifications, preserves high-resolution microsecond timestamps (timestampUs), and maintains monotonic sampleOrder sequencing.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/log/RlogDecoderServiceTest.kt": {
+      "sha256": "2f2737c2102c1d61b5f01d62d13f5da390a110ca4c3cb19f764e747e3cea5f43",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated RlogDecoderServiceTest for AdvantageKit RLOG v2 format: verified coroutine cancellation transparency, concurrent numeric/string/double-array updates at identical timestamps, array signal expansion to indexed paths (SysId/Data/0, SysId/Data/1), atomic rejection of truncated payloads and missing block terminators, block record size limits (max 65,535 records), and timestamp domain boundary enforcement.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/log/RoadRunnerDecoderServiceTest.kt": {
+      "sha256": "692df21d902202c65b6bea3d718c96d1f5be419ae97973cdd8b25cf8eac84069",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated RoadRunnerDecoderServiceTest: verified flattening of string and enum schemas into string telemetry, flattening of 2D pose structs into pose/x, pose/y, and pose/heading with imperial-to-metric conversion (inches to meters), atomic rejection and non-stalling on truncated key declarations, and strictly increasing timeline synthesis across concatenated log segments.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/log/WpiLogDecoderTest.kt": {
+      "sha256": "8e957715426703b67e41449df3d8e913dd5b6b459f3b1f4f9d015710a5a7b58d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated WpiLogDecoderTest: verified binary schema preservation (msgpack, protobuf, struct:Pose2d) as tagged base64 strings without Unicode replacement characters, strict rejection of malformed UTF-8 in textual schemas with atomic rollback, variable-length descriptor and 6-byte timestamp parsing, pre-allocation payload size bounds protection, and rejection of unsupported legacy WPILOG versions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/GenericStarterTemplateIntegrationTest.kt": {
+      "sha256": "853732acc2df2d02a3bab1a745d66934e9e8abfcbe8e09ec35d6156bf5b70001",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated GenericStarterTemplateIntegrationTest: verified opt-in end-to-end project initialization for FTC, FRC, and XRP templates, SHA-256 archive verification, template provenance generation, local.properties generation, and build tool execution across code generation, verification, and simulation unit tests.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/OfficialProjectTemplateIntegrationTest.kt": {
+      "sha256": "2f8fdf5ecdc2065ac920ea26ccf47ce67a8b898154f5b38a3b1008e27f4ed1c0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated OfficialProjectTemplateIntegrationTest: verified official pinned release archives for FTC, FRC, and XRP, JGit initialization on main branch with initial commit, provenance record persistence, acceptance checkpointing, and clean portable zip export excluding .git and build directories.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ProjectIdeLauncherTest.kt": {
+      "sha256": "1ca8366f4c12e5f7657efd54c8860d50a293f38731f31bc5b2a384e4beafa4bd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ProjectIdeLauncherTest: verified league-specific IDE discovery heuristics (Android Studio for FTC, WPILib VS Code for FRC), safe single-argument process invocation, actionable error messaging when IDE is absent, and graceful recovery messaging when repository paths are moved or missing.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/RepresentativeZeroCodeStarterIntegrationTest.kt": {
+      "sha256": "7eec02ab891824f73fa4b7480f128da22923e45059f83573aa27e9451d1dc40b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated RepresentativeZeroCodeStarterIntegrationTest: verified complete zero-code robot architecture seeding across elevator, flywheel, intake conveyor with bang-bang control and interlocks, wrist servo, superstructure state transitions, autonomous score-cycle routine, and driver control bindings; verified code generation and build verification.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/BiobuzzAutoBundleTest.kt": {
+      "sha256": "f4a701dfaa62c93148031b774c05de81e551f7b8f5b9e0cd34d9721962cb910e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated BiobuzzAutoBundleTest: verified ZIP bundle import of browser-authored autonomous routines and catalog metadata, starting pose preservation, routine step decoding, identity regeneration on re-import to prevent ID collisions, Zip Slip path traversal protection, archive entry size limits, and unrecognized file rejection.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/security/PlatformSecretStoreTest.kt": {
+      "sha256": "9c7347f1b6dff8e49308142a535c9f9b55d399d74cff0a146ec29866257f989e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated PlatformSecretStoreTest across Windows and Linux: verified Windows DPAPI encryption/decryption round-trip and deletion, verified Linux Secret Service CLI credential transmission via stdin (never process command-line arguments), and verified fail-closed behavior without plaintext fallback on keyring error.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/tuning/GuidedTuningExperimentTest.kt": {
+      "sha256": "8c246cd0be670e78053258075311cd9a27feada17aca6e523e855f78056fa7e3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated GuidedTuningExperimentTest: verified proposal policy bounding parameter adjustments, whole-step integer proposals, canonical configuration snapshotting with SHA-256 calculation excluding local state, evaluation of p95 metric improvements vs regressions, LOWER_IS_BETTER metric orientation, simulation-only candidate gating, and mentor report formatting communicating uncertainty.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/verification/RobotVerificationReportLoaderTest.kt": {
+      "sha256": "173893df498fe743d36297450345f0ae322272e957873e426a55160c13293f21",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated RobotVerificationReportLoaderTest: verified multi-layer aggregation of JUnit XML reports across generated behavior, platform integration, simulator, and physical validation checklist; verified that build failures block downstream stale test results; verified invalid subsystem descriptors report FAILED configuration evidence; verified missing test results fail explicitly.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/verification/VerificationRunStoreTest.kt": {
+      "sha256": "61ca5ddecf95fd0506af1abcb87b83decbd7495911a5d898c49c5041c249d77a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated VerificationRunStoreTest: verified persistence and exact reloading of normalized verification reports under .ares/local/verification/<runId>/report.json, and verified that edits to canonical subsystem files invalidate pending verification runs while modifications to local/history/evidence files preserve the canonical hash.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporterTest.kt": {
+      "sha256": "ca9d89504651faba8e7dcee1ba09398a1856da2013ab3a5ef573831a01711599",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ProjectArchiveExporterTest: verified export of clean portable ZIP archives including .ares/ and source files while strictly omitting .git/ metadata, build/ output directories, and sensitive credential files (credentials.json); verified rejection of export destination paths inside the project tree.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectReviewTokenFactoryTest.kt": {
+      "sha256": "60a07fe9f1a294a6ce5583eff5ac9ae86147c23d8c2d2c2e99970820513e7e0d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ProjectReviewTokenFactoryTest: verified deterministic, content-bound working tree tokens that change immediately upon file modification, and verified restore tokens binding local commit, remote commit, and ordered change sets to prevent TOCTOU commit races.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectVersionControlServiceTest.kt": {
+      "sha256": "5d9521a29fb9b25362d2bee4d9d4a89d4939090bb48c7a81a70eb35d0d422524",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ProjectVersionControlServiceTest across 25 JGit and GitHub backup test cases: verified clean initial commit creation, opt-in automatic sync, offline retry handling, content-bound review tokens, sensitive file blocking, keystore whitelisting, OAuth device authorization and token rotation, credential isolation from .git/config, safe backup refs (refs/ares/restore-backups/), rollback on push failures, and concurrent sync operation serialization.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/AcademyEngineeringLabsTest.kt": {
+      "sha256": "192a1fb5ac98ae3e732bea1c53deed82987d16275d436110f078a797d956d4f6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AcademyEngineeringLabsTest: verified control challenge mission simulation labels simplified educational models without claiming robot tuning recommendations, rejects non-finite gains, tests Mecanum kinematics preview adhering to standard coordinates (+X forward, +Y left) with uniform scaling, and validates Swerve preview module azimuths in CCW radians within [-PI, PI].",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/AresFileChooserAsyncTest.kt": {
+      "sha256": "f29126fe1511824efc4e11bfd2d6b6edb1e8860442f1af92c83951282cf9992d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AresFileChooserAsyncTest: verified asynchronous directory reading off the Swing EDT (EventQueue), confirmed slow directory listings cannot overwrite subsequent rapid navigation selections, and verified clean listing error reporting for non-existent directories.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/AresFileChooserStateTest.kt": {
+      "sha256": "42c6a1ebb9075527f060d24bc95195e3340359558fd10b5832fe4d93ff520303",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AresFileChooserStateTest across 9 state transition scenarios: verified directory refresh on file creation/deletion, keyboard selection with overwrite prompting, automatic default extension appending, rejection of directories as save targets, rejection of disappeared destination parents, relative path resolution, and sanitized new folder creation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/AresFileChooserVisualTest.kt": {
+      "sha256": "6b25bfd99fa2a51f8fbff1e4774b3eaeed4e00ebf8a1b67f52cb0d6379272602",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AresFileChooserVisualTest: verified headless ImageComposeScene rendering of directory-mode file chooser at 940x640, validating Skia PNG export diagnostics and layout structure.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/BuilderVisualScreenshotTest.kt": {
+      "sha256": "6f62c4c7fde65f3d807215137c37b378acfa6e7a61dc18c17d53c0e26b224b00",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated BuilderVisualScreenshotTest across 12 visual Compose scenes: verified explicit non-color subsystem health status rendering (NEEDS_HOMING, OUTPUT_FAULT, HEALTHY), responsive RobotStudio layouts across 1920x1080, 1440x900, and 1280x720, RoutineBuilder responsive layout, ControllerCanvas front/rear Flydigi Vader callouts, InspectorDrawer, and SpecSummaryModal rendering.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/DashboardOfflineGuideTest.kt": {
+      "sha256": "ee768053e8705606e405beb52528358d720a1a7186a3c14b64ce2b016eebf47d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DashboardOfflineGuideTest: verified shouldShowDashboardOfflineGuide logic ensuring the guide appears only when disconnected, no active replay session exists, and the user has not dismissed it.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/HardwareSelfTestWizardTest.kt": {
+      "sha256": "e1fc1c4d4db610185bd674de9d2c56f6f8ac033d06bc5d85309aabd5775ea2ea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated HardwareSelfTestWizardTest: verified disconnected preflight sets all steps to WAITING without false success, observed steps require specific telemetry evidence (battery, motor current, pinpoint status, limelight FPS), low battery and camera FPS trigger WARNING, and missing/stale heartbeat timeouts (> HARDWARE_READINESS_HEARTBEAT_TIMEOUT_MS) force all steps to WAITING with stale warnings.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/MatchStrategyAnalyticsTest.kt": {
+      "sha256": "4d8a8191b54c47472d368904fdbd8802c8bea8f2ba768b62ef746c0ff4abf8bc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated MatchStrategyAnalyticsTest: verified driver coaching card severity filtering (WARNING, EXCELLENT, TIP) and title mapping for post-match strategy analytics.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/LinkageAndBehaviorComponentsTest.kt": {
+      "sha256": "51991d6096f6c286498ac092a9355f58240f64c313f3767a6db002c7dff6506b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated LinkageAndBehaviorComponentsTest: verified TwoDofLinkageParameters workspace envelope calculation (min/max reach: 0.10m, 0.60m) and kinematics reachability checks; verified GamePieceType mapping to canonical field element documents with physical simulation properties (mass, friction, restitution).",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/NavigationModelTest.kt": {
+      "sha256": "e080d5c27c78089ff1a8403efc244a5e3fed66327b85282f1c01c1a2be7eac9c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated NavigationModelTest: verified 6 primary navigation sections (Dashboard, Robot, Autonomous, Analysis, Data, Settings), route-to-section mappings and default targets, progressive disclosure of developer utilities, command palette search filtering, responsive tab-to-menu presentation transitions, and quick menu shortcuts.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/core/AresNumberFieldTest.kt": {
+      "sha256": "8d9b1aa12733678ce456964622fa55597e5e82601c57efab7167028cff6295bd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AresNumberFieldTest: verified parsing of valid finite numeric input (positive, negative, scientific notation) and strict rejection (returning null) for empty, incomplete, or non-finite inputs ('-', 'NaN', 'Infinity', '-Infinity').",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/AutonomousSelectorCardTest.kt": {
+      "sha256": "254fe64f28aece535d72b71566ef6e0f0433f51ce79d9ee6ff5dc1ca92b76991",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AutonomousSelectorCardTest: verified parsing and normalization of routine publications from CSV or JSON formats, and verified robot SmartDashboard / NT4 topic contracts for FRC (ARES/Auto/Requested, SmartDashboard/SelectedAuto) and FTC (ARES/Input/selectedAuto).",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardFullscreenRenderTest.kt": {
+      "sha256": "c7d5a65369b64ad98c0f1906a92bc7ecfaf1294b40ad5751c8880b9c5992d9a3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DashboardFullscreenRenderTest: verified fullscreen widget expansion preserves existing composable instances without disposal or recreation, maintains scroll offsets, continues delivering telemetry updates during fullscreen mode, and cleanly disposes widgets upon dashboard destruction across multiple responsive viewport widths (600px, 1200px).",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardLayoutEngineTest.kt": {
+      "sha256": "67934eb22e5408ca31f06e470deb278941b2713587cc0190f6bf5307d95490e6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DashboardLayoutEngineTest: verified responsive column policies (6, 9, 12 columns based on width), restricted layout editing to the canonical 12-column mode, and verified reflow algorithms clamping spans and resolving overlapping collisions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardTelemetryParsingTest.kt": {
+      "sha256": "ccec530d6146d3d781515a40a987b1dee7b59d854c6e23a52b6c69314273bc83",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DashboardTelemetryParsingTest: verified motor current topic parsing extracting channel identity, verified isolation of total current from motor currents, verified brownout state defaults to unknown without synthetic healthy states, and verified pose viewer topic classification.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardWidgetGridBytecodeTest.kt": {
+      "sha256": "c3138a65635415012b710d5be5bbb0342b4254adf86cd88ab9bca16958986d93",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DashboardWidgetGridBytecodeTest: verified reflective class loading of all generated synthetic classes for DashboardWidgetGrid, ensuring clean bytecode verification without ClassFormatError regressions from non-local returns.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/EkfSensorFusionLabTest.kt": {
+      "sha256": "b6fd7e9a285b3b99f3d6cccfd670e50496dadc6377027c0a6daed7659dff4352",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated EkfSensorFusionLabTest: verified EKF sensor fusion simulation, acceptance of valid vision observations, Mahalanobis gating rejecting injected outliers, verified EKF error is strictly lower than raw odometry error, verified bounded uncertainty sigmas, and verified rejection of non-finite or unbounded teaching inputs.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/FieldViewerCardPoseTest.kt": {
+      "sha256": "45ee8765d427cf78cd108a42c29be1e6ec7cf04fa93f3539e76ce2081d549ca6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated FieldViewerCardPoseTest: verified simulator estimator overlay displays real EKF estimate rather than ground truth, live simulator pose replaces buffered head when tracer is disabled, and appends as current tracer head when tracer is enabled.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/FtcDriverStationWidgetTest.kt": {
+      "sha256": "b903b29cf0c657e8319fe3ad2e34fe14a3959c4d5bc762b7d16ec006c2f94c26",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated FtcDriverStationWidgetTest: verified safety interlock restricting dashboard opmode command issuance to connected loopback simulators (127.0.0.1, [::1]) while blocking remote network IPs.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/LocalSimulatorControlBarTest.kt": {
+      "sha256": "952e1b07c91cc2afc136351d0231a1f466cd774197783bbce6d4f5be131da8f5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated LocalSimulatorControlBarTest across 20 test cases: verified preferred TeleOp opmode resolution, FRC simulation Driver Station acknowledgements, autonomous display states, control lease timeout handling, lifecycle polling, primary button state transitions, and launch deduplication.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/MecanumVisualizerTest.kt": {
+      "sha256": "42bcfd3fde42c28138ce6b1a9d0d55cc237ce683cb80c18e5519a2864ab5c62d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated MecanumVisualizerTest: verified detail string formatting (power, encoder velocity, current), forward motion pointing up (0, -1), backward motion pointing down (0, 1), strafe vector synthesis matching robot card (+X/-X), and pure rotation producing zero net translation vector.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/SingleSignalWidgetTest.kt": {
+      "sha256": "fda6719f683918f759cb76430bfc1601cfd07a0949b7d9ec5ae0aad3358d1070",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SingleSignalWidgetTest: verified replay samples take precedence without contaminating live timestamps, live samples retain source timestamp and normalized topic name, and widget display configuration round-trips without mutating values.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartModelTest.kt": {
+      "sha256": "e41dc30f6ae51df2a4e0e86c680c5b2612dfa3e5e54500ee007e12203ee1b431",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated TelemetryChartModelTest: verified grouping of disparate physical units into separate chart bands, unit conversion before drawing, sliding window dropping expired history while retaining one boundary predecessor, and mixed-unit channel preservation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/TelemetrySignalTreeTest.kt": {
+      "sha256": "58f5036e41ab63557ada380fede44378c2947561444c72a7c5bea066371ade95",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated TelemetrySignalTreeTest: verified hierarchical tree construction from flat slash-separated topic lists, leaf vs branch node classification, full canonical path assignment, and graceful handling of single-level and empty inputs.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/WidgetPickerTest.kt": {
+      "sha256": "572a63d00ae21c1f155c2c665f57cc88e5a6f762787cf9e739f1c02460adb950",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated WidgetPickerTest: verified recommended category filtering of curated widgets, category-scoped keyword search, and plain-language search discovery for diagnostic and review tools.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/MotionProfileLabTest.kt": {
+      "sha256": "aedf910f754fb61235812a7fa5b928bc0986b51b0ea7c0d0462eb61f40db3d31",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated MotionProfileLabTest: verified quintic Hermite spline curvature sampling and centripetal acceleration clamping, jerk-limited S-curve motion profile generation respecting maximum velocity, acceleration, and settling tolerances, and strict input validation rejecting NaN or excessive step counts.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/robotstudio/RobotStudioPresentationTest.kt": {
+      "sha256": "5f1dcaf19d8d0c2ec6854ebb1d96d21d412907bd109b6b5bd80eecaf96989236",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated RobotStudioPresentationTest: verified loading and error states report honest progress without claiming false readiness, robot structure badge evaluates authoring stages independently of downstream build/sim stages, blocked stages fail closed, responsive pane breakpoints protect center canvas, and persisted revision fingerprints update only after changes settle.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/routine/RoutineBuilderResponsiveLayoutTest.kt": {
+      "sha256": "579d17743a2762f3ae808278bda828b101eba39ca335c584d3ebfe02a335d415",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated RoutineBuilderResponsiveLayoutTest: verified responsive layout presentations across wide (inline header, two panes), medium (stacked header actions, visible field), and compact (stacked header, tabbed editor/field panes) viewport widths.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/routine/RoutineReplacementPolicyTest.kt": {
+      "sha256": "2072f6ca7f8767069555ba54341d613e10a381de78daf52f58cdb6e007588d88",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated RoutineReplacementPolicyTest: verified stale action references remain visible with informative warning labels, replacement of untouched default shells proceeds without false data-loss prompts, student modifications strictly require replacement confirmation, and clean saved routines replace without prompting.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemFaultLabModelTest.kt": {
+      "sha256": "7c26867f16c0cd53501cf29a5a80937594688f55453932755f811d40f4324057",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SubsystemFaultLabModelTest: verified healthy mechanisms permit output while all fault scenarios (stale feedback, invalid feedback, configuration failure, not homed, failed output write) command safe neutral, unselected requirements do not falsely block output, and write failures latch closed until explicit neutral recovery.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemPurposeSectionTest.kt": {
+      "sha256": "bb19f40684828da4f9525684f64f73c02a3f07803f52e797851308678ab84892",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SubsystemPurposeSectionTest: verified subsystemKotlinTypeName sanitizes freeform student mechanism names into valid, idiomatic Kotlin class identifiers.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/terminal/TerminalDrawerContrastTest.kt": {
+      "sha256": "d5d3c17bdfc47fdd4a628b4411e45670cb8db8629a1ad6093ff8838807d31a78",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated TerminalDrawerContrastTest: verified ANSI plain and reset codes map to semantic foreground colors, and verified ANSI black maintains a minimum 4.5:1 contrast ratio against the terminal background across all theme variations (standard, colorblind, high contrast, bright) satisfying WCAG AA standards.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/controls/ControlsEditorPresentationTest.kt": {
+      "sha256": "fee9ad9081074ab2f4c9dd9fa1d4dd8a8457f2ef53d40c2b7f53f837ba39c3ff",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ControlsEditorPresentationTest across 13 presentation test cases: verified same-row stick axis collision offset calculation, controller callout side lanes, compact marker labels, Flydigi Vader extra shoulder separation, safety timing summaries, keymap markdown generation, accessible lighting action labels, and pure Redux learning trace generation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/AcademyCatalogDocumentTest.kt": {
+      "sha256": "2c129b6e6b1ca87b51a0af3226c99dfeade1a9a933ca4bf1288eec4d57ca7352",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AcademyCatalogDocumentTest: verified bundled Academy catalog matches current schema version, covers all LearningLab entries, round-trips deterministically through codec, rejects unsupported schema versions, and strictly rejects unknown root or nested JSON properties.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/AcademyClassroomToolkitTest.kt": {
+      "sha256": "3562dea73e254fdebb66e8630c746e9da2d791dcef74d304655b4b7b765cf0f9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AcademyClassroomToolkitTest: verified path summary counts only lessons/checkpoints within the chosen learning path, markdown reports clearly distinguish app-observed facts from student reflections with safety disclaimers, and assignment worksheets emphasize evidence boundaries.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/AutonomousSafetyTeachingModelTest.kt": {
+      "sha256": "31e3f347e47cc14d1bde504a8f6de620d534abe2ba2e485ae930d1a94656fde3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AutonomousSafetyTeachingModelTest: verified field boundary perimeter checks accounting for robot footprint and orientation, enforced >= 25% safety margin on routine timeouts, detected parallel branch resource conflicts, validated condition usability, and enforced optionality requirements on continue-on-failure policies.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/DeveloperReferenceCatalogTest.kt": {
+      "sha256": "a6e4b7b36adac8203927d288751b957a7ba79f986dd6f2638c9686c08c5e1cc3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DeveloperReferenceCatalogTest: verified all catalog entries specify valid ARESLib-Kotlin source paths, explicit units, documented invariants, and test linkages; verified alias search recognizes common student terminology ('kalman', 'cached readings', 'deterministic').",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/GlossaryCatalogTest.kt": {
+      "sha256": "a86afcf7517ef6a9830835b3e6d1b2f96881140e62c641a20c7ec5ce46f2ca60",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated GlossaryCatalogTest: verified referential integrity of cross-links to lessons and developer references, verified every term has cross-links or is listed in the allowlist, verified search across terms and definition text, and verified complete synchronization with the authoritative docs/learn/GLOSSARY.md.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/HomingSafetyTeachingModelTest.kt": {
+      "sha256": "a5d64a0235e4ae2896e0df4fb80a3c20f949966d098f5a054f3f947e8f475538",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified homing safety teaching evaluation model. Validated freshness dwell requirements (retained sensor evidence must remain active and fresh across dwell timeout), current stall rejection on invalid measurement readings, method-specific threshold filtering for sensor homing, combined stall requiring concurrent current and velocity evidence, and latched output fault recovery enforcing successful neutral actuator writes.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/LearningCatalogTest.kt": {
+      "sha256": "203efcc803f3d77e3cc38cfa477308cf2ed8624ca1f45c07095a8fd23cf33adc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified LearningCatalog structure and navigation bindings. Validated hardware-free first success path, student concept search, contextual help routing covering all active workflow screens (excluding intentionally unmapped PROFILE and ADMIN), 5 progressive engineering tracks, interactive lab guides, and evidence-backed missions across subsystem builder, control mapping, offline tuning, superstructure stateflow, and autonomous routines.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/LearningJourneyTest.kt": {
+      "sha256": "e71efeeddeda80192cce99d799e9660ef69d42cfbbd2bc54ac8394a1def47246",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified LearningJourneyEvaluator state machine and checkpoint discovery from AcademyRuntimeSnapshot. Validated runtime availability gates, local NT4 simulator connection criteria, post-run simulator stop detection, explicit builder facts extraction across subsystems, controls, tuning, superstructures, and autonomous paths without inferring unobserved execution or student reasoning.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/ProjectMissionEvidenceTest.kt": {
+      "sha256": "db71c2a2c3e402a530b0ebcb592a393a2361b45a65155ef21688baf733c9e6c9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified project mission evidence conversion from SuperstructureStudioState and PathPlannerState to Academy snapshots. Validated multi-subsystem target coverage across presets, explicit transitions, failsafe policy, deterministic preview, and fault injection requirements; confirmed partial drafts and unsaved autonomous routines fail closed and cannot earn complete or generated evidence.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/RobotSignalFlowTeachingModelTest.kt": {
+      "sha256": "d8abe2b0425c98753695f5bb0db43e279bb54a8a05535eb52640afcf1d162cfa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified pure Redux teaching loop runRobotSignalTeachingLoop across TeachingSignalPath variants. Validated motor loop deadband shaping and retained snapshot preservation, stale motor feedback requesting neutral and invalidating telemetry, positional servo inversion and failed mock write fault latching, sensor path state caching without actuator writes, and latched output fault neutralization.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/RobotStudioLearningEvidenceTest.kt": {
+      "sha256": "e7359f22de9b172029d400a3b3edebf1d623b32f0a973db20e1bad2f51dc0bd7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified mapping of RobotStudioState stages to AcademyGraduationSnapshot. Confirmed project identity, authoring readiness, verified build, running simulator, and imported run evidence requirements; verified that blocked verification or missing stages prevent false readiness assertions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/RoutineValidationLearningLinksTest.kt": {
+      "sha256": "11a8686512204832e6e0d49382f7e32f9e0bb282c2b1f291fff8f346cd1a0ffd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RoutineValidationLearningLinks mapping all 38 routine validation error codes to valid enumerated catalog lessons and existing checkpoint IDs, ensuring comprehensive diagnostic guidance for all validation failures.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/RunAnalysisLearningEvidenceTest.kt": {
+      "sha256": "4338c6ff6e6a09d90a181bfa5b997d544d340f36c69398c6de550664ff98c971",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified GuidedRunAnalysisState conversion to AcademyRunAnalysisSnapshot. Validated report source provenance, freshness status, quantitative metrics, baseline comparison, explicit limitations, export report tracking, and fail-closed handling for stale reports or mismatched selection IDs.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/help/TuningLearningEvidenceTest.kt": {
+      "sha256": "c7f7e74dc6a240f4913c21b3883cb0db76ce4a228880dcf641b5d1ade87a67e8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified live TuningState conversion to AcademyTuningSnapshot. Validated typed parameter declarations, feedforward declarations, apply policies (DISABLED_ONLY), proposal provenance tracking, and separation between draft proposals and structured promotable reviews.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/input/DesktopDriveCommandMapperTest.kt": {
+      "sha256": "95d7c35159bba8a5d19de5188c3accaf6d3cab45caa7781a40a45e10538ac9b2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified desktop drive kinematics mapping for keyboard and gamepad inputs. Validated FTC field-centric (+Y forward, +X right, CCW-positive), FRC field-centric (+X forward, -Y right, CCW-positive omega = PI), robot-centric league independence, alliance mode bitflags, and fail-closed neutralization on non-finite (NaN, Inf) inputs.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/input/DesktopDriveInputPublisherTest.kt": {
+      "sha256": "9e8385ca47c194ec7e08dbdf4225757c0a697005fa60dc374e745bb5a0319e64",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DesktopDriveFrameSession and desktopDriveIntent publisher lifecycle. Validated slow keyboard scaling (0.1x), receiver acknowledgement timeout contracts, startup timeout handling, inactive teleop waiting without session churn, publisher gap rehandshaking, zero-motion neutral handshake frames before arming, unaccepted frame retries without sequence advancement, and gamepad override with mechanism flags.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/input/DesktopDriveKeyDispatcherTest.kt": {
+      "sha256": "135e70ac5d906cff497ccb308a44e9dd32044a5899321ebc23489855080da9a9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified desktop drive key event dispatching. Validated that drive keys are ignored until armed, space key activates slow drive mode without altering authorization, shortcut keys with modifier control are preserved, and control-modified releases clear held keys properly.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/AcademyLayoutTest.kt": {
+      "sha256": "767bafb744ca04d126c7dbf489b6297016a9b8124b638275b7d40a7a981fae54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified responsive viewport layout logic in academyUsesSinglePane. Confirmed single-pane presentation on constrained desktop viewports (< 1366x768 or height < 768) and large-text display mode, while preserving the standard two-pane layout on wide desktop viewports.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/ControlTheorySandboxTest.kt": {
+      "sha256": "a84c4bda6ba965e52b050464c92082c3339235a3d9e376fa02c10f76e5d09e87",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified simulateStepResponse across control strategies. Validated flywheel velocity step response under PID+feedforward (bounded, rise time < 1s, steady-state error < 0.10), arm gravity compensation (kG reducing sag error), elevator response stability (201 samples, dt=0.01), linear ADRC disturbance rejection with ESO, and rejection of non-finite gains or unsafe sampling durations.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/DashboardScreenBytecodeTest.kt": {
+      "sha256": "236c6488cee7fe12282c0090e6c5b995549800be7eb673b9ae8a4f4b800fd3fc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified bytecode structure of DashboardScreenKt. Confirmed that the replay toolbar does not rely on synthetic compiler enum mapping classes (DashboardScreenKt$WhenMappings.class), preventing classloader fragility during incremental compilation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/ImportCenterSelectionTest.kt": {
+      "sha256": "d0a72ca9fa0a90967b2786dcc09e3d26371b999bf692a34fa47c136cfa2f3ed3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified controlledLogSelection in Import Center. Validated fail-closed behavior when loopback control is disabled or null, and verified cross-platform path separator handling when decoding selected run file lists.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/MechanismKinematicsTest.kt": {
+      "sha256": "63964ba0bd87f271e40a05d2adaef1cfc23f5b8e98754117bb53bd95204a7086",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified KinematicsMath.calculateMotorSizing. Validated NEO motor arm torque calculation (3kg, 0.5m length, 60:1 gear ratio, 90 deg travel) with peak load torque 7.36 Nm and output stall torque 132.6 Nm; confirmed stall margin > 15x, warning generation on undergeared mechanisms (2:1 gear ratio), and rejection of zero motor counts, NaN mass, or efficiency > 1.0.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/OnboardingPresentationTest.kt": {
+      "sha256": "8c31d96e8e123e2165bcb5d9ad93e7d889e0673282bc7b6e54fadf92aa745df3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified onboarding UI presentation helpers. Validated onboardingFinishLabel across all ProjectSetupMode options and onboardingReadinessHint error messaging identifying missing mandatory fields during project and robot configuration steps.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/SubsystemCommissioningModelTest.kt": {
+      "sha256": "fdb950c9a1fec3463611c44eed890f5b909fa5a7ecb46bd2f0bfda6cb5545493",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified simulateSubsystemCommissioning across control strategies (DIRECT, POSITION_PID, PROFILED_POSITION_PID, VELOCITY_PID, BANG_BANG, SERVO_POSITION). Validated deterministic bounded simulation, fault injection neutralization (0.0 output on stale, frozen, or invalid feedback), latched write and overcurrent recovery, fail-closed brownout/homing gates, continuous angle shortest-path boundary traversal, and hysteretic zero-crossing.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/SuperstructureStudioScreenTest.kt": {
+      "sha256": "7b619019717c1725d72c4ecf4116b43a5b84588c34bc358fbf7302a505cf8e3e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified shouldRefreshSuperstructureCatalogsOnEntry logic in SuperstructureStudioScreen. Confirmed catalog refresh for clean retained editors while inhibiting refresh during active loads or when dirty uncommitted drafts are present.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/onboarding/SyncStepTest.kt": {
+      "sha256": "cdc7de75077ff1f8fe10a3c283f4da1db899244cacc536382ace5e7ef70ca93d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified platformPathPlaceholder in Onboarding SyncStep. Validated platform-specific path placeholder generation adhering to native directory conventions ('\\' for Windows, '/' for POSIX).",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/theme/AresBrandContractTest.kt": {
+      "sha256": "dad86c331270a29bcea56361b193405672852bce57489a4b7148eb167d18c918",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified AresBrandTokens against checked-in contract snapshot ares-design-tokens.json. Validated exact RGB values for brand and semantic dark palettes, cyan-led analytics role, packaged official destinations/logo mark (ares-mark.webp), and WCAG normal-text contrast compliance (>= 4.5:1) for bright accents on dark backgrounds.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/theme/AresThemeContrastTest.kt": {
+      "sha256": "bace504a4e9acdbacb1c1c0b36de71369f2a7963510d5979fd4a36177e8201f4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified semantic text contrast ratios in AresTheme across standard, colorblind, and high-contrast palettes. Confirmed all semantic pairs meet WCAG AA normal-text contrast (>= 4.5:1) and verified the intentional rejection of white text on bright cyan.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/theme/AresThemeTest.kt": {
+      "sha256": "75fa590dc05727711cfafb8d7a31156ad81a8ebfbb8c2c14e5067ebcb3d3ca18",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified theme typography and font scaling. Validated effectiveAresFontScale multiplier math, WCAG AA compliance across all palette fills, white text rejection on primary cyan, and typography style color unspecification (Color.Unspecified) ensuring semantic foreground inheritance.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/theme/BrightButtonForegroundTest.kt": {
+      "sha256": "53c02a8e2dbc1a5436c946482c5ed121a9381c653dd2087572b8c04e3abfbc0c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified AST static analysis test scanning all ButtonDefaults.buttonColors declarations in the app source root. Confirmed that all bright container fills (AresCyan, AresGold, AresAmber, AresGreen, AresError) explicitly specify contentColor = AresOnAccent.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/util/DesktopFileChoosersTest.kt": {
+      "sha256": "14e0c2f780228da11486d82b07c9e1d8926dab76b792d4bed3274b3206c2d064",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DesktopFileChoosers.ensureExtension and detectRobotFlavor. Confirmed case-insensitive extension preservation, normalized extension appending, and accurate detection of project flavors (ARES, FTC, FRC, XRP, GRADLE, plain folder).",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/validation/HardwareDashboardValidationTest.kt": {
+      "sha256": "ff9e989276815126a83d7449f151c7eac8e3a04e763220ad2675e56a6a0dec7b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified self-hosted physical/simulator NT4 live telemetry validation test suite. Validated topic normalization, connection timeout, live retention window checking (LIVE_RETENTION_MS), frame persistence in DuckDB, and report serialization to JSON and Markdown.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/CloudRobotLogGroupingTest.kt": {
+      "sha256": "9fdf95b211cdb8210b9f11ace2c8201d3d0b64fc4e3ad6f25b9e02f0325fbbaa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified robotLogRunKey extraction logic. Validated correct correlation of timestamped telemetry gzip CSV log files and action JSONL log files by their shared run UUID.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/CloudViewModelTest.kt": {
+      "sha256": "c2fad846e19c590c5c26a5ac16523a89d3c3a298a73bacd3fe1a0465b7f3731d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified CloudViewModel session lifecycle and remote indexing. Validated session reloading upon entering Cloud screen, remote cloud index prerequisites (authentication and explicit destination config), and concise single-line failure reporting for robot log retrieval.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/DashboardLayoutTransactionQueueTest.kt": {
+      "sha256": "ae4ee982dc4160cb27398e799a9fe435fc174c2b64b5c7894eaf73d331004ea9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DashboardLayoutTransactionQueue serialization semantics. Validated that concurrent layout operations execute in strict sequential order, observing committed state from prior transactions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/MainViewModelWorkspaceTransitionTest.kt": {
+      "sha256": "c1038d0cef26c2fe5646a460da96022e19030dd941851422cef8388474f22d3c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified MainViewModel workspace transition safety. Validated that asynchronous workspace switching joins prior runtime ownership before exposing the target workspace config, preventing state transition race conditions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/MjpegFrameAssemblerTest.kt": {
+      "sha256": "dcf170b2a609fd1fef02449eff7afaeb28d50f9b6f27f8362ab62691d5e9f1b2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified MjpegFrameAssembler video stream parsing. Validated marker extraction across network chunks split at SOI/EOI boundaries (0xFF,0xD8 and 0xFF,0xD9), multi-frame extraction from single reads, and oversized frame dropping with resynchronization.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/OnboardingModelTest.kt": {
+      "sha256": "5b5528b5d05c7f225119ba01340066fdc9b950525121e5eeec26c8ad8c4ba908",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified OnboardingModel and evaluateJavaBuildTools. Validated JDK 17/21 acceptance, legacy version string parsing, non-blocking build tool warnings on older JDKs, field validation across project modes, path traversal rejection, Lightbot demo configuration, and wizard auto-advance logic.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/RoutineBuilderViewModelTest.kt": {
+      "sha256": "d81ceb94f88e311ec7f5273291a6def08eccda291a26ed2322b149b6d82c4174",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified PathPlannerViewModel autonomous authoring. Validated loading derived subsystem actions aligned with controller bindings, guided first routine generation with field-valid defaults, invalid coordinate rejection, dirty tracking and canonical saving, action-only stationary previews, control flow step manipulation (Branch, Together, FirstToFinish, Deadline), loop expansion limits (<= 4096), cross-project isolation, marker progress and duration bounds, nested child step editing and cleanup, and guided tour navigation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModelTest.kt": {
+      "sha256": "ed46b37e76af8a2ac929a86bfe394102403779af5550491916a259f7dfbca7be",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemGeneratorViewModel subsystem DSL authoring. Validated draft preservation during new registrations, XRP controller port constraints, FTC unique hardwareMap naming and address collision rejection, FRC mechanism CAN ID isolation (20..62), Academy evidence progression, hand-authored registration without starter overwrite, tuning metadata management, stage navigation, DSL generation and revision history, hash-bound safe removal and recovery, AI design proposals, stall homing current evidence, and follower direction transforms.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/SubsystemReloadTest.kt": {
+      "sha256": "826277904b18a16378d86a1b1f3ef50d6d4568e7174e8f8baef4a2912768b9b6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemGeneratorViewModel concurrency during reloads. Validated that delayed reloads cannot overwrite edits made after reloading started, and confirmed that subsystem creation waits for initial document identity scans before allocating identifiers.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/SubsystemTuningAuthoringTest.kt": {
+      "sha256": "9dfbcb505600240dfb2c9e9e0565bb6ce1780a10981d8aa3b0868a130e97ab7a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemTuningAuthoring parameter declaration workflows. Validated typed parameter definitions and apply policies, duplicate UID/key detection and enum/bound validation, PID and feedforward presets (truthful and idempotent), and stable identity preservation through reordering (moveByUid), codec roundtripping, and metadata discovery.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/SysIdCapabilityTest.kt": {
+      "sha256": "99becd1545d3fc38ae389facba1b022cd2b82979339e5e5aa67642f435c0aa76",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified parseSupportedSysIdMechanisms capability parser. Validated parsing of delimited SysId mechanism advertisements (LINEAR, ANGULAR, FLYWHEEL) while safely ignoring unrecognized or malformed tokens.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/controls/ControlsCoverageTest.kt": {
+      "sha256": "c68b0d509d59486ce90aa2191b7824a5867ff72840df284f472092c85bcb927d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified controlsCoverage logic. Validated counting of direct teleop action bindings, filtering of disabled bindings and autonomous-only actions, and detection of missing safety and calibration confirmation actions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/controls/ControlsEditorViewModelTest.kt": {
+      "sha256": "ac3a4697bfa67bae15bd5ae1f4838e8a93df0e67a286706fe0c4bda344b03de9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified ControlsEditorViewModel controls authoring workflows. Validated binding creation for unmapped actions, target name inheritance, momentary voltage action pairs (held voltage + release zero), headless project-backed operation, desktop learning isolation, standard controller profile mappings across FTC/FRC/GLFW, drive axis analog policies, chords/zones/repeat timing, macro recipes, argument validation, safety recovery bindings, Academy evidence progression, multi-scheme switching, and dirty state tracking.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/BiobuzzDashboardTelemetryTest.kt": {
+      "sha256": "181f90365076c7b1fa78b849c22ac5c0c0c682a375b93fe890697b3007ed1137",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified BiobuzzDashboardTelemetry NT4 live ingestion. Validated JSON snapshot string decoding (/ARES/BIOBUZZ/State), field pose state updates, replay frame decoding, malformed frame isolation, telemetry overflow resilience, and disconnect state clearing.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/BiobuzzFieldIntegrationTest.kt": {
+      "sha256": "e9e093048e6e9d006db4cc5dcc385ff7f040473f51660375abc02ede9efbe380",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified BIOBUZZ field integration. Validated tagless field document push to simulator, bundled robot project template inspection (declarative generated subsystems, mock IO, driver controls, BiobuzzSimLauncher classpath), game piece visual mapping, preset loading, undo/redo, and field background asset resolution.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldDocumentStoreTest.kt": {
+      "sha256": "1b2fd22247d7f22881e8bcb8d52fee87726e717eb54e7662b872b1e9c71f58c7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified FieldDocumentStore persistence. Validated FTC square vs. diamond coordinate system defaults, project-relative field image resolution and path traversal rejection, image-free field handling, atomic saving with revision history (.ares/history/fields), non-authorable property preservation, and rejection of split legacy configuration files.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldEditorInteractionTest.kt": {
+      "sha256": "35916b5d28640628984de286d2f004d1ee071f1c3ea4273e0a21e476a1edd13d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified FieldEditorViewModel interactions. Validated AprilTag import/export roundtrips (WPILIB JSON, Limelight FMAP), transaction-based undo/redo/duplicate, locked item protection, field geometry and boundary validation (including Crescendo wall-mounted tag perimeter tolerances), field image clearing, simulator push handshakes and receipts, rotated obstacle bounding checks, and prefab catalog/game piece management.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/integrationcenter/IntegrationCenterViewModelTest.kt": {
+      "sha256": "5df63d8da259b13dfe730e59d631935b2b07526a6373b85cc8df5ae59ae7438f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified IntegrationCenterViewModel integration settings and notebook review. Validated credential confidentiality (secrets never retained in view model state), separated approval and submission workflows for engineering notebook entries, delivery retry bounds, and durable test notification dispatch.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/ProjectDocumentRepositoriesTest.kt": {
+      "sha256": "abcd5d8a64d939651175e819fc24a8d618644c1fb3740e661fa183e9c15a7f69",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified ARES canonical document repositories. Validated ProjectMetadataRepository atomic saves, hash verification, and corruption preservation; RoutineProjectRepository linear revision numbering, concurrency, restoration, and path traversal prevention; listing diagnostics; and cross-document validation (AresProjectDocuments) across routines, controls, and capabilities.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/ProjectModelArchitectureTest.kt": {
+      "sha256": "1718b1fb25f0e920e747cb4a1e915615a01911160f87ae3ab6b1e658fbc8738e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified architectural boundaries in ARES-Analytics. Validated that database repositories share DatabaseTransactionCoordinator without overlapping ownership; services (SyncEngineService, GenerativeAiService, RobotDesignAssistantService, AiDiagnosticsService) own distinct responsibilities; version control boundary separation (auth, backup, auto-sync, recovery); studio features assemble via AresProjectDocuments; execution routing via ProjectExecutionCoordinator; route hosts use typed feature scopes instead of global ServiceRegistry; and viewmodel namespace contains no persistence stores.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/project/SuperstructureProjectRepositoryTest.kt": {
+      "sha256": "4df8d69f903527cad801441df66fff8e6934bb5b45216670ebaa92260ba96d49",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SuperstructureProjectRepository persistence. Validated atomic hash-bound saving, immutable history tracking, identity mismatch rejection, duplicate action ownership detection across state machines, fail-closed handling for missing action catalogs, and novice studio coordinator authoring.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/robotstudio/RobotStudioModelTest.kt": {
+      "sha256": "78b8590a54e17c1d9e8a48343568189854ddaa4fb3fa0185328cc52963b575d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified evaluateRobotStudioStages pipeline model. Validated 10-stage exact dependency ordering, safety recovery readiness, blocking conditions for missing drivebase, invalid metadata, or unreviewed hardware, compile-only verification status, 1-click wireless deploy lifecycle (CONNECTING -> BUILDING -> SUCCEEDED), and workspace-specific simulator correlation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/runanalysis/GuidedRunAnalysisViewModelTest.kt": {
+      "sha256": "a88b2f44206b862910e7ff94ba4904519e09a0008ba07fe0aeddc626fd2ee69c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified GuidedRunAnalysisViewModel run analysis workflows. Validated asynchronous workspace switching cancelling stale analysis, rejection of out-of-workspace session selection, empty workspace handling, imported session auto-selection, multi-run comparison alignment (RUN_START, AUTONOMOUS_START), and cancellation safety.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemDocumentAuthoringTest.kt": {
+      "sha256": "7a56bff5ea4aafce2ce877edbfdcbf66ec7b342152645b1cb4a3c211556df398",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemDocumentAuthoring hardware additions. Validated FRC collision-free CAN IDs (1..2) and channel allocations, FTC stable hardwareMapName matching hardwareId, duplicate hardware ID rejection, and rejection of platform-unsupported devices.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemDocumentGraphEditorTest.kt": {
+      "sha256": "f5ac5b958e30bad1b3e49f4a3480b76fd507f816f79c8c63182979f159a620be",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified referential integrity in subsystem document graphs via SubsystemDocumentGraphEditor. Validated that hardware renaming updates all dependent references (followers, control loops, homing, fault recovery, linkages, simulation triggers), hardware removal clears dangling references, state field renaming updates measurements/loops/feedforwards/homing, and converting an actuator to a follower removes conflicting control loops and homing definitions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemRemovalStateTransitionsTest.kt": {
+      "sha256": "07dca91a347630deea3c3cde587d6bdfb95baeee86ef8a677411ed99e8c1a5ce",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemRemovalStateTransitions pure state machine. Validated that removing a subsystem resets editor state, clears dirty/AI flags, transitions to PURPOSE stage, and creates a recovery notice; restoring from recovery selects the document, clears recovery state, and leaves Kotlin code intact.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureInterlockDescriptionTest.kt": {
+      "sha256": "86252c404471a7a6e261a2e958f9b402b28b2d5e4b172c26c037a3bf7d7b9912",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SuperstructureInterlockRule descriptions. Validated automatic human-readable descriptions based on comparison and threshold values, and confirmed that automatic/legacy generated text remains distinguishable from user-authored custom descriptions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/autotuning/golden-flywheel-v2.jsonl": {
+      "sha256": "2e676a01f51f64473dd544e718791c93a813c355ac3b8fdb1dab2111d0741a1f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified golden flywheel autotuning dataset fixture. Confirmed 161 JSONL lines containing timestamps (20..3220 ms), applied voltages (0..2.8875 V ramp), velocities (rot/s), and accelerations for SYSID / autotuning algorithm validation.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/autotuning/golden-linear-v2.csv": {
+      "sha256": "5e78745c3ddb651b79c29e56a8ae188ec67779dd7eb7ae4eb0bef955ec203225",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified golden linear mechanism autotuning dataset fixture. Confirmed 142 CSV lines of step response telemetry (timestampMs, voltage=6.0V, velocity, accel) used for elevator/linear feedforward parameter verification.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/biobuzz/browser-auto.zip": {
+      "sha256": "b70acb39444befaf22d9d222801e66572496dc76a5c93ca9770955bf30e08f67",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified packaged browser autonomous routine archive fixture. Verified via BiobuzzAutoBundleTest to contain valid .ares/routines/web-auto.aresroutine and .ares/autonomous-catalog.json documents, ensuring archive unpacking, path-traversal rejection, and uncompressed size bounds.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/packaged-runtime-project/.ares/action-catalog.json": {
+      "sha256": "1295bda38445a47796d484a2ef6ffdef1422747de973d5594da1755d6b8da435",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified packaged runtime smoke project action catalog fixture. Schema version 1 document declaring verification action smoke.run in AUTONOMOUS, TELEOP, and TEST execution contexts.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/packaged-runtime-project/.ares/autonomous-catalog.json": {
+      "sha256": "be0db0dc576e0ce27edff8663a65e0c587e3f77f6bdaeb4e125730171424b7d5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified packaged runtime smoke project autonomous catalog fixture. Schema version 1 document declaring default entry smoke-entry mapped to smoke-routine at origin (0.0, 0.0, 0.0) with alliance mirroring enabled.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/packaged-runtime-project/.ares/project.json": {
+      "sha256": "b768f8722257a7a924a50d2067bd9e0b882eee60f4049273c0891dcacc8c66b5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified packaged runtime smoke project metadata fixture. Schema version 5 FTC project document declaring 0.45m robot dimensions, 3.6576m field size, CENTER_ORIGIN_CCW convention, GUI_OWNED authoring model, and standard SDK hub transport.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/packaged-runtime-project/.ares/routines/smoke-routine.aresroutine": {
+      "sha256": "d29205240a65b11b5f8d7a4b83b0c02076bc0cc9c63ea6326888b191ebf67554",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified packaged runtime smoke routine document fixture. Schema version 2 routine declaring step-smoke-action executing smoke.run.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/packaged-runtime-project/.ares/subsystems/smoke-indicator.aressubsystem": {
+      "sha256": "1ae093bbfd805ee8e6f284ad4772a256654360dbf30901be9dff8d1841dd62fc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified packaged runtime smoke subsystem document fixture. Schema version 11 FTC subsystem declaring POSITIONAL_SERVO hardware (smokeIndicator) and SERVO_POSITION control loop (positionOutput) with zero-allocation periodic and telemetry enabled.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/replay/golden-dashboard-replay.csv": {
+      "sha256": "cafdc5e922fe4d94e17aed2400dec38c22fd8fc54cfd7b2fb7db995b73e7a5f6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified golden dashboard replay dataset fixture. Contains 8 CSV rows of timestamped telemetry including SimulatorPoseFrame (10 fields), 4-motor velocities, battery voltage, loop time, mode progression (INIT, TELEOP, STOP), and gamepad stick positions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/run-comparison/golden-oracle.properties": {
+      "sha256": "5f4c27f891b0022d1e4386edecd1980a4d83c2d49148027c2b4f0782fe2f23cb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified reference oracle properties fixture for run comparison verification. Defines independent ground-truth values for autonomous anchors (1100ms, 2250ms), battery min voltage (10.4V), loop time p95 (30.0ms), total current p95 (20.0A), and battery finding timestamps.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/run-comparison/golden-run-a.csv": {
+      "sha256": "2adcc5c8bb6cfe75fdb080bbfb530a4295d118bdbdf1a274dc5ff4df97d28d92",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified golden run comparison run A dataset fixture. Contains 26 rows of key-value telemetry frames spanning DISABLED, AUTONOMOUS_RUNNING (anchor 1100ms), and TELEOP_RUNNING with motor currents, simulator poses, gamepad inputs, and mechanism positions.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/run-comparison/golden-run-b.csv": {
+      "sha256": "8f76c13508c8c46be17a749b31fd32914f0f22e514373456d4012e9daace4ad0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified golden run comparison run B dataset fixture. Contains 26 rows of key-value telemetry frames spanning DISABLED, AUTONOMOUS_RUNNING (anchor 2250ms), and TELEOP_RUNNING with battery voltage dip (10.4V), loop time spike (30.0ms), and motor currents corresponding to golden-oracle.properties.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass292-pending-elevation-audit.md": {
+      "sha256": "610664f4395cbecdc4b3139a9cc931b89de6d5f7f4a85e5cebb141a4d97f6b73",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive Pass 292 pending file elevation, active cleanup, and milestone seal report for all 198 ARES-Analytics test suites and test resources.",
+      "evidence": [
+        "docs/audits/pass292-pending-elevation-audit.md"
       ]
     }
   }
