@@ -18,11 +18,22 @@ if ! adb devices | grep -q "[0-9a-zA-Z.:-]*[[:space:]]\+device"; then
     fi
 fi
 
-cd ftc-app || exit
-echo "Compiling and pushing to Control Hub..."
-./gradlew installDebug
+if [ -d "ftc-app" ]; then
+    cd ftc-app || exit
+    echo "Compiling and pushing to Control Hub from ftc-app..."
+    ./gradlew installDebug
+    BUILD_STATUS=$?
+    cd ..
+elif [ -f "./gradlew" ]; then
+    echo "Compiling and pushing to Control Hub via :TeamCode:installDebug..."
+    ./gradlew :TeamCode:installDebug
+    BUILD_STATUS=$?
+else
+    echo "[ERROR] Neither ftc-app directory nor root gradlew wrapper found!"
+    exit 1
+fi
 
-if [ $? -eq 0 ]; then
+if [ $BUILD_STATUS -eq 0 ]; then
     echo ""
     echo "[SUCCESS] APK pushed to the robot."
     echo "Open the Driver Station, select 'ARES Mecanum', and run!"
@@ -30,4 +41,3 @@ else
     echo ""
     echo "[FAILED] Failed to build or deploy. Make sure your laptop is connected to the Control Hub's Wi-Fi."
 fi
-cd ..
