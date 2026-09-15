@@ -5857,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "40240fc774c2bd21ed18900aa8fbdd88e4ccbed09180f2bed71f93fbe9574cd0",
+      "sha256": "b63741419d258205dceaff6f480defbee7c49b08c5221a6e176714fdefabe09a",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -27832,6 +27832,1113 @@
       "scope": "Comprehensive Pass 290 pending file elevation, active refactoring, and 100% milestone seal report for all 128 remaining ARES-FTC-Starter files.",
       "evidence": [
         "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/.dockerignore": {
+      "sha256": "e8654d238501d37109ada39c551b52b95ed18216d826703879f82a388f0a6ecc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Docker ignore contract: verified exclusions for .gradle/, .git/, build/, subproject build directories, and gradle.properties to prevent build caches, git tracking state, and local developer environment/identity variables from leaking into container build contexts.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/.firebaserc": {
+      "sha256": "7a2caecbe3392eea9db5953c14f268959bd86c6e46287abda5a6932519600c88",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Firebase project binding: verified default project alias maps strictly to 'aresfirst-portal' for Cloud Firestore and Cloud Storage deployment targets.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/.gcloudignore": {
+      "sha256": "23d008fdf83c361d033212b9fa5392bcc55f2a8e80c320b9a23bdae502b6b5fc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Google Cloud packaging filter: verified exclusion patterns for .git, .gradle, gradle.properties, and build outputs across app, gateway, and shared modules, protecting local secrets and reducing Cloud Build submission overhead.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/ARCHITECTURE.md": {
+      "sha256": "7ebd765f84d9e4947e6931242e9c0c82628f5921fdd05408effa529310e441c2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "ARES Robotics Studio architecture: verified comprehensive architectural invariants including robot offline-first principle (no direct robot-to-cloud egress), NT4 topic normalization without leading slashes, 3-tier DuckDB connection model (persistent writer, duplicated read, ephemeral live-telemetry), log decoder streaming/allocation bounds, deterministic replay reconstruction with baseline state latching, monotonic elapsed clock, gateway security/rate-limiting/OAuth brokering without token persistence, coordinate conventions (+X forward, +Y left, CCW positive, internal radians), and multi-module test verification strategy.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/COMMERCIAL-LICENSE.md": {
+      "sha256": "085873e67ea81c856193d24e7c37f4c3e4d6de037ba166bf26eb29fa1ec8e2e2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Commercial licensing governance: verified dual-licensing policy where ARES Analytics is offered under AGPL-3.0-or-later while reserving proprietary/hosted commercial exceptions exclusively to signed written agreements executed by the ARES-23247 copyright holders.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/CONTRIBUTING.md": {
+      "sha256": "f503946f050ecc27654d40879f2732c574404387eba16e130b3a6df9fb285ea8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Contribution governance: verified prerequisite contributor agreements for external contributions to preserve commercial relicensing rights beyond DCO sign-offs, third-party attribution preservation, and mandatory SPDX license identifier ('// SPDX-License-Identifier: AGPL-3.0-or-later') for all new ARES-authored source files.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/LICENSE": {
+      "sha256": "41c454984ccb03e15b90fecd4ac64405dddb1b61e8aaba7e6aadb6e54a34456e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Open-source license text: verified full, unmodified GNU Affero General Public License version 3 (AGPL-3.0-or-later) terms, including Section 13 remote network interaction source-disclosure requirements, patent covenants, and warranty disclaimers.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/LICENSE_POLICY.md": {
+      "sha256": "357b473c76a424a72a6f4a466170b6e99f4430ead35e3985c305fbb4583b833d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Repository license scope boundaries: verified AGPL-3.0-or-later baseline for ARES-authored code, explicit retention of Apache-2.0 for ARESLib dependencies, preservation of distinct licensing for FTC/FRC starter archives and user robot projects/telemetry/database files, and trademark reservation.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/NOTICE": {
+      "sha256": "7dd70e9bbc897f80a4472774ae7c06077f411803940b520c515facf0b05fb56a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Legal attribution: verified copyright notice (2024-2026 ARES FIRST Robotics and contributors) under AGPLv3-or-later with dual-licensing reservation.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/README.md": {
+      "sha256": "2522235b3b65ae9a04efd73d018ec386f1f44170979dfb9e79f7d4f28780fd02",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Project overview and operator documentation: verified accurate description of ARES Robotics Studio rebranding, offline-first robot runtime, subproject topology (app, shared, gateway), NT4 connection defaults (FTC 192.168.43.1:5810, FRC 10.TE.AM.2:5810, Sim 127.0.0.1:5810), verification and performance soak commands, and architectural constraints.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/THIRD_PARTY_NOTICES.md": {
+      "sha256": "7516b45f0d50b3a439c3d059b989ece0be2d7bbff94b4528ce64a823c518aa3c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Third-party dependency notice: verified comprehensive enumeration of third-party software and licenses (ARESLib, Compose Multiplatform, Ktor, DuckDB, Gson, JNA, Eclipse JGit, EJML, Apache Commons Math, XZ, LWJGL, Logback, Google client libraries) and distribution obligations for native installers.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/TRADEMARKS.md": {
+      "sha256": "9219868d946ba1e206250d503dcb88827e61685028803934d87141b9ff998bbc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Trademark policy: verified strict protection of ARES Robotics, ARES Analytics, and ARES FIRST Robotics names and logos; permits nominative compatibility phrasing while prohibiting implied endorsement or unauthorized logo usage in forks and commercial distributions.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/build.gradle.kts": {
+      "sha256": "991f0f06fffedfbc0ce5adeb7deb9b396874f92095aef561ac0b94b84e39d0c1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Desktop application Gradle configuration: verified Compose Multiplatform 1.12.0 and Kotlin 2.4.10 setup, DuckDB JDBC, Ktor client/server, JGit, JNA credential protection, LWJGL gamepad native bindings, dynamic BuildConfig generation from canonical release properties, brand asset verification task, runtime classpath snapshot isolation preventing classloader corruption during external rebuilds, native packaging (MSI/DMG/DEB) with upgrade UUID a3e52324-7000-4224-8700-1c7b8d9e2a3c, explicit jlink module inclusions (java.sql, java.naming, java.management, jdk.unsupported), and performance validation test profiles (dashboardSmoke, dashboardSoak, simulatorControlSoak).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/build.gradle.kts": {
+      "sha256": "c2c0fe36ce58087462b8c7b57c7bc4b8ba4b1601d0d0bb82d6b230069c3fef5a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Root Gradle build script: verified release preflight verification (verifyReleaseVersionAlignment) enforcing alignment across release manifest, starter artifacts, app build, and CI workflows; verified Kover code coverage floors (app 38%, shared/gateway 54%); verified production Kotlin file size ratchet (verifyProductionKotlinFileSizes enforcing 500-line ceiling for new files); verified studioReleaseVerification composite verification gate; verified killExisting task terminating stale orphaned ARES JVMs by matching main class name via JPS; and verified root run task coordinating gateway and desktop app processes.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
+      "sha256": "947ca0ebd20749efd59094ca02904b9d77b951787cfa53b36299d3021b121839",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Maintainability ratchet baseline: verified grandfathered list of 72 production Kotlin files exceeding the 500-line limit from 3.0.0 baseline, ensuring file sizes can only decrease and no new monoliths can be introduced without triggering studioReleaseVerification failures.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/firebase.json": {
+      "sha256": "d224b75385b451433e5c59bdbf0cc147697fbe88e773c11dab44f3b71e3e8a74",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Firebase configuration: verified binding of Firestore security rules to firestore.rules and Cloud Storage security rules to storage.rules.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/firestore.rules": {
+      "sha256": "8b03b08603f44e6126be4d3cfcdc4f05b3fbc7a6ed1c5bbf48c2ed39a9d1afc3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Firestore security rules: verified rules_version 2 least-privilege security contract, strict team isolation via request.auth.token.team_id, role-based access control via isAdmin() check on user document, team-scoped read and admin-scoped write on /teams/{teamId}/robots/{robotId}, and team-scoped create/read with admin-restricted update/delete on /summaries/{sessionId}.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/Dockerfile": {
+      "sha256": "0c7f631775b78abaf97881ce52cc6345d3499f9a44c489573e5606a81d1c96ca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gateway containerization: verified multi-stage Docker build with gradle:8.9-jdk17 build stage executing :gateway:installDist --no-daemon, and minimal eclipse-temurin:17-jre runtime stage exposing port 8080 and running /app/bin/gateway as non-root service entrypoint.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/build.gradle.kts": {
+      "sha256": "29e77b003e2dd31c8eed409722fb703018f4b91bc915e2ba0cff4646601ead60",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gateway build configuration: verified Ktor 3.5.2 server setup with Netty engine, content negotiation, authentication, CORS, rate limiting, request validation, 1 MiB body limit, Google GenAI SDK (Vertex AI), Google OIDC token verification, and test task DEV_MODE configuration.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/cloudbuild.yaml": {
+      "sha256": "2d8923f72bd291f825e756f57eb388791d9c9fbf8c33fd57bf1d71cd5a7927b9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Cloud Build CI/CD pipeline: verified 3-step build and deployment pipeline building Docker container image from gateway/Dockerfile, pushing to GCR tagged with $COMMIT_SHA, and deploying managed Cloud Run service in us-central1 with max 5 instances, default URL, and Secret Manager secret injections (ARES_GOOGLE_OAUTH_CLIENT_ID and ARES_GOOGLE_OAUTH_CLIENT_SECRET).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gradle.properties": {
+      "sha256": "49e96ea05d52ac0402f5c71376491fe3d37eb02e276dc34f2a57866e9a02fdd3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gradle environment properties: verified JVM memory settings (-Xmx2048m -XX:MaxMetaspaceSize=512m), parallel execution, caching, kotlin.incremental=false to prevent Compose Desktop classloader desynchronization and NoClassDefFoundError crashes, and checked-in non-secret public developer IDs for Google OAuth and GitHub App.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gradle/wrapper/gradle-wrapper.jar": {
+      "sha256": "96f793a18e056c23ffeec67c1f3bb8eccff5a4a407fc9ceac183527e7eedf4b6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gradle Wrapper binary: verified existence and integrity of Gradle Wrapper bootstrap JAR (Gradle 8.14.5) ensuring reproducible, hermetic build execution across developer machines and CI environments.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gradlew": {
+      "sha256": "874d75d37bf38c810a8314e0b2f78a3c77fce9437963ae33cec8543d92662b61",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "POSIX Gradle wrapper script: verified shell launcher handling UNIX environment, Cygwin/MSYS path conversions, Darwin application dock arguments, file descriptor limits, and JVM invocation via org.gradle.wrapper.GradleWrapperMain.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gradlew.bat": {
+      "sha256": "f4f428c5626b3d90cef3bd4e7fd3ad3ea5760442db8c09d586b5bfe031dbe5e3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Windows Gradle wrapper script: verified batch launcher resolving JAVA_HOME / java.exe, handling command-line arguments across Windows NT shells, invoking GradleWrapperMain, and returning proper error exit codes.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/scripts/capture-ui-regression.ps1": {
+      "sha256": "ebe16b5807a68c2634f62c14a8be95e848551952a2a3428284c576bd03b2621a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "UI regression capture script: verified PowerShell script using User32 Win32 APIs via P/Invoke to find the ARES window, maximize to 1080p, resize to 1440x900 and 1100x700, inject relative mouse scroll events to expose responsive cards, and trigger screen inspection and capture scripts.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/scripts/generate-app-icons.py": {
+      "sha256": "8ca2d115368e7bb18603d0165706bbd7676f75d2feebe9bf63da49b36653c23e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "App icon generator script: verified Python Pillow script generating complete icon family (master 1024x1024, app 256x256, linux 512x512, multi-size Windows ICO with 9 resolutions 16..256, and macOS ICNS) with Lanczos downsampling, alpha matte extraction, and supersampled rounded rectangle clipping.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/scripts/run-isolated-desktop.ps1": {
+      "sha256": "9df186f0b7100ad26f09e5acfe293ff4d0954d2612a5d6a518d0a23630140c60",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Isolated desktop runner script: verified PowerShell runner isolating application state into build/diagnostics/desktop-e2e-profile via ARES_ANALYTICS_DATA_DIR, supporting -Fresh profile reset, optional startup screenshot capture, and forwarding candidate ARES version/repository with -PskipKill=true to prevent disrupting developer workflows.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/scripts/run-local-ares.ps1": {
+      "sha256": "906b8149bbcf215e29a317eee07ef8f681fbc58a11ef5879c9c7ba75dc6accdb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Local co-development runner script: verified PowerShell workflow coordinating ARESLib-Kotlin candidate publication into a local validation repository (build/release-repository) and launching ARES Robotics Studio with matching -ParesVersion and -ParesRepository properties.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/scripts/sync-ares-design-tokens.ps1": {
+      "sha256": "1c6b0c46b2c1f099e25f0d1018f23c809f8fbdf737f047118ef81b3586db5b11",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Design token synchronization script: verified token synchronization from ARESWEB design/ares-design-tokens.json into app resources, validating schemaVersion 1 and semantic dark theme palette structure.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/scripts/verify-windows-installer-upgrade.ps1": {
+      "sha256": "df7fe8d64b0bfddcb605a79dfdcddc8bc6160771cfd3ac0a34e7abcfdc41071f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Windows MSI upgrade and repair validation script: verified elevated transaction testing using WindowsInstaller.Installer COM automation and msiexec, validating product names, version sequence, upgrade code {A3E52324-7000-4224-8700-1C7B8D9E2A3C}, silent install (/i), upgrade, repair (REINSTALL=ALL REINSTALLMODE=vomus), and full clean uninstall (/x).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/scripts/verify-windows-installer.ps1": {
+      "sha256": "d01a5283e954d456bbde8917d529f49a1c05e16da2fb5deb1e59d6699fd75926",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Static MSI installer validation script: verified COM database inspection of Property table (ProductName, ProductVersion, UpgradeCode, ARPNOREPAIR != 1), Upgrade table (JP_UPGRADABLE_FOUND), Dialog table (MaintenanceTypeDlg), and Control table (RepairButton push button) without requiring installer execution.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/settings.gradle.kts": {
+      "sha256": "5ca777c547ed981d410dbfcd2f92c5894c820d7d7ca98b685fe144d28fe7c382",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gradle build settings: verified Java 17+ toolchain requirement check on current JVM, multi-module declarations (:shared, :app, :gateway), repository declarations (Google, Maven Central, ARES GitHub Maven repository, JetBrains Compose dev, custom isolated candidate repo), and conditional includeBuild for sibling ARESLib-Kotlin checkout.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/storage.rules": {
+      "sha256": "7a1225501b0e554ad7575f3456e1a91d28c46a1f37c8b80db91fb04d076931db",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Firebase Cloud Storage security rules: verified rules_version 2 storage contract enforcing tenant isolation using request.auth.token.team_id on /{teamId}/telemetry/{sessionId} and /telemetry/{sessionId}, authentication requirements, and strict 50 MiB file size limit on telemetry log uploads.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/main/kotlin/com/ares/analytics/gateway/Application.kt": {
+      "sha256": "8e9403f630272a1eb87f317f9715d36bbd7ba792716f4013f20b9114105e6cca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Gateway Ktor server entry point running on Netty engine. Verified Netty and gRPC JSSE SSL provider enforcement (io.netty.handler.ssl.openssl.useOpenssl=false) to eliminate Cloud Run netty-tcnative SIGSEGV defects. Verified ContentNegotiation (Json with ignoreUnknownKeys, encodeDefaults), CORS (strict HTTPS allowlist from CORS_ALLOWED_HOSTS), XForwardedHeaders (for Cloud Run TLS proxy IP resolution), StatusPages (RequestValidationException to 400, Throwable to generic 500 without stack leakage), Google OIDC authentication provider installation, tiered RateLimit configuration (forensics: 5 req/60s per GooglePrincipal subject; oauth-exchange: 20 req/60s per client origin IP; oauth-exchange-global: 200 req/60s), RequestBodyLimit (1 MiB ceiling), ForensicsRequest bounds validation (max 2000 alerts, max 500 topology nodes), and routing mounts (/health, /healthz, sourceCodeRoutes, googleOAuthBrokerRoutes, diagnosticsRoutes).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/main/kotlin/com/ares/analytics/gateway/auth/GoogleOidcAuth.kt": {
+      "sha256": "b6041b1aaeed81b94dbf4ebd76dfd841caf090c07a99bf1980865a24125f4114",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Google OIDC JWT verification implementation. Verified process-scoped singleton idTokenVerifier lazy initialization caching JWK sets and public certs to eliminate per-request transport/cert re-fetching overhead. Verified mandatory audience validation against GOOGLE_OIDC_CLIENT_ID (failing closed if null or unconfigured). Verified GooglePrincipal model extraction (subject, email, name). Verified GoogleOidcAuthenticationProvider pipeline handling Authorization: Bearer <token> header, dispatching challenge completion on missing header (401) or invalid token (401), rethrowing CancellationException, logging warnings without leaking token bodies, and supporting injectable tokenVerifier lambda for comprehensive unit testability without production backdoors.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/main/kotlin/com/ares/analytics/gateway/routes/DiagnosticsRoutes.kt": {
+      "sha256": "4e4e1df170e1c5c5bc4fa5a9fd14e8a5cce0d3c4bb05aedd6e16bdd015a57568",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AI pit-forensics copilot route POST /api/diagnostics/forensics. Verified authentication (authenticate(\"google\")) and per-subject rate-limiting (rateLimit(\"forensics\")). Verified lazy Client.builder() initialization with Application Default Credentials (ADC), enterprise mode, and v1 API options. Verified concurrency protection via Semaphore(4) permit acquisition and 60-second coroutine timeout. Verified awaitCompletableFuture utility bridging CompletableFuture to suspendCancellableCoroutine with active continuation checks and cooperative RPC future cancellation (future.cancel(true)). Verified structured JSON regex sanitization stripping markdown code fences, fail-closed fallback ForensicsResponse on deserialization failure, CancellationException propagation, and generic error logging with 500 status.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/main/kotlin/com/ares/analytics/gateway/routes/GoogleOAuthBrokerRoutes.kt": {
+      "sha256": "c4112596560f85e321d94fe2de26d9adc8184d8ea6000f0784e425bf0eadf72c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated server-side Google OAuth token brokerage service and routes. Verified GoogleOAuthBroker configuration contract (client ID length 30..256 ending in .apps.googleusercontent.com, client secret length 8..512, whitespace-free). Verified authorization code exchange invariants: strict desktop loopback redirect URI http://127.0.0.1:5805/callback, code length <= 4096, PKCE code verifier regex validation (^[A-Za-z0-9._~-]{43,128}$). Verified refresh token exchange (token length <= 4096). Verified secure upstream exchange via CIO HttpClient with Form-Data, redaction of upstream error responses via SAFE_GOOGLE_ERRORS allowlist, and sanitized descriptions (safeGoogleErrorDescription). Verified routes POST /api/oauth/google/token and POST /api/oauth/google/refresh nested under both global and per-source rate limiters, robust receiveBrokerRequest trapping ContentTransformationException/BadRequestException, and zero persistence or logging of secrets, PKCE verifiers, or authorization codes.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/main/kotlin/com/ares/analytics/gateway/routes/SourceCodeRoutes.kt": {
+      "sha256": "276381f80848f73753cb43f023bd0db947034f7a8b8b38abc41b9547267662fd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated open-source compliance route GET /source serving text/plain ContentType. Verified publication of AGPL-3.0-or-later licensing declaration and canonical source code location (https://github.com/ARES-23247/ARES-Analytics) satisfying GNU AGPL-3.0 section 13 corresponding source access requirements.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/test/kotlin/com/ares/analytics/gateway/auth/GoogleOidcAuthTest.kt": {
+      "sha256": "dbb444beb22d1b68872ace9ec9e42885c8f9b8af062a71a8ed9ec9305ef6903d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated test suite for Google OIDC authentication provider using Ktor testApplication. Verified unit coverage of security contracts: successful authentication for valid bearer token mapping to GooglePrincipal, 401 Unauthorized rejection for invalid ID token, 401 Unauthorized rejection for missing Authorization header, 401 Unauthorized rejection for non-Bearer scheme (Basic auth), and 401 Unauthorized containment when verifier throws runtime exception.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/test/kotlin/com/ares/analytics/gateway/routes/DiagnosticsFutureTest.kt": {
+      "sha256": "2773db1c3716dabdb4f44a72830f776e3b96391aed1398a071af4135e0cc7ea0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated coroutine bridge test suite for awaitCompletableFuture. Verified coroutine timeout cancels underlying RPC CompletableFuture (future.isCancelled == true), successful completion resumes caller with correct result, and exceptional completion preserves and rethrows the underlying exception.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/test/kotlin/com/ares/analytics/gateway/routes/GatewayRouteTest.kt": {
+      "sha256": "8ddc95e41ff610d1b16601814950083bf6d516daad66eb83087f7107d0562c31",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated integration route test suite for gateway endpoints. Verified GET /health returns 200 OK with \"ok\" body, and unauthenticated POST /api/diagnostics/forensics returns 401 Unauthorized when Bearer token is missing.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/test/kotlin/com/ares/analytics/gateway/routes/GoogleOAuthBrokerRoutesTest.kt": {
+      "sha256": "d1f0ea02a91b14d291b46197a13ab03879c91caa3f1681b9565858b926533ca2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated test suite for GoogleOAuthBroker and its HTTP routes. Verified authorization code exchange appends protected credentials (client_id, client_secret) and parameters; malformed PKCE verifier (<43 chars) and invalid redirect URIs fail immediately with 400 without calling Google; unconfigured broker fails closed with 503 broker_unavailable; Google error responses redact sensitive upstream parameters and map to safe descriptions; refresh exchanges succeed with refreshed tokens; XForwardedHeaders rate limiting segregates distinct Cloud Run client IPs into separate rate-limit buckets; and malformed request bodies return 400 invalid_request.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/gateway/src/test/kotlin/com/ares/analytics/gateway/routes/SourceCodeRoutesTest.kt": {
+      "sha256": "956278cd84924175908210494f6b7ad4c149cf8056912b2b4bc6a61424d439fc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated unit test for GET /source. Verified HTTP 200 OK response status, text/plain content type header, and exact matching of SOURCE_CODE_NOTICE license text.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/BRANDING_AND_UPGRADES.md": {
+      "sha256": "e5a9dd382f3540216b3acd3cda81ebd197335bfadadb1242c19eb3243732b14b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design \u2022 Simulate \u2022 Operate \u2022 Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/CYCLE_LOG.md": {
+      "sha256": "5211044535715b24d45a29536723330ddd15680ac6e77917ecda9765afaf467a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated chronological product improvement cycle log across Cycles 1 through 11. Verified evidence-backed records: Robot Academy role paths and truthfulness (Cycle 1), guided run evidence review (Cycle 2), homing/freshness/safe-recovery lab (Cycle 3), Redux signal-flow lab (Cycle 4), Project Identity setup (Cycle 5), dependency propagation and no-code safety actions (Cycle 6), autonomous planning lab (Cycle 7), glossary and documentation goal (Cycle 8), contextual help coverage (Cycle 9), guided first autonomous routine (Cycle 10), and point-of-need learning guidance (Cycle 11). Verified explicit fidelity boundaries between simulation, software validation, and physical robot safety.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/DASHBOARD_WIDGET_EXTENSIONS.md": {
+      "sha256": "217ac375a243350586a3106785c22eadc83f62127c50eaedc794bfe57f011cd5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated dashboard widget extension architecture documentation. Verified single source of truth in DashboardWidgetRegistry with lower-snake-case type IDs, declared capabilities, decoupled renderers consuming DashboardWidgetServices, typed WidgetConfig.properties schema, built-in profile validation, strict separation of LIVE (Nt4ClientService) and REPLAY (ReplayFrame) data feeds, canonical unit handling, and 5-stage verification contract (catalog test, component test, layout persistence round-trip, test suites, Compose desktop journey).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/DATABASE_STORAGE_ARCHITECTURE.md": {
+      "sha256": "af36a26d0638fefb9ea541b64f20375f7221d2a94d7f19da2a7e831611032d03",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DuckDB telemetry storage architecture documentation. Verified rationale for DuckDB in offline desktop analytics, ART index removal on raw append-only telemetry_frames eliminating WAL recovery lag (resolving cold-start 11-minute recovery bug down to 10-224 ms), deterministic replay order via timestamp_us and sample_order, checkpoint boundaries at import completion and clean shutdown, bounded delete-then-insert transactions, and isolation boundaries.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/DESIGN_SYSTEM.md": {
+      "sha256": "37dd1e834fda52029fa9c1fc77dc5b1b29a27c8fc1114a0723561a4b92440b81",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated design system contract documentation. Verified synchronization with ares-design-tokens.json from ARESWEB, contrast ratios (4.5:1 normal text, 3:1 large text), semantic color roles (Cyan #00E5FF interaction, ARES red #C00000 brand identity, Bronze/Gold accents, Obsidian dark foundation), non-reliance on color alone for state, typography rules (League Spartan display, Inter body, Monospace code/telemetry), and offline accessibility compliance.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/DETERMINISTIC_REPLAY.md": {
+      "sha256": "6b25bc4f48a48f830f6cc015269f43eeddb1b04c828eed5fcf9a6b59ff5701a5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated deterministic replay documentation. Verified read-only replay invariant preventing live NT4 publishing or robot actuation, monotonic clock advancement of recorded timeline with sample_order tie-breaking, immutable ReplayFrame delivery, sparse topic retention/latching, timeline marker classifications (actions, notes, alerts), CCW-positive radian angle kinematics, and fail-closed state handling.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/DOCUMENTATION_GOAL.md": {
+      "sha256": "ebfa03ad91ece176f7b750cf4449a44dcdaab3a1dbcf48ea7877fc5b62a38aa6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated documentation improvement goals and verified baselines (G1 in-app glossary, G2 contextual help for all workflow screens, G3 widened Academy search corpus, G4 error-to-lesson deep links, G5 post-onboarding nudges and empty states, G6 terminology and two-layer sync). Verified test-enforced invariants (GlossaryCatalogTest, LearningCatalogTest, RoutineValidationLearningLinksTest) and non-goal boundaries (no certification or physical safety claims).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/DRIVEBASE_BUILDER.md": {
+      "sha256": "a82b8fe9b5fac4dffbbbd05230fb517b425934249baf4e6f19353ff2284312a6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Drivebase Builder documentation. Verified dedicated workflow for FTC mecanum, FRC CTRE swerve, differential, and custom chassis. Verified SI meter storage for wheel radius, track width, wheelbase; CCW-positive radians heading convention; canonical document path .ares/drivetrains/<stable-uid>.aresdrivetrain; historical backup path .ares/history/drivetrains/<stable-uid>/<content-hash>.aresdrivetrain; matching .arestuning profile generation; read-only vendor TunerConstants.java import with SHA-256 provenance tracking; and deterministic local drive-mixing lab.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/GITHUB_PROJECT_BACKUP_ARCHITECTURE.md": {
+      "sha256": "347dafe0c312e699f5be2c7d0733ead85151c2a7d4cf404422f50a85f420a71d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated GitHub project backup architecture documentation. Verified two-layer model: embedded offline JGit versioning and optional public GitHub App cloud backup. Verified GitHub Device Flow without embedded client secret or private key, credential storage in OS vaults (Windows DPAPI, macOS Keychain, Linux Secret Service), organization workflow, permission scoping (repository metadata read, Contents read/write), ancestor-only fast-forward restore with safety ref creation (refs/ares/restore-backups/...), atomic export ZIP sanitization, and path-limited ProjectCheckpointRecorder staging.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/GOOGLE_DRIVE_ARCHITECTURE.md": {
+      "sha256": "d12315b3f8da82c7698096d799a24977e30b7fbaedbe29db53277e32e9468cb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Google OAuth and multi-team Drive architecture documentation. Verified application identity separation from data ownership, desktop loopback callback http://127.0.0.1:5805/callback, minimal drive.file scope, server-side HTTPS token broker adding protected client credentials without persisting grants, personal/team/shared Drive destination types with folder-id boundary enforcement, versioned immutable .ares-session.zip bundle format containing Parquet telemetry and JSON manifest, OS credential vault token storage, and production release gates.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/GUIDED_COMMISSIONING.md": {
+      "sha256": "8c241642702824a8b6c21a78f966681265f7ae604bf4167484ac884c5a8513bc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated guided commissioning and control design documentation. Verified four distinct evidence levels: Simulation verified, Configuration reviewed, Ready for physical validation, and Physically validated. Verified inventory hash invalidation on descriptor edits, deterministic hardware-free controller commissioning sandbox with fault injection, explicit SysId/SupportedMechanisms runtime capability checking with STOP-first arm lease, and strict physical handoff protocol without desktop-side direct motor pulsing.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/GUIDED_TUNING_EXPERIMENTS.md": {
+      "sha256": "b9ecfeb6868df364e7d4e9faace9b8172b3640a1e823a77a0eb836270ef887e5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated guided tuning experiments documentation. Verified single-parameter/single-metric scientific cycle: falsifiable hypothesis, held constants, pre-declared numeric success threshold, immutable configuration digest snapshot, staged proposal restricted to loopback Local Sim with runtime acknowledgement, candidate run tagging, paired comparison classification (Improved, Regressed, Inconclusive), local working storage under .ares/local/tuning/experiments/, and structured promotion to canonical .arestuning.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/INDEX.md": {
+      "sha256": "94f46e0ea0613fc3d8542cd77fd6350a0b6f42a2634ca815c261d1103ac39b2b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated master documentation index and navigational task matrix. Verified operational mode boundaries (Live robot, Local simulator, Imported run/replay, Cloud Sync), 15-minute onboarding sequence, safety and recovery rules, mentor/developer links, command palette search integration, and Developer Reference mappings.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/OPERATIONS.md": {
+      "sha256": "167d4aafa4f8e782e53435dc250200ab3fc52901ed842a05a324e2967e7af5a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated operations guide for development, pit operations, target connections, and release verification. Verified JDK 17 build environment, Gradle task profiles (:app:run, :gateway:run, run), pre-pit checklists, connection diagnostics for simulator (127.0.0.1:5810, atomic v2 driveFrame), Control Hub (192.168.43.1:5810), RoboRIO (10.TE.AM.2:5810), HTTP log pull (port 5002), import and replay troubleshooting, DuckDB database repair and WAL recovery boundaries, gateway environment setup and rate limits, structured shutdown sequence, and release verification checklist.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/PRE_ROLLOUT_REFINEMENT_ACCEPTANCE.md": {
+      "sha256": "ea5b9da3834719c170bcf959918809f6dbda99f861246b7b275f017b4de98190",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated pre-rollout refinement acceptance report for Studio 5.0.0 / ARES 15.0.0 candidate. Verified exact-candidate automated gates (ARESLib 171 tasks, FTC/FRC starter generation and verification, Studio release verification, Kover floors, 500-line ratchet, MSI packaging SHA-256), visible 13-step desktop acceptance journey with isolated profile, maintainability refactoring outcomes, and explicit evidence boundary matrix.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/PRIVACY_AND_CLOUD.md": {
+      "sha256": "6c9ba817c3f314dab89653b2063352887d63297aea5322477732330c032453ca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated privacy and cloud data architecture documentation. Verified local-first design invariant (all logs, sessions, and DuckDB storage remain local to laptop), strict team/season/robot workspace isolation preventing cross-workspace leakage, read-only local replay and comparison, opt-in drive.file Google Drive sync, stateless token broker, OS credential vault storage (DPAPI/Keychain/Secret Service), and complete user control over credentials and revocation.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/PROJECT_STRUCTURE.md": {
+      "sha256": "8cd2aeb82ce0d13c4d53813a57fa4724d5257e19af9cd69c56c92fce3da1e4e1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated clean zero-code robot project structure documentation. Verified canonical version-controlled inputs under .ares/ (project.json, drivetrains, subsystems, superstructures, controls, routines, tuning), source ownership modes (DECLARATIVE_GENERATED, GENERATED_STARTER, HAND_AUTHORED), disposable generated output under build/generated/ares/, append-only evidence folders, immutable dependency resolution avoiding mavenLocal(), and explicit version-control commit boundaries.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/ROUTINES_AND_CONTROLS.md": {
+      "sha256": "dc8d5f39cee23e95ec40b76e4822bc84defecda3df62da32b4a531a1514f67b0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated student guide for autonomous routines and controller bindings. Verified unified routine model combining drive goals, mechanism actions, conditions, and parallel groups into .aresroutine documents without separate path files; safe first routine builder validation (bounds, min 0.10 m, max 2.00 m); .ares/action-catalog.json integration; visual controller mapping per platform (DESKTOP_GLFW, FTC, FRC); chord/macro binding inspector; and deterministic GeneratedAresProject.kt code generation guarded by verifyAresProject.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/RUN_COMPARISON_AND_GUIDED_DIAGNOSIS.md": {
+      "sha256": "25eeb691d95c9c9a456a23925e8888e70fb4a6a1e14d4d46418381d84268fe61",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation \u2014 cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/SUBSYSTEM_BUILDER.md": {
+      "sha256": "65efe035f6d197e24121378abb4ccef5f892ec495b9d81d08af34acf528e30b6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED \u2014 DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/SUBSYSTEM_HAND_AUTHORED_PROTOTYPE.md": {
+      "sha256": "9975ed79bb4d48c9a3e683e82173c7c981b6b85d30785775d0adb3f6d3a9421e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated hand-authored subsystem prototype evaluation document. Verified hybrid architecture preserving USER-OWNED Kotlin files while utilizing schema-v5 .aressubsystem descriptors for catalog validation and deterministic project plumbing. Evaluated against FTC indicator lights (22 actions) and goBILDA Prism (12 actions), confirming registered actions dispatch through NamedCommands into immutable Redux state without code generation overwriting source.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/SUPERSTRUCTURE_STUDIO.md": {
+      "sha256": "c2f731e9017b1872e19c6345e81e81c397492d215ad0ad42050af44bda6d2435",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Superstructure Studio documentation for multi-mechanism coordination. Verified runtime flow (Action/Sensor -> Redux coordinator -> Complete target preset -> Subsystem target tasks -> Controller/Safety -> IO), state machine configuration with complete postures (startup, fault-neutral), transition evaluation priority, cached-port health fallbacks, interlocks, lookup tables, Trace & fault lab, canonical .aressuperstructure storage, immutable recovery snapshots, and GC-free steady-state tick allocation invariant.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/TUNING_PROFILES.md": {
+      "sha256": "331ed352e620974d7933516b44554860b6032d94f00ebb827550a9ae3ac8c056",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated robot-owned tuning profiles documentation. Verified component declarations (.ares/tuning-components/*.arestuningcomponent), canonical profile storage (.ares/tuning/<id>.arestuning), prior content backup with reviewer metadata, three-column model (Source, Live, Proposed), typed input validation, apply policies (LIVE_SAFE, DISABLED_ONLY, RESTART_REQUIRED, REBUILD_REQUIRED, CALIBRATION_ONLY, READ_ONLY_VENDOR), structured diff promotion with content-hash locking, and AutoTuner proposal inbox integration.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/UI_REGRESSION.md": {
+      "sha256": "7bbab71d8923b8f18f6b6362895553cf135bcf2a58b9cbb2a1e188cba1e0c278",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated desktop UI regression capture documentation. Verified capture workflow across all supported resolutions: 1920x1080 maximized, 1440x900 default, 1100x700 minimum working size, and vertically scrolled active Dashboard view. Verified script execution (capture-ui-regression.ps1), output path build/diagnostics/ui-regression/, exact-window verification preventing desktop wallpaper captures, and legibility/card-boundary inspection criteria.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/VALIDATION.md": {
+      "sha256": "92729263e013e8dd540b8c17254f93d8efee59468ba098c165d5d36a7b417dfa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated automated dashboard validation documentation. Verified test tasks (dashboardSmoke, dashboardPerformanceBaseline, dashboardSoak, dashboardHardware), evaluated subsystem properties (live transport, persistence, DuckDB queries, Parquet export/restore, replay scrub latency, run comparison, guided tuning, alerts, heap growth, zero drop rate), performance budget limits (>=1,000 frames/s, query p95 <=1,000 ms, heap growth <=256 MiB), Kover coverage floors, 500-line source ratchet, and CI release gates.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/admin/GOOGLE_CLOUD_OAUTH.md": {
+      "sha256": "a16d8ef3026b240cbb0d367e1f38f0a7836df9b755d96ece88c72012291d773e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Google Cloud OAuth administration guide. Verified production client configuration for ARES Robotics Studio (aresfirst-portal project, aresfirst.org domain, drive.file scope), protected GitHub variable management (ARES_GOOGLE_OAUTH_CLIENT_ID, ARES_GOOGLE_OAUTH_BROKER_URL), secret manager injection of ARES_GOOGLE_OAUTH_CLIENT_SECRET into Cloud Run, gateway token broker route restrictions (/api/oauth/google/token, /api/oauth/google/refresh), custom bring-your-own client policy, Cloud Run public invoker configuration, and 10-step manual release verification checklist.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/announcements/ARES_ROBOTICS_STUDIO_3_1_1.md": {
+      "sha256": "bdb8d357f17fd2bda212922995779ee1fa6a154d0b95fb62f7bb1745aecee1df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated release announcement and blog draft for ARES Robotics Studio 3.1.1. Verified claims on desktop packaging (Windows MSI and macOS DMG), pinned starter archives, Lightbot reference robot, visual authoring to Kotlin progression, distinct evidence labels (configuration reviewed, compiled successfully, simulation verified, ready for physical validation, physically validated), inspectable local telemetry without cloud dependency, and explicit disclaimers regarding unverified physical hardware.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/announcements/ARES_ROBOTICS_STUDIO_4_0_0_PREVIEW.md": {
+      "sha256": "9e187c196ede57cca4f4065597f8aa6994001a22dc51a501e5546b00e3388e9a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated clean-slate ARES 14 / Studio 4.0.0 preview and launch documentation. Verified three explicit project ownership models (GUI-owned, code-first, hybrid), monorepo unification, API baselines, fail-closed safety contracts, zero-GC hot-loop optimizations, shared field coordinate contracts (CCW-positive radians, +X forward, +Y left), and simulation/packaging verification evidence.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/biobuzz-dashboard-plan.md": {
+      "sha256": "1bd5d8e00f3b9606388112b1497cdbed779fafbb2a0d78075aa4e5fb27a6065a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated BIOBUZZ dashboard integration plan and feature verification record (2026-09-13). Verified execution steps: Dyn4j season interaction adapter, 4-ball FIFO inventory, flower retention, mixed-mass hive tipping, separate bundled example with generated intake/shooter, NT4 game snapshots in Field 2D, Field Editor Push to Sim integration, and Lightbot template regression protection.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/biobuzz-simulation.md": {
+      "sha256": "b794af05981d2eba767cb4257609e36c7a78e635da12b90f5a71293636198e12",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated BIOBUZZ simulation integration overview. Verified boundary documentation: simulation executes via Dashboard Local Sim and Field 2D widget without separate practice tabs or simulation windows, referencing biobuzz-dashboard-plan.md and TeamCode guides.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/cycles/CYCLE_004_SAFE_BUILD.md": {
+      "sha256": "f88ae84bac221e8457579d858e4f3f8085c9f23dddc5ba834f29b32a0ef208d1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Cycle 4 safe build and project verification documentation. Verified transition from 'Build & Deploy' to simulator-first 'Verify & build' execution toolbar language, removal of hidden ADB deployment side effects, workspace-scoped verification results, and isolated local repository testing.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/cycles/CYCLE_005_ZERO_CODE_INTEGRATION.md": {
+      "sha256": "abc4322b59f3fc15214b13ba8fd5b28021262da06a21da34a90bc5b1418a01fc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Cycle 5 representative zero-code robot integration documentation. Verified automated fixture: starter drivebase, current-stall-homed elevator, velocity-controlled flywheel with feedforward, bang-bang intake, wrist servo, fail-closed interlocks, latched output faults, and superstructure state machine (STOW -> READY -> SCORE -> FAULT). Verified visible Compose Desktop workflow and unarmed pulse commissioning proposals.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/integrations/ARES-WEB-NOTEBOOK-API.md": {
+      "sha256": "cebab42a3b0b58975a1701738dd3fbacfcf3c3f7c25ee2188b2c35f61d67d33b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES Engineering Notebook Draft API specification. Verified POST /api/integrations/robotics-studio/v1/notebook-drafts HTTP contract, bearer token scoping, request envelope (schemaVersion 1, entryId, contentHash, revision), SHA-256 idempotency key semantics, human editorial review requirement, error codes, and audit trail logging.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/integrations/OPERATIONS.md": {
+      "sha256": "bedd481ac610b3cf858eb708ad920e219088f3a35289d62381224f1291bbd572",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated integrations operations guide. Verified offline-first desktop architecture, DuckDB durable delivery event rows with lease recovery, vault storage (DPAPI, Keychain, Secret Service), simulation notification suppression, Zulip/webhook/CMS delivery retries, and Windows MSI update staging and trust modes (bootstrap checksum vs authenticode with pinned thumbprints).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/learn/ACCESSIBILITY_AND_CONTRAST.md": {
+      "sha256": "ed834344167384fa03f18209816bfebfc3853719a591cdb2cc4982e9a8e4a3af",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated accessibility, contrast, and visual presentation specifications. Verified Colorblind-Friendly Palette (blue/orange accents), Enhanced High Contrast, Larger Text, Touch Target Optimization, WCAG automated test threshold compliance, multi-modal status labeling (text + icon + border), and UI color distinctions between Studio (technical cyan) and team website (expressive red).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/learn/AI_DESIGN_ASSISTANTS.md": {
+      "sha256": "109cc79cac7a5d26d5284fd9d60fb1a13422bea465c8d09e8e1385137fefad2a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AI design assistant specification. Verified review-only form assistant model with Google AI Studio / Gemini, absence of direct file writing or hardware commanding, structured diff review, prompt engineering guidance for subsystems, drivebases, and controller bindings, and restrained-chassis safety boundaries.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/learn/FIND_HELP_AND_SOURCE.md": {
+      "sha256": "402567f3e416c07fe40f7ba9b704e32f12c99afee61bc2ac92d12a8afa12f688",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated help system and source lookup documentation. Verified Ctrl+K task palette navigation, connection state semantics (NT4 on/off, ADB on/off), curated Developer Reference mapping, and safety boundaries for help and source inspection.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/learn/GLOSSARY.md": {
+      "sha256": "c1c46e16704c006e3c111654d9ef2ae41a597866064ac44232b177f131293a0b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated glossary definitions and mentor notes. Verified key system terms: ADB, CCW-positive radians (+X forward, +Y left), Cloud Sync, DuckDB, EKF pose vs raw odometry, INIT lifecycle, JSONL, Live Robot vs Local Sim vs Replay vs Cloud Sync, NT4 port 5810, RobotClock monotonic timing, and quarantine folder semantics.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/learn/PROJECT_IDENTITY.md": {
+      "sha256": "f02562bdcdd4907f644ec346c3f39e3281283048c0eea3511d2d3823b262b83a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated project identity and .ares/project.json specification. Verified stable project ID, team/season/robot IDs, authoring model declaration, league-specific coordinate conventions (FTC center origin vs FRC blue-corner origin, CCW-positive), measured footprint in meters, Control Hub runtime selection (Standard FTC SDK vs experimental Photon), and atomic diff-review saving.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/learn/ROBOT_ACADEMY.md": {
+      "sha256": "219426a02658b8291b573e2aad6a5718c396339a95b3e7bde0ac1a5979277e3b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated comprehensive Robot Academy learning guide. Verified 5 engineering mastery tracks, first simulator mission, distinct 'Observed by ARES' vs 'Your reflection' checkpoints, classroom toolkit, homing and safe recovery lab, input-to-telemetry Redux trace, superstructure coordination, autonomous planning, and graduation to verified runtime.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/learn/ROBOT_STUDIO.md": {
+      "sha256": "326e48bf51f48ce5100d72c358f8129666ba8dbf04d4ac4f3f826ec9655a11a1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Robot Studio guided front door documentation. Verified stage states (Ready, Needs action, Optional, Blocked, Invalid, Code required, Running now), pure Redux execution flow (controller/routine/transition -> typed action -> pure reducer -> immutable state -> controller -> cached IO -> adapter -> telemetry), multi-layer Verification report, and separation of build and deploy.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/mentor/CLASSROOM_PILOT.md": {
+      "sha256": "db83d10284d196078d04c780cf17cbfcd5d3b08ca5dbe30280097398795313f5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated classroom pilot curriculum guide. Verified offline-first 60-minute pilot sequence, synthetic comparison run installation (baseline-arm-run.csv, stalled-arm-run.csv), student privacy (display name only, local storage), immutable local snapshots, reset mechanics, and rubric evaluation.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/mentor/TEACHING_WITH_ARES.md": {
+      "sha256": "8d68815917f89c3bffae7079f0dea3c1ec00c4f4e906c5a6d2141ffcf445e408",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated mentor teaching guide. Verified simulator-first progression, 45-minute first lesson with rotated student roles, 7-step evidence loop, homing/safe-recovery lab, project-backed mechanism/controller missions, reversible tuning workflow, 8-point physical robot gate checklist, and 5-step student recovery script.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/operate/BRING_IN_A_RUN.md": {
+      "sha256": "9d5c36256810ef9c0e9787f387114a2e6e892c030e94cb7951b69a1bb945bd59",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated run ingestion and replay documentation. Verified local log file importing, watched folder scanning (<project>/logs/), supported file formats (.jsonl, .csv, .wpilog, .parquet, etc.), ADB/SSH log pulling, quarantine handling, and deterministic replay playback.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/operate/GUIDED_RUN_REVIEW.md": {
+      "sha256": "14902ea7c03242a8dbba0a5791fa45830fb8c7c01c344a7ea47ed1d3154e6a3e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Guided Run Review operations documentation. Verified read-only analysis path, interpretation confidence tiers (Moderate, Limited, Insufficient evidence), anchored run alignment, separation of observations from hypotheses and causes, and safe tool navigation.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/start/APP_TOUR.md": {
+      "sha256": "a65ca583c75e987350b34b2c8deafb061695377b5d02ee3f7d858e46fd572027",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated application tour guide. Verified primary window landmarks (Workspace selector, Screen trail, Execution toolbar, Main workspace, left navigation rail), core screen navigation, status text precedence over color, progressive disclosure form designs, and Ctrl+K search.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/start/CONNECT_SIMULATOR.md": {
+      "sha256": "ea65f5c966f88ef73380754e80473b95ed6b6155c2a4388d02bfd7d3f71eaba8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated simulator connection guide. Verified Local Sim target selection, monitor control launch (Ctrl+D), NT4 loopback connection (127.0.0.1:5810), kill active process (Ctrl+Shift+K), troubleshooting matrix, and simulator telemetry topics (ARES/TruePose/*, ARES/EstimatedPose/*).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/start/CREATE_ROBOT_PROJECT.md": {
+      "sha256": "59c62720566c061c7095f8cac0ae5702ab6a7bd23bf8fe040d3fa49cc71d9e67",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated zero-code robot project creation guide. Verified first-run setup wizard, pinned starter archives, atomic extraction and staging directory validation, .ares/project.json personalization, and simulation-first deployment blocking until hardware commissioning is recorded.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/start/FIRST_LAUNCH.md": {
+      "sha256": "0b2caefcf26d9fb56daf9ca5e3c7d2076f64348edb16cd2ff83816a8a038aea9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated first launch documentation. Verified private desktop runtime, workspace setup wizard, blank starter and Lightbot example cloning, optional Google Drive sign-in, private JDK 21 installation, and connectivity indicator explanations.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/start/GOOGLE_DRIVE_SETUP.md": {
+      "sha256": "f1781ae1ae29bcc17dfdd048ace42f67df5b0a1a465f895e8d9ff1fc667e1545",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated optional Google Drive synchronization guide. Verified narrow drive.file OAuth scope, desktop-managed sign-in service without credential leakage, personal vs team vs Shared Drive destinations, and administrator bring-your-own-OAuth options.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/start/HARDWARE_SETUP.md": {
+      "sha256": "a0519f97ce1d171b7e91a881201adc0c6ec2b5e588f67fb451924609ff312370",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated hardware setup and commissioning bridge. Verified aggregation of .aresdrivetrain and .aressubsystem hardware allocations, configuration-review evidence hashing under .ares/evidence/hardware/configuration/, unarmed pulse proposals (<= 10% for <= 250 ms), and FTC Driver Station Drivetrain Diagnostic TeleOp.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/start/PROJECT_BACKUP.md": {
+      "sha256": "60191692bdbd2a90da4f55d64aaec50ca4fb5a88d5c9d866a9a3196b4fe52eab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated project backup and version control guide. Verified embedded JGit operations, local checkpoint creation upon canonical document save, GitHub App device flow authentication, DPAPI/Keychain/Secret Service vault storage, secret path blocking, and reversible fast-forward-only restore.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/start/ROBOT_BUILD_TOOLS.md": {
+      "sha256": "6cd6d1221a528a1659b1f024a74889869d40ad9599ef82c939a7702c327406cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated robot build tools specification. Verified private desktop runtime, on-demand verified JDK 21 installation for Windows x64 under ~/.ares-analytics/toolchains, external FTC Android SDK and FRC WPILib detection, and offline authoring independence.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/3.1.1/autonomous-builder.png": {
+      "sha256": "ea1f2372a8b04dd7b2a21b809ffc9dec878597aff2070edc94528c8bad85e3f7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 3.1.1 Routine Builder visual capture. Confirmed Lightbot workspace, square FTC field layout with alliance walls, coordinate axes (+X forward red, +Y left green), waypoint targeting, routine steps list (Run robot action for indicator lights, Wait 0.50s), and Save & Generate action.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/3.1.1/controller-mapping.png": {
+      "sha256": "6683f8cac2c7798d6ddcab4753124052cd7d27d3bf85a1c7a137f4105ab16f78",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 3.1.1 Visual Controls Editor visual capture. Confirmed gamepad diagram with callout lines to button bindings (LB turbo, Back recoverNeutral, D-pad indicator lights, Left Stick strafe/drive, Right Stick rotate), accessible control list, and action reachability summary.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/3.1.1/dashboard.png": {
+      "sha256": "c660156c8edca6e4b8ed791f655b2ca6d6a54853934aeed3c361a4e9930678ca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 3.1.1 Dashboard visual capture. Confirmed MaintAuditBot profile in Offline status, Recorded Sessions empty state, RoboRIO / Control Hub Health card (loop time, overruns, battery, brownouts, ingest/DB performance), Field 2D Live Tracker, and Live Telemetry Viewer.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/3.1.1/field-editor.png": {
+      "sha256": "ca7976b51dbe6b3eab17d8bbbe9a9c05c34b433c73d4f3122f40d0bf872292fd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 3.1.1 Field Editor visual capture. Confirmed square FTC coordinate system, Field Background Editor upload/adjustment tools, element palette (walls, trusses, scoring zones, vision AprilTags), grid snapping, and Push to Sim action.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/3.1.1/guided-run-review.png": {
+      "sha256": "c61e21beed86b0ae30094eed62e198025126616b2131b48da0ebd36ffed93d71",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 3.1.1 Guided Run Review visual capture. Confirmed 2-step evidence workflow: run selection (Run 22bf0caf), preserved source identity with SHA-256 digest (ac91e4d...), CSV decoder attribution, historical timestamp freshness, and Moderate evidence confidence rating.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/3.1.1/simulator.png": {
+      "sha256": "3e48479a962a56e5e48fae6cb8f628eec837732fc30954473333c8966c39e5c6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 3.1.1 Local FTC Simulator visual capture. Confirmed live Lightbot TeleOp execution (ARESMecanumTeleOp), 20.0 ms loop time (50 Hz), 7071 fps ingest, terminal drawer showing Gradle :TeamCode:runSim and NT4 loopback server on port 5810, and Verify & build toolbar.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/3.1.1/subsystem-builder.png": {
+      "sha256": "d6d69d2465e5111581d431512f7ad34b94b2d67dfe986b0a0cbc31e4d6a89669",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 3.1.1 Subsystem Builder visual capture. Confirmed 4-stage builder (Purpose & Template, Hardware & IO, Stateflow & Control, Tuning & Review), Indicator lights mechanism, and 9 mechanism archetypes (Simple actuator, Position-controlled, Velocity-controlled, Elevator/lift, Arm/pivot, Flywheel, Intake, Dual-motor, Positional servo).",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.0/autonomous-builder.png": {
+      "sha256": "0dd54aa8a40f7208d6d6edaddda4e826249cefcf47a9588760b6eced5f5797b0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.0 Routine Builder visual capture. Confirmed GuiBot workspace, square field frame, 'Needs attention' validation banner, 'Start guided first routine' onboarding card, 0.45 x 0.45 m footprint, and Add drive goal / Other step controls.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.0/controller-mapping.png": {
+      "sha256": "604677439c4387067aff72d4b8343ba51963f497dbcf54817c3f1e79f9618ce2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.0 Visual Controls Editor visual capture. Confirmed GuiBot workspace, gamepad diagram with bound actions (recoverNeutral, drive forward/back, strafe, rotate), action reachability indicator, and AI Assistant button.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.0/field-editor.png": {
+      "sha256": "473bc82e7f1efc208e6e69b7bed7afdb68dd214fabf3f62944dee68da553a820",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.0 Field Editor visual capture. Confirmed GuiBot workspace, square FTC coordinate axes (+X forward, +Y left), element palette, grid controls, and Push to Sim button.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.0/guided-run-review.png": {
+      "sha256": "c61e21beed86b0ae30094eed62e198025126616b2131b48da0ebd36ffed93d71",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.0 Guided Run Review visual capture. Confirmed run selection, preserved source identity (ares_log_...csv), SHA-256 hash, historical freshness notice, and Moderate evidence classification.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.0/robot-studio.png": {
+      "sha256": "844a440a7081e20c5cbfb5f16e3fd16dc0dfbbe2882c6095bc78d9e14c00fa93",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.0 Robot Studio visual capture. Confirmed GuiBot standalone project structure, Project Identity & Robot Footprint editor, canonical .ares/project.json path, stable IDs (team99992-guibot), and authoring navigation tree.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.0/simulator-live.png": {
+      "sha256": "4a234f1504d71ed86de5c03093aa4d3065928e4ab4c760bd8b2f8af32fe099b9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.0 live simulator visual capture. Confirmed GuiBot running ARESStarterTeleOp in Local Sim, 20.0 ms loop time (50 Hz), 1408 fps ingest, Field 2D Live Tracker showing robot pose with sensor cone, and timeline playback controls.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.0/subsystem-builder.png": {
+      "sha256": "a1d5c111cb823cf981b9686bf19cb4dde12861255acde393e96b5e8d63b514e4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.0 Subsystem Builder visual capture. Confirmed 'New simple actuator draft created' notification, archetype selection grid, hardware step navigation, and Save & create files action.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.0/verification-build.png": {
+      "sha256": "b41ae7126541e13308882ccd35ca5470eeefb89e87667fb72fb4faef7751681f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.0 Verification Build visual capture. Confirmed execution of :TeamCode:assembleDebug, 66 actionable tasks executed in 43s, 'BUILD SUCCESSFUL', and explicit confirmation banner: 'Nothing was deployed; rebuild after changing project files.'",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.1-acceptance/autonomous-builder.png": {
+      "sha256": "aeb9234a6e679d4fca722e56dab1983a4057d2ee41fc2180545b8ec2401504d4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.1-acceptance Routine Builder visual capture. Confirmed AresDemo workspace, Local Sim target, clean routine setup, guided first routine card, and offline project catalog integration.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.1-acceptance/controller-chords-and-macros.png": {
+      "sha256": "880d0a74d1dac83edc811dba75738dafb3f35908bb6958b148a31d28a2da60e6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.1-acceptance Controls Editor visual capture. Confirmed Chords & macros panel ('New chord', 'Bind routine macro'), bound gamepad layout for AresDemo, and action reachability verification.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.1-acceptance/field-pushed-to-simulator.png": {
+      "sha256": "7fbc52e2dc371fcdb8bf6faeccb17dd18550d46d1141a4d67ff0d38a3fbfdf9b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.1-acceptance Field Editor visual capture. Confirmed 'Push to Sim' execution, status receipt 'Simulator applied field revision 3: 1 obstacle(s), 0 game piece(s), 2 AprilTag(s)', and updated center divider obstacle geometry.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/4.0.1-acceptance/recorded-run-replay.png": {
+      "sha256": "0a80954794d8b3a53b019cd3af087c78680edbdbf1371ed42b9258664b5fa703",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 4.0.1-acceptance Recorded Run Replay visual capture. Confirmed replay mode active for session 2461bf11-ed0, scrubbable timeline at 0.000s / 8.280s, sample-exact Field 2D Replay, and Replay Telemetry Viewer.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/5.0.0-acceptance/academy-simulator-mission.png": {
+      "sha256": "7d370fb3e7cf74e54a2a0874bb6450ad0510fe88c86c8b5a568ef2535ae5adb5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 5.0.0-acceptance Robot Academy visual capture. Confirmed Track 1: Drivetrains & Odometry lesson 'Launch Simulator & Drivetrain Telemetry', 'Observed by ARES: Local Sim is the selected execution target' checkpoint, lesson coach instructions, and 5-track navigation.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/5.0.0-acceptance/deterministic-replay.png": {
+      "sha256": "91c58503b9765451f2a0998e08ce37ff2754a38563eb1f8ca18270f3165c69a0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 5.0.0-acceptance Deterministic Replay visual capture. Confirmed replay of session 79282915-2ce, timeline duration 15.820s, sample-exact status indicator, and synchronized Field 2D replay view.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/5.0.0-acceptance/guided-run-review.png": {
+      "sha256": "c381e1ec7b993bcac60e0e7828e217fc4d69b52e7b4835f7a77a0108d3611dd4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 5.0.0-acceptance Guided Run Review visual capture. Confirmed 3-step evidence workflow: run 79282915, 'Studio-recorded simulator run' provenance, source identity preserved with local workspace database attribution, historical freshness (36180 ms to 52000 ms), and telemetry metric review cards.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/5.0.0-acceptance/live-simulator.png": {
+      "sha256": "a6335520f74bab4c04183552b4df089521c91178400511544e0d426b1b474e78",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 5.0.0-acceptance Live Simulator visual capture. Confirmed AresDemo driving ARESStarterTeleOp in Local Sim, 20.0 ms (50 Hz) loop time, 765 fps ingest, Field 2D tracking with vision cone, and active Record run control.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/5.0.0-acceptance/recorded-practice-run.png": {
+      "sha256": "5a660917a92cf5f5a86626a3ac001851456b2ed2557e9b206cf564c0b35261d7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 5.0.0-acceptance Recorded Practice Run visual capture. Confirmed session 79282915-2ce saved into Recorded Sessions widget with simulation/studio-experiment tags, 28.5 KiB log size, and ready-to-replay state.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/5.0.0-acceptance/restart-persistence.png": {
+      "sha256": "f19f24fa0daa322a396924a0fd13b115b48919d1c7acb785aa0781a87b497f47",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 5.0.0-acceptance Restart Persistence visual capture. Confirmed cold restart of ARES Robotics Studio with AresDemo workspace retained, saved Practice Run persisted in DuckDB across restarts, and offline status cleanly indicated.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/docs/media/5.0.0-acceptance/robot-build-success.png": {
+      "sha256": "bc4e0c847533fdad8059f505cf682a13e7c21f70d923d255c8a2f59abc609eb7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated rendered 5.0.0-acceptance Robot Build Success visual capture. Confirmed successful execution of :TeamCode:assembleDebug in 33s (66 tasks), Verify & build output drawer, and 'Try your first simulator mission' onboarding banner.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass291-pending-elevation-audit.md": {
+      "sha256": "717f55d63f874d4f070f90ab884f009df8d5c1644eaa21ebdc46bf79a5c21dda",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive Pass 291 pending file elevation, active refactoring, and milestone seal report for all 122 ARES-Analytics governance, gateway, build, and documentation files.",
+      "evidence": [
+        "docs/audits/pass291-pending-elevation-audit.md"
       ]
     }
   }
