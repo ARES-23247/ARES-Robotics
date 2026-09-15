@@ -26,7 +26,6 @@ dependencies {
 
     val wpiVersion = "2024.3.2"
     implementation("edu.wpi.first.ntcore:ntcore-java:$wpiVersion")
-    implementation("edu.wpi.first.wpilibj:wpilibj-java:$wpiVersion")
     implementation("edu.wpi.first.wpiutil:wpiutil-java:$wpiVersion")
 
     testImplementation(kotlin("test"))

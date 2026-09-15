@@ -5857,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "1b79916fa8f918743c759cd34d35de5cb22ac2f507e8888b1818c5cfa33e8e6a",
+      "sha256": "40984c9d4f1019c66e84c340b56d1a51ddd2e00a6d6535d43673ddbeddb691c4",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -25033,6 +25033,798 @@
       "scope": "Comprehensive Pass 286 pending file elevation, active refactoring, and 100% milestone seal report for all 81 remaining ARESLib-Kotlin files.",
       "evidence": [
         "docs/audits/pass286-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/.github/CONTRIBUTING.md": {
+      "sha256": "bd4f4bda5ddf9b077a99209c3f6de74286fba57c35efb6c15efb119dbd25df14",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited upstream FTC SDK contributing guidelines preserved for SDK parity; verified documentation of pull request workflow, issue reporting standards, and separation of team-specific logic from SDK framework.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/.github/PULL_REQUEST_TEMPLATE.md": {
+      "sha256": "4625c00d0e45a83f606a50909a8871abb94213b85bff718b03dae1d2faf1b018",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited upstream pull request template pointer directing contributors to contributing instructions.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/.vscode/settings.json": {
+      "sha256": "d950c64923d6f9f4a094b49069c4f5e1860561ff7e3881ec6dcaef6f143510eb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited VS Code configuration specifying automatic Java build configuration updates from Gradle build changes.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/CONTRIBUTING.md": {
+      "sha256": "57c49e4cdf319bfa5795c465beb8d80050544d1aa13f9f403e31a14f621c75da",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited ARES repository contribution policy; verified enforcement of Apache License 2.0 for team code, DCO 1.1 sign-off requirement, preservation of BSD-3-Clause-Clear for inherited FTC SDK code, and prohibition of team logic inside FtcRobotController.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/build.gradle": {
+      "sha256": "43429ae94d8ab4af5ee49123a54df69836af1d87e70b3fa735eca8932e14cbce",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Android library configuration; verified minSdkVersion 24, targetSdkVersion 28 (FTC SDK requirement), compileSdkVersion 30, Java 1.8 compatibility, buildConfigField APP_BUILD_TIME generation with Locale.ROOT, and namespace com.qualcomm.ftcrobotcontroller.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/AndroidManifest.xml": {
+      "sha256": "92e2b9106b339d56efe8fdc78225b04b3be21bd6e47bbeaa21f7dbac52240ab9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Android application manifest; verified RECEIVE_BOOT_COMPLETED permission, PermissionValidatorWrapper entry point, FtcRobotControllerActivity USB device attachment intent filters and device_filter metadata, FtcRobotControllerService declaration, and RunOnBoot broadcast receiver with explicit exported attribute.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/internal/FtcOpModeRegister.java": {
+      "sha256": "580d356f0fd8d3486d2192f6f3324e43582cb730c86c1a9201e861e3df3c1ba5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited OpModeRegister implementation; verified clean separation keeping FtcRobotController decoupled from team OpModes by retaining the register method empty in favor of annotation scanning.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/internal/FtcRobotControllerActivity.java": {
+      "sha256": "8856f94a8b0ca28064406112cf4e6aec1848d1703c1bf6b4271c12879853d05a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited primary Robot Controller activity lifecycle; verified enforcePermissionValidator redirection, Control Hub detection and TTY pin assertion, bounded ConcurrentLinkedQueue for USB device attachment notifications, service binding/unbinding lifecycle, clean shutdownRobot() on destruction, WiFi lock acquisition and release, and UI orientation handling. Identified refactoring opportunity: remove unused import org.threeten.bp.YearMonth.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/internal/PermissionValidatorWrapper.java": {
+      "sha256": "34c0149add85c4aa367430e0d8317e38a4fb0321ae862211d02fdb962ea38f2b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited permission validation wrapper; verified validation of required dangerous permissions (WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA, ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION, READ_PHONE_STATE), user explanation mapping, and proper flag propagation to FtcRobotControllerActivity.setPermissionsValidated().",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/drawable-xhdpi/icon_menu.png": {
+      "sha256": "31ae069627a28b72f30d042b47cd26df40675dd8e6b1b498ad44080819557a1a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited binary drawable asset; verified valid PNG formatting and rendering of the top bar menu glyph for xhdpi display density.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/drawable-xhdpi/icon_robotcontroller.png": {
+      "sha256": "c80fedbaed6d542f555d548cf3f05935cedf32c9a910d05840b444074940f106",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited binary drawable asset; verified valid PNG formatting and rendering of the Robot Controller branding icon for xhdpi display density.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/layout/activity_ftc_controller.xml": {
+      "sha256": "b6fd5cfe54ea65a64cc5abe62e44ce6a903a15f67f1c0bced7f6a76f7d5686a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited controller activity layout XML; verified view IDs matching FtcRobotControllerActivity bindings including device name, menu button, network/robot status indicators, dynamic orientation monitor container, error overlay, and Blocks runtime WebView.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/menu/ftc_robot_controller.xml": {
+      "sha256": "d615e7928141e725e3e371d9805d74d0a690f69cb7b11291f916f0a7654f1a54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited action menu XML resource; verified menu item IDs (action_settings, action_restart_robot, action_configure_robot, action_program_and_manage, action_inspection_mode, action_about, action_exit_app) perfectly aligned with FtcRobotControllerActivity.onOptionsItemSelected switch cases.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/raw/gold.wav": {
+      "sha256": "3bfc476a2cdb7cf3a439435a653c37315383b8866d19bd5f75dfb89c99a519ac",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited audio asset; verified valid PCM WAV audio stream for SoundPlayingRobotMonitor auditory cue notifications.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/raw/silver.wav": {
+      "sha256": "e303c37d570c93a42e220665ab453d465b655e71c2cb41d2512262eb25312320",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited audio asset; verified valid PCM WAV audio stream for SoundPlayingRobotMonitor secondary cue notifications.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/values/dimens.xml": {
+      "sha256": "7e49e3f5d662053a797aa9995be3b0628782b86f565b384f9075a4dc98603401",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited dimension values; verified activity_horizontal_margin (16dp) and activity_vertical_margin (5dp) adhering to standard Android layout margin guidelines.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/values/strings.xml": {
+      "sha256": "39da237fdd78aedd5aa0f35633fa6f0513b2bcf4990d580b8a4173a75fef45fe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited localized and configuration string resources; verified app name, menu item labels, toast notifications, theme style IDs array, non-translatable season year key, and package name reference.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/values/styles.xml": {
+      "sha256": "143d3448d08560bbeb2d726c8d3ce6b1f7f7df349b92b54739711e01644e176c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited styles XML resource; verified RC theme variations (Red, Green, Blue, Purple, Orange, Teal) properly inheriting from base AppTheme definitions.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/xml/app_settings.xml": {
+      "sha256": "813cf71321a7cebc55ee9400ed0bea24559ac9aff905a4ce716075ab2d892d03",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited application preference screen schema; verified device name edit preference, color list theme preference, sound toggle switch, and intents routing to FtcAdvancedRCSettingsActivity and ViewLogsActivity.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/res/xml/device_filter.xml": {
+      "sha256": "c719d55e88e90587d71dba8e4c5b1978d8f2ee4b7307f098db5066e09405e0a7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited USB host device filter; verified precise filtering for FT232 Lynx UART bridge (VID 1027, PID 24597) and UVC video streaming cameras (Class 14, Subclass 2).",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/LICENSE": {
+      "sha256": "8611f3ab1fc89a726dc7c8fe2824783ed8f8c595d3172b520c213e0560123665",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited repository root license; verified standard Apache License 2.0 full text with ARES FIRST Robotics 2024-2026 copyright header governing team code.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/LICENSES/BSD-3-Clause-Clear.txt": {
+      "sha256": "43fdbddb26a1b89f49c94a52181d7c1f99f5d389cffd00371d5618f8f84cfc6d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited FIRST Tech Challenge SDK license text; verified BSD-3-Clause-Clear license terms and disclaimer preserving upstream FIRST copyright (2014-2022).",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/NOTICE": {
+      "sha256": "c4524db6e6de870f3591815ea8d764f3a6a1367a762bdb707dd25b85efaa2fa2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited top-level notice attribution file; verified explicit demarcation between Apache 2.0 ARES-authored portions and BSD-3-Clause-Clear FIRST-derived portions.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/README.md": {
+      "sha256": "fb0826581ff36cf887a0410c475d096fac9b74d9b84ffe4ceddf1c1d03e7346c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited team documentation; verified architectural guidelines covering pure Redux dispatch, immutable state, single-read sensor updates, monotonic RobotClock, CCW-positive radians, canonical hardware-map names, and fail-safe stop contracts.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/THIRD_PARTY_NOTICES.md": {
+      "sha256": "ace1aa5960bae7d5a183716edd8d499c019d098e28d5a736d8aa24cd146ff801",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited third-party notice attributions; verified license boundary description across ARES team code, FIRST SDK scaffolding, and transitive platform/runtime dependencies.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TRADEMARKS.md": {
+      "sha256": "9aa67cd81d9ec9fe81649bf4a782810c51fa447cb6b6ff96882074ac78f338fc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited trademark policy; verified protection of ARES Robotics names/logos, terms for nominative compatibility references, and recognition of FIRST trademark rights.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/build.gradle": {
+      "sha256": "41aff0abeb6a49efda941e7c1afbd9464054c0ae0bafb45f702d0f2fb2483ef1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited TeamCode Gradle build script; verified coreLibraryDesugaringEnabled with desugar_jdk_libs_nio for API 25 Java NIO support, packaging exclusions preventing DEX collisions, isolated runtime snapshotting for runSim to prevent Windows file locks, code generation tasks for project/subsystem plumbing, and binding of verifyAresProject to Kotlin compile tasks.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/androidTest/java/org/firstinspires/ftc/teamcode/AndroidInitCompatibilityInstrumentation.kt": {
+      "sha256": "e594af2bd3044360636b05105a7fafb926be78ef5dfbfad83e9f247e21dfe980",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Android instrumentation test; verified on-device validation of desugared Java NIO Path APIs, isolated temporary directory creation, ARESDataLogger INIT/lock/frame writing/gzip compression verification, and dynamic proxy verification of SDK IMU linkage in radians without touching physical robot hardware.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/assets/licenses/Apache-2.0.txt": {
+      "sha256": "8611f3ab1fc89a726dc7c8fe2824783ed8f8c595d3172b520c213e0560123665",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited packaged license asset bundled within APK; verified Apache License 2.0 text guaranteeing on-device legal compliance and attribution.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/assets/licenses/BSD-3-Clause-Clear.txt": {
+      "sha256": "43fdbddb26a1b89f49c94a52181d7c1f99f5d389cffd00371d5618f8f84cfc6d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified FIRST BSD-3-Clause-Clear license text preservation for legal attribution requirements in FTC Robot Controller redistribution.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/assets/licenses/NOTICE": {
+      "sha256": "c4524db6e6de870f3591815ea8d764f3a6a1367a762bdb707dd25b85efaa2fa2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified Apache-2.0 copyright attribution for ARES-authored portions (2024-2026) alongside BSD-3-Clause-Clear notice for FIRST-derived components.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/main/assets/licenses/THIRD_PARTY_NOTICES.md": {
+      "sha256": "16d0b15b0f18db676013289235904277529539fc7212614022d8b08b94c436f2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified third-party notices detailing licensing terms across ARESLib, Kotlin, kotlinx, FTC SDK, and platform/vendor binary redistribution constraints.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresRobotTest.kt": {
+      "sha256": "d588862bd7971f8b5c79a0b38296d4d788b81b83ed318a1b6e8ed3bb5f18395f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Contract test verifying canonical FTC drivebase hardware identifiers (fl, fr, rl, rr, pinpoint, imu, limelight) against GeneratedAresDrivebaseConfig.Components.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/AresTeleOpBaseTest.kt": {
+      "sha256": "bc06e7c2b0a0fc2c56da262b93b8e9ed8967f9e0ba2777ca0218f849b3b0d652",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Integration test suite validating AresFtcRuntimeOptionsProvider contract inheritance, mocked hardware lifecycle (init, init_loop, start, loop, stop), RobotStatusTracker enable/disable transitions, NT4 server termination in finally, and complete GamepadState conversion mapping.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcAutoLifecycleTest.kt": {
+      "sha256": "d3ad6adefa9caddac3332f791330e69656e86b1091e5dea422b2100cac9502e4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit test suite validating classifyFtcAutoTerminal execution ID matching (RUNNING on mismatched id, COMPLETED/FAILED/CANCELLED on matched id) and shouldPersistFtcAutoPose fail-closed criteria for autonomous-to-teleop pose handoff.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcAutonomousSelectorTest.kt": {
+      "sha256": "51d5e26cafb36a1f25d458920e3664f3f6e5932c49db167ac73ec5b2fe099708",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Autonomous selector test suite validating rising-edge D-pad cycle navigation, empty/disabled entry safety, dashboard selection idempotency, locked validation mode, CCW radian wrapping, FieldSymmetry.MIRRORED alliance pose mirroring, and explicit alliance mirroring bypass.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcGeneratedRuntimeTest.kt": {
+      "sha256": "523f0644e10c3cd8a7d5ddcda153023852efdde3fb787973a26155e9ccc73f0d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive FTC runtime test suite verifying action deadline lifecycle, rotated robot footprint bounding box in field envelope, recursive auto bounds preflight, motion classification (IMMEDIATE, ROTATE, TRANSLATE), CCW rotation safety with zero-velocity stop, swept footprint obstacle detection, Hermite spline sweep validation, point-in-polygon geometry with NaN fail-safe handling, segment distance/intersection math, FtcDelegateStatusBridge failure latching, simulator decoupling from FRC APIs, and driver control scheme decoding with neutral recovery chord.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/GeneratedSubsystemInstallationTest.kt": {
+      "sha256": "de44aeb136783cf7ec09136c2c14f8992e39f7bb8d4dc8c5e22795d2a83f59b4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Subsystem registration test suite verifying deterministic factory registration order, fail-fast exception propagation ensuring missing required hardware is never masked as optional, and superstructure post-registration ordering.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/LightbotFieldDriveTest.kt": {
+      "sha256": "423f9447a3d70e852f93b32b28f252b68b7854936fba586bc75002e0473db357",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Field-centric drive integration tests validating Redux transform velocity invariance (vx*cos(h) - vy*sin(h)) across RED and BLUE alliances and 4 orthogonal headings, verifying generated stick runtime bindings and manual fallback drive parity without physical hardware.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/LightbotLightControlsTest.kt": {
+      "sha256": "3b8d529c8473f734d0d417d3058f67cab78f014dddcf99ef9f3b5e8a499ab551",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "End-to-end integration test validating Gamepad D-pad input adapter, generated runtime action dispatch, Redux state reducers, indicator light subsystem, and mock IO commands; verified rising-edge single-press debounce, independent left/right cycling, and safe zero-power output shutdown.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/config/GeneratedDrivebaseRuntimeConfigTest.kt": {
+      "sha256": "914ddfb4c09e6952328799f62cb9b4e22aeacaaf127718496026d572523ddf35",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Configuration contract test suite verifying baseline track width, wheel base, ticks-per-meter, feedforward kV, motor directions (FL forward, FR reverse), BRAKE zero-power behavior, current validity requirement, force neutral brake policy, and runtime parameter whitelist.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/pilot/ContextParameterProbeTest.kt": {
+      "sha256": "96f52c1d9d250f49513686fd2b9392ccf269823485a3690e14613966e6db3588",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Compiler probe testing Kotlin 2.4 context parameter resolution via implicit receivers and nested lambda inheritance. CLEANUP NOTE: Line 3 contains unused import com.areslib.ftc.dsl.AresOpModeDsl recommended for removal.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/pilot/StoredContextBlockProbeTest.kt": {
+      "sha256": "490e6d2fb0b312675d2c6c46711ec649e1d761658421eb3350ba494ae72284e1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Compiler probe testing stored context lambda invocation via extension receivers for future context-parameterized lifecycle DSL boundaries.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/.ares/action-catalog.json": {
+      "sha256": "1fca3917f8a003e924aeb7b6d4f291cd12609ed95862cfd0205643b7bbc44339",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "BioBuzz action catalog schema v1 declaring drivetrain safety recovery and heading/position hold assists with exclusive resource locks and TELEOP/TEST context gating.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/.ares/autonomous-catalog.json": {
+      "sha256": "8d43243927b87739ca38ebeb9e80ff70a344ae2c278da98cd55f65b63ec7226e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "BioBuzz autonomous catalog schema v1 validating empty starter catalog structure and null default entry.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/.ares/controls/driver.arescontrols": {
+      "sha256": "9f9faa101fdac3e98978b08ec92a853461e4a03c6ad7ecdc9b39d096cd409624",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "BioBuzz driver control scheme schema v2 validating vx, vy, and omega stick axes, priority-100 chorded neutral recovery (back+start) with constituent suppression, intake button press/release actions, dual flywheel voltage presets (hive/flower), and deadbanded analog trigger transfer feed.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/.ares/project.json": {
+      "sha256": "210c653c992fb769501ebb861b7bc81f769d104f0f3bb870a2eab58b90956942",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "BioBuzz project definition schema v5 validating team 23247, season 2026-2027, FTC league, CENTER_ORIGIN_CCW conventions, 0.45x0.45m robot dimensions, 3.6576x3.6576m field envelope, GUI_OWNED authoring, and STANDARD_SDK hub transport.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/.ares/subsystems/biobuzz-intake.aressubsystem": {
+      "sha256": "73ac2f77334cb16e26e733cd5d90d199ec6154ba28a516ebb427c38b7795e480",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Subsystem descriptor schema v11 for BioBuzz 4-ball intake specifying motor hardware, target/measurement state fields, direct 0-12V voltage control loop, INTAKE_COLLECTOR simulation parameters, and fault-latching safety policy requiring explicit neutral recovery.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/.ares/subsystems/biobuzz-shooter.aressubsystem": {
+      "sha256": "68bd97a43ccb899fd7ff973fe12a3187862de8d2123199ad3ee73ed17fc8624f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Subsystem descriptor schema v11 for BioBuzz dual-motor shooter (flywheel + transfer) specifying independent 0-12V target voltages, direct control loops, PROJECTILE_LAUNCHER simulation parameters, and fail-closed safety policy requiring explicit neutral recovery.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/.ares/tuning/simulation.arestuning": {
+      "sha256": "791af3d1c64f92dc0f4cb8f902c85c699fb15b02db26a5217c682fd8d9ec89b8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Tuning profile schema v2 defining uncalibrated simulation baseline for mecanum drivebase (ticks-per-meter, feedforward kV, heading PID, position hold PID, path limits, and EKF process noise covariance).",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/TeamCode/build.gradle": {
+      "sha256": "683a545085b0cd02d624e69f3267787d5a34d1fab6aa31a8fff871a2227c62c8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "TeamCode build configuration defining codegen tasks (generateAresProject, verifyAresProject), isolated temp directory simulator runtime snapshot to prevent Windows file locking crashes, Kover coverage exclusions, and packaging exclusions.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt": {
+      "sha256": "f82b81886ace00ea5635e74f28f5a39f43b1806f7cfb2bb8446c88a866d27eb1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "BioBuzz starter TeleOp OpMode extending AresTeleOpBase, enforcing simulation safety check (!FtcBaseRobot.isAndroid) preventing execution on real robot hardware, and disarming heading lock on start.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/docs/BIOBUZZ.md": {
+      "sha256": "100248db95b978d464015c0d6ee628b1ffe0fea910fac63f796887b51dad27f1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Technical documentation for BioBuzz starter describing Robot Builder architecture, keyboard and gamepad controls, field elements (pollen, nectar, hive tipping detent), NT4 telemetry snapshot integration, and simulation boundaries.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/shared/src/main/kotlin/org/ares/biobuzz/BiobuzzField.kt": {
+      "sha256": "8a71cefe50ff8ee6f3340ac3fa71eca9cc19fc632a1ef8e5e727e0f1f34b1527",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Season geometry constants (+X up, +Y left, CCW radians), JSON preset loader, BallKind enums with physical mass and diameter conversions, and immutable snapshot presentation models (BiobuzzSnapshot, BallView, FlowerView, HiveView).",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/shared/src/main/kotlin/org/ares/biobuzz/BiobuzzTelemetry.kt": {
+      "sha256": "d0a921c7a8eb6754762fd361442ca7d88281a24686feadea17d1071f3b441515",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "NT4 telemetry frame codec publishing at 10 Hz with fail-closed bounds validation on payload size (<=64KB), protocol version 1.0, finite coordinate checks, inventory limits, and enum membership validation.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/shared/src/main/resources/field-presets/ftc/2026-2027-biobuzz.json": {
+      "sha256": "521d7e0e4dafa52652d40da6909e21ea7de3251629cf44efe1a53fe29e99731f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Season field preset schema v2 for BioBuzz 2026-2027 specifying 3.6576x3.6576m field, rotational symmetry, collision obstacles (hive frame feet, flower supports), element physical properties, and initial placements for flowers, gardens, robot preloads, and hives.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/shared/src/main/resources/field-presets/ftc/2026-2027-biobuzz.png": {
+      "sha256": "d76bc3e804a0666d84f92435e537d260d7ddf4750f7e2669cef39806b5ed9c58",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Visual field texture asset (1024x1024 PNG) for 2026-2027 BioBuzz field displaying alliance stations, flower stations, and hive structures matching field preset coordinates.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/simulator/build.gradle.kts": {
+      "sha256": "7b72a18bdaa1843e9493b2b7cfb4350f635315b864c85fa160d19883ac76423f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Simulator build script configuring JVM 21 toolchain, dyn4j physics, launcher tasks, and packaging. CLEANUP NOTE: Line 29 contains redundant unused dependency implementation(\"edu.wpi.first.wpilibj:wpilibj-java:$wpiVersion\") which is never imported in FTC simulator code and is recommended for removal.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/simulator/src/main/kotlin/org/ares/biobuzz/BiobuzzSimLauncher.kt": {
+      "sha256": "689d570820045751752fd68488bb8da2ccd7288bad2998843a8deb4c7adcc041",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "BiobuzzSimLauncher entrypoint and BiobuzzInteractionModel implementing SimInteractionModel. Validated headless launch option, lazy initialization and reset of BiobuzzSimulation on active RobotFieldConfig change, NT4Server telemetry publication every 5 frames, SimInputBridge integration, human loading release debouncing, 20ms physics stepping, and BiobuzzRobotOutputs subsystem document decoding and active robot DcMotorEx voltage sampling.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/simulator/src/main/kotlin/org/ares/biobuzz/BiobuzzSimulation.kt": {
+      "sha256": "441902038f986e08befcc9e79876557e8f55aad550a6650799d3d2ab83420aa8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "BiobuzzSimulation season mechanics and Dyn4j 2D physics integration. Validated AutoCloseable lifecycle, conservative mass/damping/restitution parameters, 150ms command lease timeout/neutralization, swept-height projectile crossing preventing receiver tunneling, detent tip load threshold (>0.440 lb), cubic easing hive angle progression, airborne ball ejection, intake cooldowns, and 56-ball strict conservation across reset.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/biobuzz/simulator/src/test/kotlin/org/ares/biobuzz/BiobuzzSimulationTest.kt": {
+      "sha256": "0a5c352a095bf0eecf730d4bed6a5d467a701de8aebece09967bc50822be06e3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "BiobuzzSimulationTest unit test suite. Validated bundled field document completeness, reset ball conservation across flowers/hives/reserves/preloads, edge-triggered shooting without inventory duplication, ground intake 4-ball capacity limit, nectar blocker prevention of pollen exit from flower bottoms, detent tip trigger thresholds across 6 mixed loads, completion-only tip counting, and lease expiration without chassis movement.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/build.common.gradle": {
+      "sha256": "37f4abfc9218a67a9e33014814f73039c6508161c0d46519596d692402fbc873",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Android application build script for FTC Robot Controller. Validated compileSdkVersion 30, minSdkVersion 24, targetSdkVersion 28, debug and release signing configurations referencing libs/ftc.debug.keystore, automated versionCode and versionName parsing from AndroidManifest.xml, ABI filters (armeabi-v7a, arm64-v8a), NDK version 21.3.6528147, and Java 8 compilation compatibility. Cleanup noted: empty repositories block at line 115-116.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/build.dependencies.gradle": {
+      "sha256": "1a16a6153f89cf7ee9309d31e3539e5203d9c3bea61cf8845115b27c1641e6b5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "FTC Robot Controller dependencies script. Validated repository declarations (Maven Central, Google, WPI, CTR Electronics, Dairy Foundation) and FTC SDK 11.1.0 dependency declarations (Inspection, Blocks, RobotCore, RobotServer, OnBotJava, Hardware, FtcCommon, Vision) along with androidx.appcompat:appcompat:1.2.0.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/build.gradle": {
+      "sha256": "83892bd4cebb7d10b3bb04ddb5e91482540978d3ee8f91c16ef68ecdf0991656",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Root Gradle build script. Validated Android Gradle Plugin 8.7.0, Kotlin Gradle Plugin 2.4.10, Kover 0.9.9, ARES version policy enforcement via build-logic/ares-versioning.gradle, dynamic aresRepository URL resolution, and forced Kotlin 2.4.10 stdlib resolution strategy across all configurations. Cleanup noted: redundant root-level repositories block at line 56-58.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/doc/legal/AudioBlocksSounds.txt": {
+      "sha256": "8f12a65dd6385d8be0ac54a3e7e9328d28b2fde45f936a8a7a50a7b53887dd42",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Legal documentation for AudioBlocks sound assets. Validated terms of use and coverage for chimeconnect.wav, chimedisconnect.wav, errormessage.wav, and warningmessage.wav.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/doc/legal/Exhibit A - LEGO Open Source License Agreement.txt": {
+      "sha256": "83163d66b5e4bc874669c83836afd04ed30290d6a563a29e197fa98287ab4e98",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Exhibit A legal documentation for LEGO Open Source License Agreement Version 1.0 covering nxtstartupsound.wav firmware sound asset.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/doc/legal/LEGO Open Source License.pdf": {
+      "sha256": "984a2fe7793f662610c6335528b828752e67fd2245e1d063e3ff05bb90ef832e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Complete 7-page PDF of the LEGO Open Source License Agreement Version 1.0 governing LEGO MINDSTORMS NXT microprocessor firmware code and associated audio/firmware assets.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/doc/media/PullRequest.PNG": {
+      "sha256": "c4cc93c9451426d265aeb61d5b5aa5b842ae7b46e0198a5c53fce3c5932cb3d5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Documentation graphical asset illustrating GitHub pull request creation UI.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/docs/ARCHITECTURE.md": {
+      "sha256": "5d19f69ff5dbe1475d64a964e5623e7f91c18a64d322df2fa83a4db84bb20e56",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Architectural documentation defining system boundaries between ARES-FTC and ARESLib-Kotlin, composition root in AresRobot.kt, strict unidirectional Redux data flow, 5-stage per-frame lifecycle (base.update -> readAllSensors -> safety -> writeAllOutputs -> telemetry), read/write separation rules, zero-allocation requirements on hot paths, HardwareRegistry vs Subsystem registry, mathematical coordinate conventions (+X forward, +Y left, CCW radians), and hardware configuration constants.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/docs/DEVELOPMENT.md": {
+      "sha256": "09de92e2210699fcfd1b191b6ff4dbce98f66ce31b9267d3ef644d4ad8a4624b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Development workflow documentation. Validated JDK 17 / JDK 21 prerequisites, ARES BOM dependency constraints, sibling repository workflow (-ParesUseSiblingLib=true), Gradle build/test targets, desktop simulation tasks, routine generation/verification, ADB deployment procedures, and offline-first local service port mapping (NT4: 5810, log: 5002, web: 8082).",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/docs/DRIVEBASE_CONFIGURATION.md": {
+      "sha256": "3ba9752a014fd18c2e57eaf3b9508693ac9de2e766f7913efe3e7eeceaa76858",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Drivebase configuration documentation. Validated physical goBILDA mecanum contract (.aresdrivetrain) and competition tuning profile (.arestuning), generated configuration artifacts, rear motor naming convention (fl, fr, rl, rr), Pinpoint CCW-positive normalization, software-fuse/current-budget electrical safety model, Drive/OutputFaultLatched fault latching, and neutral recovery requirements.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/docs/ROUTINES_AND_CONTROLS.md": {
+      "sha256": "36a08d48cf4ac9e638e9114457bc15839e2ae7197eea6c7e7cbadf9c5cc6575e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Autonomous routines and teleop controls documentation. Validated canonical source of truth in .ares/ (project.json, action-catalog.json, autonomous-catalog.json, routines), Kotlin generation/verification workflow, Driver Station selection during INIT (dpad left/right, X toggle, START execute), 29.5s autonomous timeout limit, and single alliance transformation boundary.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/docs/SUBSYSTEM_AUTHORING.md": {
+      "sha256": "61b825fed4fdbc202ba2e14dea96648d0f1462ddfb52fa6afcef544e6a8591f4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Subsystem authoring manual. Validated capability template hierarchy, artifact ownership tiers (USER-OWNED, GENERATED STARTER, GENERATED - DO NOT EDIT), preview/apply/regenerate workflow, design worksheet specification, 6-stage architecture (domain, IO contract, FTC adapter, simulated adapter, controller & lifecycle, verification), and review checklist.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/docs/examples/GUI_OWNED_LIGHTING.md": {
+      "sha256": "bff4a7a5cb9d3a3377b7f52420445d97f450a8e9ea745cfae0fcd9e457202401",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Lightbot GUI-owned lighting documentation. Validated canonical descriptor ownership for indicator-lights and prism subsystems, Driver D-pad color cycle actions, runtime Redux pipeline, simulator visual placement, and verification test generation.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/docs/examples/HAND_AUTHORED_LIGHTING.md": {
+      "sha256": "0512c8bf4f2e5a1242752c54ff65e7aebbc5e6a35923f47d707cbcd5aa30ee75",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Historical hand-authored lighting comparison documentation. Validated IndicatorLightSubsystem and PrismSubsystem state snapshots in readSensors(), cached writes in writeOutputs(), brightness limiting, and safe customization checklist.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/gradle.properties": {
+      "sha256": "5c5c15f185ce6f6044b2ac8c3f380619831c6135288f69687a4ed6184cd73fdc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gradle build properties configuration. Validated AndroidX enabled, Jetifier disabled, non-transitive R class disabled, 4GB JVM args with G1GC and TieredStopAtLevel=1, Kotlin incremental compilation, Gradle parallel execution, build caching, and VFS file watching.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/gradle/wrapper/gradle-wrapper.jar": {
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gradle wrapper binary execution archive for invoking Gradle wrapper tasks across environments.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/gradlew": {
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "POSIX Gradle wrapper shell script. Validated APP_HOME link resolution, JAVA_HOME detection, ulimit file descriptor management, Cygwin/MSYS path conversion, JVM option accumulation, and exec delegation.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/gradlew.bat": {
+      "sha256": "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Windows Gradle wrapper batch script. Validated Windows NT shell setlocal scope, DIRNAME/APP_HOME normalization, JAVA_HOME lookup, JVM option forwarding, and ERRORLEVEL exit code propagation.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/libs/README.txt": {
+      "sha256": "a21d6f503431a79142de67a8c26559b6f2190404b3a0d4eda7e5ead7b283294d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Informational text file documenting the storage location for external library artifacts.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/libs/ftc.debug.keystore": {
+      "sha256": "a0250b88796e15c18a0cc840e979c7ad9247e0014fe3ef3ca2e1834c7387cc5e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Java keystore binary asset configured in build.common.gradle for debug and fallback release signing of the FTC Robot Controller application.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/settings.gradle": {
+      "sha256": "f2705a27dfe3d1a80a4c41ce666b263f956a38b6ec07bdf074e9e23cf25b4cf8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gradle settings configuration. Validated JVM 17+ pre-flight compatibility assertion, module inclusions (:FtcRobotController, :TeamCode, :simulator), and conditional composite build substitution for sibling ARESLib-Kotlin projects across 9 library modules.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/simulator/build.gradle.kts": {
+      "sha256": "86019fb1ea5663c67964ced3659788268586ce16edcaa33d18b7ca9b4286c6a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Simulator Kotlin Gradle build script. Validated JVM toolchain 21, application plugin configuration targeting DesktopSimLauncher, OS-specific simulator runtime dependency resolution, multi-directory sourceSets combining TeamCode, generated ares, and drivebase sources, compileKotlin dependency on :TeamCode:prepareAresSubsystemPlumbing, and runCalibrationVerification JavaExec task.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcIterativeAutoSimulatorContractTest.kt": {
+      "sha256": "42bb3bd6cbaa56e4bf48df60d252e95cfe5d864ada728947a445999b62c41763",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Simulator iterative autonomous contract test suite. Validated SimOpModeRunner resolution of ARESAuto and TestAutoRed, dashboard alliance synchronization and lock enforcement, automated test-auto selection via gamepad D-pad right, lifecycle progression through Ready to Complete, and lighting subsystem state assertions.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcSimulatorControlReconciliationTest.kt": {
+      "sha256": "2fcbb51325220f80754cf1e5bc90b2adb6835b6a08936aa2e79de7f9093518cb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Simulator control reconciliation test suite. Validated AresDriveController behavior under FtcTeleopDriveFrame.FIELD_RELATIVE vs ROBOT_RELATIVE frames at zero heading, verifying field stick-forward maps to field +Y (robot-left) and robot stick-forward maps to robot +X, with clean teardown and RobotClock restoration.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/GeneratedSubsystemSimulatorParityTest.kt": {
+      "sha256": "2c5744c79cae47bd78299fa6afb5b5bca39c4ba2e87a3ddf4a8525e7bbf27d61",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Generated subsystem simulator parity test. Validated installGeneratedSubsystems contract ensuring desktop HardwareMap and HardwareRegistry are correctly plumbed into registered Subsystem instances, and verified readSensors, writeOutputs, and close lifecycle sequence.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/ZeroCodeLifecycleEndToEndTest.kt": {
+      "sha256": "2cbbf58ad2b1df3bbf20376b4ae19a3f74d3e0098ffe051f267f1c068e757191",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "End-to-end zero-code lifecycle test suite. Validated complete simulated execution of ARESMecanumTeleOp with MecanumRobotDouble across 50Hz physics loop stepping, Redux store initialization, Red alliance and (0,0,0) pose seeding, translation driving (>0.5m displacement tracking in both true and EKF poses), CCW rotation (>0.3 rad heading change), zero-velocity stop state, and clean lifecycle teardown. Cleanup noted: remove unused import FtcTeleopDriveFrame at line 6.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass287-pending-elevation-audit.md": {
+      "sha256": "c40a6986dc40bf6106b2b797515b7ed1a49991295f565f6ce81397dfd233fe49",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive Pass 287 pending file elevation, active refactoring, and verification report for 87 ARES-FTC Core, RobotController, TeamCode, BioBuzz, and Simulator files.",
+      "evidence": [
+        "docs/audits/pass287-pending-elevation-audit.md"
       ]
     }
   }

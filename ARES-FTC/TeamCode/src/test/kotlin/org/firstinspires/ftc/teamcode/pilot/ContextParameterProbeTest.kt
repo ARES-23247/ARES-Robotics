@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.pilot
 
-import com.areslib.ftc.dsl.AresOpModeDsl
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
