@@ -5850,7 +5850,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "e90f9322c1bf044afc6e5fcf8357b7d0ace2ff0b6c60c04d057e861e5dcabb49",
+      "sha256": "f77c885ed6b6b3b12dc79f85205478c6640b35eca36c225f15ef3b5bbffb2cbc",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -21702,6 +21702,492 @@
       "scope": "Pass 281: Multi-agent partial file elevation report covering final 97 partial files across ARES-Analytics UI/screens/viewmodels, ARESLib FRC/FTC hardware/vision, and ARESLib core task sequencers/schemas, achieving 0 partial reviews monorepo-wide.",
       "evidence": [
         "docs/audits/pass281-partial-elevation-audit.md"
+      ]
+    },
+    "ARCHITECTURE_BASELINE.md": {
+      "sha256": "f91b0ae4d7b6c4cafd5659b8e778f7fb09df3f93913490c8557148521b1366bc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-144. Pre-refactor architecture baseline establishing behavioral, generated, and build stability across FTC, FRC, ARESLib, and Studio. Validated dependency provenance isolation using 10.0.0-rc.arch-baseline.1 in an isolated repository (no ambient mavenLocal), deterministic SHA-256 canonical and generated aggregate fingerprints across Lightbot FTC, ARES FRC, FTC Starter, and FRC Starter. Validated offline-first resilience (offline NT4 and Google Drive sign-in failures do not prevent local authoring), teleop-only explicit-neutral recovery, and gating criteria for structural refactoring.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "AUTO_TESTING.md": {
+      "sha256": "68e1bcd3810bc3c346cca5807b26c56eb805f26e20def5f260d6588b20cc78e8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-71. Automated cross-repository verification contracts and execution policy via verify-autos.ps1 and verify-autos.sh. Validated serialized build ordering preventing artifact race conditions, deterministic Kotlin generator output (GeneratedAresProject.kt) matching canonical .ares project models, Gamepad-to-InputFrame platform adapters, digital/analog/chord safety, task lifecycle manager, alliance transforms, and fail-closed field bounds. Enforced strict safety boundaries separating desktop verification from physical hardware commissioning.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "CLEAN_SLATE_ARCHITECTURE_COMPLETION.md": {
+      "sha256": "24bbb461b62a64d2e59e8d64075b7d67688c350be5d6a66b88c72cea8370155a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-130. Clean-slate architecture completion record establishing authoritative ownership boundaries: project-schema (codecs/IDs), project-model (snapshots/validation), project-compiler (IR/manifests), codegen (deterministic rendering), core (platform-neutral scheduling), ftc-hardware (OpMode lifecycle/safe autonomous host), frc-runtime (vendor-neutral FRC runtime), simulation-foundation (deterministic simulation), and Studio ProjectSession. Validated project authoring models (GUI_OWNED, CODE_FIRST, HYBRID under schema 4), fail-closed subsystem declarations, standalone robot export independence, and immutable rollback ledgers.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "CLEAN_SLATE_ARCHITECTURE_REVIEW.md": {
+      "sha256": "4b8556b4f1c8589b394bf23810ff1f97c5b8634e83a9aeec437c1d5e6588666a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-448. Rationale and design roadmap for restructured ARES architecture. Validated foundational invariants: canonical .ares documents as editable source of truth, immutable Redux state with pure reducers, hardware reads cached once per loop, fail-closed IO boundaries, zero-GC periodic runtime paths, CCW-positive radians, +X forward, +Y left kinematics, offline-first robot operation, and physical separation of FTC and FRC lifecycles and physics engines over simulation-foundation. Validated Systemcore modular target design, elimination of cross-module source-set aliases, and phased migration milestones.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "MAINTAINABILITY.md": {
+      "sha256": "fb61fac3d17af21c075d872fd0520a8320d7f64bb57644cbdb58882593a238c9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-94. Monorepo maintainability contracts and executable enforcement policies. Validated studioReleaseVerification deterministic release contract, Kover line-coverage floors (app 38%, shared 52%, gateway 52%), and 500-line production Kotlin source ratchets enforced by verifyProductionKotlinFileSizes and verifyAresLibSourceFileSizes. Validated zero-dead-code public API policy (prohibiting deprecated delegating wrappers or abandoned prototypes), published hardware topology wire contracts in telemetry-schema with golden NT4 serialization tests, single canonical MecanumTrajectoryFollower, and isolated Gradle user home rules.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "MAINTAINABILITY_REFACTOR_PROGRAM.md": {
+      "sha256": "656644e88d7f2cece02b1d0e936d2488a6521b976149291b85dd6c29a55f1f0a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-184. 8-goal maintainability refactor program reducing coupling across code generation, Studio, persistence, and season roots while preserving canonical .ares ownership, Redux flow, and fail-closed safety. Validated zero-GC hot paths, primitive GamepadAxisSource eliminating boxed lambdas, RobotClock monotonic timing (prohibiting System clock in runtime), injectable HardwareRegistry replacing static singletons, DatabaseTransactionCoordinator with modular DuckDB repositories, and separate FrcSeasonHardwareFactory / FrcMechanismCommissioningController.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "MBOT2_PLATFORM_DECISION.md": {
+      "sha256": "30272ec4bae2c8dea19e029328d1aaab7f3f676011c466616a03db70111d4fbc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-135. Architectural decision record establishing mBot2 as a distinct MBOT2 platform with native CyberPiOS and Makeblock MicroPython support. Validated separation from XRP, canonical .ares document sharing, CCW-positive radians, +X forward, +Y left coordinates, deterministic MicroPython generation, offline-first execution, and upload mode. Validated safety contracts: neutral-on-disconnect, neutral-on-boot/disable/fault, cached reads once per loop, bounded writes, and AI Camera 2.0 timestamped observation contracts failing closed on stale, malformed, or low-confidence data.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "MONOREPO_MIGRATION_BASELINE.md": {
+      "sha256": "b224a997df1215ba4533ed5622e4ad451b5e441430c45b1af435febca7fd347f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-57. Migration baseline and byte-level rollback ledger for the source-monorepo transition. Validated preservation of independent commit histories across ares-workspace, ARESLib-Kotlin, ARES-FTC, ARES-FRC, ARES-FTC-Starter, ARES-FRC-Starter, and ARES-Analytics. Enforced 7 migration invariants: historical Git parentage preservation, imported directory tree hash matching HEADs, isolated Gradle roots, immutable release boundaries (10.1.0 / 1.7.0), no ambient mavenLocal, and clear separation between simulation and physical hardware validation.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "PLATFORM_HOST_CONSOLIDATION_MILESTONE.md": {
+      "sha256": "b6f2962004e404abadadc9ccadc532ef0c277768b21ddcb21bda000d3e69760b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-124. Platform host consolidation milestone establishing GeneratedProjectControlRuntime in core as the platform-neutral generated control scheduler, FtcGeneratedAutonomousOpMode in ftc-hardware, and FrcGeneratedProjectControlsRuntime in frc-runtime. Validated pure Redux flow (GUI-authored .ares -> typed compiler -> runtimeDefinition -> league adapter -> GeneratedProjectControlRuntime -> capabilities -> Redux action/reducer -> RobotState -> controller -> IO), zero-reflection factories, isolated candidate dependency provenance, and elimination of copied host boilerplate while maintaining league boundary isolation.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "PROJECT_MODEL_FOUNDATION.md": {
+      "sha256": "cbbef11eaed1e046fcd3e42e4c814f6a4a975f4bcb5ac53b745a2591e9dd6929",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-107. Phase 1 project model foundation separating project-schema (codecs, stable typed IDs, targets), core (runtime/state), and project-model (raw RobotProjectSnapshot, derived EffectiveRobotProject, RobotProjectAssembler). Validated single effective model feeding codegen and Studio, schema 4 explicit authoring ownership, fail-closed validation on unsupported schemas, separation of canonical project ID and tuningScopeUid, and byte-identical generated tree hashes matching pre-refactor baseline across Lightbot FTC, ARES FRC, and starters.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "README.md": {
+      "sha256": "bf7b4a1f6c24b3f203d05d203d2cd155f1194f122cad4ed070735b708084f26c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-112. Authoritative monorepo root architecture specification and repository map. Validated architectural boundaries between ARESLib-Kotlin, ARES-FTC, ARES-FRC, ARES-Analytics, and starter mirrors. Validated canonical project flow (Redux unidirectional data flow, IR lowering, deterministic generation, verification manifests), immutable release policy (release/ares-versions.properties bound to Git tree hashes via ares-source-tree.txt), CI scope resolver, attested release candidate promotion without recompilation, and strict simulation vs physical evidence boundaries.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "RELEASE_TRANSITION.md": {
+      "sha256": "a894ea4e3b5931f2c840fc8e926d93864d30eeb54100ec1309fe4324246aef73",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-60. Monorepo release transition policy and execution sequence. Validated authoritative source status of ARES-23247/ARES-Robotics, immutable org.aresfirst.ares Maven coordinates, dependency-ordered publication (ARESLib isolated RC -> full consumer test matrix -> single packaging pass for MSI/DMG -> sealed 30-day candidate with GitHub provenance attestation -> merge to main -> promotion without recompilation). Enforced zero-drift guarantees, starter mirror determinism, and legacy repository retirement rules requiring two successful release cycles.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "SIMULATOR_PRODUCT_HARDENING_MILESTONE.md": {
+      "sha256": "4468e6e268671b0a0705cbf05c20b66e7974170e0f7449c56155b525bddd26e3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-100. Hardening record establishing two distinct simulator products: ftc.desktop-opmode (OpMode lifecycle, Control Hub doubles, mecanum physics) and frc.wpilib-desktop (TimedRobot/HAL lifecycle, CTRE swerve, FRC field). Validated simulation-foundation contracts (selection, capabilities, RobotClock, SimulationFaultTimeline), fail-closed simulator selection, prohibition of cross-league simulator imports, and explicit separation of software simulation evidence from physical hardware validation.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "STUDIO_PROJECT_PERSISTENCE_MILESTONE.md": {
+      "sha256": "c4c74d7c42130562a6b546f9b291cd08eca2820b6ccb0c7058e0e087b785b75d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-137. Phase 6 Studio project persistence architecture migrating document persistence to service-owned boundaries. Validated ProjectSession immutable snapshots, revision token optimistic locking, stale-edit rejection, ProjectMutationTransaction recoverable transaction journaling with rollback, atomic file replacement, offline-first resilience (non-blocking NT4 connection failures), and exclusion of run-scoped evidence from canonical project content hashes.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "STUDIO_PROJECT_SESSION_MILESTONE.md": {
+      "sha256": "d1e33bbf49369c2c7158215d69cfdca66903e66e562340a136cbc8919c10129d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-61. Application-scoped ProjectSession milestone establishing central ownership of canonical project root, target platform, immutable assembled project snapshots, content revisions, and command authorization. Validated the controller editor vertical slice, optimistic revision checks, state-plus-callback UI rendering, process delegation via ProjectExecutionCoordinator, and isolation of run-scoped/local evidence from canonical robot definition.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "TYPED_PROJECT_COMPILER_MILESTONE.md": {
+      "sha256": "f8ba6bdaa1e7690193f1e1c5b610073ed745f2775b617fd6269ba5be61642061",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-112. Phase 2 typed project compiler milestone establishing the compiler pipeline (canonical .ares -> RobotProjectAssembler -> EffectiveRobotProject -> RobotProjectCompiler -> RobotProjectIr -> renderers -> generated source + verification manifest). Validated physical relocation of codegen into codegen module (removing source-set aliases), explicit artifact ownership (USER_OWNED, GENERATED_STARTER, GENERATED_DO_NOT_EDIT), ares-project-verification.json SHA-256 binding, and EffectiveRobotProjectQueries Studio integration.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/engineering/CODE_REVIEW_PLAN.md": {
+      "sha256": "a3b038ebd442dbc7847e27dadba7f04a75b28ed383d5586af4ac81e7a8872bce",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-33. Monorepo code review engineering standard and methodology. Validated structured 6-phase review ordering (ARESLib state/reducers/safety -> league orchestration & sim parity -> project schema/compiler/codegen -> Studio services -> Studio UI/view models -> Gateway/CI/release). Validated comprehensive line-by-line inspection standards, invariant verification (failure paths, state lifetime, concurrency, determinism, hardware neutrality, API compatibility), and evidence recording protocols distinguishing ARES code from upstream/generated code.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/mathematics-audit.md": {
+      "sha256": "f50dacc896f21769ff7005de214beee4c2786f82b6bb31698e794303ff4e040d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across \u00b1\u03c0, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/ares-build-release/agents/openai.yaml": {
+      "sha256": "71a46e28f80b7ac5624fd098bf3a5fd5e93757b861df7cf58eda7aac37414901",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "OpenAI skill metadata schema compliance (lines 1-5): validates interface display_name ('ARES Build and Release'), short_description, and default_prompt directing dependency-ordered workspace build/launch actions without invalid keys or unsafe defaults.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/ares-subsystem-authoring/agents/openai.yaml": {
+      "sha256": "28616fe766450e4bc93430843df5a2d77918b79a3389b4fc002616435074d45b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "OpenAI agent skill configuration schema compliance (lines 1-5): validates interface metadata for ARES Subsystem Authoring, verifying display_name, short_description, and default_prompt enforcing safe generated or hand-authored subsystem design patterns.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/ares-workspace/agents/openai.yaml": {
+      "sha256": "ad7ba3a02e220af1e575dbaf29ed6e347a32661537f03e959491f8d10a978c4b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "OpenAI workspace skill interface metadata compliance (lines 1-5): validates interface schema definitions for ARES Workspace development and cross-product monorepo change auditing with valid prompt instructions.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/references/interaction.md": {
+      "sha256": "afcf0cd2f1cc5b26be8d337fa735d8beb581a12a42898a7a429b258e298f92b3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Compose desktop tester window interaction reference verification (lines 1-48): enforces owned-window isolation, fail-fast coordinate checks relative to verified windows (no desktop clicking), loopback-only test-control port (ARES_ANALYTICS_TEST_CONTROL_PORT), concurrent modal chooser selection via PowerShell background jobs, and user data isolation.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/references/launch-capture.md": {
+      "sha256": "f3124659e4e502c507fe2b5e581459cdd838585087f0c26dfa0b278419ba9945",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Desktop application launch and window capture contracts (lines 1-47): validates dependency mode selection, JPS/PID ownership verification, -ParesIsolatedDesktopHome isolation flag usage, strict non-zero exit on missing HWND (prohibiting silent full-desktop capture substitutions), and opt-in same-process startup capture mechanism.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/references/shutdown.md": {
+      "sha256": "00129d11a9d9ffb7aabadbced1722b38cbc77a9267e15c5bb33fcea811047dfd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Graceful process shutdown safety documentation (lines 1-10): validates native WM_CLOSE posting requirement to verified HWNDs to exercise service disposal and watchdog mechanisms, prohibits SendKeys Alt+F4 to avoid input hijacking, sets 25s exit deadline, and restricts cleanup to verified owned PIDs.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/scripts/capture_app.ps1": {
+      "sha256": "a555123d15dd5227f587a764783aef8cb17fd538157cbbbc513b9fd8fc31ae1f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "PowerShell window capture script safety (lines 1-129): verifies P/Invoke user32 declarations (FindMatchingWindow, EnumWindows, GetWindowRect, PrintWindow, ShowWindow), automatic output directory creation, window activation with sleep stabilization, CopyFromScreen fallback with exception catching, explicit non-zero exit codes (exit 2 for missing window, exit 3 for zero bounds, exit 4 for capture failure), and strict reservation of full-desktop capture to explicit -FullScreen diagnostic flag.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/scripts/inspect_app_window.ps1": {
+      "sha256": "0f6293998d159343ca93954fa82f61b7fa97b6c96903f85509c33a27cbe94090",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Deep HWND diagnostic inspection script (lines 1-267): validates P/Invoke signatures (GetWindowPlacement, DwmGetWindowAttribute, IVirtualDesktopManager COM interface), process ID window enumeration, bounded watch loop with minimum 25ms polling intervals, COM object release (Marshal.FinalReleaseComObject), cloaking/virtual desktop checks, and non-destructive read-only state reporting.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/scripts/interact_app.ps1": {
+      "sha256": "f80acc225cd43839cbeb7a9891746fa89dd79c248c4bce4452f9ceb8787c8d51",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "GUI interaction and shutdown script (lines 1-200): validates window resolution prior to input dispatch (fails fast with exit 2 if not found), native WM_CLOSE (0x0010) posting with 25-second watchdog loop (exit 3 on timeout, exit 4 on post failure), bounded MoveWindow/SetCursorPos/mouse_event coordinate logic, and safe key-hold handling with try-finally reverse-order release preventing stuck virtual keys.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".agents/skills/compose-desktop-tester/scripts/send_test_control.ps1": {
+      "sha256": "686b858a6eb3922f5e385f5948cef3effdbfd138f74e9746d125335fcb791578",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Desktop test control TCP client script (lines 1-120): validates mutually exclusive single-action validation, parameter validation (ValidateRange 1-65535 for Port, coordinate pairing, positive rotation), absolute path verification for file choosers, base64 text/path payload encoding, loopback IP connection safety, configurable connection/read timeouts, UTF-8 newline delimited communication with proper resource disposal, and exit 3 on non-OK server response.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".github/dependabot.yml": {
+      "sha256": "4886058de8a96e8c068bb64f2247ea6c83b788a0019d0b5a5482c4bdf846af2b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Dependabot configuration integrity (lines 1-42): validates version 2 schema, monthly GitHub Actions scanning, synchronized weekly Gradle updates across all 6 isolated roots (/ARESLib-Kotlin, /ARES-FTC, /ARES-FRC, /ARES-FTC-Starter, /ARES-FRC-Starter, /ARES-Analytics) grouped by dependency name to prevent version drift, pinned exclusion for com.vanniktech.maven.publish >= 0.36.0 (Gradle 9/Dokka v2 boundary), and global exclusion of semver-major updates.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".github/workflows/analytics-validation.yml": {
+      "sha256": "8c44e510afafbee9d35f0ce2976a779ddac1977920f9a4ecf36ca3f9e26faac5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Analytics validation CI workflow (lines 1-104): validates triggers (PR to main, merge_group, daily cron 23 6 * * *, workflow_dispatch with profile choices), read-only permissions (contents: read), concurrency cancellation, dynamic scope filtering via ci-scopes.yml, smoke baseline validation (25 min timeout), soak validation (50 min timeout), test report publishing to GITHUB_STEP_SUMMARY, artifact retention policies, and aggregated result verification via check_ci_results.py.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".github/workflows/codeql.yml": {
+      "sha256": "82cebc7111ba350a4cda2ed6cff196c54a8d4fe7fd024c40cf5d43ccba6305cf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "CodeQL security scanning CI workflow (lines 1-123): validates triggers (PR to main, merge_group, weekly cron, workflow_dispatch), scoped permissions (contents: read, security-events: write), concurrency group, scope filtering via ci-scopes.yml, Java/Kotlin monorepo analysis with explicit compilation across all ARES modules using --no-parallel --no-daemon --console=plain, exclusion of generated FTC controller code, Python CodeQL analysis for XRP starter and ares-micro, and check_ci_results.py gate.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".github/workflows/deploy-gateway.yml": {
+      "sha256": "895f4b318a390442923a3cc1c6ed462485a756baa8547b5114a5086c6d9489e9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Protected Cloud Run gateway deployment workflow (lines 1-41): validates manual workflow_dispatch trigger only, strict branch restriction (refs/heads/main), environment protection (gateway-production), concurrency lock (cancel-in-progress: false), OIDC authentication (id-token: write, Workload Identity Federation), Cloud Build deployment with explicit COMMIT_SHA substitution, and post-deployment /healthz verification with retries.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".github/workflows/promote-release-candidate.yml": {
+      "sha256": "6d69c66c86b4579d54e9e15a64d892a7331a5e850485e82810d8f0f74316c1ba",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Release candidate promotion workflow (lines 1-332): validates manual workflow_dispatch inputs (candidate_run_id, publish flag, windows_installer_trust mode), concurrency locking, protected main branch restriction, GitHub CLI API provenance verification (successful run, matching repository, trusted workflow path), GitHub build provenance attestation verification (gh attestation verify), exact Git tree and version manifest matching, Authenticode signing with SHA-1 thumbprint validation, and immutable publishing steps.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    ".github/workflows/verify-autos.yml": {
+      "sha256": "92553669201578c818aacba7438cb2368e3c92487a3d31178ab52ae9dc36930d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Autonomous contracts verification workflow (lines 1-47): validates triggers (PR to main, merge_group, workflow_dispatch), read-only permissions (contents: read), dynamic change scope filtering via ci-scopes.yml, execution on windows-latest runner with Java 17 Temurin, 45-minute timeout, powershell invocation of verify-autos.ps1, and consolidated status reporting via check_ci_results.py.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "build-logic/ares-versioning.gradle": {
+      "sha256": "0b422347e65596f349ff85a0496199ecfda80b64f1a037f1ef2a5e3cf0167062",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Central Gradle versioning logic (lines 1-82): validates canonical version derivation from release/ares-versions.properties across both root and child directories, registers verifyAresReleaseManifest verification task ensuring candidate version overrides retain pinned base version (${pinned}-*) and mandate explicit -ParesRepository for non-producer builds, and hooks all check/test/build/assemble tasks to enforce manifest validation.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "build.ps1": {
+      "sha256": "f93a9da960ddad221f022104cf627c6a8d801fa89caecddb125fe52da21b76da",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Monorepo root orchestration build script (lines 1-96): validates strict $ErrorActionPreference = 'Stop' (line 9), task parameter validation (Test, ReleaseValidation, Studio), canonical version extraction from release/ares-versions.properties, fail-fast Gradle execution with LASTEXITCODE inspection in try/finally directory context, Android SDK path auto-detection, XRP starter code generation and verification, and sequential build matrix execution across all modules.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-XRP-Starter/device/xrp-runtime-manifest.json": {
+      "sha256": "7f08c44bdc523ee54aaa862fb2486bd406c32eab0eef60d555888065012c0115",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated schemaVersion 2 JSON runtime manifest for XRP hardware platform. Confirmed cryptographic SHA-256 and byte size pinning for official Open-STEM XRP firmware v2.0.5 (RP2350 commit df1cf9d0c2ab7e0e8fa68c896fba120acdf1fa69, size 1725952 bytes, sha256 0a36d7e2bc...; RP2040 beta commit df1cf9d0c2ab7e0e8fa68c896fba120acdf1fa69, size 1736704 bytes, sha256 78069020bd...), MicroPython 1.28.0, and XRPLib v2026.08.2 (size 168719 bytes, sha256 1c6d51d61c...). Verified hardware channel mappings (motor channels 1-4, RP2350 servo channels 1-4, RP2040 beta servo channels 1-2), BOOTSEL volume identifiers (RP2350, RPI-RP2), and machine exclusion guards preventing unauthorized firmware execution.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-XRP-Starter/docs/PHYSICAL_READINESS.md": {
+      "sha256": "4d47465dba7910d75819a7cc4e65c05a15d7911a685275f1a0ed185608b7d80b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated physical hardware readiness runbook and verification gate. Confirmed dual-phase evidence lifecycle: pre-robot checks (immutable firmware/library hash pinning, port allocation boundaries, desktop simulation fault neutralization on brownout/timeout/sensor disconnect, LittleFS dual-slot A/B marker recovery) and mandatory physical checklist (wheels-lifted verification, motor polarity, sensor/OTOS calibration, actuator safe states, control heartbeat deadman disconnect, battery brownout thresholds, and deployment rollback).",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/BIOBUZZ_READINESS_EVIDENCE.json": {
+      "sha256": "74243990116b31353b59f5b1c6d6027ce18dfe25fd6db61f0a50e468de2f84d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated JSON audit evidence manifest for FTC BioBuzz 2026-2027 season simulator and dashboard readiness. Verified base commit (c52d4301), candidate library version (19.0.1-rc.6d49e143e3a9), library tree (6d49e143e3a919569c5b3d933b8a8200adeb9a36), source patch SHA-256, and bundled template archive SHA-256 (a46f29f90792fe...). Confirmed cryptographic digests and byte lengths for 40+ tracked source files and 50+ local execution artifacts, test logs, NT4 captures, and timing probes.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/BIOBUZZ_READINESS_REPORT.md": {
+      "sha256": "259bc25d59528724eb531931f5eeaa5a7fad08efe196e38fbaec46e7c519c31f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated audit report for BioBuzz desktop readiness. Verified resolution of kV feedforward normalization (1.0 vs 12.0) to prevent motor duty saturation, telemetry subscriber quarantine and epoch recovery on disconnect/replay, export boundary policy enforcement, simulator loop timing analysis on Windows (20 ms physics step vs host timer quantization), and zero-allocation/safe-neutral state maintenance on simulator stop/restart.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/DASHBOARD_FULLSCREEN_CHECKPOINT.md": {
+      "sha256": "a902e12c00433c2175eadbc98be2d3859ccbf37ec52d83408170c55017d4b6a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated checkpoint audit for Compose UI fullscreen expansion on Field 2D and Live Telemetry dashboard cards. Verified presentation-state isolation without persistent layout alterations, persistence of live NT4 subscriptions, channel selections, signal trees, and 60-second chart histories across expand/restore cycles, and guaranteed accessibility of the global Stop safety control during fullscreen mode.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/SIMULATOR_PACING_CHECKPOINT.md": {
+      "sha256": "f907c2e144ae6898731b778085d59280979e8a038d860fb41b9020a987d2e0fb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated simulator pacing and runtime cleanup audit report. Verified SimFramePacer absolute deadline scheduling eliminating cumulative drift and burst catch-up across coarse timer boundaries, separation of RobotClock.hostNanoTime() from monotonic robot control clock, owned process tree tracking, and deterministic cleanup of ARES_SIM_RUNTIME_ROOT temporary runtime directories without symlink traversal. Confirmed 19.998 ms mean wall period at 50 Hz and zero active loop budget violations.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/SIMULATOR_PACING_EVIDENCE.json": {
+      "sha256": "7f8e2127222cf46658eff0b90814a68a7d1f88807cd45b1a56e07033388adbfb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated machine-readable evidence manifest for simulator pacing checkpoint. Verified test execution results across ARESLib (3,046 passed), Studio (2,690 passed, 6 opt-in skips), FTC (190 passed), FRC (306 passed), and starters. Confirmed candidate 19.0.5-rc.9b29daf45957, library tree 9b29daf45957..., and SHA-256 digests for timing CSV logs, process tables, NT4 captures, and native window verification logs.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/xrp-deployment-audit.md": {
+      "sha256": "a00b14786561e7c0b2fa46cf86e9322418446f5246cc15d7cf53110b1c94f936",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Pass 6 audit record for XRP deployment tooling and bootloader recovery. Verified atomic A/B slot staging and fallback (/ares_active_slot.txt and .prev), preflight API callability verification for motors/servos/IMU, .pyc/__pycache__ payload exclusion, bounded streaming payload download (length + 1 byte limit), and interruption injection resilience across all modeled deployment mutation points.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/xrp-lifecycle-audit.md": {
+      "sha256": "dcd7d690415d8b1df1333f5201355db4e27fb728839f8e64afa444363a2ed5c9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Pass 5 audit record for XRP lifecycle, MicroPython timing, and hardware adapters. Verified wrap-aware ticks_us() and ticks_diff() scheduling for 20 ms loop execution, delta overrun forwarding to robot.step, NaN/Inf floating point neutralization across motor/drive/PWM/light adapters, bounded AP polling retries, and shutdown/exception safety cleanup in finally blocks.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "scripts/publish-immutable-maven-repository.ps1": {
+      "sha256": "da7e5ab0cd2895baaffecebdd91590c82b2a4233cd3e502257cc76b707826a0b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated PowerShell script for atomic, immutable Maven repository publishing. Verified strict preconditions (valid staged directory, .git verification, non-empty files), isolated clone in system temp, branch checkout/orphan creation with directory containment validation, per-file SHA-256 conflict detection throwing on any modified file (preserving immutable artifact invariant while allowing mutable maven-metadata), git commit with bot credentials, and robust finally cleanup of temporary worktrees.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "scripts/release_candidate.py": {
+      "sha256": "f8c17bdd982c6ced72d090cbd20593503e93e8c1bc5725f2600ee4c19b83a028",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Python release candidate sealing and verification utility. Verified strict regex validation on commit (40 hex), tree (40 hex), versions (MAJOR.MINOR.PATCH), and file digests (64 hex). Confirmed seal() hashes all files excluding manifest, verify() enforces bijective file matching (rejecting extra, missing, or changed files) and path traversal protection, extract() validates tar members against path escape and non-file entries using data filter, and verify_provenance() binds GitHub CLI attestation with --deny-self-hosted-runners and cert-identity verification.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "scripts/render_biobuzz_field.py": {
+      "sha256": "bafebad227ba75659f468d7d7b801913044adc05d9b4d115cacd418fb046f35a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated BioBuzz field extraction and 2D projection utility. Verified FreeCAD STEP tessellation, dynamic game piece exclusion (pollen, nectar), boundary clipping, outward normal filtering ((vb - va).cross(vc - va).y > 0), canonical color mapping (tile, tape, flower), and Pillow rasterization onto 1440x1440 RGB canvas with field-coordinate transformation ((0.5 - y/3.6576)*size, (0.5 - x/3.6576)*size) and 6x6 tile grid overlay.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "scripts/tests/test_release_candidate.py": {
+      "sha256": "f83de81b2ced83e0612e41c5117fe9b1500baee2ff3557d4ed1b23fb23cf7446",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated comprehensive unit test suite (11 test cases) for release_candidate.py. Confirmed test coverage across candidate sealing, verification, file tampering detection, extra file rejection, provenance verification failure on commit/tree mismatch or untrusted workflow caller, GitHub attestation CLI argument checks (--cert-identity, --deny-self-hosted-runners), and tar extraction path traversal rejection.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "setup.ps1": {
+      "sha256": "b82715a4a96c86f132d9e550bdbce000c6293bfe49bfaf78d172a16761a47cc5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated PowerShell monorepo bootstrapping script. Verified non-destructive idempotency (validates presence of 9 core subdirectories and manifest files without overwriting existing files), halts with descriptive error if components are missing, and chains execution to scripts/verify-imported-histories.ps1 and scripts/verify-monorepo-policy.ps1 with strict exit code propagation.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "setup.sh": {
+      "sha256": "12755a0baf40d51bb599c78154b9fa75e9de1e491d029c07449c5325e2e4ec52",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Bash monorepo bootstrapping script. Verified strict error handling (set -euo pipefail), idempotent directory/manifest existence checks for 9 required modules, chained execution of scripts/verify-imported-histories.sh, and static analysis enforcement forbidding ambient mavenLocal() repository declarations across all project build.gradle and build.gradle.kts files.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "verify-autos.ps1": {
+      "sha256": "66b39e69c179551d33ca9c01842b41cc0bccb893fa40b4ca1f1e31a99c990874",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated PowerShell autonomous routine, controls, and code generation verification script. Verified short commit derivation, immutable candidate version construction, execution of Core/FTC/FRC routine and codegen test suites, publishing to isolated build/release-repository, passing candidate version and repository URI to consumers (ARES-Analytics, ARES-FTC, ARES-FRC) with --no-parallel and --no-daemon flags, and strict error checking ($LASTEXITCODE).",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "verify-autos.sh": {
+      "sha256": "18e26398ebefbf467ce05b6fbafe8511e20c1b9b73d14bc4faf3a62f3a29ba40",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Bash autonomous routine and codegen verification script. Verified set -euo pipefail error handling, dynamic candidate version generation from ares-versions.properties and Git HEAD, isolated publishReleaseValidation execution, parameterization of consumers with immutable candidate version and file repository URI, and execution with --no-parallel and --no-daemon flags ensuring reproducible test execution.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass282-pending-elevation-audit.md": {
+      "sha256": "045ae6080ceb3c7f09313ca595eed22264f3e0c62f176117537cf9ae527e44bb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 282: Multi-agent pending file batched audit covering 53 files across root architecture and maintainability documents, CI workflows, agent skills, compose desktop tester scripts, build logic, and release candidate tools.",
+      "evidence": [
+        "docs/audits/pass282-pending-elevation-audit.md"
       ]
     }
   }
