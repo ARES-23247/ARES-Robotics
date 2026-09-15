@@ -7,6 +7,8 @@
 /.pnpm-store/
 /.release-validation/
 /.codex-validation/
+/build/
+**/.kotlin/
 
 # OS / editor cruft
 .DS_Store

@@ -28,7 +28,8 @@ class AresDriveControllerTest {
             Mockito.`when`(gamepad.rightStickX.value).thenReturn(-1f)
             AresDriveController(base).driveWithGamepad(gamepad, useHeadingLock = false)
             if (frame == FtcTeleopDriveFrame.FIELD_RELATIVE)
-                Mockito.verify(base.mecanumDrive).driveFieldRelativeNormalized(-0.4, 0.4, 0.4, false)
+                // Blue forward/right point toward field -Y/-X after the first EMA sample.
+                Mockito.verify(base.mecanumDrive).driveFieldRelativeNormalized(-0.4, -0.4, 0.4, false)
             else Mockito.verify(base.mecanumDrive).driveRobotRelativeNormalized(0.4, -0.4, 0.4)
             Mockito.verify(store, Mockito.times(1)).state
         }

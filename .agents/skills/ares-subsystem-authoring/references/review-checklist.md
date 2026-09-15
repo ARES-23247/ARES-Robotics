@@ -9,6 +9,9 @@
 
 ## Runtime safety
 
+Apply these checks to actuator-capable subsystems, including safe startup, required calibration,
+soft limits, current validity, and zero-allocation periodic behavior where applicable.
+
 - Inputs are cached once per loop with validity/freshness.
 - Nonzero output requires configuration health and required homing.
 - Declared safe output is honored for every actuator type.

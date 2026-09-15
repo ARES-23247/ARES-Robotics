@@ -8,9 +8,10 @@ Open the monorepo root as the workspace so its instructions and skills are disco
 
 1. Inspect the branch and dirty state. Preserve other people's changes and running processes.
    Use an isolated feature branch/worktree when the checkout contains unrelated work.
-2. Read the applicable sections of [the workspace engineering guide](docs/agents/WORKSPACE_GUIDE.md)
-   before editing. It preserves the complete product map, telemetry contract, desktop launch
-   requirements, simulator controls, and release workflow. Paths in that guide are repo-relative.
+2. Use [the workspace engineering guide](docs/agents/WORKSPACE_GUIDE.md) for the boundary being
+   changed: product ownership (sections 1-3), telemetry/coordinates (4-5), product conventions (6),
+   desktop or simulator behavior (7/7A), and dependency/release work (2). Read only applicable
+   sections; a local documentation or wording edit needs no runtime or release review.
 3. Read nested `AGENTS.md` or `GEMINI.md` guidance for the product being changed. In particular,
    [ARESLib conventions](ARESLib-Kotlin/GEMINI.md) apply to library/coordinate work, and each
    FTC/FRC starter has its own `AGENTS.md`. These are engineering guidance for every tool,

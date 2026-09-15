@@ -24,7 +24,7 @@ published library have different toolchains and release boundaries.
 | **ARES-FRC-Starter/** | Canonical standalone FRC starter source exported into deterministic release archives | Same FRC toolchain | project root |
 | **ARES-XRP-Starter/** | Canonical standalone XRP source with deterministic `.ares`→MicroPython generation, simulator, and deploy wrapper | Python 3 host tooling + MicroPython/XRPLib target | `.ares/`, `tools/ares_project.py`, `ares_micro/`, `simulator/` |
 
-## 2. Dependency Graph (read this before changing anything)
+## 2. Dependency Graph and Release Validation
 
 ```
                          ARESLib-Kotlin  (foundation, pure Kotlin + math/control/pathing/state)
