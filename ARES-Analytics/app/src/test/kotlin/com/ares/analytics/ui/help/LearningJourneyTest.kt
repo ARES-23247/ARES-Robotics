@@ -1,6 +1,27 @@
 package com.ares.analytics.ui.help
 
-import com.ares.analytics.service.LearningProgress
+import com.ares.analytics.domain.learning.LearningCatalog
+import com.ares.analytics.domain.learning.AcademyRuntimeSnapshot
+import com.ares.analytics.domain.learning.AcademyGraduationSnapshot
+import com.ares.analytics.domain.learning.AcademyRunAnalysisSnapshot
+import com.ares.analytics.domain.learning.AcademySuperstructureSnapshot
+import com.ares.analytics.domain.learning.AcademyAutonomousSnapshot
+import com.ares.analytics.domain.learning.AcademyTuningSnapshot
+import com.ares.analytics.domain.learning.AcademyControlsSnapshot
+import com.ares.analytics.domain.learning.AcademySubsystemSnapshot
+import com.ares.analytics.domain.learning.LearningLessonStatus
+import com.ares.analytics.domain.learning.LearningJourneyEvaluator
+import com.ares.analytics.domain.learning.FirstMissionCheckpointIds
+import com.ares.analytics.domain.learning.SubsystemMissionCheckpointIds
+import com.ares.analytics.domain.learning.ControlsMissionCheckpointIds
+import com.ares.analytics.domain.learning.TuningMissionCheckpointIds
+import com.ares.analytics.domain.learning.SuperstructureMissionCheckpointIds
+import com.ares.analytics.domain.learning.AutonomousMissionCheckpointIds
+import com.ares.analytics.domain.learning.RunImportMissionCheckpointIds
+import com.ares.analytics.domain.learning.RunAnalysisMissionCheckpointIds
+import com.ares.analytics.domain.learning.GraduationMissionCheckpointIds
+
+import com.ares.analytics.domain.learning.LearningProgress
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

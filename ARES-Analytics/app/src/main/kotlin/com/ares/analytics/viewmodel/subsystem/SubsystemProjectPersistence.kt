@@ -19,7 +19,7 @@ import com.areslib.subsystem.SubsystemDocument
  * tests and callers without a long-lived session use the same document repositories directly.
  */
 internal class SubsystemProjectPersistence(
-    private val documents: AresProjectDocuments,
+    private val documents: com.ares.analytics.service.project.ProjectDocumentGateway,
     private val projectSession: ProjectSession?,
 ) {
     fun save(

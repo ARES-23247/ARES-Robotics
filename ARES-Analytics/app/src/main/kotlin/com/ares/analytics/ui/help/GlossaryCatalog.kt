@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.LearningCatalog
+
 /**
  * In-app glossary backed by `docs/learn/GLOSSARY.md`.
  *

@@ -16,6 +16,17 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class ManagedToolchainServiceTest {
+    @Test fun `XRP readiness uses observed Python evidence without requiring Java`() = runBlocking {
+        for (readiness in listOf(ToolchainReadiness.READY, ToolchainReadiness.MANUAL_SETUP_REQUIRED)) {
+            val component = RobotToolchainComponent("Python", readiness, "Observed host result; board not checked")
+            val service = ManagedToolchainService(xrpHostProbe = { component })
+            val result = service.refresh(League.XRP)
+            assertEquals(listOf(component), result.components)
+            assertEquals(readiness == ToolchainReadiness.READY, result.buildReady)
+        }
+        assertTrue(!RobotToolchainSnapshot().buildReady)
+    }
+
     @Test
     fun `FTC build readiness does not require an unused local NDK`() {
         val sdk = Files.createTempDirectory("ares-ftc-sdk-readiness").toFile()

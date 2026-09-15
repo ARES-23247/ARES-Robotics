@@ -1,4 +1,4 @@
-package com.ares.analytics.viewmodel.controls
+package com.ares.analytics.domain.project
 
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityContext

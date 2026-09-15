@@ -1,7 +1,7 @@
-package com.ares.analytics.service
+package com.ares.analytics.domain.learning
 
-import com.ares.analytics.ui.help.LearningProgressView
-import com.ares.analytics.ui.help.LearningRubricRating
+import com.ares.analytics.domain.learning.LearningProgressView
+import com.ares.analytics.domain.learning.LearningRubricRating
 import kotlinx.serialization.Serializable
 import java.io.File
 
@@ -54,3 +54,7 @@ data class AcademyProgressSnapshot(
     val learnerId: String,
     val pathId: String,
 )
+
+const val CURRENT_LEARNING_CONTENT_VERSION = 5
+
+const val ACADEMY_CLASSROOM_SCHEMA_VERSION = 1

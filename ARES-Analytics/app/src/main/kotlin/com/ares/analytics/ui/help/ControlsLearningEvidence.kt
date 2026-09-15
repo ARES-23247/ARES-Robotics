@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AcademyControlsSnapshot
+
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.viewmodel.controls.ControlsEditorState
 import com.ares.analytics.viewmodel.controls.ControlsProblemSeverity

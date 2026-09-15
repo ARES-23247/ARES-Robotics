@@ -23,7 +23,7 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.shared.PathPoint
 import com.ares.analytics.ui.theme.*
-import com.ares.analytics.viewmodel.field.FieldDocumentMapper
+import com.ares.analytics.domain.project.FieldDocumentMapper
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)

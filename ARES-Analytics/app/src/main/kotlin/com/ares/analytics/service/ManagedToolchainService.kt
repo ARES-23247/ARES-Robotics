@@ -36,7 +36,7 @@ data class RobotToolchainSnapshot(
     val league: League = League.FTC,
     val components: List<RobotToolchainComponent> = emptyList(),
 ) {
-    val buildReady: Boolean get() = components.all { it.readiness == ToolchainReadiness.READY }
+    val buildReady: Boolean get() = components.isNotEmpty() && components.all { it.readiness == ToolchainReadiness.READY }
 }
 sealed class ManagedToolchainInstallState {
     object Idle : ManagedToolchainInstallState()
@@ -65,6 +65,7 @@ class ManagedToolchainService internal constructor(
     private val packageDownloader: (JdkPackage, File, (Long, Long?) -> Unit) -> Unit = ::downloadJdkPackage,
     private val jdkVerifier: (File) -> Unit = ::verifyInstalledJdk,
     private val managedInstallationSupported: () -> Boolean = ManagedToolchainPaths::managedJdkInstallationSupported,
+    private val xrpHostProbe: () -> RobotToolchainComponent = ::probeXrpHostTools,
 ) {
     private val installMutex = Mutex()
     private val _installState = MutableStateFlow<ManagedToolchainInstallState>(ManagedToolchainInstallState.Idle)
@@ -73,6 +74,9 @@ class ManagedToolchainService internal constructor(
     val snapshot: StateFlow<RobotToolchainSnapshot> = _snapshot.asStateFlow()
 
     suspend fun refresh(league: League): RobotToolchainSnapshot = withContext(Dispatchers.IO) {
+        if (league == League.XRP) {
+            return@withContext RobotToolchainSnapshot(league, listOf(xrpHostProbe())).also { _snapshot.value = it }
+        }
         val jdk = ManagedToolchainPaths.resolveJavaHome()
         val javaComponent = if (jdk != null) {
             RobotToolchainComponent(
@@ -142,14 +146,7 @@ class ManagedToolchainService internal constructor(
                     )
                 }
             }
-            League.XRP -> {
-                RobotToolchainComponent(
-                    name = "MicroPython / XRP Tools",
-                    readiness = ToolchainReadiness.READY,
-                    detail = "MicroPython runtime and serial / Wi-Fi tethering are available.",
-                    location = "system",
-                )
-            }
+            League.XRP -> error("XRP uses the Python host check above")
         }
         RobotToolchainSnapshot(league, listOf(javaComponent, platformComponent)).also { _snapshot.value = it }
     }

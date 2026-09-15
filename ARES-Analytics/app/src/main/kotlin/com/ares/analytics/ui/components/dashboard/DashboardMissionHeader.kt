@@ -40,7 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBackground
 import com.ares.analytics.ui.theme.AresBorder

@@ -49,7 +49,9 @@ fun JavaVerificationStep(
     installState: ManagedToolchainInstallState,
     onVerifyClick: () -> Unit,
     onInstallClick: () -> Unit,
+    league: com.ares.analytics.shared.models.League = com.ares.analytics.shared.models.League.FTC,
 ) {
+    val xrp = league == com.ares.analytics.shared.models.League.XRP
     val installWorking = installState is ManagedToolchainInstallState.Working
     val icon = when (isValid) {
         true -> Icons.Default.CheckCircle
@@ -78,9 +80,9 @@ fun JavaVerificationStep(
     ) {
         Icon(icon, contentDescription = iconDescription, tint = tint)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("Robot build tools (optional)", color = AresTextPrimary, fontWeight = FontWeight.Bold)
+            Text(if (xrp) "Python host tools (optional)" else "Robot build tools (optional)", color = AresTextPrimary, fontWeight = FontWeight.Bold)
             Text(
-                if (isVerifying) "Checking the Java version..." else message,
+                if (isVerifying) "Checking ${if (xrp) "Python" else "Java"}..." else message,
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isValid == false) AresAmber else AresTextSecondary,
             )
@@ -108,7 +110,7 @@ fun JavaVerificationStep(
             }
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (isValid != true) {
+            if (!xrp && isValid != true) {
                 Button(
                     onClick = onInstallClick,
                     enabled = !installWorking && !isVerifying,

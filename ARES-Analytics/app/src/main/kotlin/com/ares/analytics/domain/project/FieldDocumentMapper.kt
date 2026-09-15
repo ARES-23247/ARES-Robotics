@@ -1,4 +1,4 @@
-package com.ares.analytics.viewmodel.field
+package com.ares.analytics.domain.project
 
 import com.ares.analytics.shared.AprilTagPlacement
 import com.ares.analytics.shared.FTCCoordinateSystem

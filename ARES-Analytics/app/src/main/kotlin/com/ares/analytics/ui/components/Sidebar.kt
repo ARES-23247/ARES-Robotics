@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.components
 
+import com.ares.analytics.domain.navigation.NavigationTarget
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring

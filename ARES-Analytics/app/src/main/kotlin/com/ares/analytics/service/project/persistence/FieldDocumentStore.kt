@@ -9,7 +9,7 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.util.Sha256
-import com.ares.analytics.viewmodel.field.FieldDocumentMapper
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import java.io.File

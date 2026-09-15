@@ -33,7 +33,7 @@ import com.ares.analytics.util.ProjectLayout
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.areslib.math.coordinate.CoordinateTransformers
-import com.ares.analytics.viewmodel.field.FieldDocumentMapper
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.ares.analytics.viewmodel.field.FieldImageLoader
 import com.areslib.state.RobotFieldDocument
 import kotlin.math.cos

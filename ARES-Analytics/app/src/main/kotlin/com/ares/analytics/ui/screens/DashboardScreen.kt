@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.screens
 
+import com.ares.analytics.ui.components.icon
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,7 +53,7 @@ import com.ares.analytics.service.project.persistence.ProjectMetadataRepository
  * @see FieldViewerViewModel
  * @see MecanumVisualizer
  */
-import com.ares.analytics.ui.components.NavigationTarget
+import com.ares.analytics.domain.navigation.NavigationTarget
 import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
 

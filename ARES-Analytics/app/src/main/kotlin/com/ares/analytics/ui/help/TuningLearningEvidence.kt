@@ -1,5 +1,7 @@
 package com.ares.analytics.ui.help
 
+import com.ares.analytics.domain.learning.AcademyTuningSnapshot
+
 import com.ares.analytics.viewmodel.TuningState
 import com.areslib.tuning.TuningParameterDeclaration
 

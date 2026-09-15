@@ -55,7 +55,7 @@ Column(
     )
 
     val docDir = File(userHome, "Documents")
-    if (docDir.exists()) {
+    if (docDir in quickAccess) {
         SidebarItem(
             icon = Icons.Default.Folder,
             label = "Documents",
@@ -65,7 +65,7 @@ Column(
     }
 
     val downloadDir = File(userHome, "Downloads")
-    if (downloadDir.exists()) {
+    if (downloadDir in quickAccess) {
         SidebarItem(
             icon = Icons.Default.Download,
             label = "Downloads",
@@ -75,7 +75,7 @@ Column(
     }
 
     val desktopDir = File(userHome, "Desktop")
-    if (desktopDir.exists()) {
+    if (desktopDir in quickAccess) {
         SidebarItem(
             icon = Icons.Default.Computer,
             label = "Desktop",
@@ -95,7 +95,7 @@ Column(
     )
 
     val aresDocDir = File(docDir, "ARES")
-    if (aresDocDir.exists()) {
+    if (aresDocDir in quickAccess) {
         SidebarItem(
             icon = Icons.Default.PrecisionManufacturing,
             label = "ARES Projects",
@@ -106,7 +106,7 @@ Column(
     }
 
     val robotsDir = File(userHome, "Robots")
-    if (robotsDir.exists()) {
+    if (robotsDir in quickAccess) {
         SidebarItem(
             icon = Icons.Default.PrecisionManufacturing,
             label = "Robots",
@@ -125,7 +125,6 @@ Column(
         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
     )
 
-    val roots = remember { File.listRoots().orEmpty() }
     roots.forEach { root ->
         val driveLabel = root.absolutePath.ifEmpty { "Drive" }
         SidebarItem(
