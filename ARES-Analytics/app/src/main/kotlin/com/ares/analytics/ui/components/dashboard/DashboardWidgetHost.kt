@@ -1,7 +1,12 @@
 package com.ares.analytics.ui.components.dashboard
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.ares.analytics.service.DashboardLayoutConfig
 import com.ares.analytics.service.MatchInfo
@@ -37,6 +42,16 @@ fun DashboardWidgetHost(
     modifier: Modifier = Modifier,
     controllerHealth: ControllerHealthObservation? = null,
 ) {
+    // Presentation state only: expanding a card never rewrites the user's saved grid.
+    var fullscreenWidgetId by remember(workspace.id, workspace.projectPath, dashboardState.currentRoleProfile) {
+        mutableStateOf<String?>(null)
+    }
+    val fullscreenWidget = fullscreenWidgetId?.takeIf { id ->
+        !dashboardState.isLayoutEditing && layout.widgets.any { it.id == id }
+    }
+    LaunchedEffect(fullscreenWidget) {
+        if (fullscreenWidget == null) fullscreenWidgetId = null
+    }
     val renderContext = DashboardWidgetRenderContext(
         services = services,
         workspace = workspace,
@@ -56,6 +71,10 @@ fun DashboardWidgetHost(
         onSelectCompareSession = onSelectCompareSession,
         onOpenKeybindings = onOpenKeybindings,
         onUpdateProperties = onUpdateProperties,
+        fullscreenWidgetId = fullscreenWidget,
+        onToggleWidgetFullscreen = { id ->
+            fullscreenWidgetId = if (fullscreenWidgetId == id) null else id
+        },
     )
     val builders: Map<String, @Composable (WidgetConfig, Modifier) -> Unit> =
         DashboardWidgetRegistry.definitions.associate { definition ->
@@ -72,6 +91,7 @@ fun DashboardWidgetHost(
             onRemoveWidget = onRemoveWidget,
             widgetBuilders = builders,
             modifier = modifier,
+            fullscreenWidgetId = fullscreenWidget,
         )
     }
 }

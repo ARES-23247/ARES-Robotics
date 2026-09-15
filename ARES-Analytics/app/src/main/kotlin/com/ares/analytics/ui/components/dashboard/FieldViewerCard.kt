@@ -68,7 +68,9 @@ fun FieldViewerCard(
     robotDimensions: RobotDimensions = RobotDimensions.defaultFor(league),
     properties: Map<String, String> = emptyMap(),
     onPropertiesChanged: (Map<String, String>) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFullscreen: Boolean = false,
+    onToggleFullscreen: (() -> Unit)? = null,
 ) {
     val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
     val scope = rememberCoroutineScope()
@@ -170,6 +172,7 @@ fun FieldViewerCard(
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    onToggleFullscreen?.let { WidgetFullscreenButton(isFullscreen, it) }
                     val currentRotation = properties["rotation"]?.toFloatOrNull() ?: 0f
                     IconButton(
                         onClick = {

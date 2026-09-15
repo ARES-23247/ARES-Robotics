@@ -79,7 +79,9 @@ fun TelemetryChartPanel(
     currentFrame: ReplayFrame? = null,
     properties: Map<String, String>,
     onPropertiesChanged: (Map<String, String>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFullscreen: Boolean = false,
+    onToggleFullscreen: (() -> Unit)? = null,
 ) {
     var parentWindowOffset by remember { mutableStateOf(Offset.Zero) }
     var draggedKey by remember { mutableStateOf<String?>(null) }
@@ -261,7 +263,7 @@ fun TelemetryChartPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
                     if (currentFrame == null) "Live Telemetry Viewer" else "Replay Telemetry Viewer",
                     style = MaterialTheme.typography.titleMedium,
@@ -284,6 +286,7 @@ fun TelemetryChartPanel(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                onToggleFullscreen?.let { WidgetFullscreenButton(isFullscreen, it) }
                 timeWindows.forEach { sec ->
                     FilterChip(
                         selected = selectedWindowSec == sec,
