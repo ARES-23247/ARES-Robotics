@@ -487,4 +487,3 @@ internal fun CompactStepPicker(
         }
     }
 }
-
