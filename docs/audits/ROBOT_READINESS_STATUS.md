@@ -7,7 +7,9 @@ The saved bounded goal is complete; no further audit will start automatically.
 The interrupted library check was resumed successfully: 3,036 tests, 13 APIs and the source-size
 gate pass. Candidate `19.0.1-rc.6d49e143e3a9` is published only to the local validation repository;
 716 FTC/FRC consumer tests, generated verification and FTC APK assembly pass. Studio test sources
-compile, but ordinary tests remain blocked by the existing distribution-version alignment gate.
+compiled here, while ordinary tests were blocked by the distribution-version alignment gate.
+The subsequent authorized [alignment follow-up](RELEASE_ALIGNMENT_REPORT.md) records the resolved
+local gate, official-template integration and final Studio validation.
 XRP verification passes 121 tests, reusable MicroPython 130, and CI routing 28.
 
 Library source remains `1cef6f04`, tree `6d49e143e3a919569c5b3d933b8a8200adeb9a36`.

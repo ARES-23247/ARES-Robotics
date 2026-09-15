@@ -5,8 +5,9 @@
 performance, and safety exit criteria. The [paused checkpoint](RESUME.md),
 [pass 277](generated-runtime-lifecycle-math-audit.md), and ledger preserve the useful prior work.
 The selected local checkpoint is complete; see the [readiness report](ROBOT_READINESS_REPORT.md).
-Hardware validation and existing release gates remain explicit limits. Do not resume an automatic
-audit of every remaining file.
+The later authorized [Studio/template alignment follow-up](RELEASE_ALIGNMENT_REPORT.md) records
+resolution of the local release gates and subsequent validation. Hardware and protected release
+validation remain explicit limits. Do not resume an automatic audit of every remaining file.
 
 The former audit goal was to account for every tracked file, review its owned behavior, and
 complete appropriate validation. The inventory started at 2,349 tracked files on

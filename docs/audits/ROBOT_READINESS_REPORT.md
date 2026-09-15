@@ -2,7 +2,8 @@
 
 **Selected local/desktop validation is complete.** The realistic scenarios below pass, and no known
 high-impact production defect remains within that selected scope. This is not physical robot or
-release approval. Target-controller timing/IO and existing Studio/release gates remain unverified.
+release approval. Target-controller timing/IO remains unverified. Studio/release alignment was a
+separate blocker at this checkpoint; see the subsequent [local alignment follow-up](RELEASE_ALIGNMENT_REPORT.md).
 The open-ended file audit is superseded; no further broad pass will start automatically.
 
 Source: `1cef6f04`, followed by XRP fixture correction `ad11a35f`, on local branch
@@ -47,7 +48,7 @@ at that batch's beginning; earlier origin across all previous audits was not rec
 | High; pre-existing at pass 277 | Cancellation/cleanup exceptions prevented other owners from stopping or releasing. Aggregate cleanup and idempotent lifecycle closure preserve all attempts and failure evidence. |
 | High; pre-existing at pass 277 | Authored guard ages were ignored, target hash collisions lost updates, and multiple fields overwrote each other. Explicit freshness limits, exact target comparison and projected target initialization preserve commands. |
 | Performance; measured in pass 277 | Stable controls metadata reads allocated 1,280,000 bytes over 10,000 reads. Caching reduced the same fixture to zero bytes. This is focused evidence, not whole-loop allocation. |
-| Audit-introduced; fixed in pass 277 | The health-binding API change left Studio's preview adapter incompatible. Signature/age semantics were fixed and compile checks pass; preview execution remains blocked by release alignment. |
+| Audit-introduced; fixed in pass 277 | The health-binding API change left Studio's preview adapter incompatible. Signature/age semantics were fixed and compile checks passed; preview execution was blocked here by release alignment. See the subsequent Studio follow-up. |
 | Test-fixture issue; fixed here | The XRP benchmark's original circle reached the field edge. It now starts at (0, −0.25 m) and checks an independent circle. Older timing is retained as a different, boundary-constrained workload. |
 | Lower priority; deferred | Sequence exhaustion, timestamp/sentinel extremes, additional schema/LUT combinations and cosmetic deprecations. No new realistic defect was established behind these leads. Already completed safe numerical fixes remain. |
 
@@ -139,7 +140,7 @@ It remains in the pause record as additional desktop evidence, not an optimizati
 | FRC + starter | 306 + 206 tests and generated-project verification pass. |
 | XRP + reusable MicroPython | 121 + 130 host tests pass. |
 | Changed-part CI | 28 routing/result tests pass; shared runtime/schema/generator and readiness resources select candidate and consumers. |
-| Studio | All three test-source compilations pass; normal tests stop at `verifyReleaseVersionAlignment`. |
+| Studio | At this checkpoint, all three test-source compilations passed and normal tests stopped at `verifyReleaseVersionAlignment`. Subsequent results are recorded in the alignment follow-up. |
 
 Gradle reused valid unchanged results. Prior test identities were retained; the new candidate's
 410 artifact hashes and both earlier candidates' 820 hashes were verified unchanged. Work remains
@@ -149,10 +150,11 @@ CI retains the regressions in existing candidate/XRP scopes and uploads readines
 Shared library changes trigger relevant FTC/FRC, starter and Studio consumers. Only scope assertions
 and evidence retention were added. Remote CI was not run because work remains local.
 
-The existing release gate expects `ARES_VERSION: 19.0.1` in the distribution workflow. Source policy
-also stops at the missing bundled FTC starter 19.0.0 archive. Guidance and current-document links
-pass. The previously unapproved archive/workflow/template migration remains unchanged. These gates
-must pass before release; compilation is not substituted for Studio execution or release approval.
+At this checkpoint, the release gate expected `ARES_VERSION: 19.0.1` in the distribution workflow,
+and source policy stopped at the missing bundled FTC starter 19.0.0 archive. Guidance and current
+document links passed. The archive/workflow changes were subsequently explicitly approved and
+handled in the [local alignment follow-up](RELEASE_ALIGNMENT_REPORT.md). This historical checkpoint
+does not substitute compilation for Studio execution or release approval.
 
 ## Remaining hardware checkpoint and next action
 
