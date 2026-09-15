@@ -2,6 +2,8 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $root = Split-Path -Parent $PSScriptRoot
 & python (Join-Path $PSScriptRoot 'verify_agent_guidance.py')
 if ($LASTEXITCODE -ne 0) { throw 'Shared agent guidance verification failed.' }

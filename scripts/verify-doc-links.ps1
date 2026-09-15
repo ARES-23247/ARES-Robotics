@@ -2,6 +2,8 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $root = Split-Path -Parent $PSScriptRoot
 $historical = @('ARESLib-Kotlin/audit_report_areslib_kotlin.md', 'CLEAN_SLATE_ARCHITECTURE_COMPLETION.md')
 $historicalPrefixes = @('.planning/', 'ARES-Analytics/docs/cycles/', 'ARES-Analytics/reports/')
