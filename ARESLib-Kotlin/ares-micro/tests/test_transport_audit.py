@@ -44,6 +44,29 @@ class Socket:
         self.closed = True
 
 
+class ListenerBoundaryTest(unittest.TestCase):
+    def test_default_listener_is_reachable_only_on_loopback(self):
+        server = telemetry.XrpTelemetryServer("test", "a" * 64, "differential", port=0)
+        try:
+            self.assertTrue(server.start())
+            address = server.server_socket.getsockname()
+            self.assertEqual(address[0], "127.0.0.1")
+            with telemetry.socket.create_connection(address, timeout=1) as client:
+                server.poll()
+                hello = json.loads(client.recv(4096).decode("utf-8"))
+            self.assertEqual(hello["type"], "hello")
+            self.assertEqual(hello["projectId"], "test")
+        finally:
+            server.close_client()
+            if server.server_socket is not None:
+                server.server_socket.close()
+
+    def test_listener_rejects_implicit_all_interface_addresses(self):
+        for host in (None, "", " ", "0.0.0.0"):
+            with self.subTest(host=host), self.assertRaisesRegex(ValueError, "interface address"):
+                telemetry.XrpTelemetryServer("test", "a" * 64, "differential", host=host)
+
+
 class TransportAuditTest(unittest.TestCase):
     def setUp(self):
         self.now = 1000

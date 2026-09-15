@@ -20,7 +20,8 @@ class XrpRobot:
                  deadman_timeout_ms=200, brownout_threshold_volts=4.3,
                  battery_voltage_supplier=None, track_width=0.155,
                  wheel_base=0.140, wheel_radius=0.030, max_linear_speed=0.85,
-                 heading_supplier=None, runtime_identity=None, pose_constraint=None):
+                 heading_supplier=None, runtime_identity=None, pose_constraint=None,
+                 link_host="127.0.0.1"):
         if (type(brownout_threshold_volts) not in (int, float)
                 or not math.isfinite(brownout_threshold_volts)
                 or not 3.0 <= brownout_threshold_volts <= 6.0):
@@ -54,6 +55,7 @@ class XrpRobot:
             project_id=project_id,
             content_sha256=content_sha256,
             drivetrain_type=drivetrain_type.lower(),
+            host=link_host,
             port=link_port,
             deadman_timeout_ms=deadman_timeout_ms,
             runtime_identity=runtime_identity,

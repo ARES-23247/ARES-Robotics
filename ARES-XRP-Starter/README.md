@@ -59,6 +59,12 @@ ARES-XRP-Starter/
    `ares.bat plan-deploy`; it stages and compiles the same payload but performs no device mutation.
 8. Connect your laptop to the robot's Wi-Fi Access Point and control the robot with ARES Studio.
 
+The desktop simulator accepts control connections only on loopback (`127.0.0.1`). The physical
+controller binds its control link to the IPv4 address of the selected AP or station interface.
+Wi-Fi access remains the control-link trust boundary; use a trusted robot network and configure
+your own `WIFI_PASSWORD` in the user-owned `xrp_secrets.py` before physical deployment. Session
+IDs and deadman leases protect control ordering and freshness, not peer authentication.
+
 The `.ares` documents are canonical for GUI-owned behavior. `ares generate` compiles them directly
 to deterministic MicroPython and generated safety tests under `build/generated/ares`; those files
 are disposable and never edited. This is not Kotlin transpilation and Studio does not attempt to

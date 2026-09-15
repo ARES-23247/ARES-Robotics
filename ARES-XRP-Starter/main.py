@@ -47,12 +47,15 @@ def init_wifi(mode, ssid):
             raise RuntimeError("Timed out joining the configured Wi-Fi network")
     else:
         raise RuntimeError("Unsupported generated Wi-Fi mode: " + str(mode))
-    print("[Wi-Fi]", mode, "active. SSID:", ssid, "IP:", interface.ifconfig()[0])
-    return True
+    address = interface.ifconfig()[0]
+    if not isinstance(address, str) or not address.strip() or address == "0.0.0.0":
+        raise RuntimeError("Configured Wi-Fi interface has no usable IPv4 address")
+    print("[Wi-Fi]", mode, "active. SSID:", ssid, "IP:", address)
+    return address
 
 def main():
     print("=== ARES Robotics - XRP MicroPython Controller ===")
-    init_wifi(PROJECT["wifi_mode"], PROJECT["wifi_ssid"])
+    link_host = init_wifi(PROJECT["wifi_mode"], PROJECT["wifi_ssid"])
 
     try:
         from XRPLib.defaults import board as xrp_board, drivetrain as xrp_drivetrain, imu as xrp_imu
@@ -77,6 +80,7 @@ def main():
         use_otos=PROJECT["use_otos"],
         drivetrain_io=differential_io,
         motors=mecanum_motors,
+        link_host=link_host,
         link_port=PROJECT["link_port"],
         deadman_timeout_ms=PROJECT["deadman_timeout_ms"],
         brownout_threshold_volts=PROJECT["brownout_threshold_volts"],

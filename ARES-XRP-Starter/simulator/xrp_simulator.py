@@ -81,6 +81,7 @@ def create_simulated_robot():
         drivetrain_type=PROJECT["drivetrain_type"],
         use_otos=False,
         motors=motors,
+        link_host="127.0.0.1",
         link_port=PROJECT["link_port"],
         deadman_timeout_ms=PROJECT["deadman_timeout_ms"],
         brownout_threshold_volts=PROJECT["brownout_threshold_volts"],

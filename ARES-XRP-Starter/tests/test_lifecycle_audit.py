@@ -58,7 +58,7 @@ class PhysicalLifecycleAuditTest(unittest.TestCase):
         self.enterContext(mock.patch.dict(sys.modules, {
             "XRPLib": types.ModuleType("XRPLib"), "XRPLib.defaults": defaults,
             "XRPLib.version": types.SimpleNamespace(__version__="2026.08.2")}))
-        self.enterContext(mock.patch.object(self.module, "init_wifi"))
+        self.enterContext(mock.patch.object(self.module, "init_wifi", return_value="192.168.4.1"))
         self.enterContext(mock.patch.object(self.module, "create_subsystems", return_value=[]))
         self.enterContext(mock.patch.object(self.module, "create_autonomous_routines", return_value={}))
         self.robot = mock.Mock()
@@ -85,6 +85,7 @@ class PhysicalLifecycleAuditTest(unittest.TestCase):
                 self.assertEqual(clock.sleeps, [16000])
                 self.assertEqual(clock.wall_reads, 0)
                 self.robot.shutdown.assert_called()
+                self.assertEqual(self.module.XrpRobot.call_args.kwargs["link_host"], "192.168.4.1")
 
     def test_failed_bind_aborts_before_registering_subsystems_and_closes_robot(self):
         self.robot.start_server.return_value = False
@@ -102,6 +103,28 @@ class PhysicalLifecycleAuditTest(unittest.TestCase):
 
 
 class WifiLifecycleAuditTest(unittest.TestCase):
+    def test_selected_interface_address_is_returned_for_ap_and_station(self):
+        module = load("main.py", "wifi_address_audit")
+        for mode, expected_interface, address in (("AP", 1, "192.168.4.1"), ("STATION", 2, "10.0.0.25")):
+            with self.subTest(mode=mode):
+                interface = mock.Mock()
+                interface.active.return_value = True
+                interface.isconnected.return_value = True
+                interface.ifconfig.return_value = (address, "255.255.255.0", "", "")
+                network = types.SimpleNamespace(AP_IF=1, STA_IF=2, WLAN=mock.Mock(return_value=interface))
+                with mock.patch.dict(sys.modules, {"network": network}), mock.patch.object(module, "_wifi_password", return_value="test-password"):
+                    self.assertEqual(module.init_wifi(mode, "test"), address)
+                network.WLAN.assert_called_once_with(expected_interface)
+
+    def test_missing_interface_address_fails_before_a_wildcard_bind(self):
+        module = load("main.py", "wifi_missing_address_audit")
+        interface = mock.Mock()
+        interface.active.return_value = True
+        interface.ifconfig.return_value = ("0.0.0.0", "", "", "")
+        network = types.SimpleNamespace(AP_IF=1, STA_IF=2, WLAN=lambda _: interface)
+        with mock.patch.dict(sys.modules, {"network": network}), self.assertRaisesRegex(RuntimeError, "IPv4 address"):
+            module.init_wifi("AP", "test")
+
     def test_ap_startup_is_bounded(self):
         module = load("main.py", "wifi_main_audit")
         interface = mock.Mock()
@@ -127,6 +150,16 @@ class SimulatorLifecycleAuditTest(unittest.TestCase):
         self.robot.start_server.return_value = True
         self.enterContext(mock.patch.object(self.module, "create_simulated_robot", return_value=(self.robot, ())))
         self.enterContext(mock.patch.object(self.module.signal, "signal"))
+
+    def test_simulator_factory_keeps_its_listener_on_loopback(self):
+        module = load("simulator/xrp_simulator.py", "sim_listener_audit")
+        robot, _ = module.create_simulated_robot()
+        try:
+            robot.telemetry.port = 0
+            self.assertTrue(robot.start_server())
+            self.assertEqual(robot.telemetry.server_socket.getsockname()[0], "127.0.0.1")
+        finally:
+            robot.shutdown()
 
     def test_bind_failure_shuts_down_robot(self):
         self.robot.start_server.return_value = False

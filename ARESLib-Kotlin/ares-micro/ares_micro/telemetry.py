@@ -30,7 +30,7 @@ def _ticks_diff(now, then):
 
 class XrpTelemetryServer:
     def __init__(self, project_id, content_sha256, drivetrain_type,
-                 host="0.0.0.0", port=5811, deadman_timeout_ms=200, runtime_identity=None):
+                 host="127.0.0.1", port=5811, deadman_timeout_ms=200, runtime_identity=None):
         if not isinstance(project_id, str) or not project_id:
             raise ValueError("XRP link requires a canonical project ID")
         if (not isinstance(content_sha256, str) or len(content_sha256) != 64
@@ -40,6 +40,8 @@ class XrpTelemetryServer:
             raise ValueError("XRP link requires a supported drivetrain type")
         if type(deadman_timeout_ms) is not int or not 100 <= deadman_timeout_ms <= 1000:
             raise ValueError("XRP deadman timeout must be an integer in 100..1000 ms")
+        if not isinstance(host, str) or not host.strip() or host == "0.0.0.0":
+            raise ValueError("XRP link requires a specific local interface address")
         self.project_id = project_id
         self.content_sha256 = content_sha256
         self.drivetrain_type = drivetrain_type
