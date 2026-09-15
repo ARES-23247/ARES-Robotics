@@ -197,6 +197,7 @@ public class com/qualcomm/hardware/limelightvision/LLResultTypes$FiducialResult 
 	public fun getPose3D ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;
 	public final fun getPoseAmbiguity ()D
 	public fun getRobotPoseTargetSpace ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;
+	public fun getTargetPoseCameraSpace ()Lorg/firstinspires/ftc/robotcore/external/navigation/Pose3D;
 	public fun getTx ()D
 	public fun getTy ()D
 }

@@ -16,7 +16,8 @@ import com.areslib.hardware.LoggableDevice
 data class VisionIOInputs(
     var isConnected: Boolean = false,
     var measurements: List<VisionMeasurement> = emptyList(),
-    var cameraPoses: List<Pose3d> = emptyList()
+    var cameraPoses: List<Pose3d> = emptyList(),
+    var clusterTargets: List<ClusterTargetMeasurement> = emptyList()
 )
 
 /**
@@ -43,6 +44,12 @@ interface VisionIO : LoggableDevice {
      * Replaces [inputs] with the latest cached/device snapshot for this loop.
      */
     fun updateInputs(inputs: VisionIOInputs)
+
+    /** Configures moving-target clusters outside the loop. Cluster cameras disable field-pose
+     * publication entirely, including mixed static/moving frames. Use a separate camera for localization. */
+    fun configureTargetClusters(clusters: List<AprilTagCluster>) {
+        require(clusters.isEmpty()) { "This vision source does not support target clusters" }
+    }
 
     /**
      * Supplies robot orientation and motion hints used by gyro-assisted estimators such as MegaTag2.

@@ -10,7 +10,11 @@ import org.firstinspires.ftc.teamcode.dsl.AresTeleOpBase
 class ARESStarterTeleOp : AresTeleOpBase() {
     override val allowGeneratedDrive = true
     override fun define() = teleOp {
-        setup { check(!FtcBaseRobot.isAndroid) { "The BIOBUZZ example has only been validated in simulation." } }
+        setup {
+            check(!FtcBaseRobot.isAndroid) { "The BIOBUZZ example has only been validated in simulation." }
+            robot.base.limelightIO?.configureTargetClusters(
+                org.firstinspires.ftc.teamcode.vision.BiobuzzTagClusters.clusters)
+        }
         onStart { generatedHeadingLock = false }
         everyLoop { }
     }

@@ -39,6 +39,7 @@ object ActionReplay {
 
     private val builtInByName: Map<String, Class<out RobotAction>> = linkedMapOf(
         "DriveHardwareUpdate" to RobotAction.DriveHardwareUpdate::class.java,
+        "ClusterTargetsReceived" to RobotAction.ClusterTargetsReceived::class.java,
         "VisionMeasurementsReceived" to RobotAction.VisionMeasurementsReceived::class.java,
         "PoseUpdate" to RobotAction.PoseUpdate::class.java,
         "SetAlliance" to RobotAction.SetAlliance::class.java,

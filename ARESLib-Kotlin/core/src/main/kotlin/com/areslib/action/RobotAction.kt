@@ -13,6 +13,12 @@ interface RobotAction {
     val timestampMs: Long
         get() = com.areslib.util.RobotClock.currentTimeMillis()
 
+    /** Camera-relative moving targets, separate from every localization action. */
+    data class ClusterTargetsReceived(
+        val targets: List<com.areslib.hardware.vision.ClusterTargetSnapshot>,
+        override val timestampMs: Long
+    ) : RobotAction
+
     // Hardware Updates
 
     /**

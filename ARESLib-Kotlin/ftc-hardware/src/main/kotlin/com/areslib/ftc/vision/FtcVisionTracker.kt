@@ -84,6 +84,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
             updateFrame(timestampMs)
         } catch (failure: Throwable) {
             clearInputs()
+            publishClusterTargets(timestampMs)
             resetRecoveryAccumulator()
             lastLimelightPose = null
             publishStatus("IO_ERROR")
@@ -96,8 +97,27 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
     private fun clearInputs() {
         visionInputs.isConnected = false
         visionInputs.measurements = emptyList()
+        visionInputs.clusterTargets = emptyList()
         visionInputs.cameraPoses = emptyList()
         freshMeasurements.clear()
+    }
+
+    private fun publishClusterTargets(nowMs: Long) {
+        val targets = visionInputs.clusterTargets
+        val previous = store.state.vision.clusterTargets
+        if (!visionInputs.isConnected || targets.isEmpty()) {
+            if (previous.isNotEmpty()) store.dispatch(RobotAction.ClusterTargetsReceived(emptyList(), nowMs))
+            return
+        }
+        var unchanged = targets.size == previous.size
+        for (i in targets.indices) {
+            if (!unchanged) break
+            val t = targets[i]; val p = previous[i]
+            unchanged = t.sourceId == p.sourceId && t.clusterId == p.clusterId &&
+                t.frameId == p.frameId && t.timestampMs == p.timestampMs && p.isFresh(nowMs)
+        }
+        if (unchanged) return
+        store.dispatch(RobotAction.ClusterTargetsReceived(targets.map { it.snapshot() }, nowMs))
     }
 
     private fun publishStatus(status: String) {
@@ -116,6 +136,7 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
         clearInputs()
 
         val io = limelightIO ?: run {
+            publishClusterTargets(timestampMs)
             resetRecoveryAccumulator()
             lastLimelightPose = null
             publishStatus("OFFLINE")
@@ -135,8 +156,10 @@ class FtcVisionTracker @kotlin.jvm.JvmOverloads constructor(
                 driveBeforeVision.rollDegrees, 0.0, measuredLinearSpeed)
         }
         io.updateInputs(visionInputs)
+        publishClusterTargets(timestampMs)
         if (!visionInputs.isConnected) {
             clearInputs()
+            publishClusterTargets(timestampMs)
             resetRecoveryAccumulator()
             lastLimelightPose = null
             publishStatus("OFFLINE")

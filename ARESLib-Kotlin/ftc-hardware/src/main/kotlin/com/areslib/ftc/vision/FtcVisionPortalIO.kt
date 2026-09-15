@@ -41,6 +41,7 @@ class FtcVisionPortalIO(
 
     /** Replaces connection/measurement fields from one `freshDetections` read. */
     override fun updateInputs(inputs: VisionIOInputs) {
+        inputs.clusterTargets = emptyList()
         inputs.cameraPoses = cameraPoses
         try {
             val detections = aprilTagProcessor.freshDetections

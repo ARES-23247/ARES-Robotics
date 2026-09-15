@@ -53,6 +53,11 @@ kotlin {
     jvmToolchain(21)
 }
 
+tasks.test {
+    // Generated robot lifecycle tests must load this exported project's canonical .ares documents.
+    workingDir(rootProject.projectDir)
+}
+
 val javaToolchains = project.extensions.getByType<JavaToolchainService>()
 
 // The simulator compiles the real editable adapters plus the same disposable registration source

@@ -20,6 +20,11 @@ object VisionReducer {
      */
     fun reduce(state: VisionState, action: RobotAction): VisionState {
         return when (action) {
+            is RobotAction.ClusterTargetsReceived -> {
+                val targets = action.targets.filter { it.isFresh(action.timestampMs) }
+                if (targets == state.clusterTargets) state else state.copy(
+                    clusterTargets = java.util.Collections.unmodifiableList(ArrayList(targets)))
+            }
             is RobotAction.VisionMeasurementsReceived -> {
                 // Preserve the configured inclusive/availability policy used by the runtime.
                 // Direct pure-reducer callers still need this guard before snapshot publication.

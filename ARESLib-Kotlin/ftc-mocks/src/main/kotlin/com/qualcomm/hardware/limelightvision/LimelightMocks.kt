@@ -31,6 +31,7 @@ open class LLResultTypes {
         open fun getTy(): Double = ty
         open fun getPose3D(): Pose3D = pose3d
         open fun getRobotPoseTargetSpace(): Pose3D = robotPoseTargetSpace
+        open fun getTargetPoseCameraSpace(): Pose3D? = null
     }
 }
 
