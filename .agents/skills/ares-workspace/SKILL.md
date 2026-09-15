@@ -1,50 +1,30 @@
 ---
 name: ares-workspace
-description: Develop, debug, review, or document the ARES Robotics source monorepo across ARESLib-Kotlin, FTC/FRC products and starters, and ARES Robotics Studio. Use for cross-product changes, Redux/state flow, typed tuning and drivebase descriptors, telemetry contracts, robot/simulator parity, hardware safety, zero-GC loops, or deciding which monorepo product owns a change.
+description: Resolve ARES product ownership and change cross-product runtime contracts, including Redux, telemetry, coordinates, and hardware safety.
 ---
 
 # ARES Workspace
 
-## Start safely
+Keep shared behavior in ARESLib, season behavior in FTC/FRC, exportable project sources in
+starters, and desktop workflows in `ARES-Analytics/`. Preserve the root `AGENTS.md` invariants
+and the affected product's guidance.
 
-1. Read the workspace `AGENTS.md` completely. Treat it as the current source of truth.
-2. Inspect the monorepo branch and dirty state before editing. Preserve unrelated changes, including
-   changes in product directories you are not modifying.
-3. Identify ownership before changing code: shared behavior belongs in ARESLib; season hardware and
-   game logic belong in FTC/FRC; exportable generic project sources belong in the starters; desktop
-   workflows belong in Studio's `ARES-Analytics/` source directory.
-4. Trace the full runtime boundary before editing: input, Redux action, reducer, immutable state, controller, IO, telemetry, simulator, and consumer UI.
-5. Make the smallest coherent change across all affected producers, consumers, tests, and documentation.
+## Read for the affected boundary
 
-## Preserve invariants
+- Use [repository-map.md](references/repository-map.md) when ownership or integration points are unclear.
+- Use [runtime-contracts.md](references/runtime-contracts.md) when changing controls, hardware,
+  telemetry, simulation, vision, coordinates, tuning, or hot loops. Trace the affected producers
+  and consumers far enough to preserve their contract; unrelated runtime paths need no audit.
+- Use [ares-subsystem-authoring](../ares-subsystem-authoring/SKILL.md) for subsystem descriptors,
+  generation, or registration, and [ares-build-release](../ares-build-release/SKILL.md) for
+  Gradle validation, dependency resolution, or release work.
+- For instruction maintenance, use [the maintenance guide](../../../docs/agents/README.md).
+  Edit these canonical repository skills; personal copies must not supply competing policy.
 
-- Keep reducers pure and state immutable. Do not bypass Redux for actuator intent.
-- Read hardware once per loop into cached inputs. Never read hardware from getters or output writers.
-- Keep periodic robot and simulator paths allocation-free where required.
-- Use `RobotClock`; do not introduce system wall-clock calls in library/runtime code.
-- Keep headings CCW-positive and radians internally. Verify field/canvas and Limelight boundaries before changing signs.
-- Keep robots offline-first. Robots serve local telemetry/logs; the desktop performs cloud work.
-- Fail closed on invalid, stale, unhomed, unconfigured, or faulted hardware.
-- Preserve FTC/FRC/mock/simulator behavioral parity.
-- Keep physical hardware identity in canonical drivebase descriptors, tunable values in typed tuning profiles, and runtime experiments in local overlays. Never model CAN IDs, motor names, inversion, or topology as live tuning values.
-- Treat live tuning as a proposal transaction: publish a typed requested value with a monotonic safe nonce, require an explicit consumer callback, and roll back rejected or unmapped values.
+## Completion
 
-## Route detailed work
-
-- Read [references/repository-map.md](references/repository-map.md) when locating ownership or integration points.
-- Read [references/runtime-contracts.md](references/runtime-contracts.md) before changing controls, telemetry, hardware, vision, coordinates, or hot loops.
-- Use `$ares-subsystem-authoring` for subsystem generation, descriptors, lifecycle, actions, or hand-authored registration.
-- Use `$ares-build-release` for dependency resolution, launching, validation, publishing, or CI/release work.
-
-## Shared repository guidance
-
-These skills are canonical in `.agents/skills/` for Codex, Gemini CLI, and Antigravity.
-Edit them here and commit the references alongside them. Do not sync from a developer's
-home directory or keep separate tool-specific copies. Read `docs/agents/README.md`
-for instruction entry points and `docs/agents/WORKSPACE_GUIDE.md` for detailed contracts.
-
-## Verify proportionally
-
-Run focused tests first, then the full affected product suites. When ARESLib changes, validate
-consumers in dependency order. Report simulator/desktop coverage separately from physical HIL work;
-never imply hardware was tested when it was not.
+Complete the requested change across affected producers and consumers. Verify changed behavior
+with focused checks; broaden coverage when shared contracts, failures, or release requirements
+justify it. ARESLib changes still require dependency-ordered candidate validation through the
+build/release skill. Report observed simulator/desktop evidence separately from physical hardware
+validation. Documentation-only changes use guidance/link checks rather than product test suites.

@@ -8,6 +8,10 @@ Normal consumers resolve these coordinates from Maven Central and the monorepo's
 
 ## Local shared-source development
 
+Before a Studio launch, apply the process ownership and isolation rules in
+[the desktop tester](../../compose-desktop-tester/SKILL.md): normal `:app:run` invokes
+`killExisting` and can close another checkout's app.
+
 ```powershell
 cd ARES-Analytics
 .\gradlew.bat :app:run "-ParesUseSiblingLib=true"
@@ -33,4 +37,21 @@ Use one candidate version throughout the matrix. The validation publisher reject
 
 - FTC: generated-project verification as applicable, `:TeamCode:testDebugUnitTest`, `:simulator:test`, and `:TeamCode:assembleDebug`.
 - FRC: generated-project verification as applicable and `test`; run simulation when affected.
-- Analytics: focused UI/service tests, then `:shared:test :gateway:test :app:test`.
+- Analytics: focused UI/service tests; use `:shared:test :gateway:test :app:test` when the change spans those modules or requires broader regression coverage.
+
+## Library changes and candidate evidence
+
+Run focused tests for the changed library module and full ARESLib tests/API checks for public
+contract changes. Publish an isolated validation candidate for release evidence; sibling source
+substitution is useful during development but does not replace candidate validation. Build affected
+FTC/FRC, starter, simulator, and Studio consumers in dependency order with that same candidate.
+Run generated-project verification before packaging robot applications.
+
+## Launch selection
+
+- Studio app only: use `:app:run` from `ARES-Analytics/` with the chosen dependency properties.
+- Studio with gateway: use the Analytics root `run` task when gateway behavior is required.
+- FTC simulation: use the FTC product's simulator tasks.
+- FRC simulation: use its WPILib/HAL simulation task and validate season IO separately.
+
+Simulation results are not physical hardware coverage.
