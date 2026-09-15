@@ -2,7 +2,6 @@ package com.areslib.control.assist
 
 import com.areslib.control.feedback.GravityFeedforward
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ControlChampionshipTest {

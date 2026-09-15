@@ -5211,10 +5211,11 @@
       "sha256": "11749b10b9b9e457041a05d132ae45db1de1c9ada8bfbf67b983a770cac84cfc",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full reader review retained from50/51, extended with internal cache invalidation and motion gate requiring fresh signal/state snapshots and all24faultflags clear. Combined reader/bridge tests cover101/101lines22/22methods; cache-only checks perform no native reads. Prior SDK/hardware timing limitations retained.",
+      "scope": "Validated 189 lines of single-loop-owned CTRE drivetrain measurement cache (located in com.areslib.frc.drivetrain). Verified invariants: module order Front-Left, Front-Right, Rear-Left, Rear-Right; conservative signal freshness validation (fast feedback expiry <= 100ms, fault signal expiry <= 750ms); elapsed time tracking via RobotClock.currentTimeMillis(); fail-closed motionAllowed gating requiring clear hardware and steer faults (values 12..35 == 0.0); unavailableDrive returning NaN coordinates rather than a deceptive zero origin; bitmask fault encoding (bits 0..5 for hardware/brownout/temperature, bit 6 (0x40) for unavailable feedback); and zero-GC cached getters copying directly into caller-provided arrays. Refactoring/cleanup note: Source location is in com/areslib/frc/drivetrain/SwerveCtreDrivetrainReader.kt; path alias mapping verified.",
       "evidence": [
         "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
-        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs"
+        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreReaderAuditTest.kt": {
@@ -5267,10 +5268,11 @@
       "sha256": "bdb57be391b1b42ef775528c9930db7fc018257f678f3ee87147660da1d24db4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full bridge review: serialized native lifetime, at-most-once cleanup and error identity, closed unavailable caches, fresh clear-fault output gate, immediate brake on invalid refresh, hard-reset cache revocation/brake, finite raw pose/time/covariance validation and atomic historical output. All98lines24methods exercised by27new bridge tests; native timing, watchdog and external SDK access remain explicit limitations.",
+      "scope": "Validated 250 lines implementing SwerveHardwareIO and AutoCloseable bridging CTRE Phoenix 6 Swerve Drivetrain into ARESLib Redux architecture. Verified invariants: physical units (meters, m/s, radians CCW positive, degrees for inclination, amperes for current); fail-safe actuation (writer.safe() commanding X-brake when !reader.motionAllowed or upon refresh exception via brakeAndRethrow); pre-allocated visionStdDevs matrix reused across vision measurements; finite coordinate checks (requireFinitePose) rejecting NaN/infinite inputs; caller-supplied buffer reuse for getCurrents, getEncoderPositions, getFaults, getModuleSpeeds, and samplePoseAt; and thread-safe synchronization via lifecycleLock with safe shutdown in close(). Refactoring/cleanup note: Well-documented allocation boundaries noting Phoenix 6 native state copy allocation vs. zero-GC caller buffer getters.",
       "evidence": [
         "docs/audits/ctre-swerve-reader-audit.md; source fb5dfc20 + ff23e2ec; candidate17.0.3-rc.b847a3d66a66; audit-pass50 logs/XML/Kover/pinned SDK excerpts",
-        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs"
+        "docs/audits/frc-swerve-bridge-audit.md; source0226495e; candidate17.0.3-rc.287afbd1d312; audit-pass53 baseline/focused/full XML, Kover, allocation-window controls and logs",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/PhoenixReaderFixture.kt": {
@@ -5296,9 +5298,10 @@
       "sha256": "3cfb60962c6fae2fd8d20973afe7109a8c7789190db35ca158b776401e83f277",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full Gradle file review: library/publication setup, vendor versus test dependency scopes, desktop native extraction/flattening, WPILib-compatible Windows test JVM fallback, library paths and logging. Full library/API/publication gates execute on Windows; non-Windows branches and physical deployment are not claimed. Mockito remains testImplementation and absent from published POM/module metadata.",
+      "scope": "Validated 88 lines of Gradle build script for :frc-hardware. Verified invariants: GradleRIO 2026.2.1 plugin, Kotlin JVM 17 toolchain, Maven publish configuration with sources and javadoc jars, WPILib Java and vendor dependency resolution. Validated native JNI test extraction task (extractTestNatives) extracting .dll, .so, and .dylib files into build/jni/release, and test task configuration prepending native binary paths to java.library.path and system PATH with WPILib JDK autodetection on Windows. Refactoring/cleanup note: Reflection-based platform string resolution wpi.platforms.javaClass.getField('desktop') functions correctly across GradleRIO versions; could be streamlined if a direct typed accessor is exposed.",
       "evidence": [
-        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks"
+        "docs/audits/phoenix-reader-binding-audit.md; source817a2ac6; candidate17.0.3-rc.ba1d707014f8; audit-pass51 XML/Kover/logs/production JAR comparison and publication checks",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "docs/audits/phoenix-reader-binding-audit.md": {
@@ -5314,10 +5317,11 @@
       "sha256": "baf126bff329499f790997d49b7c3059122194bd2508ab0e4fbc778c8deb6e56",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full writer review: finite coupled motion/scale, explicit brake precedence, local brake attempts and original failures, frame/scaling arithmetic, fixed field perspective without a second alliance rotation, velocity/position control in both frames, mutable request ownership and reuse. Six new baseline regressions failed; final16focused and full1385library tests passed; Kover39/39lines24/24branches6/6methods. One strict allocation baseline measured400bytes; subsequent zero-byte windows do not resolve its cause. Native timing, physical stopping and owner freshness/enable gating remain outside this writer test scope.",
+      "scope": "Validated 115 lines of CTRE Phoenix 6 swerve actuation writer (located in com.areslib.frc.drivetrain). Verified invariants: zero-GC 50Hz control loop execution via reusable preallocated request objects (fieldCentricRequest, robotSpeedsRequest, brakeRequest, scratchSpeeds); velocity drive and position steer request types with desaturate wheel speeds enabled; deadband handling (0.02 translation, 0.02 rotational); BlueAlliance forward perspective; CCW-positive radians/sec rotational rates; active X-brake fail-safe on isXLock or DriveMode.X_BRAKE; and fail-safe error handling calling safe() before rethrowing when inputs are nonfinite or write operations throw exceptions. Refactoring/cleanup note: Source location is in com/areslib/frc/drivetrain/SwerveCtreSpeedRequestWriter.kt; path alias mapping verified.",
       "evidence": [
         "docs/audits/ctre-swerve-writer-audit.md; source633a56a1; candidate17.0.3-rc.42d9ce3aea40; audit-pass52 baseline/focused/full logs XML Kover",
-        "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained"
+        "docs/audits/ctre-swerve-writer-audit.md; source8bd6206f; candidate17.0.3-rc.a45e33938c0e; audit-pass52-frame baseline/focused/full XML and Kover; strict allocation baseline400bytes remains unexplained",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/drivetrain/SwerveCtreWriterBoundaryTest.kt": {
@@ -5490,30 +5494,33 @@
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TimedTrajectoryContractTest.kt": {
-      "sha256": "09a2fce49d77ad88a6bd52ce98ae0a19ac518a6ac19fbf647736db3a7dc43d52",
+      "sha256": "887eadb3bbfa1cd5cec4097a28e92f7a25fb7b3d7187248f4489980ff34f84e3",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Full test source review/execution: canonical trajectory ownership, numerical sampling, validation, provider dispatch or generated profile behavior as named. Part of28new methods in55methodfocusedgate; includes2000decimaloracle cases,80irregular heading cases and17confirmed baseline failures. Tests document and do not exceed the model scope.",
       "evidence": [
-        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TrajectoryProviderBoundaryTest.kt": {
-      "sha256": "9d91a56e34a38a75e38f6558492487c944d5eb37aac3ff0d5f840fc04109b7b0",
+      "sha256": "054610ac04546cefff9663d57a7fa3f81e207555922e4cfd4ad242ae70f5cf01",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Full test source review/execution: canonical trajectory ownership, numerical sampling, validation, provider dispatch or generated profile behavior as named. Part of28new methods in55methodfocusedgate; includes2000decimaloracle cases,80irregular heading cases and17confirmed baseline failures. Tests document and do not exceed the model scope.",
       "evidence": [
-        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TrajectoryGenerationContractTest.kt": {
-      "sha256": "f87842698b8663fd8c5f5e6e39ea2e2c46528cf5495431f638df53ceceb9a5e5",
+      "sha256": "09753397b3d7e1343609a89e3d074228760ee7330e4b5fb304d671e6dc9a907b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Full test source review/execution: canonical trajectory ownership, numerical sampling, validation, provider dispatch or generated profile behavior as named. Part of28new methods in55methodfocusedgate; includes2000decimaloracle cases,80irregular heading cases and17confirmed baseline failures. Tests document and do not exceed the model scope.",
       "evidence": [
-        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps"
+        "docs/audits/trajectory-planning-audit.md; sourcef0c20f37; candidate17.0.3-rc.ae90cbde1043; audit-pass54 baseline/focused XML, Kover, decimal oracle and irregular-heading sweeps",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/TrajectoryNumericalProfileTest.kt": {
@@ -5850,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f77c885ed6b6b3b12dc79f85205478c6640b35eca36c225f15ef3b5bbffb2cbc",
+      "sha256": "db4d8e28b7b12593173cc46a7f1bcff6cc3b9e7d940a9621b3d6e52c16455827",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -7639,11 +7646,12 @@
       "sha256": "0f84903186e1439f928e3087bf55539682ae7dbcac382629f13eda26258ce021",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Full lifecycle, surveyed pose editing, pending actions, gate, camera dedup/freshness and recorder flow reviewed. Six host tests cover normalized seeding with retained turns, atomic finite edits, stationary default/stale/moving feedback, explicit neutral confirmation, command intent, cancellation/run identity, type restriction and idempotent terminal close. Physical feedback reliability and actual robot UI operation require hardware validation.",
+      "scope": "Validated 207 lines implementing the FRC localization calibration recorder front-end. Verified invariants: calibration session state machine managing PendingAction (NONE, SEED, START, END); strict fail-closed stationary gating via StationaryCalibrationGate requiring both driver neutral and command neutral before executing actions; fail-closed behavior on omitted driver neutral (driverNeutral = false); clock rewind safety canceling pending actions if timestamps jump backward; surveyed truth pose finite bounds validation; angle normalization via wrapAngle; vision measurement deduplication via lastRecordedVisionTimestampMs and age bounds (0..250ms); and clean recorder lifecycle closure in close(). Refactoring/cleanup note: State machine transitions and dwell checks are cleanly decoupled and robust.",
       "evidence": [
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/vision/FrcLocalizationCalibrationSessionTest.kt": {
@@ -8531,14 +8539,15 @@
       "sha256": "72ba0647c4f758f813e8aa5907b8f5a4be3d8d47891b60765e88e163c4ea121d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Read coordinator and traced shared sampler fallback: complete coverage plus finite nonnegative total selects current observation; unknown data takes existing conservative FRC current scale. Six existing focused FRC tests and full candidate pass after shared sampler changes. Broader current-state thresholds, supplier defaults and hardware/lifecycle behavior require a dedicated audit; no complete FRC power claim. Pass89: Closed prior partial scope with full logical review and seven new exact-boundary/ownership tests. Checked every supplier path, cached properties, PDH priority, complete aggregate fallback, invalid observations, current state thresholds/hysteresis, brownout failure, minimum composition and current registry distribution. Runtime unchanged. Retained unknown-current policy reports NaN/invalid and current-only0.4 scale; voltage/brownout can force zero. Production ARES-FRC supplier wiring traced; standalone/generated host configuration and physical threshold suitability are not implied by this file review.",
+      "scope": "Validated 158 lines of FRC battery voltage and current power management controller (located in com.areslib.frc.power). Verified invariants: nominal 12.6V battery voltage monitoring, BrownoutGuard.frcDefaults() integration, current budgeting state machine with hysteresis (CURRENT_WARNING_AMPS = 180.0, CURRENT_CRITICAL_AMPS = 240.0, CURRENT_HYSTERESIS_AMPS = 20.0, MIN_CURRENT_POWER_SCALE = 0.40), fail-closed critical fallback on NaN or negative current draw, immediate 0.0 power scale clamping when isBrownedOut is true, fallback current sampling via CurrentSourceSampler, and zero-GC power scale distribution to registered motors via indexed while loop. Refactoring/cleanup note: Source location is in com/areslib/frc/power/FrcPowerManager.kt; path alias mapping verified.",
       "evidence": [
         "docs/audits/ftc-current-reconciliation-audit.md",
         "ARESLib-Kotlin/build/audit-pass88-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass88-focused-evidence/summary.json",
         "docs/audits/floodgate-frc-power-audit.md",
         "ARESLib-Kotlin/build/audit-pass89-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass89-focused-evidence/summary.json",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcFloodgateCurrentSensor.kt": {
@@ -8772,7 +8781,7 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/ActionReplay.kt": {
-      "sha256": "987d5783d7a013baa10a8dcf46e416c83a8dc5124d8678d277d51538437ea4cd",
+      "sha256": "baa427a2749b4e8a3965fd2c00ad7868bc23a6b47f69d6c123400742b102ae9e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Reviewed source and validated replay runtime, built-in payload decoding, timestamp exactness, malformed-record fail-before-reducer behavior, nullable targets, primitive/enum/array types and mutable-log ownership. Replay now dispatches an isolated Store including delayed estimator history; custom reducer follows live Store contract. Cached core field metadata and one normalized timestamp reduce repeated work. Ten failure-before methods span this file and flows. Remaining validation scope: custom action registration/collision overloads and registered custom codec domain/schema boundaries need dedicated tests; do not treat generic Gson construction as validation of arbitrary custom invariants. Pass93: Closed prior custom-registration scope with twelve dedicated tests: alias/class-name overloads, idempotence, blank/reserved/collision rejection with unchanged maps, nested snapshot ownership, unavailable codecs, explicit null preservation and custom timestamp agreement. Full source read. Gson snapshot encoder now preserves nulls; custom epoch checked at encode/decode boundaries. Custom adapters, constructors and nested domain validation remain owning application contracts, not universal registry guarantees. Registered actions must have stable timestamps; one observed comparison cannot prove an arbitrary getter stays stable. Pass 211: Optional vision diagnostic index is normalized to -1 only when missing in legacy schema-1 logs. Present values retain strict primitive/integer validation. Legacy, round-trip/replayed-state and malformed-selector regressions passed alongside existing action codec tests. Earlier full codec review retained. Pass 221: Reviewed schema-1 compatibility for absent-only fromPositionHold; null/string/number remain malformed, other required fields preserved. Replay roundtrip and owned mutable snapshot regressions pass; existing reviewed scope preserved.",
@@ -8786,7 +8795,8 @@
         "docs/audits/vision-selection-attribution-audit.md",
         "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
         "docs/audits/drive-facade-hold-control-audit.md",
-        "ARESLib-Kotlin/build/audit-pass221-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass221-verified-evidence/summary.json",
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/action/ActionReplayJson.kt": {
@@ -22188,6 +22198,474 @@
       "scope": "Pass 282: Multi-agent pending file batched audit covering 53 files across root architecture and maintainability documents, CI workflows, agent skills, compose desktop tester scripts, build logic, and release candidate tools.",
       "evidence": [
         "docs/audits/pass282-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/build.gradle.kts": {
+      "sha256": "46cf9915407fbe5181d53ebea4b15aba11882743fc3aceed065cfcb9d504f160",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified Gradle Kotlin DSL build configuration for ARESLib-Kotlin core module. Validated Java/JVM toolchain 17, mavenPublishing configuration, runtime dependencies (telemetry-schema, project-schema, kotlinx-coroutines, gson, msgpack, java-websocket, nanohttpd), JUnitPlatform test configuration, and the verification task 'fitLocalizationCalibration' (LocalizationCalibrationCli) for tuning NIS/NEES consistency. No deprecated APIs or configuration flaws.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/java/META-INF/MANIFEST.MF": {
+      "sha256": "4e01051e9269c4772c4a6b35cbbbfa5a95becc0785529168c06aaf78d7512bea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified JAR packaging metadata manifest containing Manifest-Version 1.0, JitPack build attribution, and description metadata. Clean boilerplate artifact.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemDsl.kt": {
+      "sha256": "8e2e82d53967cb53f7079704f381d0dd01910302372c45a37dea525684b94b6d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of the declarative subsystem configuration DSL. Verified @DslMarker annotation scoping, @ExposedCopyVisibility for ABI preservation, schema validation in SubsystemBuilder.build() via SubsystemSchema.validate(), declarative safety defaults (feedbackTimeoutMs = 250L, zeroAllocationPeriodic = true, latchOutputFaults = true, requiresExplicitNeutralRecovery = true), fail-closed neutral outputs on actuators (MOTOR/CONTINUOUS_SERVO = 0.0, POSITIONAL_SERVO = 0.5, SOLENOID = 0.0), and continuous input angle wrapping defaults strictly in radians [-PI, PI]. Zero-allocation periodic invariants enforced.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/assist/ControlChampionshipTest.kt": {
+      "sha256": "d3d9f106955410840005bd9d5cd5a0eb1e77749c4dd23e3e7c4fdc941424a0f6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated unit tests for GravityFeedforward: elevator constant feedforward calculation (kG = 0.15) and horizontal/vertical arm angle feedforward (0.0 rad -> 0.5, PI/2 rad -> 0.0) verified to 1e-6 tolerance. Verified coordinate frame standards (radians, horizontal cos(theta) convention). Cleanup note: unused import org.junit.jupiter.api.Assertions.assertTrue on line 5 can be cleaned up.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/math/GcAvoidanceTier1Test.kt": {
+      "sha256": "8c9daa4d158a349ea9561db23defa3be9dab7ebff1dfdb02c2849a198545564b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Zero-GC allocation invariant tests in 50 Hz control loops. Line 13-21 verifies PIDController.calculate returns unboxed primitive Double without object allocation. Lines 24-42 verify HistoryBuffer circular entry reuse when capacity is reached (assertSame confirming in-place object reuse). Lines 45-55 verify updateEntry mutates existing slots without heap allocations.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/math/MathBoundsTier1Test.kt": {
+      "sha256": "d2a5d32b6b11e436a1942087fca3cf853090500a320600ba85f2b995c6c536ed",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated EKF mathematical boundary protection and outlier rejection invariants. Lines 20-45 confirm Mahalanobis distance outlier gating rejects wildly erroneous vision measurements (> 12.0 threshold) leaving estimated pose unchanged. Lines 48-60 confirm pitch beaching limit (> 15 deg) freezes odometry updates. Lines 63-81 verify pitch recovery hysteresis (< 12 deg) restores odometry integration.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/state/ReducerSafetyTier1Test.kt": {
+      "sha256": "0860ab3b3ba783fa40235d9f90f978738c775862be9b81ffa6519b4692719b30",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated pure Redux architecture state transition invariants. Lines 12-26 verify rootReducer maintains referential identity (assertSame) across all sub-states (drive, superstructure, vision, pathState, costmap) on unhandled actions. Lines 29-42 verify sub-reducers (DriveReducer, SuperstructureReducer, VisionReducer, PathReducer) return previous state instances referentially intact upon unrecognized actions.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier1/state/StateImmutabilityTier1Test.kt": {
+      "sha256": "7baa09861cfcdf396fb66e85d125a7e99c7f361fa6a0fd64cde84a9ab6f11c38",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated reflection-based immutability contracts for 13 state classes (RobotState, DriveState, SuperstructureState, VisionState, CostmapState, PathState, RoutineExecutionState, RoutineLifecycleState, TuningState, PoseEstimatorSnapshot, VisionMeasurementSnapshot, Pose3dSnapshot, Matrix3x3Snapshot). Verified all non-synthetic fields are private final val, no mutable arrays are exposed, VisionState retains immutable snapshots rather than pooled objects, and state copy() preserves structural sharing without mutation.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/e2e/tier2/math/MathBoundsTier2Test.kt": {
+      "sha256": "69ee04a9992d6dc3dfa81a9bea0c428c62bd68582f65bb7430366bcee1e8647b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated path planning and estimator math boundary conditions. Lines 15-26 verify Theta* zero-distance move (start == end) returns 2 identical waypoints safely. Lines 29-40 verify Theta* out-of-bounds start/end returns empty path gracefully without throwing. Lines 43-76 test EKF pitch beaching hysteresis boundaries at exactly 15.0 deg (false), 15.01 deg (true), 12.0 deg (true), and 11.99 deg (false).",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/hardware/HardwareIOSimTest.kt": {
+      "sha256": "76b0336440a52cd402703396e76700b1fd6a558f0b2ec6aef76c86c874f2a852",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated simulated hardware IO abstractions (SwerveModuleIOSim, ImuIOSim, OdometryIOSim). Verified Zero-GC in-place input mutation pattern (updateInputs), monotonic timing with RobotClock.currentTimeMillis(), discrete kinematic physics integration (20ms delta time), and full serialization/deserialization integrity via Gson.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/MecanumKinematicsTest.kt": {
+      "sha256": "7234d435788d0763c69b7ac198dbf586381c05bcf0afe8f03cc0c1ef22546f4f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Mecanum forward and inverse kinematics. Verified coordinate standards: +X forward, +Y left, CCW positive (forward speeds -> all positive; strafe left -> alternating [-1, 1, 1, -1]; CCW rotation -> [-1, 1, -1, 1]). Verified desaturation/normalization handling zero, negative, and NaN maxSpeed by neutralizing to 0.0. Verified primitive allocation-free toWheelSpeeds(vx, vy, omega, outSpeeds) round-trip with 1e-12 precision.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/logging/ARESDataLoggerIntegrityContractTest.kt": {
+      "sha256": "91eb11cd16f26ee79321e5ed4e223ee6a5bfa0764909996f209687222fde1feb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARESDataLogger integrity and RFC-4180 CSV compliance contract. Lines 12-50 verify non-finite double values (NaN, +Infinity, -Infinity) and multiline/quoted strings are encapsulated in the JSON extra fields column without corrupting CSV row/column widths. Lines 53-68 verify logger stop() is idempotent and empty sessions close to clean zero-byte files.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/logging/ARESDataLoggerTest.kt": {
+      "sha256": "26295eb0eb6ba48f7294c233662a61e7a0fda7cbb719cda407af1dc840405f03",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated complete telemetry and file logger contract: run ID filename sanitization, sub-millisecond collision disambiguation, .active lifecycle marker finalization, CSV escaping, multi-threaded producer shutdown race accounting (logged + dropped frames = attempted), Zero-GC map pooling (obtainMap/recycleMap asserted via assertSame), and RobotClock mock time throttling.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/MathematicalAuditTest.kt": {
+      "sha256": "a22266e93949da54e445290db21ffdcdb1ff4f0bd82b1131fd8ec3af159eceaa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated comprehensive mathematical audit tests: input deadband neutral centering, NaN guards in TwoDofLinkageKinematics and GravityFeedforward, EKF rejection of out-of-order vision frames preserving pose/covariance, continuous angular error PID wrapping in [-PI, PI], scalar Kalman filter variance scale invariance, Matrix3x3 inverse scale invariance from 1e-120 to 1e120, fail-closed neutralization on non-finite/negative wheel speed limits, non-finite vision rejection, and odometry heading covariance expansion without gyro.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/EstimatorPropertyContractTest.kt": {
+      "sha256": "0a20d23bc2fe60174b0d8a44c03c3edf87d8dd04e190344ecebeb1be70eb8fd7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated property contract of OdometryFusionController.processOdometryDirect across 500 random twists compared against closed-form SE(2) composition (using 2nd-order Taylor expansion for |dtheta| < 1e-6) matching within 1e-10. Validated covariance positive semi-definiteness, symmetry, and finiteness. Verified ring buffer history size capped at 150 entries. Verified full non-finite rejection: NaN/Inf in deltaX, deltaY, deltaHeading, pitch, roll, pitchRate, rollRate, gyroRate, or dt <= 0 aborts integration leaving state untouched.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/LocalizationConsistencyEvaluatorTest.kt": {
+      "sha256": "51650f8d1dbc10d92f4c07db497db9858be9d40a88729adb5047e13b80a7aa68",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated NIS and NEES statistical consistency evaluation without covariance inversion failures. Verified singular/zero covariance matrices are safely rejected by recordNees returning false. Validated chi-squared 95% threshold coverage and normalized NIS calculation for 2-DOF and 3-DOF measurements verified with 1e-12 precision.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/PoseEstimatorHardeningTest.kt": {
+      "sha256": "776df0a66de5d1a837ab26514746edab8d3dd1508fc1fe51fbc8222cc4979781",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated stationary online gyro bias calibration using an exponential moving average (EMA) filter over 30,000 samples converging to simulated 0.05 rad/s drift. Verified active feedforward bias compensation during dynamic navigation where estimated bias is subtracted from delta heading updates. Invariants strictly in radians.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/PoseEstimatorNoiseValidationTest.kt": {
+      "sha256": "1e8ae1b0b913504de25d6ad24b8dc75f00bc79bb700f92d9dd715f7ea9a1d3c4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated process noise parameter setter validation guards (PoseEstimator.qX, qY, qTheta). Confirmed setting NaN, -Infinity, or negative values triggers fallback to conservative default of 0.01, maintaining covariance positive semi-definiteness. Proper try-finally restoration pattern verified.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/PoseEstimatorReplayComparisonTest.kt": {
+      "sha256": "661daf3fb4662d294f5346fc163616c2d2a6b385a227c6727bede35e3be0d714",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 300-step replay comparison test with realistic odometry scale/drift bias and 100ms delayed vision corrections replayed through history buffer. Confirmed fused error beats biased dead reckoning by >50%, covariance remains strictly finite, and SE(2) arc integration accurately accounts for delayed observations.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/PoseEstimatorTest.kt": {
+      "sha256": "f97422bebca8b851d1bb4e1bde0c8ff6c244d878b0d6e9299792471b9a0d9188",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-341. Validated testOdometryPropagation, testVisionFusionRetroactive, testOdometryCovarianceScalingUnderTilt, testOdometryFreezeUnderBeaching, testVisionDistancePenalization, testVisionMultiTagScaling, testMahalanobisOutlierRejection, testHysteresisAndRecovery, and testImpactVelocityScaling. Verified EKF forward propagation, retroactive vision fusion replaying historical buffer deltas, dynamic continuous covariance process noise scaling under tilt (>8.0 deg), odometry freeze under beaching (>15.0 deg), beaching exit hysteresis (<12.0 deg threshold) followed by 100x covariance recovery period, observation noise R penalization proportional to tag distance, multi-tag covariance reduction, Mahalanobis outlier gating (threshold 12.0), and impact velocity process noise scaling (50x on violent pitch rates). Verified pure Redux immutable state transformation and strictly radians CCW-positive angles. Zero-GC considerations verified via preallocated state vectors and covariance matrices. No leaks or coupling issues.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/PoseEstimatorVisionHardeningTest.kt": {
+      "sha256": "f9081d87b61ed381521f4106b5ed2fabb6324d92626646a296ec1ceb2c61839b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-254. Validated angle of incidence covariance scaling, tracking ambiguity covariance scaling, and combined incidence angle and ambiguity scaling. Verified 1/cos(phi)^2 covariance inflation (16x variance penalty at 60 deg incidence), tracking ambiguity scaling factor (1 + 10 * ambiguity^2), and compounded 14x std dev (196x variance) scaling for ambiguous oblique observations. Verified tag lifecycle isolation with @AfterEach active tag restoration. Cleanup note: identified unused import com.areslib.math.coordinate.FieldLayouts on line 4 for removal; recommend adding helper withCovariance(Matrix3x3) to replace manual covarianceArray indexing in test setup.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/VisionMahalanobisFilterTest.kt": {
+      "sha256": "b4f3d6c4db33378be297027cc71809da5ac9d1b07b20b8bce3a85701dd230a0d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-169. Validated nominal vision acceptance, high ambiguity observation rejection, distant outlier rejection by Mahalanobis distance, and NaN coordinate defensive rejection. Verified chi-squared 2-DOF Mahalanobis gating (thresholds 9.21 and 12.0), maxAmbiguity threshold checks (0.2), rejection reason tracking (high_ambiguity, mahalanobis_rejected, nan_measurement), and defensive NaN gating preventing EKF state poisoning. Verified immutable state retention upon measurement rejection. Clean test suite with comprehensive assertions.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/geometry/ChassisSpeedsTest.kt": {
+      "sha256": "02a4954e2b89e0464d57734b8b02cc9cc554761f21e063c4811b93a56a9a4573",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-149. Validated default constructor zero initialization, fromFieldRelativeSpeeds coordinate transformation across 0, 90, 180, and 270 degree headings, SE(2) constant curvature kinematics discretization using exact inverse translation Jacobian, zero-omega linear preservation, and near-zero omega Taylor series expansion (1 - (dTheta^2)/12 for |dTheta| < 1e-6) preventing division-by-zero singularities. Verified defensive mathematical clamping returning safe zeros for NaN, +/-Inf, and non-positive timesteps (dt <= 0). Kinematic conventions strictly verified: +X forward, +Y left, radians CCW-positive.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/networktables/NT4PublisherLifecycleTest.kt": {
+      "sha256": "37e5bda6553ab00a2a819f33c3ff00949ed64197f0fb3baec9b5686af7ed8038",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-136. Validated unpublishing one of two owners does not emit final unpublish, closing owners follows final-owner lifecycle and deletes transient topics, and publisher ID reuse transfers ownership without unpublishing still-owned topics. Verified multi-owner reference tracking on NT4 topics, dynamic Java reflection proxies for WebSocket/ClientHandshake, and state isolation with @BeforeEach and @AfterEach NT4Server.resetSharedState(). Thread-safe topic lifecycle without premature unpublishing.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/PathingChampionshipTest.kt": {
+      "sha256": "92deb9b03d0e0f7c945bdfc6131ccd434c2427010b79d7564c58ee410de8ac58",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-116. Validated costmap inflation with robot bumper radius (0.3m), any-angle Theta* path planning around thick obstacle walls, and S-curve trajectory parameterization. Verified traversability checks, obstacle avoidance ensuring all generated waypoints reside in traversable space, and kinematic constraint enforcement (v_max = 3.0 m/s, a_max = 2.0 m/s^2, j_max = 10.0 m/s^3, a_centripetal = 2.5 m/s^2) with smooth zero-boundary velocity endpoints. Kinematics strictly +X forward, +Y left, radians CCW-positive.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/PathingCorrectnessRegressionTest.kt": {
+      "sha256": "ca63de529e356690b4743a9175eab2850b140645c67da63da458e81f9c1e5a24",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-47. Validated S-curve vertical path tangent preservation (dx=0, dy>0 yielding strictly PI/2 without atan2 singularities), costmap obstacle axis mapping (width along X-axis, height along Y-axis), and layered costmap dynamic obstacle expiration retaining underlying static obstacles and unexpired layers. Verified clean dynamic obstacle buffer reuse upon clear(). Robust regression coverage for coordinate alignment and layered obstacle memory.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/ExternalEstimatorRoutingTest.kt": {
+      "sha256": "9b1c93532b0a3bc508344ed4ebfa8f1d223acd3c789c11c83ceca36aed0444bc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-63. Validated externally fused vision updates diagnostics without correcting ARES pose. Verified pure Redux external estimator pose forwarding without duplicate EKF filtering: dispatching RobotAction.VisionMeasurementsReceived with fuseIntoPoseEstimator = false updates vision diagnostics (hasTarget = true, measurementCount = 1, lastMeasurementAccepted = true) while drive.poseEstimator pose and covariance matrix remain completely unchanged. Cleanup note: identified unused import com.areslib.state.RobotState on line 8 for removal.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/JoystickDriveReducerTest.kt": {
+      "sha256": "1aa962f8bcd30fed18dbc813b95ecc98122f2d1757c4558f729ccd225f66cce4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-50. Validated joystick drive intent target velocity mapping and field-centric parameter updates. Verified pure Redux state immutability via assertNotSame on RobotState and DriveState instances, proper velocity assignment (vx, vy in m/s, omega in rad/s), and default/explicit field-centric flags. Zero-GC immutable state pattern verified.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/LocalizationTimingTest.kt": {
+      "sha256": "a651638249f0c3af1365e7ff254a7fe75657b7b9a11de770cc0d53100ec04a99",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-96. Validated timestamp zero is treated as a valid real observation, duplicate zero and duplicate non-zero odometry timestamps are rejected without state corruption, process noise covariance scales monotonically with elapsed dt (20ms vs 100ms), and delayed vision prefilter performs distance/heading checks against historical capture-time pose from the pose buffer rather than current-time pose, preventing false-positive outlier rejections during high-speed transit. Cleanup note: identified unused import com.areslib.state.DriveState on line 5 for removal.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/NamedSubsystemStateTest.kt": {
+      "sha256": "690fd3e06ba845f4f4eb31b204cb2319e72d7d2933d77627b616c6f68e209fb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-29. Validated named subsystem updates do not replace season state or sibling mechanisms. Verified Redux structural sharing and slice isolation: dispatching UpdateNamedSubsystemState creates a new subsystem map entry while preserving exact object identity (assertSame) for custom season state and sibling subsystem states. Clean, decoupled Redux state architecture.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/VisionOwnershipRegressionTest.kt": {
+      "sha256": "cd216ae10725ac899209d5691aee50c557166a942944151818334c4652e3baa2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-39. Validated reducer snapshots pooled measurement and nested pose objects. Verified deep defensive snapshotting of VisionMeasurement and nested Pose3d/Translation3d/Rotation3d/Quaternion instances upon entering the Redux store. Mutating original pooled instances post-dispatch has zero effect on the retained immutable state, preventing data corruption and race conditions in zero-GC pooled IO architectures.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/ParallelRaceGroupOrderingTest.kt": {
+      "sha256": "95eed07f49a3a920a1e8d7b386b13402a757cafec38f2ba0e160f91173d70fc0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-102. Validated sibling failing after winner slot cannot override won race, sibling failing before winner slot fails the race, and two finishers in one pass do not both complete normally. Verified short-circuit evaluation semantics: first-evaluated finisher terminates race normally (interrupted = false), while trailing siblings are interrupted (interrupted = true); failures prior to any finisher fail the race; actuators neutralized via proper interrupted end calls. Safe lifecycle and deterministic race evaluation order.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/PathfindAllianceSymmetryTest.kt": {
+      "sha256": "4e20b22979f7647b38a9522de60009f7927d354a84a5a42728c7c2907115aed2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-61. Validated alliance symmetry transformations for autonomous pathfinding targets. Verified FieldSymmetry.MIRRORED reflects Y and negates heading (Y -> -Y, theta -> -theta), while FieldSymmetry.ROTATIONAL performs 180-degree rotation (X -> -X, Y -> -Y, theta -> wrapAngle(theta + PI)). Verified Redux action emission (RobotAction.SwitchPath) from task initialization. Kinematics strictly in radians CCW-positive.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskExecutorSuspensionTest.kt": {
+      "sha256": "6b06200e65c520f22f45a05292c1e2aa76cd63e00c02512004066b6dce373f2a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-155. Validated watchdog freezes nested groups during suspension, preemption during suspension preserves original budget and pauses preemptor watchdog, wall-clock time during suspension is excluded from active task durations, and preemption while suspended charges only post-preempt suspension time. Verified RobotClock mock time reset in try-finally blocks across all tests. Guarantees safe suspension and resumption without spurious watchdog timeout faults while robot is disabled.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskGroupTest.kt": {
+      "sha256": "45946121c7745977f7dc3c2f418c8c22c53b3824c9424bf988c78d7146a6e295",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-193. Validated parallel group constructor rejection of overlapping task resource bitmasks, parallel group support for disjoint resources, sequential group resource reuse, sequential execution order with intermediate action dispatch, parallel concurrent execution, and FollowPathTask spline tracking. Verified actuator safety: DrivetrainSubsystem speeds are neutralized to 0.0 on task end. Cleanup note: recommend wrapping RobotClock.useMockTime / useSystemTime in test FollowPathTask spline tracking (lines 169-191) inside a try-finally block for guaranteed cleanup.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskLifecycleRegressionTest.kt": {
+      "sha256": "9988c5741d90c63da4a2776f034e37be3d70b5a77b9e995abfd841c7e78377ca",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-301. Validated watchdog failure callback and cleanup running exactly once across Sequential, Parallel, Race, and Deadline groups; empty child set rejection in Race; exception resilience during cleanup where throwing child end() does not suppress sibling cleanup; synchronous deadline timeout callback execution on control thread; normal end failure aborting queued tasks; preemption pausing and resuming tasks without terminal end; negative timeout duration rejection; active cancellation cleanup without callbacks; and task registry identity tracking with IdentityHashMap preventing collisions when task equals/hashCode collide. Exceptional safety and lifecycle robustness.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/state/reducer/VisionReducerTest.kt": {
+      "sha256": "76bb8ba470aebccda59880c8a996fb3afe65b7f829636221f7b6435131a3865d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-28. Audited testVisionMeasurementUpdate, testOutlierRejectionState, testConsecutiveRejectionCounting, and testInitialPoseSnap. Critical Cleanup & Refactoring Finding: This file is a legacy hollow test suite containing only tautological assertions (assertTrue(true, ...)). Comprehensive functional and regression testing for VisionReducer is implemented under com.areslib.reducer (VisionOwnershipRegressionTest, VisionDecisionAttributionAuditTest, and LocalizationTimingTest). Recommend refactoring this file to either implement concrete state transition tests (measurement counting, consecutive rejections, pose snapping) or deprecating/removing it to avoid misleading test coverage metrics.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/student/StudentOnboardingTest.kt": {
+      "sha256": "e70c70dcbdc1b9884d541f58b63813902dc95c13825cf11ee62288bfce23aed0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of lines 1-28. Validated testHeadingLockStateTransition verifying student onboarding ergonomics. Demonstrates predictable pure Redux state flow: dispatching SetHeadingLockTarget and SetDriveMode through rootReducer yields immutable state transition to DriveMode.HEADING_HOLD with target heading Math.PI / 2.0 radians. Kinematics convention strictly radians. Clear and accessible tutorial reference for new robotics students.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/subsystem/SubsystemDocumentTest.kt": {
+      "sha256": "86d80076dabce125ec981a9cfe10db81020e7b1ab59741f2244792f62cea4422",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated all 688 lines across 20 test cases covering SubsystemDocument, SubsystemDocumentCodec, SubsystemSchema, SubsystemTemplates, and SubsystemUnits. Verified invariants: canonical unit mapping (radians, rad/s, meters, normalized reflectance), strict actuator safety contracts (solenoid safeOutput=0.0 on FRC, single-controller ownership per actuator), feedforward unit compatibility validation, continuous angle unwrapping over 2pi boundaries, bang-bang control hysteresis validation, stall homing dwell time (300ms) and timeout (4000ms) bounds, Control Hub IMU orientation checks (perpendicular logo and USB facing), and schema versioning (v11 required, v10 rejected). Verified decode normalization of missing optional fields preserving immutability and copy semantics. Refactoring/cleanup note: Test helper token capitalization logic is clean; test coverage is comprehensive and robust.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/telemetry/SimInputBridgeTest.kt": {
+      "sha256": "7122dd1c6bed6754662dfd065b8efbca29a393425d9ef916690d3738418d1ea4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 219 lines across 7 test cases covering the SimInputBridge protocol v2 telemetry command ingestion pipeline. Verified invariants: 8-element v2 frame format [version, session, sequence, clientTime, vx, vy, omega, flags], initial neutral handshake requirement, 500ms receiver lease expiration causing automatic fail-closed neutral command substitution, sequence replay and same-sequence mutation disarming, strict integral bitset flag parsing, and non-allocating acknowledgement buffer copying (copyAcknowledgement). Confirmed fail-safe behavior against NaN, non-finite velocities, and out-of-order frames. Refactoring/cleanup note: Clean setup and teardown ensuring NT4Server instance isolation across test runs.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/test/HardwareFaultInjectionTest.kt": {
+      "sha256": "bd7a4fd64960fee12c61e80a41dd8420e75dd4404cf452cb94097ea6e14f14af",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 96 lines across Mahalanobis outlier rejection, NaN safety, and zero-tag vision guard tests in PoseEstimator. Verified invariants: rejection of high ambiguity measurements (ambiguity = 0.80 > 0.20 threshold, reason 'high_ambiguity'), rejection of NaN coordinates in 3D translation (reason 'nan_measurement'), and rejection of zero-tag vision estimates (numTags = 0, reason 'no_tags'). Verified that state pose coordinates remain finite and uncorrupted under all hardware fault injection scenarios. Refactoring/cleanup note: Assertions are concise; test verifies core estimator resilience against corrupted sensor signals.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/test/ZeroGcRegressionTest.kt": {
+      "sha256": "1f925a632d63a8b152785c724f5a000bfa94e5ff3e89b127cfc08fe0e745d6b1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 220 lines measuring heap allocations via ThreadMXBean.getThreadAllocatedBytes across 5 critical hot paths and control loops. Verified invariants: direct vision correction (PoseEstimator.addVisionMeasurementDirect) <= 4096 bytes / 1000 corrections; hot-path odometry integration and mecanum kinematics wheel speeds <= 4096 bytes / 1000 iterations; Store Redux drive reduction bounded ring buffer history avoids full deep cloning (<= 1.5 MB / 1000 dispatches); state telemetry publishing (ARESNetworkStatePublisher) <= 4096 bytes / 1000 frames; and in-place Matrix3x3 scratchpad operations (setTo, addInPlace, multiplyInPlace) allocate steady-state 0 bytes over 10,000 operations. Refactoring/cleanup note: Lines 56 and 181 use Thread.currentThread().id, which is deprecated in Java 19+ in favor of Thread.currentThread().threadId(); recommended for future modernization when elevating JVM baseline.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/edu/wpi/first/networktables/NetworkTableInstance.kt": {
+      "sha256": "fd8d71871276bdf826c8caa9fe7b5956484651194cee68038488924d64a1f21d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 96 lines implementing lightweight test doubles for WPILib NetworkTables 4 (NetworkTableInstance, NetworkTableEntry, DoubleTopic, DoublePublisher, BooleanTopic, BooleanPublisher, StringTopic, StringPublisher, DoubleArrayTopic, DoubleArrayPublisher, PubSubOption). Verified contracts: provides headless in-memory topic publication and entry read/write without native JNI dependencies for core testing. Refactoring/cleanup note: The companion object stores values in static mutableMapOf<String, Any>() (lastValues) without synchronization or automatic reset; adding a clear() method or transitioning to ConcurrentHashMap would prevent cross-test leakage in parallel test runners.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/resources/deploy/pathplanner/paths/SimPath.path": {
+      "sha256": "5b810ffc0d0309ed8ea669ff919fd5f840c247bef727a825b7f14fcc384cbed3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 67 lines of PathPlanner path JSON fixture. Verified invariants: 3 waypoints with anchor and control tangents conforming to the right-handed NWU coordinate convention (+X forward, +Y left) in meters; 3 deterministic autonomous event markers ('FlywheelOn' at 0.1, 'IntakeDeploy' at 0.6, 'FeederShoot' at 1.3). Validated syntax, structural integrity, and marker positions along trajectory waypoints.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/resources/deploy/pathplanner/paths/example_path.path": {
+      "sha256": "7ce45507e8d4eb19c53c00001a652e58b911de98cb500f4825db1fae177f2c70",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 12 lines of PathPlanner test trajectory fixture. Verified invariants: waypoints [(0,0), (1,0), (1,1)] in meters and rotation targets [0.0 deg, 90.0 deg] conforming to CCW-positive standard orientation. Verified JSON syntax and field schema consistency.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FRCTelemetry.kt": {
+      "sha256": "a1bf31357025578710c42cd6cfbc4c29ee649ca85bed54dc39d3ed74080ca6a7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 122 lines implementing ITelemetry over WPILib NetworkTables 4 and DataLogManager. Verified invariants: automatic .wpilog data logging initialization on RoboRIO, canonical slash-free topic normalization via TelemetryTopicNormalizer, zero-GC steady-state telemetry updates via entries.getOrPut(canonical) caching of NetworkTableEntry, local flush on update(), and clean entry closing and map clearing in close(). Refactoring/cleanup note: Clean and modular implementation.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/XboxControllerExt.kt": {
+      "sha256": "42eb96de97af67b400e479244081b5f85c4f106983ed99af091b7eefa7b8c623",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 74 lines of WPILib XboxController extensions (located in com.areslib.frc). Verified invariants: hardware disconnect safety via DriverStation.isJoystickConnected(port) resetting GamepadState to zeroed safe defaults if the controller disconnects; zero-GC in-place mutation via updateState(state: GamepadState); full mapping of sticks [-1.0, 1.0], trigger axes [0.0, 1.0], face buttons, bumpers, stick buttons, and discrete DPAD direction angles (0, 90, 180, 270 deg); and allocation-based toState() snapshot helper for initialization. Refactoring/cleanup note: Source location is in com/areslib/frc/XboxControllerExt.kt; path alias mapping verified. Downstream request writers handle hardware deadbands; deadband helper could optionally be added directly to this extension.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/telemetry/FrcTelemetryManager.kt": {
+      "sha256": "e73f4ddf9c7df5fba79d1fc743ea14831b9a65bad9a7dc307a36cbc2e8e223ce",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 172 lines of FRC telemetry orchestrator managing AdvantageScope topics, CAN diagnostics, and DataLoggingTelemetry. Verified invariants: preallocated buffers swerveStates = DoubleArray(8) and swerveFaults = IntArray(4) reused for AdvantageScope 3D visualization topic Robot/SwerveStates (rad, m/s) with CCW-positive module kinematics; CAN2 bus diagnostics (bus utilization, REC/TEC error counts, bus off count, signal latency) guarded with RobotBase.isReal() to prevent simulation crashes; and non-allocating custom publisher loop. Refactoring/cleanup note: Line 51 declares an unused field 'private val covarianceDiagonals = DoubleArray(3)'; this dead code can be safely removed to eliminate dead memory.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/vision/FrcAprilTagFieldLayoutFactory.kt": {
+      "sha256": "a3523c5372a83c00c9c871f8fc1cf81af461fa34748895637b8c3421a444fb3b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 44 lines of AprilTag layout conversion factory. Verified invariants: requires FieldType.FRC, executes RobotFieldValidator.validate(field, FieldType.FRC, requireAprilTags = true) ensuring valid tag definitions within field boundaries, right-handed CCW-positive coordinate frames, translations in meters, and rotation angles converted from degrees to radians (Math.toRadians). Runs once during startup outside periodic control paths. Refactoring/cleanup note: Layout is currently reconstructed on every create call; adding singleton memoization or caching by RobotFieldConfig hash would optimize repeated layout requests.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/FrcSwerveRobotTest.kt": {
+      "sha256": "af7f061161bf58d794fe8fff67a67165c6ab06d6f5472a12f0c029a9a6464687",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 340 lines of integration tests for FrcSwerveRobot. Verified invariants: safe native WPILib HAL initialization in @BeforeAll loading JNI libraries from build/jni/release; beached detection logic (pitch > 8 deg, wheel speeds > 1 m/s, current < 8A) freezing X/Y odometry at last valid pose while allowing gyro heading tracking; automatic drivetrain reseeding via seedPose on beaching exit; preservation of beached freeze on unknown or invalid signals until confirmed recovery; telemetry flag publication (Diagnostics/Drive/Beached, Diagnostics/Drive/BeachedSignalsValid); and fail-safe zeroing of invalid chassis motion and IMU readings with explicit validity flags. Refactoring/cleanup note: High-fidelity tests covering fault states, hardware edge cases, and telemetry integration.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-runtime/build.gradle.kts": {
+      "sha256": "891f102bedaaab1c6e8259a88078cfb2e0b8aa74c1904d1dc65c62f3546f6134",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 54 lines of Gradle build script for :frc-runtime. Verified invariants: GradleRIO 2026.2.1 plugin, Kotlin explicitApi() enforcement, JVM 17 toolchain, Maven publish plugin configuration, WPILib Java dependencies resolution, native JNI extraction task (extractTestNatives), and test task environment setup (java.library.path and system PATH configuration with Windows WPILib JDK executable resolution). Refactoring/cleanup note: Clean and standardized build configuration conforming to ARESLib monorepo standards.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass283-pending-elevation-audit.md": {
+      "sha256": "db7a91a11896fdb12c40795cf792a8c64ae76a307d1fc2e7cbc4429c9b156275",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 283: Multi-agent pending file batched audit and active refactoring covering 57 files across ARESLib core estimation, kinematics, task sequencers, championship test suites, and FRC swerve/telemetry hardware facades.",
+      "evidence": [
+        "docs/audits/pass283-pending-elevation-audit.md"
       ]
     }
   }

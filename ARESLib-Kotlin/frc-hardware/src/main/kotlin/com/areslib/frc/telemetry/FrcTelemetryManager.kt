@@ -48,7 +48,6 @@ open class FrcTelemetryManager(
     override val customPublishers = mutableListOf<(RobotState, ITelemetry) -> Unit>()
 
     // Pre-allocated buffers to prevent high-frequency GC allocations in update loop
-    private val covarianceDiagonals = DoubleArray(3)
     private val swerveStates = DoubleArray(8)
     private val swerveFaults = IntArray(4)
 
