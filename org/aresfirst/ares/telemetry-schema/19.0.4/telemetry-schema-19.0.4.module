@@ -1,0 +1,115 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "telemetry-schema",
+    "version": "19.0.4",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.11.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "telemetry-schema-19.0.4.jar",
+          "url": "telemetry-schema-19.0.4.jar",
+          "size": 41201,
+          "sha512": "5aa71197449aea6f54c48210759fe75d8534a664b68bc8c7c44f0887c1ef6c56ae20a8866ebf2701a37f2983279e742a59015a320052360ab531b4570dae802a",
+          "sha256": "b74268145b1de1a121aa0e160ed1a1ab17dad08bdb7ac079eb5825ae9aa122b9",
+          "sha1": "e9a583004de47abdb3b94b8b769b537cea0e978c",
+          "md5": "f913e2590f00d5d25ba6903fe2c4c5e6"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-serialization-json",
+          "version": {
+            "requires": "1.11.0"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "telemetry-schema-19.0.4.jar",
+          "url": "telemetry-schema-19.0.4.jar",
+          "size": 41201,
+          "sha512": "5aa71197449aea6f54c48210759fe75d8534a664b68bc8c7c44f0887c1ef6c56ae20a8866ebf2701a37f2983279e742a59015a320052360ab531b4570dae802a",
+          "sha256": "b74268145b1de1a121aa0e160ed1a1ab17dad08bdb7ac079eb5825ae9aa122b9",
+          "sha1": "e9a583004de47abdb3b94b8b769b537cea0e978c",
+          "md5": "f913e2590f00d5d25ba6903fe2c4c5e6"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "telemetry-schema-19.0.4-sources.jar",
+          "url": "telemetry-schema-19.0.4-sources.jar",
+          "size": 11216,
+          "sha512": "0899d2edf8e5d428b595251d61c13e828cbfba1899aec0f2a23412e70b67c6f01dd540065b65a1ea328dacc92a18b0c22809d6d0732a0aa182823a26ce36a3d3",
+          "sha256": "f675017e14aa97d2ccb934b83cbfb4d56449db8aaed1a1f821ce56894eabce01",
+          "sha1": "67da6344117bec5e73eb68ad12ebfb6550856a05",
+          "md5": "99943f535d2d2f7e0b3935717b521567"
+        }
+      ]
+    }
+  ]
+}
