@@ -8,9 +8,8 @@ import com.areslib.state.Alliance
 /**
  * Converts driver intent into season drivetrain commands without touching hardware directly.
  *
- * Each axis is deadband-rescaled, exponent-shaped, and passed through a first-order EMA. Command
- * parameters follow ARES field axes: +X forward, +Y left, and CCW-positive rotation. The gamepad
- * adapter maps negated left-stick Y to field X and negated left-stick X to field Y. Blue
+ * Each axis is deadband-rescaled, exponent-shaped, and passed through a first-order EMA. Explicit field commands use +X/+Y field axes and CCW-positive rotation. The gamepad
+ * adapter maps forward to Red +Y and right to Red +X, away from the alliance wall. Blue
  * alliance negates both field-relative translation axes but never rotation. Robot-relative driving
  * is not alliance mirrored. Instances retain smoothing history and belong to one robot.
  */
@@ -62,7 +61,7 @@ class AresDriveController(private val base: FtcMecanumRobot) {
 
     /**
      * Reads normalized FTC gamepad axes and commands the frame selected by
-     * [FtcMecanumRobot.teleopDriveFrame]. Forward is -leftStickY, left is -leftStickX, and
+     * [FtcMecanumRobot.teleopDriveFrame]. Field-relative forward maps to Red +Y and right to Red +X;
      * CCW rotation is -rightStickX. Alliance mirroring applies only to field-relative
      * translation; robot-relative controls retain the robot's physical forward/left axes.
      */
@@ -74,7 +73,7 @@ class AresDriveController(private val base: FtcMecanumRobot) {
         when (base.teleopDriveFrame) {
             FtcTeleopDriveFrame.FIELD_RELATIVE -> {
                 base.mecanumDrive.driveFieldRelativeNormalized(
-                    direction * smoothX, direction * smoothY, smoothRot, useHeadingLock
+                    -direction * smoothY, direction * smoothX, smoothRot, useHeadingLock
                 )
             }
             FtcTeleopDriveFrame.ROBOT_RELATIVE -> {

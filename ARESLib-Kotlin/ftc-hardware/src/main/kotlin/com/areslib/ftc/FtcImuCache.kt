@@ -1,11 +1,10 @@
 package com.areslib.ftc
 
-import com.areslib.Store
 import com.areslib.hardware.sensor.ImuIO
 import com.areslib.hardware.sensor.ImuInputs
 
 /** Samples once at the sensor boundary and owns the validated IMU cache's fallback policy. */
-internal class FtcImuCache(private val store: Store, private val cachedImuInputs: ImuInputs) {
+internal class FtcImuCache(private val cachedImuInputs: ImuInputs) {
     private val imuSampleBuffer = ImuInputs()
 
     fun refresh(imu: ImuIO?) {
@@ -40,7 +39,8 @@ internal class FtcImuCache(private val store: Store, private val cachedImuInputs
     }
 
     private fun invalidateCachedImu() {
-        cachedImuInputs.headingRadians = store.state.drive.poseEstimator.estimatedPoseHeading
+        // Retain the last raw heading. Fallback applies its field offset separately;
+        // feeding the fused heading back here would repeatedly add that offset.
         cachedImuInputs.pitchRadians = 0.0
         cachedImuInputs.rollRadians = 0.0
         cachedImuInputs.yawVelocityRadPerSec = 0.0

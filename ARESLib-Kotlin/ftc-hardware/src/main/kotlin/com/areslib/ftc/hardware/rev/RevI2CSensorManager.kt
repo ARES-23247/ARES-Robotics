@@ -47,9 +47,9 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
                     latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
                     latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
                     latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
-                    latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
-                    latestPitchVel = angularVel.getYRotationRate(AngleUnit.RADIANS).toDouble()
-                    latestRollVel = angularVel.getXRotationRate(AngleUnit.RADIANS).toDouble()
+                    latestYawVel = angularVel.zRotationRate.toDouble()
+                    latestPitchVel = angularVel.yRotationRate.toDouble()
+                    latestRollVel = angularVel.xRotationRate.toDouble()
                     latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
                 }
             } catch (_: Exception) {}
@@ -84,9 +84,9 @@ class RevImuController(private val imu: IMU) : ImuIO, AutoCloseable {
                 latestYaw = yawPitchRoll.getYaw(AngleUnit.RADIANS)
                 latestPitch = yawPitchRoll.getPitch(AngleUnit.RADIANS)
                 latestRoll = yawPitchRoll.getRoll(AngleUnit.RADIANS)
-                latestYawVel = angularVel.getZRotationRate(AngleUnit.RADIANS).toDouble()
-                latestPitchVel = angularVel.getYRotationRate(AngleUnit.RADIANS).toDouble()
-                latestRollVel = angularVel.getXRotationRate(AngleUnit.RADIANS).toDouble()
+                latestYawVel = angularVel.zRotationRate.toDouble()
+                latestPitchVel = angularVel.yRotationRate.toDouble()
+                latestRollVel = angularVel.xRotationRate.toDouble()
                 latestTimestamp = com.areslib.util.RobotClock.currentTimeMillis()
             }
         } catch (_: Exception) {}

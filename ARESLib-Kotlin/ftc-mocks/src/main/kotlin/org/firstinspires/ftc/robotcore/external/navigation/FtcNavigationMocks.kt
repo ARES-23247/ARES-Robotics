@@ -90,16 +90,24 @@ class YawPitchRollAngles(
  *
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
-class AngularVelocity(
-    val unit: AngleUnit = AngleUnit.DEGREES,
-    val xRotationRate: Float = 0f,
-    val yRotationRate: Float = 0f,
-    val zRotationRate: Float = 0f,
-    val acquisitionTime: Long = 0
+class AngularVelocity @JvmOverloads constructor(
+    unit: AngleUnit = AngleUnit.DEGREES,
+    @JvmField var xRotationRate: Float = 0f,
+    @JvmField var yRotationRate: Float = 0f,
+    @JvmField var zRotationRate: Float = 0f,
+    @JvmField var acquisitionTime: Long = 0
 ) {
-    fun getXRotationRate(unit: AngleUnit): Float = if (unit == this.unit) xRotationRate else Math.toRadians(xRotationRate.toDouble()).toFloat()
-    fun getYRotationRate(unit: AngleUnit): Float = if (unit == this.unit) yRotationRate else Math.toRadians(yRotationRate.toDouble()).toFloat()
-    fun getZRotationRate(unit: AngleUnit): Float = if (unit == this.unit) zRotationRate else Math.toRadians(zRotationRate.toDouble()).toFloat()
+    @JvmField var angleUnit: UnnormalizedAngleUnit = UnnormalizedAngleUnit.valueOf(unit.name)
+
+    constructor(unit: UnnormalizedAngleUnit, x: Float, y: Float, z: Float, acquisitionTime: Long) :
+        this(AngleUnit.valueOf(unit.name), x, y, z, acquisitionTime)
+
+    fun toAngleUnit(unit: AngleUnit): AngularVelocity {
+        if (unit.name == angleUnit.name) return this
+        val scale = if (unit == AngleUnit.RADIANS) Math.PI / 180.0 else 180.0 / Math.PI
+        return AngularVelocity(unit, (xRotationRate * scale).toFloat(),
+            (yRotationRate * scale).toFloat(), (zRotationRate * scale).toFloat(), acquisitionTime)
+    }
 }
 
 /**

@@ -23,7 +23,7 @@ class FtcSimulatorControlReconciliationTest {
     }
 
     @Test
-    fun `normal teleop applies field and robot frames differently at ninety degree heading`() {
+    fun `normal teleop applies field and robot frames differently at zero degree heading`() {
         RobotClock.useMockTime(1_000L)
         val base = MecanumRobotDouble().let { double ->
             FtcMecanumRobot(
@@ -38,7 +38,7 @@ class FtcSimulatorControlReconciliationTest {
         base.store.dispatch(RobotAction.PoseUpdate(
             xMeters = 0.0,
             yMeters = 0.0,
-            headingRadians = Math.PI / 2.0,
+            headingRadians = 0.0,
             timestampMs = RobotClock.currentTimeMillis(),
             isReset = true,
         ))
@@ -47,7 +47,8 @@ class FtcSimulatorControlReconciliationTest {
         base.teleopDriveFrame = FtcTeleopDriveFrame.FIELD_RELATIVE
         AresDriveController(base).driveWithGamepad(fieldGamepad, useHeadingLock = false)
         assertTrue(abs(base.store.state.drive.xVelocityMetersPerSecond) < 1e-8)
-        assertTrue(base.store.state.drive.yVelocityMetersPerSecond < -0.1)
+        // Red stick-forward is field +Y; at zero heading that is robot-left.
+        assertTrue(base.store.state.drive.yVelocityMetersPerSecond > 0.1)
 
         val robotGamepad = AresGamepad().apply { update(GamepadState(leftStickY = -1.0f)) }
         base.teleopDriveFrame = FtcTeleopDriveFrame.ROBOT_RELATIVE
