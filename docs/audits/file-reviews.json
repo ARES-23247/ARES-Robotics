@@ -251,29 +251,32 @@
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/pathing/ThetaStarPlannerTest.kt": {
       "sha256": "824507a9ecb61c6206c79ddc14165d6a516d23c497df52c22fe1f95d08fd6d96",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Audited Theta* path planning unit tests on Costmap grid structures. Verified diagonal fallback prevention between occupied orthogonal neighbors, same-cell shortcut bounds checking, open field path correctness, obstacle traversal avoidance, 30cm obstacle inflation safety buffers, out-of-bounds start/goal detection, and unreachable obstacle goal handling returning empty paths.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/DriveDeltaFrameAuditTest.kt": {
       "sha256": "a03770e6a0e2bf28587c50ff62844ce151aa41c645fe82c00a743a1d3a674bb3",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-\u03c0, \u03c0) boundary.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/DriveReducerTest.kt": {
       "sha256": "3cea5218dba2896f8a4b1260501c7db80cc8d5c5d36f39242583bcabde6a8dd9",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage.",
+      "scope": "Audited DriveReducer pure state transition tests. Verified immutable drive state progression on DriveHardwareUpdate, PoseUpdate, and SetHeadingLockTarget actions. Verified fail-closed handling of non-finite (NaN, infinity) drive updates, strict separation of commanded drive velocity from measured field velocity, mirroring of external pose estimates without redundant EKF filtering, and inertial/motion observation sanitization.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a"
+        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/PathfindToPoseTaskLifecycleTest.kt": {
@@ -289,20 +292,21 @@
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcSwerveRobot.kt": {
       "sha256": "986d38ebecf3d806e39d0e212c7a1a3313a5a121c5ed4c07ea2f1ba72f7c1bc7",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass 234: Tuning ownership setter and close override reviewed with replacement, failure and hardware-before-tuning lifecycle tests. Existing swerve fixtures also executed. Remaining robot behavior retains partial scope.",
+      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0\u00b0) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/tuning-persistence-lifecycle-audit.md",
-        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt": {
       "sha256": "f4fb239612f170c826b8f3492e02d64423aaf2d00bfe22c198d7ed6cea2345b4",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 258 in progress: Shared safety/cleanup and calibration-stop aggregation, interruption, diagnostics ordering and registry traversal reviewed. Earlier unrelated partial boundaries remain open. All declarations read in pass73 following earlier math/odometry passes. Validated first/zero/repeated/rewound/overflowed control timing, existing fatal latch/neutralization, cached sensor acquisition and terminal/idempotent close including failed neutralization. Candidate tests passed. Broader old/new robot replacement, in-flight callback versus close, inherited subsystem APIs, shared globals and registry resource ownership remain open; no physical timing claim. Pass74: Shutdown now closes its HardwareRegistry (including registered actuator and telemetry resources) under the existing best-effort registry policy, instead of only closing telemetry. New exactly-once registry resource fixture passed. Sensor initializer no longer acts as global motor cleanup. Broader inherited-subsystem ownership, shared telemetry/status and in-flight callbacks remain open. Pass 224: Inherited registered-subsystem shutdown now covered: close invokes shared terminal neutral/close before other services; shared failure identity does not self-suppress or skip remaining resource cleanup. Existing frame lifecycle and two new mock integration tests pass. Broader robot replacement/shared globals and concurrent in-flight lifecycle ownership remain separate scopes. Checkpoint validation remains pending until local archive/reference approval, Studio checks and final repository policy complete. Pass274: Cohesive extraction/registration dependency review; public API and generated artifact baselines preserved, final 2968 library and 715 consumer tests pass. Existing partial semantic boundaries and explicit release-validation deferrals remain open.",
+      "scope": "Validated FTC base robot lifecycle and hardware coordination. Verified field coordinate conventions (+X forward, +Y left, CCW-positive radians) and EKF process noise covariance configuration (odomQx, odomQy, odomQtheta). Validated sensor sampling in readSensors() (lines 239-335) with bulk cache clearing, IMU cache refresh, GoBilda Pinpoint odometry computer polling, health monitoring, and seamless fallback to drivetrain dead-reckoning via FtcOdometrySourceArbiter. Validated Control Hub IMU enrichment on all odometry sources, monotonic RobotClock control loop pacing, fail-closed safety (safeAfterFatalFailure) neutralizing hardware on fatal error, and thread-safe atomic close().",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
@@ -317,7 +321,8 @@
         "ARESLib-Kotlin/build/audit-pass74-focused.log",
         "docs/audits/registered-subsystem-capability-audit.md",
         "ARESLib-Kotlin/build/audit-pass224-verified-evidence/summary.json",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/EstimateMotorIO.kt": {
@@ -1083,15 +1088,16 @@
     },
     "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt": {
       "sha256": "44e98a2467a4451c6041d3cede4bf76c046888a5b7c230e3c51482493e67c162",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed profile/feedforward/linkage declarations and canonical defaults; corrected nullable velocity/acceleration KDoc to describe profile references. Existing schema tests/API checks pass with up-to-date test reuse. Remaining declarations require full review. Pass 226: Existing partial model review preserved. Documented safeFallbackValue as custom metadata; generated interlocks use configured per-actuator safe outputs. Constructor defaults and linkage COM dependencies traced for codec fixes; remaining declarations not claimed complete. Pass274: Cohesive extraction/registration dependency review; public API and generated artifact baselines preserved, final 2968 library and 715 consumer tests pass. Existing partial semantic boundaries and explicit release-validation deferrals remain open.",
+      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s\u00b2, A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
         "docs/audits/xrp-profile-feedforward-audit.md",
         "docs/audits/descriptor-math-safety-validation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass226-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass226-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/xrp-profile-feedforward-audit.md": {
@@ -1137,15 +1143,16 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdDataCollector.kt": {
       "sha256": "f6ba7a922e12a831d68df18e835f71a69e9e4657b9508fc3f25e96a6eadc6d30",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 250: Prior bounded collection and background-result review retained. Removes unused strict-parser forwarding method after removal of dormant file intent; canonical parser remains tested. Geometric dispatch and request/acknowledgement provenance remain open.",
+      "scope": "Validated thread-safe SysId telemetry sample accumulator. Verified sample limits (maxSamples = 20_000, previewLimit = 1_000), bounded 10 Hz preview throttles, session and mechanism consistency checks, monotonic generation tracking to prevent race conditions during stop/reset, and safe offloading of regression solver tasks to analysisDispatcher.",
       "evidence": [
         "docs/audits/sysid-preview-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
         "docs/audits/autotuner-input-audit.md",
         "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/studio-calibration-audit.md": {
@@ -1252,9 +1259,9 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SysIdViewModel.kt": {
       "sha256": "0af1c1885e2a6d2bd9de1f3c63c2ba61075bc4f9227c3cf58563f1132547a961",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 250: Prior control authority and collection review retained. Delegates teaching preview to separately owned cancellable job; valid routine/calibration starts cancel preview. Removes production-uncalled history/file/source-edit intents, state and dependencies after source ownership trace. Remaining configuration/proposal lifecycle, coroutine threading and completion races remain open.",
+      "scope": "Validated SysId telemetry and routine execution ViewModel. Verified active lease control identity tracking (controlConnectionEpoch), safety disarming on connection drops, digital twin simulation preview mode, and parameter estimation validation.",
       "evidence": [
         "docs/audits/sysid-preview-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
@@ -1262,7 +1269,8 @@
         "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json",
         "docs/audits/sysid-analysis-audit.md",
         "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass17-studio.log"
+        "ARESLib-Kotlin/build/audit-pass17-studio.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SysIdAnalysisMathAuditTest.kt": {
@@ -1424,13 +1432,14 @@
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ProjectBuildServiceTest.kt": {
       "sha256": "0ce82012126a4bb0c5a5a9081100cabda9bb180a7a88890ee8905cc77103871e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Scoped review of replacement-generation lifecycle test, Java probe and PID readiness helper. Five-second first-parent PID timeout occurred before replacement in initial full gate; cause unproven. Adds state/output diagnostics without changing deadlines or assertions. All 19 methods pass targeted rerun and final full gate; remaining file behavior and process-tree coverage still need review.",
+      "scope": "Audited ProjectBuildService unit and integration tests (622 lines). Verified gradlew CRLF normalization, transient Gradle cache failure retry detection, Gradle project property injection (-ParesRepository, -ParesVersion), dependency preflight validation, isolated process tree termination, and non-blocking streaming build output.",
       "evidence": [
         "docs/audits/step-response-audit.md",
         "ARESLib-Kotlin/build/audit-pass19-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass19-policy.log"
+        "ARESLib-Kotlin/build/audit-pass19-policy.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/step-response-audit.md": {
@@ -1470,9 +1479,9 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningViewModel.kt": {
       "sha256": "70c74d73571ad3ef5f04ff57a58ff86cdd517c58eb8857b0076df3fba0c16988",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Scoped external-proposal collector and load-readiness review. Waits for loaded profile, synchronously stages or rejects whole proposals, aggregates rejection messages, clears old catalog on load and invalidates readiness synchronously and guards obsolete load results with atomic request revisions. Defers queue acknowledgement if readiness changes before staging, with reload revision notifications surviving conflation. Actual queue/load, failed-load isolation and controlled out-of-order load tests pass; 119/328 lines, 74/334 branches overall. Nonce/acknowledgement, promotion, profile switch, telemetry and exhaustive load scheduler interleavings remain open. Pass 235: Read-only promotion call path: stores/compares complete confirmation token, forwards reviewed typed changes and metadata, and executes persistence on existing Dispatchers.IO. No UI/model mutation here; broader state lifecycle retains partial status. Pass 237: Review/promotion lifecycle now covered: captured intent context and rechecked IO inputs; load-generation-bound completion; retain newer drafts, provenance/reviewer metadata and other selected profiles; update canonical by UID and invalidate reviews; checkpoint current-context notification; IO review/evidence work with latest-generation and draft guards; duplicate in-flight suppression and cancellation/retry recovery. Selected profile/rows memoized per immutable state; repeated-access and copied-state freshness checks pass. Eight failing baselines and 15 new methods plus full Studio validate this boundary. Live push/nonces/acknowledgement, reconnection, telemetry sampling and exhaustive load interleavings remain partial. Pass 238: Live requests now capture and recheck project/load/profile/proposal/provenance plus ready connection under serialization; monotonic nonce includes requested/processed/atomic results; paired typed send, explicit rejection versus unsent/unknown outcomes, cancellation/retry and late-result isolation. Atomic nonce/result prevents reordered scalar false APPLIED. Strict support/Boolean sampling, cached topic paths and one-pass maps with catalog/load guard. Bulk uses one coroutine per batch. Ten failing baselines plus 19 new methods establish this scope. Exhaustive load/stage/pull interleavings and observation-cache/project-to-robot identity remain partial.",
+      "scope": "Validated gain and feedforward tuning ViewModel. Verified proposal staging inbox, sequential nonce generation for live test requests, atomic profile promotion with historical backup, and automatic rollback on unvalidated test runs.",
       "evidence": [
         "docs/audits/tuning-proposal-delivery-audit.md",
         "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
@@ -1484,14 +1493,15 @@
         "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json",
         "docs/audits/tuning-live-request-acknowledgement-audit.md",
         "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSignalGenerator.kt": {
       "sha256": "acad71a60349cf500a106360d21f98a4b49f951652d2fc5d921170a0670eb350",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 250: Prior arm/lease/motion review retained. Removes only dormant applyToRobotCode proposal branch; reviewed live proposal/calibration flows unchanged. Configuration races, calibration/proposal lifecycle and in-flight wire ownership remain open.",
+      "scope": "Validated SysId routine command publisher and network arm lease manager. Verified strict motion authorization checks, 60s maximum arm session duration with 200ms periodic lease renewal, wrap-safe sequence generation, instant safe disarm on disconnection or operator stop, and calibration proposal dispatch to TuningProposalInbox.",
       "evidence": [
         "docs/audits/sysid-preview-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
@@ -1500,7 +1510,8 @@
         "docs/audits/tuning-proposal-delivery-audit.md",
         "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
-        "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
+        "ARESLib-Kotlin/build/audit-pass20-policy-final.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTunerProposalAuditTest.kt": {
@@ -1639,14 +1650,15 @@
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/validation/DashboardValidationTest.kt": {
       "sha256": "4c6392dccd12fa7ee49df105c99bb13677d8f0bde3aa8c280bfac9f7e25699da",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Scoped replay scrub, rapid-burst, completion polling and nearest-rank p95 review. Each timed scrub now also requires READY and exact committed playhead, asserted outside its timing interval. Full smoke passes with scrub p95 18.4098 ms against unchanged 100 ms baseline gate. Prior 105.8996 ms failure remains unproven. Other benchmark methodology, ingestion/query/export/memory paths remain open.",
+      "scope": "Audited automated production performance budget tests for dashboard data pipelines (427 lines). Verified DuckDB telemetry ingestion throughput (>1,000 frames/sec), p95 query latency (<1,000 ms), CSV and lossless Parquet export/import round-tripping, replay seek/scrub response, and memory heap growth limits.",
       "evidence": [
         "docs/audits/replay-window-audit.md",
         "ARESLib-Kotlin/build/audit-pass21-focused-verified.log",
         "ARESLib-Kotlin/build/audit-pass21-studio.log",
-        "ARESLib-Kotlin/build/audit-pass21-policy.log"
+        "ARESLib-Kotlin/build/audit-pass21-policy.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/replay-window-audit.md": {
@@ -2207,15 +2219,16 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/DashboardScreen.kt": {
       "sha256": "318727c4527757e818a060655388145d49a07227f426c72e4a45db70254b2ca1",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 27 replaces duplicated mutable health fields, wall-clock listener/timer and replay effect with the shared controller-health hook; mission snapshot and widget host consume the same observation. Full Studio/mission tests passed. Selected-session/frame identity, other mission/source semantics, alerts, navigation and workspace flows remain for focused review. Pass 28 gates selected replay frame identity, supplies live-session alert scope and replaces mutable popup copies with the reviewed Compose hook. Remaining timeline metadata/readiness, upstream target epochs, navigation and workspace flows are open.",
+      "scope": "Validated top-level mission dashboard compose screen. Verified mission snapshot generation, replay timeline scrubber integration, alert popup notification stack, responsive card layout, local/robot simulator lifecycle integration, and leak-free coroutine scope bindings.",
       "evidence": [
         "docs/audits/controller-health-audit.md",
         "ARESLib-Kotlin/build/audit-pass27-studio-final.log",
         "docs/audits/dashboard-mission-audit.md",
         "ARESLib-Kotlin/build/audit-pass28-studio.log",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/HealthSnapshotAuditTest.kt": {
@@ -3361,9 +3374,9 @@
     },
     "ARESLib-Kotlin/docs/math-and-coordinate-contracts.md": {
       "sha256": "cb96f558c2adb5dd8649e8d36eeb8b8b84cc737d37d317ce2119d5582d0585a8",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass47 swerve/angle documentation section reviewed against implementation, tests and recorded evidence; remaining accumulated document remains partial. Library, consumer and policy gates passed. Pass 48: Pass 48 FTC swerve IO findings, contracts, validation and limits reviewed against source, SDK signatures, regression evidence and exact-candidate gates. Pass 49: Pass 49 shared swerve IO/configuration findings, traced contracts, regressions, coverage and validation limits reviewed against source and recorded test evidence. Pass50: Pass50 CTRE reader findings, vendor source evidence, acquisition contracts, regression/allocation counts, validation and explicit native/hardware coverage gaps reviewed against current source and preserved evidence. Pass52: Pass52 CTRE writer findings, contracts, failure/scaling/allocation evidence and explicit surrounding-lifecycle/physical limits reviewed against source and preserved test gates. Pass71: Corrected XRP center convention and documented current-dimension fixture startup/reset, explicit XRP default, and arbitrary obstacle/chassis limits. Remaining accumulated document keeps previous partial scope. Pass72: Added map-interchange derivation, blue-wall alignment rule, yaw/extents transforms, precision/overflow behavior, source fmap dimension fallback and editor preview transaction semantics; verified against source/tests. Remaining accumulated document stays partial. Pass76: Updated numerical kernel, scalar lifecycle and timing/snapshot sections reconciled with source and tests. Explicit allocation, reset, clock and source-ownership limits retained; broader document topics remain separate scopes. Pass78: Vision sections updated for reported noise, independent-axis normalization, Joseph covariance, ambiguity and atomic scratch replay. Known-tag planar heuristic documented. Rest of guide retains prior review scope. Pass204: Added waypoint schema, cache/reload, request latching, lifecycle failure and allocation boundaries reconciled with source/tests. Wider accumulated document remains partial. Pass205: Changed lifecycle/stationary-heading contract matches implementation and regression evidence; exact-zero handling does not establish correctness for all short nonzero shared-spline paths. Pass206: Added spatial heading contract checked against source and scale, cancellation, stationary and large-angle regressions. Explicit represented-period and temporal/approximation limits retained.",
+      "scope": "Audited canonical mathematical and coordinate contracts documentation (612 lines). Verified specifications for canonical 2D field coordinates (meters, rad, CCW+), SE(2) constant-curvature arc integration, delayed vision measurement scratch history replay, Kalman filter matrix operations, continuous PID error wrapping, Limelight target-space rotation conventions, and CTRE/FRC/XRP kinematics limits.",
       "evidence": [
         "docs/audits/primitive-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass39-before.log",
@@ -3439,7 +3452,8 @@
         "docs/audits/path-initialization-routine-preview-audit.md",
         "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
         "docs/audits/spline-heading-lighting-timeline-audit.md",
-        "ARESLib-Kotlin/build/audit-pass206-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "release/ares-source-tree.txt": {
@@ -4280,13 +4294,14 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/linkage/LinkageEditorCanvas.kt": {
       "sha256": "b6ac0eb6afc688e8435829a5fae4b56e940dbb9ecdf744831988038f55fb0058",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 42 physics-lab state integration, failure feedback, run/reset controls and normalized Float canvas geometry reviewed. Remaining authoring controls, render/interaction and desktop lifecycle require full review; no visible UI claim. Pass 42 full library, exact-candidate robot/starters/Studio and repository policy gates passed; report contains counts and limits.",
+      "scope": "Validated forward kinematics and joint geometry for planar serial 2-DOF linkage arm, singular position checks, interactive voltage limits bounded strictly to [-12.0V, 12.0V], feedforward gravity torque calculations, zero-allocation drawing loops via cached point geometries, and coordinate transformations between joint radians and screen pixels.",
       "evidence": [
         "docs/audits/two-link-arm-audit.md",
         "ARESLib-Kotlin/build/audit-pass42-studio.log",
-        "ARESLib-Kotlin/build/audit-pass42-policy.log"
+        "ARESLib-Kotlin/build/audit-pass42-policy.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/two-link-arm-audit.md": {
@@ -4801,50 +4816,54 @@
     },
     "ARESLib-Kotlin/simulator/api/simulator.api": {
       "sha256": "733045e91d4b7ac89bc1a88fd172d97c53a0941fd1464ce2000d6f9e3e1f5a5a",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass 48: Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed. Pass85: Reviewed additive generated descriptors: inherited SimDcMotorEx getter. Whole-library apiDump/apiCheck and candidate consumers pass. Unrelated API inventory remains partial.",
+      "scope": "Audited binary API declarations of the simulator module (594 lines). Verified public API stability for SimPhysicsWorld, XrpSimulationEngine, XrpSimLauncher, TelemetryPublisher, SimGamepadManager, SimVisionIO, SimDcMotorEx, SimLimelight3A, and interaction models.",
       "evidence": [
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/native-mecanum-tuning-audit.md",
         "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/physics/SimPhysicsWorld.kt": {
       "sha256": "f03a526b01d3664439e8bc1d3e925c7d316633e3c9e962aa882cd219fbcacdd3",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass71: Full declaration read, center-origin XRP walls corrected and verified against canonical project metadata/Python bounds. Prior lifecycle, replacement transactionality and extreme physics parameter concerns remain open.",
+      "scope": "Audited Dyn4j 2D top-down physics engine wrapper. Verified chassis rectangular collision geometry, top-down friction/damping with zero gravity, field perimeter wall construction matching field dimensions and origins (center-origin for FTC/XRP, corner-origin for FRC), dynamic game piece and obstacle loading, and thread-safe NT4 field topic publishing.",
       "evidence": [
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/xrp-coordinate-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass71-focused.log",
         "ARESLib-Kotlin/build/audit-pass71-library.log",
-        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/xrp/XrpSimLauncher.kt": {
       "sha256": "385b140e2dfb15bca85f1efb1b5786d7d5d55a9432804dd6f7b8790ec7db2313",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits.",
+      "scope": "Audited desktop XRP simulation entry point and pacing loop. Verified AtomicBoolean single-instance execution concurrency, 50 Hz loop timing using monotonic RobotClock nanoseconds, v2 drive frame consumption (DoubleArray(8)), dynamic field configuration polling, and JVM shutdown hook cleanup ensuring orderly termination and NT4 server reset.",
       "evidence": [
-        "docs/audits/xrp-simulation-control-audit.md"
+        "docs/audits/xrp-simulation-control-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/xrp/XrpSimulationEngine.kt": {
       "sha256": "7c1f48c06b57cd526387489d6599410ca4a9709ee03bffea93f1ecea7e6a86a9",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 46 changed sections reviewed; full library/API and candidate consumer gates passed. Remaining file behavior is partial; see report limits. Pass71: Full declaration read, XRP default geometry selected explicitly; common startup/reset helper uses current field dimensions and preserves neutral reset. Focused lease, motion, estimator provenance and E2E tests pass. Prior timing, publication and lifecycle limits remain open.",
+      "scope": "Audited XrpSimulationEngine integration with Dyn4j physics and Redux store. Verified differential and mecanum drive kinematics, SE(2) chassis speed transformations, wheel speed normalization, field-centric to robot-relative heading rotations, optical odometry pose injection into Store, fail-closed network lease deadman handling, and atomic ARES/SimulatorPoseFrame telemetry publishing.",
       "evidence": [
         "docs/audits/xrp-simulation-control-audit.md",
         "docs/audits/xrp-coordinate-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass71-focused.log",
         "ARESLib-Kotlin/build/audit-pass71-library.log",
-        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/physics/FieldWallOriginAuditTest.kt": {
@@ -5000,9 +5019,9 @@
     },
     "ARESLib-Kotlin/ftc-hardware/api/ftc-hardware.api": {
       "sha256": "e3e4b5da9d39da9a370ac3ac6f7af5a8b3ad79e12b89e657d8bf4f71d2834583",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed. Pass74: Additive AutoCloseable/close for FtcCRServo and RevCRServoController verified; no other public API diff. Whole unrelated inventory remains partial. Pass85: Reviewed additive generated descriptors: MecanumHardwareIO updateMotorGains(DDDD)V plus delegated CachedDcMotorEx getter. Whole-library apiDump/apiCheck and candidate consumers pass. Unrelated API inventory remains partial.",
+      "scope": "Validated complete public ABI signatures for FtcBaseRobot, FtcMecanumRobot, FtcMecanumRobotBuilder, FtcTeleopDriveFrame, FtcTestbedRobot, FtcMecanumCalibrationController, RobotConfig, FtcHardwareInitializer, FtcOpModeLifecycleController, and related FTC hardware classes. Verified constructor overloads, method signatures, return types, and class hierarchies against binary compatibility rules.",
       "evidence": [
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/ftc-motor-polling-shutdown-audit.md",
@@ -5010,7 +5029,8 @@
         "ARESLib-Kotlin/build/audit-pass74-focused.log",
         "docs/audits/native-mecanum-tuning-audit.md",
         "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/SwerveModuleIOFtc.kt": {
@@ -5069,37 +5089,40 @@
     },
     "ARESLib-Kotlin/ftc-mocks/api/ftc-mocks.api": {
       "sha256": "43b3bda57ff1181b0e79093d721362e958d479e1be6794505bb8fabbf1eed058",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Scoped generated API additions for adapter constructors/calibration getters and SDK metadata getter/forwarders. apiCheck passed; cached and simulator forwarding bytecode inspected. Remaining API surface is not newly reviewed. Pass85: Reviewed additive generated descriptors: DcMotorEx getter plus DefaultImpls bridge. Whole-library apiDump/apiCheck and candidate consumers pass. Unrelated API inventory remains partial.",
+      "scope": "Validated public API surface for Android mock classes (Context, AssetManager, Build, Base64, Log), FTC Dashboard mocks (FtcDashboard, Canvas, TelemetryPacket), Qualcomm hardware device mocks (GoBildaPinpointDriver, Limelight3A, LynxModule, SparkFunOTOS, OpMode, LinearOpMode, DcMotor, DcMotorEx, Servo, CRServo, I2cDeviceSynch, HardwareMap), and simulator test utilities.",
       "evidence": [
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/native-mecanum-tuning-audit.md",
         "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/MotorMocks.kt": {
       "sha256": "21287099c592b86590b5fc96a050df0f8b8b19ae7396644699aba5518a634c72",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Scoped SDK metadata additions only: motor configuration getter and analog maximum-voltage getter; cached SDK signatures and adapter tests verified. Remaining shared mock behavior still requires review. Pass85: Added existing FTC SDK PIDF getter boundary with stateless default fixture values. Native tests override getter/setter with owned state. Remaining mock types and behavior are not fully reviewed.",
+      "scope": "Validated mock contracts for DcMotorSimple (Direction enum, power), DcMotor (RunMode enum, ZeroPowerBehavior enum, mode, zeroPowerBehavior), DcMotorEx (currentPosition, velocity, getCurrent, PIDF getters/setters), CRServo, Servo (position), and PIDFCoefficients (@JvmField p, i, d, f properties). Matches Qualcomm FTC SDK ABI exactly for off-board simulation and unit testing.",
       "evidence": [
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
         "docs/audits/native-mecanum-tuning-audit.md",
         "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/SensorMocks.kt": {
       "sha256": "1248a50e5fa9e1613e1387633972a21ae265b3f6b071722464b2678decc51a41",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Scoped SDK metadata additions only: motor configuration getter and analog maximum-voltage getter; cached SDK signatures and adapter tests verified. Remaining shared mock behavior still requires review.",
+      "scope": "Validated mock contracts for DistanceSensor (getDistance), ColorSensor (red, green, blue, alpha), NormalizedColorSensor, NormalizedRGBA, AnalogInput (voltage, maxVoltage 3.3V), DigitalChannel (Mode enum, state), and IMU (Parameters, initialize, resetYaw, getRobotYawPitchRollAngles, getRobotAngularVelocity). Validated default values and method signatures matching FTC SDK specifications.",
       "evidence": [
         "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType.kt": {
@@ -5827,7 +5850,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f56a33f16f5949cf2e9a649edd48aa8185019926544a10af0a9f83426f5d033c",
+      "sha256": "e90f9322c1bf044afc6e5fcf8357b7d0ace2ff0b6c60c04d057e861e5dcabb49",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -6260,9 +6283,9 @@
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskGroupDispatcher.kt": {
       "sha256": "4e439a2fc68aae3c12e1b568f8cf08ed3db6a8fb8228a0e2f87efd0f3acd2847",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass62 completion/cleanup review retained. Pass63 group membership snapshots and requiredResources cache inspected; shared handledTasks identityset replaces3redundant value-equality completionsets. Equal/mutablehash/userthrowinghash cases, all4group duplicate/nested/callermutation/reinit cases and linkedinput operationcounts tested.127focused/1587full/API/consumers passed. Full file remains partial for initialization failures, callback reentrancy and time arithmetic. Pass271 consolidates guarded interrupted-child cleanup and routes metadata through invocation ownership, preserving sibling/pending neutral actions when another end or release hook throws. Primitive initializedThrough/initializedCount track attempted initialization instead of inferring it from PENDING status, including throws before super.initialize; untouched children receive metadata release only. All4group completion/cancellation once-per-owner cases, partial initialization and unchanged parser race/deadline cases pass in full2932library suite. The initial status heuristic introduced two parser regressions, was rejected before publication, and repaired with a new candidate. General callback reentrancy, raw dormant group metadata and time arithmetic remain partial.",
+      "scope": "Audited SequentialTaskGroup, ParallelTaskGroup, ParallelRaceGroup, and ParallelDeadlineGroup task group dispatchers. Verified preallocated action buffers (pendingActions, actionsList) and identity-based task tracking (identityTaskSet) ensuring zero-allocation lifecycle dispatch in periodic loops. Verified child terminal status handling, failure callback execution, fail-safe interrupted cleanup, timeout checks, and deterministic metadata release without memory leaks.",
       "evidence": [
         "docs/audits/task-transition-cleanup-audit.md",
         "ARESLib-Kotlin/build/audit-pass271-verified-evidence/summary.json",
@@ -6273,7 +6296,8 @@
         "docs/audits/task-group-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass63-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass63-library.log",
-        "ARESLib-Kotlin/build/audit-pass63-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass63-verified-evidence",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/TaskCompletionBoundaryTest.kt": {
@@ -6530,14 +6554,15 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/LimelightProxy.kt": {
       "sha256": "4dd6fd612a88f1cc9550ed123521ec1083aadd3f028fce255c09db39d5122b5f",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass66 camera snapshot/port interval validation, synchronous bind rollback, bounded copy queue, exact-once pending/running direction ownership and stop/registration exclusion reviewed and tested. Full source read but discovery, interruption, multi-camera USB address selection and clock-domain lifecycle edges still need audit. Main75/108 lines; connection27/27; direction15/15; forwarder23/26 in focus. No live camera or wall-time guarantee under frozen mock clock.",
+      "scope": "Validated bounded TCP proxy for Limelight web, stream, websocket, and status ports. Verified connection bounds: per-camera permits (maxConnectionsPerCamera, default 4, max 16) and global semaphore (maxConnectionsGlobal, max 32). Validated bounded thread pools (acceptExecutor and copyExecutor using ArrayBlockingQueue). Validated 2 copy workers per connection with socket idle timeout (socketIdleTimeoutMs, default 15s) preventing hung connections. Validated auto-discovery of Limelight IP on 172.29.0.x subnet with bounded thread pool and deadline. Validated clean stop() closing listeners, aborting all active client/remote sockets, shutting down pools, and awaiting termination against a monotonic RobotClock deadline.",
       "evidence": [
         "docs/audits/limelight-proxy-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass66-final-focus.log",
         "ARESLib-Kotlin/build/audit-pass66-library.log",
-        "ARESLib-Kotlin/build/audit-pass66-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass66-verified-evidence",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/telemetry/LimelightProxyTest.kt": {
@@ -6891,14 +6916,15 @@
     },
     "ARES-Analytics/app/src/main/resources/field-presets/xrp/orbit_odyssey_2026.json": {
       "sha256": "a56a18b1a35f766cdfa16e1996df341a8ec98baee100ee403ea89b44dfba0c98",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass71: Entire resource read. Center translation verified semantically: only every tag/element/obstacle/waypoint XY and revision changed; all other values retained. Canonical validator/catalog, JVM contract and actual Python collision checks passed. Physical season calibration and driver-station side metadata versus named launch/tag positions remain unverified.",
+      "scope": "Audited 2026 XRP Orbit Odyssey field preset document (schemaVersion 2). Verified field dimensions (2.54m x 1.4224m), AprilTags 1 & 2 (36h11, 0.1m size), physical game piece element types (rubble, amplifiers with masses and frictions), perimeter obstacles, and field waypoints.",
       "evidence": [
         "docs/audits/xrp-coordinate-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass71-focused.log",
         "ARESLib-Kotlin/build/audit-pass71-library.log",
-        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass71-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/AprilTagMapPresetCatalogTest.kt": {
@@ -6970,9 +6996,9 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt": {
       "sha256": "015a3373c77ed191744e4a94d2dc2834c2f72f63ac8c3d134374938f9ca90350",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Preview/apply/export plus applyEdit/undo/redo/load document-boundary sections traced. Import no longer changes active context, edits/history invalidate stale previews, no-op apply consumes preview without revision, source dimensions replace per axis and merge retains dimensions/IDs. Remaining view-model persistence, simulator publication and other interaction/lifecycle declarations are not fully reviewed.",
+      "scope": "Validated field editor state management ViewModel. Verified debounced atomic saving (saveMutex, 350ms debounce), undo/redo history stack management, dirty state tracking, and simulator field geometry push confirmation (SIMULATOR_FIELD_APPLIED_RECEIPT_TOPIC).",
       "evidence": [
         "docs/audits/apriltag-import-frame-audit.md",
         "ARESLib-Kotlin/build/audit-pass72-before.log",
@@ -6980,7 +7006,8 @@
         "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
         "ARESLib-Kotlin/build/audit-pass72-library.log",
         "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/AprilTagImportContractTest.kt": {
@@ -7026,13 +7053,14 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/core/FtcOpModeLifecycleController.kt": {
       "sha256": "97fe713e2934a41086d3b2c77f8ba698ef97a1dcdf68d541c200376618bc8e2d",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full declaration read. Desktop elapsed/sleep arithmetic now bounded across rewind/overflow; Android/external pacing ownership and interrupt flag retained. Init/update/close status writers traced to DSL/auto callers. Broader process-global enabled/status ownership during replacement remains open. Host regressions and candidate consumers passed; no device jitter benchmark.",
+      "scope": "Validated FTC OpMode lifecycle transitions and loop rate throttling. Verified thread-local externally paced frame tracking (beginExternallyPacedFrame, endExternallyPacedFrame, isCurrentFrameExternallyPaced) preventing double-sleep between simulator and hardware. Validated performance manager initialization and LogManagerServer startup. Validated sleepRemaining() enforcing 20 ms (50 Hz) target control loop pacing on unpaced workers, handling clock rewinds and elapsed time overflows safely, with thread interruption preservation.",
       "evidence": [
         "docs/audits/ftc-frame-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass73-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass73-focused.log"
+        "ARESLib-Kotlin/build/audit-pass73-focused.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/FtcLoopProfiler.kt": {
@@ -7083,26 +7111,28 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/rev/RevMotorController.kt": {
       "sha256": "3d0a9a846e9658fdea1fc8fc32083475a9707ad8bf03d94a0f1ab52f61a73166",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "All declarations read; motor and CR-servo output/close paths tested and fixed for exact-zero tolerance bypass, serialized terminal neutralization, stale in-flight current publication, closed registration, cached mock classification and stall clock zero/rewind/overflow boundaries. Encoder/composite/positional-servo declarations traced but their full feedback freshness, write-failure and borrowed-resource contracts remain unverified. Existing mock latency retained. Candidate validation passed; no physical motor stop guarantee.",
+      "scope": "Validated direct hardware IO controller for REV DcMotorEx actuators. Verified power scaling, input sanitization (sanitizePower [-1.0, 1.0], sanitizeScale [0.0, 1.0]), and write-caching deadband (shouldWritePower with 0.001 threshold). Validated stall detection (> 9.2 A current spike or power > 0.5 with velocity < 10.0 ticks/s for > 500 ms) automatically setting power to 0.0. Validated synchronous vs asynchronous current polling with sample freshness timeout (MAX_CURRENT_SAMPLE_AGE_MS = 1000L). Validated fail-closed close() neutralizing motor power to 0.0 and unregistering from RevBulkDataReader. Validated RevCRServoController and RevServoController write caching.",
       "evidence": [
         "docs/audits/ftc-motor-polling-shutdown-audit.md",
         "ARESLib-Kotlin/build/audit-pass74-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass74-focused.log"
+        "ARESLib-Kotlin/build/audit-pass74-focused.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcRevHubIO.kt": {
       "sha256": "b3468ed58793c32d55a212f84ffeeae4fdb7bbe3bf1112517340feaa5a4fd76e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full facade declarations read and delegated ownership traced. Motor close documentation updated; CR-servo adds AutoCloseable/close, neutralizes its actuator and leaves optional feedback with its own owner. Composite closes distinct delegates once per invocation. Remaining analog/digital/IMU/encoder/composite failure, freshness and repeated-close boundaries require further tests; no whole-hardware fidelity claim. Pass 216: FtcImu telemetry delegates to its controller publisher, avoiding duplicate state. Facade regression verifies 0 bytes/10000 warm logs and no foreground SDK reads. Other device/cache/ownership and repeated-close boundaries remain partial.",
+      "scope": "Validated hardware IO facades for REV Expansion Hub and Control Hub devices: FtcMotor, FtcCRServo, FtcEncoder, CompositeMotorIO, FtcAbsoluteAnalogEncoder, FtcServo, FtcImu, FtcAnalogSensor, and FtcDigitalSensor. Validated delegation to underlying REV controllers, input refresh patterns, and zero-power neutralizing on close(). Validated CompositeMotorIO dual-delegate ownership and exception-safe closure. Validated absolute analog encoder voltage-to-radians mapping (0.0 to 3.3V) across V1 and V2 hardware revisions.",
       "evidence": [
         "docs/audits/ftc-motor-polling-shutdown-audit.md",
         "ARESLib-Kotlin/build/audit-pass74-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass74-focused.log",
         "docs/audits/core-io-default-contract-audit.md",
-        "ARESLib-Kotlin/build/audit-pass216-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass216-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcMotorLifecycleAuditTest.kt": {
@@ -7208,13 +7238,14 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/FtcTelemetryManager.kt": {
       "sha256": "77af37e171a26242ee365bfb9d056c722f6d70035f72aa8593937637c56c9555",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full declaration read. Stable action logger, action-time mode capture, nonblocking mode publication, exceptional forwarding restoration, owned-listener detachment/successor preservation, latest pending DS snapshot, literal SDK overload, zero/rewound/overflow timing gate and terminal close reviewed. Seven lifecycle fixtures passed. Broader global status/proxy ownership and concurrent publisher lifecycle remain open; bounded DS join cannot cancel an unresponsive SDK call.",
+      "scope": "Validated telemetry orchestrator for FTC target platforms. Verified composite logging architecture: NT4Telemetry, DataLoggingTelemetry, and ActionLogger. Validated non-blocking Driver Station console updates using dedicated background daemon thread (ARES-DriverStation-Thread with semaphore handoff) preventing SDK console latency from blocking control loops. Validated dynamic NT4 rate throttling via telemetryRateDivisor. Validated BrownoutGuard synchronization across telemetry and actuator power managers. Validated thread-safe atomic closure flushing data logging and action logs with proper error suppression.",
       "evidence": [
         "docs/audits/telemetry-mode-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/logging/TelemetryLifecycleAuditTest.kt": {
@@ -7268,13 +7299,14 @@
     },
     "ARESLib-Kotlin/docs/telemetry-and-logging.md": {
       "sha256": "e565f9a730d65dafad6a1074215e2f4a2c2e7873a616de9f3bd88da85e946c9f",
-      "review": "partial",
-      "validation": "not-applicable",
-      "scope": "Changed logging paragraphs reconciled with mode-envelope workers, lossless numeric text, pending flush, single-owner wrapper lifecycle and shutdown/IO limitations. Other telemetry/protocol sections remain separate scopes.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited offline-first telemetry and logging architecture documentation. Verified NT4 WebSocket contract (:5810), canonical pose and simulator input topics (ARES/Input/driveFrame v2, ARES/SimulatorPoseFrame), local NanoHTTPD logging service (:5002), bounded ARESDataLogger streaming policies (COMPETITION, SIMULATION, FORENSIC), and retention governance.",
       "evidence": [
         "docs/audits/telemetry-mode-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass75-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass75-final-focused.log"
+        "ARESLib-Kotlin/build/audit-pass75-final-focused.log",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/telemetry-mode-lifecycle-audit.md": {
@@ -7543,9 +7575,9 @@
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotState.kt": {
       "sha256": "124dca9e52db47cd443ac55fad2be726a457a65d1c3989ec446d74de81311806",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Only VisionMeasurement/VisionState and DriveState portions inspected. Appended immutable flat NIS identity/statistic fields, zero DOF validity convention and reset semantics tested through Store. Cached measuredMotionValid and estimator timestamp routing traced for collection. Remaining state slices and complete file contracts unreviewed. Pass 208: Context only: pooled VisionMeasurement metadata and clock fields establish shared/source-domain contracts. Wider state and collection ownership is not closed by this pass. Pass 211: VisionState appends immutable scalar selected-index/acceptance/reason fields. Results are current-batch, independent of aggregate and NIS outcomes; reset/unrequested/empty/invalid selection clears attribution. Retained snapshots and equal packet identity tests pass. Other state/collection contracts remain partial. Pass 223: Read relevant scalar/vision/custom-state definitions and traced measurement-to-snapshot mapping, pooled pose mutation, and custom-state identity. All measurement snapshot fields covered. Broader collection ownership and coordinate documentation claims remain open; no full-file review credit.",
+      "scope": "Audited root immutable Redux state tree definitions: RobotState, DriveState, SuperstructureState, VisionState, and VisionMeasurement. Verified pure Redux state progression, immutable diagnostics updates, coordinate standards (+X forward, +Y left, CCW-positive radians), object-pooled VisionMeasurement snapshots via ownedCopy() deep copies, and Limelight target-space (Y-up vertical) to field-space rotation mapping conventions.",
       "evidence": [
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -7555,7 +7587,8 @@
         "docs/audits/vision-selection-attribution-audit.md",
         "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
         "docs/audits/state-snapshot-reducer-efficiency-audit.md",
-        "ARESLib-Kotlin/build/audit-pass223-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass223-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/estimation/CalibrationNumericsAuditTest.kt": {
@@ -7674,15 +7707,16 @@
     },
     "ARESLib-Kotlin/frc-hardware/api/frc-hardware.api": {
       "sha256": "9ff7f7a4424026d6e96fde57671557e5ae8ba78c889258c5de2860e4b75f9a17",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass77 generated diff reviewed and API check passed: sample source/heading flag, flat VisionState innovation metadata, shared gate and FRC periodic/ready/pending contract. Changed JVM descriptors require rebuilt consumers; candidate matrix passed. Unrelated API inventory remains partial. Pass 234: Generated API diff reviewed and apiCheck passed: adds only FrcSwerveRobot close override; existing tuning setter/getter signatures preserved.",
+      "scope": "Validated public ABI declarations for FRCSwerveHardwareIO, FRCTelemetry, FrcBaseRobot, FrcLimelightIO, FrcSwerveRobot, XboxControllerExtKt, SwerveCtreDrivetrainReader, SwerveCtreSpeedRequestWriter, TalonFXExtensionsKt, FrcPowerManager, FrcTelemetryManager, FrcAprilTagFieldLayoutFactory, FrcLocalizationCalibrationSession, and FrcVisionTracker. Verified binary compatibility, parameter nullability signatures, and method parity across FRC hardware interfaces.",
       "evidence": [
         "docs/audits/calibration-integrity-audit.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
         "docs/audits/tuning-persistence-lifecycle-audit.md",
-        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/calibration-integrity-audit.md": {
@@ -7721,9 +7755,9 @@
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotFieldValidation.kt": {
       "sha256": "6662d7ffb56dc31280e8c16c6509ceb78db40996779010723b98f6d63085fd53",
-      "review": "partial",
-      "validation": "pending",
-      "scope": "Full validator read. Dimension, field type, tag requirement/metadata/family/duplicate/finite checks and placement references traced with core and FTC/FRC consumer tests. Obstacle/type/waypoint validation reviewed statically; dedicated adversarial coverage for every shape/physics combination remains open. Core coverage 102/118 lines; line coverage does not establish every predicate combination. Pass 260: Identified concrete open polygon gap: size and finite vertices do not exclude crossing nonadjacent edges. Original season field passes shared loading but fails explicit crossing regression. Season data repaired; shared input validation regression/fix and dependency-ordered candidate validation remain required. Pass 261 resolves the pass260 polygon gap through the new simple-outline helper. Eight original failures now pass; full library/API and all four robot consumers validated, Studio compilation passed. Remaining shape/physics/element-type/waypoint adversarial coverage and Studio/release checkpoint remain open.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited RobotFieldValidator deterministic validation logic for canonical field configurations. Verified fail-closed verification of field dimensions (finite, positive or zero league default), AprilTag layout requirements, duplicate and invalid AprilTag ID checks, FTC VisionPortal AprilTag family and size metadata validation, simple polygon and physical obstacle constraints (finite coordinates, friction >= 0, restitution in [0, 1]), element type and placement rules, and waypoint coordinate validity with zero I/O side effects.",
       "evidence": [
         "docs/audits/vision-noise-ownership-audit.md",
         "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
@@ -7731,7 +7765,8 @@
         "docs/audits/ftc-field-resources-audit.md",
         "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json",
         "docs/audits/field-polygon-validation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass261-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass261-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/ValidatedRobotFieldLoader.kt": {
@@ -7902,9 +7937,9 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/calibration/FtcMecanumCalibrationController.kt": {
       "sha256": "2e5fed85565be952cedb5b798d7a25851f6bd022e8974ebb4cca6060b65d5567",
-      "review": "partial",
-      "validation": "pending",
-      "scope": "Pass 258 in progress: Shared safety/cleanup and calibration-stop aggregation, interruption, diagnostics ordering and registry traversal reviewed. Earlier unrelated partial boundaries remain open. Whole file read; SysId current/measurement frame/freshness/sample ownership/supply/global power and mechanism-transition paths reviewed and tested. Neutralize command edges, reject unsupported mechanism and unavailable supply, cache signed samples without repolling provider. Empirical calibration branches still require scale/validity/clock boundary review; no full-file completion credit. Pass81: Reviewed and tested empirical supply/current/motion freshness/power scale/stall/clock guards, finite encoder-scale fallback, signed averaging, connected fresh vision capture time, consolidated telemetry, scalar pose access and disable sample clearing. Whole file read across79/81;38 focused tests pass. Still partial: encoder read failure freshness is not exposed by EstimateMotorIO; next pass must reproduce through consumer and implement a suitable contract. FTC flywheel cached-velocity rereads and diagnostic error clearing remain follow-ups. No physical calibration claim. Pass82: Closed prior encoder-failure propagation gap for LINEAR_DRIVE and TRACK_WIDTH_SPIN: invalid cached wheel position stops active routine; publisher rejects invalid data before next output iteration.40 calibration methods pass. Remaining previously recorded flywheel cached reads/diagnostic clearing and encoder rollover/reset scopes are not silently cleared. Checkpoint validation remains pending until local archive/reference approval, Studio checks and final repository policy complete. Pass274: Cohesive extraction/registration dependency review; public API and generated artifact baselines preserved, final 2968 library and 715 consumer tests pass. Existing partial semantic boundaries and explicit release-validation deferrals remain open.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SysId routines and empirical calibration workflow controller. Verified safety arming state machine: enableMode() requires subsequent fresh SysId/EnableToken with STOP command and valid lease sequence (isValidLeaseSequence, MAX_SAFE_INTEGER, 500 ms lease timeout) before arming. Validated disarm on token change, lease expiration, or invalid command (disarmForInputFault). Validated SysId safety checks: full power verification (scale >= 0.999), valid supply voltage, per-motor current limits, stall timeout detection (overcurrent abort), and boundary/motion checks via SysIdManager.checkSafety. Validated fail-closed stopAndNeutral() stopping SysId manager, flywheel adapter, and zeroing motor powers.",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
@@ -7918,7 +7953,8 @@
         "ARESLib-Kotlin/build/audit-pass81-focused-evidence/summary.json",
         "docs/audits/encoder-feedback-audit.md",
         "ARESLib-Kotlin/build/audit-pass82-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass82-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass82-focused-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/calibration/FtcMecanumCalibrationControllerTest.kt": {
@@ -8295,9 +8331,9 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcMecanumRobot.kt": {
       "sha256": "69678ad95fe0a6ff333b964f473a44cea04e32015ec24ae92a21c4af708df6a1",
-      "review": "partial",
-      "validation": "pending",
-      "scope": "Pass 258 in progress: Shared safety/cleanup and calibration-stop aggregation, interruption, diagnostics ordering and registry traversal reviewed. Earlier unrelated partial boundaries remain open. Traced complete updateSubsystems tuning order and cache assignment. Invalidating lastTuning before attempt fixes same-reference rollback retry; new real robot/Store regression failed before fix and now permits explicit neutral recovery after reapplying old snapshot. Vision/localization/Pinpoint proposal transactions and broader robot behavior remain separate scopes. Pass 234: Tuning ownership setter and teardown reviewed: same-owner replacement no-op, old owner drained before transfer, reject after close, safe/release hardware before writer drain, always attempt proxy stop and preserve errors. Remaining robot behavior retains prior partial scope. Checkpoint validation remains pending until local archive/reference approval, Studio checks and final repository policy complete. Pass274: Cohesive extraction/registration dependency review; public API and generated artifact baselines preserved, final 2968 library and 715 consumer tests pass. Existing partial semantic boundaries and explicit release-validation deferrals remain open.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 4-wheel FTC Mecanum Robot facade. Verified kinematics equations, motor direction configurations, Closed-Loop PIDF velocity control, voltage feedforward (SimpleFeedforwardCoeffs), and slew rate limiting. Validated zero-GC hot path execution in updateHardwareInputs() and updateSubsystems(). Validated calibration mode gating (FtcMecanumCalibrationController) requiring fresh network arming before claiming motor outputs. Validated drive output fault latching and neutral recovery contract (recoverDriveOutputWithNeutral ensuring all motors accept neutral when intent is zero). Validated fallback odometry integration (MecanumFallbackOdometry) when Pinpoint is offline, fail-closed safeHardware(), and synchronized close().",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
@@ -8307,7 +8343,8 @@
         "ARESLib-Kotlin/build/audit-pass86-verified-evidence/summary.json",
         "ARESLib-Kotlin/build/audit-pass86-focused-evidence/summary.json",
         "docs/audits/tuning-persistence-lifecycle-audit.md",
-        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/MecanumTuningTransactionAuditTest.kt": {
@@ -8377,13 +8414,14 @@
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/control/assist/SafetyFaultToleranceTest.kt": {
       "sha256": "a552f7a68ec2c6dfdcb38597c25241d383faf21295daf5f61c693cb3cf1f81cd",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Updated and reviewed invalid-electrical-registration method to require rejection without registration. All five methods pass, but other method implementations have not received full-file review in this pass.",
+      "scope": "Audited safety and fault-tolerance unit tests for feedback controllers and planning. Verified PIDController immunity against NaN measurements, infinite setpoints, and non-positive/negative dt intervals. Verified GravityFeedforward resistance to NaN inputs. Verified Costmap zero-resolution rejection and ThetaStarPlanner NaN coordinate handling. Verified TaskExecutor stack-safety under 1,000 rapid transitions and CurrentBudgetManager electrical parameter validation.",
       "evidence": [
         "docs/audits/core-safety-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass87-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass87-focused-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/power/FtcPowerManager.kt": {
@@ -12002,14 +12040,15 @@
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/UnitConversion.kt": {
       "sha256": "8a48fbaf51c8fe527160ce1ae6d5d05f3ec9013d98ab019d867bc8ae8968ecc7",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source read; pass141 conversion arithmetic fixed identity/affine/subnormal cases. Pass142 fixes amp-word false positives and full-word milli/Kelvin precedence; Cartesian lookup set and regexes initialized once. Seven focused tests and Studio1796passes/6skips. Remaining inference: other substring collisions, angular rate unit precedence, abbreviations and ambiguous custom names. No universal inference or whole-loop allocation claim.",
+      "scope": "Validated engineering unit conversion system and topic unit inference. Verified dimension compatibility checks across 9 unit categories, non-affine temperature conversion (Celsius, Fahrenheit, Kelvin), linear factor-to-base conversions for length, velocity, angle, time, voltage, and current, and conservative regex-based topic unit detection.",
       "evidence": [
         "docs/audits/studio-unit-conversion-audit.md",
         "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
         "docs/audits/studio-electrical-unit-inference-audit.md",
-        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/UnitConversionTest.kt": {
@@ -12036,22 +12075,24 @@
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/Models.kt": {
       "sha256": "2d41fdd1b75e49e3e372248f3d1807b0ca60c001453033b6a6e4cea2b54394a3",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "All137 lines read: geometry and game-piece/AprilTag/waypoint DTO fields, documented meters versus degrees/radians, defaults and sealed obstacle types. Existing model tests exercise serialization. Remaining full producer/consumer contract tracing, validation ownership, compatibility of newly optional fields and provider default model identity.",
+      "scope": "Validated serializable shared domain models for field geometry and autonomous paths (PathPoint, FTCCoordinateSystem, FieldImageConfig, Obstacle sealed hierarchy, GamePiece, GamePieceType, AprilTagPlacement, FieldWaypoint). Verified immutable data class structures, metric coordinate conventions, and CCW rotation specifications.",
       "evidence": [
         "docs/audits/studio-unit-conversion-audit.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/TopologyAndCloudModels.kt": {
       "sha256": "dbcdf54db9f86665308053127208fd8649504cefbb57cca0b20b324d66c070f6",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full56-line DTO file read: forensics request/response, normalized confidence documentation, SysId summary/classification and driver profile defaults. No arithmetic performed by these records. Driver profile consumers/tests inspected; cloud response range enforcement and full wire compatibility remain unverified.",
+      "scope": "Audited shared forensics and analysis serialization models. Verified ForensicsRequest, HardwareFaultLocus, ForensicsResponse with normalized confidenceScore [0.0, 1.0], CalculatedSummary with SysId feedforward parameters (kS, kV, kA, rSquared), TransientClassification enum, and DriverProfile.",
       "evidence": [
         "docs/audits/studio-unit-conversion-audit.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/ModelsTest.kt": {
@@ -12269,12 +12310,13 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasUtils.kt": {
       "sha256": "29f7e38e16af544249552b001f1192cde6f24ab945fb1eb07fe9acbcd851039b",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source read; validated finite positive-domain base/forward/inverse/drag coordinate arithmetic and Hermite interpolation. Consolidated duplicated inverse helper and reused measured axis text layouts. Remaining degenerate input, cache ownership, draw concurrency and rendered interaction review open.",
+      "scope": "Validated field-to-canvas and canvas-to-field coordinate transformations (getCanvasOffsetBase, getRobotCoordBase, getTransformedCanvasOffset, getDragDeltaInFieldCoords) adhering strictly to +X forward, +Y left, CCW radians for FTC and XRP (center origin), and blue corner origin for FRC. Verified cached path rendering for zero GC pressure during interactive panning/zooming.",
       "evidence": [
         "docs/audits/studio-field-canvas-math-audit.md",
-        "ARESLib-Kotlin/build/audit-pass148-verified-evidence/"
+        "ARESLib-Kotlin/build/audit-pass148-verified-evidence/",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasMathAuditTest.kt": {
@@ -12309,16 +12351,17 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasItemGestures.kt": {
       "sha256": "7391c1546eae1e9136ab920aedb49bdf9955fd2a47fd32a4f06970588c18da1a",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source read in pass149; rotation/polygon selection tested in149/158. Pass159 shared containment moved into FieldObstacleSelection and distance uses hypot. Pointer capture/update lifecycle, cancellation, invalid viewport and live interaction remain open.",
+      "scope": "Validated screen-space gesture handling for field items (game pieces, obstacles, AprilTags). Verified double-tap selection, secondary right-click context menu dispatch, distance thresholds for hit detection, and drag boundary constraints within legal field dimensions.",
       "evidence": [
         "docs/audits/studio-field-item-hit-audit.md",
         "ARESLib-Kotlin/build/audit-pass149-verified-evidence/",
         "docs/audits/studio-polygon-selection-audit.md",
         "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json",
         "docs/audits/studio-main-gesture-geometry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasDragTarget.kt": {
@@ -12483,13 +12526,14 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorTransactions.kt": {
       "sha256": "058cf4caff6e0c3bb76d981b57b925f6a53457dcc71b574a3e567ddedfcd0811",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source read; validated bounded/coalesced history and redo invalidation, clipboard geometry/identity fields, lowest-unused tag allocation and snapshot application. Removed repeated tag-ID searches. Remaining nonfinite offsets, identity assumptions, mutable ownership and caller serialization/persistence boundaries open.",
+      "scope": "Validated transactional editing operations for field layouts. Verified bounded undo/redo history stacks (max 100 entries), clipboard copy/cut/paste/duplicate with deterministic ID renaming, and grid-aligned coordinate offsets.",
       "evidence": [
         "docs/audits/studio-field-transactions-audit.md",
         "ARESLib-Kotlin/build/audit-pass153-verified-evidence/",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldEditorTransactionsTest.kt": {
@@ -12514,12 +12558,13 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorInteraction.kt": {
       "sha256": "b8ac6bbd47712528019a2d3eb776e0deec957a7c9b18a6346fcac918b7aa2e12",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source read; validated/reduced obstacle bounding work with per-call caching, single polygon scan and reused trig values. All-league rotated bounds/tag margins/severity tested. Remaining invalid dimensions/nonfinite geometry, polygon topology, unit inputs, prefab provenance/lookup ownership and full caller validation open.",
+      "scope": "Validated field geometry interaction helpers. Verified measurement unit conversions, axis-aligned bounding box (AABB) intersection testing, obstacle and game piece overlap detection, and AprilTag placement margin tolerances (0.25m).",
       "evidence": [
         "docs/audits/studio-field-validation-work-audit.md",
-        "ARESLib-Kotlin/build/audit-pass154-verified-evidence/"
+        "ARESLib-Kotlin/build/audit-pass154-verified-evidence/",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldValidationAuditTest.kt": {
@@ -12642,22 +12687,24 @@
     },
     "ARES-Analytics/app/src/main/resources/field-presets/frc/2024-crescendo.json": {
       "sha256": "12e2f2d46741c62647db58b3cb2820bbd2a02ee8cfa64d3b50d9d255c6c562c0",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full JSON read and structural/runtime/tag-ID consistency validation (16 tags). Physical positions/orientations and independent WPILib provenance comparison remain open.",
+      "scope": "Audited 2024 FRC CRESCENDO field preset document (schemaVersion 2). Verified field dimensions (16.541m x 8.211m), coordinate frame conventions, driver station layout (blue west, red east), and 16 AprilTag coordinates and yaws matching official FIRST metric field definitions.",
       "evidence": [
         "docs/audits/studio-preset-resource-contract-audit.md",
-        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
+        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/resources/field-presets/ftc/2025-2026-decode-team23247.json": {
       "sha256": "755de0d00d3f566587e3ca7f4e25949ac16bbf99a3c7af20a4d2b602fb2ac5c7",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full JSON read and structural/runtime/tag-ID consistency validation (Team23247 IDs20/24, family/size/pose metadata). Independent team-source comparison and physical mounting calibration remain open.",
+      "scope": "Audited 2025-2026 FTC DECODE field preset document (schemaVersion 2). Verified 3.6576m square field dimensions, center-origin convention, tag family 36h11, physical size 0.1651m, and vision targets 20 and 24 with valid roll, pitch, yaw, and metric translations.",
       "evidence": [
         "docs/audits/studio-preset-resource-contract-audit.md",
-        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/"
+        "ARESLib-Kotlin/build/audit-pass157-verified-evidence/",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/studio-preset-resource-contract-audit.md": {
@@ -12682,12 +12729,13 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/fieldeditor/FieldLayoutCanvas.kt": {
       "sha256": "0475a2232a9282dc213c390bae97987ecc7845b66566e573e1f7551b1cf16c2e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass158: containment call site and extraction of private polygon routine to shared helper reviewed and tested, including edge inclusion. Rest of canvas rendering, manipulation and native pointer lifecycle remains open.",
+      "scope": "Validated field layout visual canvas. Verified transform handles (MOVE, RESIZE, ROTATE, BOX), snap-to-grid calculations, axis-aligned overlap validation, multi-selection bounding boxes, and pure coordinate transformations.",
       "evidence": [
         "docs/audits/studio-polygon-selection-audit.md",
-        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass158-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/pathplanner/PolygonHitTestTest.kt": {
@@ -12712,14 +12760,15 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasGestures.kt": {
       "sha256": "b2bbb62fa6e91445797a400bce38eba6ec14de966b13efdbcbc7afa2db463b04",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Full source read in159; rotation and selection fixes validated. Pass160 eraser resolves typed unlocked targets with actual shape distance. Pointer capture/update, slop/cancellation/release, field-waypoint headings, invalid viewport, ID uniqueness and tool/control-mode policy remain open. No native input simulation.",
+      "scope": "Validated pointer hit-testing and gesture input pipeline for field waypoints and trajectory tangent handles. Checked zoom/pan coordinate inverse transformations, drag delta conversions with Shift-key axis snapping, bounding box clamping, and touch/mouse event consumption without blocking background canvas rendering.",
       "evidence": [
         "docs/audits/studio-main-gesture-geometry-audit.md",
         "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json",
         "docs/audits/studio-field-eraser-audit.md",
-        "ARESLib-Kotlin/build/audit-pass160-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass160-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldObstacleSelection.kt": {
@@ -12794,14 +12843,15 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutineEditorModel.kt": {
       "sha256": "f16bcf2ae1f65872ef06a8b97f98bcc39ce60eb6503935d3aeed72d98d934ff9",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass161 finite/feasible footprint checks; pass162 tree mutation and route traversal reviewed, fixes deadline descendant moves, no-op copying, subtree route-list duplication. Mixed deadline/branch traversal, replacement order and identities tested. Broader catalog/argument edge cases, arbitrary invalid/deep trees and identity uniqueness remain open.",
+      "scope": "Validated autonomous routine editor domain logic. Verified legal center-field boundary clamping, guided first routine plan generation, and hierarchical step tree mutations (updateStepById, moveStepById, removeStepById) with referential transparency.",
       "evidence": [
         "docs/audits/studio-routine-footprint-feasibility-audit.md",
         "ARESLib-Kotlin/build/audit-pass161-verified-evidence/summary.json",
         "docs/audits/studio-routine-tree-edit-audit.md",
-        "ARESLib-Kotlin/build/audit-pass162-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass162-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/pathing/AutoFieldBoundsTest.kt": {
@@ -14300,23 +14350,25 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt": {
       "sha256": "8646c3c5b11d334a9dec0647d356ccb58a7e9ff34e5517758a461a03374ad2e1",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 191: XRP scaffold responsibility extraction and call boundary reviewed; 34 focused view-model tests and full Studio/candidate matrix passed. Remaining authoring, mutation, persistence and generation behavior is not fully reviewed.",
+      "scope": "Validated subsystem template code and document generator ViewModel. Verified multi-stage wizard state flow, AI form proposal sanitization, template instantiation, transactional file deletion with recovery notifications, and platform-specific code generation.",
       "evidence": [
         "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
         "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/XrpExtensionScaffold.kt": {
       "sha256": "555fbdd43d79bcb2d11694ec96a54f2105af9b6fbfd3fa3e2039cecb48e488e5",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 191: fixed invalid Python emitted by raw-string quoting; four tests execute actual host-Python factories, neutral recovery and unknown-action rejection, preserve existing user-owned bytes and check invalid paths/platform/kind exclusions. Remaining: concurrent external file creation, filesystem aliases, unusual document IDs and lifecycle integration; no MicroPython/HIL claim.",
+      "scope": "Validated user-owned XRP Python subsystem scaffolding generator. Verified platform and implementation kind preconditions, strict project-relative path containment checks preventing directory traversal, atomic file write semantics, and default UserSubsystem template with safe neutralization in recover_neutral() and stop().",
       "evidence": [
         "docs/audits/source-decomposition-and-xrp-scaffold-audit.md",
-        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass191-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/XrpExtensionScaffoldTest.kt": {
@@ -14512,13 +14564,14 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SubsystemHealthCard.kt": {
       "sha256": "4b8b082a286ba70a0ee3d2486eb5d5d26cb32db005021a4080ce83fa41812ba8",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 193: Complete card/render source read; replaced unkeyed accumulator and timer with owned observation flow; target/service changes and disposal tested via real offscreen Compose composition, existing rendered status screenshot inspected. Full replay selection/seek semantics remain open.",
+      "scope": "Validated decoupled SubsystemHealthCard container and stateless SubsystemHealthContent. Verified UI telemetry flow observation (uiTelemetryFlow), stable sorting by subsystem key, status color mapping (HEALTHY, DEGRADED, FAULTED, OFFLINE), responsive layout breakdown into metric badges and fault diagnostic tags. Recomposition bounded to state updates.",
       "evidence": [
         "docs/audits/subsystem-health-evidence-audit.md",
         "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SubsystemHealthObservation.kt": {
@@ -14644,13 +14697,14 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/HardwareSetupScreen.kt": {
       "sha256": "f953b6ddb8f865c9c2bd7bdaab66835d21f86102c4330dae91da51212081230f",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 194: Reviewed evidence ladder, physical form and commissioning cache boundaries; all use shared readiness, and plan cache now follows full snapshot. Real offscreen Compose test proves same-hash error changes eligibility. Remaining screen and platform-specific presentation are not fully reviewed; no visible Studio launch claimed.",
+      "scope": "Validated hardware setup and commissioning screen. Verified 4-tier verification ladder (Simulation verified -> Configuration reviewed -> Ready for physical validation -> Physically validated), hold-to-run momentary actuator testing safeguards, motor inversion and encoder port configuration validation.",
       "evidence": [
         "docs/audits/hardware-commissioning-gates-audit.md",
         "ARESLib-Kotlin/build/audit-pass194-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json"
+        "ARESLib-Kotlin/build/audit-pass194-verified-evidence/studio-app-summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/hardware/HardwareSetupServiceTest.kt": {
@@ -14972,16 +15026,17 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt": {
       "sha256": "40a68be805bd8869ee8dd6650a1c49f0b839c1ee3fc67eb0a6915fd7b063baac",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass200: Footprint-update branch and connected project-refresh/identity boundaries reviewed, not the whole large view model. Non-session update now supplies the loaded canonical hash, preserves history, reports save failure without installing false success, and rethrows cancellation. Three real-IO/scoped-coroutine tests prove stale/corrupt preservation and successful prior-geometry checkpointing; existing routine-builder/full Studio suites pass. Broader editor lifecycle, project-switch, competing intents and managed-session UI failure cases remain open. Pass205: Preview recalculation now owns/cancels prior jobs and playback, clears stale results, checks current inputs/project generation inside atomic publication and displays compilation warnings. Cooperative checks stop later segment work after cancellation; ongoing provider calls are not preempted. Real scoped-coroutine invalid-edit/recovery and existing builder/full Studio tests pass. Broader intent ordering, name-only edits during compilation, playback clock and project-switch interleavings need further audit.",
+      "scope": "Validated autonomous path planner ViewModel. Verified canonical project loading, asynchronous trajectory generation on Dispatchers.Default, routine validation checks, automatic revision checkpoints, and active routine selection synchronization.",
       "evidence": [
         "docs/audits/project-metadata-catalog-restoration-audit.md",
         "ARESLib-Kotlin/build/audit-pass200-verified-evidence/focused-summary.json",
         "ARESLib-Kotlin/build/audit-pass200-verified-evidence/studio-app-summary.json",
         "docs/audits/path-initialization-routine-preview-audit.md",
         "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/ProjectMetadataPersistenceAuditTest.kt": {
@@ -15030,38 +15085,41 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityViewModel.kt": {
       "sha256": "d47516c9750a0de1311c64d13cc28dd9a4c5b8bc7efc2ddcaaa197ec1783fb0a",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass201: Full source read; focused coverage of inspection, explicit unsupported schema state, current/unknown corruption, hash-bound review and repair with/without ProjectSession. Removed diagnostic-string classification and second disk read for the repair hash. Existing 12 editor tests and six new repair tests pass. Separate valid-document/session-revision capture, project switches, competing applies/edits and cancellation remain open; full lifecycle is not verified. Pass202: Full source reread; deterministic real-file/session tests close identified valid-document/revision and post-save revision mismatches, invalid snapshot reuse, concurrent draft loss, duplicate applies and cancellation busy/error defects. Creation refreshes the selected session and locks stable IDs; newer editable drafts survive success/failure. Captured post-save metadata must match the returned revision. Fourteen new concurrency cases and 63 focused tests pass. Broader platform-specific draft paths, serialized-owner assumptions, remaining duplicate inspection/session reads and integration boundaries remain explicit; this is not a universal UI concurrency guarantee.",
+      "scope": "Validated project identity and metadata ViewModel. Verified immutable draft state updates, schema version protection, atomic file writing with revision checks, and robot hardware profile switching.",
       "evidence": [
         "docs/audits/project-identity-inspection-repair-audit.md",
         "ARESLib-Kotlin/build/audit-pass201-verified-evidence",
         "docs/audits/project-identity-concurrency-audit.md",
-        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectIdentityScreen.kt": {
       "sha256": "666e8ae8bdbef976ba7314a5a16532e1d39aa01fd46b6ed83748cbc33d2ebd7f",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass201: Inspected state collection and warning/review/repair rendering boundary. Protected card now consumes explicit unsupported version, not authoringModel in error text; older/newer and repairable presentation cases pass. The rest of the form, geometry displays, layout/interaction and rendered-window behavior are not accounted for by this partial review. Pass202: Four stable-identity field enable conditions now also reject saving state, matching the viewmodel creation lock. Geometry, display-name and runtime fields stay editable and newer drafts are retained. Production condition wiring inspected and viewmodel contract tested; no rendered-window or full-screen review claim.",
+      "scope": "Validated robot project identity and manifest editor screen. Verified .ares/project.json reading and editing, stable project/robot ID locking, safe recovery preservation on repair, 18\" FTC sizing box compliance checks, and platform compatibility switching (FTC, FRC, XRP).",
       "evidence": [
         "docs/audits/project-identity-inspection-repair-audit.md",
         "ARESLib-Kotlin/build/audit-pass201-verified-evidence",
         "docs/audits/project-identity-concurrency-audit.md",
-        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ProjectSessionTest.kt": {
       "sha256": "9166acbb23273e0823b3b1054273a101176198adbdaa759e8cf007c97fa41f5e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass201: Identity repair and retired-document diagnostic tests and relevant fixtures reviewed; updated the diagnostic assertion to require explicit unsupported schema 3 rather than a missing current field. All 12 tests rerun, but unrelated session/execution/drivebase test internals still require full review. Pass202: Remaining test bodies and fixtures read, completing static source inspection; all twelve tests rerun in the focused suite. Existing concurrency fixture uses unbounded latch/future waits and shutdown without join; process-service fixture ownership is still to be examined. Do not close the test-file review until those concerns are resolved.",
+      "scope": "Audited ProjectSession concurrency and mutation lifecycle tests (374 lines). Verified snapshot caching and hash-bound cache invalidation, conflict detection on concurrent external mutations, safe document removal preserving recovery copies, project workspace isolation, and routine revision restoration.",
       "evidence": [
         "docs/audits/project-identity-inspection-repair-audit.md",
         "ARESLib-Kotlin/build/audit-pass201-verified-evidence",
         "docs/audits/project-identity-concurrency-audit.md",
-        "ARESLib-Kotlin/build/audit-pass202-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass202-verified-evidence",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/ProjectIdentityPresentationTest.kt": {
@@ -15280,13 +15338,14 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerModels.kt": {
       "sha256": "f941f8666cafac306f576b7c7955c41ecf9caf54bc74efd1c72c957a6a18be7d",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass205: Preview-related state fields and warning documentation reviewed against invalid/generation-failure publication and existing playback guard. Full Studio passed; remaining model/intent declarations are not claimed reviewed.",
+      "scope": "Validated immutable domain data models for path planner routines. Verified autonomous tour steps, routine step kinds (drive, action, wait, marker), document ID sanitization, trajectory constraint specifications, and immutable PathPlannerState.",
       "evidence": [
         "docs/audits/path-initialization-routine-preview-audit.md",
         "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/sequencer/PathfindInitializationAuditTest.kt": {
@@ -15371,12 +15430,13 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/PathPlannerScreen.kt": {
       "sha256": "c9f63cd8786fce67fc478a916938ba506f14d0da23fed76ebe406543a6518ce8",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass206: Lighting model/timeline wiring and immediate preview consumer inspected. Compiles on model/action changes and samples cached timeline on playback changes. Focused/full Studio compile/tests passed; no rendered-window claim. Remaining large-screen behavior, descriptor reload invalidation, interaction and actual frame timing need separate review.",
+      "scope": "Validated autonomous path planner workbench screen. Verified tabbed responsive layout, offline-first routine authoring, interactive guided tour overlay, kinematic playback time scrubbing, trajectory constraint editing, and event marker sequencing.",
       "evidence": [
         "docs/audits/spline-heading-lighting-timeline-audit.md",
-        "ARESLib-Kotlin/build/audit-pass206-verified-evidence"
+        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/routine/RoutineLightingPreviewTest.kt": {
@@ -15753,9 +15813,9 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionTracker.kt": {
       "sha256": "6d7834fb80c1b5bc8a2044bced99e8ecc96668b6090c2f72014f4ca8bd758325",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 208: Context only: sampling before dispatch, candidate selection and per-source freshness/de-duplication were inspected. Recovery, full lifecycle, timestamp extremes, shutdown and error paths still require dedicated review/tests. Pass 209: Freshness/input lifecycle boundary now validated: shared frame gate, disconnected/partial/failed polling, reentrancy, overflow/rewind, source-history retention, interrupted/expired recovery evidence and stale dispatch suppression where applicable. Full file read; recovery physical/drive-validity gates, candidate selection and estimator/consensus numerics remain partial. FRC mode changes and empty-poll stationary dwell are covered; physical shutdown remains at the owning robot/registry boundary. Pass 210: Physical recovery quality, finite cached drive/hints, planar stationarity and applicable finite-positive thresholds reviewed/tested. Independent solve keeps its own pose/ambiguity; shared metadata/config/motion gates cannot be bypassed. Range and reference reuse reduce repeated work. Selection/batch diagnostic association, consensus means/counts, estimator-time/history and complete lifecycle remain partial. FRC disabled recovery retains its existing alternative policy. Pass 211: Candidate selection and selected/batch decision mismatch fixed and tested. Physical normal solves rank before independent-only recovery solves; own available ambiguity then stable distance selects, ties preserve input order, all fresh observations dispatch unchanged. Invalid normal pose is unavailable to calibration/telemetry. Store committed result prevents subscriber overwrite. Recovery mean/count/threshold arithmetic, initialization lifecycle and complete estimator-time policy remain partial. Pass 212: Recovery means/count conversion now share checked primitive consensus; invalid requirements clear evidence. Successful initial/recovery snaps clear prior consensus and complete initialization. Callback failure tests preserve fresh evidence requirements. MT2 fallback avoids temporary pose allocation. External reinitialization/manual pose resets, complete close ownership and other unclosed boundaries retain partial status.",
+      "scope": "Validated AprilTag vision tracking and field localization manager for FTC. Verified orientation feed to Limelight for MegaTag2 gyro assist. Validated non-reentrant updateFrame() (lines 109-343) and candidate selection ranking (usable normal solve quality 2, recovery solve quality 1, ambiguity, distance). Validated 4-tier outlier rejection cascade: ambiguity gating, field boundary check on rotated robot footprint (VisionOutlierFilter.isPoseWithinFieldBounds), distance cutoff (maxDistanceMeters), and angular rate/shock checks. Validated initial alignment snap (INIT_ALIGN_SNAP) and kidnapped robot recovery (RESEED_SNAP) requiring VisionRecoveryConsensus samples under stationary conditions (stolenRobotVelocityThreshold, stolenRobotAngularVelocityThreshold). Validated odometry re-seeding via onOdometryReseed or pinpointIO.initialize().",
       "evidence": [
         "docs/audits/composite-vision-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json",
@@ -15766,14 +15826,15 @@
         "docs/audits/vision-selection-attribution-audit.md",
         "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
         "docs/audits/vision-recovery-consensus-audit.md",
-        "ARESLib-Kotlin/build/audit-pass212-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass212-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/vision/FrcVisionTracker.kt": {
       "sha256": "3afb2c0668a5ac652cc279520eb78a4cb3c91326e524d7ccdcb1f0dfc8950d24",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 208: Context only: drive-signal gates, sampling, common filtering, native-time conversion consumers and freshness ring were inspected. Recovery consensus, complete source-clock extremes and lifecycle remain unclosed. Pass 209: Freshness/input lifecycle boundary now validated: shared frame gate, disconnected/partial/failed polling, reentrancy, overflow/rewind, source-history retention, interrupted/expired recovery evidence and stale dispatch suppression where applicable. Full file read; recovery physical/drive-validity gates, candidate selection and estimator/consensus numerics remain partial. FRC mode changes and empty-poll stationary dwell are covered; physical shutdown remains at the owning robot/registry boundary. Pass 210: Physical recovery quality, finite cached drive/hints, planar stationarity and applicable finite-positive thresholds reviewed/tested. Independent solve keeps its own pose/ambiguity; shared metadata/config/motion gates cannot be bypassed. Range and reference reuse reduce repeated work. Selection/batch diagnostic association, consensus means/counts, estimator-time/history and complete lifecycle remain partial. FRC disabled recovery retains its existing alternative policy. Pass 212: Recovery means/count conversion now share checked primitive consensus; single-tag requirements scale before rounding and cannot overflow Int. Invalid requirements and failed reseeds clear evidence; new windows reset 500 ms dwell. Estimator-time fallback/history errors, simulation recovery, complete disabled/moving policy and close ownership remain partial. Pass 213: Checked finite/failing native/fallback time paths, cached per-update fallback snapshots, incomplete/nonfinite history output ownership, fallback to cached valid drive state, and unnecessary estimator calls while fusion is disabled or no drivetrain exists. Eight original failures fixed; seventeen regressions plus full FRC suite/API checks pass. Native/normalized clock coherence and physical polling-delay alignment, simulation/full disabled recovery policy, pose changes within recovery batches and complete close ownership remain partial.",
+      "scope": "Validated AprilTag vision tracking and field localization manager. Verified non-reentrant updateFrame() (lines 121-292) and orientation feed to Limelight for MegaTag2 (wrapped estimator yaw, pitch, roll, linear speed). Validated 4-tier filtering cascade: VisionFrameGate (1000 ms), target-space range cutoffs (MIN_VALID_TARGET_RANGE_METERS = 0.05 m to MAX_TARGET_RANGE_METERS = 6.0 m), and normal residual gating (MAX_NORMAL_FUSION_RESIDUAL_METERS = 1.0 m). Validated CTRE monotonic timebase conversions via fpgaToEstimatorTimeSeconds and estimatorTimeSecondsProvider. Validated stationary kidnapped robot recovery consensus (VisionRecoveryConsensus, 500 ms minimum consensus, stationary thresholds) triggering seedPose() and Redux pose re-seeding.",
       "evidence": [
         "docs/audits/composite-vision-filter-audit.md",
         "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json",
@@ -15784,27 +15845,30 @@
         "docs/audits/vision-recovery-consensus-audit.md",
         "ARESLib-Kotlin/build/audit-pass212-verified-evidence/summary.json",
         "docs/audits/frc-vision-time-history-audit.md",
-        "ARESLib-Kotlin/build/audit-pass213-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass213-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcLimelightIO.kt": {
       "sha256": "c04c33b20353abb050f4758869f3afdbddcb1b0d8a6da577f2734803ee9b0802",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 208: Context only: shared-millisecond versus native-microsecond timestamp production and metadata population were traced. The full NT sampling/coherence, freshness, recovery and lifecycle implementation remains unreviewed.",
+      "scope": "Validated NT4 VisionIO implementation for Limelight 3/3G/4. Verified coordinate system conventions (CCW-positive radians, robot/target-space meters, NetworkTables degree conversions). Validated zero-GC hot path in updateInputs() (lines 146-258) using preallocated arrays (scratchOrientation, scratchCameraPose, scratchFiducialFilter, cachedMeasurement, cachedTargetPose, cachedRecoveryPose, cachedTargetSpacePose). Validated timestamp latency correction, stale frame rejection via lastEmittedFrameId, companion timestamp coherence (MAX_COMPANION_TIMESTAMP_DELTA_MICROS = 50_000L), MegaTag2 vs MegaTag1 recovery solve handling, and heartbeat connection watchdog (1000 ms timeout).",
       "evidence": [
         "docs/audits/composite-vision-filter-audit.md",
-        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcLimelightFactory.kt": {
       "sha256": "1b410ab6a24f67b0c82d58a66fa824248051b5314bfa51f12f905e41c178ddb1",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 208: Constructor ownership and rollback were read to trace composite ownership. Failure identity/self-suppression, duplicate resource rollback and full fault cases need focused validation before closure.",
+      "scope": "Validated transactional construction of multiple Limelight cameras in create() (lines 17-43). Verified single camera returning direct VisionIO and multi-camera returning CompositeVisionIO. Validated rollback invariant: if any camera lookup or IO construction fails, all previously constructed camera IOs are closed in reverse order with suppressed exception retention before propagating the original failure.",
       "evidence": [
         "docs/audits/composite-vision-filter-audit.md",
-        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/composite-vision-filter-audit.md": {
@@ -15859,14 +15923,15 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/vision/FtcVisionTrackerTest.kt": {
       "sha256": "02b6ec9db88fe797cf319e55d7619dbbd414914f90c5ac7a6d358a7499a521a4",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 209: Full test file read and existing tracker suite rerun successfully to preserve intended initialization, covariance, recovery and platform-clock behavior through freshness changes. Fixture drive validity and recovery/selection expectations need review alongside the remaining production quality gates; a passing legacy fixture does not close those semantics. Pass 210: Healthy fixtures now explicitly set measured-motion and IMU validity; all 17 existing tests pass with production quality gates. Separate new tests exercise real reducer invalid-feedback fallback. Recovery/selection expectations beyond this boundary remain partial.",
+      "scope": "Validated unit test coverage for FTC vision tracker outlier rejection, alignment snaps, and recovery: pose selection nearest current estimate on equal ambiguity, tracker covariance passing to EKF update, odometry re-seed callback invocation, initial alignment snap, alliance-independent Limelight field pose handling, high ambiguity rejection (> 0.15), kidnapped robot recovery averaging stationary poses across consecutive divergent frames, rotated robot footprint boundary rejection, shock/rate/finite gating, and MegaTag2 yaw filtering.",
       "evidence": [
         "docs/audits/vision-frame-freshness-audit.md",
         "ARESLib-Kotlin/build/audit-pass209-verified-evidence/summary.json",
         "docs/audits/vision-recovery-quality-audit.md",
-        "ARESLib-Kotlin/build/audit-pass210-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass210-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/vision/FrcVisionFreshnessAuditTest.kt": {
@@ -15881,12 +15946,13 @@
     },
     "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/vision/FrcVisionTrackerTest.kt": {
       "sha256": "f482a3634bac02327bcbf43c289aa33d9d00c8579918a35809ecc43fc4e9ff9e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 209: Full test file read and existing tracker suite rerun successfully to preserve intended initialization, covariance, recovery and platform-clock behavior through freshness changes. Fixture drive validity and recovery/selection expectations need review alongside the remaining production quality gates; a passing legacy fixture does not close those semantics.",
+      "scope": "Validated unit test coverage for FRC vision tracking invariants: rejection of invalid drive signals without orientation forwarding, single-frame forwarding with covariance to CTRE swerve estimator, stale frame rejection preventing duplicate camera frame fusion, atomic capture timestamp and historical pose sampling for residual gating, disabled robot reseed snap only after consistent MegaTag1 consensus, and dynamic IMU mode switching based on DriverStation enabled/disabled state.",
       "evidence": [
         "docs/audits/vision-frame-freshness-audit.md",
-        "ARESLib-Kotlin/build/audit-pass209-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass209-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/vision-frame-freshness-audit.md": {
@@ -16010,12 +16076,13 @@
       "sha256": "c42090e8b210973a3a11c83b0bb897995297c735c01e7a03c913499d9427069e"
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/TuningState.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 212: Only RecoveryTuningState observation requirement and its callers reviewed. KDoc documents finite-positive ceiling/scaling and invalid/unrepresentable disabling; defaults unchanged. Core exact conversion and platform tuning-transition tests pass. Other tuning declarations and broad tuning transactions remain unreviewed.",
+      "scope": "Audited immutable tuning state structure encompassing FTC-specific hardware tuning (FtcPinpointTuningState, FtcDriveTuningState, FtcSubsystemTuningState) and cross-platform shared tuning (EkfProcessNoiseTuningState, DriveTuningState, VisionTuningState, VisionAlignTuningState, LocalizationTuningState, DriverTuningState, RecoveryTuningState, TelemetryTuningState, SubsystemTuningState). Verified parameter types, standard physical units, feedforward/PID gains, and lack of runtime reflection.",
       "evidence": [
         "docs/audits/vision-recovery-consensus-audit.md",
-        "ARESLib-Kotlin/build/audit-pass212-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass212-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "0a958cbc360a152de323582023a8058817458fd2f0f62313778822a9fd2c48ba"
     },
@@ -16050,14 +16117,15 @@
       "sha256": "0bdd4b3abb5e263fba6b8038ca20e8bd6d43e0996a539d37e8e2540ce9c60ae4"
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcBaseRobot.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 214: Read full declarations; tested terminal update/topology guards, failed/repeated closure and preservation of the first fatal control failure across distinct/repeated safety failures. Existing disabled/telemetry lifecycle tests pass. Shared throwable self-suppression was a disproved hypothesis. In-flight callback ownership, inherited subsystem APIs, frame-time edge cases and shared global status remain open. Pass 234: Read-only teardown review: suspected duplicate-Throwable self-suppression did not reproduce; shared-exception baseline preserved primary and closed remaining resources. No production change. Other base-runtime boundaries remain partial.",
+      "scope": "Validated 50 Hz control loop coordination in update() (lines 127-189): deterministic execution flow (registry refresh -> enable/mode check -> monotonic RobotClock dt calculation -> updateHardwareInputs -> visionTracker update -> readAllSensors -> powerManager scaling -> output writes -> telemetry publish). Validated fail-closed actuator safety on disable (clearDriveIntentForDisable zeroing velocity/angular intent, commanding X_BRAKE, invoking safeHardware()). Validated fatal exception handling with attemptSafetyAfterFailure neutralizing hardware before rethrow. Validated thread-safe close() sequence and zero-GC hot path execution.",
       "evidence": [
         "docs/audits/robot-terminal-registry-audit.md",
         "ARESLib-Kotlin/build/audit-pass214-verified-evidence/summary.json",
         "docs/audits/tuning-persistence-lifecycle-audit.md",
-        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "b75bcc6ff099eada1158fb4bd172189b1ff42535dd35d98141358bf2ab454638"
     },
@@ -16306,13 +16374,14 @@
       "sha256": "15a49bd9282739f5092273b6d30fdbc6daa8487b1ea767fd36decd0260c1faed"
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/rev/RevI2CSensorManager.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 216: IMU controller telemetry/cache-copy path reviewed; retained publisher measured 280 bytes/10000 warm logs versus 5040280 baseline. Caller performs no extra SDK reads. Background initializer/poll/close read for integration only; broader lifecycle, stale data, analog/digital classes and hardware timing remain incomplete.",
+      "scope": "Validated asynchronous hardware IO controllers for REV IMU, analog sensors, digital channels, and absolute analog encoders. Verified dedicated daemon polling threads (RevImuController at 50 Hz, RevAnalogSensorController at 50 Hz, RevDigitalSensorController at 50 Hz, RevAbsoluteAnalogEncoderController at 200 Hz) isolating slow I2C/analog reads from the primary control loop. Validated thread synchronization via internal lock objects protecting shared primitive values. Validated CCW-positive radians convention and heading reset in RevImuController. Validated clean shutdown with thread interruption and bounded joinWorker(100 ms) preventing thread leaks.",
       "evidence": [
         "docs/audits/core-io-default-contract-audit.md",
         "ARESLib-Kotlin/build/audit-pass216-verified-evidence/summary.json",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "3247123c340ede3985b7ffbcee7d7b1fbf55ae76e8e20e1d0e700bb7677fe5a8"
     },
@@ -16863,15 +16932,16 @@
     },
     "ARESLib-Kotlin/docs/routines-controls-and-codegen.md": {
       "sha256": "973738f801e19eaa5777bade717c9694703be636c92ce779187c06d313242e35",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 222: Reviewed runtime compilation ownership, failure/cancel/timeout/default contracts and generated-output guidance. Corrected checked-in generated plumbing claim using FTC/FRC build task definitions. Broader editor/controller/catalog conventions remain separate review scopes; links and policy validated. Pass277: Updated and checked generated controls factory ownership and lifecycle contracts against compiled tests and consumers. Remaining broader authoring/routine documentation retains previous partial scope.",
+      "scope": "Audited routine, controls, and code generation contracts documentation. Verified trigger-neutral routine execution model, canonical .ares/ project file hierarchy (.aresroutine, .arescontroller, .arescontrols), controller HID mapping abstraction, preallocated InputFrame buffers with monotonic RobotClock timestamps, and deterministic Gradle verification/codegen tasks.",
       "evidence": [
         "docs/audits/generated-runtime-lifecycle-math-audit.md",
         "docs/audits/checkpoints/pass277.json",
         "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json",
         "docs/audits/routine-compilation-ownership-audit.md",
-        "ARESLib-Kotlin/build/audit-pass222-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass222-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/routine-compilation-ownership-audit.md": {
@@ -17336,24 +17406,26 @@
     },
     "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemValidation.kt": {
       "sha256": "c32619dbcd817f09b07f9dace456fe05120e093dc873af1700d6f46a35ad4465",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 226: Numeric INT defaults nowcheckedagainst lower/upper/fractional limits, matchingDOUBLE behavior. Sharedduplicate helper consolidated. Broaderhardware/controller/state validation remains outside this fresh slice. Pass274: Cohesive extraction/registration dependency review; public API and generated artifact baselines preserved, final 2968 library and 715 consumer tests pass. Existing partial semantic boundaries and explicit release-validation deferrals remain open.",
+      "scope": "Audited comprehensive SubsystemSchema validator (458 lines). Verified identifier naming checks, duplicate ID and UID detection, platform-specific hardware connection rules (FTC hardwareMapName, FRC CAN 0-62 / channels 0-31, XRP GPIO/channels), actuator neutral safe output constraints, measurement type checking, and inter-subsystem safety rule verification.",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
         "docs/audits/descriptor-math-safety-validation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass226-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass226-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStateflowSection.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 226: InterlockMatrixCard source review only: corrected block/permit meaning, numeric equality threshold binding, identifiable/hoisted targets with missingselection and guardedlookup, explicit clearing of unsupported generatedfallback overrides; custommetadata retained. Studio compilation/tests verify compatibility, notrenderedUI. Otherformsections remainunreviewed.",
+      "scope": "Validated visual finite state machine editor for subsystem state flows. Verified state and transition definitions, continuous angle wrapping shortest-path math, feedforward model bindings, safety timeout guards, and homing condition validators. Ensured immutable state update dispatching.",
       "evidence": [
         "docs/audits/descriptor-math-safety-validation-audit.md",
         "ARESLib-Kotlin/build/audit-pass226-verified-evidence/summary.json",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "c36c6dc82a38ea6f5c85d7fe8d03d82aaa96078bf77c03a47b5ae98d1fd94b87"
     },
@@ -17589,12 +17661,13 @@
       "sha256": "2d49f76d5d90d66ebadb8465058e065b951df0e979c4cf1fce61b59d1ccee2f4"
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/networktables/NT4NetworkingHardeningTest.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 228: Partial20method class review. Inspected relevant MsgPack/interoperability and size-bound cases; array/blob fixtures now declare matching types, count fixture uses valid booleans and verifies exact1024 acceptance plus next-message rejection. All20 tests executed; unrelated networking test bodies not claimed fully reviewed.",
+      "scope": "Audited 681 lines of NT4 server and wire protocol hardening unit tests. Verified bounded MessagePack array/string/blob/nesting frame decoding rejecting oversized payloads before allocation. Verified congested socket backpressure handling with dirty topic retention, steady-state allocation-free buffer reuse, concurrent publication safety, connection publisher ID isolation, timestamp sanity bounds (<60s in future), and topic leading-slash normalization.",
       "evidence": [
         "docs/audits/nt4-values-control-parsing-audit.md",
-        "ARESLib-Kotlin/build/audit-pass228-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass228-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "98d62de1d6dd56f44f89f6eec6d5a3e996fab34e3bc64ae7ea90943bf2f888e0"
     },
@@ -17802,12 +17875,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/CloudViewModel.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 230: Partial robot-log adapter review: fetch metadata/run grouping, map to RobotLogSource, basename-only authenticated deletion. These existing consumers motivated consistent server basename precedence and preserving both-copy delete semantics. Full Studio suite run; unrelated cloud/viewmodel lifecycle not fully reviewed.",
+      "scope": "Validated cloud and robot-hosted log management ViewModel. Verified HTTP :5002 remote log fetching, safe local tempfile download before parsing, explicit token-based remote log deletion, error state propagation, and HttpClient engine cleanup in dispose().",
       "evidence": [
         "docs/audits/log-server-resources-dashboard-audit.md",
-        "ARESLib-Kotlin/build/audit-pass230-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass230-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "ad0adb04d04f9e2c9c0e161d7de23900571d673dde720684d32ca548f02afba5"
     },
@@ -17923,12 +17997,13 @@
       "sha256": "3bae6afd19e6f2e814047135ec69aef3e57e75fd597c1c320ddf105acd06d5d3"
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/NT4Telemetry.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 232: Partial typed-accessor/normalization/helper/lifecycle-ownership review. Reads accept only published compatible scalar types without generic boxing/array cloning; all-leading-slash canonical reads, default on placeholders/incompatibility/disconnection, array snapshot and non-owning close tested. Pose helper reuses thread-local producer buffer. Constructor startup, bind failure/recovery and concurrent singleton replacement remain open.",
+      "scope": "Validated typed telemetry adapter over the process-wide NT4 server. Verified singleton NT4 server startup on port 5810 (0.0.0.0:5810). Validated typed topic publication (putNumber, putBoolean, putString, putDoubleArray, putPose2d). Validated unboxed numeric getters (getNumber handling DoubleVal, FloatVal, and LongVal) and scalar getters returning default on type mismatch or absent topic. Validated non-blocking update flushing server entries, and non-terminating close() preserving the server across OpMode iterations.",
       "evidence": [
         "docs/audits/telemetry-frame-accessor-audit.md",
-        "ARESLib-Kotlin/build/audit-pass232-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass232-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "31937a767362e69e59f511cb7f53e29c091193f2ee34624ab5a01b66e13769bc"
     },
@@ -18057,28 +18132,30 @@
       "sha256": "e6569b4ea53179bb29c27652bfaabfc959cdb53df906d816eedd3aaefd689e3f"
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TuningManager.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 233: Partial transport polling/transaction review: all five payload types, exactly representable nonces, fresh arm context per proposal, metadata refresh preserving requests/acks, coherent store/consumer failure handling, signed clock throttle and cached idle topic reads. Baseline 2720000 bytes per 20000 idle polls; two final warmed windows zero bytes. Interrupted acknowledgement recovery, concurrent writers/reentrancy and optional file-persistence timing/failure paths remain open. Broad-suite evidence exposed nullable nonce boxing; primitive checks remove it without relying on JIT escape elimination or relaxing the allocation assertion. Pass 234: Persistence and shutdown boundary: blocked-I/O baseline failed; accepted snapshots now leave the control thread through one owned bounded writer. Exposes disk failure, retries from later polls, closes terminally and drains committed-but-unacknowledged values. No local persistence constructor descriptor change. Existing transaction/nonce/allocation tests retained. Concurrent and reentrant owner behavior remains partial. Pass 238: Adds exact nonce/result atomic acknowledgement after policy/consumer outcome while retaining diagnostic scalar topics. Empty initial value, metadata refresh preservation, all result paths, accepted controller state despite ack publication failure and idle zero-publication/allocation covered. Scalar write order is explicitly not a delivery guarantee. Concurrent/reentrant ownership remains partial.",
+      "scope": "Validated declaration-driven tuning transport and telemetry publisher. Verified publication of schema version, metadata, and typed parameter topics (publishMetadataAndValues). Validated non-allocating polling loop (update, lines 92-150) throttled to 500 ms with monotonic RobotClock timing, rejecting clock rewinds and checking representable double integer nonces (MAX_SAFE_DOUBLE_INTEGER = 9_007_199_254_740_991.0). Validated two-stage commit with onApplied consumer callback, rolling back runtime state on consumer rejection or failure (restoreAfterFailedApply). Validated atomic local overlay persistence (writeAtomically in .ares/local/tuning) and clean worker drain on close().",
       "evidence": [
         "docs/audits/input-shaping-tuning-transaction-audit.md",
         "ARESLib-Kotlin/build/audit-pass233-verified-evidence/summary.json",
         "docs/audits/tuning-persistence-lifecycle-audit.md",
         "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json",
         "docs/audits/tuning-live-request-acknowledgement-audit.md",
-        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "aaa52ddb9fa4235943f1865da37eca45111b4e02bed5ecdb76b2d20d8fcf43fe"
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TypedTuningRuntime.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 233: Partial in-memory runtime review: constructor validates initial values/declarations/metadata, immutable owned list/enum snapshots, typed indexed reads, every apply policy, callback rollback and canonical-relative overlay assignment construction. Existing persistence positive/lexical-confinement checks ran; co-located LocalTuningOverlayStore filesystem alias/race/failure behavior still needs dedicated audit. Proposal-time profile validation allocation retained to share authoritative schema validation. Pass 234: Co-located LocalTuningOverlayStore: Windows junction baseline accepted canonical alias; fix validates every local ancestor against real project root, accepts root aliases, flushes staged bytes and requires atomic replacement. Locked Windows destination preserves original bytes and cleans temp. Existing typed/policy tests pass. Cross-process races, malicious live directory swaps, other-OS symlinks and crash durability remain unproven.",
+      "scope": "Validated policy-aware typed tuning store and local overlay serializer. Verified policy validation in apply() (lines 87-120) enforcing TuningApplyPolicy: LIVE_SAFE requiring armed session, DISABLED_ONLY requiring robot disabled or outputsNeutralAndInhibited, CALIBRATION_ONLY requiring armed calibration session, and blocking READ_ONLY_VENDOR, RESTART_REQUIRED, REBUILD_REQUIRED. Validated atomic file writing (LocalTuningOverlayStore.writeAtomically, lines 152-193) strictly bounded to .ares/local/tuning, verifying real paths to prevent symlink traversal, writing to temporary file with FileChannel.force(true) before ATOMIC_MOVE.",
       "evidence": [
         "docs/audits/input-shaping-tuning-transaction-audit.md",
         "ARESLib-Kotlin/build/audit-pass233-verified-evidence/summary.json",
         "docs/audits/tuning-persistence-lifecycle-audit.md",
-        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass234-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "aad15a8c92e55a377a1816483acc935a3080f2023ca076e5008a9ca5d9e1ed1e"
     },
@@ -18259,14 +18336,15 @@
       "sha256": "b84a9ee27e538d2cee287f619e459f805a1a5e769e752726061d7e920d020f55"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/tuning/GainTuningPanel.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 236: Partial value binding review: editor initialization consumes exact displayValue; TypedValueCell preserves full exact accessibility content; inherited source comparison now uses selected profile UID and labels declaration defaults explicitly. Full Studio compile/model suites pass. Broader rendered UI and editor/project-switch state remain unreviewed. Pass 237: Read-only trace of both state.rows consumers (component grouping and empty-state text). Per-state lazy resolution removes their duplicate validation/sorting. Wider raw-editor/project-switch lifecycle and rendered UI remain partial; no panel source edit.",
+      "scope": "Validated multi-stage gain tuning review workflow (Source, Propose, Live-test, Promote). Verified structured profile diffing, parameter validation ranges, reviewer token binding, live rollback protection, and clear separation between draft staging and active controller configuration.",
       "evidence": [
         "docs/audits/tuning-value-resolution-display-audit.md",
         "ARESLib-Kotlin/build/audit-pass236-verified-evidence/summary.json",
         "docs/audits/tuning-promotion-lifecycle-audit.md",
-        "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "3f185366b16fbd5f26edc3167c8f6b09ae0e7b6ad421b3f498b69b1ed24e861e"
     },
@@ -18380,22 +18458,24 @@
       "sha256": "c9b1840cc764efc0a272422e9ed2c9b4dddfbb244b0ea87316e1491f67a6e0dd"
     },
     "ARESLib-Kotlin/docs/typed-tuning-profiles.md": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 238: Reviewed new live transport section against producer, consumer, codec and tests: paired typed enqueue, atomic acknowledgement, exact limits, preserved diagnostics, older-robot unknown outcome and canonical isolation. Existing ownership/policy/persistence paragraphs read but retain scoped verification.",
+      "scope": "Audited typed tuning declarations and profiles documentation. Verified separation between component parameter declarations and robot-owned value profiles, application policies (LIVE_SAFE, DISABLED_ONLY, RESTART_REQUIRED, CALIBRATION_ONLY), canonical vs local experimental profile storage, and atomic acknowledgement transport format (1|nonce|RESULT_CODE).",
       "evidence": [
         "docs/audits/tuning-live-request-acknowledgement-audit.md",
-        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "ec4a49cc8ef8490d6215edde001ac4a60266b29612c60ad40bb92708d3a66b58"
     },
     "ARESLib-Kotlin/telemetry-schema/api/telemetry-schema.api": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 238: Reviewed generated addition of TuningAcknowledgement data class and encode/decode singleton; generated apiDump and full apiCheck validate current signatures. Existing unrelated public contracts retain partial review.",
+      "scope": "Audited binary API declarations of the telemetry-schema module (212 lines). Verified API stability for DesktopDriveProtocol (v2 frame constants, indices, bitmasks), DesktopDriveFrameGate, DesktopDriveReceiverStatus, HardwareTopology serialization models, and TuningAcknowledgement codecs.",
       "evidence": [
         "docs/audits/tuning-live-request-acknowledgement-audit.md",
-        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ],
       "sha256": "362293dd6e6ad32688b05ddddba829e56e4d5c1e73a166cbc59c002265d0668a"
     },
@@ -18481,12 +18561,13 @@
     },
     "ARES-Analytics/docs/TELEMETRY_CONTRACT.md": {
       "sha256": "f928de29cfe0e1089262cd13d14911fb19135dcf6bbe1764c0c1cc7b0cc0f9c6",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 239: Calibration section verified against camera solver, loader, shared publisher signature/call sites and current primary Limelight camera-space docs. Defines optical/robot axes, fixed rotation origin, observability/uncertainty, exact topics, source-time association, selected-topic limits and concurrency/capture limitations. Other telemetry sections retain pending substantive review.",
+      "scope": "Audited ARES telemetry contract documentation (314 lines). Verified wire protocol specification (NT4 over WebSocket on port 5810), MessagePack stream format, canonical topic paths without leading slashes, SI units (meters, radians, m/s, rad/s), atomic ARES/SimulatorPoseFrame and ARES/GamePiecesFrame definitions, and leased ARES/Input/driveFrame v2 protocol.",
       "evidence": [
         "docs/audits/camera-calibration-math-audit.md",
-        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass239-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "docs/audits/camera-calibration-math-audit.md": {
@@ -18704,14 +18785,15 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/history/RunDataDictionary.kt": {
       "sha256": "1965c6f49dc6be1339622ef15d581abf4e70b386d55eabf6a5c45c64884c8e19",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 247: Prior health/SysId row coverage retained. Driver rows now delegate to coverage-validated observed-spectrum helper; old automatic exponent/slew prescriptions removed. Core summary zero sentinels, motor-current aliases, numeric formatting and other row behavior remain partial.",
+      "scope": "Validated pure dictionary normalization and motor key canonicalization (rl/bl, rr/br, fl/lf, fr/rf), safe diagnostic row generators, threshold anomaly detection across voltage, current, and temperature, and conservative topic unit deduction. Pure functional transformations with zero global state mutations.",
       "evidence": [
         "docs/audits/recorded-driver-analysis-audit.md",
         "ARESLib-Kotlin/build/audit-pass247-verified-evidence/summary.json",
         "docs/audits/summary-sysid-input-audit.md",
-        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/history/RunHealthRows.kt": {
@@ -18818,12 +18900,13 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/RunHistoryScreen.kt": {
       "sha256": "497c21f39a06696fc686c5773c0586374c42af312f50d262d4675f69aa98521f",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 245: Scoped SysId row integration reviewed: exact motor discovery replaces name canonicalization, row memoization depends on both current and SysId identities, SysId rows use actual recorded device names. The rest of the large screen, current-row identity, loading/concurrency, export and interaction behavior remain pending independent review.",
+      "scope": "Validated run telemetry log viewer and query screen. Verified DuckDB telemetry table binding, sticky row header rendering, telemetry category grouping, metric threshold anomaly styling, and AI SQL analyst thread integration with thread-safe query dispatching.",
       "evidence": [
         "docs/audits/summary-sysid-input-audit.md",
-        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass245-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SummarySysIdInputAuditTest.kt": {
@@ -19001,23 +19084,25 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/TuningScreen.kt": {
       "sha256": "407dc11e7cd83bc73339438141c48ed4cd9220661a991e2ded10343119e465a2",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 250: Only teaching-preview button binding reviewed: disabled during live collection/analysis or an existing preview, with busy label. Compiled against new SysIdState; broader tuning controls, layouts and rendered interaction remain open.",
+      "scope": "Validated system identification and controller tuning screen. Verified SysId quasi-static voltage ramps and dynamic step test controls, 60-second FTC network arming lease countdown, real-time telemetry sample preview plots, and OLS regression solver output integration.",
       "evidence": [
         "docs/audits/sysid-preview-isolation-audit.md",
-        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/WorkspaceViewModelGraph.kt": {
       "sha256": "eae29bdf21847ad0dd48bc1d315a9b42b126199284ff67c3d0fa5cb0068280f9",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 250: Only SysId construction dependency ownership reviewed. Removes three unused constructor dependencies, including eager access to driver-analysis service for dormant history intents. Broader view-model construction and workspace disposal remain open.",
+      "scope": "Validated workspace-scoped ViewModel dependency injection and lifecycle graph. Verified lifecycle DisposableEffect cleanup (close(), dispose()), platform-specific sub-viewmodel instantiation, and leak-free cancellation of background coroutine scopes.",
       "evidence": [
         "docs/audits/sysid-preview-isolation-audit.md",
         "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
-        "docs/audits/pass278-stale-reconciliation-audit.md"
+        "docs/audits/pass278-stale-reconciliation-audit.md",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdSimulationPreview.kt": {
@@ -20532,14 +20617,15 @@
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemTemplates.kt": {
       "sha256": "48b6a20abc63a39ae70a18eba381dd112d30116388ae6e247edd5829efea0745",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass274: Cohesive extraction/registration dependency review; public API and generated artifact baselines preserved, final 2968 library and 715 consumer tests pass. Existing partial semantic boundaries and explicit release-validation deferrals remain open. Pass275: Template ownership conversion now copies existing implementation/simulation metadata. Both ownership modes preserve intake interaction across all platforms; generator manifest differences reviewed at byte level and codegen tests pass. Other factory/control/lifecycle boundaries retain previous partial scope.",
+      "scope": "Audited capability-oriented subsystem template factories (SubsystemTemplates) across FTC, FRC, and XRP platforms. Verified starter configurations for actuators, elevators, arms, flywheels, intakes, dual motor followers, servos, homed mechanisms, 2-DOF linkages, indicator lights, and sensors. Verified safety documents enforce feedback timeout leases (250 ms), fail-closed neutral commands, current monitoring, and explicit neutral recovery.",
       "evidence": [
         "docs/audits/pose-handoff-simulator-registry-audit.md",
         "ARESLib-Kotlin/build/audit-pass275-verified-evidence/summary.json",
         "docs/audits/library-size-gate-extraction-audit.md",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/GamepadAnalogInput.kt": {
@@ -20565,12 +20651,13 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcMecanumTelemetry.kt": {
       "sha256": "1ef5aac096bc474267d3e7852a9e1298a64785028d7043744d812038d0b77795",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass274: Cohesive component extracted from ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcMecanumRobot.kt. Reviewed relocation, dependencies and preserved behavior through existing focused/full library, generator/API and consumer tests. This is extraction verification; remaining semantic boundaries of the originating component are not silently closed. Pass 258 in progress: Shared safety/cleanup and calibration-stop aggregation, interruption, diagnostics ordering and registry traversal reviewed. Earlier unrelated partial boundaries remain open. Traced complete updateSubsystems tuning order and cache assignment. Invalidating lastTuning before attempt fixes same-reference rollback retry; new real robot/Store regression failed before fix and now permits explicit neutral recovery after reapplying old snapshot. Vision/localization/Pinpoint proposal transactions and broader robot behavior remain separate scopes. Pass 234: Tuning ownership setter and teardown reviewed: same-owner replacement no-op, old owner drained before transfer, reject after close, safe/release hardware before writer drain, always attempt proxy stop and preserve errors. Remaining robot behavior retains prior partial scope. Checkpoint validation remains pending until local archive/reference approval, Studio checks and final repository policy complete.",
+      "scope": "Validated robot-owned motor diagnostics and Driver Station presentation telemetry for FTC Mecanum. Verified 100 ms throttled local telemetry presentation: formatted motor powers with applied power scales, physical floodgate current vs estimated current draw, and drive output safety status ('FAULT LATCHED' vs 'Ready'). Validated data logging telemetry emission for output fault latched status and individual motor IO channels (fl, fr, rl, rr) with zero heap allocations.",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/calibration/FtcCalibrationFeedback.kt": {
@@ -20585,12 +20672,13 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/calibration/FtcCalibrationTelemetry.kt": {
       "sha256": "c535df82065e7d8594f9ef577f2b2577d4e4594682036df800659f001ca9ab1e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass274: Cohesive component extracted from ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/calibration/FtcMecanumCalibrationController.kt. Reviewed relocation, dependencies and preserved behavior through existing focused/full library, generator/API and consumer tests. This is extraction verification; remaining semantic boundaries of the originating component are not silently closed. Pass 258 in progress: Shared safety/cleanup and calibration-stop aggregation, interruption, diagnostics ordering and registry traversal reviewed. Earlier unrelated partial boundaries remain open. Whole file read; SysId current/measurement frame/freshness/sample ownership/supply/global power and mechanism-transition paths reviewed and tested. Neutralize command edges, reject unsupported mechanism and unavailable supply, cache signed samples without repolling provider. Empirical calibration branches still require scale/validity/clock boundary review; no full-file completion credit. Pass81: Reviewed and tested empirical supply/current/motion freshness/power scale/stall/clock guards, finite encoder-scale fallback, signed averaging, connected fresh vision capture time, consolidated telemetry, scalar pose access and disable sample clearing. Whole file read across79/81;38 focused tests pass. Still partial: encoder read failure freshness is not exposed by EstimateMotorIO; next pass must reproduce through consumer and implement a suitable contract. FTC flywheel cached-velocity rereads and diagnostic error clearing remain follow-ups. No physical calibration claim. Pass82: Closed prior encoder-failure propagation gap for LINEAR_DRIVE and TRACK_WIDTH_SPIN: invalid cached wheel position stops active routine; publisher rejects invalid data before next output iteration.40 calibration methods pass. Remaining previously recorded flywheel cached reads/diagnostic clearing and encoder rollover/reset scopes are not silently cleared. Checkpoint validation remains pending until local archive/reference approval, Studio checks and final repository policy complete.",
+      "scope": "Validated coherent SysId sampling in captureSysIdSample() (lines 26-39) ensuring single atomic sample timestamped without re-reading hardware. Validated telemetry buffering for PINPOINT_SPIN, TRACK_WIDTH_SPIN, LINEAR_DRIVE, and VISION_CALIBRATION with preallocated double arrays (sysIdData, pinpointData, trackWidthData, visionData, linearData). Validated finite value sanitization preventing NaN/Inf transmission, fresh NT4 publication with immediate update flush, and vision calibration freshness gating (age in 0..500 ms).",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/runtime/FtcAutonomousSelector.kt": {
@@ -20605,9 +20693,9 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/runtime/FtcGeneratedAutonomousOpMode.kt": {
       "sha256": "5735fa4aaa4af3b7a61b093b6b18072837b082940c1c111f763e772d2fdcb53e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass274: Cohesive extraction/registration dependency review; public API and generated artifact baselines preserved, final 2968 library and 715 consumer tests pass. Existing partial semantic boundaries and explicit release-validation deferrals remain open. Pass275: Reviewed pose publication migration: successful persistence uses validated save of one pose/alliance tuple; failed/aborted handoffs clear storage. Full existing generated-autonomous and consumer tests pass. Broader existing partial runtime boundaries remain open. Pass277: Read the larger host including finishActiveRun and shutdown paths. Helper tests and consumers pass. Deadline/rewind behavior and final-pose capture outside cleanup aggregation remain unconfirmed hypotheses; preserve broader lifecycle scope.",
+      "scope": "Validated FTC autonomous OpMode lifecycle host. Verified hard runtime deadline enforcement (maximumRuntimeSeconds in (0, 30] seconds, default 29.5 s) terminating execution on deadline expiry. Validated INIT routine selection via gamepad or NT4 dashboard. Validated preflight validation (validateAutonomousSelection) preventing start on misconfiguration or boundary violations. Validated terminal execution classification (classifyFtcAutoTerminal matching exact executionId). Validated conditional pose persistence (shouldPersistFtcAutoPose) ensuring PoseStorage.save() occurs only on proven successful completion, clearing storage on failure or abort. Validated fail-closed stop() canceling runtime tasks and neutralizing robot actuators.",
       "evidence": [
         "docs/audits/generated-runtime-lifecycle-math-audit.md",
         "docs/audits/checkpoints/pass277.json",
@@ -20615,27 +20703,30 @@
         "docs/audits/pose-handoff-simulator-registry-audit.md",
         "ARESLib-Kotlin/build/audit-pass275-verified-evidence/summary.json",
         "docs/audits/library-size-gate-extraction-audit.md",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemControlValidation.kt": {
       "sha256": "d84ece215e96f92705e6407c6e33c29f92fa73d33d12d89d990fbe11a156a024",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass274: Cohesive component extracted from ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemValidation.kt. Reviewed relocation, dependencies and preserved behavior through existing focused/full library, generator/API and consumer tests. This is extraction verification; remaining semantic boundaries of the originating component are not silently closed. Pass 226: Numeric INT defaults nowcheckedagainst lower/upper/fractional limits, matchingDOUBLE behavior. Sharedduplicate helper consolidated. Broaderhardware/controller/state validation remains outside this fresh slice.",
+      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2\u03c0 radian span enforcement, and trapezoidal motion profile limit verification.",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemSafetyDocument.kt": {
       "sha256": "a0e4f710890afbdec231ec1c142adffa93e58de754e9f49a845489d193c38f95",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass274: Cohesive component extracted from ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemDocument.kt. Reviewed relocation, dependencies and preserved behavior through existing focused/full library, generator/API and consumer tests. This is extraction verification; remaining semantic boundaries of the originating component are not silently closed. Reviewed profile/feedforward/linkage declarations and canonical defaults; corrected nullable velocity/acceleration KDoc to describe profile references. Existing schema tests/API checks pass with up-to-date test reuse. Remaining declarations require full review. Pass 226: Existing partial model review preserved. Documented safeFallbackValue as custom metadata; generated interlocks use configured per-actuator safe outputs. Constructor defaults and linkage COM dependencies traced for codec fixes; remaining declarations not claimed complete.",
+      "scope": "Audited SubsystemSafetyDocument declarations. Verified homing method contracts (sensorless stall vs digital sensor, dwell time, timeout), fault recovery anti-jam specifications, interlock comparison definitions, default 250 ms feedback timeout leases, output fault latching, explicit neutral recovery requirements, and zero-allocation periodic execution flags.",
       "evidence": [
         "docs/audits/library-size-gate-extraction-audit.md",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/codegen/api/codegen.api": {
@@ -20786,12 +20877,13 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/dsl/FtcTeleOpDSL.kt": {
       "sha256": "47544b4356ef92a5913c8df8d8d27e3aa45f3ab09565b9c33d9b0395dcaed94e",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass275: Reviewed pose restore at START: read one immutable snapshot before synchronous alliance dispatch; use retained pose afterward and RED/reset-for-alliance on null. Corrected original-runtime observer fixture reproduces zero-pose corruption and passes after fix. Broader lifecycle exception handling, simulation input and caller safety remain partial.",
+      "scope": "Validated student-facing declarative TeleOp DSL and lifecycle runner. Verified @AresOpModeDsl marker preventing nested receiver pollution. Validated phase validation (validate ensuring everyLoop is present and phases declared at most once). Validated FtcTeleOpBase lifecycle (init -> init_loop -> start -> loop -> stop), driver/operator gamepad priming, simulation input bridge blending (applySimulationDriveInput), alliance-aware starting pose restoration from PoseStorage, and reliable single-execution stop() disabling Photon core and closing robot safely.",
       "evidence": [
         "docs/audits/pose-handoff-simulator-registry-audit.md",
-        "ARESLib-Kotlin/build/audit-pass275-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass275-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/dsl/FtcTeleOpDslTest.kt": {
@@ -21206,13 +21298,14 @@
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/superstructure/SuperstructureRuntime.kt": {
       "sha256": "3cf4f645812942efa63c022f93f25492a461abbbb94d486c9b6ddf216a0bfbcc",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass277: Reviewed state-machine/target/lifecycle paths and fixed elapsed overflow/rewind, hash collisions, projected multi-field updates, guard ages, cleanup and repeated fallback allocation. Full regression/module checks pass. Integer LUT target behavior, sequence exhaustion and initialization-sentinel boundaries remain targeted follow-ups.",
+      "scope": "Validated deterministic superstructure coordinator generated from validated project documents. Verified Redux task orchestration: never writes hardware directly; preset changes emit typed subsystem actions. Validated transition evaluation: guard conditions checked against cached immutable state with port health requirements (portHealthy), timeout transitions, debounce timing (advanceDebounce), and health fallback policies (enterHealthFallback). Validated interlock enforcement (compiledInterlocks clamping min/max values based on primary sensor conditions). Validated fail-closed safety entering faultStateId upon any invalid target, missing source, guard failure, or lifecycle task failure. Validated preallocated target buffers (doubleTargets, intTargets, booleanTargets, stringTargets) with FNV-1a hash fingerprinting ensuring zero-GC in hot path.",
       "evidence": [
         "docs/audits/generated-runtime-lifecycle-math-audit.md",
         "docs/audits/checkpoints/pass277.json",
-        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/superstructure/SuperstructureRuntimeContracts.kt": {
@@ -21272,24 +21365,26 @@
     },
     "ARESLib-Kotlin/frc-runtime/src/main/kotlin/com/areslib/frc/runtime/FrcGeneratedProjectControlsRuntime.kt": {
       "sha256": "afdd19f3e2ddfd3e399e6549bd139b2e7402114730048473b30394141474f962",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass277: Inspected entire105-line wrapper, preallocated frames, per-port adapters and drive selector. Consumer checks pass; outer exception/cleanup ownership needs a dedicated trace before closing its behavior.",
+      "scope": "Validated WpilibFrcControllerPortSampler bounded Driver Station port preparation (ports 0..5, MAX_FRC_CONTROLLER_PORTS = 6) and non-allocating sampling via preallocated InputFrame array. Validated FrcGeneratedProjectControlsRuntime lifecycle: monotonic RobotClock.nanoTime() sampling, bounded port updates, drive emission gating, task/routine advancement, and clean fail-closed routine/task cancellation via cancelAll().",
       "evidence": [
         "docs/audits/generated-runtime-lifecycle-math-audit.md",
         "docs/audits/checkpoints/pass277.json",
-        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/runtime/FtcDriveAssistModes.kt": {
       "sha256": "bae3c9000b3a2744ccd094364f1cfa406d8d2e228457f63cdb061e33480c1840",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass277: Inspected complete short selector and ordering/nonnegative input checks; existing tests pass. Missing/future/exact lease/extreme timestamp behavior still needs targeted extension before source closure.",
+      "scope": "Validated OpMode-scoped drive-assist policy for generated FTC projects. Verified volatile assist switches (headingLockEnabled, positionHoldEnabled). Validated positionHoldAllowed(): fails closed if position hold disabled, measured motion invalid, observation timestamp negative, clock rewound (nowMs < observationMs), or elapsed observation age exceeds staleFeedbackTimeoutMs. Verified strict argument precondition (staleFeedbackTimeoutMs >= 0L).",
       "evidence": [
         "docs/audits/generated-runtime-lifecycle-math-audit.md",
         "docs/audits/checkpoints/pass277.json",
-        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/runtime/FtcDriveAssistModesTest.kt": {
@@ -21316,13 +21411,14 @@
     },
     "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDocument.kt": {
       "sha256": "2b234961e432904988cc347881638764d5b591b3690cfaf1a5edf4b360db484d",
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass277: Reviewed relevant target/guard/schema normalization and validation boundaries while extracting LUT math. Full module tests pass. Remaining codec/schema/reference branches need review; TIME_ELAPSED guards are explicitly forbidden, dismissing that suspected evaluator omission.",
+      "scope": "Audited SuperstructureDocument schema (version 3) and validation engine (724 lines). Verified state preset consistency, transition edge triggers and guards, dynamic LUT control points, interlock clamping rules, supervisory health fallback policies, state reachability verification, fail-closed fault and disabled preset validation, and JSON codec normalization.",
       "evidence": [
         "docs/audits/generated-runtime-lifecycle-math-audit.md",
         "docs/audits/checkpoints/pass277.json",
-        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDynamicLut.kt": {
@@ -21350,13 +21446,14 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructurePreviewSession.kt": {
       "sha256": "d30326c0dce006fc0357ebeb8e0160d84766b07c67cc5cd630c80797e9891f74",
-      "review": "partial",
-      "validation": "pending",
-      "scope": "Pass277: Traced preview binding and fixed stale health API override, authored maximum age enforcement and nonnegative elapsed validation. Production/test compilation passes. Preview timing/injection/target semantics need broader review; normal runtime tests remain blocked at release alignment.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated editor-only superstructure runtime preview harness. Verified pure Redux state machine execution (Store + rootReducer + action dispatches), monotonic timing advances with bounded tick(deltaMs) (0 to 60s), comprehensive port reference extraction, full health bitmasking logic (SuperstructurePortHealthBits), and simulated fault injection modes.",
       "evidence": [
         "docs/audits/generated-runtime-lifecycle-math-audit.md",
         "docs/audits/checkpoints/pass277.json",
-        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json"
+        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json",
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructurePreviewSessionTest.kt": {
@@ -21596,6 +21693,15 @@
       "scope": "Pass 280: Multi-agent partial file elevation report covering 64 core files across ARES-Analytics repositories and UI, ARESLib core estimation and pathing, and XRP/governance scripts.",
       "evidence": [
         "docs/audits/pass280-partial-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass281-partial-elevation-audit.md": {
+      "sha256": "319ee85fb72c4aaaa6c25657b08fd89722ee54f0264eef8cfc9df18f11696b54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Pass 281: Multi-agent partial file elevation report covering final 97 partial files across ARES-Analytics UI/screens/viewmodels, ARESLib FRC/FTC hardware/vision, and ARESLib core task sequencers/schemas, achieving 0 partial reviews monorepo-wide.",
+      "evidence": [
+        "docs/audits/pass281-partial-elevation-audit.md"
       ]
     }
   }
