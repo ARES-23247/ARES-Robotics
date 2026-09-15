@@ -3,7 +3,7 @@ package com.ares.analytics.service.project.persistence
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.service.project.AresProjectDocuments
 import com.ares.analytics.util.ProjectLayout
-import com.ares.analytics.viewmodel.field.FieldDocumentMapper
+import com.ares.analytics.domain.project.FieldDocumentMapper
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.routine.RoutineDocument

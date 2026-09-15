@@ -18,8 +18,8 @@ env:
   FRC_STARTER_SHA256: 17ee19891c6265091cd9c0aba2f9cda8ff678cf9e0bb86b46752f44ce3bc983c
   XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.56/ARES-XRP-Starter-3.0.55.zip
   XRP_STARTER_SHA256: 5756d8def9c7e18356a77c8bd3d13254159b16fdde9feb9b1725dc482860608a
-  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.56/ARES-Lightbot-Example-3.0.55.zip
-  LIGHTBOT_EXAMPLE_SHA256: 5af3d2e59c606409ac21d08cba3cd05159c81ee6552e06f794020583fd0274d9
+  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.56/ARES-Lightbot-Example-3.0.56.zip
+  LIGHTBOT_EXAMPLE_SHA256: 000548ee9e6317ced2f8ebe6b49b2c779cd79dd62e4d61d5edb79be6220224be
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
