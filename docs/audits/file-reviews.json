@@ -5857,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "9876b525449286e6d066b2a82aff6a120c33b25bb5a5e2b0890a7a6d331fa243",
+      "sha256": "40240fc774c2bd21ed18900aa8fbdd88e4ccbed09180f2bed71f93fbe9574cd0",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -26671,6 +26671,1167 @@
       "scope": "Comprehensive Pass 289 pending file elevation, active refactoring, and 100% milestone seal report for all 25 ARES-FRC-Starter files.",
       "evidence": [
         "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/.ares/action-catalog.json": {
+      "sha256": "371e586f650a1b3adc2fb379ed0b56f9ae11858eaf6b7b8d448349ca34bac130",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated action catalog descriptor under schema v1 (projectId: 'ares-ftc-starter', revision 1). Verified 7 starter actions covering Drive safety ('drivetrain.recoverNeutral') and Drive assists ('drivetrain.headingLock.{enable,disable,toggle}', 'drivetrain.positionHold.{enable,disable,toggle}'). Validated exclusive drivetrain resource locks, TELEOP/TEST contexts, zero parameters, and fail-closed safety semantics.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/.ares/autonomous-catalog.json": {
+      "sha256": "8f889e9af690c7a647eaf8c0d1c9e8ee25b90b9b5e5e19f08c93130cf140f19e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated autonomous catalog descriptor under schema v1 (projectId: 'ares-ftc-starter', revision 1). Verified null defaultEntryId and clean empty entries collection, establishing an unopinionated zero-code autonomous foundation awaiting Field Studio routine authoring.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/.ares/controllers/ftc-driver.arescontroller": {
+      "sha256": "626aa1113aff80baf69655d595edc10344840cc4d06a745bc9ca14b61ea4d48b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated controller profile descriptor under schema v1 (documentId: 'ftc-driver', revision 1). Verified FTC Driver Station gamepad profile with device matcher requiring >=4 axes and >=8 buttons. Validated full front-surface mappings for face buttons (a:0, b:1, x:2, y:3), bumpers (lb:4, rb:5), system buttons (back:6, start:7), thumbstick clicks (l3:9, r3:10), dpad buttons (up:11, right:12, down:13, left:14), dual analog sticks (lx:0, ly:1, rx:2, ry:3), and triggers (lt:4, rt:5).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/.ares/controls/driver.arescontrols": {
+      "sha256": "ed8afe6ec12e1a5a0bce936cd7589ba2ef83c9c17e8ec25f50b20e5f978d13eb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated controls binding descriptor under schema v2 (documentId: 'driver', revision 1). Verified field-centric drive bindings adhering to NWU CCW-positive rotation: forward/back (left_stick_y inverted to vx), strafe left/right (left_stick_x inverted to vy), rotation (right_stick_x inverted to omega) with 0.05 deadband, 75ms chord window, and IGNORE_IF_RUNNING routine policy. Verified safety chord binding ('recover-drive-neutral', Back + Start, priority 100, 1.0s cooldown, 0.1s debounce, suppresses constituents) targeting 'drivetrain.recoverNeutral'.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/.ares/project.json": {
+      "sha256": "d20b28710f13c7007a1c03f1767b6863c28f518d36917cb45cf9c3f8d809565e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated project manifest under schema v5 (projectId: 'ares-ftc-starter'). Verified team identity '00000', season 'starter', robot 'AresFtcStarter', league 'FTC', coordinate convention 'CENTER_ORIGIN_CCW', robot footprint 0.45m x 0.45m (18in FTC sizing box), field dimensions 3.6576m x 3.6576m (12ft standard FTC perimeter), authoring model 'GUI_OWNED', and runtime options specifying STANDARD_SDK command transport with limelight proxy disabled.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/.github/workflows/ci.yml": {
+      "sha256": "67f65e9e77ec08a600adce5f0914b4c1ef6ac11e064e908ac9ac4f586dbf0e4b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated GitHub Actions CI pipeline. Verified 'build-and-test' job on ubuntu-latest using Temurin JDK 17, pinned immutable ARES BOM availability head check, './gradlew generateAresProject verifyAresProject :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug', debug APK artifact upload, and Windows-based 'headless-drive-verification' executing ':TeamCode:runVerification' with JDK 21.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/.github/workflows/codeql.yml": {
+      "sha256": "18ed4e42ff7a545a0cd4978f01c49affacdbd618edd3911594d8fe95da87883d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated CodeQL static analysis workflow. Verified weekly cron schedule, PR/push master triggers, manual dispatch, Temurin JDK 17 setup, scan scope targeted to 'TeamCode/src' and 'simulator/src' while strictly excluding vendor 'FtcRobotController/**', compiling via ':TeamCode:assembleDebug :simulator:compileKotlin'.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/.vscode/tasks.json": {
+      "sha256": "0b1cbd0842a3def4e934ecc8bed1fc19d13c7221a5b98834899bcc247443e40a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated VS Code tasks configuration (version 2.0.0). Verified cross-platform tasks for ARES project verification (generateAresProject, :TeamCode:verifyAresProject, :TeamCode:testDebugUnitTest, :simulator:test), APK compilation (:TeamCode:assembleDebug), desktop simulation (:TeamCode:runSim), and device deployment (:TeamCode:installDebug) with $gradle problem matchers.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/AGENTS.md": {
+      "sha256": "af1f1eeefbc5c0d0eed23a0e528edd36de42f5d330d056be4fe51db741b138c4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated FTC Starter agent guidelines. Confirmed boundaries between generic starter and competition robots, canonical .ares source of truth, disposable codegen under 'TeamCode/build/generated/ares', immutable Redux state invariants, single sensor read caching per loop, fail-safe neutral outputs, and Hardware Review approval gates before physical deployment.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/build.gradle": {
+      "sha256": "43429ae94d8ab4af5ee49123a54df69836af1d87e70b3fa735eca8932e14cbce",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated FTC Robot Controller module build script. Verified 'com.android.library' plugin, compileSdkVersion 30, minSdkVersion 24, targetSdkVersion 28, BuildConfig field 'APP_BUILD_TIME', Java 8 source/target compatibility, namespace 'com.qualcomm.ftcrobotcontroller', and application of 'build.dependencies.gradle'.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/AndroidManifest.xml": {
+      "sha256": "92e2b9106b339d56efe8fdc78225b04b3be21bd6e47bbeaa21f7dbac52240ab9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated Robot Controller Android manifest (versionCode 61, versionName 11.1). Verified RECEIVE_BOOT_COMPLETED permission, AppThemeRedRC theme, launcher entry Activity PermissionValidatorWrapper, USB hardware attachment intent filters and device filter on FtcRobotControllerActivity, FtcRobotControllerService, and RunOnBoot broadcast receiver.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/internal/FtcOpModeRegister.java": {
+      "sha256": "580d356f0fd8d3486d2192f6f3324e43582cb730c86c1a9201e861e3df3c1ba5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated FTC SDK OpMode register implementation. Confirmed clean implementation of OpModeRegister.register(OpModeManager) documenting class annotation-based discovery (@TeleOp and @Autonomous) without deprecated hardcoded registrations.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/internal/FtcRobotControllerActivity.java": {
+      "sha256": "17cf4071ff5fabba225e25cdf143f729edda65889cc806b0df6ca52349b917d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated FTC Robot Controller core Android Activity. Verified USB device attachment handling via ConcurrentLinkedQueue, Rev Control Hub / Dragonboard board presence detection, web server management, service binding to FtcRobotControllerService, UI update handlers, and permission validation redirects.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/internal/PermissionValidatorWrapper.java": {
+      "sha256": "34c0149add85c4aa367430e0d8317e38a4fb0321ae862211d02fdb962ea38f2b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated runtime permission wrapper Activity. Verified dangerous permission validations for WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA, ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION, and READ_PHONE_STATE, redirecting safely to FtcRobotControllerActivity upon validation.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/drawable-xhdpi/icon_menu.png": {
+      "sha256": "31ae069627a28b72f30d042b47cd26df40675dd8e6b1b498ad44080819557a1a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated XHDPI menu drawable asset for FTC Robot Controller action bar navigation. Confirmed valid binary PNG graphic format (169 bytes).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/drawable-xhdpi/icon_robotcontroller.png": {
+      "sha256": "c80fedbaed6d542f555d548cf3f05935cedf32c9a910d05840b444074940f106",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated XHDPI Robot Controller launcher icon drawable asset. Confirmed valid binary PNG graphic format (6,140 bytes).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/layout/activity_ftc_controller.xml": {
+      "sha256": "b6fd5cfe54ea65a64cc5abe62e44ce6a903a15f67f1c0bced7f6a76f7d5686a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated Robot Controller main layout XML. Verified top bar with robot icon and device name, header include, network and robot status text views, camera monitor frame layout, error overlay, gamepad 1/2 indicator layouts, and Blocks webview container.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/menu/ftc_robot_controller.xml": {
+      "sha256": "d615e7928141e725e3e371d9805d74d0a690f69cb7b11291f916f0a7654f1a54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated Robot Controller action menu resource. Verified items for settings (order 100), restart robot (200), configure robot (300), program and manage (550), self inspection mode (600), about (999), and exit app (1000).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/raw/gold.wav": {
+      "sha256": "3bfc476a2cdb7cf3a439435a653c37315383b8866d19bd5f75dfb89c99a519ac",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated audio feedback asset for gold mineral / detection feedback. Verified valid standard PCM WAV audio resource (13,742 bytes).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/raw/silver.wav": {
+      "sha256": "e303c37d570c93a42e220665ab453d465b655e71c2cb41d2512262eb25312320",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated audio feedback asset for silver mineral / detection feedback. Verified valid standard PCM WAV audio resource (14,214 bytes).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/values/dimens.xml": {
+      "sha256": "7e49e3f5d662053a797aa9995be3b0628782b86f565b384f9075a4dc98603401",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated standard Android dimension resources. Verified activity horizontal margin (16dp) and vertical margin (5dp).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/values/strings.xml": {
+      "sha256": "39da237fdd78aedd5aa0f35633fa6f0513b2bcf4990d580b8a4173a75fef45fe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated string resources for Robot Controller application. Verified app title, menu action labels, toast alerts, theme token arrays (AppTheme{Red,Green,Blue,Purple,Orange,Teal}RC), and package name references.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/values/styles.xml": {
+      "sha256": "143d3448d08560bbeb2d726c8d3ce6b1f7f7df349b92b54739711e01644e176c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated theme style declarations extending AppTheme.* for Red, Green, Blue, Purple, Orange, and Teal Robot Controller color schemes.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/xml/app_settings.xml": {
+      "sha256": "813cf71321a7cebc55ee9400ed0bea24559ac9aff905a4ce716075ab2d892d03",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated PreferenceScreen XML for robot configuration. Verified device name EditTextPreference, color theme ColorListPreference, sound toggle SwitchPreference, advanced RC settings intent, and log viewer intent.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/res/xml/device_filter.xml": {
+      "sha256": "c719d55e88e90587d71dba8e4c5b1978d8f2ee4b7307f098db5066e09405e0a7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated USB host device filter configuration. Verified FTDI FT232 Lynx USB vendor ID 1027 (0x0403) / product ID 24597 (0x6015) and UVC video cameras (class 14, subclass 2) for automatic attachment notifications.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/LICENSE": {
+      "sha256": "7f0e7eeb191f898e7f864326f03095978fb537e044d907b30fb2806a0c93ccb5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated open-source software license. Confirmed standard FIRST BSD 3-Clause license governing FTC Robot Controller distribution and starter codebase.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/README.md": {
+      "sha256": "f87047be8188020bcc5e6a778d87dc7290301fc4cf054bcfadccec027c5faab5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated FTC Starter documentation and quickstart instructions. Verified simulation-first onboarding, drivebase motor naming ('fl', 'fr', 'rl', 'rr'), Control Hub IMU, closed-loop chassis velocity, rotation lock, fail-closed anti-push position hold, sibling ARESLib integration, and mentor Hardware Review sign-off rules.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/build.gradle": {
+      "sha256": "b2df952da4b19aef91a54d741c8883715bd31db5c8c629d3257ed7a725cf46dd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated TeamCode module build script. Verified core library desugaring for Java 8 / API 26 NIO on API 25 Control Hubs, disposable generated code source directories ('generated/ares/main/kotlin', 'generated/ares/drivebase/kotlin'), isolated snapshot simulator runtime classpath preventing Windows file locking, and codegen tasks ('generateAresProject', 'prepareAresSubsystemPlumbing', 'previewSubsystemChanges', 'generateSubsystemStarters', 'replaceSubsystemStarters', 'verifyAresProject').",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/networktables.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated TeamCode NetworkTables schema configuration. Confirmed clean empty schema array for FTC TeamCode runtime initialization.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/AndroidManifest.xml": {
+      "sha256": "98746b00d8660ca234a3814e481611c14099b9c9a48202b7abff2159d03d529d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated TeamCode Android manifest. Verified namespace definition and minimal '<application/>' structure, delegating permissions and activity declarations to FtcRobotController library merger.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/assets/paths/field.json": {
+      "sha256": "e318a40669c86bc6279daf2d3af9d9ece4690d56c364008d105f03e75a017929",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated canonical Field Studio asset under schema v2 (revision 1, id: 'ares-starter-empty-ftc-field'). Verified NWU coordinate compliance: width 3.6576m, height 3.6576m (12ft x 12ft FTC perimeter), xAxisDirection 'up' (+X forward), yAxisDirection 'left' (+Y left), rotational alliance symmetry, and starter empty element collections.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/config/AresRuntimePolicy.kt": {
+      "sha256": "638235beb7f85146f515925abb103899e69c3cde053be92c1270a2c404692cdb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated runtime options policy bridge. Verified typed conversion from generated constants ('FTC_HUB_COMMAND_TRANSPORT', 'FTC_LIMELIGHT_PROXY_ENABLED') to AresFtcRuntimeOptions for FTC robot startup and pre-init lifecycle.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/AresAutoDSL.kt": {
+      "sha256": "06af737dc401441ada8c63a5bf90f1bb2ca684a8e02960b413c9584b8eaec50d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated autonomous DSL adapter ('AresAutoBase' extending 'FtcGeneratedAutonomousOpMode<AresRobot>'). Verified pure Redux autonomous lifecycle, autonomous bounds validation against field envelope, deterministic routine execution, and fail-closed stop neutral output guarantees.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/AresTeleOpDSL.kt": {
+      "sha256": "7f1506e7035a9ba3500309cd72c2aca7a308baf4933cf335f9dd8ce4f6d88750",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated declarative TeleOp lifecycle adapter ('AresTeleOpBase' extending 'FtcTeleOpBase<AresRobot>'). Verified zero-GC hot path through preallocated driverFrame and operatorFrame (InputFrame), lazy cached input adapters, monotonic clock timing (RobotClock.nanoTime()), scheme-authored drive delegation, and fail-safe project controls cancellation on stop.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/dsl/AutoCapabilities.kt": {
+      "sha256": "28700c9d590bf104a9c8b7b3f3b31e2c026aa482478bb41e9be28e270c0b5e72",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated runtime registration for generic drivetrain actions. Verified 'FtcAutoCapabilities.DRIVE_RECOVER_NEUTRAL' ('drivetrain.recoverNeutral'), registering a named command task requiring TaskResources.DRIVE that neutralizes all four motors before clearing latched drive faults.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/extensions/TeamRobotExtensions.kt": {
+      "sha256": "6d62f17e162634cbe547715ff09936b493bb7fe206d8fdec27ae522af1b13aba",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated anchor object for user-owned handwritten FTC Kotlin. Verified USER-OWNED contract ensuring ARES Studio code generation will never overwrite or reverse-engineer custom mechanisms in this package.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterAuto.kt": {
+      "sha256": "14db9dd59c29c09d5758bdff0973a73b49b93ab77eb5c5314e60b94adc7c3d6c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated autonomous OpMode entry point (@Autonomous(name = 'ARES Zero-Code Auto', group = 'ARES')). Verified clean extension of AresAutoBase, safely reporting blocked status until autonomous routines are authored in Field Studio.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt": {
+      "sha256": "e9b3af73c9bd30504cabe797345376104eedf6764f5849eab6f47e4c68edac40",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated TeleOp OpMode entry point (@TeleOp(name = 'ARES Zero-Code TeleOp', group = 'ARES')). Verified clean extension of AresTeleOpBase, enabling scheme-authored drive (allowGeneratedDrive = true) with explicit everyLoop bounded lifecycle hook.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt": {
+      "sha256": "50c63f05712c117fd8cf5e354e91bc148463c7b12bc4b2f2144f3d3927e94e2e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated core FTC composition root facade. Verified FtcMecanumRobot construction with limelight proxy options, TuningManager integration, Redux atomic tuning updates (RobotAction.UpdateTuningState), canonical field asset loading (StarterFtcFieldContractLoader) with AprilTag map registration, single sensor read/output write per loop cycle (readAllSensors, writeAllOutputs), and hardware-safe neutral shutdowns on exception or close.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/res/raw/readme.md": {
+      "sha256": "b3284e413aa57b33ea86b60101d75d2981293a65b5d10b90a2592afc46d2187b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated instructional documentation for TeamCode raw resource assets.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/res/values/strings.xml": {
+      "sha256": "e2058058058823dde53ec6ec3d9aed090f45f27a84698eac649af57289df8222",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated TeamCode XML string resources. Verified clean empty resource collection for application customizations.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/main/res/xml/teamwebcamcalibrations.xml": {
+      "sha256": "479817397cae86a78cb12a04d18a8bdd18a3f09e5c7278949a46ddfe96fc2755",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated webcam calibration configuration resource. Verified specifications for camera resolution, focal length, principal point, and 8-element distortion coefficients [r0, r1, t0, t1, r2, r3, r4, r5] for external UVC vision sensors.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/FtcDriveAssistModesTest.kt": {
+      "sha256": "a0a5e9b84433ced7527b5ff82e41efbf198d239c9dec7217191ca9eeab474082",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated unit test suite for FTC drive assist modes. Verified rotation lock defaults enabled, anti-push position hold defaults opt-in, and anti-push strictly requires fresh, valid pose feedback (observation timestamp within timeout and valid measured motion).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/StarterProjectContractTest.kt": {
+      "sha256": "dd0dd4fe7c0da900206a6fb9810082281f0792aec2cecb5c95f8b616bdff8ea3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated starter project contract tests. Verified preservation of explicit neutral recovery action key ('drivetrain.recoverNeutral'), 4 distinct drivebase motors ('fl', 'fr', 'rl', 'rr'), supported localization odometry kinds ('WHEEL_ENCODERS_IMU', 'PINPOINT'), absence of checked-in mechanical outputs, and strict exclusion of FRC or vendor APIs.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/build.common.gradle": {
+      "sha256": "7860fb8f9e2f2b89e9b41e5344c7f98b8fff45bb000693dabf54ae136b8d3f45",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated common Android application build script. Verified compileSdkVersion 30, signing configs for debug and release using 'libs/ftc.debug.keystore', manifest version sync Groovy regex parser, NDK ABI filters ('armeabi-v7a', 'arm64-v8a'), ndkVersion '21.3.6528147', and verified elimination of empty repository blocks.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/build.dependencies.gradle": {
+      "sha256": "1523aac4622baa37c588091c170a54260150d82d0cb1e392b6a859bfc29428d4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated FTC SDK dependency declarations. Verified resolution of official FTC SDK v11.1.0 modules (Inspection, Blocks, RobotCore, RobotServer, OnBotJava, Hardware, FtcCommon, Vision) and AndroidX AppCompat 1.2.0 from MavenCentral, Google, FRC Maven, CTR, and Dairy Foundation repositories.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/build.gradle": {
+      "sha256": "83892bd4cebb7d10b3bb04ddb5e91482540978d3ee8f91c16ef68ecdf0991656",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated top-level build script for FTC application. Verified Android Gradle Plugin 8.7.0, Kotlin 2.4.10, Kover 0.9.9, ARES version policy resolution, repository cascades, resolution strategies forcing consistent Kotlin stdlib artifacts, and isolated repository declarations.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/docs/APRILTAG_FIELDS.md": {
+      "sha256": "0c1140ae819591d24a910c52b1e953117cdf5b8873b2001f956933d5197581a3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated field layout and vision setup documentation. Verified canonical field format ('paths/field.json'), AprilTag map import protocols (ARES/FTC JSON, WPILib, Limelight .fmap), physical size and tag family verification, camera pose transform calibration, and simulation limitations.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/docs/CODE_FIRST_AND_HYBRID.md": {
+      "sha256": "b5384bd6cadf122e581f29400249e46588f1fcdcb50fd10e2444c0eec800f3a2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated architectural guide for code-first and hybrid workflows. Verified authoring models ('GUI_OWNED', 'CODE_FIRST', 'HYBRID'), mechanism registration contracts ('.aressubsystem'), CLI workflow commands, and local development independence without mandatory GitHub coupling.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/docs/PHYSICAL_COMMISSIONING.md": {
+      "sha256": "587529366e6425cf7b46906c8a73b2c8ed321bf21c7a8ca204fc11e8026799eb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated physical commissioning safety protocol. Verified block testing, parameter verification, canonical device naming ('fl', 'fr', 'rl', 'rr', 'imu'), motor direction diagnostic checks, neutral mode verification, camera calibration, and mentor Hardware Review sign-off rules.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/docs/STARTER_ARCHITECTURE.md": {
+      "sha256": "8c745e4d587e132c33b84f5756e2e58edf5102b837760424bcd53084f0f43bda",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated architecture overview document. Verified dataflow pipeline (gamepad -> generated binding -> Redux action/state -> drive controller -> cached IO -> hardware/mock double), disposable generated code boundaries, and separation between starter template and season competition projects.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/gradle.properties": {
+      "sha256": "5c5c15f185ce6f6044b2ac8c3f380619831c6135288f69687a4ed6184cd73fdc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated build performance and Android environment properties. Verified AndroidX enablement, non-transitive R classes, G1GC tuning with 4GB heap, incremental Kotlin compilation, parallel execution, build cache, and VFS file watching.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/gradle/wrapper/gradle-wrapper.jar": {
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated Gradle wrapper binary execution archive (43,764 bytes). Verified official Gradle distribution bootstrapper for deterministic cross-platform execution.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/gradlew": {
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated POSIX shell startup wrapper script for Gradle. Verified POSIX shell expansion compatibility, link resolution, APP_HOME derivation, and JVM argument pass-through for Linux and macOS environments.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/gradlew.bat": {
+      "sha256": "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated Windows batch startup script for Gradle. Verified Windows NT command shell environment setup, JAVA_HOME path resolution, JVM options, and Gradle wrapper invocation.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/libs/README.txt": {
+      "sha256": "a21d6f503431a79142de67a8c26559b6f2190404b3a0d4eda7e5ead7b283294d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated external libraries directory documentation marker file.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/libs/ftc.debug.keystore": {
+      "sha256": "a0250b88796e15c18a0cc840e979c7ad9247e0014fe3ef3ca2e1834c7387cc5e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated standard Android debug signing keystore (2,146 bytes). Verified default debug key alias and credentials for local FTC Robot Controller APK signing.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/settings.gradle": {
+      "sha256": "8add8e4019b3705d8d5f8cb3f77fa2f44a2860f772c20721c92b7089433971ff",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated Gradle settings configuration. Verified Java 17+ host JVM requirement check, subproject inclusions (:FtcRobotController, :TeamCode, :simulator), and composite build dependency substitutions for sibling ARESLib checkouts via '-ParesUseSiblingLib=true'.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/simulator/build.gradle.kts": {
+      "sha256": "1eaa9b6ad78039bd6ed1a76b5f46035fa7eae0e5ca46451deafb4e8ae733eb73",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated desktop simulator build script (Kotlin DSL). Verified Kotlin JVM toolchain 21, platform dependencies against ares-bom, WPILib 2024.3.2 NT4 and core dependencies, composite source sets incorporating real editable and generated adapters, and execution tasks ('run', 'runCalibrationVerification').",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/simulator/networktables.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated desktop simulator NetworkTables schema configuration. Confirmed clean empty schema array for desktop simulator initialization.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/StarterSimulatorE2ETest.kt": {
+      "sha256": "274eaa47d85ee99626b273e707537e1ea1a0f179356a85b3f26d419bf3e17b51",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Evaluated end-to-end integration test for desktop simulator. Verified generated controls drive MecanumRobotDouble via simulated OpMode runner, validates zero motor powers when neutral, responsive motor power commands upon stick input, and safe neutral neutralization upon OpMode stop.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOmniOpMode_Linear.java": {
+      "sha256": "9d53be174a1b150000486ac3f67894144917ac7a62f15b65565dca2ca571098a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 4-motor omni-directional (holonomic/Mecanum/X-Drive) teleoperated driving linear OpMode. Verified @Disabled annotation, axial/lateral/yaw joystick mixing (frontLeft = axial + lateral + yaw, etc.), power normalization scaling preserving drive direction when max > 1.0, zero-GC loop allocations, and actuator shutdown safety via SDK de-energization on OpMode termination.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOpMode_Iterative.java": {
+      "sha256": "c7318e6f209343cf3c222ce51b5f2e29c9b30e785792452db2320251e25e9cf7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated canonical iterative OpMode lifecycle implementation (init, init_loop, start, loop, stop). Verified @Disabled annotation, dual-motor differential drive POV control with joystick stick inversion (drive = -gamepad1.left_stick_y), saturation clipping via Range.clip, zero-allocation hot path, and hardware shutdown safety.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOpMode_Linear.java": {
+      "sha256": "cf1f6fadbc4333e670378337ca98246dd81a0ae4450b053ff029c24a63e5a9d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated canonical minimal linear OpMode lifecycle implementation (waitForStart, opModeIsActive). Verified @Disabled annotation, differential drive POV controls, power clipping via Range.clip, and safe motor neutralization upon exit.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTag.java": {
+      "sha256": "9567513a24b812726bb9789cd8dec5ebaee46ac4b3c1a40ef99eec726b7ac4e4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated comprehensive AprilTag detection and 6-DOF pose estimation OpMode. Verified @Disabled annotation, builder initialization for AprilTagProcessor and VisionPortal, live view stream pause/resume controls via D-pad, full telemetry breakdown (XYZ coordinates, PRY orientation, RBE polar values), 20ms CPU pacing, and mandatory visionPortal.close() cleanup upon loop termination.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagEasy.java": {
+      "sha256": "2262684e3bdd919c73ec66c2edbc0fce56fd4b97ecb7c003b270f7595286b678",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated simplified AprilTag detection pipeline utilizing AprilTagProcessor.easyCreateWithDefaults() and VisionPortal.easyCreateWithDefaults(). Verified @Disabled annotation, webcam vs. internal camera selection, telemetry reporting, and proper resource release with visionPortal.close() upon exit.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagLocalization.java": {
+      "sha256": "6f8ae4d2625448ed1ad15b8c381623de4201f6f46745167f7faa0bbaf3a442ee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated 3D field localization from AprilTag camera detections. Verified @Disabled annotation, camera-to-robot spatial extrinsics (Position, YawPitchRollAngles via setCameraPose), transformation of tag detections into global robot coordinates on the field (detection.robotPose), filter exclusion for non-field markers, and clean resource deallocation with visionPortal.close().",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagMultiPortal.java": {
+      "sha256": "bc2bd0bbddf75384615aaac3f57d9c039d9b5090d3e4eabd2098797883e0ddeb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated dual-camera simultaneous vision processing architecture using VisionPortal.makeMultiPortalView(2, VERTICAL). Verified @Disabled annotation, clean imports (unused BuiltinCameraDirection confirmed eliminated), independent AprilTagProcessor instances per camera container, and parallel multi-stream lifecycle management.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagOptimizeExposure.java": {
+      "sha256": "fd2a60a73c6ccb0e257cedc36cc5b05a9a11d78d0bb19d17f3f6d49c3e5c3b4d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated interactive exposure and gain calibration utility for motion blur mitigation. Verified @Disabled annotation, edge-triggered gamepad adjustments, boundary enforcement via Range.clip, camera streaming state guards (visionPortal.getCameraState() == CameraState.STREAMING), and safe ExposureControl/GainControl application with !isStopRequested() polling safeguards.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagSwitchableCameras.java": {
+      "sha256": "c9673e26f7f7f20c38bdc33248d1dcd62ce96f5407e1b6e84067b64cbb981288",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated runtime camera switching using ClassFactory.getInstance().getCameraManager().nameForSwitchableCamera(). Verified @Disabled annotation, bumper edge detection for active webcam toggling, state verification before switching (CameraState.STREAMING), unified single-portal AprilTag processing, and proper visionPortal.close() shutdown.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptBlackboard.java": {
+      "sha256": "ee10179ab6a596cd23e05dfa9f68fe9eba147963fa4a7fc4a821a867d242a1fe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated FTC SDK 2025 Blackboard shared memory state management across Auto and TeleOp boundaries. Verified @Disabled annotation, key-value storage (blackboard.put, blackboard.getOrDefault), persistent alliance/run-counter state tracking across OpMode lifecycles, and iterative OpMode execution contracts.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptExploringIMUOrientation.java": {
+      "sha256": "7690ddfb66c8e3d5cf4d1fbbcbd5bc8511fe750dcf770e44458f666a171f776f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated interactive IMU hub mounting orientation validation utility. Verified @Disabled annotation, runtime re-initialization of IMU.Parameters with RevHubOrientationOnRobot, detection of invalid orthogonal configurations via IllegalArgumentException, yaw reset capability, and verification of right-hand rule sign conventions (pitch +X, roll +Y, yaw +Z CCW-positive).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/externalhardware/ConceptExternalHardwareClass.java": {
+      "sha256": "5e6460de3e111aa2bddd31dbc3bcfc45d4fe7d26bfccc35bae420a7d6d09f6d3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated modular robot hardware abstraction design pattern isolating hardware mappings within RobotHardware (disk path: externalhardware/ConceptExternalHardwareClass.java). Verified @Disabled annotation, lifecycle delegation (robot.init() in setup, robot.driveRobot() in loop), servo offset clamping with Range.clip(-0.5, 0.5), loop rate pacing (50ms), and clean hardware termination.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadEdgeDetection.java": {
+      "sha256": "ff8c93708bc464cfe32946005bc22bcd632cf0a4d2aac7e90cc7b1762477e15c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated built-in SDK gamepad transition detection methods (leftBumperWasPressed, leftBumperWasReleased, leftTriggerWasPressed, leftTriggerWasReleased). Verified @Disabled annotation, transition vs. level state inspection, and telemetry reporting contracts.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadRumble.java": {
+      "sha256": "7475e2792d5c312da49f824a11957cdfe724683007df024cecca0e4992ae8195",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated comprehensive gamepad haptic feedback capabilities. Verified @Disabled annotation, builder pattern for timed multi-step sequences (Gamepad.RumbleEffect.Builder), continuous variable rumble with manual shutoff (stopRumble), rumbleBlips, threshold triggering, and collision prevention via gamepad1.isRumbling().",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadTouchpad.java": {
+      "sha256": "fda4aeb6569512c097bb4f96434b0a03e883f0b856f1f9f38ec14de90a55d0d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated dual-finger capacitive touchpad input processing on supported gamepads. Verified @Disabled annotation, coordinate space verification (normalized [-1.0, 1.0] centered at origin), finger touch presence flags, and monospace telemetry formatting.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptLEDStick.java": {
+      "sha256": "8781029351e21977c8644e47329a56b7f77aec1f4c40203bd10cfa6cc7b3b930",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SparkFun Qwiic 10-addressable RGB LED stick I2C subsystem driver. Verified @Disabled annotation, brightness clipping (Range.clip(0..31)), single color application (setColor), individual LED array mapping (setColors), and match timing alert transitions (endgame at 90s).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptMotorBulkRead.java": {
+      "sha256": "4f8af5b70dfdbed2c20253c1a383569a3404b2d6ba2bbf7568d30c62995ce950",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated REV Expansion Hub and Control Hub bulk-read caching optimization benchmarks. Verified @Disabled annotation, comparison across BulkCachingMode.OFF, AUTO, and MANUAL, manual cache clearing protocol (module.clearBulkCache()), and zero-allocation primitive telemetry tracking across 500 benchmark cycles.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptNullOp.java": {
+      "sha256": "50bd665dc1ccb206acbd98fa6d9733de5deeeb0412c9e97c724b17a86891c34a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated canonical zero-overhead skeleton iterative OpMode. Verified @Disabled annotation, clean lifecycle hook execution (init, init_loop, start, loop, stop), and match-safe zero-motion neutral guarantees.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRampMotorSpeed.java": {
+      "sha256": "87fedd4508ebd669f8fe4d3a4bdb66fe13a9c01af2fb65c1ef1804f94070db02",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated linear motor acceleration and deceleration rate-limiting / slew profiling. Verified @Disabled annotation, cyclic speed incrementation bounded within [-1.0, 1.0], loop rate pacing (50ms), and explicit zero-power actuator stop safety (motor.setPower(0)) on exit.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRevLED.java": {
+      "sha256": "f3f5f5ae25ab02217f239fdbddfa40862d37f7e08fb4d0f7d54dec7ffcd6c913",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated REV Digital Indicator bicolor (red/green) LED driver. Verified @Disabled annotation, digital output mapping via hardwareMap.get(LED.class), discrete on/off states, and clean telemetry-free driver feedback mechanisms.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRevSPARKMini.java": {
+      "sha256": "c946f3ed2acd7f6e343f2783f2cc7eebbd956c244c5c0ba675e16567ffe914c6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated REV SPARKmini PWM speed controller integration over servo ports. Verified @Disabled annotation, DcMotorSimple abstraction interface, motor direction configuration, differential POV drive mixing with Range.clip, and zero-allocation hot paths.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptScanServo.java": {
+      "sha256": "9702fe6d734042ab00eb78e7cb758e515d05abffd4e1696e234e64da1481851b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated positional servo sweeping and range oscillation testing. Verified @Disabled annotation, bounded travel limits (MIN_POS = 0.0, MAX_POS = 1.0), incremental slew rate pacing (INCREMENT = 0.01 per 50ms), and boundary reversal logic.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsASJava.java": {
+      "sha256": "8cc147b7a88aeb45a01e42a29def0857396131f136a60cc53ef77a9f68ea251f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Android application compiled raw resource sound playback. Verified @Disabled annotation, dynamic resource lookup via appContext.getResources().getIdentifier(), resource verification via SoundPlayer.preload(), and non-blocking asynchronous playback invocation.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsOnBotJava.java": {
+      "sha256": "2b207cae5ff8349d7b9a1a97e4794d89dff2d369c16d64582e4dde3af453ec66",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated OnBotJava filesystem-based WAV audio playback from external storage (/sdcard/FIRST/blocks/sounds/). Verified @Disabled annotation, file presence checks (File.exists()), edge-triggered playback, and clean telemetry status indication.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsSKYSTONE.java": {
+      "sha256": "ace67aab944fe9ed8bd62eb086976c660a78600f92593ea9d4ce6c6c689230ae",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated cyclic sound resource chooser and audio playback manager. Verified @Disabled annotation, array modulo wrapping, SoundPlayer.PlaySoundParams configuration, and completion callback Runnable resetting the active playback flag to prevent audio overlapping.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptTelemetry.java": {
+      "sha256": "dd611d2b14ade48fb247a717bab3fde19764837230113497e3e878fd0445dc21",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated advanced FTC Driver Station telemetry transmission and formatting features. Verified @Disabled annotation, lazy lambda evaluation using Func<Double> (polling battery voltage from hardwareMap.voltageSensor), scrolling log buffer capacity and order management (DisplayOrder.OLDEST_FIRST), structured line composition, and transmission bandwidth throttling.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorLocator_Circle.java": {
+      "sha256": "fa8d3c87236c82c8fc837eaafcd0bb3d38a51aa00af1ec857942b357ebe14e0b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated OpenCV color blob locator pipeline for circular objects (ColorBlobLocatorProcessor). Verified @Disabled annotation, normalized unity ROI definition, morphological operations (blur, erode, dilate, CLOSING), contour filtering by area (50..20000 px) and circularity (0.6..1.0), and initialization stream preview execution (opModeInInit()).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorLocator_Rectangle.java": {
+      "sha256": "b8d7cb61409df2411fbdb4b57c9a6ada8044b4f3d59254e847da662adaf0223b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated OpenCV color blob locator pipeline for polygonal/rectangular objects (ColorBlobLocatorProcessor). Verified @Disabled annotation, clean imports (unused SortOrder confirmed eliminated), RotatedRect boxFit bounding box extraction, criteria filtering by contour area and density, and init-mode camera preview execution.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorSensor.java": {
+      "sha256": "e9d2854a4b7263d749433aff3b7be4073edea7c14b9519fcb148113dfdceacb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated camera-as-color-sensor video processing pipeline using PredominantColorProcessor. Verified @Disabled annotation, unity center ROI inspection, swatch matching against predefined palette (ARTIFACT_GREEN, ARTIFACT_PURPLE, RED, BLUE, etc.), multi-color-space telemetry (RGB, HSV, YCrCb), and streaming in init.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByEncoder_Linear.java": {
+      "sha256": "4ea82bddca941d7ae46568ed8da8e5bfcbca6c2f642ecba4891960cea3493d4e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated closed-loop autonomous driving by motor encoders using RUN_TO_POSITION. Verified @Disabled annotation, mechanical gearing calculations (COUNTS_PER_INCH), target position computation, multi-condition termination guards (opModeIsActive(), timeout, motor busy), and explicit actuator stopping safety (leftDrive.setPower(0); rightDrive.setPower(0);).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByGyro_Linear.java": {
+      "sha256": "6ef4f21e5df67ea12d079fbe2489f4a031e5b8776352dd876d5b7de5c136b7a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated closed-loop gyro-stabilized autonomous path navigation using universal IMU interface. Verified @Disabled annotation, hub mounting orientation specification, proportional heading error correction with normalization to [-180, 180] degrees, CCW-positive angle convention compliance, high/low-level methods (driveStraight, turnToHeading, holdHeading), brake mode zero-power behavior, and explicit zero-motion actuator neutralizing on step completion.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByTime_Linear.java": {
+      "sha256": "0fdd7f8dbfabd5d69dbfd4c4bc17a1f309b51d647d74a37fbd87af3aeb19bc43",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated open-loop timed autonomous motion sequence. Verified @Disabled annotation, elapsed-time based stage transitions (runtime.seconds() < duration), constant speed driving and spinning, and guaranteed final actuator shutdown (setPower(0)).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagOmni.java": {
+      "sha256": "08ff7c6ad39f1f351afed5b3b423ccb7127f6846d593482391baf1c8cdb68ebd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated closed-loop visual servoing to AprilTags on holonomic (Mecanum/X-Drive) chassis. Verified @Disabled annotation, 3-axis proportional error controller (range, bearing, yaw) with saturation clamping (MAX_AUTO_SPEED, MAX_AUTO_STRAFE, MAX_AUTO_TURN), NWU coordinate compliance (positive X forward, positive Y left, CCW positive yaw), power normalization scaling, and manual/auto driver override switching.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToLine_Linear.java": {
+      "sha256": "ee2ac7ca251100ebc459c82872dfb5a228ef29bfb4eff295ac905a4c92128090",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated autonomous optical line detection and termination using NormalizedColorSensor. Verified @Disabled annotation, reflected light measurement via normalized alpha channel, white line threshold comparison (getBrightness() < WHITE_THRESHOLD), and immediate actuator stop (leftDrive.setPower(0); rightDrive.setPower(0);).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotTeleopMecanumFieldRelativeDrive.java": {
+      "sha256": "98c3e94dc45cba3dce84755970dc073614fa564b020bd31b49c8d1e45202dd96",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated field-relative 4-wheel mecanum drive Iterative OpMode. Verified IMU initialization with RevHubOrientationOnRobot (UP logo, FORWARD usb) and heading acquisition via imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS). Verified polar coordinate conversion (Math.atan2, Math.hypot), angle transformation via AngleUnit.normalizeRadians(theta - yaw), and Cartesian conversion (sin/cos). Verified 4-wheel mecanum motor mixing, proportional power normalization when maximum power exceeds 1.0, and robot-relative override on left bumper. Verified safe actuator neutralization on OpMode termination.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotTeleopPOV_Linear.java": {
+      "sha256": "c3d9d269ce6e1c77c65125885a87a57b57a3946c3f0836a6cebbc2b9a2e67b7a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated POV arcade drive LinearOpMode for direct-drive differential chassis with arm motor and mirrored dual-finger claw servos. Verified joystick forward drive stick negation (-gamepad1.left_stick_y), blended steering (left = drive + turn, right = drive - turn), and power normalization when magnitude exceeds 1.0. Verified mirrored servo positioning (MID_SERVO +- clawOffset) bounded with Range.clip(-0.5, 0.5), arm zero-power default, and 20Hz loop rate pacing via sleep(50).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotTeleopTank_Iterative.java": {
+      "sha256": "9c02eb4f81c80751856c11afe30310a38d9ac9ac4153321311321b4a80616da5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated classic dual-stick tank drive Iterative OpMode with arm motor and mirrored dual-finger claw servos. Verified forward stick negation on left and right joysticks (-gamepad1.left_stick_y, -gamepad1.right_stick_y), claw servo incremental offset manipulation with Range.clip(-0.5, 0.5), and zero-power arm fallback. Verified zero heap allocations in loop() using primitive doubles and verified clean stop lifecycle.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SampleRevBlinkinLedDriver.java": {
+      "sha256": "de56fe9355b0103d099c39b6ba601e9953a0897d0d6fc7bd429278c905541784",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated REV Blinkin LED Driver PWM controller sample. Verified pattern cycling in AUTO mode using Deadline(10, TimeUnit.SECONDS), gamepad edge detection and debouncing lockout using Deadline(500, TimeUnit.MILLISECONDS), safe pattern enumeration traversal (pattern.next() and pattern.previous()), and efficient telemetry item updating via cached Telemetry.Item.setValue().",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorAndyMarkIMUNonOrthogonal.java": {
+      "sha256": "a9808c9e5e21d24c9233f8616a74ae00ab2ee7f336faa7288aff8f5e5c5e68ec",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AndyMark IMU configuration for arbitrary non-orthogonal mounting orientations. Verified 3-axis Euler rotation matrix construction via AndyMarkIMUOrientationOnRobot.xyzOrientation(xRotation, yRotation, zRotation) and AndyMarkIMUOrientationOnRobot(imuRotation). Verified compliance with right-hand rule conventions (+X side, +Y I2C port, +Z logo up; pitch up on X, roll left on Y, yaw CCW on Z), live angular velocity telemetry, and gamepad heading reset via imu.resetYaw().",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorAndyMarkIMUOrthogonal.java": {
+      "sha256": "ae08ea83e98419a05ec8ca669c7190be272c9ce2f5eba43056e15be8ffda82e3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated orthogonal AndyMark IMU configuration. Verified orientation definition using AndyMarkIMUOrientationOnRobot.LogoFacingDirection and AndyMarkIMUOrientationOnRobot.I2cPortFacingDirection mapped to robot coordinate axes. Verified imu.initialize(new IMU.Parameters(orientationOnRobot)), dynamic heading reset via imu.resetYaw(), and angular rate telemetry.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorAndyMarkTOF.java": {
+      "sha256": "0ca467f2b850d4cf6e510ec9941d4e47ad317a138c089d8b30ca263fa7511d4c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AndyMark 2m Time-Of-Flight Lidar Sensor sample. Verified polymorphic access via DistanceSensor interface and downcasting to AndyMarkTOF. Verified multi-unit distance measurement (MM, CM, METER, INCH) and hardware-specific model ID (sensorTimeOfFlight.getModelID()) and communication timeout detection (sensorTimeOfFlight.didTimeoutOccur()).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorBNO055IMU.java": {
+      "sha256": "1ad55824f04da682c629d7cdf08f0b72be63614443efdf086a3b0330ef627110",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Bosch BNO055 IMU interface sample. Verified initialization parameters, logging configuration, and JustLoggingAccelerationIntegrator. Verified deferred evaluation telemetry pattern with telemetry.addAction() acquiring ZYX intrinsic Euler angles and gravity vector exactly once per cycle, eliminating redundant I2C bus transactions. Verified angle normalization via AngleUnit.DEGREES.normalize() and gravity vector magnitude computation.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorBNO055IMUCalibration.java": {
+      "sha256": "179a23e6cdc6beb0774eac0186e4b8ca98044018804b0e18890fe4ad3b42c683",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Bosch BNO055 IMU register calibration utility. Verified calibration status monitoring across gyro, accelerometer, magnetometer, and system registers. Verified calibration data serialization via imu.readCalibrationData().serialize() and filesystem persistence using AppUtil.getInstance().getSettingsFile() and ReadWriteFile.writeFile(). Verified gamepad button debouncing wait loop.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorColor.java": {
+      "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated universal NormalizedColorSensor sample supporting software gain tuning, light switching via SwitchableLight, and color space conversions. Verified dynamic gain incrementing with lower bound clipping (gain >= 1), button X edge detection toggling LED, RGB to HSV conversion via Color.colorToHSV(), and integrated short-range proximity reading via DistanceSensor. Verified UI cleanup guaranteeing restoration of Robot Controller screen background color to Color.WHITE in finally block.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorDigitalTouch.java": {
+      "sha256": "61ffcff5d7797276a751b27f70fbbff8f6ea0aab8268eab34f42b673c5985feb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated digital channel touch sensor reading via DigitalChannel configured with Mode.INPUT. Verified active-low pull-up switch logic (digitalTouch.getState() == false indicates pressed). Verified minimal zero-heap polling loop with interruptible opModeIsActive() termination guard.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorGoBildaPinpoint.java": {
+      "sha256": "5bff68cd3c2cd5ca09058c14c6735fd2eefa9528416b087d2a3c521e0f7393e9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated GoBilda Pinpoint Odometry Computer integration (GoBildaPinpointDriver). Verified tracking center pod offset configuration (setOffsets(-84.0, -168.0, DistanceUnit.MM)), encoder resolution selection (goBILDA_4_BAR_POD / setEncoderResolution), and encoder counting directions (X forward, Y left). Verified IMU recalibration and position zeroing with resetPosAndIMU(), and cyclic pose acquisition via pinpoint.update() and pinpoint.getPosition().",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorHuskyLens.java": {
+      "sha256": "219856f8cb214141b64d01bd6a24c403112fb22c8d950ea65c8e4f9ef6a87808",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DFRobot HuskyLens intelligent vision sensor integration. Verified communication handshake check via huskyLens.knock(), explicit algorithm selection via huskyLens.selectAlgorithm(HuskyLens.Algorithm.TAG_RECOGNITION), rate-limited polling via Deadline(1, TimeUnit.SECONDS), and bounding box extraction from HuskyLens.Block arrays (width, height, top, left, x, y, id).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorIMUNonOrthogonal.java": {
+      "sha256": "d568366fa4b64f0b4e4e1ef306e51ae60f38c9d55498feb3eae97f1d7aa59ad1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated universal FTC SDK IMU interface for non-orthogonal REV Control/Expansion Hub mounting. Verified 3-axis Euler angle rotation matrix construction via RevHubOrientationOnRobot.xyzOrientation(xRotation, yRotation, zRotation) and new RevHubOrientationOnRobot(hubRotation). Verified right-hand rule axes (+X I2C connectors, +Y USB connectors, +Z logo up; pitch up on X, roll left on Y, yaw CCW on Z), live angular velocity telemetry, and gamepad heading reset via imu.resetYaw().",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorIMUOrthogonal.java": {
+      "sha256": "2a1fd590eaa833e43775110b5c8dc38308a0f24afa1584798f4d7be6ab014409",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated universal FTC SDK IMU interface for orthogonal REV Control/Expansion Hub mounting. Verified orthogonal orientation setup using RevHubOrientationOnRobot.LogoFacingDirection and RevHubOrientationOnRobot.UsbFacingDirection. Verified imu.initialize(new IMU.Parameters(orientationOnRobot)), dynamic heading reset via imu.resetYaw(), and angular velocity and Euler angle telemetry outputs.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorKLNavxMicro.java": {
+      "sha256": "2f5a31b7dc5736608c0a7409d11e009a4caf61e3f4a51e6fca0aa709f02ef420",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Kauai Labs navX Micro Robotics Navigation Sensor sample. Verified polymorphic access via NavxMicroNavigationSensor and IntegratingGyroscope. Verified non-blocking calibration wait loop using navxMicro.isCalibrating() and Thread.sleep(50). Verified ZYX intrinsic Euler angles, angular rate reporting, angle normalization via AngleUnit.DEGREES.normalize(), and proper idle() invocation in loop.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorLimelight3A.java": {
+      "sha256": "d06f754fb7501ae240e184d6a4efea1b1fab950711db38b8bd10364922734adc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Limelight 3A intelligent vision sensor integration sample. Verified pipeline switching (pipelineSwitch(0)), polling lifecycle start (limelight.start()), and clean shutdown (limelight.stop()). Verified target validity guard (result.isValid()) before accessing targeting data (getTx(), getTy(), getBotpose()). Verified parsing of barcode, classifier, detector, fiducial (AprilTag ID, family, angles), and color result collections.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorMRColor.java": {
+      "sha256": "42f11a5b5fd5fcd462bf8df27b0273dfc0c8efe6e8ce25908164fb21f83431e9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Modern Robotics Color Sensor (ColorSensor) sample. Verified button edge detection on Gamepad 1 X toggling illuminator LED via colorSensor.enableLed(bLedOn). Verified color space conversion using Color.RGBToHSV(colorSensor.red() * 8, ...) with preallocated float[3] array, and validated background color restoration to Color.WHITE on exit.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorMRGyro.java": {
+      "sha256": "2fd8dbe60420dec9f28f4c38da72f26521ded87a418613c3537bde3160ea787c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Modern Robotics I2C Gyro (ModernRoboticsI2cGyro & IntegratingGyroscope). Verified calibration sequence with isCalibrating() wait loop and sleep(50). Verified Z-axis integrator reset via resetZAxisIntegrator() on dual button press (A & B). Verified reading raw 3-axis registers (rawX(), rawY(), rawZ()), heading, integrated Z value, angular velocity, and Z-axis offset/coefficient telemetry.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorMROpticalDistance.java": {
+      "sha256": "501581c8497258b0a8f95511b555640dea7751bf83d7d6e51f97ca217f0e234c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Modern Robotics Optical Distance Sensor (OpticalDistanceSensor) sample. Verified reading raw reflection levels via getRawLightDetected() and normalized ambient/reflected light via getLightDetected(). Verified simple, minimal polling loop with interruptible opModeIsActive() guard.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorMRRangeSensor.java": {
+      "sha256": "d5a214ec476cd33448af4a81352b1dbbfdde91c3e806fcc0f1d5b0e1088c4dc8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Modern Robotics I2C Ultrasonic and Optical Range Sensor (ModernRoboticsI2cRangeSensor). Verified reading raw ultrasonic and raw optical values, optical distance in cm (cmOptical()), and fused distance via getDistance(DistanceUnit.CM). Noted legacy comment typo on line 56 referring to range sensor as 'compass'.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorOctoQuad.java": {
+      "sha256": "42909401f73935c416a92e6bd7babe36e6e417d2ac4f7c78e91800460c2eb69f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DigitalChickenLabs OctoQuad 8-channel encoder interface module for 3-deadwheel odometry tracking (left, right, perpendicular). Verified channel direction assignment, velocity sample interval configuration (50ms = 20Hz), persistent flash parameter storage via saveParametersToFlash(), and caching reads via readSinglePosition_Caching() and readSingleVelocity_Caching(). Confirmed unused ElapsedTime import was already removed, ensuring clean imports.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorOctoQuadAdv.java": {
+      "sha256": "7a038feb8d06ca0a50902c610324e47057db4c9a9f365a073326f06d040c7601",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated advanced Swerve Drive encoder architecture with OctoQuad. Verified 4-wheel swerve module management: channels 0-3 configured for drive wheel relative quadrature encoders, channels 4-7 configured for steer motor absolute pulse-width encoders (1-1024 us for REV Through-Bore encoder). Verified block register reading via octoquad.readAllEncoderData(encoderDataBlock) with zero heap allocations in the 40Hz hot loop using preallocated EncoderDataBlock. Verified angle normalization with AngleUnit.normalizeDegrees() and cycle timing statistics via MovingStatistics.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorOctoQuadLocalization.java": {
+      "sha256": "03acd50e2249b1997914752af6936d9e7ed9ea8c758e1dd653df1216d7e7a620",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated MK2 OctoQuad on-board hardware localizer with IMU sensor fusion. Verified initialization, deadwheel port and direction configuration, counts-per-mm scaling, tool center point (TCP) offsets, IMU scalar, and recovery mode. Verified IMU calibration wait loop and pose teleporting via setLocalizerPose(). Crucially validated ESD error detection through CRC check: enforces localizer.crcOk guard before consuming data and increments badPackets on corrupted frames. Verified zero-allocation telemetry updates using preallocated LocalizerDataBlock and radians heading.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorREV2mDistance.java": {
+      "sha256": "de56bca0d478653a63922c2222f347a0ac480b5c2d119f158cb5ecc1a2901544",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated REV 2m Time-Of-Flight Distance Sensor sample (Rev2mDistanceSensor / DistanceSensor). Verified polymorphic access, distance measurements across MM, CM, METER, and INCH units, device model ID query, and hardware timeout detection. Verified clean polling loop and interruptible OpMode lifecycle.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorSparkFunOTOS.java": {
+      "sha256": "de3cd3c6932fa4982bb5c4e7d3e9bf1c3e64669789836bef39a834ba27cedebc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SparkFun Qwiic Optical Tracking Odometry Sensor (OTOS) sample (SparkFunOTOS). Verified unit selection (DistanceUnit.INCH, AngleUnit.DEGREES), sensor pose offset relative to robot center (SparkFunOTOS.Pose2D), linear and angular calibration scalars, IMU calibration (calibrateImu()), tracking reset (resetTracking()), starting position seeding (setPosition()), and version query (getVersionInfo()). Verified clean pose polling and telemetry reporting.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorTouch.java": {
+      "sha256": "918829fede18c6481318ce1af7a38685bee4ed8ad18399f9c484edcb60fdf1f7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated universal touch switch sample for REV Touch Sensor and Magnetic Limit Switch (TouchSensor). Verified digital contact detection via touchSensor.isPressed(). Verified clean OpMode lifecycle, minimal overhead, and zero heap allocations.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/UtilityCameraFrameCapture.java": {
+      "sha256": "50a2e17c844c66d0b9caed43ee0d913abdc7ff61ec3a53b5f119612145286907",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated vision calibration utility capturing raw image frames to robot controller storage via VisionPortal.saveNextFrameRaw(). Verified webcam (WebcamName) and phone camera (BuiltinCameraDirection) selection with 640x480 resolution. Verified edge detection on Gamepad 1 X button triggering sequential capture (CameraFrameCapture-%06d) with timed telemetry feedback.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/UtilityOctoQuadConfigMenu.java": {
+      "sha256": "80fdbe004a9fb3ca45364b4d7a6882e8ad6d557d660f8d263574b88b1848f9b9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated full-featured interactive on-robot OctoQuad configuration utility. Verified TelemetryMenu tree structure supporting EnumOption, IntegerOption, and BooleanOption, gamepad D-pad and bumper navigation, chip ID and firmware major version validation against OctoQuad constants, and parameter writing to RAM or persistent flash. Refactoring note: Line 86 uses hardwareMap.getAll(OctoQuad.class).get(0) without checking if the list is empty, which throws IndexOutOfBoundsException if an OctoQuad is not configured in the active configuration.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/readme.md": {
+      "sha256": "5b98f91b39bb071d31a5abe9f1428c8f58067a2c0fb7e1f6264cb95b014ddbf0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated external samples architectural documentation. Verified guidance regarding sample immutability in samples directory and copy/paste workflows to /TeamCode, naming convention definitions (Basic, Sensor, Robot, Concept), and class naming grammar (Sensor - Company - Type, Robot - Mode - Action - OpModetype, Concept - Topic - OpModetype).",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/externalhardware/RobotHardware.java": {
+      "sha256": "587ba00ba3d91444c5539772565f8c18a149ef0e368e08df0955d11a48d47313",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated modular robot hardware encapsulation class for 2-motor drive, arm motor, and 2-finger servo gripper (canonical on-disk location: ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/externalhardware/RobotHardware.java, package org.firstinspires.ftc.robotcontroller.external.samples.externalhardware). Verified motor direction setup, servo midpoint initialization (MID_SERVO = 0.5), blended drive mixing (driveRobot) with proportional normalization when magnitude exceeds 1.0, and mirrored gripper servo control with Range.clip(offset, -0.5, 0.5). Actuator safety note: Hardware instances rely on SDK automatic neutralization on stop; recommending adding an explicit stop() / neutralize() method to force zero power on shutdown.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagTank.java": {
+      "sha256": "c28d7d8ea8254ea589dda03387d763d57479fe479ff4bdf77360a65950e4b49b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated autonomous visual servoing OpMode driving a differential tank chassis to an AprilTag using VisionPortal and AprilTagProcessor. Verified decimation configuration (aprilTag.setDecimation(2)), manual camera exposure (6ms) and gain (250) to eliminate motion blur. Verified proportional heading tracking (TURN_GAIN = 0.01, clipped to MAX_AUTO_TURN = 0.25) and distance tracking (SPEED_GAIN = 0.02, target DESIRED_DISTANCE = 12.0 inches, clipped to MAX_AUTO_SPEED = 0.5). Verified differential wheel power mixing (leftPower = x - yaw, rightPower = x + yaw where positive yaw is CCW) with proportional normalization if magnitude > 1.0.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/sample_conventions.md": {
+      "sha256": "d4103a19d36f409d4070c9cd37cf24da66f00fe067d69932c059e9a2bfc7b1d6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated sample conventions specification (v1.1.0). Verified OpMode prefix taxonomy (Basic, Sensor, Robot, Concept, Utility), Google Java Style Guide conformity, canonical hardware device configuration naming conventions (left_drive, right_drive, left_arm, left_hand, sensor_color, imu, navx, etc.), variable camelCase conventions matching configuration names, and strict guidelines against user directive comments.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass290-pending-elevation-audit.md": {
+      "sha256": "2c6d4d9d4447731bc3384f78c87be21179ac014a0c40ebccaeca3f28761f7379",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive Pass 290 pending file elevation, active refactoring, and 100% milestone seal report for all 128 remaining ARES-FTC-Starter files.",
+      "evidence": [
+        "docs/audits/pass290-pending-elevation-audit.md"
       ]
     }
   }
