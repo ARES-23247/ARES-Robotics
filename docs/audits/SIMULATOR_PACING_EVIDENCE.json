@@ -1,0 +1,398 @@
+{
+  "status": "local checkpoint complete",
+  "sourceCommit": "434472d10a6fb206d396b384954b082d67c2ad22",
+  "libraryTree": "9b29daf45957d532e997668d82118a70c84a517d",
+  "candidate": "19.0.5-rc.9b29daf45957",
+  "platform": "Windows desktop, Java 21 JBR; physical hardware unavailable",
+  "checks": {
+    "library": {
+      "tests": 3046,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": 476
+    },
+    "studio": {
+      "tests": 2690,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 6,
+      "reports": 375
+    },
+    "FTC": {
+      "tests": 190,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": 38
+    },
+    "FRC": {
+      "tests": 306,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": 51
+    },
+    "FTC-starter": {
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": 6
+    },
+    "FRC-starter": {
+      "tests": 206,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": 25
+    },
+    "BioBuzz": {
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": 9
+    }
+  },
+  "sourceInventory": [
+    ".github/workflows/build-distributions.yml",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SimulatorProcessService.kt",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SimulatorRuntimeWorkspace.kt",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.0.6.zip",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-19.0.4.zip",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-19.0.4.zip",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.59.zip",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.58.zip",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SimulatorRuntimeCleanupTest.kt",
+    "ARES-FTC-Starter/TeamCode/build.gradle",
+    "ARES-FTC/TeamCode/build.gradle",
+    "ARESLib-Kotlin/core/api/core.api",
+    "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/util/RobotClock.kt",
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/util/RobotClockContractTest.kt",
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/DesktopSimLauncher.kt",
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/SimFramePacer.kt",
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/SimLoopTimingRecorder.kt",
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/SimulatorStartPose.kt",
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/SimFramePacerTest.kt",
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/SimulatorTimingTest.kt",
+    "docs/audits/SIMULATOR_PACING_CHECKPOINT.md",
+    "release/ares-source-tree.txt",
+    "release/ares-versions.properties",
+    "release/starter-artifacts.properties"
+  ],
+  "files": {
+    "build/sim-pacing/archive-build.log": {
+      "bytes": 1216,
+      "sha256": "561adf5a0feac8cf9d21e69ced6c3c02afc69061e60536731aa25e4b683067f8"
+    },
+    "build/sim-pacing/archive-reproduction.log": {
+      "bytes": 1216,
+      "sha256": "1d22481cd8d2b683d9358c6dc717e4e0930550ff56ed2efa20354c1a0e4fb457"
+    },
+    "build/sim-pacing/ARES-FRC-checks.log": {
+      "bytes": 44745,
+      "sha256": "785db18c694058e091f32568fa59f7f6a93fdd3d446ea7abcfd6210320dcbdac"
+    },
+    "build/sim-pacing/ARES-FRC-final-checks.log": {
+      "bytes": 44473,
+      "sha256": "f525d1ed076e57a050ac93f725b560591836a51697081fa69723243e05d7b241"
+    },
+    "build/sim-pacing/ARES-FRC-Starter-checks.log": {
+      "bytes": 29264,
+      "sha256": "ddf674d4d875690b4e8bea46cd0dfa585ba2d04569ea76d47ed3302fb645867c"
+    },
+    "build/sim-pacing/ARES-FRC-Starter-final-checks.log": {
+      "bytes": 1414,
+      "sha256": "05a5f5f78ab2063f7d525a03a1ad00f730c87c37eac74a7826d57e7397e851db"
+    },
+    "build/sim-pacing/ARES-FTC-checks.log": {
+      "bytes": 36137336,
+      "sha256": "cbce079829bd90423319482b3633eb1adfc82b42b9ef7fa99a6eb18e89a7bc7a"
+    },
+    "build/sim-pacing/ARES-FTC-final-checks.log": {
+      "bytes": 36137071,
+      "sha256": "bdda18d7340add83b048ae040bb8e3f3a2e75fbd82ee7011f822fe1cdcdebbe3"
+    },
+    "build/sim-pacing/ARES-FTC-Starter-checks.log": {
+      "bytes": 541457,
+      "sha256": "69bcb0b175b5a8b228b684ddf9c6c66acc4a622ebe34616868e41e1e6a187f96"
+    },
+    "build/sim-pacing/ARES-FTC-Starter-final-checks.log": {
+      "bytes": 5766,
+      "sha256": "f8515b62e7c8fa67495c3e12a8cef171ea2d870b21f7f7053e841ebf3785d013"
+    },
+    "build/sim-pacing/biobuzz-tests.log": {
+      "bytes": 5628,
+      "sha256": "002c2713eb13d5ef7c4840ef32a02fab84990c296e3e30d9069c97223d25cb50"
+    },
+    "build/sim-pacing/ci-scope-tests.log": {
+      "bytes": 4248,
+      "sha256": "f174b2c46bc81e7a6d20a7de2c06a4d700f3f4af862b1fa0508f33883f768314"
+    },
+    "build/sim-pacing/library-candidate-final.log": {
+      "bytes": 21920,
+      "sha256": "f75a7f1ec1e737bb6c4079c0a24a0d75126a3e6ddb47347723836da04b559fa0"
+    },
+    "build/sim-pacing/library-candidate.log": {
+      "bytes": 64407,
+      "sha256": "05fe9bcbb4dbdf1d303535844d6aff8ed408e057d13e2fad96ed275dd9d36484"
+    },
+    "build/sim-pacing/library-focused-2.log": {
+      "bytes": 4865,
+      "sha256": "f0b36ac756e07cf09c191e68e52e042f0f7a08054637e31702b70e8f417bb055"
+    },
+    "build/sim-pacing/library-focused.log": {
+      "bytes": 2310,
+      "sha256": "08a92cbd5b4347982b9b8922318e1da9850255d073762fa237e0cce292973367"
+    },
+    "build/sim-pacing/live-runtime-rebuild.log": {
+      "bytes": 1580,
+      "sha256": "716c55be4b6014b6ea12b8c245cfb1214b13b9f1161299c952867bcd672c687b"
+    },
+    "build/sim-pacing/native-launch.log": {
+      "bytes": 19224,
+      "sha256": "1779cc1184bcaaf5f2e8dd988543c59175ca3eefd741acbbc76da644d05a1980"
+    },
+    "build/sim-pacing/observer-cycle2.log": {
+      "bytes": 29,
+      "sha256": "93a47ff0bb24cac9749fe6cf7f7da74ef015eb25bca10ce4ba20713ba66186b2"
+    },
+    "build/sim-pacing/observer.log": {
+      "bytes": 29,
+      "sha256": "93a47ff0bb24cac9749fe6cf7f7da74ef015eb25bca10ce4ba20713ba66186b2"
+    },
+    "build/sim-pacing/scope-export-tests-final.log": {
+      "bytes": 137,
+      "sha256": "40b44d92dee14d13266ae8de55321f91ef2d7ef72e769d6955e40e95ba4a6c53"
+    },
+    "build/sim-pacing/source-policy.log": {
+      "bytes": 243,
+      "sha256": "5848bdb7223480744b610b0a25cead635f43ee26cd2a8e98b224e4f664ca8001"
+    },
+    "build/sim-pacing/studio-tests-2.log": {
+      "bytes": 3840,
+      "sha256": "955371018d2958a9dbf8101a5a2f6026906f2245a3953cf12c5796875bb769f2"
+    },
+    "build/sim-pacing/studio-tests-final.log": {
+      "bytes": 5316,
+      "sha256": "b82f7a362fd2746dfa4a80d6e926ebe88b64db13a1a028e4ef5aff3f97694c46"
+    },
+    "build/sim-pacing/studio-tests.log": {
+      "bytes": 3582,
+      "sha256": "122cb0423c7bea2ab0e675b686333052464e1a8a7297fa1548cfe9af3e7d0352"
+    },
+    "build/sim-pacing/sustained-load.log": {
+      "bytes": 175,
+      "sha256": "9a948cbedfaf1134f10d8e5baee21da988ace6b48e788eef3246d1e79aa70a18"
+    },
+    "build/sim-pacing/archive-reproduction.json": {
+      "bytes": 418,
+      "sha256": "e49efb444bdb1badbe020651255d79c92b95b407006e977f66f67778e3cf223d"
+    },
+    "build/sim-pacing/consumer-final-results.json": {
+      "bytes": 825,
+      "sha256": "fff7ca8b856e99a1815b5c7e12ab2f59909b9da9db6f1aaf3a60d97e1d2e04c0"
+    },
+    "build/sim-pacing/consumer-results.json": {
+      "bytes": 801,
+      "sha256": "7a85519694fa1be408a2243e8e23e269a18f17f36fbd923bb57849061058f3ff"
+    },
+    "build/sim-pacing/cycle2-after-close.json": {
+      "bytes": 184,
+      "sha256": "4496cb0acb6728de19f03851ad9dbaf7e306b9035b6a96512864133f3838b044"
+    },
+    "build/sim-pacing/cycle2-before-close.json": {
+      "bytes": 32558,
+      "sha256": "106aef785dd95a130f1e8e4956fb6045afb61911e29d62fd87307b31969efb54"
+    },
+    "build/sim-pacing/drive-and-mechanisms-after.json": {
+      "bytes": 63916,
+      "sha256": "041f4c3cfbb0c59b28c68b6b3379a854c4a1d789662ff9c6b735a7bb35843d9a"
+    },
+    "build/sim-pacing/drive-and-mechanisms-before.json": {
+      "bytes": 63561,
+      "sha256": "8a2e4cc9f90d1876983fa9d74024581ebbbed2a2305db7a56dd6a61b3fde5fab"
+    },
+    "build/sim-pacing/host-timing-cycle2.summary.json": {
+      "bytes": 2315,
+      "sha256": "8a972faa6f0bbf99d4d3a98659cc890c38bf20f7d59e256341ea0f9c252ce415"
+    },
+    "build/sim-pacing/host-timing.summary.json": {
+      "bytes": 2334,
+      "sha256": "c1fd3b41964ee6ae0e86e71bd2bd2697501b7887c5e334dae0ec1ed81e8fda8b"
+    },
+    "build/sim-pacing/nt4-cycle1-last.json": {
+      "bytes": 64011,
+      "sha256": "c6a9f7d5955555f64e9561fe57b4716464a44787fd2ec96eb3645c5a45c196cc"
+    },
+    "build/sim-pacing/nt4-cycle1-summary.json": {
+      "bytes": 908,
+      "sha256": "9a45159b477140a73205abbfa85ab3163a7abfd2ffc415ac3cda511d71503b8d"
+    },
+    "build/sim-pacing/nt4-latest.json": {
+      "bytes": 63899,
+      "sha256": "12c9ce981f92a6c847fc5c9d107b71e5e5b573e85953ecfaa5c98659902bb4eb"
+    },
+    "build/sim-pacing/owned-running-processes.json": {
+      "bytes": 32711,
+      "sha256": "505c1de7bea85bd50a57bc96195bea8d13369d9a9b04b830f66e193a1aa7cd9b"
+    },
+    "build/sim-pacing/prelaunch-processes.json": {
+      "bytes": 13566,
+      "sha256": "77e9ae402d696d220516580c15a01e79584459816154fa9ef0f11c51b5865af8"
+    },
+    "build/sim-pacing/restarted-after.json": {
+      "bytes": 63991,
+      "sha256": "aa23495448220603158f57868962bb3221de73759e59de9fcf8caa3a32111004"
+    },
+    "build/sim-pacing/restarted-before.json": {
+      "bytes": 63988,
+      "sha256": "075a0d8005289f04e5720cc27d4f101ce8ed0543137d5369565e23457c1501ef"
+    },
+    "build/sim-pacing/runtime-after-stop.json": {
+      "bytes": 159,
+      "sha256": "d29435d3280466747a8d1068a0d0e4f2e1064a80a2108922bec12b8615a2d5e4"
+    },
+    "build/sim-pacing/runtime-before-stop.json": {
+      "bytes": 156,
+      "sha256": "c6a663545b9f4513256d8595d4058842be5d50baeca06d736a0e77d916bc5803"
+    },
+    "build/sim-pacing/stopped-held-after.json": {
+      "bytes": 63988,
+      "sha256": "5fa6136b59afe19df80c539e92ae0e0e5bab02f1a5610a3c6f0f9b7f10fadace"
+    },
+    "build/sim-pacing/stopped-held-before.json": {
+      "bytes": 63988,
+      "sha256": "d5f28401ce8f8cec3ea480848f68e2bccfe209e508980e5280810d245f119878"
+    },
+    "build/sim-pacing/sustained-load-after.json": {
+      "bytes": 63890,
+      "sha256": "ef4893b81a7870a7bbc2a35a1bbd2ab482f141e40f0932583f3e131e9ec1be20"
+    },
+    "build/sim-pacing/sustained-load-summary.json": {
+      "bytes": 339,
+      "sha256": "3a8e5da540d5140ac2e7828c1831a2d15d685325457e3d0bc6516b9902ce2f86"
+    },
+    "build/sim-pacing/sustained-load-window.json": {
+      "bytes": 54,
+      "sha256": "882a4b8ae54fc9be501c6b31ebc44b9d7000fa632024cb3b1f661979d042a1ec"
+    },
+    "build/sim-pacing/test-summary.json": {
+      "bytes": 821,
+      "sha256": "b83a1444b323cb5e1724248e72de1832c0e48477bac1b5953280d5d071dd0791"
+    },
+    "build/sim-pacing/host-timing-cycle1.csv": {
+      "bytes": 354455,
+      "sha256": "8b68d8a2611733c10ee118b851ffa5effbf93a8f30b14c1071a1ae253889e405"
+    },
+    "build/sim-pacing/host-timing-cycle2.csv": {
+      "bytes": 350618,
+      "sha256": "cb5ffd0a1242e06461c6626a9b1df7b372eb1e928d18b0864af52c72db6f01fb"
+    },
+    "build/sim-pacing/host-timing.csv": {
+      "bytes": 350618,
+      "sha256": "cb5ffd0a1242e06461c6626a9b1df7b372eb1e928d18b0864af52c72db6f01fb"
+    },
+    "build/sim-pacing/analyze_host_timing.py": {
+      "bytes": 1899,
+      "sha256": "0e44a090eee9626502b8566e69791f82d193477f87eec5ab57a47fd6db4dfa2f"
+    },
+    "build/sim-pacing/analyze_nt4.py": {
+      "bytes": 1734,
+      "sha256": "e478a4a7b937a7037d2c2895c0c89e195d8ca154664a47bcddd3710aa7f7f5d7"
+    },
+    "build/sim-pacing/observe_nt4.py": {
+      "bytes": 2366,
+      "sha256": "a728ca95d7fba0b348731434faa782e82a6aa56b45d3b36aa3fb8daf4a204bb8"
+    },
+    "build/sim-pacing/ui_actions.py": {
+      "bytes": 2461,
+      "sha256": "9e98518b0981a63bd89a83ce61aee998121c8e8d43e4cae31d21e1748d7e7b73"
+    },
+    "build/sim-pacing/check-consumers-final.ps1": {
+      "bytes": 1644,
+      "sha256": "258ecbf0bcc8c66ae331f5cf6cacd403c3bd96905a7a9d9577a76ab0bebe1e49"
+    },
+    "build/sim-pacing/check-consumers.ps1": {
+      "bytes": 1632,
+      "sha256": "3071198de8fb5481923b52d882e8e6f1aa2f19fb7eefdf863a11a390a5633ab5"
+    },
+    "build/sim-pacing/native/capture-001.png": {
+      "bytes": 101812,
+      "sha256": "fa327092940b520e660c33ed902fa854e8c5c9d55925a34e9d035bea3c421120"
+    },
+    "build/sim-pacing/native/capture-002.png": {
+      "bytes": 98311,
+      "sha256": "64ca7d03c0711cf43a5b931ba01f8ecb0aec9672a19c2de3f16d1a95c5d2644a"
+    },
+    "build/sim-pacing/native/capture-003.png": {
+      "bytes": 125617,
+      "sha256": "6a6f9994773deb19e3931b3379eea01a308927fe821124eeab804b972139b213"
+    },
+    "build/sim-pacing/native/capture-004.png": {
+      "bytes": 98167,
+      "sha256": "85f5341008401cdc60f8d7e5b6f40395c9d00c95fbf09e76e04a03291b8ac428"
+    },
+    "build/sim-pacing/native/capture-005.png": {
+      "bytes": 110514,
+      "sha256": "7f51b86ea0a1e6bc8d896e99c1e8ec8348e97a48519e3995065ee1ecf184a541"
+    },
+    "build/sim-pacing/native/capture-006.png": {
+      "bytes": 116507,
+      "sha256": "bb2c70560eb7997e1b8a7303e88c05f88f1928bfc56f4274eaa73a62ca91cfc2"
+    },
+    "build/sim-pacing/native/capture-007.png": {
+      "bytes": 114635,
+      "sha256": "783a5ad80066680bfeb25bd6839c00a72a996011957e9b47aa20d0d2693c12d3"
+    },
+    "build/sim-pacing/native/capture-008.png": {
+      "bytes": 95919,
+      "sha256": "5635b8aa5edc105a2ca6f537e930b93efd2eb1eb376e107e409427c07bebe223"
+    },
+    "build/sim-pacing/native/capture-009.png": {
+      "bytes": 95881,
+      "sha256": "312839a192dde0f6b4508ebb218b1d6c8de30470ea5b72470984c5db980df22b"
+    },
+    "build/sim-pacing/native/capture-010.png": {
+      "bytes": 115222,
+      "sha256": "b59d728bd1951e8996aaf917e44bc4b88f049d5d6ad3cd67902dff85f58b8d71"
+    },
+    "build/sim-pacing/native/capture-011.png": {
+      "bytes": 115222,
+      "sha256": "b59d728bd1951e8996aaf917e44bc4b88f049d5d6ad3cd67902dff85f58b8d71"
+    },
+    "build/sim-pacing/native/capture-012.png": {
+      "bytes": 110697,
+      "sha256": "4219447aed9ba38f45d9ba07257fea05dd647724d25aa403c3ddda9a2b6624c9"
+    },
+    "build/sim-pacing/native/capture-013.png": {
+      "bytes": 105027,
+      "sha256": "4081fbaf6d822f2a3e738614b4a7659de57cf1b90e7b5f311eefebe9850090d8"
+    },
+    "build/sim-pacing/native/capture-014.png": {
+      "bytes": 126223,
+      "sha256": "fc7566d6ae1048dcd83dd20cad8d77e0bc362bfbfac887e9e1d346d3f8950454"
+    },
+    "build/sim-pacing/native/capture-015.png": {
+      "bytes": 116759,
+      "sha256": "7c85ba020d6b73cfc0e8aa36bc68831b1fc1a5c02dc05299ee3e8905d5457af6"
+    },
+    "build/sim-pacing/native/capture-016.png": {
+      "bytes": 114852,
+      "sha256": "9bf1ac51a0b330c84e10b0c1122600511cc3a6747fe32a8fcf81bf217510e6f2"
+    },
+    "build/sim-pacing/native/startup.png": {
+      "bytes": 97082,
+      "sha256": "1d8241f06165fd2239249de5ce89650eb991cf403d3be8c1f19455eda82ba13e"
+    },
+    "build/sim-pacing/nt4-cycle1.jsonl": {
+      "bytes": 41101643,
+      "sha256": "e91a7a3dc4240ead7dce75ae86c083c658b2979ba55a5950c386c23d07a98a59"
+    },
+    "build/sim-pacing/nt4-observations.jsonl": {
+      "bytes": 16480964,
+      "sha256": "908447f2317722617ff4321f878bb6946967b629ae5169ebda8380db9631ecb9"
+    }
+  }
+}
