@@ -5857,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "40984c9d4f1019c66e84c340b56d1a51ddd2e00a6d6535d43673ddbeddb691c4",
+      "sha256": "5002f073a3dd52fb28556897dc6b0dea8fbf7f69468cfeb368b3c68e6b93238d",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -25825,6 +25825,618 @@
       "scope": "Comprehensive Pass 287 pending file elevation, active refactoring, and verification report for 87 ARES-FTC Core, RobotController, TeamCode, BioBuzz, and Simulator files.",
       "evidence": [
         "docs/audits/pass287-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOmniOpMode_Linear.java": {
+      "sha256": "9d53be174a1b150000486ac3f67894144917ac7a62f15b65565dca2ca571098a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode sample demonstrating holonomic omni/mecanum 4-motor kinematics (axial, lateral, yaw mixing). Verified @TeleOp and @Disabled sample annotations preventing driver station clutter, hardwareMap lookup for 4 drive motors, direction configuration, motor power normalization (Math.max scaling), opModeIsActive() lifecycle compliance, and safe shutdown.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOpMode_Iterative.java": {
+      "sha256": "c7318e6f209343cf3c222ce51b5f2e29c9b30e785792452db2320251e25e9cf7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Iterative OpMode sample demonstrating two-wheel differential drive (POV and Tank modes). Verified @TeleOp and @Disabled sample annotations, non-blocking lifecycle overrides (init, init_loop, start, loop, stop), hardwareMap configuration for left/right motors, motor power clipping via Range.clip to [-1.0, 1.0], and telemetry reporting.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOpMode_Linear.java": {
+      "sha256": "cf1f6fadbc4333e670378337ca98246dd81a0ae4450b053ff029c24a63e5a9d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode sample demonstrating two-wheel differential drive. Verified @TeleOp and @Disabled sample annotations, waitForStart() blocking sync, opModeIsActive() loop contract, hardwareMap lookups, motor reversal configuration, Range.clip motor power saturation protection, and runtime telemetry.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTag.java": {
+      "sha256": "9567513a24b812726bb9789cd8dec5ebaee46ac4b3c1a40ef99eec726b7ac4e4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating AprilTag vision processing and 6-DOF pose estimation (XYZ, PRY, RBE). Verified @TeleOp and @Disabled sample annotations, VisionPortal.Builder and AprilTagProcessor.Builder pipelines, webcam/internal camera fallback, streaming pause/resume controls via gamepad dpad, non-blocking sleep pacing, tag detection telemetry iteration, and explicit visionPortal.close() resource release.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagEasy.java": {
+      "sha256": "2262684e3bdd919c73ec66c2edbc0fce56fd4b97ecb7c003b270f7595286b678",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating simplified VisionPortal and AprilTag initialization using AprilTagProcessor.easyCreateWithDefaults() and VisionPortal.easyCreateWithDefaults(). Verified @TeleOp and @Disabled annotations, camera selection, streaming toggling, tag pose reporting, and explicit visionPortal.close() disposal.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagLocalization.java": {
+      "sha256": "6f8ae4d2625448ed1ad15b8c381623de4201f6f46745167f7faa0bbaf3a442ee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept illustrating field-relative robot localization using AprilTags and camera extrinsic calibration. Verified @TeleOp and @Disabled annotations, Position and YawPitchRollAngles camera pose definition, AprilTagProcessor builder setCameraPose configuration, detection robotPose extraction, and proper visionPortal.close() cleanup.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagMultiPortal.java": {
+      "sha256": "bc2bd0bbddf75384615aaac3f57d9c039d9b5090d3e4eabd2098797883e0ddeb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating simultaneous dual-camera vision portals using VisionPortal.makeMultiPortalView(). Verified @TeleOp and @Disabled annotations, multi-portal view ID assignment, independent AprilTagProcessor instantiation per portal, and active loop telemetry. Cleanup note: Unused import BuiltinCameraDirection identified; recommended adding explicit portal1.close() and portal2.close() on OpMode exit.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagOptimizeExposure.java": {
+      "sha256": "fd2a60a73c6ccb0e257cedc36cc5b05a9a11d78d0bb19d17f3f6d49c3e5c3b4d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode tool for manual camera exposure and gain optimization to eliminate motion blur. Verified @TeleOp and @Disabled annotations, ExposureControl and GainControl query/set pipelines, camera state STREAMING synchronization with isStopRequested() protection, bounded parameter adjustment via Range.clip, and gamepad edge-detection. Cleanup note: recommended adding explicit visionPortal.close() on OpMode termination.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagSwitchableCameras.java": {
+      "sha256": "c9673e26f7f7f20c38bdc33248d1dcd62ce96f5407e1b6e84067b64cbb981288",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating dynamic dual webcam switching via ClassFactory nameForSwitchableCamera and visionPortal.setActiveCamera(). Verified @TeleOp and @Disabled annotations, streaming state check before switching, bumper click edge-detection, AprilTag telemetry, and clean visionPortal.close() shutdown.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptBlackboard.java": {
+      "sha256": "ee10179ab6a596cd23e05dfa9f68fe9eba147963fa4a7fc4a821a867d242a1fe",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Iterative OpMode concept illustrating inter-OpMode data sharing across Autonomous and TeleOp via FTC SDK blackboard. Verified @TeleOp and @Disabled annotations, constant string keys (TIMES_STARTED_KEY, ALLIANCE_KEY), safe getOrDefault and type casting, non-blocking loop handling, and Driver Station telemetry persistence.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptExploringIMUOrientation.java": {
+      "sha256": "7690ddfb66c8e3d5cf4d1fbbcbd5bc8511fe750dcf770e44458f666a171f776f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode utility for interactive exploration of REV Control/Expansion Hub IMU orientation parameters. Verified @TeleOp and @Disabled annotations, RevHubOrientationOnRobot LogoFacingDirection and UsbFacingDirection enumeration cycling, dynamic IMU re-initialization with try-catch handling of IllegalArgumentException, Yaw pitch roll angles and angular velocity readouts, and imu.resetYaw() functionality.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadEdgeDetection.java": {
+      "sha256": "ff8c93708bc464cfe32946005bc22bcd632cf0a4d2aac7e90cc7b1762477e15c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating FTC SDK built-in edge detection methods on Gamepad. Verified @TeleOp and @Disabled annotations, verified leftBumperWasPressed/Released, rightBumperWasPressed/Released, leftTriggerWasPressed/Released, and rightTriggerWasPressed/Released state transition evaluations.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadRumble.java": {
+      "sha256": "7475e2792d5c312da49f824a11957cdfe724683007df024cecca0e4992ae8195",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating Gamepad rumble capabilities. Verified @TeleOp and @Disabled annotations, Gamepad.RumbleEffect custom pulse builder, match runtime countdown triggers, continuous variable rumble tied to triggers, rumble blip sequences, isRumbling collision prevention, and stopRumble() safety. Cleanup note: typographical error in comment line 63 ('representstive').",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadTouchpad.java": {
+      "sha256": "fda4aeb6569512c097bb4f96434b0a03e883f0b856f1f9f38ec14de90a55d0d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating dual-touch touchpad coordinates tracking on supported controllers (e.g. PS4). Verified @TeleOp and @Disabled annotations, monospace telemetry formatting, touchpad_finger_1 / touchpad_finger_2 boolean presence detection, and normalized coordinate reporting [-1.0, 1.0].",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptLEDStick.java": {
+      "sha256": "780d4a80585c6f2fcf5744687acab72331cee4dcb0c944098ee0f96ddd0678ad",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Iterative OpMode concept demonstrating SparkFun QWIIC LED Stick I2C control. Verified @TeleOp and @Disabled annotations, hardwareMap acquisition, setBrightness and Range.clip clamping [0, 31], D-pad edge detection, and endgame timer pattern changes. Refactoring recommendation: Hot-path allocation of int[] ledColors inside loop() during endgame should be preallocated as a static final array to eliminate GC allocation churn in 50 Hz control loops.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptMotorBulkRead.java": {
+      "sha256": "deba5e896ed2b9e01a6ad8fb00f4533a5838c517e58da0b9b2d175c4fe47ee1d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode benchmark concept demonstrating Expansion Hub bulk-read caching strategies. Verified @TeleOp and @Disabled annotations, hardwareMap acquisition of DcMotorEx and all LynxModule hubs, cycle timing benchmarks across BulkCachingMode.OFF, BulkCachingMode.AUTO, and BulkCachingMode.MANUAL with required per-cycle module.clearBulkCache() execution, and safe loop completion.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptNullOp.java": {
+      "sha256": "50bd665dc1ccb206acbd98fa6d9733de5deeeb0412c9e97c724b17a86891c34a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Iterative OpMode baseline concept demonstrating minimal skeletal structure. Verified @TeleOp and @Disabled annotations, complete lifecycle implementation (init, init_loop, start, loop, stop), ElapsedTime runtime tracking, and zero-allocation telemetry updates.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRampMotorSpeed.java": {
+      "sha256": "87fedd4508ebd669f8fe4d3a4bdb66fe13a9c01af2fb65c1ef1804f94070db02",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating controlled motor power ramping up and down. Verified @TeleOp and @Disabled annotations, INCREMENT stepping with MAX_FWD/MAX_REV bounds [-1.0, 1.0], sleep pacing, and critical actuator safety neutralizing motor power to 0 upon test termination. Cleanup note: Redundant idle() call immediately after sleep(CYCLE_MS) can be removed.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRevLED.java": {
+      "sha256": "f3f5f5ae25ab02217f239fdbddfa40862d37f7e08fb4d0f7d54dec7ffcd6c913",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Iterative OpMode concept demonstrating REV Digital Indicator dual-color LED control. Verified @TeleOp and @Disabled annotations, hardwareMap lookup for red and green LED channels, digital on()/off() switching based on gamepad button states, and clean non-blocking loop execution.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRevSPARKMini.java": {
+      "sha256": "c946f3ed2acd7f6e343f2783f2cc7eebbd956c244c5c0ba675e16567ffe914c6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating two-wheeled drive control using REV SPARKmini motor controllers connected to servo ports. Verified @TeleOp and @Disabled annotations, hardwareMap lookup as DcMotorSimple, direction configuration, Range.clip power limiting [-1.0, 1.0], and POV stick mixing.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptScanServo.java": {
+      "sha256": "9702fe6d734042ab00eb78e7cb758e515d05abffd4e1696e234e64da1481851b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating servo position slewing. Verified @TeleOp and @Disabled annotations, hardwareMap Servo binding, strict position limit enforcement between MIN_POS (0.0) and MAX_POS (1.0), increment stepping, and cycle pacing. Cleanup note: Redundant idle() call immediately following sleep(CYCLE_MS) can be removed.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsASJava.java": {
+      "sha256": "8cc147b7a88aeb45a01e42a29def0857396131f136a60cc53ef77a9f68ea251f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating Android Studio compiled raw resource sound playback. Verified @TeleOp and @Disabled annotations, dynamic resource ID lookup via getResources().getIdentifier, SoundPlayer preloading and asynchronous startPlaying, and rising-edge button detection. Cleanup note: Inconsistent variable naming convention (wasX vs WasB).",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsOnBotJava.java": {
+      "sha256": "2b207cae5ff8349d7b9a1a97e4794d89dff2d369c16d64582e4dde3af453ec66",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "LinearOpMode concept demonstrating external filesystem sound file playback for OnBotJava. Verified @TeleOp and @Disabled annotations, File path construction and existence validation (goldFile.exists(), silverFile.exists()), SoundPlayer integration, and rising-edge button handling. Cleanup note: Misleading copy-pasted comments describing sounds as resources rather than filesystem files, and inconsistent naming (wasX vs WasB).",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsSKYSTONE.java": {
+      "sha256": "ace67aab944fe9ed8bd62eb086976c660a78600f92593ea9d4ce6c6c689230ae",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Sound playback chooser sample using SoundPlayer with asynchronous Runnable completion callbacks; verified @Disabled annotation, graceful loop termination on !isStopRequested(), resource identifier lookup by name, and edge-triggered DPAD navigation logic.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptTelemetry.java": {
+      "sha256": "dd611d2b14ade48fb247a717bab3fde19764837230113497e3e878fd0445dc21",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Telemetry diagnostic and log output sample; verified @Disabled annotation, deferred Func evaluation pattern for battery voltage monitoring, telemetry log capacity/ordering controls, and loop timing benchmarks in opModeIsActive().",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorLocator_Circle.java": {
+      "sha256": "fa8d3c87236c82c8fc837eaafcd0bb3d38a51aa00af1ec857942b357ebe14e0b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "VisionPortal and ColorBlobLocatorProcessor sample for circular blob detection; verified @Disabled annotation, camera resolution configuration (320x240), morphological closing operations (dilate/erode kernels of 15), ROI unity center coordinates (-0.75, 0.75, 0.75, -0.75), and contour filtering by area and circularity.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorLocator_Rectangle.java": {
+      "sha256": "b8d7cb61409df2411fbdb4b57c9a6ada8044b4f3d59254e847da662adaf0223b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "VisionPortal and ColorBlobLocatorProcessor sample for rectangular blob detection with RotatedRect extraction; verified @Disabled annotation, blur sizing, contour mode EXTERNAL_ONLY, and area filtering. Cleanup note: identified unused import 'com.qualcomm.robotcore.util.SortOrder'.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorSensor.java": {
+      "sha256": "e9d2854a4b7263d749433aff3b7be4073edea7c14b9519fcb148113dfdceacb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "PredominantColorProcessor vision sensor sample; verified @Disabled annotation, unity center ROI (-0.1, 0.1, 0.1, -0.1), swatch configuration across ARTIFACT colors and primary palette, and telemetry conversion across RGB, HSV, and YCrCb color spaces.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByEncoder_Linear.java": {
+      "sha256": "4ea82bddca941d7ae46568ed8da8e5bfcbca6c2f642ecba4891960cea3493d4e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Linear autonomous encoder drive sample; verified @Disabled annotation, counts-per-inch conversion calculations, RUN_TO_POSITION mode, safety timeout checking (runtime.seconds() < timeoutS), motor busy verification, and actuator power neutralization (0 power) on completion or timeout.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByGyro_Linear.java": {
+      "sha256": "6ef4f21e5df67ea12d079fbe2489f4a031e5b8776352dd876d5b7de5c136b7a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Closed-loop gyro heading autonomous drive sample; verified @Disabled annotation, RevHubOrientationOnRobot configuration (Logo UP, USB FORWARD), ZeroPowerBehavior.BRAKE initialization, yaw reset, proportional steering control (P_DRIVE_GAIN=0.03, P_TURN_GAIN=0.02), heading error angle normalization to +/-180 degrees, and safe power neutralization. Refactoring note: recommend adding an explicit timeout to driveStraight() loop to prevent stalls on wheel slip.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByTime_Linear.java": {
+      "sha256": "0fdd7f8dbfabd5d69dbfd4c4bc17a1f309b51d647d74a37fbd87af3aeb19bc43",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Time-based linear autonomous sample; verified @Disabled annotation, sequential leg runtime checks, opModeIsActive() safety gating, and zero-power actuator neutralization at sequence completion.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagOmni.java": {
+      "sha256": "08ff7c6ad39f1f351afed5b3b423ccb7127f6846d593482391baf1c8cdb68ebd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Mecanum visual servoing to AprilTag; verified @Disabled annotation, manual camera exposure calibration (6ms/250 gain), holonomic kinematics (+X forward, +Y strafe left, +Yaw CCW), proportional gains (SPEED_GAIN=0.02, STRAFE_GAIN=0.015, TURN_GAIN=0.01), wheel power normalization (< 1.0), and fallback to manual control on button release.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagTank.java": {
+      "sha256": "c28d7d8ea8254ea589dda03387d763d57479fe479ff4bdf77360a65950e4b49b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Differential tank visual servoing to AprilTag; verified @Disabled annotation, manual exposure configuration, proportional control gains (SPEED_GAIN=0.02, TURN_GAIN=0.01), range and bearing error tracking, differential motor scaling, and safe manual fallback.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToLine_Linear.java": {
+      "sha256": "ee2ac7ca251100ebc459c82872dfb5a228ef29bfb4eff295ac905a4c92128090",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line detection autonomous sample; verified @Disabled annotation, NormalizedColorSensor initialization, SwitchableLight LED enablement, gain configuration (15), alpha threshold comparison (WHITE_THRESHOLD=0.5), and immediate motor zeroing upon line detection. Refactoring note: recommend adding an autonomous timeout guard in the detection loop.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotTeleopMecanumFieldRelativeDrive.java": {
+      "sha256": "98c3e94dc45cba3dce84755970dc073614fa564b020bd31b49c8d1e45202dd96",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Field-centric mecanum teleop sample; verified @Disabled annotation, RevHubOrientationOnRobot (Logo UP, USB FORWARD), polar vector rotation via imu.getYaw(AngleUnit.RADIANS) and AngleUnit.normalizeRadians, mecanum kinematic distribution, and power normalization with maxSpeed scaling. Cleanup note: class comments list obsolete motor names vs actual hardware map names.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotTeleopPOV_Linear.java": {
+      "sha256": "c3d9d269ce6e1c77c65125885a87a57b57a3946c3f0836a6cebbc2b9a2e67b7a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Linear POV teleop sample for differential drive with arm and claw; verified @Disabled annotation, blended drive/turn motor power clamping, mirrored servo position clipping ([-0.5, 0.5]), and safe arm power zeroing on button release. Refactoring note: hardware members declared public instead of private.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotTeleopTank_Iterative.java": {
+      "sha256": "9c02eb4f81c80751856c11afe30310a38d9ac9ac4153321311321b4a80616da5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Iterative OpMode teleop sample for dual-stick tank drive with arm and claw; verified @Disabled annotation, standard OpMode lifecycle implementations (init, loop), claw offset clamping, and arm motor power neutral behavior. Refactoring note: stop() method should explicitly set motor powers to 0.0, and hardware members should be private.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SampleRevBlinkinLedDriver.java": {
+      "sha256": "de56fe9355b0103d099c39b6ba601e9953a0897d0d6fc7bd429278c905541784",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "REV Blinkin LED Driver sample; verified @Disabled annotation, PWM pulse pattern configuration via RevBlinkinLedDriver.BlinkinPattern, pattern stepping via next() and previous(), rate limiting with Deadline instances for gamepad lockout (500ms) and auto cycling (10s), and clean telemetry display formatting.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorAndyMarkIMUNonOrthogonal.java": {
+      "sha256": "a9808c9e5e21d24c9233f8616a74ae00ab2ee7f336faa7288aff8f5e5c5e68ec",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "AndyMark IMU arbitrary non-orthogonal mounting sample; verified @Disabled annotation, xyzOrientation(xRotation, yRotation, zRotation) transformation matrix setup, AndyMarkIMUOrientationOnRobot initialization, runtime yaw reset on Gamepad Y, and angular velocity / Euler angle telemetry polling.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorAndyMarkIMUOrthogonal.java": {
+      "sha256": "ae08ea83e98419a05ec8ca669c7190be272c9ce2f5eba43056e15be8ffda82e3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "AndyMark IMU orthogonal mounting sample; verified @Disabled annotation, LogoFacingDirection.UP and I2cPortFacingDirection.FORWARD parameters, AndyMarkIMUOrientationOnRobot parameter validation, yaw reset handling, and angular rate telemetry reporting.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorAndyMarkTOF.java": {
+      "sha256": "0ca467f2b850d4cf6e510ec9941d4e47ad317a138c089d8b30ca263fa7511d4c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "AndyMark 2m Time-Of-Flight Lidar sample; verified @Disabled annotation, DistanceSensor polymorphism with cast to AndyMarkTOF, distance unit conversions (MM, CM, METER, INCH), model ID queries, and timeout detection. Cleanup note: multiple telemetry addData calls share identical key 'range'.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorBNO055IMU.java": {
+      "sha256": "1ad55824f04da682c629d7cdf08f0b72be63614443efdf086a3b0330ef627110",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Legacy BNO055 IMU interface sample; verified @Disabled annotation, JustLoggingAccelerationIntegrator configuration, deferred Func telemetry queries, and intrinsic ZYX angle extraction. Refactoring note: documented legacy status in favor of universal IMU interface with RevHubOrientationOnRobot.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorBNO055IMUCalibration.java": {
+      "sha256": "179a23e6cdc6beb0774eac0186e4b8ca98044018804b0e18890fe4ad3b42c683",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Legacy BNO055 calibration tool; verified @Disabled annotation, BNO055IMU.CalibrationData reading, JSON serialization via ReadWriteFile and AppUtil settings directory, and edge-triggered file write on Gamepad A. Cleanup note: calibration file name differs from SensorBNO055IMU ('AdafruitIMUCalibration.json' vs 'BNO055IMUCalibration.json').",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorColor.java": {
+      "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Generic color and proximity sensor sample; verified @Disabled annotation, NormalizedColorSensor usage, SwitchableLight toggling, runtime gain adjustment, DistanceSensor capability checking, and UI background color synchronization with try...finally cleanup. Cleanup note: allocating Runnable inside 50Hz loop causes GC churn if used in competition opmodes.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorDigitalTouch.java": {
+      "sha256": "61ffcff5d7797276a751b27f70fbbff8f6ea0aab8268eab34f42b673c5985feb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Digital channel touch sensor sample; verified @Disabled annotation, DigitalChannel.Mode.INPUT configuration, active-low touch button evaluation (getState() == false indicates pressed), and opModeIsActive() loop gating.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorGoBildaPinpoint.java": {
+      "sha256": "23f193e089952415da968c55f053077532b16ebf909fe795af673382f2700da1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated GoBildaPinpointDriver odometry computer integration in iterative OpMode. Verified pod offset configurations (DistanceUnit.MM), encoder resolution presets (goBILDA_4_BAR_POD), encoder direction reversal handling, and IMU re-zeroing via resetPosAndIMU(). Verified odometry updates via pinpoint.update() and position retrieval via getPosition(). Refactoring/GC note: setPosition(new Pose2D(...)) allocates a new Pose2D in the loop when button A is pressed; in high-frequency 50Hz control loops, preallocated pose instances or reusing positions is recommended.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorHuskyLens.java": {
+      "sha256": "88ed2dd4e988a20dabe07f33a6352290c912c87fff753083b99bfa9cc03e596a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DFRobot HuskyLens vision sensor LinearOpMode. Verified I2C communication handshake via knock(), algorithm selection (HuskyLens.Algorithm.TAG_RECOGNITION), rate limiting using Deadline(1, TimeUnit.SECONDS), and block parsing (HuskyLens.Block[] for bounding box dimensions, IDs, and positions). GC note: huskyLens.blocks() allocates a new array each call, appropriately throttled by the 1s deadline.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorIMUNonOrthogonal.java": {
+      "sha256": "d568366fa4b64f0b4e4e1ef306e51ae60f38c9d55498feb3eae97f1d7aa59ad1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated universal IMU interface with non-orthogonal mounting via RevHubOrientationOnRobot using 3-axis Euler angle rotations (xyzOrientation). Verified heading reset via imu.resetYaw(), extraction of YawPitchRollAngles and 3-axis AngularVelocity. Checked kinematics and angle standards: uses right-hand-rule rotation angles and telemetry output in degrees; ARES core internal kinematics remains strictly radians, CCW-positive.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorIMUOrthogonal.java": {
+      "sha256": "2a1fd590eaa833e43775110b5c8dc38308a0f24afa1584798f4d7be6ab014409",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated universal IMU interface with orthogonal mounting via RevHubOrientationOnRobot using LogoFacingDirection and UsbFacingDirection enums. Verified yaw reset via imu.resetYaw(), getRobotYawPitchRollAngles(), and getRobotAngularVelocity(AngleUnit.DEGREES). Telemetry provides 3-axis angular rates and orientations.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorKLNavxMicro.java": {
+      "sha256": "2f5a31b7dc5736608c0a7409d11e009a4caf61e3f4a51e6fca0aa709f02ef420",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Kauai Labs navX-Micro navigation sensor LinearOpMode using dual interfaces: NavxMicroNavigationSensor and IntegratingGyroscope. Verified non-blocking calibration loop via navxMicro.isCalibrating() with ElapsedTime timeout feedback, intrinsic ZYX orientation querying, and angular rate retrieval. Refactoring note: Line 70 contains a legacy copy-paste comment typo referencing Modern Robotics GyroSensor. String.format calls inside the active OpMode loop contribute to minor GC churn.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorLimelight3A.java": {
+      "sha256": "d06f754fb7501ae240e184d6a4efea1b1fab950711db38b8bd10364922734adc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Limelight 3A smart camera driver integration. Verified pipeline switching (pipelineSwitch(0)), polling lifecycle (start()/stop()), status monitoring (LLStatus temperature, CPU, FPS, pipeline index), and comprehensive LLResult parsing across target offsets (tx, ty, txnc, tync), Botpose 3D, barcodes, classifiers, detectors, fiducials/AprilTags, and color blobs. Refactoring note: Line 103 calls result.isValid() directly without checking if result is null; recommended adding defensive null guard if (result != null && result.isValid()) to prevent NPE if packets are delayed or connection drops.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorMRColor.java": {
+      "sha256": "42f11a5b5fd5fcd462bf8df27b0273dfc0c8efe6e8ce25908164fb21f83431e9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Modern Robotics ColorSensor LinearOpMode. Verified LED toggle logic with gamepad edge detection, RGB reading (red, green, blue, alpha), and RGB to HSV color conversion via Color.RGBToHSV. Refactoring note: Lines 122-126 post a new Runnable to relativeLayout on the Android UI thread every loop iteration; on headless Control Hubs relativeLayout may be null (leading to NPE) and allocating Runnables in the loop causes GC allocation churn. Recommend null-checking relativeLayout and throttling UI updates.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorMRGyro.java": {
+      "sha256": "2fd8dbe60420dec9f28f4c38da72f26521ded87a418613c3537bde3160ea787c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Modern Robotics I2C Gyro (ModernRoboticsI2cGyro & IntegratingGyroscope). Verified calibration sequence with isCalibrating() wait loop, Z-axis integrator reset via resetZAxisIntegrator() on dual button press (A & B), raw axis reads (rawX, rawY, rawZ), heading, integrated Z value, and Z-axis offset/coefficient telemetry. String formatting in loop notes apply.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorMROpticalDistance.java": {
+      "sha256": "501581c8497258b0a8f95511b555640dea7751bf83d7d6e51f97ca217f0e234c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Modern Robotics OpticalDistanceSensor LinearOpMode. Verified reading raw reflection levels via getRawLightDetected() and normalized ambient/reflected light via getLightDetected(). Simple, clean sensor read loop.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorMRRangeSensor.java": {
+      "sha256": "d5a214ec476cd33448af4a81352b1dbbfdde91c3e806fcc0f1d5b0e1088c4dc8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated legacy Modern Robotics I2C Ultrasonic and Optical Range Sensor (ModernRoboticsI2cRangeSensor). Verified reading raw ultrasonic and raw optical values, optical distance in cm, and fused getDistance(DistanceUnit.CM). Refactoring note: Line 56 contains a copy-paste comment typo referring to the range sensor as a 'compass'.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorOctoQuad.java": {
+      "sha256": "42909401f73935c416a92e6bd7babe36e6e417d2ac4f7c78e91800460c2eb69f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DigitalChickenLabs OctoQuad 8-channel encoder interface module for 3-deadwheel odometry tracking (left, right, perpendicular). Verified channel direction assignment, velocity sample interval configuration (50ms = 20Hz), persistent flash parameter storage via saveParametersToFlash(), and caching reads via readSinglePosition_Caching() and readSingleVelocity_Caching(). Cleanup note: Line 28 imports com.qualcomm.robotcore.util.ElapsedTime which is unused and can be removed.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorOctoQuadAdv.java": {
+      "sha256": "7a038feb8d06ca0a50902c610324e47057db4c9a9f365a073326f06d040c7601",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated advanced Swerve Drive encoder architecture with OctoQuad. Verified 4-wheel swerve module management: channels 0-3 configured for drive wheel relative quadrature encoders, channels 4-7 configured for steer motor absolute pulse-width encoders (1-1024 us for REV Through-Bore encoder). Verified block register reading via octoquad.readAllEncoderData(encoderDataBlock) with zero heap allocations in the 40Hz hot loop using preallocated EncoderDataBlock. Verified angle normalization with AngleUnit.normalizeDegrees() and cycle timing statistics via MovingStatistics.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorOctoQuadLocalization.java": {
+      "sha256": "03acd50e2249b1997914752af6936d9e7ed9ea8c758e1dd653df1216d7e7a620",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated MK2 OctoQuad on-board hardware localizer with IMU sensor fusion. Verified initialization, deadwheel port and direction configuration, counts-per-mm scaling, tool center point (TCP) offsets, IMU scalar, and recovery mode. Verified IMU calibration wait loop and pose teleporting via setLocalizerPose(). Crucially validated ESD error detection through CRC check: enforces localizer.crcOk guard before consuming data and increments badPackets on corrupted frames. Verified zero-allocation telemetry updates using preallocated LocalizerDataBlock and radians heading.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorREV2mDistance.java": {
+      "sha256": "de56bca0d478653a63922c2222f347a0ac480b5c2d119f158cb5ecc1a2901544",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated REV 2-meter Time-of-Flight Distance Sensor (Rev2mDistanceSensor). Verified DistanceSensor polymorphic querying across multiple units (MM, CM, METER, INCH) and Rev2mDistanceSensor specialized diagnostics including getModelID() and didTimeoutOccur().",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorSparkFunOTOS.java": {
+      "sha256": "de3cd3c6932fa4982bb5c4e7d3e9bf1c3e64669789836bef39a834ba27cedebc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SparkFun Optical Tracking Odometry Sensor (OTOS) LinearOpMode. Verified distance and angle unit selection, sensor physical offset configuration, linear and angular scalar calibration, blocking IMU calibration (255 samples / ~612ms), tracking reset via resetTracking(), and initial pose seeding. Refactoring notes: Line 86 comment has a minor typo ('AnguleUnit.RADIANS'). In the active loop, myOtos.getPosition() allocates a new Pose2D each iteration, which should be noted for high-frequency control loops. Gamepad X triggers calibrateImu() which blocks for >600ms.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorTouch.java": {
+      "sha256": "918829fede18c6481318ce1af7a38685bee4ed8ad18399f9c484edcb60fdf1f7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated TouchSensor digital interface with active-low ground contact. Verified digital port usage rules (ports 1, 3, 5, 7 for REV Touch, any port for magnetic limit switches) and boolean contact querying via touchSensor.isPressed(). Clean sample implementation.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/UtilityCameraFrameCapture.java": {
+      "sha256": "50a2e17c844c66d0b9caed43ee0d913abdc7ff61ec3a53b5f119612145286907",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated camera calibration capture utility using FTC VisionPortal. Verified webcam and built-in camera configuration with custom resolution (640x480), button edge-detection for frame capture triggering, and saving raw frames via portal.saveNextFrameRaw(). Refactoring recommendation: OpMode should explicitly call portal.close() upon stop to ensure camera USB endpoints are cleanly released.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/UtilityOctoQuadConfigMenu.java": {
+      "sha256": "2817e0cb8c160ff599b76f0252cb709706762ef373d8aa822d046708bae1c052",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated full-featured interactive on-robot OctoQuad configuration utility. Verified TelemetryMenu tree structure supporting EnumOption, IntegerOption, and BooleanOption, gamepad D-pad and bumper navigation, chip ID and firmware major version validation against OctoQuad constants, and parameter writing to RAM or persistent flash. Refactoring note: Line 86 uses hardwareMap.getAll(OctoQuad.class).get(0) without checking if the list is empty, which throws IndexOutOfBoundsException if an OctoQuad is not configured in the active configuration.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/externalhardware/ConceptExternalHardwareClass.java": {
+      "sha256": "5e6460de3e111aa2bddd31dbc3bcfc45d4fe7d26bfccc35bae420a7d6d09f6d3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated hardware abstraction design pattern isolating hardware access in RobotHardware. Verified clean OpMode lifecycle (robot.init() in init, robot.driveRobot() and subsystem access in loop), stick negation for forward drive (-gamepad1.left_stick_y), servo position offset clipping via Range.clip, and loop rate pacing with sleep(50).",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/externalhardware/RobotHardware.java": {
+      "sha256": "587ba00ba3d91444c5539772565f8c18a149ef0e368e08df0955d11a48d47313",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated modular robot hardware encapsulation class for 2-motor drive, arm motor, and 2-finger servo gripper. Verified motor direction setup, servo midpoint initialization (MID_SERVO = 0.5), blended drive mixing (driveRobot) with proportional normalization when magnitude exceeds 1.0, and mirrored gripper servo control. Actuator safety note: Hardware instances rely on SDK automatic neutralization on stop; recommending adding an explicit stop() / neutralize() method to force zero power on shutdown.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/readme.md": {
+      "sha256": "d3eaed211d095425bd07b0c9537c779cb157803c2e89324e2f08ffa6aaba2f62",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated external samples architectural documentation. Verified guidance regarding sample immutability in samples directory and copy/paste workflows to /TeamCode, naming convention definitions (Basic, Sensor, Robot, Concept), and class naming grammar (Sensor - Company - Type, Robot - Mode - Action - OpModetype, Concept - Topic - OpModetype).",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/sample_conventions.md": {
+      "sha256": "d943f89dd4e16910084e6d5d196c11348f183ba68fc2361e195a4cd675fefbbf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated sample conventions specification (v1.1.0). Verified OpMode prefix taxonomy (Basic, Sensor, Robot, Concept, Utility), Google Java Style Guide conformity, canonical hardware device configuration naming conventions (left_drive, right_drive, left_arm, left_hand, sensor_color, imu, navx, etc.), variable camelCase conventions matching configuration names, and strict guidelines against user directive comments.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass288-pending-elevation-audit.md": {
+      "sha256": "630d690dd95c6145d34f6aa0eab06d86b756725f3dee5b411dd4e45583efcba9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive Pass 288 pending file elevation, active refactoring, and 100% milestone seal report for all 67 remaining ARES-FTC external sample OpModes and utilities.",
+      "evidence": [
+        "docs/audits/pass288-pending-elevation-audit.md"
       ]
     }
   }
