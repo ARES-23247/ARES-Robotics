@@ -488,16 +488,3 @@ internal fun CompactStepPicker(
     }
 }
 
-@Composable
-internal fun RoutineDecimalEditor(value: Double, label: String, suffix: String, modifier: Modifier = Modifier, onChanged: (Double) -> Unit) {
-    var text by remember { mutableStateOf(formatRoutineNumber(value)) }
-    var focused by remember { mutableStateOf(false) }
-    LaunchedEffect(value, focused) { if (!focused) text = formatRoutineNumber(value) }
-    OutlinedTextField(
-        value = text,
-        onValueChange = { updated -> text = updated; updated.toDoubleOrNull()?.takeIf(Double::isFinite)?.let(onChanged) },
-        label = { Text(label) }, suffix = { Text(suffix) }, singleLine = true,
-        modifier = modifier.onFocusChanged { focused = it.isFocused },
-        colors = routineTextFieldColors()
-    )
-}

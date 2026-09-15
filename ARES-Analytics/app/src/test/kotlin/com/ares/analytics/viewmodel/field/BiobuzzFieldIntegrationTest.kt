@@ -1,5 +1,7 @@
 package com.ares.analytics.viewmodel.field
 
+import com.ares.analytics.domain.project.FieldDocumentMapper
+
 import com.ares.analytics.shared.models.League
 import org.ares.biobuzz.BiobuzzField
 import com.ares.analytics.viewmodel.FieldEditorIntent

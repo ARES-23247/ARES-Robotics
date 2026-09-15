@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package com.ares.analytics.viewmodel.field
 
+import com.ares.analytics.domain.project.FieldDocumentMapper
+
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.shared.GamePieceType
 import com.ares.analytics.shared.models.League
