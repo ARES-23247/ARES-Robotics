@@ -13,6 +13,7 @@ import java.lang.management.ManagementFactory
 import com.areslib.telemetry.ITelemetry
 
 class SwerveIoContractAuditTest {
+    @Volatile private var retainedAllocation: DoubleArray? = null
     @Test
     fun `telemetry publishes four owned values and truthful checked validity across instances`() {
         val arrays = mutableMapOf<String, DoubleArray>()
@@ -170,24 +171,49 @@ class SwerveIoContractAuditTest {
 
     @Test
     fun `checked cached reads allocate no bytes after warmup`() {
-        val bean = ManagementFactory.getThreadMXBean() as ThreadMXBean
-        bean.isThreadAllocatedMemoryEnabled = true
         val io = ContractSwerveIO()
         val out = DoubleArray(4)
         var checksum = 0.0
-        fun tick() {
+        val samples = allocationWindows {
             if (io.getCurrentsIfValid(out)) checksum += out[0]
             if (io.getEncoderPositionsIfValid(out)) checksum += out[0]
         }
-        repeat(50_000) { tick() }
+        println("Checked swerve reads: ${samples.contentToString()} bytes per 20,000 reads")
+        // Warm the measured loop and counter too, then require both final windows to be zero.
+        // Early windows can include one-time JVM linkage/JIT work on a fresh CI worker.
+        assertEquals(0L, samples[8], "allocation windows: ${samples.contentToString()}")
+        assertEquals(0L, samples[9], "allocation windows: ${samples.contentToString()}")
+        assertTrue(checksum.isFinite() && checksum > 0.0)
+        assertEquals(300_000, io.reads)
+    }
+
+    @Test
+    fun `allocation windows detect per-read array allocation after warmup`() {
+        val io = ContractSwerveIO()
+        val out = DoubleArray(4)
+        val samples = allocationWindows {
+            io.getCurrentsIfValid(out)
+            retainedAllocation = out.copyOf()
+        }
+        println("Allocating control: ${samples.contentToString()} bytes per 10,000 reads")
+        // The escaped copy must remain visible to the same counter and warm-up procedure.
+        assertTrue(samples.all { it >= 10_000L * 4 * Double.SIZE_BYTES }, samples.contentToString())
+        assertArrayEquals(io.currents, retainedAllocation)
+        assertEquals(150_000, io.reads)
+    }
+
+    private fun allocationWindows(tick: () -> Unit): LongArray {
+        val bean = ManagementFactory.getThreadMXBean() as ThreadMXBean
+        bean.isThreadAllocatedMemoryEnabled = true
         val thread = Thread.currentThread().id
-        repeat(2) {
+        val samples = LongArray(10)
+        repeat(50_000) { tick() }
+        repeat(samples.size) { window ->
             val before = bean.getThreadAllocatedBytes(thread)
             repeat(10_000) { tick() }
-            assertEquals(0L, bean.getThreadAllocatedBytes(thread) - before)
+            samples[window] = bean.getThreadAllocatedBytes(thread) - before
         }
-        assertTrue(checksum.isFinite() && checksum > 0.0)
-        assertEquals(140_000, io.reads)
+        return samples
     }
 }
 
