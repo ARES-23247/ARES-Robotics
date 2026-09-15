@@ -70,7 +70,7 @@ object AresRoutineCodec {
     }
 
     private fun validateStepJson(
-        array: com.google.gson.JsonArray,
+        array: JsonArray,
         path: String,
         depth: Int,
         stepCount: IntArray

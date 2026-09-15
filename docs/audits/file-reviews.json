@@ -5857,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "04f54c92450da6ae91f2fc3348bd14a8750f5302bd08b95409fdbca3d87bcf41",
+      "sha256": "4bbd48b790aa703486d082985d5fab5019e73b3407b81565394b2ac92257d5e8",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -23485,6 +23485,816 @@
       "scope": "Comprehensive Pass 284 pending file elevation and active refactoring report for 90 FTC hardware facades, peripheral drivers, automated tests, vendordeps, XRP build scripts, and FTC desktop mock runtimes.",
       "evidence": [
         "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulation-foundation/build.gradle.kts": {
+      "sha256": "da215963e6e0146e1ef696f1c0be180c97b36486928570ba3e220cea734302b6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gradle build script for simulation-foundation module. Verified explicitApi() enforcement, JVM toolchain 17, and Vanniktech Maven publishing configuration with JavadocJar.Empty() and sourcesJar=true. Verified dependencies: decoupled project schema (:project-schema), core library (:core), kotlin-stdlib, kotlin-test, and junit-jupiter 5.14.4 test runner. Clean build configuration with zero platform leakage.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulation-foundation/src/main/kotlin/com/areslib/simulation/SimulationFaultTimeline.kt": {
+      "sha256": "f1414062781eab04fa736de4c96f816b5f6e89bb31ccf55e7c411a13217b2437",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Deterministic fault injection schedule and command models. Verified SimulationFaultKind (7 kinds) and SimulationFaultCommand initialization constraints (non-blank IDs, startsAtMillis >= 0, endsAtMillis > startsAtMillis). Verified zero-GC hot-path execution: commands pre-sorted and stored in a typed array; activeFault() and isActive() query methods use primitive while-loop index traversal without iterator or collection allocations, terminating early when command.startsAtMillis > timeMillis. Verified time source integration using RobotClock.currentTimeMillis().",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulation-foundation/src/main/kotlin/com/areslib/simulation/SimulationProjectPlan.kt": {
+      "sha256": "0fb258b2e781d314e21ab42fa68a8bd7eec7df0e5b4d73f36f4dd045ec1f71b5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Deterministic simulator product and capability selection planner. Verified SimulationProductId (FTC_DESKTOP_OPMODE, FRC_WPILIB_DESKTOP, XRP_DESKTOP), SimulationCapability (9 capabilities), and immutable SimulationProductContract definitions in SimulationProducts. Verified SimulationProjectPlanner.plan() pure functional implementation: derives required capabilities, performs strict compatibility checks, fails closed on controller/simulator mismatches, unsupported drivetrains, or missing subsystem simulator adapters without inferring generic substitutes. Zero process launches or side effects.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulation-foundation/src/test/kotlin/com/areslib/simulation/SimulationFaultTimelineTest.kt": {
+      "sha256": "ec9db99f2e62028d68fec2f4a6922aa2ce31bac04d71a91ec18007cac97ca4f5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for SimulationFaultTimeline. Verified test coverage across 3 test cases: mock clock tracking with RobotClock.useMockTime() at boundary timestamps (99, 100, 200 ms), deterministic resolution of simultaneous overlapping faults via stable secondary sort order (targetId, kind.ordinal, commandId), validation rejection of duplicate command IDs and inverted/zero intervals in init, and reliable clock restoration in @AfterTest.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulation-foundation/src/test/kotlin/com/areslib/simulation/SimulationProjectPlanTest.kt": {
+      "sha256": "6f663ea3cca45e0d39f47293518771a20460ca8d17a3a6a2f0f45317e1f6031b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for SimulationProjectPlanner. Verified test coverage across 3 test cases: FTC Control Hub target resolving to FTC OpMode product with FTC_OPMODE_LIFECYCLE capability, FRC roboRIO target resolving to WPILib desktop product with FRC_TIMED_ROBOT_LIFECYCLE capability, and fail-closed validation on mismatched controller and simulator targets producing controller_simulator_mismatch issue.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/build.gradle.kts": {
+      "sha256": "ca4504ac92194683594c7ad6ef713f26772e1713f351374a0c650a9723f230b5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Build script for the FTC desktop simulator. Verified integration of dyn4j 4.2.2 physics engine, gson 2.14.0, WPILib 2024.3.2 stack (wpilibj, cameraserver, wpinet, ntcore, wpiutil, wpimath, hal), and LWJGL 3.4.3 (core and glfw). Verified hostRuntime configuration dynamically selecting platform-specific native binaries (windowsx86-64, osxuniversal, linuxx86-64) for local runs and tests without publishing native jars. Verified application entry points: DesktopSimLauncher, runFakeController, runVerification, and fatJar. Configured on JVM toolchain 17.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/networktables.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Static default NetworkTables topic configuration file for simulator runtime. Verified valid JSON structure containing empty root array ([]).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/hardware/vision/SimVisionIO.kt": {
+      "sha256": "34d5fa6c919a1e546051c3c7c6d1e78b8d276bf36338b260768272495ea9ee16",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Vision hardware abstraction double implementing VisionIO. Verified updateInputs() assigns camera mount poses and sets isConnected = true while preserving caller measurements. Verified injectMeasurement() creates synthetic Tag 1 observations with CCW-positive radians heading, field-relative coordinates in meters (+X forward, +Y left), and RobotClock.currentTimeMillis() timestamps. Intended for manual simulation injection.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/DesktopSimLauncher.kt": {
+      "sha256": "796809444fefbc6098eb3066423229a8e4d18f322e81278e7d508fcb13de7ddd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Primary FTC desktop simulator runtime entry point and 50 Hz loop orchestrator (SIM_TIMESTEP_SECONDS = 0.02, SIM_TIMESTEP_MS = 20L). Verified SimFramePacer pacing integration, Dyn4j SimPhysicsWorld stepping, MecanumRobotDouble sensor synchronization, and NT4 telemetry publishing. Verified kinematic coordinate conventions: CCW-positive radians, +X forward, +Y left; forward and inverse field/robot frame velocity transformations using cos/sin heading projections. Verified hardware safety: motor powers zeroed on STOP command, full resource teardown in finally block. Verified game piece telemetry buffer reuse avoiding per-tick allocations. Refactoring notes: unused imports com.areslib.sim.network.NT4FieldPublisher, com.areslib.state.RobotFieldManager, and com.areslib.sim.field.FieldElementLoader; unused volatile fields sumSqErrorX/Y/Heading and maxCurrent never accumulated in main loop; redundant classloader probe TelemetryPublisher.javaClass.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/SimFramePacer.kt": {
+      "sha256": "210d14162b979b748ac990f73e9e626c0a86cb152126c7b3a3d610eaaee349fc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Deterministic 50 Hz simulator frame pacer (default periodNanos = 20_000_000L). Verified absolute-deadline scheduling using non-spinning LockSupport.parkNanos; frame work and normal wakeup jitter consume the current period instead of drifting. Verified anti-burst stall rebasing: if lateness exceeds a full period, scheduling rebases to now + periodNanos and increments rebasedPeriods. Verified unboxed Long primitive arguments across SimHostClock and SimHostWait fun interfaces, zero hot-path object allocations, and clean InterruptedException handling on thread interrupt.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/SimInteractionModel.kt": {
+      "sha256": "bdc26462850589d6e4041003d2e7a0e9eddd31648c45a3b4c5bf81d4e4d95a49",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Interface contract and default implementation for robot-environment physical interactions in Dyn4j. Verified SimInteractionModel.update() method contract taking Dyn4j world, robot body, game piece bodies list, mechanism applied flags, inventory count, and robot pose (heading in CCW-positive radians, X/Y in meters). Verified reset() lifecycle boundary hook. Verified NoOpInteractionModel pass-through implementation returning current inventory count without modifying field bodies.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/SimLoopTimingRecorder.kt": {
+      "sha256": "6ca8c10cceb468165507c24cd07ee9176c18ad6ad1634e6c91c7d565e093acf7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Opt-in diagnostic loop timing and allocation recorder for the simulator runner thread. Activated via ARES_SIM_TIMING_PATH and ARES_SIM_TIMING_FRAMES environment variables. Verified preallocated fixed-capacity primitive arrays (LongArray for starts, work, waits, lateness, rebased, allocations; BooleanArray for active) guaranteeing zero heap allocation during 50 Hz measurement frames. Verified thread allocation tracking using ThreadMXBean.getThreadAllocatedBytes(). Verified deferred CSV flush on close().",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/SimulatorStartPose.kt": {
+      "sha256": "0f9e6798ba097482ae2a2c09bdbd1c708aa5f4eb500c0eb08ace41da92a4c06f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Explicit mode-based simulator start pose ownership helper (synchronizeSimulatorStartPose). Verified autonomous pose ownership: authored OpMode pose owns starting position (even when (0, 0, 0)) and synchronizes Dyn4j physics body, Pinpoint odometry double, and Redux pose estimator. Verified teleop pose ownership: configured physics/alliance spawn owns starting position, initializing Pinpoint and Redux while preserving the existing physics spawn location. Zero sentinel coordinate hacks.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/VerificationApp.kt": {
+      "sha256": "e7209081a162600c4ffd72d4208c6f81024f1e4e73ad625e7d204720f8ef1fc9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Programmatic integration verification application for FTC mecanum simulation. Verified background headless simulator launch, NT4 INIT/START command sequencing, and v2 drive input frame streaming. Verified 4-phase automated verification: 4-segment square drive translation (+Y, +X, -Y, -X), heading rotation and PID stabilization to 0.0 rad, field-centric motion verification under rotated heading, and multi-target rotation (+PI/2, -PI/2, 0.0 rad). Verified verificationDriverAxis deadband and cubic curve inverse function ensuring faithful driver intent transmission. Refactoring note: standard CLI test utility invokes System.exit() on pass/fail completion.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/cli/SimCliParser.kt": {
+      "sha256": "f752279a7cabeea4664f663808090eb8a6200d80596956005cfffb25204f339a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "CLI argument parser and field configuration loader. Verified robust option parsing for --field-config, --opmode, --headless (both flag and flag=value syntax) with strict non-empty validation via requireValue(). Verified loadFieldConfig() loading from local files with fallback to ARESWEB REST endpoint, decoding via RobotFieldDocument.decode(), and registering with RobotFieldManager.setActiveConfig(). Refactoring note: unused import java.net.URL (replaced by URI.create().toURL()).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/field/ConfigurableGamePieceInteractionModel.kt": {
+      "sha256": "c4d5aa33c5784ec548f833631d9c330393ac884980787ca738baffb1b55be19f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Descriptor-driven physical game piece intake, inventory, and projectile ejection model for Dyn4j. Verified constructor parameter bounds validation in init block. Verified intake capture zone calculation (frontX/frontY offset by intakeRangeMeters, capture radius squared comparison), body removal from Dyn4j world, and inventory deque metadata tracking. Verified projectile launching with planar velocity (launchSpeedMps * cos(launchElevationDeg) + robotBody.linearVelocity) and damping parameters. Verified zero-allocation roleActive() traversal across bindings array. Verified reset() clearing state.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/field/DescriptorSimInteractionLoader.kt": {
+      "sha256": "56bd7604f4326e24eb25aa414564cdda6d9d47136c88011281efcdef9260b3b4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Filesystem loader for simulator interaction models from robot project documents. Verified directory search walking up to 4 parent directories searching for .ares/subsystems, decoding all .aressubsystem files via SubsystemDocumentCodec.decode(), and constructing ConfigurableGamePieceInteractionModel if any interaction roles are configured. Pure loader returning null on missing directories or non-interactive subsystems.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/field/FieldElementLoader.kt": {
+      "sha256": "6faa2de87fb633b11b8b4c436d976e19ee0b005b376d5e65453c21a2d0c10bc3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Dyn4j field element body loader and factory. Verified deserialization of RobotFieldConfig from JSON and instantiation of movable and static element bodies. Verified immovable elements are configured with MassType.INFINITE. Integrates SimGamePieceBodyFactory for metadata attachment. Refactoring note: unused import com.google.gson.JsonObject.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/field/FieldObstacleLoader.kt": {
+      "sha256": "ede72d7485c71bc2a3765642270c105015a7566cefd0ac62aef53e01015fff1b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Dyn4j 2D obstacle deserializer and physics body factory. Verified support for circle, rectangle, and polygon obstacle geometries, all instantiated with MassType.INFINITE. Verified resilient non-convex polygon fallback: if Geometry.createPolygon fails, decomposes vertices into rectangular wall segments with wallThickness = 0.04m. Verified friction, restitution, and rotation angle handling. Refactoring notes: redundant import and fully qualified name for JsonObject; unused parameter inMeters in loadObstacles().",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/field/MecanumInteractionModel.kt": {
+      "sha256": "d61bece81257a030ea54e8fc5955845cb05c42d2341a907f9d3962bb5e032016",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Default simulation interaction model for mecanum chassis. Verified intake capture logic (capacity 3, range 0.35m, radius 0.12m) and ball projectile shooting logic (linear impulse 8.0 N*s on rising edge of transferApplied when flywheelApplied). Verified ball physical properties (radius 0.075m, friction 0.6, restitution 0.3, density 0.24/area, damping 1.5). Verified reset() clearing transfer edge detection. Refactoring note: update boilerplate class KDoc to describe actual ball intake and launcher physics role.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/field/SimGamePieceMetadata.kt": {
+      "sha256": "5548ec55bc71553a8afd8fc4d131dd08d427d40cf06461ad5c904d73054527d6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Canonical game piece metadata model and atomic v2 telemetry packing. Verified immutable SimGamePieceMetadata structure and SimGamePieceBodyFactory body creation with metadata stored in body.userData. Verified stableTelemetryKey() producing 64-bit deterministic hash masked to MAX_EXACT_DOUBLE_INTEGER (2^53 - 1) for lossless representation in IEEE-754 double telemetry. Verified SimGamePieceTelemetryFrame atomic binary packing directly into DoubleArray buffers without per-piece object allocation (HEADER_WIDTH = 2, RECORD_WIDTH = 9, SEQUENCE_WIDTH = 1).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/infra/FakeControllerClient.kt": {
+      "sha256": "0ef247a9439cae0dd615ebb548128da686eef98093eba3794c84888d330068ed",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Interactive remote controller CLI client communicating over NetworkTables 4. Verified connection establishment, streaming of v2 drive input frames (vx, vy, omega), command and obstacle injection. Verified hardware safety: sends neutral zero-speed frame (0, 0, 0) upon initialization and upon exit/stop. Verified path traversal security validation in safeLogBasename and localLogFilename rejecting directory separators and non-basename files. Refactoring note: modernize deprecated URL() constructors to URI.create().toURL().",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/infra/MockI2cDeviceSynch.kt": {
+      "sha256": "d2694fd02426451142cd2ce525e94eab92d187505db317b447e8d6e6cb719f98",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "FTC I2cDeviceSynch mock double for simulated I2C sensor devices. Verified 256-byte internal register array with safe bounds handling (getOrElse(regIndex) { 0 } and 0..255 range check on write). Verified read8(), read(), write(), and readWindow properties, as well as onRead and onWrite interceptor callbacks for simulated device integration.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/infra/SimGamepadManager.kt": {
+      "sha256": "c651a5044a0e397bbbf09c633e39303d1b0c17718e0b1f5909695f42e0722f16",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unified input coordinator handling GLFW gamepad polling, keyboard events, and remote dashboard NT4 command frames. Verified reference-counted GlfwLifecycleCoordinator lease management preventing GLFW init/terminate lifecycle races across instances. Verified remote authority override model superseding local inputs when active. Verified toggle state pulse generator reconciling synthetic bumper presses with Redux accepted state. Verified writeEffectiveGamepads mapping to FTC Gamepad mocks (negative left_stick_y for forward, negative left_stick_x for left strafe). Verified close() thread join with 2000ms timeout and complete neutralization of controls.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/infra/VirtualDriverStation.kt": {
+      "sha256": "9e49a7cd2eba77a7268f6fa193aa96ae6d4837183323a2c5a9420b6cf1f7f480",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of Swing virtual driver station GUI (lines 1-173). Validated focus management where windowLostFocus (lines 142-144) and focusLost (lines 151-153) explicitly clear gamepadManager.pressedKeys to prevent stale drive commands. Validated graceful termination hook onClose() on windowClosing (lines 145-147). Validated visual overlay rendering in paintComponent/drawGamepadOverlay displaying mode (TELEOP/AUTO), drive coordinates (FIELD-CENTRIC/ROBOT-CENTRIC), alliance (RED/BLUE), and mapped controller triggers (WASD, QE, Shift, F, Enter). Clean separation between Swing UI event dispatch thread and 50 Hz physics loop. Refactoring/Cleanup note: Replace wildcard imports java.awt.* with explicit imports (Color, Dimension, Font, Graphics, Graphics2D, RenderingHints).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/model/MecanumRobotDouble.kt": {
+      "sha256": "efbc2b401808fad922be47891ac843d2cfc30d0574466e4b731960d4eeb26d3f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of simulated robot hardware model and sensors (lines 1-388). Validated SimDcMotorEx fault handling (BROWNOUT scaling power to 35%, WRITE_REJECTED, DEVICE_DISCONNECTED, BUS_DISCONNECTED, INVALID_INPUT, FROZEN_INPUT, STALE_INPUT), power limits coerced to [-1.0, 1.0], direction reversal, and dynamic current draw modeling (0.15A idle to 4.2A loaded). Validated Mecanum inverse kinematics in updateSensors (FL = vx - vy - omega*0.45, FR = vx + vy + omega*0.45, RL = vx + vy - omega*0.45, RR = vx - vy + omega*0.45) with 2000 ticks/m encoder scaling. Validated Pinpoint coordinate frame offsets and CCW-positive heading support. Validated Limelight 3A vision raycast checking 35-deg half-FOV cone (HORIZONTAL_HALF_FOV_RADIANS = 0.610865) and 0.2m..3.5m range squared. Validated HardwareMap dynamic proxy caching. Refactoring/Cleanup note: In updateSensors (line 341), visibleTagId is declared as nullable Int?; using primitive Int = -1 as sentinel eliminates autoboxing in the 50 Hz physics tick.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/network/NT4FieldPublisher.kt": {
+      "sha256": "4f3538e0403fb2261e0bb5d4116f7a4d71049719ff2344cff9ee55f49ee24c5f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of NT4 field telemetry publisher (lines 1-173). Validated publication of field topics: ARES/Field/Obstacles, ARES/Field/Elements, ARES/Field/Scores, ARES/Field/ConfigId, ARES/Field/AprilTags, and ARES/Field/AppliedReceipt. Validated encodeObstaclesJson constructing canonical JSON with physical coordinates, dimensions, friction, restitution, and rotation. Validated encodeAppliedFieldReceipt generating verifiable SHA-256 digests of canonical field configurations and atomic sequence tracking via AtomicLong to confirm field installation. Refactoring/Cleanup note: The private instance StringBuilder `sb` is shared across publishAprilTags, publishElements, and publishScores; allocating locally or synchronizing ensures safety if called across threads.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/network/RobotStateStruct.kt": {
+      "sha256": "bc967775674fe0a60ad5da83cef3d0be253586d8eeaa5faa104e994b008025a1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of WPILib native AdvantageScope struct serializer (lines 1-38). Validated binary layout matching schema: 8 doubles (drive velocities vx, vy, omega, odometry x, y, heading, vision target x, y), 2 int64 longs (vision timestamp, robot timestamp), and 1 boolean byte (hasTarget), totaling exactly 81 bytes (Double.BYTES * 8 + Long.BYTES * 2 + 1). Validated pack() writes values directly into ByteBuffer without heap allocations or reflection. Validated unpack() throws UnsupportedOperationException, preserving the immutable Redux state invariant.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/network/TelemetryPublisher.kt": {
+      "sha256": "e65002ca2e2725d249b6b14c276bc4f47cfed164eb6887f84598b8dc262bc384",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of simulation telemetry bridge and NT4/AdvantageScope broadcaster (lines 1-372). Validated preallocated primitive buffers in hot paths: targetPoseBuf (3), truePoseBuf (3), simulatorPoseFrameBuf (10), driveInputAckBuf (3), and mecanumMotorFrameBuf (13), achieving zero GC allocation per 50 Hz tick. Validated sequence overflow guards resetting before JavaScript safe integer limit MAX_EXACT_DOUBLE_INTEGER (9,007,199,254,740,991). Validated pollWebInputs integrating atomic remote command leases and Redux store alliance dispatching. Validated cached indicatorLightPublishers map avoiding per-frame topic lookups.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/opmode/SimOpModeLifecycle.kt": {
+      "sha256": "8b4cb55c68d849c3eaf794e910bcefcfddef975f0b359e5122144454881b8cbd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of desktop simulator OpMode lifecycle adapter and transition slot (lines 1-339). Validated fail-closed state transitions for SimOpModeState (AUTO_INIT, AUTO_RUNNING, TELEOP_INIT, TELEOP_RUNNING, DISABLED). Validated dual support for iterative OpMode (init, init_loop, start, loop, stop) and threaded LinearOpMode with daemon worker thread. Validated watchdog termination in stop(): sets stopRequested, joins thread for 500ms (LINEAR_STOP_JOIN_MS), issues thread.interrupt(), joins for another 500ms, and records failure if still alive. Validated SimOpModeLifecycleSlot: terminal failure locks transition gate, preventing candidate construction and running concurrent OpModes.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/opmode/SimOpModeRunner.kt": {
+      "sha256": "91051baa1f8a504e32cf0bb364cd9dddfa70472d997d35a6466d59135a2fa3b8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of reflective OpMode discovery and resolution engine (lines 1-239). Validated classpath scanning for @TeleOp and @Autonomous classes, filtering @Disabled, abstract classes, and SDK robot controller packages. Validated advertisedTeleOps fallback logic: AresHardwareTestOpMode is advertised only when consuming project contributes no enabled TeleOps. Validated createOpModeInstance resolving fully-qualified names, teamcode package conventions, simple class names, and annotation display names with fail-closed instantiation.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/main/resources/decode_obstacles.json": {
+      "sha256": "345800dd5d4e67c1f86a6fe4fcf595bbc42cb97bffdf56401171760cde979ef5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FTC DECODE season field obstacle definition resource (lines 1-63). Validated canonical geometry and physical dimensions within standard FTC field perimeter: Red Ramp (-0.9144m, 0.0m, w=0.6096m, h=0.6096m), Blue Ramp (0.9144m, 0.0m, w=0.6096m, h=0.6096m), Gate 1 (0.0m, 1.6764m, w=0.6096m, h=0.3048m, blocking), Gate 2 (0.0m, -1.6764m, w=0.6096m, h=0.3048m, blocking). Validated friction (0.5), restitution (0.3), and zero rotation.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/GamePieceTelemetryTest.kt": {
+      "sha256": "b8e9defa962c742fdf311de08bf9d232de047e5f0b7fdc59ac5677e6814e9b97",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of game piece telemetry test suite (lines 1-49). Validated test cases for TelemetryPublisher.publishGamePieces and publishGamePieceFrame: verified that publishing count=0 explicitly clears stale game piece arrays on NT4, and verified that atomic typed frames publish correct version headers, instance keys, element types, coordinates, and sequence tags. Clean NT4Server instance reset in teardown.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/MecanumRobotDoubleImuTest.kt": {
+      "sha256": "b44c80b3047bc561ba141a9bbf54ac922cc8e9e186569106ef92d4ec9ee8469e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of IMU simulation tests in MecanumRobotDouble (lines 1-42). Validated updateSensors correctly populates mockImu with physical heading in radians (1.25 rad) and angular velocity in both radians/sec (-0.75 rad/s) and degrees/sec (Math.toDegrees(-0.75)). Confirmed tolerance bounds (1e-9 rad, 1e-6 rad/s, 1e-5 deg/s).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/SimFramePacerTest.kt": {
+      "sha256": "15d60ec8d81ff45bdccd8e35e04fddd19488d7a81e9a7486a2cb77970f37055c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of simulation frame pacing unit tests (lines 1-78). Validated SimFramePacer behavior under coarse host clock boundaries (Windows 15.625ms timer ticks) with zero drift accumulation over 1,000 frames (20s). Validated long stall handling rebasing deadlines instead of running burst backlogs. Validated signed nanosecond clock wrap preservation. Validated thread interruption handling while RobotClock is frozen in mock time.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/SimPhysicsWorldContractTest.kt": {
+      "sha256": "05ca1ff49d378e48d30f0aac0da737ba77757e6a8ac767cbe2f262636ff40c0a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of Dyn4j physics world contract test suite (lines 1-97). Validated field asset lookup precedence (project assets precede developer checkouts). Validated symmetric alliance spawn poses: Red (0.0, -1.2, PI/2) and Blue (0.0, 1.2, -PI/2) mirrored in translation and rotation. Validated field boundary walls preventing chassis tunneling under 10 m/s velocity. Validated linear and angular damping bringing unforced chassis to rest. Validated dynamic obstacle replacement from JSON payloads.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/SimVisionFovTest.kt": {
+      "sha256": "8fc9f95ae445fba31e70348a0f3bcb7bd3bd304dc960cccf9ccdef0090b87d91",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of simulated camera FOV line-of-sight test suite (lines 1-102). Validated Limelight 3A target detection inside 35-degree half-FOV cone (detecting Tag 11 at (0, 1.8) from (0, -1.2) facing +90 deg). Validated target loss and boolean topic clearing (Vision/HasTarget = false) when robot rotates away (-90 deg) or when tags lie outside FOV cone. Validated dynamic field configuration updating authored AprilTag layouts.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/SimulatorPoseOwnershipTest.kt": {
+      "sha256": "0d4eb46777604b112b00579cc53fa9c79720b19e194e686b6797ab77b77152f5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of simulator pose ownership and start pose synchronization tests (lines 1-63). Validated Autonomous start: authored origin explicitly synchronizes physics body, Pinpoint odometry, and Redux store state. Validated TeleOp start: retains configured alliance physics spawn without modifying physics body, and initializes Pinpoint and Redux poses to the alliance spawn.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/SimulatorTimingTest.kt": {
+      "sha256": "46bcfe36de0dcd2f8cbd5caeb5c747b2ea00372021f701d352c4fc4c84efa494",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of simulator timing and integration tests (lines 1-48). Validated 50 fixed 20ms simulation steps (SIM_TIMESTEP_SECONDS = 0.02) integrating exactly 1.000s and 1.000m linear travel at 1 m/s. Validated DesktopSimLauncher.paceFrame single ownership of 20ms pace per frame across 20 iterations, advancing RobotClock exactly 400ms without drift.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/TelemetryUpdateE2ETest.kt": {
+      "sha256": "f979fd667a18d9c97d3888977d131538e10bb4e715d29190b5fc4000c41d01a3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of consolidated headless simulator end-to-end integration test (lines 1-331). Validated headless launch, NT4Server port 5810 binding, non-interference with dashboard MatchState, OpMode announcement and INIT/START dispatching. Validated leased drive input injection (vx = 2.0 m/s), obstacle injection, motor powers, motor velocities (>100 ticks/sec aggregate), and motor currents (>0.1A). Validated true physics displacement (>0.05m), atomic 10-value pose frame streaming, odometry-to-truth error (<0.10m), and EKF-to-truth error (<0.25m). Robust background publisher cleanup in teardown.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/VerificationRotationControlTest.kt": {
+      "sha256": "b91983a83033f56a721ce5a371f1464ccb1fe39240ce2ef227a7d6fcfe907145",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of verification OpMode resolution and driver axis curve inversion tests (lines 1-44). Validated verificationOpModeClassName resolving explicitly passed names and defaulting to ARESMecanumTeleOp on blank inputs. Validated verificationDriverAxis inverting 0.05 deadband and cubic curve across negative and positive efforts with 1e-12 precision. Validated neutral fail-safe behavior on NaN/Infinity and rejection of invalid deadbands (>=1.0) and exponents (<=0.0).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/field/CanonicalFieldPhysicsTest.kt": {
+      "sha256": "97bf20c92952995704ebe0d4e803bcfb06161f7284ab861f4db4834ac47e61ee",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of canonical field physics loader test suite (lines 1-155). Validated obstacle loading converting degrees to radians (90 deg -> PI/2 rad) and applying friction (0.77) and restitution (0.12). Validated game piece material properties. Validated synchronized dynamic replacement of obstacles and elements via RobotFieldDocument. Validated perimeter wall reconstruction from canonical field dimensions (2.0m x 4.0m). Validated applied receipt SHA-256 formatting and complete JSON array serialization for obstacle telemetry.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/field/MecanumInteractionModelTest.kt": {
+      "sha256": "b7180a98f902495ca2926bc84a8a7750d98e6059b6299d9179683d20a73a65cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of Mecanum game piece manipulation and interaction tests (lines 1-118). Validated intake consuming field bodies only on applied input (intakeApplied = true) and incrementing inventory. Validated transfer rising-edge latching preventing repeated consumption during held transfer until edge reset. Validated shooting impulse calculation applying directional velocity vector aligned with robot heading (PI/2 rad shooting in +Y direction with positive Y velocity).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/infra/FakeControllerClientTest.kt": {
+      "sha256": "e024dce970d82ab0bb2e1d23972cf296bb9fce3a9ff6b0000cd3427d49b38cfb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FakeControllerClient path traversal sanitization tests (lines 1-29). Validated safeLogBasename and localLogFilename allowing valid log names (.jsonl, .csv) and throwing IllegalArgumentException on path traversal attacks (../, ..\\, C:, /tmp/, empty string, unsupported extensions).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/infra/SimGamepadManagerTest.kt": {
+      "sha256": "5bc2162aca979f64a7bf9c11c2c17740af4d782515ed48e757b937e9725edb96",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of gamepad manager and GLFW lifecycle tests (lines 1-178). Validated reference-counted GlfwLifecycleCoordinator keeping backend initialized until final generation lease closes. Validated close() joining polling loop before subsequent generation initializes. Validated remote command lease overriding local keyboard/gamepad inputs and restoring local authority upon expiry. Validated mechanism toggle synthetic button edge generation and retry on season interlock rejection.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/model/SimulatedFtcFaultAdapterTest.kt": {
+      "sha256": "10925649f512226ddd7f828214d161ddcfaf22eae580c28f59ffc1db2e9597a0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of simulated hardware fault adapter tests (lines 1-95). Validated STALE_INPUT freezing cached encoder positions and setting inputFresh = false while inputValid remains true. Validated WRITE_REJECTED engaging output fault latches in MecanumHardwareIO requiring recoverWithNeutral(). Validated DEVICE_DISCONNECTED and BUS_DISCONNECTED throwing IllegalStateException on hardware access. Validated BROWNOUT scaling available motor power to 35%. Clean restoration of RobotClock in teardown.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/opmode/SimOpModeLifecycleTest.kt": {
+      "sha256": "7a943531445880c8940a8aea8f30a5048806dd08b4b6844033521ac60d049b1b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of SimOpModeLifecycle and lifecycle slot tests (lines 1-263). Validated AresFtcRuntimeOptions reporting photon transport selection without claiming active hardware acceleration. Validated discrete published states (AUTO_INIT -> AUTO_RUNNING -> DISABLED, TELEOP_INIT -> TELEOP_RUNNING -> DISABLED). Validated iterative OpMode callback sequencing and external pacing assertions. Validated linear OpMode worker lifecycle and cooperative cancellation. Validated rollback through stop() on initialization failure. Validated terminal slot locking on uncooperative linear stop failure.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/simulator/src/test/kotlin/com/areslib/sim/opmode/SimOpModeRunnerTest.kt": {
+      "sha256": "f73262e5d4364de176e71c127fefc5bfebc9595197c7f52f3a83e2c3c79b410b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of SimOpModeRunner OpMode discovery and advertising tests (lines 1-40). Validated advertisedTeleOps hiding library fallback AresHardwareTestOpMode when project TeleOps are present. Validated fallback AresHardwareTestOpMode retained when no project TeleOps exist. Validated deterministic alphabetical ordering and de-duplication of discovered OpMode inventory.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/build.gradle.kts": {
+      "sha256": "4a07a618156fe2e7f95f1b3401d88a42262e5c71e0a55019ae60778c37abb6e0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gradle Kotlin DSL build configuration for codegen module. Validated dependencies on :core, :project-model, :project-compiler, kotlin-compiler-embeddable 2.4.10, JUnit 5.14.4, JavadocJar/SourcesJar publication, and Java 17 toolchain setup.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemFrcIoRenderer.kt": {
+      "sha256": "c76dc82a8e56a9181db265126ea0c0a318d2fdacceaf1c0937b7c490465bf688",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "SubsystemFrcIoRenderer code generator for FRC hardware adapters. Verified: (1) fail-closed output latching and neutral safe recovery semantics; (2) zero-allocation 50 Hz control loop reads via cached field properties; (3) correct CCW-positive angle transformation negating WPILib clockwise gyroscope heading at hardware boundary; (4) clamping of voltages and actuation bounds for TalonFX, PWM SparkMax, Servos, and Solenoids; (5) robust exception boundary catching and telemetry generation.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemFtcIoRenderer.kt": {
+      "sha256": "0e3f7bc208e83d64deee2c25a409ad1902cbab4c7797e01e25c452c64e1e9d2e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "SubsystemFtcIoRenderer code generator for FTC hardware adapters. Verified: (1) DcMotorEx, CRServo, Servo, AnalogInput, DigitalChannel, IMU, ColorSensor, and DistanceSensor mapping with HardwareMap lookups; (2) fail-closed latching and neutral-mode applyNeutral logic; (3) REV Hub IMU orientation initialization parameters; (4) zero-GC periodic refresh caching primitive readings and monotonic RobotClock timestamps; (5) bounds enforcement and safe power scaling.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-compiler/build.gradle.kts": {
+      "sha256": "0c5eaa0fc5c41123696b600fb074a3c0aeaac2e85283baa43e6af64fe859d166",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Build script for project-compiler module. Validated explicitApi() mode, JVM 17 toolchain, Maven publishing setup, and API dependencies on :project-model and Kotlin stdlib/test.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-compiler/src/main/kotlin/com/areslib/project/compiler/ProjectArtifactManifest.kt": {
+      "sha256": "6460bbab8b1be63243e17f40119178e3c7febbd7d9b2e61275f3b702cfdab030",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Artifact planning and verification manifest contracts. Validated ProjectArtifactId regex constraint ([a-z][a-z0-9._-]{0,159}), ProjectArtifactPlan path normalization rejecting leading slashes and directory traversal ('..'), ProjectArtifactManifestEntry SHA-256 regex enforcement, ProjectVerificationManifestBuilder sorting and duplicate detection, and standalone deterministic JSON encoder in ProjectVerificationManifestCodec escaping control characters and calculating self-manifest SHA-256.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-compiler/src/main/kotlin/com/areslib/project/compiler/RobotProjectCompiler.kt": {
+      "sha256": "85ba7d6524d980d3b0025d02d8f9b66c2ab147780ef5e0de44721b8e94deb660",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Compiler lowering boundary from EffectiveRobotProject to RobotProjectIr (IR version 2). Validated: (1) project validity prerequisite checks; (2) rejection of DESKTOP_GLFW on-robot code generation; (3) platform and target controller compatibility validation; (4) single active drivetrain constraint; (5) canonicalProjectHash computation sorting all raw project document inputs with null-byte separators and SHA-256 digestion.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-compiler/src/test/kotlin/com/areslib/project/compiler/RobotProjectCompilerTest.kt": {
+      "sha256": "9fc5f85ff0c9f4a7bf22c769097d7dbc28ff986871a4e942f596491c6b7beb51",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for RobotProjectCompiler. Verified test coverage for lowering idempotency, canonical project content hashing, invalid project rejection, cross-league target rejection, and verification manifest binding with SHA-256 content hashes.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-model/build.gradle.kts": {
+      "sha256": "8848d8329e84c8642e535f1a74827b0b2289814fda87877e28042efcd047e902",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Build script for project-model module. Validated explicitApi(), JVM 17 toolchain, and module dependencies on :project-schema, :simulation-foundation, and :core.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-model/src/main/kotlin/com/areslib/project/model/EffectiveRobotProjectQueries.kt": {
+      "sha256": "13bde7b376cf3332bb191ab4fabeb7be0c638ce5d9f9245fcfda6a2a5d6ba620",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "High-level feature query API over EffectiveRobotProject. Verified null-safe and type-safe lookups for ProjectActionKey, ProjectDocumentId, sorted derived document lists, and parameter declaration aggregations across drivetrains, subsystems, and tuning components.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-model/src/main/kotlin/com/areslib/project/model/RobotProjectModel.kt": {
+      "sha256": "e03eaf8e8399b69176bd1a49d2d8046db4d45c1503b1e02e5085ed082ed3309f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Assembly engine and cross-document validation for ARES projects. Validated: (1) metadata parsing, project ID validity, and target derivation; (2) subsystem capability merging into effective capability catalog; (3) project identity consistency checks across all documents; (4) league vs platform validation (FTC, FRC, XRP); (5) superstructure unique action ownership; (6) control scheme validation against catalog actions and controller profiles; (7) routine set validation; (8) drivetrain, field, and tuning validation; (9) stable issue sorting and deduplication.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-model/src/test/kotlin/com/areslib/project/model/RobotProjectAssemblerTest.kt": {
+      "sha256": "7ecd3d1e76119201b93efab5241de280c456513d68312550baa242c1e70f88e4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit test suite for RobotProjectAssembler. Verified test coverage for: (1) raw FTC snapshot assembly into effective project; (2) feature query API reading effective catalog; (3) project identity and platform mismatch detection; (4) XRP canonical drivetrain platform acceptance; (5) raw load failure preservation in issues list; (6) tuning document project identity mismatch detection.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/build.gradle.kts": {
+      "sha256": "45e6b471a570757b17a9776b94c21f5bcd0ec1b9a7596e826e47c33b46036e36",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Build script for project-schema module. Validated dependencies on Gson 2.14.0, Kotlin stdlib/test, JUnit 5.14.4, Java 17 toolchain, and Maven publishing configuration.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/catalog/CapabilityArguments.kt": {
+      "sha256": "e40a4e34bd55fd17c1089aa3c4b7df942d934373b7f81a60c63eea36591068a7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Portable capability argument evaluation and validation contracts. Validated initialArgumentValue derivation, unknown argument rejection, required parameter enforcement, NUMBER finite and range checks, case-insensitive BOOLEAN validation, and ENUM option set membership verification.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/catalog/CapabilityCatalog.kt": {
+      "sha256": "3b8ebcab1d53c647df0647688e564213bb40832d605a53216347f01d1ec7daea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Action catalog schema definition, validation, and codec (schemaVersion = 1). Validated: (1) value class constraints for ActionKey, ConditionKey, ResourceKey; (2) validateCapabilityCatalog comprehensive checks (schema version, project ID regex, duplicate keys, allowedContexts non-empty, parameter limits, conflicting defaults per type, enum uniqueness, resource claim uniqueness); (3) CapabilityCatalogCodec deterministic canonicalization and SHA-256 content hashing.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/controls/ControlSchemeDocument.kt": {
+      "sha256": "256104d7ec167fabe0b346c9dcd08cc295e7c6541d674d7d648f8cb84e8ad3cf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Control scheme document model (schemaVersion = 2). Validated ControllerAssignment (devicePort 0..15), ControlSourceKind, ControlEvent, ControlTargetKind, DriveAxisKeys convention (vx +X forward, vy +Y left, omega CCW-positive), RoutineInvocationPolicy, AxisTransformDocument, ControlTimingDocument, and AnalogControlPolicyDocument.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/controls/ControlSchemeValidation.kt": {
+      "sha256": "47b6527d86a1eca98f55638f3e64266e460eafb39fd568883d3349b034744c54",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Control scheme fail-closed validation and codec. Validated: (1) schema version 2 verification; (2) controller device ports uniqueness and 0..15 range check; (3) chord control counts (>= 2) and button/axis counts (== 1); (4) axis threshold hysteresis direction and finite checks; (5) transform range and deadband bounds; (6) DRIVE target axis constraint (DriveAxisKeys.ALL) requiring AXIS_VALUE source and VALUE event with single-binding uniqueness; (7) ambiguous binding detection via sourceSignature; (8) ControlSchemeCodec canonical sorting and SHA-256 hashing.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/controls/ControllerProfileDocument.kt": {
+      "sha256": "dab0c67ab754cbcd432f5a5a504eb93d049a07194f1eb3b225d9ef7b6cd8fda0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Controller profile document model and validation (schemaVersion = 1). Validated ControllerDeviceMatcherDocument range limits, diagram anchor bounds ([0, 1]), platform mapping exclusivity and type alignment (buttons reject axis index, axes reject button index), learnedControlIds extraction, and ControllerProfileCodec canonical sorting and SHA-256 hashing.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/drivetrain/DrivetrainDocument.kt": {
+      "sha256": "844ec691faf41f48f1f8a5027d7d1017275723a58c489fa2e86a31a41cf0edd2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Drivetrain schema, validation, and codec (schemaVersion = 1). Validated: (1) CCW-positive heading requirement; (2) fail-closed safety flags (safeNeutralRequired, configurationHealthRequired, faultLatchingRequired, explicitNeutralRecoveryRequired, disabledOutputIsNeutral, zeroAllocationPeriodicRequired); (3) stale feedback timeout range (20..10,000 ms); (4) current monitoring availability for drive motors; (5) bijective CTRE module component membership; (6) leader/follower motor relationship rules; (7) differential drive 2 primary motor rule; (8) DrivetrainDocumentCodec deterministic encoding and SHA-256 hashing.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/project/AresProjectMetadata.kt": {
+      "sha256": "395cfc544ef15175bd4affa513dee57f74ceff7f36bf0231f9fef6890dd79ab6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Project metadata model, validator, and codec (schemaVersion = 5). Validated: (1) coordinate conventions: FTC/XRP CENTER_ORIGIN_CCW vs FRC BLUE_CORNER_ORIGIN_CCW; (2) robot footprint boundary inside field; (3) authoringModel requirement (GUI_OWNED, CODE_FIRST, HYBRID); (4) platform-specific runtime options isolation and cross-league rejection; (5) XRP Link port validation (1024..65535, != 5810) and controller models; (6) AresProjectMetadataCodec strict primitive parsing via BigDecimal intValueExact and SHA-256 content hashing.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/project/schema/ProjectIdentity.kt": {
+      "sha256": "8d57015e24d231faaaf332ae0e8ed3766e6512d7c2e65479bd42ef1f65da2131",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Project identity typed value classes and targets. Validated ProjectId, ProjectDocumentId, and ProjectActionKey regex validation, ProjectDocumentKind enum (12 kinds), AresControllerTarget, AresSimulatorTarget, and defaultProjectTarget mapping.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/project/schema/ProjectSchemaVersions.kt": {
+      "sha256": "a97ee3a954842dad7f18ce7e868f6eb3575424ffc2017d9aff1a294f5e09d666",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Central schema version registry. Validated explicit version policies for 11 schema-owned document kinds, fail-closed disposition evaluation returning CURRENT or UNSUPPORTED, and intentional exclusion of runtime-owned FIELD document.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/AutonomousCatalog.kt": {
+      "sha256": "b76a6fa163971532930bbb18317d2cb14280d102a68f78b07e32d5625739f229",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Autonomous catalog document model, validator, and codec (schemaVersion = 1). Validated separation of match selector metadata from reusable routine logic, starting pose finite checks, default entry existence and enabled state checks, and AutonomousCatalogCodec canonical sorting by sortOrder then entryId with SHA-256 hashing.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/AutonomousCatalogResolver.kt": {
+      "sha256": "68f588304e39fc7b9a3955aa6f0805ff522a7ba44cbfde3125035bccb87ae9c0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Autonomous entry runtime resolver. Validated deterministic ordering of enabled entries, exact ID lookup, fail-safe fallback cascading (defaultEntryId -> 'do-nothing' fallback -> first enabled entry), and non-null resolution guarantee for match INIT.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/RoutineCodec.kt": {
+      "sha256": "7d767e863b74ef461e98f1d4ea581f62be74eda1a04f48e821988e07afa7f16d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Strict native .aresroutine JSON codec. Validated: (1) envelope limits (<= 4MB character limit, <= 200 container depth); (2) streaming duplicate key detection via JsonReader; (3) exact field allowlist enforcement on root, step, drive, target, and marker objects rejecting unexpected fields; (4) max nesting depth (64) and step count (10,000) caps; (5) strict numeric type parsing; (6) step argument map canonical sorting and SHA-256 content hashing; (7) FTC SDK Gson 2.8 backward-compatibility.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/RoutineDocument.kt": {
+      "sha256": "200d06c7b71ee61edefbe615783f4848f34faee31ee351f12f574320a9c1f4df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Trigger-neutral routine document model (schemaVersion = 2). Validated RoutinePose (CCW-positive), 10 RoutineStepKind variants, RoutineDriveMarker, RoutineDriveStep, RoutineStep flat payload model, and companion factory builders with unique stepId generation.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/RoutineValidation.kt": {
+      "sha256": "66088cfa194ce07aaafb113bfcf52b8939225efc97c08e700f61f469168702cf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Routine logic and structural validation. Validated: (1) header limits (name <= 256, description <= 65536); (2) source step count cap (10,000) and saturated expanded step count cap (10,000) preventing expansion bombs; (3) unique step IDs; (4) per-step-kind payload enforcement rejecting incompatible fields; (5) WAIT_UNTIL mandatory timeout; (6) drive target finite coordinates and marker bounds ([0, 1]); (7) argument length and count constraints; (8) DFS call cycle detection (recursive_routine_call); (9) parallel resource conflict detection across concurrent branches; (10) validateRoutineSet cross-routine call validation.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/tuning/TuningProfileDocument.kt": {
+      "sha256": "43d6fce9a811b6ac120d1003515c58180b9362669af8fc53c3f6ff639e96f489",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Tuning parameter declarations and profile document model (schemaVersion = 2). Validated: (1) parameter type checking and bounds enforcement (DOUBLE, INT, BOOLEAN, TEXT, ENUM); (2) single-level shallow profile composition in resolveTuningProfiles rejecting missing, deep, or cyclic parents; (3) promotion provenance validation requiring matching project-relative evidence paths and SHA-256 hashes; (4) local experimental profile restriction against claiming promotion; (5) TuningProfileDocumentCodec and TuningComponentDocumentCodec deterministic sorting and SHA-256 content hashing.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/util/GsonCompatibility.kt": {
+      "sha256": "351e14cedbdbbbb117af3900f82c9143cf3e6cf1a83e224832b4aff02105797c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Gson backward-compatibility bridge. Verified parseJsonElement utilizing JsonParser().parse(json) to maintain runtime compatibility with FTC SDK 11.1 bundled Gson 2.8.x while suppressing deprecation warnings.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/util/Sha256.kt": {
+      "sha256": "792bcea54324ae91fa0821974361cdd3d18e8b0fe406b518e1190fe126832b4e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Cryptographic utility sha256Hex computing lowercase hexadecimal SHA-256 digests over UTF-8 byte arrays for project document identity and revision parent links.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/catalog/CapabilityCatalogTest.kt": {
+      "sha256": "3a91eed8fcd11cef22eeab2b40ee44eb04919cfe6c4f83dcaed49731f6d9a401",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for CapabilityCatalog. Verified test coverage for codec canonicalization, duplicate action/condition rejection, parameter setting validation, typed key validation (ActionKey, ConditionKey, ResourceKey), and capability argument validation.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/controls/ControlSchemeValidationTest.kt": {
+      "sha256": "ca9e02152fc2e50274616a91f2b6b5dbb415a9095df17b83895173f40eda6a26",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for ControlSchemeValidation. Verified test coverage for chord/axis bindings, unknown target rejection, controller port requirement and uniqueness, drive axis binding (vx, vy, omega) as analog value, drive target argument rejection, and single-binding-per-axis enforcement.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/controls/ControllerProfileDocumentTest.kt": {
+      "sha256": "bb8f07bd26fee65ea856394556443cccb5b89d1c587c313cae2a9922da33d8b3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for ControllerProfileDocument. Verified round-trip deterministic serialization, learnedControlIds filtering by platform, and validation rejection of conflicting control types.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/drivetrain/DrivetrainDocumentTest.kt": {
+      "sha256": "6c3aabac4fb8834b0cd7965b313bd68472b8b30bfb11222628e1694f92e86ce4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for DrivetrainDocument. Verified test coverage for: (1) mecanum round-trip and strict schema validation; (2) XRP 4-motor mecanum expansion support; (3) fail-closed safety, localization, geometry, and current measurement validation; (4) CTRE swerve vendor import and bijective module component membership requirements.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/project/AresProjectMetadataTest.kt": {
+      "sha256": "f8382431852ea92d5c913dcb9e9ab372b7328b9c0d08282cd1438ea6c28dc95e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for AresProjectMetadata. Verified round-trip serialization, mandatory authoringModel, league coordinate convention enforcement, legacy schema fail-closed rejection (v1, v2, v3), FTC runtime options round-trip, and XRP link policy validation (port 5811 vs prohibited 5810).",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/project/schema/ProjectIdentityTest.kt": {
+      "sha256": "d00ee1cd1a8f9d007e86b48ed758feadd2f663e2aaaa73ac975a82ce6c9b5416",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for ProjectId, ProjectDocumentId, and ProjectActionKey verifying acceptance of valid identifiers and rejection of path traversal, spaces, and unstable characters.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/project/schema/ProjectSchemaOwnershipTest.kt": {
+      "sha256": "b2dbde2e4982014df133fb8ad44ea103506e9c64adaa772eca92f96ccae425af",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Ownership test verifying that all 11 canonical descriptor source files physically reside in project-schema and are not duplicated or compiled from core.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/project/schema/ProjectSchemaVersionsTest.kt": {
+      "sha256": "e331ac7b718170b5760667bb1f7c500ee19fbffb44f396d47576194fb00b7f2c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit test verifying that every schema-owned document kind has an explicit current version policy returning CURRENT, that FIELD is excluded, and that all non-current versions return UNSUPPORTED.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/routine/AutonomousCatalogTest.kt": {
+      "sha256": "0b87d6a7cda11f7aa7ffb92d2ab5385df0fe85ff1fded2747c7f8b33ff5a7bf3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for AutonomousCatalog. Verified separation of selector metadata from reusable routine logic, sorting by sortOrder then entryId, and fail-closed validation for unknown or disabled default entries.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/routine/RoutineCodecStrictTest.kt": {
+      "sha256": "6fbeccd9df10745a6d0d2805e77b3c57a944845afbc41ae8082f6d07374d2353",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for AresRoutineCodec strictness. Verified acceptance of exact drive schema and fail-closed rejection of misspelled keys, missing target coordinates, malformed markers, non-string arguments, duplicate JSON keys, and invalid step IDs.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/routine/RoutineDocumentTest.kt": {
+      "sha256": "e60f1a93b56c547f6b667b7c1754fac6547c9810fc39f4a0904e549a349ef1b9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for RoutineDocument. Verified round-trip deterministic argument sorting, content hashing, rejection of unknown fields, wait timeout requirement, recursive routine call detection, parallel resource conflict detection, expansion bomb capping, and JSON envelope length/depth limit enforcement.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/project-schema/src/test/kotlin/com/areslib/tuning/TuningProfileDocumentTest.kt": {
+      "sha256": "f6d96b20a1c2f4a147d4b7298c44c93d266c120cc6cd1fc8633dfb0ac1f17300",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests for TuningProfileDocument. Verified round-trip deterministic serialization, type checking, bounds validation, one-level shallow composition resolution with cyclic/deep parent rejection, and promotion evidence hash validation.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass285-pending-elevation-audit.md": {
+      "sha256": "a10cef6974da9dc381e0368b8466fa10e91b0e5dd1a1124267e59125013ef20b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive Pass 285 pending file elevation and active refactoring report for 89 simulation foundations, desktop simulator runtime/physics/networking, project schema, compiler, model, and codegen files.",
+      "evidence": [
+        "docs/audits/pass285-pending-elevation-audit.md"
       ]
     }
   }
