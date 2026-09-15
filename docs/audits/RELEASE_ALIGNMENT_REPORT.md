@@ -1,5 +1,9 @@
 # Local Studio and template alignment follow-up
 
+The later [desktop follow-up](DESKTOP_READINESS_REPORT.md) closes this report's live-window,
+native-dialog, fresh-Lightbot and dashboard-baseline gaps. The evidence below remains the original
+alignment snapshot; hardware and protected release limits still apply.
+
 **Complete locally, 2026-09-15.** Normal Studio tests, the official FTC/FRC/XRP project journeys and
 local release-alignment gates pass. Hardware and protected release validation remain separate.
 

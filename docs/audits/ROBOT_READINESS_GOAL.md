@@ -8,6 +8,10 @@ This objective supersedes the open-ended
 unfinished file counts are historical supporting information, not a work queue or exit criterion.
 No new task, sub-agent, automatic broad audit pass, push, merge, or external release is authorized.
 
+The separately authorized hardware-free follow-up is also complete, 2026-09-15; see the
+[desktop readiness report](DESKTOP_READINESS_REPORT.md). It adds live Studio/Lightbot validation,
+native dialogs and the desktop dashboard baseline while preserving this bounded stopping rule.
+
 ## Saved objective
 
 Close and review the combined current audit batch, preserve a reproducible local checkpoint, and

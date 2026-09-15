@@ -15,8 +15,13 @@ XRP verification passes 121 tests, reusable MicroPython 130, and CI routing 28.
 Library source remains `1cef6f04`, tree `6d49e143e3a919569c5b3d933b8a8200adeb9a36`.
 The final XRP fixture correction is `ad11a35f`: center the free-motion circle and verify its analytic
 trajectory. Earlier boundary-contact timing remains preserved below as a different workload.
-All owned builds are terminal. Work is local; hardware, rendered Studio and release approval remain
-outside the observed evidence. The historical file ledger and pass-277 fixes are preserved.
+All owned builds are terminal. Work is local; hardware and release approval remain outside the
+observed evidence. The historical file ledger and pass-277 fixes are preserved.
+
+The authorized [desktop follow-up](DESKTOP_READINESS_REPORT.md), completed 2026-09-15, adds observed
+live Studio/native-dialog behavior, fresh Lightbot creation/build/control and the dashboard baseline.
+Hardware remains unavailable. Its report documents desktop cadence and deferred disk cleanup/wording
+limits; all owned processes are closed. No automatic further pass is scheduled.
 
 The app's old objective remains paused because its available API cannot edit that objective.
 It was not falsely marked complete. Only the replacement tracked bounded goal is complete.

@@ -9,6 +9,9 @@ The later authorized [Studio/template alignment follow-up](RELEASE_ALIGNMENT_REP
 resolution of the local release gates and subsequent validation. Hardware and protected release
 validation remain explicit limits. Do not resume an automatic audit of every remaining file.
 
+The [hardware-free desktop follow-up](DESKTOP_READINESS_REPORT.md) additionally verifies the live
+Studio/Lightbot journey, native folder dialogs, process shutdown and dashboard performance baseline.
+
 The former audit goal was to account for every tracked file, review its owned behavior, and
 complete appropriate validation. The inventory started at 2,349 tracked files on
 `e6640f5a`; additions are included after staging. No repository-wide coverage claim is made.
