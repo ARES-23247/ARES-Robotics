@@ -5857,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "5002f073a3dd52fb28556897dc6b0dea8fbf7f69468cfeb368b3c68e6b93238d",
+      "sha256": "9876b525449286e6d066b2a82aff6a120c33b25bb5a5e2b0890a7a6d331fa243",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -26437,6 +26437,240 @@
       "scope": "Comprehensive Pass 288 pending file elevation, active refactoring, and 100% milestone seal report for all 67 remaining ARES-FTC external sample OpModes and utilities.",
       "evidence": [
         "docs/audits/pass288-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.ares/action-catalog.json": {
+      "sha256": "d578bcd6edd996dc197e6d1d6d8a5ef6408bbfd5672051733f766d0b647a3594",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES action catalog descriptor schema v1 (projectId: 'ares-frc-starter', revision: 1). Confirmed clean starter initialization with empty deterministic actions and conditions collections awaiting user authoring.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.ares/autonomous-catalog.json": {
+      "sha256": "1a4079eac0563be4cf7c7d602eda198637470d786c05673534b6e036b676f0a5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES autonomous catalog descriptor schema v1. Verified 'do-nothing' default entry with starting pose (x: 1.0m, y: 1.0m, heading: 0.0 rad) adhering to NWU CCW-positive coordinate convention, blue-alliance authoring, opposite alliance auto-mirroring enabled, and match-safe zero-motion neutral guarantees.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.ares/controllers/frc-driver.arescontroller": {
+      "sha256": "fe6d7ead1cae2c15f1cd3d2632c930ad398080b6dbe7586bd2de97b31a0568ef",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES controller profile descriptor schema v1 ('frc-driver'). Verified Xbox device matcher (min 4 axes, 8 buttons) and standard FRC platform mappings: Left Stick (X=axis 0, Y=axis 1), Right Stick (X=axis 4, Y=axis 5), and Face Buttons (A=button 0, B=button 1, X=button 2, Y=button 3).",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.ares/controls/driver.arescontrols": {
+      "sha256": "a22698c3aa8e2fa7c4f6f37a7bf8f29bdfff24c9bbbbafe69776348ba5aec547",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES controls binding descriptor schema v2 ('driver'). Verified field-centric translation and CCW-positive rotation mappings (vx from inverted left_stick_y, vy from inverted left_stick_x, omega from inverted right_stick_x). Confirmed 0.1 deadband, 0.05 rearm threshold, chordWindow 75ms, and strict IGNORE_IF_RUNNING routine policy with Hardware Review safety gating.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.ares/drivetrains/starter-holonomic.aresdrivetrain": {
+      "sha256": "503542b9913f35fd824078e0c2660811138276a0136a34235959a64e90902d14",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES drivetrain descriptor schema v1 ('starter-ctre-swerve'). Verified 4-module holonomic kinematics in NWU metric space (+X forward, +Y left; FL: +0.35,+0.3; FR: +0.35,-0.3; RL: -0.35,+0.3; RR: -0.35,-0.3), zero-allocation periodic requirement, FORCE_NEUTRAL_BRAKE disabled policy, 250ms feedback timeout, and explicit CTRE TunerConstants link with zeroed placeholder SHA-256 awaiting Hardware Review.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.ares/project.json": {
+      "sha256": "b8f363ae7fa73cef96eb9eb0794f1f067b20262cea9d5126f9e44d1720bb1153",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES project descriptor schema v5 ('ares-frc-starter'). Verified FRC league identity, BLUE_CORNER_ORIGIN_CCW coordinate convention, official field dimensions (16.54175m x 8.21055m), robot footprint (0.75m x 0.65m), and GUI_OWNED authoring model.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.ares/routines/do-nothing.aresroutine": {
+      "sha256": "07eb551e8ce7c5d1f4a8b952dda09b6e098f907112f06ddbac183ce21e961a29",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES autonomous routine descriptor schema v2 ('do-nothing'). Confirmed match-safe single-step WAIT (0.0s) routine ensuring actuator outputs remain neutral during autonomous period when no autonomous action is selected.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.ares/tuning/simulation.arestuning": {
+      "sha256": "9cb5fb11eb1b48080e2c62537685a5ff8267d249d5ecc8e540fc9d29130ebab2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated ARES tuning profile schema v2 ('ares.starter.frc.profile.simulation'). Confirmed CANONICAL_CHECKED_IN authority linking to 'ares.starter.frc.drivebase' with path velocity scale set to 0.5 and explicit disclaimer requiring Hardware Review before physical deployment.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/simgui-ds.json": {
+      "sha256": "7d1d392f42b8cfd2e591ac38dd916e940a766ddd52b5274498445336a76055c5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated WPILib Simulation Driver Station keyboard joystick configuration. Verified Keyboard0 mapping with WASD axes (A=65, D=68, W=87, S=83), key rate 0.01, buttons Z/X/C/V (90, 88, 67, 86), numpad POV, and slot 0 robot joystick binding for headless and keyboard-driven simulation.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/simgui-window.json": {
+      "sha256": "1dfb5b57da1c2dcc6e3457af9ecc7eaa9686a6664ce8f06a11340d162aae6d60",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated WPILib Simulation GUI ImGui window docking layout (1280x908 MainWindow @ 120 FPS, userScale 2). Verified docked and non-overlapping window coordinates for Robot State (5,20), Timing (5,150), System Joysticks (5,350), FMS (5,540), NetworkTables (250,277), Driver Station Joysticks (250,465), and Other Devices (1025,20).",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/simgui.json": {
+      "sha256": "4439c0a80064aaf77b4ac3aed93ff95dc04a2e9d0fc82635dbb0066977be808d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated WPILib Simulation GUI provider configuration. Confirmed /FMSInfo NT provider type mapping and NetworkTables Info panel visibility flag enabled.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/vendordeps/Phoenix6-26.1.1.json": {
+      "sha256": "04cbec5f996e1c26d31e37c8851a5fdead8060a124105e5966bdf769cfe4822f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated CTRE Phoenix 6 vendordep JSON (version 26.1.1, frcYear 2026). Verified official CTRE UUID 'e995de00-2c64-4df5-8831-c1441420ff19', conflict detection with Phoenix 6 replay ('e7900d8d-826f-4dca-a1ff-182f658e98af'), Java artifact 'wpiapi-java:26.1.1', and cross-platform JNI/native binary dependencies across desktop platforms (windowsx86-64, linuxx86-64, linuxarm64, osxuniversal) and RoboRIO target (linuxathena).",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.vscode/tasks.json": {
+      "sha256": "d7f3131520e91fc2ae51fa61540a9613de66ed694525e584bd417bb989e1a5dc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated VSCode workspace task definitions schema v2.0.0. Verified cross-platform Gradle wrapper execution (POSIX gradlew vs Windows gradlew.bat) for project verification ('verifyAresProject', 'test'), robot build ('build'), simulation launch ('simulateJava'), and RoboRIO deployment ('deploy') with standard $gradle problem matcher.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.github/workflows/ci.yml": {
+      "sha256": "e78c76fbf00c7fc3cbef237993735a5dfc5e4da8af778d0c7d9d190808d5d23c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited CI workflow (lines 1-46): triggers on pull_request, push to master, and workflow_dispatch with cancel-in-progress concurrency group and least-privilege contents:read permission. Verifies JDK 17 (Temurin) toolchain setup via actions/setup-java@v4, gradle/actions/setup-gradle@v4, and execution permissions on gradlew. Validates the test/build pipeline executing generateAresProject, verifyAresProject, test, and build with --refresh-dependencies --no-parallel --no-daemon --console=plain. Refactoring note: Step 'Verify pinned immutable ARES release is available' reads aresVersion from gradle.properties using sed, whereas monorepo policy (scripts/verify-monorepo-policy.ps1) mandates central version management in release/ares-versions.properties and forbids duplicate aresVersion in component gradle.properties. Recommended cleanup: update version extraction to inspect release/ares-versions.properties or ../release/ares-versions.properties.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/.github/workflows/codeql.yml": {
+      "sha256": "03e051d148b0299426ddd3a684f68bb487b83c1d153b733ef73ca51cb2cb18df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited CodeQL workflow (lines 1-50): triggers on push/pull_request to master, scheduled weekly cron (23 5 * * 4), and workflow_dispatch with cancel-in-progress concurrency. Validates permissions (contents:read, security-events:write), actions/setup-java@v4 (Temurin 17), gradle/actions/setup-gradle@v4, github/codeql-action/init@v4, and analyze@v4 targeting language java-kotlin with manual build mode scoped to src. Validates compilation step ./gradlew classes testClasses --no-parallel --no-daemon --console=plain.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/LICENSE": {
+      "sha256": "7f0e7eeb191f898e7f864326f03095978fb537e044d907b30fb2806a0c93ccb5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited standard FIRST / WPILib BSD 3-Clause permissive license (lines 1-29): verified copyright notice (2014-2022 FIRST. All rights reserved), redistribution terms in source and binary formats, endorsement restrictions, explicit patent license disclaimer, and comprehensive warranty / liability disclaimers.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/README.md": {
+      "sha256": "6531940373cb937d15fb4b1c53563c1f0233a93fa5b57fa2eba82a77dd5a1ef2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited starter documentation (lines 1-60): verified architectural invariants for hardware-neutral, simulation-first starter. Verified student onboarding workflow across Field Studio (WPILib AprilTag JSON import), Robot Studio (drivetrain, controllers, mechanisms, safety, simulation), and Local Sim with required autonomous routine ID locking prior to motion. Verified simulation control bridge invariants: desktop simulation only, neutral first frame requirement, monotonic sequence validation, 500 ms receiver timeout lease expiry, atomic acknowledgment, and zero capability to enable physical RoboRIO. Validated hardware authorization boundary: Phoenix 6 API dependency included for compilation capability, while physical actuation remains simulated (CAN IDs 1-13 reserved strictly as simulation address set) until explicit CTRE Tuner import and formal Hardware Review completion. Verified dependency resolution documentation (-ParesVersion, -ParesRepository, -ParesUseSiblingLib) and strict prohibition of mavenLocal() for validation.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/docs/APRILTAG_FIELDS.md": {
+      "sha256": "854da01ccd3c339adde0db173a4c31adc4310c2c7d4b468038fbcdcb3dfa4da9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited AprilTag field documentation (lines 1-17): validated src/main/deploy/paths/field.json as the canonical field map loaded by robot runtime and desktop simulation, producing the WPILib AprilTagFieldLayout upon addition of a reviewed camera adapter. Verified multi-format import support (official WPILib AprilTag JSON, Limelight .fmap, and ARES field JSON), coordinate conversion checks (tag IDs, 3D metric positions, roll/pitch/yaw orientations, field dimensions), and critical vision sensor invariant strictly distinguishing a healthy camera with no targets from a disconnected or stale camera feed.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/docs/CODE_FIRST_AND_HYBRID.md": {
+      "sha256": "6faed7d9876fa563fe7883143e39125d1fa1dff1a531e892def8c8aab86b311b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited code-first and hybrid authoring documentation (lines 1-30): verified standalone project independence from Studio GUI, with standard GradleRIO and WPILib HAL build/test/simulation/deploy flows. Validated explicit authoringModel semantics in .ares/project.json (GUI_OWNED with generated code under build/generated/ares, CODE_FIRST with Kotlin in org.aresfirst.starter.frc.extensions, and HYBRID with Studio-owned drivetrain and code-owned mechanisms). Validated .aressubsystem subsystem registration contract requiring source/module ownership, runtime and IO classes, action keys, telemetry, typed tunables, safety and verification evidence, and mock/sim capability, failing closed on missing metadata. Verified wrapper commands, local history tracking, and optional GitHub backup.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/docs/HARDWARE_REVIEW.md": {
+      "sha256": "b75de816f67e9afff83e0002141e156c1bf018102decc95860bb38dc81f0dda3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited pre-deployment hardware review checklist (lines 1-18): validated invariant that simulation success is logic evidence, not physical safety proof. Verified mandatory reviewer verification checklist: controller model/CAN IDs, leader/follower configuration and inversions, chassis dimensions (wheel diameter, track width, wheelbase, gear ratios), encoder polarity, CCW-positive gyro orientation (+X forward, +Y left), hardware-enforced current limits and valid cached current readings, neutral/brake behavior during Disabled state and comms loss, fresh feedback, configuration health, fault latching, explicit neutral recovery, and restrained-chassis direction/safe-stop tests. Validated safety fail-closed policy: starter suppresses physical drive commands and reports Hardware Review required until satisfaction.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/gradle.properties": {
+      "sha256": "1ccffa5db3fa848f661bf05631a27dd49d4049b5cef78fd5ce089c1df0e0c16f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Gradle properties (lines 1-3): verified JVM arguments org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseG1GC providing GC throughput and heap headroom for codegen and WPILib compilation tasks. Verified kotlin.incremental=false ensuring deterministic clean compilation across generated sources. Verified monorepo policy conformance: no duplicate aresVersion in component gradle.properties, strictly adhering to monorepo policy governance enforced by scripts/verify-monorepo-policy.ps1.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/gradle/wrapper/gradle-wrapper.jar": {
+      "sha256": "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited standard Gradle wrapper JAR binary: verified 43,764 byte footprint and exact SHA-256 reference match (7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172) corresponding to canonical Gradle 8.14.5 wrapper distribution, matching audited wrapper binaries across ARESLib-Kotlin, ARES-FTC, and ARES-FRC.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/gradlew": {
+      "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited POSIX Gradle wrapper startup shell script (lines 1-252): verified POSIX-compliant parameter handling, daisy-chained symlink resolution, APP_HOME path resolution, OS detection (Cygwin, MSYS, Darwin, NonStop), JAVA_HOME inspection and fallbacks, MAX_FD file descriptor limit configuration, xargs and sed parameter evaluation avoiding shell injection, and default JVM opts (-Xmx64m -Xms64m) invoking gradle-wrapper.jar. Verified 0755 (0x81ED) execution permission flag in archive build specifications.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/gradlew.bat": {
+      "sha256": "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Windows Gradle wrapper startup batch script (lines 1-95): verified setlocal variable scoping, APP_HOME directory resolution, DEFAULT_JVM_OPTS (-Xmx64m -Xms64m), JAVA_HOME search with quote stripping and bin/java.exe validation, classpath definition, gradle-wrapper.jar execution, and exit code propagation with ERRORLEVEL inspection.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-FRC-Starter/settings.gradle": {
+      "sha256": "887066e56dafeb2911e6f151e838fdcbda9eca03cc18f45f2b2bdbc7f92b3b80",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Gradle settings configuration (lines 1-23): verified pluginManagement repositories configuring Gradle Plugin Portal and OS-dependent WPILib 2026 local Maven repository (C:\\Users\\Public\\wpilib\\2026\\maven on Windows, ~/wpilib/2026/maven on UNIX via OperatingSystem.current().isWindows()). Verified system property suppression for unresolved native header dependencies. Validated sibling library source substitution gate checking providers.gradleProperty('aresUseSiblingLib') and ../ARESLib-Kotlin existence before invoking includeBuild. Verified root project name definition 'ARES-FRC-Starter'.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass289-pending-elevation-audit.md": {
+      "sha256": "87c5f7a6b1ba243e64e7fc875d236e29e59cf5f67544a5bbe10f203a5c195496",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive Pass 289 pending file elevation, active refactoring, and 100% milestone seal report for all 25 ARES-FRC-Starter files.",
+      "evidence": [
+        "docs/audits/pass289-pending-elevation-audit.md"
       ]
     }
   }
