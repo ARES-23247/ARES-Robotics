@@ -9,6 +9,7 @@ import kotlin.test.*
 
 class FieldWaypointLoaderAuditTest {
     private val waypoint = """{"id":"dock","name":"Dock","x":1.25,"y":-0.5,"headingDegrees":90.0}"""
+    @Volatile private var allocationSink: Any? = null
 
     @Test fun `missing and invalid sources are resolved only once until clear`() {
         for (initial in listOf(null, "not-json", "null", "{}", "[null]")) {
@@ -101,26 +102,46 @@ class FieldWaypointLoaderAuditTest {
         val bean = ManagementFactory.getThreadMXBean() as ThreadMXBean
         bean.isThreadAllocatedMemoryEnabled = true
         val thread = Thread.currentThread().id
-        for (json in listOf(null, "[$waypoint]")) {
-            val cache = FieldWaypointCache { json }
-            var observed: FieldWaypoint? = null
-            // Warm the same compiled loop used by each measured window, including the counter API.
-            repeat(20) {
-                observed = lookups(cache, 10_000)
-                bean.getThreadAllocatedBytes(thread)
-            }
-            repeat(2) {
-                val before = bean.getThreadAllocatedBytes(thread)
-                observed = lookups(cache, 10_000)
-                assertEquals(0L, bean.getThreadAllocatedBytes(thread) - before)
-            }
-            assertEquals(json != null, observed != null)
+        val missing = FieldWaypointCache { null }
+        val present = FieldWaypointCache { "[$waypoint]" }
+        val expected = assertNotNull(present.load()["Dock"])
+        missing.load()
+        // Warm the complete counter/lookup/counter routine with both map implementations and
+        // the escaped allocation control before measuring. Do not change the JIT type profile
+        // from an empty map to an unmodifiable map between warmup and measured windows.
+        repeat(1_000) {
+            measureLookups(bean, thread, missing, 1_000, false)
+            measureLookups(bean, thread, present, 1_000, false)
+            measureLookups(bean, thread, present, 100, true)
         }
+        val missingBytes = LongArray(3)
+        val presentBytes = LongArray(3)
+        val controlBytes = LongArray(3)
+        repeat(3) { window ->
+            missingBytes[window] = measureLookups(bean, thread, missing, 10_000, false)
+            assertNull(allocationSink)
+            presentBytes[window] = measureLookups(bean, thread, present, 10_000, false)
+            assertSame(expected, allocationSink)
+            controlBytes[window] = measureLookups(bean, thread, present, 10_000, true)
+        }
+        println("Waypoint allocation bytes: missing=${missingBytes.toList()}, " +
+            "present=${presentBytes.toList()}, escapedControl=${controlBytes.toList()}")
+        repeat(3) { window ->
+            assertEquals(0L, missingBytes[window], "missing window=$window")
+            assertEquals(0L, presentBytes[window], "present window=$window")
+            assertTrue(controlBytes[window] >= 10_000L * 16L, "allocation control window=$window")
+        }
+        allocationSink = null
     }
-    private fun lookups(cache: FieldWaypointCache, count: Int): FieldWaypoint? {
-        var result: FieldWaypoint? = null
+
+    private fun measureLookups(bean: ThreadMXBean, thread: Long, cache: FieldWaypointCache,
+        count: Int, allocateControl: Boolean): Long {
+        val before = bean.getThreadAllocatedBytes(thread)
         var index = 0
-        while (index++ < count) result = cache.load()["Dock"]
-        return result
+        while (index++ < count) {
+            val result = cache.load()["Dock"]
+            allocationSink = if (allocateControl) arrayOf(result) else result
+        }
+        return bean.getThreadAllocatedBytes(thread) - before
     }
 }

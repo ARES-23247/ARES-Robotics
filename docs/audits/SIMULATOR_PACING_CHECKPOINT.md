@@ -169,3 +169,27 @@ identity recorded above. No failing assertion or required check was disabled.
 The selected pacing, control, rebuild-isolation, and cleanup scenarios pass. No known high-impact
 defect remains in the changed scheduling/cleanup paths. Changes are committed locally; a future
 release still requires the normal protected PR, hosted checks, packaging, and candidate promotion.
+
+## Release-validation addendum
+
+PR [102](https://github.com/ARES-23247/ARES-Robotics/pull/102) exposed the previously recorded
+waypoint allocation assertion in Monorepo CI run `35008036595`, attempts one and two. A focused
+local recheck passed on unchanged source; the second hosted failure ended diagnostic retries.
+Neither the waypoint loader nor its original test differed from released main. The short hosted
+failure logs did not retain the measured byte count, so the precise source of those bytes remains
+unproven. The original failures are preserved in `build/sim-pacing/release/`.
+
+The test now warms the complete counter/lookup/counter routine with both missing and present map
+implementations before measurement, avoiding a type-profile change between the two cases. Each
+lookup escapes its result through a volatile test sink. Three fixed windows must all report exactly
+zero bytes; there is no best-window selection, retry loop, or relaxed threshold. An intentionally
+allocating control must report at least 16 bytes per lookup in each window, proving that the counter
+detects escaped allocations. Every measured window is printed for future diagnosis.
+
+The focused local result was `missing=[0,0,0]`, `present=[0,0,0]`, and
+`escapedControl=[240000,240000,240000]` bytes over 10,000 lookups per window. The complete local
+library tests, API check, and isolated publication then passed. The new test-only library source
+tree is `03a39314803a59ee44996be066a015969624f8aa`, with local candidate
+`19.0.5-rc.03a39314803a`. Production library code and the five template archives are unchanged from
+the measured local checkpoint above; that original evidence manifest remains a historical record.
+Hosted consumer and package checks must run against the updated PR before protected promotion.
