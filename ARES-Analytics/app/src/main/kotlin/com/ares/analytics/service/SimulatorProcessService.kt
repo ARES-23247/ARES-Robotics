@@ -61,6 +61,7 @@ class SimulatorProcessService internal constructor(
 
     private var process: Process? = null
     private var job: Job? = null
+    private var runtimeWorkspace: SimulatorRuntimeWorkspace? = null
 
     fun start(projectPath: String, product: SimulationProductId, simulatorCommand: String? = null) {
         if (shuttingDown.get()) return
@@ -81,6 +82,7 @@ class SimulatorProcessService internal constructor(
 
         val replacement = scope.launch(start = CoroutineStart.LAZY) {
             var ownedProcess: Process? = null
+            var ownedWorkspace: SimulatorRuntimeWorkspace? = null
             try {
                 _state.value = SimulatorProcessState(true, projectRoot.path, league)
                 val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
@@ -115,9 +117,14 @@ class SimulatorProcessService internal constructor(
                     ManagedToolchainPaths.configureJavaEnvironment(builder, simulationJavaHome)
                     _output.emit("[SYSTEM] FRC simulator Java: ${simulationJavaHome.path}")
                 }
+                val workspace = SimulatorRuntimeWorkspace.create()
+                ownedWorkspace = workspace
+                runtimeWorkspace = workspace
+                workspace.configureEnvironment(builder)
                 val child = builder.start()
                 ownedProcess = child
                 process = child
+                workspace.retainProcessTree(child)
                 currentCoroutineContext().ensureActive()
                 child.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
                     while (true) {
@@ -135,7 +142,16 @@ class SimulatorProcessService internal constructor(
                 currentCoroutineContext().ensureActive()
                 _output.emit("[SYSTEM] Error running simulation: ${error.message}")
             } finally {
-                ownedProcess?.let { if (it.isAlive) terminateProcessTree(it) }
+                ownedProcess?.let {
+                    ownedWorkspace?.retainProcessTree(it)
+                    if (it.isAlive) terminateProcessTree(it)
+                }
+                runCatching { ownedWorkspace?.cleanup() }.onSuccess { cleaned ->
+                    if (cleaned == false) _output.tryEmit("[SYSTEM] Simulator runtime retained because an owned process is still alive: ${ownedWorkspace?.directory}")
+                }.onFailure { error ->
+                    _output.tryEmit("[SYSTEM] Simulator runtime cleanup failed: ${error.message}")
+                }
+                if (runtimeWorkspace === ownedWorkspace) runtimeWorkspace = null
                 if (process === ownedProcess) process = null
                 _state.value = SimulatorProcessState()
             }
@@ -162,7 +178,10 @@ class SimulatorProcessService internal constructor(
         val ownedProcess = process
         val ownedJob = job
         ownedJob?.cancel()
-        ownedProcess?.let { terminateProcessTree(it) }
+        ownedProcess?.let {
+            runtimeWorkspace?.retainProcessTree(it)
+            terminateProcessTree(it)
+        }
         ownedJob?.cancelAndJoin()
         if (process === ownedProcess) process = null
         if (job === ownedJob) job = null

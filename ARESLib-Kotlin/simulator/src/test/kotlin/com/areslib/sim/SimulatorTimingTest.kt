@@ -29,19 +29,16 @@ class SimulatorTimingTest {
 
     @Test
     fun `runner is the sole owner of one twenty millisecond pace per frame`() {
-        var sleepCalls = 0
-        var sleptMs = 0L
+        var hostNanos = 0L
+        val pacer = SimFramePacer(SimHostClock { hostNanos }, SimHostWait { hostNanos += it })
         com.areslib.util.RobotClock.useMockTime(0L)
         try {
             repeat(20) {
-                DesktopSimLauncher.paceFrame { delayMs ->
-                    sleepCalls++
-                    sleptMs += delayMs
-                }
+                hostNanos += 3_000_000L // Representative work must consume the frame budget.
+                DesktopSimLauncher.paceFrame(pacer)
             }
 
-            assertEquals(20, sleepCalls)
-            assertEquals(400L, sleptMs)
+            assertEquals(400_000_000L, hostNanos)
             assertEquals(400L, com.areslib.util.RobotClock.currentTimeMillis())
         } finally {
             com.areslib.util.RobotClock.useSystemTime()

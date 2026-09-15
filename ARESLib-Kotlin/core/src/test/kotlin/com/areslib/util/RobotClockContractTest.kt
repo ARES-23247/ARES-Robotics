@@ -50,6 +50,16 @@ class RobotClockContractTest {
     }
 
     @Test
+    fun `host timing continues independently of frozen or rewound robot time`() {
+        RobotClock.useMockTime(Long.MAX_VALUE)
+        val before = RobotClock.hostNanoTime()
+        RobotClock.useMockTime(-1L)
+        assertTrue(RobotClock.hostNanoTime() - before >= 0L)
+        assertEquals(-1_000_000L, RobotClock.nanoTime())
+        assertTrue(RobotClock.isMocked)
+    }
+
+    @Test
     fun `mode and injected timestamp publish coherently across threads`() {
         val running = AtomicBoolean(true)
         val sawTornInitialMock = AtomicBoolean(false)

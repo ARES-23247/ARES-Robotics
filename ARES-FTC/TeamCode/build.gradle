@@ -147,7 +147,10 @@ android.applicationVariants.all { variant ->
             systemProperty 'ares.sim.summary.path', summaryFile.absolutePath
             doFirst {
                 summaryFile.parentFile.mkdirs()
-                def snapshotDir = java.nio.file.Files.createTempDirectory("ares-ftc-sim-run-").toFile()
+                def ownedRuntimeRoot = System.getenv('ARES_SIM_RUNTIME_ROOT')
+                def snapshotDir = (ownedRuntimeRoot
+                    ? java.nio.file.Files.createTempDirectory(file(ownedRuntimeRoot).toPath(), "ares-ftc-sim-run-")
+                    : java.nio.file.Files.createTempDirectory("ares-ftc-sim-run-")).toFile()
                 activeSimRuntimeSnapshot.dir = snapshotDir
                 def workspaceRoot = rootProject.projectDir.parentFile.canonicalFile.toPath()
                 def isolatedEntries = []

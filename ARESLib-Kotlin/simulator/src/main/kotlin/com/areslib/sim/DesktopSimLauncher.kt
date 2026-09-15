@@ -47,11 +47,11 @@ object DesktopSimLauncher {
     @Volatile private var sampleCount = 0L
 
     /** Completes exactly one runner-owned simulator frame. */
-    internal fun paceFrame(sleep: (Long) -> Unit = Thread::sleep) {
+    internal fun paceFrame(pacer: SimFramePacer) {
         if (RobotClock.isMocked) {
             RobotClock.useMockTime(RobotClock.currentTimeMillis() + SIM_TIMESTEP_MS)
         }
-        sleep(SIM_TIMESTEP_MS)
+        pacer.awaitNextFrame()
     }
 
     @JvmStatic
@@ -143,6 +143,7 @@ object DesktopSimLauncher {
         }
 
         var lifecycleStop: (() -> Unit)? = null
+        val timing = SimLoopTimingRecorder.fromEnvironment()
         try {
 
         if (serverMode) {
@@ -247,6 +248,7 @@ object DesktopSimLauncher {
             opModeSlot.stopActiveForShutdown()
         }
 
+        val framePacer = SimFramePacer()
         opModeSlot.activeMode?.let { initialMode ->
             publishActiveOpModeIdentity(initialMode)
             driverStation.resetInjectionState()
@@ -264,7 +266,8 @@ object DesktopSimLauncher {
             syncRobotPoseToPhysics(initialMode)
 
             val initStartTime = RobotClock.currentTimeMillis()
-            while (RobotClock.currentTimeMillis() - initStartTime < 500) {
+            framePacer.reset()
+            while (isSimRunning && RobotClock.currentTimeMillis() - initStartTime < 500) {
                 driverStation.writeEffectiveGamepads(initialMode.gamepad1, initialMode.gamepad2)
                 synchronizeDriverStationState()
                 initialMode.tick()
@@ -279,9 +282,10 @@ object DesktopSimLauncher {
                     physicsWorld.robotBody.transform.rotationAngle,
                     ccwPos,
                 )
-                paceFrame()
+                paceFrame(framePacer)
             }
 
+            if (!isSimRunning) return@let
             println("[Simulator] Driver clicked PLAY! Activating telemetry & drivetrain controls.")
             synchronizeDriverStationState()
             syncRobotPoseToPhysics(initialMode)
@@ -297,8 +301,10 @@ object DesktopSimLauncher {
         var gamePieceTelemetryBuffer = DoubleArray(SimGamePieceTelemetryFrame.requiredSize(0))
         val periodicTraceEnabled = java.lang.Boolean.getBoolean("ares.sim.trace")
 
-        while (isSimRunning) {
+        framePacer.reset()
+        while (isSimRunning && !Thread.currentThread().isInterrupted) {
           try {
+            timing?.beginFrame()
             TelemetryPublisher.pollWebInputs(driverStation)?.let { obstaclesJson ->
                 physicsWorld.replaceObstaclesFromAnalyticsJson(obstaclesJson)
             }
@@ -588,18 +594,21 @@ object DesktopSimLauncher {
             ntInst.defaultServer?.flush()
 
             try {
-                paceFrame()
+                timing?.endWork(opModeSlot.activeMode?.isStarted == true)
+                paceFrame(framePacer)
+                timing?.endPacing(framePacer)
             } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
                 break
             }
           } catch (e: Exception) {
               System.err.println("[Simulator] CRASH in main loop iteration $sampleCount:")
               e.printStackTrace()
               throw e
-              // Continue running — one bad frame shouldn't kill the sim
           }
         }
         } finally {
+            timing?.close()
             try {
                 lifecycleStop?.invoke()
             } catch (error: Throwable) {
@@ -636,29 +645,4 @@ object DesktopSimLauncher {
         NT4Server.publishTopic(ACTIVE_OP_MODE_CLASS_TOPIC, mode?.rawOpMode?.javaClass?.name.orEmpty())
         NT4Server.publishTopic(ACTIVE_OP_MODE_DISPLAY_NAME_TOPIC, mode?.displayName.orEmpty())
     }
-}
-
-/**
- * Applies explicit mode-based simulator pose ownership without using coordinate sentinels.
- *
- * Autonomous owns its authored OpMode pose even when all components are zero. TeleOp owns the
- * configured physics/alliance spawn. Pinpoint and Redux are always reset to the selected pose, and
- * autonomous additionally moves the physics body to that pose.
- */
-internal fun synchronizeSimulatorStartPose(
-    modeKind: SimOpModeKind,
-    opModePose: Pose2d,
-    physicsPose: Pose2d,
-    applyPhysicsPose: (Pose2d) -> Unit,
-    initializePinpoint: (Pose2d) -> Unit,
-    resetReduxPose: (Pose2d) -> Unit,
-): Pose2d {
-    val selectedPose = when (modeKind) {
-        SimOpModeKind.AUTONOMOUS -> opModePose
-        SimOpModeKind.TELEOP -> physicsPose
-    }
-    if (modeKind == SimOpModeKind.AUTONOMOUS) applyPhysicsPose(selectedPose)
-    initializePinpoint(selectedPose)
-    resetReduxPose(selectedPose)
-    return selectedPose
 }

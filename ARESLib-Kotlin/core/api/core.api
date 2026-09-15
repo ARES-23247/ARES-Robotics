@@ -7387,6 +7387,7 @@ public final class com/areslib/util/PoseStorage$Snapshot {
 public final class com/areslib/util/RobotClock {
 	public static final field INSTANCE Lcom/areslib/util/RobotClock;
 	public final fun currentTimeMillis ()J
+	public final fun hostNanoTime ()J
 	public final fun isMocked ()Z
 	public final fun nanoTime ()J
 	public final fun useMockTime (J)V

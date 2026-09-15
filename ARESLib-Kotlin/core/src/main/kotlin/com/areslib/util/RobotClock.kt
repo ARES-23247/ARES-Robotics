@@ -58,6 +58,14 @@ object RobotClock {
     }
 
     /**
+     * Monotonic host time for pacing and measuring a desktop simulator while robot time is mocked.
+     * This clock never advances the robot timeline. Do not use it for controller dt, feedback
+     * freshness, leases, or replay timestamps: those must continue to use [nanoTime] and
+     * [currentTimeMillis]. Like nanoTime, only differences within 2^63 nanoseconds are meaningful.
+     */
+    fun hostNanoTime(): Long = System.nanoTime()
+
+    /**
      * Enters mock mode at the fixed timestamp [timeMs]. Calling this again advances or rewinds time.
      */
     fun useMockTime(timeMs: Long) {
