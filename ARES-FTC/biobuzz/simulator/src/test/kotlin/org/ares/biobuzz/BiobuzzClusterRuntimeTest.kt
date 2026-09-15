@@ -82,7 +82,7 @@ class BiobuzzClusterRuntimeTest {
             assertEquals(0.0, flywheel.power)
             assertEquals(0.0, hardware.fl.power)
         } finally {
-            lifecycle.close()
+            lifecycle.stop()
         }
     }
 }
