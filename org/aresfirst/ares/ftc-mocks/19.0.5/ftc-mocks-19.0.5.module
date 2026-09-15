@@ -1,0 +1,115 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "ftc-mocks",
+    "version": "19.0.5",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "19.0.5"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "ftc-mocks-19.0.5.jar",
+          "url": "ftc-mocks-19.0.5.jar",
+          "size": 177339,
+          "sha512": "fe8b66877dc090727419051a79390dd16b9b6aa557745ce47e46f56790324b90c94b6dea8166e9d1311acd12824033a773d3b255a955fca865a1b5f95cf590e5",
+          "sha256": "1a533c3d1d7cc0f3b83106d17da25aac6551a1fbff990b1490e1e704412b73f0",
+          "sha1": "6e081cdc09c399f0348f98c08693093eef9ad082",
+          "md5": "0f41d64dbe108ab370cb1b9ed73b0388"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "19.0.5"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "ftc-mocks-19.0.5.jar",
+          "url": "ftc-mocks-19.0.5.jar",
+          "size": 177339,
+          "sha512": "fe8b66877dc090727419051a79390dd16b9b6aa557745ce47e46f56790324b90c94b6dea8166e9d1311acd12824033a773d3b255a955fca865a1b5f95cf590e5",
+          "sha256": "1a533c3d1d7cc0f3b83106d17da25aac6551a1fbff990b1490e1e704412b73f0",
+          "sha1": "6e081cdc09c399f0348f98c08693093eef9ad082",
+          "md5": "0f41d64dbe108ab370cb1b9ed73b0388"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "ftc-mocks-19.0.5-sources.jar",
+          "url": "ftc-mocks-19.0.5-sources.jar",
+          "size": 42191,
+          "sha512": "e8eded91af92df1be9303bb069674bf74c6f2e99219700be2f3a53c73c0b1c767c0625d260a0d3c60e706c41fe7845f6660a092ec821f17cf32b55bc8c843390",
+          "sha256": "58d3086199c9d85ed3c4a4af8cbb865bc8253371e10831689a3159e511215749",
+          "sha1": "97825330212253c3610240590e584cc2f41d4c4a",
+          "md5": "1d430bc977556b179d598f00e89edb39"
+        }
+      ]
+    }
+  ]
+}
