@@ -117,9 +117,6 @@ class PinpointIO @kotlin.jvm.JvmOverloads constructor(
     
     private val reusablePoseUpdate = RobotAction.PoseUpdate(0.0, 0.0, 0.0, 0L)
 
-    init {
-    }
-
     /**
      * Polls the GoBilda Pinpoint hardware computer and returns the updated pose as an immutable action.
      *

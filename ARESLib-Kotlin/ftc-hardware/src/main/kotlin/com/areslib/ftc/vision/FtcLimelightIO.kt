@@ -41,7 +41,6 @@ class FtcLimelightIO(
     private val visionMeasurementPool = Array(10) { VisionMeasurement() }
     private val translationPool = Array(20) { Translation3d() }
     private val rotationPool = Array(20) { Rotation3d() }
-    private val emptyTargetPose = Pose3d()
     private val posePool = Array(20) { Pose3d() }
     private var visionMeasurementPoolIndex = 0
     private var translationPoolIndex = 0

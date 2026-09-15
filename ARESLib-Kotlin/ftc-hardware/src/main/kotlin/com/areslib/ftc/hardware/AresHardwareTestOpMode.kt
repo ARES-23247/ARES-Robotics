@@ -2,7 +2,6 @@ package com.areslib.ftc.hardware
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp
-import com.areslib.ftc.FtcTestbedRobot
 import com.areslib.ftc.update
 import com.areslib.telemetry.AresGamepad
 

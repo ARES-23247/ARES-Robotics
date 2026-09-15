@@ -7,8 +7,7 @@ package android.util
  * Robotics framework control component.
  */
 object Base64 {
-    @JvmField
-    val NO_WRAP = 2
+    const val NO_WRAP = 2
     
     @JvmStatic
     fun encodeToString(input: ByteArray, flags: Int): String {

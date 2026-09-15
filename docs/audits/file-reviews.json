@@ -5857,7 +5857,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "db4d8e28b7b12593173cc46a7f1bcff6cc3b9e7d940a9621b3d6e52c16455827",
+      "sha256": "04f54c92450da6ae91f2fc3348bd14a8750f5302bd08b95409fdbca3d87bcf41",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -22666,6 +22666,825 @@
       "scope": "Pass 283: Multi-agent pending file batched audit and active refactoring covering 57 files across ARESLib core estimation, kinematics, task sequencers, championship test suites, and FRC swerve/telemetry hardware facades.",
       "evidence": [
         "docs/audits/pass283-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/build.gradle.kts": {
+      "sha256": "b20654d1d769d7a8894669e205c6cf936889fe3f90d9c729c02fa570d904bf2e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified Gradle build configuration for ftc-hardware module. Validated Kotlin JVM toolchain 17, Maven publishing settings with empty javadoc and sourcesJar, repository endpoints, and dependencies (:core, kotlinx-coroutines-core:1.11.0, ftc-mocks, and kotlin test). Clean configuration without redundant plugins or deprecated properties.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcKeyboardListener.kt": {
+      "sha256": "27a36cb419998929cb83f10460cece7abd3711743811a381404bbaa6a0d04036",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Android HID keyboard listener for function keys F1-F12 (keycodes 131..142). Confirmed zero-GC in-place mutation of primitive boolean fields on GamepadState in onKeyDown/onKeyUp/updateKeyState. Zero heap allocations on gamepad sampling cycles.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcMecanumRobotBuilder.kt": {
+      "sha256": "cc6815e7b0f9edbdfe8748e1e247a8cf7e0b0db75a09ece501e6db8b4d79f805",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated fluent Kotlin DSL builder for FtcMecanumRobot. Confirmed default motor mapping names (fl, fr, rl, rr), polarities (FORWARD/REVERSE), odometry computer name (pinpoint), vision camera name (limelight), zero power behaviors (BRAKE), and telemetry binding. Clean DSL entry point ftcMecanumRobot().",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcTestbedRobot.kt": {
+      "sha256": "cec87808029717c647183cc4a649baec7bc208b54eda68cfc93e138fa986a46a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated single-motor testbed facade extending FtcBaseRobot with pinpointName=null and limelightName=null. Verified preallocated ImuInputs buffer in updateHardwareInputs preventing loop allocations, proper conversion of pitch/roll to degrees and yaw velocity to rad/s, Redux action dispatch, voltage scaling [0.0, 12.0] V, and safeHardware delegation to hardwareRegistry.safeAll().",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/GamepadExt.kt": {
+      "sha256": "e26eacad3b1f3bf0e70ea2ffc2d8538bcb75509bd0065a8e84debd8ed926b0d0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Gamepad.toState() and GamepadState.update(gamepad) extensions. Verified in-place mutation of primitive joystick (-1..1), trigger (0..1), and button fields. Static reflection caching for extended keys (c, z, m1..m4) executed once during class initialization.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/config/RobotConfig.kt": {
+      "sha256": "c7166f1b49550c96f82716c37647d2312639a5846949b43fba735a78fdc01fe9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated central FTC dependency injection factory for AprilTagProcessor and VisionIO. Confirmed createAprilTagProcessor integrates canonical field configs via FtcAprilTagLibraryFactory. Verified multi-camera comma-separated parsing delegating to FtcLimelightFactory with composite fallbacks, and getAprilTagVision delegating to FtcVisionPortalIO.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/PinpointIO.kt": {
+      "sha256": "5a700b38a2364cfd1c85404fe33f13ea89f918b4f5dea247399ed8544e284896",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated GoBilda Pinpoint odometry computer abstraction layer. Verified CCW-positive heading convention in [-PI, PI], +X forward, +Y left. Validated preallocated reusablePoseUpdate ensuring zero-GC in 100Hz loop. Verified health state machine (STARTING, HEALTHY, STALE, NONFINITE, IMPLAUSIBLE, COMMUNICATION_FAILURE), jump tolerance gating (0.75m pos, 0.75 rad heading), and hardware/software initialization modes. Pruned redundant empty init block.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/SparkFunOtosIO.kt": {
+      "sha256": "52709ecf7e0e50acc0de73ad1518156357a698e1652a83891c7e4f55df12cd07",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SparkFun Optical Tracking Odometry Sensor (OTOS) IO layer implementing OdometryIO and AutoCloseable. Confirmed coordinate conventions (+X forward, +Y left, CCW-positive radians), health status transitions, jump gating against observation baseline, and updateInputs in-place mutation.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/AresHardwareTestOpMode.kt": {
+      "sha256": "8f7253af388e5efc5abbe1e98093b868232a25fb1af2351e2cea329a00f99ed0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated sample teleoperated LinearOpMode demonstrating robot facade integration, 50Hz loop watchdog (30ms threshold), zero-power safety failsafe on exception catch, and deterministic robot.close() in finally block. Cleaned up unused import.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcHardwareMapInitializer.kt": {
+      "sha256": "6818671ba1f5d71519ef34a31384c7f9ea0fb9b42b9421c523dbd2582d23c6d9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated exception-safe factory methods initPinpoint, initImu, and initLimelight. Verified graceful null handling when hardware devices are missing or unconfigured, pod offset forwarding, and multi-camera string splitting.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcIndicatorLightIO.kt": {
+      "sha256": "5cf566da130a2c7224653f40b1f8d39afd0fc9229c265dce393427e5a43a7aa9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated GoBilda RGB Indicator Light servo wrapper implementing IndicatorLightIO. Confirmed write-skipping threshold (abs(clamped - lastSentPosition) > 0.001) preventing redundant I2C bus traffic, failsafe safe() commanding IndicatorLightColor.OFF (0.0), and zero allocations during refresh.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcPerformanceManager.kt": {
+      "sha256": "eaebad62d38a5598b828a55f47e9063f66bd416a3949564e26e560c048f7a3c7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated hardware performance optimizer configuring manual bulk caching on all detected LynxModule REV Hubs and auto-detecting SrsHubDriver instances. Confirmed clearBulkCaches uses indexed 0 until lynxModules.size primitive loops with zero heap allocations in the 50Hz-100Hz hot path.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcPrismDriverI2cIO.kt": {
+      "sha256": "026d8df8aca14263c826be77c462bd79e1043a257e3b42de657f82b8150b8cd8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated direct I2C driver for Prism/Blinkin LED controllers (address 0x38). Confirmed 32-bit register writes, artboard saving/loading (slots 0-7), solid RGB scaling by maxBrightnessPercent, rainbow animation, legacy PWM mapping (500-2500us), and failsafe safe() clearing all active animations.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/FtcPrismDriverIO.kt": {
+      "sha256": "9e627ac0c3f607de3c098af5a8e8e343176d5e4d1e40a7908387f48362349f87",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated PWM servo port driver for GoBilda Prism RGB LED Driver. Confirmed pulse width clamping [500, 2500] us, write throttling (abs(clampedUs - lastSentPulseWidth) >= 2), RGB to hue to pulse width mapping (1050-1949us), and failsafe safe() commanding SOLID_RED.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/OctoquadIO.kt": {
+      "sha256": "e5306d01e530225ee300e248c2ecb22a132cb70c924e071258bbe18607f4f260",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated DCL OctoQuad FWv3 I2C driver, encoders, and localizer wrappers. Confirmed 200Hz daemon background polling thread reading 32-byte chunks with double-buffered synchronized arrays, zero-GC copyLocalizerDataInto, OctoQuadLocalizerFrameTransform rigid math (CCW+, +X fwd, +Y left), and clean thread termination in close(). Cleaned up unused import Rotation2d and simplified RevEncoderVersion type reference.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/SrsHubAdapters.kt": {
+      "sha256": "24c3c36a5ddc763f36d449e3affd3dddae1256179e92e1ed89cb1b9f0ace081f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SRS Hub peripheral IO adapters: analog (SrsHubAnalogIO), digital (SrsHubDigitalIO), PWM servo (SrsHubServoIO), Prism driver (SrsHubPrismDriverIO with SOLID_RED failsafe), quadrature/absolute encoders (SrsHubEncoderIO, SrsHubAbsoluteAnalogEncoder, SrsHubAbsolutePWMEncoder), distance/color sensors (SrsHubVL53L5CX, SrsHubRevColorSensorV3, SrsHubVL53L0X), and Pinpoint odometry (SrsHubPinpointOdometry). Confirmed zero-allocation copying methods and SrsHubPinpointFrameTransform rigid field rotation.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/SrsHubIO.kt": {
+      "sha256": "adc8abfbad51c64242a5f6d99b7fc2dabdee703f18b3eb6cf86f93c3b521cc0b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated low-level SrsHubDriver extending I2cDeviceSynchDevice. Confirmed 200Hz background thread reading 256-byte continuous register windows, parsing analog, digital, encoders, PWM, APDS9151/VL53L0X, Pinpoint odometry, and VL53L5CX multizone arrays into preallocated primitive buffers. Thread-safe lock synchronization and deterministic close() thread join.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/photon/AresPhotonCore.kt": {
+      "sha256": "1a6b362410522a8afac8cfc8159927f1fd9138596c240d9ece1dffb296edae13",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated experimental reflective fast-path for FTC Control Hub and Expansion Hub Lynx commands. Confirmed explicit opt-in via runtime policy, preservation of SDK transmission lock and unfinished command maps, maximumParallelCommands queue limits, single-threaded duplicate checking, clean module substitution on onOpModePreInit, defensive firstOrNull name lookup, full restoration on onOpModePostStop, and fallback to SDK path on error.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/photon/AresPhotonLynxModule.kt": {
+      "sha256": "2de1fbce066fec27e7a369dd4c26a9e7c6d039db9802ccf4e1c45aabc46ea39a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated LynxModule wrapper intercepting motor power and servo pulse width writes. Confirmed proper delegation to AresPhotonCore.registerSend with graceful fallback to super.sendCommand on congestion or transport rejection, normalized KDoc annotations, and preserved acquireNetworkTransmissionLock/releaseNetworkTransmissionLock contracts.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/photon/AresPhotonReflectionUtils.kt": {
+      "sha256": "5b47892d0a2535e59f2140614fdbc236dc69c639c87c10a37511d898ba0a6ba7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated isolated reflection helpers for AresPhotonCore initialization. Confirmed getField traverses superclass chains with accessibility overrides, deepCopy clones declared fields, and runtime exceptions are safely caught without impacting main control loops.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/photon/PhotonEnabledOpMode.kt": {
+      "sha256": "f6077383c4803ccbfdf1a4b000055316044b0a87e79397c82901d8edc4c52049",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated FtcHubCommandTransport enum (STANDARD_SDK, ARES_PHOTON), immutable AresFtcRuntimeOptions data class, and AresFtcRuntimeOptionsProvider interface providing early runtime configuration before OpMode initialization.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/sim/FtcSimMechanismStateProvider.kt": {
+      "sha256": "651c40e901173b3b4c0e7fd2bb1827f9afe6cc4d9b6e27a149259de7458055f6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated FtcSimMechanismStateProvider interface extending SimMechanismOutputProvider. Confirmed segregation of accepted Redux intents (intakeAccepted, flywheelAccepted) from applied hardware outputs, preventing interlock rejections from being mistaken for toggles.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/telemetry/LimelightProxyAutoStart.kt": {
+      "sha256": "8f11bdff59e91520b300dc5a27c69dd1e91eb98e156c720e32448ba5b0bb1d26",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated LimelightProxyAutoStart HTTP stream tunneling lifecycle. Confirmed thread-safe synchronized start/stop methods, updates to RobotStatusTracker.ftcLimelightProxyActive, and exception recovery via runCatching { p.stop() }.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcAprilTagLibraryFactory.kt": {
+      "sha256": "3e646125c70f32e212712a9ac86e0b676fc6f43a0264f326f349435908f96213",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated factory converting canonical RobotFieldConfig into SDK AprilTagLibrary and configuring AprilTagProcessor.Builder. Verified single tag family enforcement, distance normalization in meters, roll/pitch/yaw Euler angle to quaternion conversion, and validation during camera initialization.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcLimelightIO.kt": {
+      "sha256": "600413c21f0117fd10d528ce11bd70ef53852cc7950a9cfe79521a7db6db5f6f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Limelight 3A vision IO wrapper. Confirmed fixed object pools (visionMeasurementPool, translationPool, rotationPool, posePool, measurementListPool) eliminating allocations in 50Hz loop. Cleaned up unused emptyTargetPose field. Verified IMU heading feeding via setOrientation, MegaTag2 with MegaTag1 recovery fallback, single-solve deduplication to prevent covariance collapse, staleness threshold checks (250ms), and limelight.stop() in close().",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionPortalIO.kt": {
+      "sha256": "2d26376e851b3485219eb1bf7f65b6372cb9c7e9833c301b6826d672eb61e0c7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated VisionPortal AprilTag adapter. Confirmed coordinate transform from inches/degrees to meters/radians (1 in = 0.0254m), ring pools for measurements and 3D geometry objects, field pose inversion solving (tagFieldPose * cameraToTag^-1 * robotToCamera^-1), rate-limited stderr warnings, and disconnect failsafe.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/e2e/tier1/app/AppFailsafeTier1Test.kt": {
+      "sha256": "434cb36a7cbdc953508a2f618b028a1d24e17a59ab551a32e550f0a6ad5a1fa5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Tier 1 E2E tests for loop overrun watchdog (30ms overrun threshold) and per-iteration failsafe motor neutralization (asserting 0.0 power across all four motors upon simulated exception catch).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/CompositeMotorLifecycleTest.kt": {
+      "sha256": "67d4425f037a6fc4c586f57acbd611cfb53fbd41772b5be9f3fa69c30e479a04",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated lifecycle tests for CompositeMotorIO and FtcCRServo. Verified power scaling isolation, refresh delegation to sensor delegate, exception propagation on delegate close, and shared delegate deduplication.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcHeadingFeedbackTest.kt": {
+      "sha256": "1051c5c80f23c3967f533329901976c84248b25c693e1da1458042d4705946bd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated heading feedback tests for Pinpoint and IMU. Verified fallback to drivetrain odometry on NaN reads, recovery after fault, avoidance of duplicate field heading offset accumulation on missing IMU, and sample timestamp freshness verification.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcLimelightIOTest.kt": {
+      "sha256": "ca53227675e663f5dabb10f0677b8dd7ef60a3c4e7d30961ade2873447a2ddc8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated unit tests for FtcLimelightIO covering coordinate conversions, fiducial parsing, target-space transforms, multi-tag deduplication, MegaTag2 with MegaTag1 recovery retention, timestamp quality metrics, and rejection of stale/disconnected results.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/MecanumHardwareIOTest.kt": {
+      "sha256": "ddd972b56c247fc21e385d61103812066e39099a0ffbc78b1ab62cf09109e8f2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated unit tests for MecanumHardwareIO: default BRAKE mode, reverse polarity on right side motors, voltage-compensated slew rate limiting, boundary power scaling, nonfinite request fail-closed (0.0 power & latched fault), neutral latching, and recovery requiring neutral Redux drive command.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/PinpointIOTest.kt": {
+      "sha256": "f6383dfea860b99b4c27f36a40dbcd5f6cca87ef15ab7b78a6ec9a4178e4611b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated PinpointIO unit tests covering pose initialization, offset handling, CCW vs CW polarity toggles, default 4-bar pod selection, custom resolution overrides, sequential updates, nonfinite packet rejection, staleness detection, and implausible jump rejection.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosIOTest.kt": {
+      "sha256": "ca4c2591fbc56e011e5a7a0319ee21a24c42c7011c2c419d0a707bfd18d39579",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated SparkFunOtosIO unit tests covering pose initialization, driver coordinate offset handling (cos/sin rotation), updateInputs parity, and rejection of implausible 100m teleports with health status transition to IMPLAUSIBLE.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/drivetrain/MecanumTrajectoryFollowerTest.kt": {
+      "sha256": "ec152f8b7974827783308a8c90a3cdc17bf43a892e1f8695aedfe9d5a1cb2807",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated trajectory follower test suite. Verified edge-triggered pathfind task activation, idempotency of held requests, cancellation back to idle state, and dynamic PIDF gain updates from TuningState for translation and rotation controllers.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/OctoQuadLocalizerFrameTransformTest.kt": {
+      "sha256": "91ce1c01698972d891c2ee43bdb20c96f98930e696284834d83d2f5e72d73ea0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated unit tests for OctoQuadLocalizerFrameTransform. Verified rigid frame transformation of native mm/ticks to field meters, radians, and velocities with CCW-positive rotation and +X forward/+Y left kinematics.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/SrsHubPinpointFrameTransformTest.kt": {
+      "sha256": "9e19a08bd8787619c308c5e75713839eb8ef54615c54cba3ca9c7de48ba7557a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated unit tests for SrsHubPinpointFrameTransform. Verified rigid coordinate transformation from SRS Hub Pinpoint native coordinates to field coordinates, heading wrapping, and rejection of nonfinite initialization seeds.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/photon/AresFtcRuntimeOptionsTest.kt": {
+      "sha256": "ef148277b211c389e744e21ffed8855a5a78798963720707f4a47abeacaccfa5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated AresFtcRuntimeOptions unit tests verifying unconfigured OpModes default to STANDARD_SDK and limelightProxyEnabled=false, while providers implementing AresFtcRuntimeOptionsProvider explicitly select ARES_PHOTON and proxy enablement.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/vision/FtcAprilTagLibraryFactoryTest.kt": {
+      "sha256": "99cbff0745c1874850514dcb602ca8c9f3f634c9616dd823006096fae0190e20",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated unit tests for FtcAprilTagLibraryFactory. Verified conversion of RobotFieldConfig metadata to SDK AprilTagLibrary (tag ID, name, size, field position), AprilTagProcessor tagFamily configuration, and exception throwing on missing tag family/size.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/vision/FtcLimelightFactoryTest.kt": {
+      "sha256": "6f204bacd2f42fca55fbe9692f5e0201936ee242d91195baaf2d7c3ff84617f9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Validated Limelight factory tests ensuring proper resource cleanup: verified that when multi-camera lookup fails on subsequent cameras, previously started cameras are safely stopped in both FtcHardwareMapInitializer.initLimelight and RobotConfig.getLimelight.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/hardware/TalonFXExtensions.kt": {
+      "sha256": "68166d7c10d79209b904f6cc45a9c7b210c14886e4be58412c5fbf26f4937812",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of Phoenix 6 configuration and telemetry helpers. Validated Iterable<TalonFX>.applyConfigChecked(maxAttempts, block) with positive attempt requirement, up to 5 CAN retry attempts, and fail-safe error escalation via DriverStation.reportError when configuration fails. Consolidated duplicate KDoc blocks. Validated setUpdateFrequencies(hz, vararg signals) batch updating CTRE BaseStatusSignal update rates to optimize CAN bus bandwidth.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/FRCTelemetryTest.kt": {
+      "sha256": "1ac00408d0f8a1c15f06dcbc7e4f01a022f698df26af6c4bcce8834a04892f8a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of NetworkTable telemetry contract test. Validated that FRCTelemetry normalizes keys to canonical slash-free topic identities ('Robot/LoopTimeMs', 'Drive/Pose_Source'), suppresses legacy /SmartDashboard/ table prefixing, and performs leak-free lifecycle management via try-finally closing both telemetry and NetworkTableInstance.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/FrcLimelightIOTest.kt": {
+      "sha256": "9395d68db8b02a0930a516f45be4e248295056b9ed8d0adf4fd23ef00d6448df",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FrcLimelightIO contract test. Validated parsing of official Limelight NetworkTable topics (botpose_orb_wpiblue MegaTag2, botpose_wpiblue MegaTag1, stddevs, heartbeat, targetspace), target pose extraction, closest raw fiducial tag ID selection, recovery pose fallback, standard deviation mapping, and deduplication preventing re-fusion of identical NT timestamp samples. Validated try-finally cleanup of all publishers and subscribers.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/TestSwerveHardwareIO.kt": {
+      "sha256": "2618453425a7277e1cb766f274100024ac114b6678841bfca2bc3c63a4907179",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of fail-closed SwerveHardwareIO test double. Verified zero-allocation buffer filling for getCurrents, getEncoderPositions, getModuleSpeeds, and getFaults. Validated safe fail-closed sensor flags (currentMeasurementsValid=false, encoderPositionsValid=false, signalLatencyMs=Double.POSITIVE_INFINITY, samplePoseAt=false, Double.NaN kinematics).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/src/test/kotlin/com/areslib/frc/vision/FrcAprilTagFieldLayoutFactoryTest.kt": {
+      "sha256": "557be401c603de4094d15973aae212758b3b28adb4ad9259013dd9682c8df383",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of WPILib AprilTagFieldLayout factory test. Validated field boundary dimensions (fieldLength, fieldWidth), 3D tag translations, degree-to-radian Euler angle rotation conversions, and strict boundary enforcement rejecting FTC field documents with IllegalArgumentException.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/frc-hardware/vendordeps/Phoenix6-26.1.1.json": {
+      "sha256": "3436b329be690e801fc93d522059bb865e7f953bbbd55552ec1af25a5dad61dc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of CTRE Phoenix 6 vendordep JSON manifest for FRC year 2026. Verified package version 26.1.1, UUID pinning, maven release URLs, conflict declarations against Phoenix 6 replay dependencies, and multi-platform native JNI/C++ library declarations (windowsx86-64, linuxx86-64, linuxarm64, linuxathena, osxuniversal).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/xrp-hardware/build.gradle.kts": {
+      "sha256": "6d5d050f3c889e723dbdfdeb0fa9f367a6414e6291b364fa8974ea76e9632a7b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of XRP hardware Gradle build definition. Validated JVM toolchain 17, maven publishing configuration with empty JavadocJar and sourcesJar, module dependencies (:core, :telemetry-schema, :project-schema), and JUnitPlatform test task configuration.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/build.gradle.kts": {
+      "sha256": "c70487eea1a378a81e7cace0df9f3a61fb89ecb9043e44a7154edf6d4678f282",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FTC desktop mock Gradle build configuration. Validated JVM toolchain 17, maven publishing setup, and modular dependency on :core.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/content/res/AssetManager.kt": {
+      "sha256": "85cc79ab2c5e8b0a5b99c642b0dad2009355fbcb71ec71eed0967428cea28165",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of desktop AssetManager shim. Validated path normalization (backslash to forward slash, leading slash removal), path traversal prevention ('..' check), and multi-candidate asset directory discovery (TeamCode/src/main/assets, src/main/assets, ../TeamCode/src/main/assets) returning valid FileInputStream or throwing FileNotFoundException.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/os/Build.kt": {
+      "sha256": "ed2574d5c51afb2f3b6303f247fb8fdaab47bf001e77c4d7beec630ae3c0d298",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of android.os.Build mock. Validated shadowing of Android SDK stub classes to prevent RuntimeException('Stub!') during desktop JVM execution. Verified nested class VERSION with SDK_INT=0, RELEASE, CODENAME, and hardware identification constants (MANUFACTURER, MODEL, HARDWARE, PRODUCT, FINGERPRINT).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/util/Log.kt": {
+      "sha256": "9de9ebd4bd5dc68f9923746acef0cf93ec51f6f0e11cfff0cb0ccb4caa730eab",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of android.util.Log desktop mock. Validated logging priority constants (VERBOSE through ASSERT), isLoggable override, standard output routing for v/d/i/w/println, and standard error routing with stack trace dumping for e(tag, msg, tr) and w(tag, msg, tr).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/FtcDashboard.kt": {
+      "sha256": "ef5af6ddcd2a5d5256de2eb0eeb013a10e58aa5fd5b5a69bff3f3720078e77aa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FTC Dashboard mock singleton. Validated getInstance() returning the object singleton and safe no-op sendTelemetryPacket(TelemetryPacket) implementation for headless desktop execution.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/canvas/Canvas.kt": {
+      "sha256": "305cc693c3fc152e895cd6dd70c8b14741ef561de28b5928b8b65d61e2f7cb43",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FTC Dashboard Canvas mock. Validated contract signatures for drawCircle, drawLine, and setStroke operations.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/telemetry/TelemetryPacket.kt": {
+      "sha256": "1cff13b6230b265b520ca4cbcf0fdc313628e2f0b7c1c77d275fba2f55de5064",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FTC Dashboard TelemetryPacket mock. Validated pre-instantiated Canvas fieldOverlay and no-op put(key, value) method avoiding heap leaks and retaining API compatibility.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/areslib/ftc/MockIndicatorLightIO.kt": {
+      "sha256": "421c8fa2c44718c949671e781e9627c81cf7bf38286bda8b67ba69eb20c48210",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of MockIndicatorLightIO. Validated in-memory position caching, value clamping to [0.0, 1.0] in setPosition, safe() neutralization to IndicatorLightColor.OFF.position, no-op refresh() for write-only actuator, and zero-allocation string telemetry publishing in logTelemetry.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/ftccommon/FtcEventLoopMocks.kt": {
+      "sha256": "1ea1361b3bd21a2092a517963bea4089498e06bc61a4c06fc0ecbc8241db2d8a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FtcEventLoop mock. Validated OpModeManagerImpl instantiation and member exposure conforming to FTC SDK contract.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/bosch/BNO055IMU.kt": {
+      "sha256": "ba4ccad5c7017c25af44c0d2850a0505ef69fc52029c849cb384b9d04107a35d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of BNO055IMU mock interface. Validated AngleUnit enums, Parameters configuration container defaulting to AngleUnit.RADIANS, and interface method signatures for initialize and getAngularOrientation.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/gobilda/GoBildaPinpointDriver.kt": {
+      "sha256": "738e1e3df41bddc0851c2cae90b79383678d9b83b66a64e2aed5b8fb6f425994",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of GoBildaPinpointDriver thread-visible simulation double. Validated @Volatile fields, @Synchronized accessors, coordinate transformations accounting for pod offsets (swapping xOffset as lateral robot Y and yOffset as forward robot X with millimeter conversion), resetPosAndIMU origin capture, heading unwrapping, and Pose2D snapshot construction.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/limelightvision/LimelightMocks.kt": {
+      "sha256": "ea00d75a2670fd5600c0d0ed84025e1fb0988a989b72ccb8093ea9810b1ae1c0",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of FTC Limelight mocks (LLResultTypes, FiducialResult, LLResult, Limelight3A). Validated FiducialResult accessors, LLResult pose queries (getBotpose, getBotpose_MT2, getStddevMt1/Mt2), RobotClock timestamping, and Limelight3A simulated result injection via setSimulatedPose.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/LynxMocks.kt": {
+      "sha256": "6224a2027dff410c817f0b2416f46a50b9a712be3763be18d2c7ac4795b79037",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of REV LynxModule and USB device mocks. Validated HardwareDevice interface adherence, BulkCachingMode enum (OFF, AUTO, MANUAL), ConcurrentHashMap unfinishedCommands, lock management mocks, and USB device hierarchy (LynxUsbDevice, LynxUsbDeviceDelegate, LynxUsbDeviceImpl).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/commands/LynxCommandMocks.kt": {
+      "sha256": "66bae5d1c6ac1fa5ed02822470dfccabfdb769b9d07ec8790ba2a9c22ffeef18",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of Lynx command hierarchy mocks. Validated LynxMessage base state fields, LynxRespondable<T> callbacks (onResponseReceived, onAckReceived), generic LynxCommand<T>, and LynxDatagram framing with toByteArray().",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/commands/core/LynxCoreCommandMocks.kt": {
+      "sha256": "63a77a5975e95a7e497b35e4881ef52e48d4827fffea9e29a94a40e02d18a9c1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of Lynx core commands. Validated LynxSetMotorConstantPowerCommand and LynxSetServoPulseWidthCommand extending LynxCommand<LynxAck> to match REV core protocol specification.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/commands/standard/LynxStandardCommandMocks.kt": {
+      "sha256": "66efbc7d1dba5a4436a200f6b1dad32fd5c8fae6c8279a05ee11ca192fe4d60d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of LynxAck mock. Validated inheritance from LynxMessage and standard constructor accepting LynxModule and isAttentionRequired boolean.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/rev/RevHubOrientationOnRobot.kt": {
+      "sha256": "f86d9c95756d3b98791f8ef65edf558d7e3e544de4e756c07f4fd655e4d98a94",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of RevHubOrientationOnRobot mock. Validated ImuOrientationOnRobot implementation, LogoFacingDirection and UsbFacingDirection enums, and explicit fail-fast UnsupportedOperationException on transform queries documenting that simulated IMU samples are already in the robot frame.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/sparkfun/SparkFunOTOS.kt": {
+      "sha256": "919867db9f613c0b80aae4644619a99b1f6575502588673b53ed8a21f92534e3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of SparkFunOTOS simulation double. Validated @Volatile fields with @Synchronized accessors for Pose2D position/velocity/acceleration/offset, scalar calibrations, resetTracking, and unit defaults (DistanceUnit.METER, AngleUnit.RADIANS).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/AndroidMocks.kt": {
+      "sha256": "ed74efc791216eb9fdf3016068c59c58b0cacd42b3b16805b5adfd506a331acf",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of android.content.Context mock. Validated exposure of assets property resolving to android.content.res.AssetManager for desktop simulation.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/Base64.kt": {
+      "sha256": "9b8883f22cbf12bf91a103fd91c9730b79598acf6bb85958f4a35ca4a259a81b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of android.util.Base64 mock. Validated const val NO_WRAP constant for compile-time inlining and encodeToString delegation to standard java.util.Base64.getEncoder().encodeToString(input).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/JSONObject.kt": {
+      "sha256": "02756d701f20f6e22d49fd34c07546d2fd88bad93b0551f9d3c65b832873607b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of org.json.JSONObject mock. Validated standard constructor signatures, chainable put returning this, get, optString, and default toString() representation.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/WebHandlerManager.kt": {
+      "sha256": "c5a0df70a4a3e4fb260e045be6de719d56e394d54a2f9278ed5131297ff6cc81",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of WebHandlerManager mock. Validated package declaration under com.qualcomm.robotcore.util and open class definition for FTC web server handler registration compatibility.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/WebHandlerRegistrar.kt": {
+      "sha256": "488d7f29462af5f7be2afef53959381a12afc2fbd8980452dc7bc06a151e9572",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of WebHandlerRegistrar marker annotation retained for FTC web handler registration on desktop. Verified zero runtime overhead and headless compile compatibility.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/eventloop/opmode/FtcOpModeMocks.kt": {
+      "sha256": "2fa7cdf749473ab9c07f653937a0028ae7f9f9a48dc2bb113e8452e2fe234df5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of LinearOpMode, @TeleOp, @Autonomous, and @Disabled annotations. Verified lifecycle state machine flags (isStarted, isStopRequested, opModeIsActive, opModeInInit), cooperative waitForStart() and sleep() with RobotClock virtual time support and Thread.isInterrupted guards, idle() yield, and fail-closed HardwareMap get/getAll stubs.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/eventloop/opmode/OpModeManagerMocks.kt": {
+      "sha256": "7d4773463a1b22ba43a323fcc8d0108d0f6267fc70690723a24a362f4eea4b46",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of OpModeManager, OpModeManagerNotifier, Notifications, and OpModeManagerImpl. Verified DEFAULT_OP_MODE_NAME constant ('$Stop$Robot$') and lifecycle listener contracts (onOpModePreInit, onOpModePreStart, onOpModePostStop) facilitating fail-closed actuator neutralization.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/eventloop/opmode/OpModeMocks.kt": {
+      "sha256": "a935fd1fb56c5b7fb328de21d21967ca07a046519c47dae72112a884edb7c64a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of iterative OpMode base mock. Verified init, init_loop, start, loop, and stop lifecycle methods, preallocated HardwareMap, Telemetry, and Gamepad fields to eliminate GC pressure during control loops, and requestOpModeStop() flag signaling.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/Gamepad.kt": {
+      "sha256": "d8d2a3f348e8c814a6418d9803419db883d3fc223e2ca8b898105d68476773de",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of Gamepad hardware double. Verified zero-GC unboxed primitives for all 28 analog axes and buttons, ID_UNASSOCIATED constant (-1), rumble compatibility stubs, and copy(other) in-place state copying enabling 50 Hz controller polling without object allocations.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/HardwareDeviceMocks.kt": {
+      "sha256": "8ee065dc7aa726b1f3d714c2b470b18d706f7aa4ec9d6a9467e745d4f97cc91c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of HardwareDevice, DeviceMapping, HardwareMap, and VoltageSensor. Verified Manufacturer enum, deterministic metadata methods, DeviceMapping fallback synthesizing 12.0V nominal battery voltage on empty voltage-sensor collections, and fail-closed NotImplementedError on unconfigured get/getAll lookups.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/I2cDeviceSynchSimple.kt": {
+      "sha256": "54e536cfea13086bed41765a1f0b8ea2c1ef1d438d3ff1b6f059ae85529eb84b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of I2cDeviceSynchSimple interface extending HardwareDevice. Verified unboxed primitive Byte and Int parameters for read8/write8 methods with safe default implementations preventing simulation crashes.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/I2cMocks.kt": {
+      "sha256": "ef04016b15b2ec5b45359275dd6de5bfc6a0f2b36f90b3b4516d0ad3d14dbe42",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of I2cAddr, I2cDeviceSynch, ReadWindow, ReadMode (REPEAT, BALANCED, ONLY_ONCE), and I2cDeviceSynchDevice. Verified register window caching emulation, 7-bit/8-bit address factories, and template initialization lifecycle (initialize -> doInitialize).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/ImuOrientationOnRobot.kt": {
+      "sha256": "e64c51fde23f9bc535316524922607b3e273b573dd6c680a139ea478095ec970",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of ImuOrientationOnRobot interface. Verified Quaternion orientation signatures for robot-to-IMU coordinate systems, rotation offsets, and angular velocity transforms adhering to standard robotics conventions (+X forward, +Y left, +Z up).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/LynxConstantsMocks.kt": {
+      "sha256": "30be849dcb8d4597a414b41eac852729046b1c7188108cce8c170c5f5daa2626",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of LynxConstants object. Verified hardware port bounds constants (INITIAL_MOTOR_PORT=0, NUMBER_OF_MOTORS=4, INITIAL_SERVO_PORT=0, NUMBER_OF_SERVOS=6) and isEmbeddedSerialNumber stub.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/annotations/Annotations.kt": {
+      "sha256": "0f7f7f2d21ec0893cda577e02f270815d73f2330265465199f56513992821bde",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of @DeviceProperties and @I2cDeviceType configuration annotations. Verified desktop compatibility for hardware configuration discovery without Android dependencies.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/usb/UsbMocks.kt": {
+      "sha256": "84b4712d95e8fcf0ad07eb1bcf75fb1fa0df52b052041ca2f19d17ec92b520b1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of RobotUsbDevice abstraction. Verified safe no-op write(ByteArray) stub for serial USB communication emulation.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/util/ElapsedTime.kt": {
+      "sha256": "06b2c20facb25a5b7c4f64a20c4a3c351611be2e08355a43acd066162e7dd5a3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of ElapsedTime utility. Verified virtual time binding via RobotClock.currentTimeMillis() with reflection cache and direct fallback, supporting deterministic clock rewinds during replay, reset(), and unboxed seconds()/milliseconds() calculations.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/util/RobotLogMocks.kt": {
+      "sha256": "183506f8ece8e9cd51d79a961846efa69ab04a9e8bca16b661490580c0429c57",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of RobotLog logging facade. Verified logging level methods (v, d, i, w, e, ee, ii, ww, dd, vv), formatting overloads, and stream separation routing errors to System.err with stack traces and standard output for lower severities.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/util/SerialNumberMocks.kt": {
+      "sha256": "30020524ef67cbd4307950c0ec8ecb15b0895a3ffce77c63627ed3e931c4612b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of SerialNumber USB device identifier. Verified immutable string property, fromString factory, and default embedded serial flag (false).",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/ftccommon/external/ExternalMocks.kt": {
+      "sha256": "8a28c5883a72c584eea8bfcb417a0aedb8be1aa50936813d21c6a5e9d283df42",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of @OnCreateEventLoop marker annotation retained for event loop initialization hooks in desktop simulation.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/Telemetry.kt": {
+      "sha256": "3d0077a03d53f74451ba3db0daa2ee3e8b134edc4a6bf6083c0510567e688bf8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of Telemetry interface and MockTelemetry implementation. Verified thread-safe buffer synchronization, atomic immutable snapshot publishing to @Volatile displayLines on update(), and defensive try-catch substituting [Format Error] on invalid string format input.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/matrices/VectorF.kt": {
+      "sha256": "f63fc15c20eaa6b92a1c2892a13f7f080aa66977fcf1643b749c213888643784",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of VectorF float vector. Verified defensive copying on construction (values.copyOf()), unboxed indexed get(index) operator, and length() query.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/navigation/FtcNavigationMocks.kt": {
+      "sha256": "9a371d2ccc8f1fac584e4891ccd71d80b26e43223ed0c27079f01dd86be74711",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of navigation types: AngleUnit, DistanceUnit, Quaternion, Pose2D, Orientation, YawPitchRollAngles, AngularVelocity, Position, and Pose3D. Verified exact distance conversions (fromUnit with 0.0254 m/in), angle transforms (Math.PI / 180.0), and unboxed accessors.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/internal/usb/exception/RobotUsbExceptionMocks.kt": {
+      "sha256": "3b895a96c866f76f46b0895b59efd067670574d3f2f65c71d8ff862b5f7157fb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of RobotUsbException. Verified proper Exception inheritance for USB hardware communication fault handling.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/VisionPortalMocks.kt": {
+      "sha256": "0a796c23bb2be9f56bf59edff30f81677897e86e50e4ad1b9e86122f4fbaf2b4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of VisionPortal base double enabling camera subsystem compilation and mock pipeline binding in headless desktop simulation.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/apriltag/AprilTagMocks.kt": {
+      "sha256": "8b226d81cc7f1fc9ba87169f4ef7d3961d236a1beb151e6a8fa64b2cc8af8538",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Line-by-line audit of AprilTagPoseFtc, AprilTagDetection, AprilTagProcessor, AprilTagMetadata, and AprilTagLibrary. Verified TagFamily enum, Builder duplicate tag detection assertion (allowOverwrite || id !in tags), VectorF field positions, and Quaternion orientations.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
+      ]
+    },
+    "docs/audits/pass284-pending-elevation-audit.md": {
+      "sha256": "36a0c7cd6d95e786acca81ad8b2f0268616c9ca9bb926e4ee2d2cbc5906f2ffc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Comprehensive Pass 284 pending file elevation and active refactoring report for 90 FTC hardware facades, peripheral drivers, automated tests, vendordeps, XRP build scripts, and FTC desktop mock runtimes.",
+      "evidence": [
+        "docs/audits/pass284-pending-elevation-audit.md"
       ]
     }
   }
