@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 
-const source = fs.readFileSync(path.join(__dirname, '../ARESLib-Kotlin/core/src/main/kotlin/com/areslib/logging/LogManagerServer.kt'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../ARESLib-Kotlin/core/src/main/kotlin/com/areslib/logging/LogDashboardPage.kt'), 'utf8');
 const html = source.match(/<!DOCTYPE html>[\s\S]*?<\/html>/)?.[0];
 assert.ok(html, 'Production dashboard HTML must be available');
 let browser;
