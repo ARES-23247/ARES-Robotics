@@ -3419,7 +3419,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthModels.kt": {
-      "sha256": "a295846f07f8774707887a58d67f4b2c79ae56f91ba5c900c388681af8ebbe60",
+      "sha256": "afec702b40006bcd5e8694da3fddaa52b5fabcd1f65a7a1f4efb0c0bbfeedd71",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire validated snapshot/source models, recognized topics, numeric/boolean domains and FTC runtime presentation reviewed. Shared parser replaces the unused incremental updater; exact alias priority, unknown feedback and valid active/inactive states covered. Final Studio gate passed; 59/59 lines, 78/82 branches.",
@@ -3438,17 +3438,8 @@
         "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/CriticalAlertOverlay.kt": {
-      "sha256": "f8d5129d38d69ca160c77843ee76783d26333accfb8c7f4385fe1995850161f1",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Audited critical heads-up telemetry alert overlay. Verified detection of motor stalls, battery brownouts, and heartbeat dropouts, plus WCAG AA contrast calculation via `readableForeground`.",
-      "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardAlertPresentation.kt": {
-      "sha256": "8412e10d339eca28921d6075100399c71266b0be3a7abed93ea6e2aae4c8bc0b",
+      "sha256": "3c6b8ccfa58a66e3159c7112f8965a211eb159f3604314e3cb796e0e371212e5",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire category, source/resolution filtering, overflow-safe deterministic priority, derived popup/dismissal lifecycle and source-time formatting reviewed. Six regression methods exercise actual Compose state transitions.",
@@ -3465,17 +3456,6 @@
       "scope": "Audited dashboard control toolbar. Verified dashboard layout profile switching (Driver, Pit, Tuning), touch optimization mode toggle, and custom layout configuration save dialog.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardCriticalAlertStack.kt": {
-      "sha256": "84e929e721055c6a0dcad52d60db7750b54ee35cc819f3b476231bff316295bd",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Entire popup component reviewed; bounded lazy layout, stable IDs, source-time details and dismissal callback wiring inspected. Headless 20-alert fixture rendered; scrolling/click interaction remains outside executed coverage.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass28-studio.log",
-        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardLayoutEngine.kt": {
@@ -3518,17 +3498,6 @@
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardReplaySelection.kt": {
-      "sha256": "077a9215641e47c7868b7e64e41266db2ac3f133034636c3d9d115f38f1a0c85",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Entire exact selected-session/live-rewind identity gate reviewed; blank/mismatched identities and live mode boundaries exercised, 3/3 lines and 12/12 branches covered.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass28-studio.log",
-        "ARESLib-Kotlin/build/audit-pass28-render-final.log"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardWidgetGrid.kt": {
       "sha256": "fae820108102a18212bb973e81c172da3b7dfee4d2f2c5b14b6c61605c1d9231",
       "review": "reviewed",
@@ -3539,7 +3508,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardWidgetHost.kt": {
-      "sha256": "f42f5e885e2d8ce090a50e58b920553617edc8288f130dbb9db81368b53e30c7",
+      "sha256": "8a0591028b87509d8fce8a69c109e0358d89e1eecc66dce0ed27d2642fb566a9",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated lines 1-98: DashboardWidgetHost. Verified dynamic Compose widget grid mapping from DashboardWidgetRegistry definitions, state isolation ensuring fullscreen toggling is strictly in-memory and never alters persisted grid layout, lifecycle state separation keying on replayFrame?.sessionId ?: 'live', and capability-scoped execution via DashboardWidgetRenderContext.forDefinition.",
@@ -3660,16 +3629,6 @@
       ],
       "sha256": "5a45f768f145275a94f28ad6edaaa277b49e22f07b2d39a4fd845ec1452f59f6"
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyObservation.kt": {
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 219: Complete bounded topology-key tracker, one collector/10Hz sampler and Compose ownership review. Canonical Motor IDs precede friendly alias; non-motors ignored. String placeholders/nonfinite values unknown and invalid canonical observations cannot revive aliases. Inclusive 2s per-metric desktop receipt freshness, source epochs, clock rewind suppression, retained-frame exclusion, disabled/cached/changed-source disposal and immutable map snapshots tested. Unrelated publication volume does not increase presentation sampling; no physical timing benchmark.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
-      ],
-      "sha256": "9b09d3f0a25e5b7bf90b87b47aa715c9b59a523af95c17ec822a7420d0da2f08"
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyPresentation.kt": {
       "review": "reviewed",
       "validation": "passed",
@@ -3678,17 +3637,7 @@
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
       ],
-      "sha256": "f4f82388520a162d9c780ded33791121f36d578e19c459ff976032bb45aa5ee8"
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologySelection.kt": {
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 219: Complete keyed asynchronous cache selector review. Database/session changes initialize empty/loading state; only nonblank resolved robot IDs query cache, mismatched identity and storage errors are contained, CancellationException rethrows. Tests include late completion after cancelled selection and changing database owner. Live selection never falls back to retired cache. Underlying persistence is latest-per-robot, not session-time topology; UI label makes this explicit.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json"
-      ],
-      "sha256": "44a22969cc237c52727530fb9d5f27c79e8428bbb2f54d88aa2063decba9eb65"
+      "sha256": "0a591f1d67dab640bea8443d18225a12485b3ea7941eb8f541d93570b23fecb7"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/IMUVisualizerCard.kt": {
       "sha256": "33d37a8913519b709595d46d7d5635f91f01f5bfb533b6185f026bed8a96a40c",
@@ -3790,16 +3739,6 @@
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/PlatformHealthPresentation.kt": {
-      "sha256": "70f171d522166c8a49c8e8e983a9eb54b98f8e8a4ae1af0ce086a6118d502dfe",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Entire display policy and controller titles reviewed. Tests cover all leagues, missing/nonfinite voltage, exact thresholds, invalid XRP configuration, accepted endpoints and caution ceiling. Kover 27/27 lines, 28/28 branches. Thresholds are existing dashboard policy, not verified electrical safety boundaries.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass27-studio-final.log"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/PoseViewerCard.kt": {
       "sha256": "e8fa97a2c3f56d0ab4e67e24820d0b970693b3819c296cbf0e5d6f4a4d40fdba",
       "review": "reviewed",
@@ -3829,7 +3768,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ReplayDashboardModels.kt": {
-      "sha256": "945d9f4824e78b7602d97faac4f6c80e41a4fb288cdd20810ad161dbeeea7efc",
+      "sha256": "5aedf3bb9e292ed74e577f7121274d52ae3565f05f39475ab6bf3ff5b2c6d718",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire normalized replay extractor reviewed. Only known keys retained, deterministic canonical/alias and normalized spelling priority, invalid canonical remains unknown, one scan of input maps and shared numeric/runtime parser. 13/13 lines, 9/12 branches; historical per-topic age is not inferred.",
@@ -3948,17 +3887,6 @@
         "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SubsystemHealthObservation.kt": {
-      "sha256": "1b4a5e64cf5bdc836e296d847db882a5678d5884158d743d649d5f424a5bf49e",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Pass 193: Complete new observation helper reviewed/tested: current frame identity plus epoch recheck, epoch-aware sampling, retained-heartbeat exclusion while preserving same-target flags, 4 Hz publication and structured collector cancellation. High-cardinality limits belong to the separately partial accumulator; replay-mode choice belongs to the partial card integration.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass193-verified-evidence/studio-app-summary.json"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SwerveModuleVisualizer.kt": {
       "sha256": "152a5a8d86cc7b19e481a443dc086ecc99adc35b9e6ce87310643caa67ea2845",
       "review": "reviewed",
@@ -3988,19 +3916,10 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartModel.kt": {
-      "sha256": "5ecc14f39cd14f3e77aaccf401086e886a5cc38dbbe67835a53f6abeed39a05c",
+      "sha256": "d29bff3da9a780f97228cf974e97c0969bd0533f37666703b8a006f731b9f341",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated TelemetryChartModel physical dimension grouping, small multiples layout configuration, auto-ranging min/max bounds calculation with 10% safety margin, and physical unit conversions.",
-      "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartModels.kt": {
-      "sha256": "546a6f8ffcdf55ade506b97ab6b3fa60d256158f24b8919d3f2a08ff4d516348",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated TelemetryPoint data model and buildSignalTree hierarchical signal grouping by slash-delimited topic path.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -4046,15 +3965,6 @@
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated vision pipeline diagnostics, tag detection count, ambiguity percentage, camera latency, and innovation threshold canvas drawing (dashed line at +/- 5cm threshold).",
-      "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/WidgetFullscreenButton.kt": {
-      "sha256": "9aa739984dfadf48999b0a8b09aca44cb2045875d4d3d667f2cd391a98045c01",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated widget fullscreen toggle button, accessibility content descriptions, and Compose state hoisting.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -28957,7 +28867,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "845e377979c9e0343529774ba89e115e66bd074977631e1aa8bede5e517f4bb7",
+      "sha256": "dac529f2d1b7888326d449834f84f098d99d25c1f43099c9d3af94f33e06b12b",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -29376,7 +29286,7 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "8f02222e23d83b77daba5b561eec3b1bbb1550e4ba45a2239e3a035681ba9d3b",
+      "sha256": "67d208378c8b21655e505a503fdd8bcccb12421b27d35794ff576544c369f75c",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Pass 258 in progress: Canonical next version/source identity reviewed against frozen commit and isolated candidate. Archive/workflow alignment and Studio verification require approval. Pass 191: full manifest/identity/hash record checked against frozen library tree 271e2518a412f19cac6ea84331cbc101e5efdd91, unique candidate 17.0.10-rc.271e2518a412, exact rebuilt archive bytes and complete local validation matrix. No remote release. Pass204: Version/source/hash manifest checked against frozen library tree 886d799fea29f93368b6f21e95b516ec61a79793, local candidate 17.0.11-rc.886d799fea29 and new immutable local archive bytes. Full library/API and robot/starter candidate gates passed; no public release. Final Studio, 101 tooling tests and policy/version/hash preflight passed against the same local candidate. Pass205: Version/tree/hash identity checked against source commit 54aafe0f, tree af2998dac603d828aeb9a77bf1e2411ea104e1ed, candidate 17.0.12-rc.af2998dac603 and exact rebuilt local archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and 101 tooling tests passed; no public release. Pass206: Local version/tree/hash identities verified against source commit 2e1a2938, tree c6d7742429b063b7fb9bf3b51cb87d8b839fe60d, candidate 17.0.13-rc.c6d7742429b0 and exact rebuilt archive bytes. Full dependency-ordered library/API/robot/starter/Studio gates and tooling passed; no public release. Pass 207: Reviewed current version/source identity and candidate or bundle hash/pin changes. Candidate tree is ac39695702dc468db823e5418fd9368044a628f2; existing broader review status retained. Pass 208: Reviewed candidate/source identity, version and bundle hash/pin updates. Existing broader review status retained. Pass 209: Local candidate 17.0.16-rc.0599f2cfaa63 binds library tree 0599f2cfaa63e12f2f1a6593fbbfd90d624a1552; stable version/URL/hash pins updated together. Four regenerated archives differ only in release version properties, with old/new hashes verified. No public release or remote workflow ran. Pass 210: Candidate 17.0.17-rc.fb069fce9d5b binds source commit bc50f06d59cb03d34ef098ed139678a381cff0f0 and library tree fb069fce9d5b2e13e2c47a218d1a34c5961c6a41. Version/URL/hash pins updated together. All four archives were compared entry-by-entry: only version properties changed. Public release and remote workflow execution are excluded. Pass 211: Local candidate 17.0.18-rc.8800d379ac34 binds source 06c60d28dbe92cc65e61ee8fcb2056b3794c0071 and library tree 8800d379ac34dd1027880104c102ab62882a10be. Version/URL/hash pins synchronized. Four rebuilt archives match prior normalized entry inventories and differ only in version properties; old/new SHA-256 verified. No public release or remote workflow execution. Pass 212: Local candidate 17.0.19-rc.c8cd236c4f20 binds source b0e09c1e91780eb41d9aa8965311e58f002905fc and tree c8cd236c4f2004cdffcd478f7e63d8128f58a12c. Version/URL/hash pins align. Four archives compared entry-by-entry differ only in version properties; old/new hashes verified. No public release or remote workflow execution. Pass 213: Local candidate 17.0.20-rc.1fba72d36659 binds source 60328197952cccaa7486341f16ad36eddce96d23 and library tree 1fba72d3665993919cfeca77f9462cc497ad0887. Versions/URLs/hash pins aligned; four archives have identical normalized entry sets and differ only in version properties. Old/new hashes verified. Existing broader review status retained; no public release or remote workflow execution. Pass 214: Local candidate 17.0.21-rc.6cb97758e409 binds source 88fb3f0b34e40602a60a0050e8f2b531c6a6d1d0 and tree 6cb97758e409ea1d12b60b63b6bb0078106287af. Versions, URLs and SHA pins synchronized; four rebuilt archives have matching normalized entry sets and differ only in version properties. Old/new hashes verified. Broader existing review status retained; no remote publication. Pass 215: Local candidate 17.0.22-rc.f02981fd655c binds source f60bd3a131d0bcf777a84cc4537962eca6ab3404 and tree f02981fd655c4e5c14bae236d768b1446f3ec0dd. Version/URL/SHA pins synchronized. Four archives have matching normalized entry sets and differ only in version properties; old/new hashes verified. Existing broader review status retained; no remote publication. Pass 216: Local candidate 17.0.23-rc.0d76019da030 binds source 7eb380d57ab4116502d19e319f09b5b356d04504 and library tree 0d76019da0309fb34d6eafc024912b34689fd2d0. Versions and archive pins synchronized. Four normalized archives differ only in version properties; original and replacement hashes verified. Existing broader status preserved; no remote publication. Pass 217: Local candidate 17.0.24-rc.e7609c4def7f binds source 6c771860e9a82b51cbdd00ce3399d4bf41f8e308 and library tree e7609c4def7fe6d8b96b387f252da2b6b7ed92ac. Versions and archive pins synchronized. Four normalized archives differ only in version properties; original and replacement hashes verified. Existing broader status preserved; no remote publication. Pass 218: Local candidate 17.0.25-rc.9de91b51866d binds source 7c9c55bbbfea14e9c00d515a2d2b5280da4f53dc and library tree 9de91b51866db1217c4a221681e9157cd1398100. Versions and archive pins synchronized. Four normalized archives differ only in version properties; original and replacement hashes verified. Existing broader status preserved; no remote publication. Pass 220: Local candidate 17.0.26-rc.3da6b44138f4 binds source 0cc4422127b5df80f44896bd119f72452d6e603c and library tree 3da6b44138f4309be21a560f9ff9a218326f71f5. Versions and archive pins synchronized; normalized archives differ only in version properties and all hashes verified. Existing broader status preserved; no remote publication. Pass 221: Local candidate 17.0.27-rc.73ec2a3ea406 binds source 15d4997ca6af38cfff48e730f446bd449bab645e and library tree 73ec2a3ea406d8f632f6c989f12db4b7f2072bf0. Versions/archive pins synchronized; four normalized archives differ only in version properties and all hashes verified. Broader status preserved; no remote publication. Pass 222: Local candidate 17.0.29-rc.c03e14b0ae4c binds source 359a33139dff85dd044a51241e425a82c217fec1 and library tree c03e14b0ae4c0b9b8bac0f25f3a98cff6eac8ef4. Versions/archive pins synchronized; four normalized archives differ only in version properties and all hashes verified. Broader status preserved; no remote publication. Pass 223: Candidate 17.0.30-rc.2cb4931d225e binds source 9bff66fa5eb5857b8e5ddec9c9f0f349dffc994f and library tree 2cb4931d225ead9c69dd676c1062b98d27ad31d4. Version/archive pins synchronized; normalized archives differ only in version properties. Hashes checked locally; no publication. Pass 224: Local candidate 17.0.31-rc.23925b619c60 binds final source/manifest caa1d0fede9d964a78e5fcdaec05a569ec257fa0 and library tree 23925b619c605a598ec1e94d9548e8c89cfdccbc. Initial local preparation pin mismatch was rejected before publication and corrected without changing the library tree. Versions/archive pins synchronized and normalized archive/hash checks performed; no remote publication. Pass 225: Local candidate 17.0.32-rc.15bb5db96df3 binds source 6b49d6b0b5343edef8868972e18d30c03662cb98 and library tree 15bb5db96df380f2befdc057a48a8b239492eee8. Versions and four archive/hash/workflow pins synchronized; normalized archives differ only in version properties. No remote publication. Pass 226: Local candidate 17.0.33-rc.074ee5429e75 binds source 3a6dbd9ae4b98597d28e06d586ff4b2b8e9f0163 and library tree 074ee5429e759939a87fac7a9530e08c85bbf289. Versions/archive/hash/workflow pins synchronized; four normalized archive comparisons change only version properties. No remote publication. Pass 227: Local candidate 17.0.34-rc.e00869558843 binds source 1bdebc611e52694527140d404e9e49f476463e0e and library tree e00869558843acf074d1ef7251884e44494b7750. Version/archive/hash/workflow pins synchronized; all4 normalized starter archives change only version properties. No remote publication. Pass 228: Local candidate 17.0.35-rc.2295478af864 binds source bc586334dd441f45cbaf081759134781504903ab and library tree 2295478af864c7a4426c6138bedc044a701548cd. Version/archive/hash/workflow pins synchronized; all4 normalized starter archives change only version properties. No remote publication. Pass 229: Local candidate 17.0.36-rc.c5a9c65bbd2f binds source ab3e502c78f5536969e2c770611bd7ebccff5162 and library tree c5a9c65bbd2fe2a47b6cea2b20003e05f2c389cc. Version/archive/hash/workflow pins synchronized; all4 normalized starter archives change only version properties. No remote publication. Pass 230: Local candidate 17.0.37-rc.6c25c3bf76a0 binds source 93f1ed7b38ab75be98bb4cb4a1bf12a4deb38c84 and library tree 6c25c3bf76a088a7e85b402153462fe8de6ff047. Version/archive/hash/workflow pins synchronized; all4 normalized starter archives change only version properties. No remote publication. Pass 231: Local candidate 17.0.38-rc.a1c678aeabfc binds source 3a832621b941f7d161a7d9a8199a5eab207ec223 and tree a1c678aeabfc1fb59830a5ee37018560fe52e2a5. Version/archive/hash/workflow pins synchronized; all4 normalized starter archives change only version properties. No remote publication. Pass 232: Local candidate 17.0.39-rc.b5d79a71a7e9 binds source 9cb026dc636e39ed4344041eec1a624c0e158aea and tree b5d79a71a7e9fbdec358c89fbde5681081656dbe. Version/archive/hash/workflow pins synchronized; all4 normalized starter archives change only version properties. No remote publication. Pass 233: Local candidate 17.0.40-rc.1387676e0c2b binds source fca5e5986d1071a646e571e3dbd6ff390309b4e3 and library tree 1387676e0c2bdeb795f0e9ac842f156bae493b17. Prior unpublished attempt was superseded after port-isolation fixture fix. Version/archive/hash/workflow pins synchronized; four normalized archives differ only in version properties. No remote publication. Pass 234: Local candidate 17.0.41-rc.a559b2f1934c binds source 2801d2627e0886fc8b0c1bb80987a1ce98715301 and library tree a559b2f1934c9317ec4b67b2dd812d867f91f6df. Version/archive/hash/workflow pins synchronized; four normalized starter archives differ only in release version properties. No remote publication. Pass 238: Local candidate 17.0.42-rc.526a048d8dfb binds source 701a4482a8d7b2b6e6aa329a24aab8a8e0c79660 and library tree 526a048d8dfb1092e89be95c8e906e9fbc516027. All six versions and archive/hash/workflow pins synchronized; four normalized starter archives differ only in release version properties. No remote publication. Checkpoint validation remains pending until local archive/reference approval, Studio checks and final repository policy complete. Pass 261 freezes source tree f9e7569ea873a08df0477fad1008b6f9ef4575e3 and unique local candidate 17.0.44-rc.f9e7569ea873. Full library/API and robot consumer matrix pass; all 410 artifact hashes unchanged. Canonical library/Studio/starter/example versions advance together under source policy. Archive/workflow migration remains unapproved; Studio tests and remaining repository policy are pending. No tracked archive/reference or remote release changes. Pass270 freezes library tree be6f53042221e2123eba11170ed7cdb3cb4a11ce and unique local candidate 17.0.45-rc.be6f53042221. Full2918library/API and714robot consumer tests pass; Studio shared/gateway/app test compilation passes. All410candidate files hash-verified. Canonical versions advance together under source policy; archive/workflow migration remains unapproved, Studio runtime tests and repository alignment remain pending. No tracked archive/reference or remote release change. Pass271 rejects initial17.0.46 local source after full-suite regression and freezes repaired library tree a8eee7a6261ff6e47ae071e74c49f51520f67c1b under unique local candidate 17.0.47-rc.a8eee7a6261f.2932library/API and 715robot consumer tests pass; Studio test sources compile.410candidate files hash-verified. Archive/workflow references remain unchanged/unapproved, so Studio test execution and repository alignment are pending. No remote release. Pass272 rejects initial17.0.48 source after completed-task compatibility regression and freezes repaired tree 0fd1e530f36351c25c943e0a30ceba3444a321c8 with unique local candidate 17.0.50-rc.0fd1e530f363.2950library/API and 715robot consumer tests pass, Studio test sources compile and410candidate hashes are verified. Archive/workflow references remain unchanged/unapproved, leaving Studio test execution and repository alignment pending. No remote release. Pass273 freezes source tree 89c4b65bc69d8189299d4c3af78e6f666931a7f6 with unique local candidate 17.0.51-rc.89c4b65bc69d; 2968 library/API and 715 robot consumer tests pass, Studio test sources compile, and 410 artifact hashes are verified. Archive/workflow alignment remains unapproved and unmodified, so normal Studio test execution and repository release policy are still pending. No remote release. Pass274: canonical 17.0.52/source tree bound to frozen local candidate 17.0.52-rc.f570536575d8; library/API/size and robot-consumer validation pass. Existing archive/workflow alignment remains unapproved and normal Studio tests/repository policy remain pending. Pass275: canonical 18.0.0/immutable source tree bind candidate 18.0.0-rc.caed526a0608. Public pose API migration requires the new major identity. Library/API and robot-consumer checks pass; existing Studio/archive/workflow alignment remains unapproved and pending. Pass276: canonical18.0.1 and source identity bind 18.0.1-rc.2d39a27fb81d; library/API and robot-consumer checks pass. Existing Studio/archive/workflow alignment remains pending and unapproved. Pass277: canonical19.0.0 and library source identity bind 19.0.0-rc.e1e0b12c1f6a;3030 library/716 robot tests and13 API checks pass. Studio compilation passes after adapter migration, but workflow/archive/template release alignment remains pending and outside approved migration scope. Robot-readiness checkpoint: Recorded library tree matches frozen candidate;13 APIs and local candidate/consumer checks pass. Release alignment remains pending. Release alignment follow-up: Library source identity unchanged and matches the validated candidate; 410 artifact hashes retained. Local alignment and consumer validation complete; no release approval.",
