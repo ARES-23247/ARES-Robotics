@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-16T13:40:08.761864+00:00",
+  "generatedAt": "2026-09-16T13:50:14.220589+00:00",
   "summary": {
-    "totalProductionKotlinFiles": 1107,
-    "verifiedFiles": 3,
-    "auditedFiles": 1104,
+    "totalProductionKotlinFiles": 1108,
+    "verifiedFiles": 2,
+    "auditedFiles": 1106,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 17,
@@ -5776,15 +5776,26 @@
       "status": "AUDITED"
     },
     {
-      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt",
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderState.kt",
       "product": "ARES-Analytics",
-      "lines": 750,
+      "lines": 119,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "AUDITED"
+      "status": "VERIFIED"
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt",
+      "product": "ARES-Analytics",
+      "lines": 650,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false,
+      "status": "VERIFIED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/AprilTagMapPresetCatalog.kt",
@@ -6400,7 +6411,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/GoogleOAuthBrokerModels.kt",
@@ -8787,7 +8798,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/Geometry3d.kt",
@@ -8809,7 +8820,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/QuaternionEuler.kt",
