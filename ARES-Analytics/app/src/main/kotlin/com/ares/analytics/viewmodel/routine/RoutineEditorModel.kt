@@ -456,3 +456,20 @@ private fun routineIssue(
     code: String,
     message: String
 ) = RoutineValidationIssue(RoutineValidationSeverity.ERROR, routine.documentId, path, code, message)
+
+fun defaultAutonomousEntry(
+    routine: RoutineDocument,
+    league: League,
+    dimensions: RobotDimensions,
+): AutonomousCatalogEntry = AutonomousCatalogEntry(
+    entryId = routine.documentId,
+    displayName = routine.name,
+    routineId = routine.documentId,
+    startingPose = clampRoutinePose(
+        routine.steps.firstOrNull()?.drive?.target ?: RoutinePose(0.0, 0.0, 0.0),
+        league,
+        dimensions,
+    ),
+    authoredAlliance = RoutineAlliance.RED,
+    mirrorForOppositeAlliance = true,
+)

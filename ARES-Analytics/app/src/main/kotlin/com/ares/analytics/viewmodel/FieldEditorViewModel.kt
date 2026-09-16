@@ -20,6 +20,9 @@ import com.ares.analytics.viewmodel.field.FieldEditorHistory
 import com.ares.analytics.viewmodel.field.FieldEditorSnapshot
 import com.ares.analytics.viewmodel.field.editorSnapshot
 import com.ares.analytics.viewmodel.field.FieldAprilTagTransfer
+import com.ares.analytics.viewmodel.field.FieldEditorTransferOps
+import com.ares.analytics.viewmodel.field.FieldEditorSimulatorSync
+import com.ares.analytics.viewmodel.field.FieldEditorValidationOps
 import com.ares.analytics.viewmodel.field.FieldEditorLayout
 import com.ares.analytics.viewmodel.field.FieldMeasurementUnit
 import com.ares.analytics.viewmodel.field.FieldPrefabCatalog
@@ -56,97 +59,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.atomic.AtomicLong
 
-/** Immutable editor state backed by one canonical, revisioned field document. */
-data class FieldEditorState(
-    val document: RobotFieldConfig? = null,
-    val projectRevision: ProjectSessionRevision? = null,
-    val fieldImage: ImageBitmap? = null,
-    val fieldImageConfig: FieldImageConfig = FieldImageConfig(),
-    val obstacles: List<Obstacle> = emptyList(),
-    val gamePieces: List<GamePiece> = emptyList(),
-    val gamePieceTypes: List<GamePieceType> = emptyList(),
-    val aprilTags: List<AprilTagPlacement> = emptyList(),
-    val aprilTagImportPreview: AprilTagImportPreview? = null,
-    val fieldWaypoints: List<FieldWaypoint> = emptyList(),
-    val saveStatus: String = "",
-    val selectedElementIds: Set<String> = emptySet(),
-    val canUndo: Boolean = false,
-    val canRedo: Boolean = false,
-    val clipboardCount: Int = 0,
-    val snapEnabled: Boolean = true,
-    val gridSpacingMeters: Double = 0.1,
-    val measurementUnit: FieldMeasurementUnit = FieldMeasurementUnit.METERS,
-    val validationIssues: List<FieldValidationIssue> = emptyList(),
-    val simulatorStatus: String = "",
-    val isLoading: Boolean = false,
-    val isDirty: Boolean = false,
-    val errorMessage: String? = null
-) {
-    val selectedElement: String? get() = selectedElementIds.singleOrNull()
-}
 
-sealed class FieldEditorIntent {
-    data object LoadBiobuzzPreset : FieldEditorIntent()
-    data class LoadConfig(val projectPath: String?, val league: League) : FieldEditorIntent()
-    object SaveDocument : FieldEditorIntent()
-    data class ImportFieldImage(val imageFile: File, val projectPath: String?, val league: League) : FieldEditorIntent()
-    data object ClearFieldImage : FieldEditorIntent()
-    data class UpdateFieldImageConfig(val config: FieldImageConfig, val projectPath: String?, val league: League) : FieldEditorIntent()
-    data class AddObstacle(val obstacle: Obstacle) : FieldEditorIntent()
-    data class UpdateObstacle(val index: Int, val obstacle: Obstacle) : FieldEditorIntent()
-    data class DeleteObstacle(val index: Int) : FieldEditorIntent()
-    data class AddGamePiece(val piece: GamePiece) : FieldEditorIntent()
-    data class UpdateGamePiece(val index: Int, val piece: GamePiece) : FieldEditorIntent()
-    data class DeleteGamePiece(val index: Int) : FieldEditorIntent()
-    data class AddAprilTag(val tag: AprilTagPlacement) : FieldEditorIntent()
-    data class UpdateAprilTag(val index: Int, val tag: AprilTagPlacement) : FieldEditorIntent()
-    data class DeleteAprilTag(val index: Int) : FieldEditorIntent()
-    data class AddFieldWaypoint(val waypoint: FieldWaypoint) : FieldEditorIntent()
-    data class UpdateFieldWaypoint(val index: Int, val waypoint: FieldWaypoint) : FieldEditorIntent()
-    data class DeleteFieldWaypoint(val index: Int) : FieldEditorIntent()
-    data class SelectElement(val elementId: String?, val additive: Boolean = false) : FieldEditorIntent()
-    data class SelectElements(val elementIds: Set<String>, val additive: Boolean = false) : FieldEditorIntent()
-    object SelectAll : FieldEditorIntent()
-    object Undo : FieldEditorIntent()
-    object Redo : FieldEditorIntent()
-    object CopySelection : FieldEditorIntent()
-    object PasteSelection : FieldEditorIntent()
-    object DuplicateSelection : FieldEditorIntent()
-    object DeleteSelection : FieldEditorIntent()
-    data class NudgeSelection(val deltaX: Double, val deltaY: Double) : FieldEditorIntent()
-    data class SetSnapEnabled(val enabled: Boolean) : FieldEditorIntent()
-    data class SetGridSpacing(val meters: Double) : FieldEditorIntent()
-    data class SetMeasurementUnit(val unit: FieldMeasurementUnit) : FieldEditorIntent()
-    data class AddPrefab(val prefabId: String) : FieldEditorIntent()
-    object PushToSimulator : FieldEditorIntent()
-    object ClearSaveStatus : FieldEditorIntent()
-    data class SetObstacles(val obstacles: List<Obstacle>) : FieldEditorIntent()
-    data class SetGamePieces(val gamePieces: List<GamePiece>) : FieldEditorIntent()
-    data class SetGamePieceTypes(val gamePieceTypes: List<GamePieceType>) : FieldEditorIntent()
-    data class SetAprilTags(val tags: List<AprilTagPlacement>) : FieldEditorIntent()
-    data class SetFieldWaypoints(val waypoints: List<FieldWaypoint>) : FieldEditorIntent()
-    data class SetLayout(val layout: FieldEditorLayout) : FieldEditorIntent()
-    data class PreviewAprilTagMap(
-        val content: String,
-        val fileName: String,
-        val projectPath: String?,
-        val league: League,
-    ) : FieldEditorIntent()
-    data class ApplyAprilTagImport(val replaceExisting: Boolean) : FieldEditorIntent()
-    data object DismissAprilTagImport : FieldEditorIntent()
-    data class ExportAprilTagMap(val format: AprilTagExportFormat, val destination: File) : FieldEditorIntent()
-}
-
-enum class AprilTagExportFormat { LIMELIGHT_FMAP, WPILIB_JSON }
-
-data class AprilTagImportPreview(
-    val format: AprilTagMapFormat,
-    val tags: List<AprilTagPlacement>,
-    val fieldLengthMeters: Double?,
-    val fieldWidthMeters: Double?,
-    val warnings: List<String>,
-    val sourceName: String,
-)
 
 /**
  * Single owner for field editor state and persistence.
@@ -655,92 +568,20 @@ class FieldEditorViewModel(
     }
 
     private fun currentSimulatorReceipt(): SimulatorFieldApplyReceipt? =
-        fieldApplyReceiptProvider?.invoke() ?: nt4ClientService
-            ?.latestValues
-            ?.get(SIMULATOR_FIELD_APPLIED_RECEIPT_TOPIC)
-            ?.stringValue
-            .let(::parseSimulatorFieldApplyReceipt)
+        FieldEditorSimulatorSync.currentSimulatorReceipt(fieldApplyReceiptProvider, nt4ClientService)
 
     private fun currentSimulatorFailure(): SimulatorFieldApplyFailure? =
-        fieldApplyFailureProvider?.invoke() ?: nt4ClientService
-            ?.latestValues
-            ?.get(SIMULATOR_FIELD_APPLY_ERROR_TOPIC)
-            ?.takeIf { !it.stringValue.isNullOrBlank() }
-            ?.let { frame ->
-                SimulatorFieldApplyFailure(
-                    eventId = "${frame.sessionId}:${frame.timestampUs}:${frame.sampleOrder}",
-                    message = frame.stringValue.orEmpty(),
-                )
-            }
+        FieldEditorSimulatorSync.currentSimulatorFailure(fieldApplyFailureProvider, nt4ClientService)
 
     private suspend fun awaitSimulatorReceipt(
         client: Nt4ClientService,
         expected: ExpectedSimulatorField,
         previousReceipt: SimulatorFieldApplyReceipt?,
-    ): SimulatorFieldApplyReceipt? = withTimeoutOrNull(FIELD_APPLY_CONFIRMATION_TIMEOUT_MS) {
-        client.telemetryFlow.first { frame ->
-            if (frame.key.trimStart('/') != SIMULATOR_FIELD_APPLIED_RECEIPT_TOPIC) return@first false
-            val receipt = parseSimulatorFieldApplyReceipt(frame.stringValue) ?: return@first false
-            receipt.eventId != previousReceipt?.eventId && receipt.matches(expected)
-        }.stringValue.let(::parseSimulatorFieldApplyReceipt)
-    }
+    ): SimulatorFieldApplyReceipt? =
+        FieldEditorSimulatorSync.awaitSimulatorReceipt(client, expected, previousReceipt)
 
-    private fun withValidation(state: FieldEditorState): FieldEditorState {
-        val width = state.fieldImageConfig.widthMeters.takeIf { it > 0.0 } ?: when (activeLeague) {
-            League.FTC -> 3.6576
-            League.FRC -> 16.541
-            League.XRP -> 2.54
-        }
-        val height = state.fieldImageConfig.heightMeters.takeIf { it > 0.0 } ?: when (activeLeague) {
-            League.FTC -> 3.6576
-            League.FRC -> 8.211
-            League.XRP -> 1.4224
-        }
-        val editorIssues = FieldEditorValidator.validate(
-            league = activeLeague,
-            widthMeters = width,
-            heightMeters = height,
-            obstacles = state.obstacles,
-            gamePieces = state.gamePieces,
-            aprilTags = state.aprilTags,
-            waypoints = state.fieldWaypoints
-        )
-        val requiredFieldType = when (activeLeague) {
-            League.FTC -> FieldType.FTC
-            League.FRC -> FieldType.FRC
-            League.XRP -> FieldType.XRP
-        }
-        val canonicalIssues = state.document.orEmptyValidation(requiredFieldType).map { issue ->
-            FieldValidationIssue(
-                severity = FieldValidationSeverity.ERROR,
-                message = issue.message,
-                elementIds = issue.elementIds,
-            )
-        }
-        return state.copy(
-            validationIssues = (editorIssues + canonicalIssues).distinctBy { issue ->
-                issue.severity to (issue.message to issue.elementIds)
-            }
-        )
-    }
-
-    private fun RobotFieldConfig?.orEmptyValidation(requiredFieldType: FieldType) =
-        this?.let { document ->
-            RobotFieldValidator.validate(
-                config = document,
-                requiredFieldType = requiredFieldType,
-                // The reviewed BIOBUZZ layout has no AprilTags. Keep normal FTC layout
-                // requirements and validation of any authored tags; do not invent vision targets.
-                requireAprilTags = requiredFieldType == FieldType.FTC && document.id != "ftc-2026-2027-biobuzz",
-            )
-        }.orEmpty()
-
-    private fun allElementIds(state: FieldEditorState): Set<String> = buildSet {
-        state.obstacles.forEach { add(it.id) }
-        state.gamePieces.forEach { add(it.id) }
-        state.aprilTags.forEach { add(it.id) }
-        state.fieldWaypoints.forEach { add(it.id) }
-    }
+    private fun withValidation(state: FieldEditorState): FieldEditorState =
+        FieldEditorValidationOps.withValidation(state, activeLeague)
 
     private fun nextAvailableTagId(): Int {
         val used = _state.value.aprilTags.mapTo(hashSetOf()) { it.tagId }
@@ -807,18 +648,7 @@ class FieldEditorViewModel(
         activeLeague = intent.league
         scope.launch {
             try {
-                val bitmap = withContext(Dispatchers.IO) {
-                    val target = File(ProjectLayout.assetsDirectory(projectPath, intent.league), "field_image.png")
-                    target.parentFile?.mkdirs()
-                    val temporary = File(target.parentFile, ".field_image.png.tmp")
-                    try {
-                        Files.copy(intent.imageFile.toPath(), temporary.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                        Files.move(temporary.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                    } finally {
-                        if (temporary.exists()) temporary.delete()
-                    }
-                    org.jetbrains.skia.Image.makeFromEncoded(target.readBytes()).toComposeImageBitmap()
-                }
+                val bitmap = FieldEditorTransferOps.importFieldImage(intent.imageFile, projectPath, intent.league)
                 applyEdit {
                     it.copy(
                         fieldImage = bitmap,
@@ -833,15 +663,12 @@ class FieldEditorViewModel(
 
     private fun previewAprilTagMap(intent: FieldEditorIntent.PreviewAprilTagMap) {
         try {
-            require(intent.league == activeLeague && (intent.projectPath == null || intent.projectPath == activeProjectPath)) {
-                "Load the target project and league before importing AprilTags"
-            }
-            val preview = FieldAprilTagTransfer.decode(
-                content = intent.content,
-                fileName = intent.fileName,
-                field = requireNotNull(_state.value.document) { "Load a field before importing its AprilTags" },
+            val preview = FieldEditorTransferOps.previewAprilTagMap(
+                intent = intent,
+                document = _state.value.document,
                 existingTags = _state.value.aprilTags,
-                league = intent.league,
+                activeLeague = activeLeague,
+                activeProjectPath = activeProjectPath,
             )
             _state.update {
                 it.copy(
@@ -864,23 +691,7 @@ class FieldEditorViewModel(
         // Applying a no-op import must still consume its preview, without adding an undo entry.
         _state.update { it.copy(aprilTagImportPreview = null) }
         applyEdit { state ->
-            val tags = if (replaceExisting) {
-                preview.tags
-            } else {
-                val existingIds = state.aprilTags.mapTo(hashSetOf()) { it.tagId }
-                state.aprilTags + preview.tags.filterNot { it.tagId in existingIds }
-            }
-            state.copy(
-                aprilTags = tags,
-                fieldImageConfig = if (replaceExisting) {
-                    state.fieldImageConfig.copy(
-                        widthMeters = preview.fieldLengthMeters ?: state.fieldImageConfig.widthMeters,
-                        heightMeters = preview.fieldWidthMeters ?: state.fieldImageConfig.heightMeters,
-                    )
-                } else {
-                    state.fieldImageConfig
-                },
-            )
+            FieldEditorTransferOps.applyAprilTagImport(preview, state, replaceExisting)
         }
     }
 
@@ -888,14 +699,7 @@ class FieldEditorViewModel(
         val document = _state.value.document ?: return
         scope.launch {
             try {
-                val content = withContext(Dispatchers.Default) {
-                    FieldAprilTagTransfer.encode(document, intent.format)
-                }
-                withContext(Dispatchers.IO) {
-                    writeFileAtomically(intent.destination) { temporary ->
-                        temporary.writeText(content.trimEnd() + System.lineSeparator())
-                    }
-                }
+                FieldEditorTransferOps.exportAprilTagMap(document, intent.format, intent.destination)
                 _state.update {
                     it.copy(saveStatus = "Exported ${document.apriltags.size} AprilTag(s) to ${intent.destination.name}.")
                 }
@@ -910,10 +714,4 @@ class FieldEditorViewModel(
         const val FIELD_APPLY_CONFIRMATION_TIMEOUT_MS = 3_000L
         val ID_SEQUENCE = AtomicLong(System.currentTimeMillis())
     }
-}
-
-private fun League.targetPlatform() = when (this) {
-    League.FTC -> com.areslib.controls.ControllerInputPlatform.FTC
-    League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
-    League.XRP -> com.areslib.controls.ControllerInputPlatform.XRP
 }

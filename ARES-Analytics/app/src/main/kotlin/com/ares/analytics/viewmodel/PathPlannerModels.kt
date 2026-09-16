@@ -38,6 +38,13 @@ internal fun newRoutine(name: String = "New Routine"): RoutineDocument = Routine
     steps = emptyList(),
 )
 
+internal fun createGuidedFirstRoutineDraft(plan: GuidedFirstRoutinePlan): Pair<RoutineDocument, AutonomousCatalogEntry> {
+    val documentId = "${safeRoutineDocumentId(plan.name).take(55)}-${UUID.randomUUID().toString().take(8)}"
+    val draft = com.ares.analytics.viewmodel.routine.guidedFirstRoutineDocument(documentId, plan)
+    val entry = com.ares.analytics.viewmodel.routine.guidedFirstRoutineEntry(documentId, plan)
+    return draft to entry
+}
+
 enum class AutonomousTourTarget { EDITOR, CANVAS }
 
 enum class AutonomousTourStep(

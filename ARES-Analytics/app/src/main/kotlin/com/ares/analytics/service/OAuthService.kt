@@ -12,11 +12,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.cio.*
-import io.ktor.server.engine.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -73,17 +69,6 @@ class OAuthService(
     private val _drivePickerState = MutableStateFlow<DrivePickerState>(DrivePickerState.Idle)
     val drivePickerState: StateFlow<DrivePickerState> = _drivePickerState.asStateFlow()
 
-    private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
-    private var serverGeneration: Long? = null
-
-    private data class PendingOAuthRequest(
-        val state: String,
-        val generation: Long,
-        val successTitle: String,
-        val onCodeReceived: suspend (String, Parameters) -> Unit,
-        val onError: (String) -> Unit,
-    )
-
     private data class AuthAttempt(
         val generation: Long,
         val previousState: AuthState
@@ -92,6 +77,29 @@ class OAuthService(
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val tokenStore: OAuthTokenStore = createOAuthTokenStore(authFilePath, secretsWriter)
+
+    private val loopbackServer = OAuthLoopbackServer(
+        serviceScope = serviceScope,
+        consumePendingRequest = ::consumePendingRequest,
+        launchPendingCodeExchange = { pending, code, params ->
+            launchPendingCodeExchange(pending, code, params)
+        },
+    )
+
+    private val drivePickerCoordinator = GoogleDrivePickerCoordinator(
+        googleClientResolver = googleClientResolver,
+        httpClient = httpClient,
+        drivePickerState = _drivePickerState,
+        getAuthState = { _authState.value },
+        getAuthGeneration = { authGeneration.get() },
+        isGenerationCurrent = ::isGenerationCurrent,
+        hasPendingOAuthRequest = { pendingOAuthRequest.get() != null },
+        registerPendingRequest = ::registerPendingRequest,
+        exchangeAuthorizationCode = ::exchangeAuthorizationCode,
+        bootCallbackServer = ::bootCallbackServer,
+        launchBrowser = ::launchBrowser,
+        testGoogleCredentials = ::testGoogleCredentials,
+    )
 
     init {
         // On startup, re-establish Authenticated state from persisted Google tokens.
@@ -275,146 +283,12 @@ class OAuthService(
     fun startGoogleDriveFolderPicker(
         workspaceConfig: WorkspaceConfig? = null,
         onFolderPicked: suspend (String) -> Unit,
-    ) {
-        val identity = _authState.value as? AuthState.Authenticated
-        if (identity == null) {
-            _drivePickerState.value = DrivePickerState.Error("Sign in with Google before choosing a Drive folder.")
-            return
-        }
-        val credentials = when (val resolution = googleClientResolver.resolve(workspaceConfig)) {
-            is GoogleOAuthClientResolution.Available -> resolution.credentials
-            is GoogleOAuthClientResolution.Unavailable -> {
-                _drivePickerState.value = DrivePickerState.Error(resolution.message)
-                return
-            }
-        }
-        beginGoogleDriveFolderPicker(credentials, identity, interactive = true, onFolderPicked = onFolderPicked)
-    }
-
-    private fun beginGoogleDriveFolderPicker(
-        credentials: GoogleOAuthClientCredentials,
-        identity: AuthState.Authenticated,
-        interactive: Boolean,
-        onFolderPicked: suspend (String) -> Unit,
-    ): String? {
-        val generation = authGeneration.get()
-        if (!isGenerationCurrent(generation) || pendingOAuthRequest.get() != null) {
-            _drivePickerState.value = DrivePickerState.Error("Another Google authorization is already in progress.")
-            return null
-        }
-        val codeVerifier = generateCodeVerifier()
-        val codeChallenge = generateCodeChallenge(codeVerifier)
-        val callbackPort = GOOGLE_CALLBACK_PORT
-        val redirectUri = GOOGLE_DESKTOP_REDIRECT_URI
-        val state = generateCodeVerifier()
-        val pickerUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
-            "client_id=${credentials.clientId}" +
-            "&redirect_uri=${URLEncoder.encode(redirectUri, "UTF-8")}" +
-            "&response_type=code" +
-            "&scope=${URLEncoder.encode("https://www.googleapis.com/auth/drive.file", "UTF-8")}" +
-            "&access_type=offline" +
-            "&prompt=consent" +
-            "&include_granted_scopes=false" +
-            "&trigger_onepick=true" +
-            "&allow_folder_selection=true" +
-            "&login_hint=${URLEncoder.encode(identity.email, "UTF-8")}" +
-            "&code_challenge=$codeChallenge" +
-            "&code_challenge_method=S256" +
-            "&state=$state"
-
-        val request = PendingOAuthRequest(
-            state = state,
-            generation = generation,
-            successTitle = "Folder Authorization Received",
-            onCodeReceived = picker@{ code, parameters ->
-                val pickedIds = parameters["picked_file_ids"]
-                    ?.split(',')
-                    ?.map(String::trim)
-                    ?.filter(String::isNotEmpty)
-                    .orEmpty()
-                if (pickedIds.size != 1 || !pickedIds.single().matches(Regex("[A-Za-z0-9_-]{10,256}"))) {
-                    _drivePickerState.value = DrivePickerState.Error(
-                        "Google did not return one valid Drive folder. Try choosing the folder again.",
-                    )
-                    return@picker
-                }
-                try {
-                    val response = exchangeAuthorizationCode(
-                        credentials = credentials,
-                        code = code,
-                        redirectUri = redirectUri,
-                        codeVerifier = codeVerifier,
-                    )
-                    if (response.status != HttpStatusCode.OK) {
-                        _drivePickerState.value = DrivePickerState.Error(
-                            googleOAuthRecoveryMessage(response.bodyAsText(), credentials.source),
-                        )
-                        return@picker
-                    }
-                    val pickerToken = response.body<GoogleOAuthBrokerTokenResponse>().accessToken
-                    val about = httpClient.get("https://www.googleapis.com/drive/v3/about") {
-                        header(HttpHeaders.Authorization, "Bearer $pickerToken")
-                        parameter("fields", "user(emailAddress)")
-                    }
-                    if (about.status != HttpStatusCode.OK) {
-                        _drivePickerState.value = DrivePickerState.Error(
-                            "Google could not verify the account that selected this folder. Try again.",
-                        )
-                        return@picker
-                    }
-                    val pickerEmail = about.body<JsonObject>()["user"]
-                        ?.jsonObject
-                        ?.get("emailAddress")
-                        ?.jsonPrimitive
-                        ?.contentOrNull
-                    if (!pickerEmail.equals(identity.email, ignoreCase = true)) {
-                        _drivePickerState.value = DrivePickerState.Error(
-                            "That folder was selected with ${pickerEmail ?: "another Google account"}, but ARES is signed in as ${identity.email}. Choose the same account.",
-                        )
-                        return@picker
-                    }
-                    onFolderPicked(pickedIds.single())
-                    _drivePickerState.value = DrivePickerState.Selected(pickedIds.single())
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (failure: Exception) {
-                    _drivePickerState.value = DrivePickerState.Error(
-                        "The Drive folder selection could not be completed: ${failure.message ?: "unknown error"}",
-                    )
-                }
-            },
-            onError = { error ->
-                _drivePickerState.value = DrivePickerState.Error(
-                    googleOAuthRecoveryMessage("{\"error\":\"$error\"}", credentials.source),
-                )
-            },
-        )
-        if (!registerPendingRequest(request)) return null
-        _drivePickerState.value = DrivePickerState.Picking
-        if (interactive) {
-            bootCallbackServer(callbackPort, generation)
-            launchBrowser(pickerUrl, generation) { message ->
-                _drivePickerState.value = DrivePickerState.Error(message)
-            }
-        }
-        return state
-    }
+    ) = drivePickerCoordinator.startGoogleDriveFolderPicker(workspaceConfig, onFolderPicked)
 
     internal fun beginGoogleDriveFolderPickerForTest(
         clientId: String,
         onFolderPicked: suspend (String) -> Unit,
-    ): String {
-        val identity = _authState.value as? AuthState.Authenticated
-            ?: error("Test must establish an authenticated identity first")
-        return requireNotNull(
-            beginGoogleDriveFolderPicker(
-                credentials = testGoogleCredentials(clientId),
-                identity = identity,
-                interactive = false,
-                onFolderPicked = onFolderPicked,
-            ),
-        )
-    }
+    ): String = drivePickerCoordinator.beginGoogleDriveFolderPickerForTest(clientId, onFolderPicked)
 
     /** Deterministic non-interactive seam for callback lifecycle tests. */
     internal fun beginGoogleLoginForTest(googleClientId: String): String =
@@ -640,7 +514,6 @@ class OAuthService(
         nextState: (AuthState) -> AuthState
     ): AuthAttempt? {
         var jobsToCancel: List<Job> = emptyList()
-        var serverToStop: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         val attempt = synchronized(authLifecycleLock) {
             if (disposed) return@synchronized null
             val current = _authState.value
@@ -650,15 +523,12 @@ class OAuthService(
             pendingOAuthRequest.set(null)
             jobsToCancel = authWorkJobs.toList()
             authWorkJobs.clear()
-            serverToStop = server
-            server = null
-            serverGeneration = null
             _authState.value = nextState(current)
             AuthAttempt(generation, current)
         }
         if (attempt != null) {
             jobsToCancel.forEach { it.cancel() }
-            stopEmbeddedServer(serverToStop)
+            loopbackServer.stop()
         }
         return attempt
     }
@@ -766,97 +636,22 @@ class OAuthService(
         markDisposed: Boolean
     ) {
         var jobsToCancel: List<Job> = emptyList()
-        var serverToStop: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
         synchronized(authLifecycleLock) {
             authGeneration.incrementAndGet()
             if (markDisposed) disposed = true
             pendingOAuthRequest.set(null)
             jobsToCancel = authWorkJobs.toList()
             authWorkJobs.clear()
-            serverToStop = server
-            server = null
-            serverGeneration = null
             _authState.value = nextState
             _drivePickerState.value = DrivePickerState.Idle
             if (deletePersistedAuth) tokenStore.delete()
         }
         jobsToCancel.forEach { it.cancel() }
-        stopEmbeddedServer(serverToStop)
+        loopbackServer.stop()
     }
 
     private fun bootCallbackServer(port: Int, generation: Long) {
-        stopServer(generation)
-        val candidate = embeddedServer(CIO, host = "127.0.0.1", port = port) {
-            routing {
-                get("/callback") {
-                    val returnedState = call.request.queryParameters["state"]
-                    val pending = consumePendingRequest(returnedState)
-                    if (pending == null) {
-                        call.respondText("Authentication failed: invalid state parameter (possible CSRF attack).")
-                        return@get
-                    }
-                    val code = call.request.queryParameters["code"]
-                    val error = call.request.queryParameters["error"]
-
-                    if (code != null) {
-                        call.respondText(
-                            """
-                            <html>
-                            <head>
-                                <title>ARES Mission Control Sign-In</title>
-                                <style>
-                                    body {
-                                        background-color: #0D0F14;
-                                        color: #E8ECF4;
-                                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        height: 100vh;
-                                        margin: 0;
-                                    }
-                                    .card {
-                                        background-color: #161A22;
-                                        border: 1px solid #2A2F3C;
-                                        padding: 40px;
-                                        border-radius: 16px;
-                                        text-align: center;
-                                        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-                                    }
-                                    h1 { color: #00E5FF; margin-bottom: 8px; }
-                                    p { color: #9CA3B4; }
-                                </style>
-                            </head>
-                            <body>
-                                <div class="card">
-                                    <h1>${pending.successTitle}</h1>
-                                    <p>Google returned the authorization response. ARES is completing the secure exchange now. Return to the application to see the final result.</p>
-                                </div>
-                            </body>
-                            </html>
-                            """.trimIndent(),
-                            io.ktor.http.ContentType.Text.Html
-                        )
-                        launchPendingCodeExchange(pending, code, call.request.queryParameters)
-                    } else {
-                        call.respondText("Authentication was not completed. Return to ARES Robotics Studio for recovery steps.")
-                        pending.onError(error ?: "unknown")
-                        serviceScope.launch { stopServer(pending.generation) }
-                    }
-                }
-            }
-        }
-        val installed = synchronized(authLifecycleLock) {
-            if (!isGenerationCurrent(generation)) {
-                false
-            } else {
-                candidate.start(wait = false)
-                server = candidate
-                serverGeneration = generation
-                true
-            }
-        }
-        if (!installed) stopEmbeddedServer(candidate)
+        loopbackServer.boot(port, generation, ::isGenerationCurrent)
     }
 
     private fun launchBrowser(
@@ -888,23 +683,7 @@ class OAuthService(
     }
 
     private fun stopServer(expectedGeneration: Long? = null) {
-        val serverToStop = synchronized(authLifecycleLock) {
-            if (expectedGeneration != null && serverGeneration != expectedGeneration) {
-                null
-            } else {
-                server.also {
-                    server = null
-                    serverGeneration = null
-                }
-            }
-        }
-        stopEmbeddedServer(serverToStop)
-    }
-
-    private fun stopEmbeddedServer(
-        target: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>?
-    ) {
-        target?.let { runCatching { it.stop(1000, 2000) } }
+        loopbackServer.stop(expectedGeneration)
     }
 
     fun dispose() {

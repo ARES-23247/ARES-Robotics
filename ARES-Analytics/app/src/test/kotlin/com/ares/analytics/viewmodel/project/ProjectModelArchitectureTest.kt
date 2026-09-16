@@ -247,10 +247,12 @@ class ProjectModelArchitectureTest {
         ).firstOrNull(File::isDirectory)
         checkNotNull(sourceRoot) { "Could not locate Analytics application sources" }
         val mainScreen = File(sourceRoot, "ui/screens/MainScreen.kt").readText()
+        val headerBar = File(sourceRoot, "ui/screens/MainScreenHeaderBar.kt").takeIf(File::isFile)?.readText().orEmpty()
+        val screenContent = mainScreen + headerBar
         val selector = File(sourceRoot, "ui/components/WorkspaceSelector.kt").readText()
 
-        assertTrue("WorkspaceSelector(" in mainScreen)
-        assertTrue("DropdownMenu(" !in mainScreen, "Workspace menu state belongs to WorkspaceSelector.")
+        assertTrue("WorkspaceSelector(" in screenContent)
+        assertTrue("DropdownMenu(" !in screenContent, "Workspace menu state belongs to WorkspaceSelector.")
         assertTrue("ServiceRegistry" !in selector, "The workspace selector receives data and actions, not application services.")
     }
 

@@ -24,25 +24,16 @@ import com.ares.analytics.service.project.ProjectExecutionCommand
 import com.ares.analytics.shared.*
 import com.ares.analytics.shared.models.*
 import com.ares.analytics.domain.navigation.NavigationTarget
-import com.ares.analytics.ui.components.QuickNavigationMenu
-import com.ares.analytics.ui.components.SectionNavigationBar
 import com.ares.analytics.ui.components.Sidebar
-import com.ares.analytics.ui.components.WorkspaceSelector
 import com.ares.analytics.ui.components.core.TargetSelection
 import com.ares.analytics.ui.input.DesktopDriveInputPublisher
 import com.ares.analytics.ui.input.DesktopDriveKeyDispatcher
 import com.ares.analytics.ui.input.XrpDriveInputPublisher
-import com.ares.analytics.ui.components.core.ExecutionToolbar
-import com.ares.analytics.ui.components.dashboard.DashboardCommandBar
-import com.ares.analytics.ui.components.dashboard.DashboardMissionHeader
 import com.ares.analytics.ui.components.dashboard.DashboardMissionSnapshot
-import com.ares.analytics.ui.components.dashboard.DashboardAnalysisWidgetServices
-import com.ares.analytics.ui.components.dashboard.DashboardLiveWidgetServices
-import com.ares.analytics.ui.components.dashboard.DashboardReplayWidgetServices
-import com.ares.analytics.ui.components.dashboard.DashboardWidgetServices
 import com.ares.analytics.ui.components.dashboard.LocalSimulatorLaunchRequest
 import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import com.ares.analytics.ui.components.dashboard.localSimulatorLaunchRequest
+
 import com.ares.analytics.ui.components.terminal.TerminalDrawer
 import com.ares.analytics.domain.learning.LearningCatalog
 import com.ares.analytics.ui.theme.*
@@ -392,117 +383,14 @@ fun MainScreen(services: ServiceRegistry) {
             robotStudioViewModel.refresh()
         }
     }
-    val academyFeatureScope = remember(
-        subsystemGeneratorViewModel,
-        controlsEditorViewModel,
-        tuningViewModel,
-        superstructureStudioViewModel,
-        pathPlannerViewModel,
-        guidedRunAnalysisViewModel,
-        robotStudioViewModel,
-    ) {
-        AcademyRuntimeFeatureScope(
-            subsystem = subsystemGeneratorViewModel,
-            controls = controlsEditorViewModel,
-            tuning = tuningViewModel,
-            superstructure = superstructureStudioViewModel,
-            autonomous = pathPlannerViewModel,
-            runAnalysis = guidedRunAnalysisViewModel,
-            graduation = robotStudioViewModel,
-        )
-    }
-    val dashboardFeatureServices = remember(services) {
-        DashboardFeatureServices(
-            widgets = DashboardWidgetServices(
-                live = DashboardLiveWidgetServices(
-                    nt4ClientService = services.nt4ClientService,
-                    xrpLinkService = services.xrpLinkService,
-                    alertEngineService = services.alertEngineService,
-                    dashboardHealthService = services.dashboardHealthService,
-                    keyboardDriveState = services.keyboardDriveState,
-                    gamepadService = services.gamepadService,
-                ),
-                analysis = DashboardAnalysisWidgetServices(
-                    databaseService = services.databaseService,
-                    advancedAnalyticsService = services.advancedAnalyticsService,
-                    aiDiagnosticsService = services.aiDiagnosticsService,
-                    driverAnalysisService = services.driverAnalysisService,
-                    diagnosticCoachService = services.diagnosticCoachService,
-                ),
-                replay = DashboardReplayWidgetServices(
-                    replayEngineService = services.replayEngineService,
-                ),
-            ),
-            simulator = services.simulatorProcessService,
-            tuningProfiles = services.tuningProfileRepository,
-        )
-    }
-    val workspaceRouteFeatureScope = remember(
-        dashboardViewModel,
-        pathPlannerViewModel,
-        fieldEditorViewModel,
-        cloudViewModel,
-        importCenterViewModel,
-        guidedRunAnalysisViewModel,
-        academyFeatureScope,
-        tuningViewModel,
-        sysIdViewModel,
-        guidedTuningExperimentViewModel,
-        robotStudioViewModel,
-        drivebaseBuilderViewModel,
-        subsystemGeneratorViewModel,
-        superstructureStudioViewModel,
-        controlsEditorViewModel,
-        hardwareSetupViewModel,
-        projectIdentityViewModel,
-        profileViewModel,
-        projectBackupViewModel,
-        integrationCenterViewModel,
-        dashboardFeatureServices,
-        services,
-    ) {
-        WorkspaceRouteFeatureScope(
-            dashboard = dashboardViewModel,
-            dashboardServices = dashboardFeatureServices,
-            pathPlanner = pathPlannerViewModel,
-            fieldEditor = fieldEditorViewModel,
-            runData = RunDataFeatureScope(
-                cloud = cloudViewModel,
-                imports = importCenterViewModel,
-                guidedAnalysis = guidedRunAnalysisViewModel,
-                database = services.databaseService,
-                sync = services.syncEngineService,
-                aiDiagnostics = services.aiDiagnosticsService,
-            ),
-            academy = academyFeatureScope,
-            learningProgress = services.learningProgressService,
-            academyPracticeWorkflow = services.academyPracticeWorkflowService,
-            tuning = tuningViewModel,
-            sysId = sysIdViewModel,
-            tuningExperiment = guidedTuningExperimentViewModel,
-            authoring = RobotAuthoringFeatureScope(
-                robotStudio = robotStudioViewModel,
-                drivebase = drivebaseBuilderViewModel,
-                subsystem = subsystemGeneratorViewModel,
-                superstructure = superstructureStudioViewModel,
-                pathPlanner = pathPlannerViewModel,
-                controls = controlsEditorViewModel,
-                hardwareSetup = hardwareSetupViewModel,
-                projectIdentity = projectIdentityViewModel,
-                gamepads = services.gamepadService,
-            ),
-            workspaceServices = WorkspaceServicesFeatureScope(
-                profile = profileViewModel,
-                projectBackup = projectBackupViewModel,
-                integrations = integrationCenterViewModel,
-                toolchains = services.managedToolchainService,
-                sync = services.syncEngineService,
-                oauth = services.oauthService,
-            ),
-            nt4 = services.nt4ClientService,
-            simulator = services.simulatorProcessService,
-        )
-    }
+    val academyFeatureScope = rememberAcademyFeatureScope(workspaceModels)
+    val dashboardFeatureServices = rememberDashboardFeatureServices(services)
+    val workspaceRouteFeatureScope = rememberWorkspaceRouteFeatureScope(
+        models = workspaceModels,
+        services = services,
+        dashboardFeatureServices = dashboardFeatureServices,
+        academyFeatureScope = academyFeatureScope,
+    )
     val academyEnvironment = AcademyRuntimeEnvironment(
         isLocalSimulatorSelected = targetSelection == TargetSelection.LOCAL_SIM,
         isSimulatorRunning = isSimRunning,
@@ -611,142 +499,78 @@ fun MainScreen(services: ServiceRegistry) {
                     verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
                     // Top header bar with run config info
-                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                        val compactShell = maxWidth < 1450.dp
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(if (compactShell) 6.dp else 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                        WorkspaceSelector(
-                            current = currentConfig,
-                            workspaces = mainState.workspaces,
-                            compact = compactShell,
-                            onSelect = { mainViewModel.onIntent(MainIntent.SelectWorkspace(it)) },
-                            onRemove = { workspace ->
-                                val displayName = workspace.robotName.ifBlank {
-                                    "${workspace.robotId} (Team ${workspace.teamId})"
-                                }
-                                workspacePendingDeletion = workspace.id to displayName
-                            },
-                            onCreate = {
-                                requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
-                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                            },
-                            onExploreBiobuzz = {
-                                requestedProjectSetupMode = ProjectSetupMode.EXPLORE_BIOBUZZ
-                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                            },
-                            onExploreDemo = {
-                                requestedProjectSetupMode = ProjectSetupMode.EXPLORE_LIGHTBOT
-                                mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                            },
-                        )
-
-                        val missionSnapshot = dashboardMissionSnapshot
-                        if (activeNav == NavigationTarget.DASHBOARD && missionSnapshot != null) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                DashboardMissionHeader(
-                                    snapshot = missionSnapshot,
-                                    onNavigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
-                                    modifier = Modifier.weight(1f),
-                                )
-                                if (dashboardShellState.hasLayout) {
-                                    DashboardCommandBar(
-                                        profileName = dashboardShellState.currentRoleProfile,
-                                        availableProfiles = dashboardShellState.availableProfiles,
-                                        isEditing = dashboardShellState.isLayoutEditing,
-                                        onSelectProfile = { dashboardViewModel.onIntent(DashboardIntent.ChangeProfile(it)) },
-                                        onSaveLayoutAs = { dashboardViewModel.onIntent(DashboardIntent.SaveLayoutAs(it)) },
-                                        onDeleteProfile = { dashboardViewModel.onIntent(DashboardIntent.DeleteLayout(it)) },
-                                        onToggleEditing = { dashboardViewModel.onIntent(DashboardIntent.SetLayoutEditing(!dashboardShellState.isLayoutEditing)) },
-                                        onAddWidget = { dashboardViewModel.onIntent(DashboardIntent.SetPickerOpen(true)) },
-                                        onResetLayout = { dashboardViewModel.onIntent(DashboardIntent.ResetProfile) },
-                                        modifier = Modifier.widthIn(min = 145.dp, max = 250.dp),
-                                    )
-                                }
+                    MainScreenHeaderBar(
+                        currentConfig = currentConfig,
+                        workspaces = mainState.workspaces,
+                        activeNav = activeNav,
+                        dashboardMissionSnapshot = dashboardMissionSnapshot,
+                        dashboardShellState = dashboardShellState,
+                        robotStudioShellState = robotStudioShellState,
+                        targetSelection = targetSelection,
+                        liveRobotIp = liveRobotIp,
+                        isLiveRobotOnline = isLiveRobotOnline,
+                        isLocalSimOnline = isLocalSimOnline,
+                        isBuildRunning = isBuildRunning,
+                        isSimRunning = isSimRunning,
+                        simulatorLaunchRequestEnabled = simulatorLaunchRequestEnabled,
+                        simulatorLaunchDisabledReason = simulatorLaunchDisabledReason,
+                        activeCoachLessonId = activeCoachLessonId,
+                        onSelectWorkspace = { mainViewModel.onIntent(MainIntent.SelectWorkspace(it)) },
+                        onRemoveWorkspace = { workspace ->
+                            val displayName = workspace.robotName.ifBlank {
+                                "${workspace.robotId} (Team ${workspace.teamId})"
                             }
-                        } else {
-                            SectionNavigationBar(
-                                activeTarget = activeNav,
-                                onNavigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        ExecutionToolbar(
-                            projectPath = currentConfig.projectPath,
-                            targetSelection = targetSelection,
-                            targetIp = if (targetSelection == TargetSelection.LOCAL_SIM || isSimRunning) "127.0.0.1" else liveRobotIp,
-                            isLiveRobotOnline = isLiveRobotOnline,
-                            isLocalSimOnline = isLocalSimOnline,
-                            isBuildRunning = isBuildRunning,
-                            isSimRunning = isSimRunning,
-                            buildEnabled = robotStudioShellState.canRunBuild,
-                            buildDisabledReason = robotStudioShellState.buildDisabledReason,
-                            simulationEnabled = simulatorLaunchRequestEnabled,
-                            simulationDisabledReason = simulatorLaunchDisabledReason,
-                            onTargetChanged = { targetSelection = it },
-                            onTargetIpChanged = { ip ->
-                                if (targetSelection == TargetSelection.LIVE_ROBOT) {
-                                    liveRobotIp = ip
-                                }
-                            },
-                            onRunBuild = {
-                                if (robotStudioShellState.canRunBuild) {
-                                    executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
-                                }
-                            },
-                            onRunSim = requestSimulatorLaunch,
-                            onStopAll = {
-                                pendingSimulatorLaunch = false
-                                services.projectBuildService.killActiveBuild()
-                                services.robotDeploymentService.cancel()
-                                services.simulatorProcessService.stop()
-                            },
-                            compact = compactShell,
-                        )
-
-                            QuickNavigationMenu(
-                                onNavigate = { destination ->
-                                    if (destination == NavigationTarget.ACADEMY) { requestedLessonId = null; requestedGlossaryTerm = null }
-                                    mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
-                                },
-                                compact = compactShell,
-                            )
-
-                            if (activeNav != NavigationTarget.ACADEMY && activeCoachLessonId != null) {
-                                if (compactShell) {
-                                    IconButton(onClick = { coachDrawerOpen = true }, modifier = Modifier.size(36.dp)) {
-                                        Icon(Icons.Default.School, "Open Robot Academy coach", tint = AresCyan, modifier = Modifier.size(18.dp))
-                                    }
-                                } else {
-                                    OutlinedButton(
-                                        onClick = { coachDrawerOpen = true },
-                                        contentPadding = PaddingValues(horizontal = 9.dp, vertical = 7.dp),
-                                    ) {
-                                        Icon(Icons.Default.School, contentDescription = null, modifier = Modifier.size(17.dp))
-                                        Spacer(Modifier.width(5.dp))
-                                        Text("Coach", fontSize = 12.sp)
-                                    }
-                                }
-                            } else if (activeNav != NavigationTarget.ACADEMY) LearningCatalog.lessonFor(activeNav)?.let { lesson ->
-                                IconButton(
-                                    onClick = {
-                                        requestedLessonId = lesson.id
-                                        mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
-                                    },
-                                    modifier = Modifier.size(36.dp),
-                                ) {
-                                    Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = "Help for ${activeNav.label}", modifier = Modifier.size(18.dp))
-                                }
+                            workspacePendingDeletion = workspace.id to displayName
+                        },
+                        onCreateWorkspace = {
+                            requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
+                            mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                        },
+                        onExploreBiobuzz = {
+                            requestedProjectSetupMode = ProjectSetupMode.EXPLORE_BIOBUZZ
+                            mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                        },
+                        onExploreDemo = {
+                            requestedProjectSetupMode = ProjectSetupMode.EXPLORE_LIGHTBOT
+                            mainViewModel.onIntent(MainIntent.AddNewWorkspace)
+                        },
+                        onNavigate = { destination ->
+                            if (destination == NavigationTarget.ACADEMY) {
+                                requestedLessonId = null
+                                requestedGlossaryTerm = null
                             }
-                        }
-                    }
+                            mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
+                        },
+                        onSelectProfile = { dashboardViewModel.onIntent(DashboardIntent.ChangeProfile(it)) },
+                        onSaveLayoutAs = { dashboardViewModel.onIntent(DashboardIntent.SaveLayoutAs(it)) },
+                        onDeleteProfile = { dashboardViewModel.onIntent(DashboardIntent.DeleteLayout(it)) },
+                        onToggleEditing = { dashboardViewModel.onIntent(DashboardIntent.SetLayoutEditing(it)) },
+                        onAddWidget = { dashboardViewModel.onIntent(DashboardIntent.SetPickerOpen(true)) },
+                        onResetLayout = { dashboardViewModel.onIntent(DashboardIntent.ResetProfile) },
+                        onTargetChanged = { targetSelection = it },
+                        onTargetIpChanged = { ip ->
+                            if (targetSelection == TargetSelection.LIVE_ROBOT) {
+                                liveRobotIp = ip
+                            }
+                        },
+                        onRunBuild = {
+                            if (robotStudioShellState.canRunBuild) {
+                                executeProjectCommand(ProjectExecutionCommand.VERIFY_AND_BUILD)
+                            }
+                        },
+                        onRunSim = requestSimulatorLaunch,
+                        onStopAll = {
+                            pendingSimulatorLaunch = false
+                            services.projectBuildService.killActiveBuild()
+                            services.robotDeploymentService.cancel()
+                            services.simulatorProcessService.stop()
+                        },
+                        onOpenCoach = { coachDrawerOpen = true },
+                        onOpenLessonHelp = { lessonId ->
+                            requestedLessonId = lessonId
+                            mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
+                        },
+                    )
 
                     if (
                         !learningProgress.firstMissionNudgeDismissed &&
@@ -785,29 +609,11 @@ fun MainScreen(services: ServiceRegistry) {
                                 requestedGlossaryTerm = requestedGlossaryTerm,
                             ),
                             scope = workspaceRouteFeatureScope,
-                            actions = WorkspaceRouteActions(
-                                navigate = { mainViewModel.onIntent(MainIntent.SetActiveNav(it)) },
-                                saveWorkspace = { mainViewModel.onIntent(MainIntent.SaveConfig(it)) },
-                                reloadRuns = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
-                                associateSessionWithMatch = { sessionId, match, allianceColor ->
-                                    workspaceScope.launch {
-                                        val opponents = if (allianceColor == "red") {
-                                            match.blueAlliance
-                                        } else {
-                                            match.redAlliance
-                                        }
-                                        services.databaseService.associateSessionWithMatch(
-                                            sessionId = sessionId,
-                                            matchNumber = match.matchNumber,
-                                            allianceColor = allianceColor,
-                                            opponentTeams = opponents,
-                                        )
-                                        mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-                                    }
-                                },
-                                setDiagnosticsResponse = {
-                                    mainViewModel.onIntent(MainIntent.SetDiagnosticsResponse(it))
-                                },
+                            actions = createWorkspaceRouteActions(
+                                mainViewModel = mainViewModel,
+                                workspaceScope = workspaceScope,
+                                services = services,
+                                currentConfig = currentConfig,
                                 updateMissionSnapshot = { dashboardMissionSnapshot = it },
                                 requestSimulatorLaunch = requestSimulatorLaunch,
                                 startSimulator = startSimulatorProcess,
@@ -816,10 +622,6 @@ fun MainScreen(services: ServiceRegistry) {
                                 createProject = {
                                     requestedProjectSetupMode = ProjectSetupMode.CREATE_NEW
                                     mainViewModel.onIntent(MainIntent.AddNewWorkspace)
-                                },
-                                chooseStandaloneExport = { chooseStandaloneArchiveDestination(currentConfig) },
-                                exportStandaloneProject = { destination ->
-                                    exportStandaloneArchive(currentConfig, services.projectArchiveExporter, destination)
                                 },
                                 openAcademyLesson = {
                                     requestedCheckpointId = null
@@ -832,12 +634,6 @@ fun MainScreen(services: ServiceRegistry) {
                                     mainViewModel.onIntent(MainIntent.SetActiveNav(NavigationTarget.ACADEMY))
                                 },
                                 executeProjectCommand = executeProjectCommand,
-                                openInIde = {
-                                    services.projectIdeLauncher.open(
-                                        currentConfig.projectPath,
-                                        currentConfig.league,
-                                    ).message
-                                },
                             ),
                         )
                     }
