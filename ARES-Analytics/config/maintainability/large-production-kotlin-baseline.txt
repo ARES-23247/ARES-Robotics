@@ -62,7 +62,6 @@ app/src/main/kotlin/com/ares/analytics/ui/screens/SubsystemConceptHelp.kt=739
 app/src/main/kotlin/com/ares/analytics/ui/screens/SubsystemGeneratorScreen.kt=865
 app/src/main/kotlin/com/ares/analytics/ui/screens/TuningScreen.kt=838
 app/src/main/kotlin/com/ares/analytics/viewmodel/CloudViewModel.kt=522
-app/src/main/kotlin/com/ares/analytics/viewmodel/controls/ControlsEditorViewModel.kt=1088
 app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt=758
 app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt=1025
 app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt=615

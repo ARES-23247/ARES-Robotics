@@ -5549,7 +5549,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/controls/ControlBindingDraftFactory.kt": {
-      "sha256": "706b1429886d996f8b2a60d4ee78be9d41ff2c068ec655a5b6b0e20fc57d351e",
+      "sha256": "85c21d513dd3a49261b2a4f1e60377fbe13ecf22a7b2b8f181888716142fc677",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified ControlBindingDraftFactory draft creation routines: createChordBindingDraft for multi-button chord bindings with 75ms chord window and constituent binding suppression, createRoutineMacroBindingDraft for triggering autonomous/macro routines, and uniqueBindingId collision-free ID generation.",
@@ -5557,8 +5557,17 @@
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/controls/ControlsAiProposalCoordinator.kt": {
+      "sha256": "078a84740a2134176b92760a9da0740df43680bd42ff3e8a4a176d917aabb559",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Controls viewmodel coordinator handling Gemini AI design proposal generation, diffing, and application.",
+      "evidence": [
+        "docs/audits/pass294-pending-elevation-audit.md"
+      ]
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/controls/ControlsEditorState.kt": {
-      "sha256": "4489572df139640521a6593f4c46e0d3461525a9f73fadc232df4fc870f42a89",
+      "sha256": "b3fbb29074fadf8bab360c3d22da44ec79c1f9facfdd9fb66875156a553a069a",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified ControlsEditorState immutable state model: ControlsProblemSeverity, ControlLearningSession, ControlsAiProposalReview, and state getters (selectedScheme, selectedController, selectedProfile, selectedControl, selectedAction, coverage, canSave, canGenerate).",
@@ -5576,12 +5585,21 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/controls/ControlsEditorViewModel.kt": {
-      "sha256": "d51ba4d002fc2108838fa0184bf345314fd7ebe6d7d9129f033028b45d2cb8d2",
+      "sha256": "cc76d846c3d03fbef1312aa2fc7d40c68309d16a22e416753006416e3f449987",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified ControlsEditorViewModel offline-first controller binding editor: control scheme and controller profile editing, chord creation, macro bindings, addSafeMomentaryPair (holding commands output, releasing commands 0.0), desktop GLFW gamepad learning without affecting robot mappings, optimistic concurrency control via ProjectSession, and automated Project History checkpoints.",
       "evidence": [
         "docs/audits/pass293-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/controls/ControlsHardwareBindingCoordinator.kt": {
+      "sha256": "d6cf7f2f251fb3b3001fc3bfb74938cef00873300d61d612332c60bf4b06c188",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Controls viewmodel coordinator handling live gamepad observation, desktop input learning, and platform mapping.",
+      "evidence": [
+        "docs/audits/pass294-pending-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt": {
@@ -9960,7 +9978,7 @@
       ]
     },
     "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
-      "sha256": "22e28a98551dc6ff2dbb067c2155f1d6d7c245862bdceb55a15ddde05cf3ed0d",
+      "sha256": "b07a7390a03b5411115201f6cb5f671b601f0d5bc2115c43444e32fc4d721dbe",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Maintainability ratchet baseline: verified grandfathered list of 72 production Kotlin files exceeding the 500-line limit from 3.0.0 baseline, ensuring file sizes can only decrease and no new monoliths can be introduced without triggering studioReleaseVerification failures.",
@@ -28730,7 +28748,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "6aada5d7cf7dcd0595afe0796a52a8eb179437c1be5bb29201abeddd7410255b",
+      "sha256": "f2ef81c13bad1438fc83d6259b01c129dc9f1604782338e8c8907ddb121e97db",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",

@@ -99,4 +99,8 @@ data class ControlsEditorState(
     val canGenerate: Boolean
         get() = loadError == null && generationPhase != AresGenerationPhase.RUNNING &&
             problems.none { it.severity == ControlsProblemSeverity.ERROR }
+
+    fun replaceScheme(scheme: ControlSchemeDocument): ControlsEditorState = copy(
+        schemes = schemes.map { if (it.documentId == scheme.documentId) scheme else it }
+    )
 }
