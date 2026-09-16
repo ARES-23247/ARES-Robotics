@@ -40,6 +40,7 @@ import com.areslib.state.AprilTagMapFormat
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldValidator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,8 +59,6 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.atomic.AtomicLong
-
-
 
 /**
  * Single owner for field editor state and persistence.
@@ -220,6 +219,7 @@ class FieldEditorViewModel(
                     ))
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 if (generation == loadGeneration) {
                     _state.update {
                         it.copy(isLoading = false, errorMessage = error.message ?: "Failed to load field layout")
@@ -230,36 +230,39 @@ class FieldEditorViewModel(
     }
 
     private fun applyEdit(historyGroup: String? = null, transform: (FieldEditorState) -> FieldEditorState) {
-        val current = _state.value
-        val transformed = transform(current)
-        if (transformed.editorSnapshot() == current.editorSnapshot()) return
-        history.record(
-            snapshot = current.editorSnapshot(),
-            historyGroup = historyGroup,
-            groupWindowActive = saveJob?.isActive == true,
-        )
-        val base = transformed.document ?: FieldDocumentMapper.newDocument(activeLeague, transformed.fieldImageConfig)
-        val document = FieldDocumentMapper.withEditorData(
-            base = base,
-            league = activeLeague,
-            image = transformed.fieldImageConfig,
-            obstacles = transformed.obstacles,
-            gamePieces = transformed.gamePieces,
-            gamePieceTypes = transformed.gamePieceTypes.ifEmpty { FieldDocumentMapper.defaultGamePieceTypes(activeLeague) },
-            aprilTags = transformed.aprilTags,
-            fieldWaypoints = transformed.fieldWaypoints
-        )
-        _state.value = withValidation(
-            transformed.copy(
-                document = document,
-                aprilTagImportPreview = null,
-                isDirty = true,
-                saveStatus = "Unsaved changes",
-                canUndo = history.canUndo,
-                canRedo = history.canRedo,
+        var documentToSave: RobotFieldConfig? = null
+        _state.update { current ->
+            val transformed = transform(current)
+            if (transformed.editorSnapshot() == current.editorSnapshot()) return@update current
+            history.record(
+                snapshot = current.editorSnapshot(),
+                historyGroup = historyGroup,
+                groupWindowActive = saveJob?.isActive == true,
             )
-        )
-        scheduleSave(document)
+            val base = transformed.document ?: FieldDocumentMapper.newDocument(activeLeague, transformed.fieldImageConfig)
+            val document = FieldDocumentMapper.withEditorData(
+                base = base,
+                league = activeLeague,
+                image = transformed.fieldImageConfig,
+                obstacles = transformed.obstacles,
+                gamePieces = transformed.gamePieces,
+                gamePieceTypes = transformed.gamePieceTypes.ifEmpty { FieldDocumentMapper.defaultGamePieceTypes(activeLeague) },
+                aprilTags = transformed.aprilTags,
+                fieldWaypoints = transformed.fieldWaypoints
+            )
+            documentToSave = document
+            withValidation(
+                transformed.copy(
+                    document = document,
+                    aprilTagImportPreview = null,
+                    isDirty = true,
+                    saveStatus = "Unsaved changes",
+                    canUndo = history.canUndo,
+                    canRedo = history.canRedo,
+                )
+            )
+        }
+        documentToSave?.let(::scheduleSave)
     }
 
     private fun loadBiobuzzPreset() {
@@ -366,32 +369,36 @@ class FieldEditorViewModel(
     }
 
     private fun restoreSnapshot(snapshot: FieldEditorSnapshot, previousSelection: Set<String>) {
-        val current = snapshot.applyTo(_state.value)
-        val base = (current.document ?: FieldDocumentMapper.newDocument(activeLeague, current.fieldImageConfig))
-            .copy(revision = _state.value.document?.revision ?: 0L)
-        val document = FieldDocumentMapper.withEditorData(
-            base = base,
-            league = activeLeague,
-            image = current.fieldImageConfig,
-            obstacles = current.obstacles,
-            gamePieces = current.gamePieces,
-            gamePieceTypes = current.gamePieceTypes.ifEmpty { FieldDocumentMapper.defaultGamePieceTypes(activeLeague) },
-            aprilTags = current.aprilTags,
-            fieldWaypoints = current.fieldWaypoints
-        )
-        val validSelection = previousSelection.intersect(allElementIds(current))
-        _state.value = withValidation(
-            current.copy(
-                document = document,
-                aprilTagImportPreview = null,
-                selectedElementIds = validSelection,
-                isDirty = true,
-                saveStatus = "Unsaved changes",
-                canUndo = history.canUndo,
-                canRedo = history.canRedo,
+        var documentToSave: RobotFieldConfig? = null
+        _state.update { state ->
+            val current = snapshot.applyTo(state)
+            val base = (current.document ?: FieldDocumentMapper.newDocument(activeLeague, current.fieldImageConfig))
+                .copy(revision = state.document?.revision ?: 0L)
+            val document = FieldDocumentMapper.withEditorData(
+                base = base,
+                league = activeLeague,
+                image = current.fieldImageConfig,
+                obstacles = current.obstacles,
+                gamePieces = current.gamePieces,
+                gamePieceTypes = current.gamePieceTypes.ifEmpty { FieldDocumentMapper.defaultGamePieceTypes(activeLeague) },
+                aprilTags = current.aprilTags,
+                fieldWaypoints = current.fieldWaypoints
             )
-        )
-        scheduleSave(document)
+            val validSelection = previousSelection.intersect(allElementIds(current))
+            documentToSave = document
+            withValidation(
+                current.copy(
+                    document = document,
+                    aprilTagImportPreview = null,
+                    selectedElementIds = validSelection,
+                    isDirty = true,
+                    saveStatus = "Unsaved changes",
+                    canUndo = history.canUndo,
+                    canRedo = history.canRedo,
+                )
+            )
+        }
+        documentToSave?.let(::scheduleSave)
     }
 
     private fun copySelection() {
@@ -562,6 +569,7 @@ class FieldEditorViewModel(
                     )
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 _state.update { it.copy(simulatorStatus = "Simulator push failed: ${error.message}") }
             }
         }
@@ -635,6 +643,7 @@ class FieldEditorViewModel(
                     _state.update { it.copy(isDirty = false, saveStatus = "Saved field revision ${document.revision}") }
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 if (_state.value.document?.revision == document.revision) {
                     _state.update { it.copy(saveStatus = "Failed to save field: ${error.message}") }
                 }
@@ -656,6 +665,7 @@ class FieldEditorViewModel(
                     )
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 _state.update { it.copy(saveStatus = "Failed to import field image: ${error.message}") }
             }
         }
@@ -704,6 +714,7 @@ class FieldEditorViewModel(
                     it.copy(saveStatus = "Exported ${document.apriltags.size} AprilTag(s) to ${intent.destination.name}.")
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 _state.update { it.copy(saveStatus = "AprilTag export failed: ${error.message}") }
             }
         }

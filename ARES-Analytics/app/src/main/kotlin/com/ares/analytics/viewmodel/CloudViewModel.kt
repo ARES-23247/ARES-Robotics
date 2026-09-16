@@ -61,6 +61,11 @@ class CloudViewModel(
 
     init {
         checkAuth()
+        scope.launch {
+            oauthService.authState.collect { authState ->
+                _state.update { it.copy(isAuthenticated = authState is AuthState.Authenticated) }
+            }
+        }
         onIntent(CloudIntent.RefreshCloudLogs)
     }
 

@@ -627,13 +627,14 @@ class SuperstructureStudioViewModel(
     }
 
     private fun neutralTarget(reference: SuperstructureFieldReference): SuperstructureSubsystemTarget {
-        val subsystem = _state.value.subsystems.single { it.uid == reference.subsystemUid }
-        val field = subsystem.stateFields.single { it.uid == reference.fieldUid }
-        return when (field.type) {
+        val subsystem = _state.value.subsystems.firstOrNull { it.uid == reference.subsystemUid }
+        val field = subsystem?.stateFields?.firstOrNull { it.uid == reference.fieldUid }
+        return when (field?.type) {
             SubsystemValueType.DOUBLE -> SuperstructureSubsystemTarget(reference, constantDoubleValue = field.defaultNumber ?: 0.0)
             SubsystemValueType.INT -> SuperstructureSubsystemTarget(reference, constantDoubleValue = (field.defaultInt ?: 0).toDouble())
             SubsystemValueType.BOOLEAN -> SuperstructureSubsystemTarget(reference, constantBooleanValue = field.defaultBoolean ?: false)
             SubsystemValueType.STRING -> SuperstructureSubsystemTarget(reference, constantStringValue = field.defaultText.orEmpty())
+            null -> SuperstructureSubsystemTarget(reference)
         }
     }
 

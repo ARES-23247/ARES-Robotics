@@ -50,7 +50,7 @@ Every audit cycle operates over a manageable batch of **15–25 coherent authore
 |---|---|---|---|---|---|
 | **Batch 1** | Log Ingestion & NT4 Client Services | 18 | `AutoImportService`, `Nt4ClientService`, run comparison, observation pruning, atomic CAS rate-limiting | **Complete** | `3b8d51dc8` (54 tests passed) |
 | **Batch 2** | Cloud Integration, OAuth & Platform Services | 22 | `GoogleDriveService` query escaping (\'), `OAuthLoopbackServer` port collision resilience, `SyncEngine` atomicity | **Complete** | `d51c14399` (72 tests passed) |
-| **Batch 3** | Analytics ViewModels & State Flows | ~22 | `OnboardingViewModel`, `ProfileViewModel`, `RunComparisonViewModel`, coroutine scopes, state emission safety | *In Progress* | Next cycle |
+| **Batch 3** | Analytics ViewModels & State Flows | 23 | Reactive auth collection in `CloudViewModel`, atomic state updates & `CancellationException` handling in `FieldEditorViewModel`, monotonic time & atomic scrubbing in `RoutinePlaybackController`, safe `firstOrNull` lookups in `SuperstructureStudioViewModel` | **Complete** | (316 tests passed across 26 suites) |
 | **Batch 4** | Analytics Desktop UI, Panels & Dialogs | ~24 | Compose desktop lifecycles, memory retention, window state boundaries, layout dialogs | *Planned* | |
 | **Batch 5** | Analytics Ingestion & DuckDB Pipelines | ~25 | Parquet framing, DuckDB thread serialization, batch telemetry database writes | *Planned* | |
 | **Batch 6** | Analytics Preferences, Theming & Configuration | ~24 | Desktop settings persistence, atomic file serialization, theme state management | *Planned* | |

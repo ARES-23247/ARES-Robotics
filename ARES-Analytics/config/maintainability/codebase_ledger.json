@@ -4932,7 +4932,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/CloudViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 438,
+      "lines": 443,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4972,7 +4972,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 717,
+      "lines": 728,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5522,7 +5522,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePlaybackController.kt",
       "product": "ARES-Analytics",
-      "lines": 54,
+      "lines": 58,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5672,7 +5672,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 668,
+      "lines": 669,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
