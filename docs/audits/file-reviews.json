@@ -4243,6 +4243,16 @@
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemInterlockCard.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified InterlockMatrixCard Compose component. Ensures positional interlock configuration between generated subsystems, strict type-safe comparison gating (LESS_THAN for numeric, EQUALS_STATE for boolean/state), and disallows custom fallback overrides on ARES-generated subsystems to enforce configured actuator safe outputs.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemDocumentAuthoringTest.kt"
+      ],
+      "sha256": "36f03f45321fdca057a977324ac39eb1085d8fcb415b0db0451f6040188c6db4"
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemPurposeSection.kt": {
       "sha256": "838af849c5a1810c31b9d960edd3c784f3013a1ec5cf57cae56cb3e666baecc8",
       "review": "reviewed",
@@ -4443,6 +4453,16 @@
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyCheckpointSection.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified CheckpointSection Compose component. Displays student learning checkpoints, automatic app evidence observation states, accessible semantics state descriptions, and safe reflection input handling up to 4000 characters.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/learning/LearningCatalogTest.kt"
+      ],
+      "sha256": "178683273438ca670624408b6b665f1b9596851f7811ef51eeae0e7ea9a420aa"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyClassroomComponents.kt": {
       "sha256": "0498117ae3ea6fff31223944ce124925ee830ef5bac849524a976980d8b90a83",
@@ -4682,6 +4702,16 @@
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenHeaderBar.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified MainScreenHeaderBar Compose component. Manages workspace selection, mission headers, responsive layout toggling (<1450dp compactShell), execution toolbar integration, and contextual coach/help actions.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/MainViewModelWorkspaceTransitionTest.kt"
+      ],
+      "sha256": "47c0b26e9414ec0a49bd745996eb6b931399bd8f8b7b9ac2b90fecf63e38c002"
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenOverlays.kt": {
       "sha256": "e5bb29d9d923b7b5af7da0dfecc6d9d81d34cabc418a1439344ecdfa9b83f272",
       "review": "reviewed",
@@ -4690,6 +4720,16 @@
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenScopes.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified MainScreenScopes lifecycle and dependency wiring. Enforces workspace-scoped coroutine cancellation via key(workspaceId), provides immutable feature scope bundles, and safeguards standalone archive exports via DesktopFileChoosers and atomic export.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporterTest.kt"
+      ],
+      "sha256": "2b20fe6adc8749e18140f92f249e6dc64e26930ebac3d7f41d80e706f63334ab"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MatchStrategyScreen.kt": {
       "sha256": "bb505b8b2b2aa5cec6377d0b06d39780c0710805a7009d339b0112ec07eab6b9",
@@ -5204,6 +5244,16 @@
         "ARESLib-Kotlin/build/audit-pass20-policy-final.log"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorState.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified FieldEditorState immutable data structures and FieldEditorIntent sealed class hierarchy. Validates element selection, transaction undo/redo tracking, AprilTag import preview models, and platform mapping.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldEditorTransactionsTest.kt"
+      ],
+      "sha256": "6a98fb3ba1b326b3efa7ecbf653404bd94b1590ab0efbacbcab80adca6c07824"
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt": {
       "sha256": "015a3373c77ed191744e4a94d2dc2834c2f72f63ac8c3d134374938f9ca90350",
       "review": "reviewed",
@@ -5476,6 +5526,16 @@
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderState.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified DrivebaseBuilderState immutable data models, DriveLabState, and DrivebaseBuilderIntent sealed interface. Enforces hardware configuration, geometry calculations, localization failure scenarios, and safety declarations.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/drivebase/DrivebaseAuthoringTest.kt"
+      ],
+      "sha256": "6f934c63150d57bca3a0bff98b153db869e3923be651a2dc767ea186f8a1a0c8"
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt": {
       "sha256": "26ce7e93000a6ec7a6798b562553f63f5547ee3c4e48bc3c12b2a3b90a4975df",
       "review": "reviewed",
@@ -5519,6 +5579,16 @@
         "ARESLib-Kotlin/build/audit-pass154-verified-evidence/"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorSimulatorSync.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified FieldEditorSimulatorSync object. Synchronizes field configuration with running simulator via NT4 telemetry topics, validating receipt events with timeout and matching expected field hash and geometry.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/SimulatorFieldApplyReceiptTest.kt"
+      ],
+      "sha256": "40a98dd8ec46804e49a87c9c18fe8130338691c4b6fe3e65fe63765dfd3d804b"
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorTransactions.kt": {
       "sha256": "058cf4caff6e0c3bb76d981b57b925f6a53457dcc71b574a3e567ddedfcd0811",
       "review": "reviewed",
@@ -5528,6 +5598,26 @@
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass153-verified-evidence/"
       ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorTransferOps.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified FieldEditorTransferOps. Executes atomic field image imports with temporary file staging and replace-existing move, AprilTag map decoding and preview generation, and atomic export using Dispatchers.IO and Dispatchers.Default.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/AprilTagImportContractTest.kt"
+      ],
+      "sha256": "12070fa07a452f5c4d6dcccbf8b4e3146acdf9057b2fdcdcb1ce5efd1ddb36df"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorValidationOps.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified FieldEditorValidationOps. Validates field dimensions, obstacle boundaries, game pieces, waypoints, and AprilTags across FTC, FRC, and XRP leagues; explicitly skips AprilTag requirements for the reviewed BIOBUZZ layout while preserving all other validation rules.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/field/FieldValidationAuditTest.kt"
+      ],
+      "sha256": "23814b9ad64c338fe95dbfdfaeb13c15aaefdba30f8e38bb85bfca5dbb67cbc3"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldPoseBufferManager.kt": {
       "sha256": "714fa01809bb26f70bab27a2b943b6b8c492591e7c37a35bc9ea4a8ec214a4ee",
@@ -5711,6 +5801,26 @@
         "ARESLib-Kotlin/build/audit-pass206-verified-evidence"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePersistenceService.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RoutinePersistenceService. Coordinates autonomous routine and catalog persistence across ProjectSession revisions with stale and conflict detection, atomic catalog updates, and automated ProjectCheckpointRecorder checkpoints.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/RoutineEditorModelTest.kt"
+      ],
+      "sha256": "0b1757adf77d427b7eaeaf51ae0d694e191172a0d81de2e9b1e4062ab0870e8c"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePlaybackController.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified RoutinePlaybackController. Controls animation playback loop for routine trajectory previews on a coroutine scope with 16ms tick intervals, automatic end-of-duration clamping, and cancellation handling.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/routine/RoutineBuilderViewModelTest.kt"
+      ],
+      "sha256": "8e2f90894b870398c8596de85fc8f5623f72869913f6717ea945d184a0899c6e"
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePreviewAnalyzer.kt": {
       "sha256": "987cf42acf72cb50993170924c3c267d4a90b7f8556bb7955d7865dda9934e0f",
       "review": "reviewed",
@@ -5740,6 +5850,26 @@
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemAiProposalCoordinator.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemAiProposalCoordinator. Coordinates Gemini subsystem design proposals with atomic generation tracking to discard stale asynchronous completions, candidate schema sanitization, and structured diff review without auto-persisting to disk.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/subsystem/SubsystemDesignAssistantTest.kt"
+      ],
+      "sha256": "841c5f3e3027b49f4b44546e7ab2ebbaf1b0434327996128e705ad1fde41799f"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemCreationOps.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemCreationOps. Handles creation of new subsystems from templates with available template connection wiring and registration of hand-authored subsystems across FTC, FRC, and XRP without overwriting unsaved drafts.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemDocumentAuthoringTest.kt"
+      ],
+      "sha256": "3287a1d5e7383ff6b439b0daaebaa28a6d9280259ac50c794060fee5a29612d4"
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemDocumentAuthoring.kt": {
       "sha256": "6ddf0e3942d9fc0914984490d27f3538f21c4b4f21d566e7ff1b3609a437e277",
       "review": "reviewed",
@@ -5767,6 +5897,16 @@
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
     },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemRemovalCoordinator.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemRemovalCoordinator. Coordinates safe subsystem removal and recovery, ensuring user Kotlin source files are preserved, writing recovery metadata, and recording ProjectCheckpointRecorder checkpoints upon removal and restoration.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemRemovalStateTransitionsTest.kt"
+      ],
+      "sha256": "566b3afabe9296f1c4f80bb106ae07843ee2ffe2fd0e3a3697be82fe39b9060f"
+    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemRemovalStateTransitions.kt": {
       "sha256": "c1800c77fd054d3e3ebcb6e00bbd3c7c88318d23259812f54290b0d958638a67",
       "review": "reviewed",
@@ -5775,6 +5915,16 @@
       "evidence": [
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemStarterGeneratorOps.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SubsystemStarterGeneratorOps. Controls starter code generation, protecting user-owned modifications against inadvertent overwrites, and requiring explicit starter confirmation tokens.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemGeneratorViewModelTest.kt"
+      ],
+      "sha256": "77d71f69718d8e74cfb60d308bb4d898edc2e006975992df66bfaba8f1ce43e4"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/XrpExtensionScaffold.kt": {
       "sha256": "555fbdd43d79bcb2d11694ec96a54f2105af9b6fbfd3fa3e2039cecb48e488e5",
@@ -5796,6 +5946,16 @@
         "docs/audits/checkpoints/pass277.json",
         "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json"
       ]
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioState.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified SuperstructureStudioState immutable state model, posture step transitions, target and source field resolution, and automatic interlock description formatting and validation.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureInterlockDescriptionTest.kt"
+      ],
+      "sha256": "30d45b02b746d3ba5d48e23cb0dc5432c70fd735c7d9a1f5fe4630d19c467187"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioViewModel.kt": {
       "sha256": "c7089ed60145fb09851b7c50fece07549eb614cdaf8cca8b21422c804bd8143b",
@@ -7798,6 +7958,16 @@
       "evidence": [
         "docs/audits/pass292-pending-elevation-audit.md"
       ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/BiobuzzTemplateAuthoringTest.kt": {
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Verified BiobuzzTemplateAuthoringTest test suite. Confirms the bundled BioBuzz example archive unpacks, validates path safety, and loads into DrivebaseBuilderViewModel with intact project identity and tuning parameters.",
+      "evidence": [
+        "docs/audits/DEEP_AUDIT_GOAL.md",
+        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/BiobuzzTemplateAuthoringTest.kt"
+      ],
+      "sha256": "77012b07e5a56432c03039e1d748ccacb6ca3e9678f533836060783fad04d2d3"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/GenericStarterTemplateIntegrationTest.kt": {
       "sha256": "853732acc2df2d02a3bab1a745d66934e9e8abfcbe8e09ec35d6156bf5b70001",
@@ -29026,7 +29196,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "a0a697e6477b694bd28f5da5b1b544d9d88e7b4b364b24ce8829d218ead8a93d",
+      "sha256": "8cfc922d0ca4ca4ec96d4c5b458a5b8ab356f0e0ef353225910bd6f67c91b254",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
