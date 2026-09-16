@@ -25,12 +25,24 @@ class AresFormattersTest {
 
         assertTrue(Regex("[A-Z][a-z]{2} \\d{2}, \\d{2}:\\d{2}").matches(AresFormatters.formatDateTimeShort(timestamp)))
         assertTrue(Regex("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}").matches(AresFormatters.formatDateTimeMinutes(timestamp)))
+        assertTrue(Regex("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}").matches(AresFormatters.formatDateTimeSeconds(timestamp)))
+        assertTrue(Regex("\\d{2}:\\d{2}").matches(AresFormatters.formatTimeHoursMinutes(timestamp)))
+        assertTrue(Regex("\\d{8}_\\d{6}").matches(AresFormatters.formatCompactTimestamp(timestamp)))
+        assertTrue(Regex("\\d{8}-\\d{6}").matches(AresFormatters.formatCompactTimestampHyphen(timestamp)))
     }
 
     @Test
     fun `concurrent formatting agrees with independently prepared calendar expectations`() {
         val timestamps = listOf(-1L, 0L, 951_782_400_123L, 1_725_000_000_123L, 2_147_483_648_000L)
-        val formats = listOf("HH:mm:ss.SSS", "MMM dd, HH:mm", "yyyy-MM-dd HH:mm").map { pattern ->
+        val formats = listOf(
+            "HH:mm:ss.SSS",
+            "MMM dd, HH:mm",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd HH:mm:ss",
+            "HH:mm",
+            "yyyyMMdd_HHmmss",
+            "yyyyMMdd-HHmmss",
+        ).map { pattern ->
             SimpleDateFormat(pattern, Locale.US).apply { timeZone = TimeZone.getDefault() }
         }
         // Prepare expectations on this thread; SimpleDateFormat itself is not shared with workers.
@@ -39,8 +51,15 @@ class AresFormattersTest {
         try {
             val tasks = (0 until 200).map { index -> Callable {
                 val timestamp = timestamps[index % timestamps.size]
-                assertEquals(expected.getValue(timestamp), listOf(AresFormatters.formatTimeMillis(timestamp),
-                    AresFormatters.formatDateTimeShort(timestamp), AresFormatters.formatDateTimeMinutes(timestamp)))
+                assertEquals(expected.getValue(timestamp), listOf(
+                    AresFormatters.formatTimeMillis(timestamp),
+                    AresFormatters.formatDateTimeShort(timestamp),
+                    AresFormatters.formatDateTimeMinutes(timestamp),
+                    AresFormatters.formatDateTimeSeconds(timestamp),
+                    AresFormatters.formatTimeHoursMinutes(timestamp),
+                    AresFormatters.formatCompactTimestamp(timestamp),
+                    AresFormatters.formatCompactTimestampHyphen(timestamp),
+                ))
             } }
             executor.invokeAll(tasks, 5, TimeUnit.SECONDS).forEach { it.get() }
         } finally {

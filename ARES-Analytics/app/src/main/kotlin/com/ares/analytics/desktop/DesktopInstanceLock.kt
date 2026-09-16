@@ -47,13 +47,17 @@ internal class DesktopInstanceLock private constructor(
  * terminates the process because a windowless JVM must not keep the instance lock alive.
  */
 internal object DesktopCrashHandler {
+    private val timestampFormatter = java.time.format.DateTimeFormatter
+        .ofPattern("yyyyMMdd-HHmmss")
+        .withZone(java.time.ZoneId.systemDefault())
+
     fun install(onFatalDesktopUiFailure: () -> Nothing) {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             val fatalDesktopUiFailure = thread.name.startsWith("AWT-EventQueue")
             try {
                 val logDir = AppDataPaths.file("logs")
                 logDir.mkdirs()
-                val timestamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(java.util.Date())
+                val timestamp = timestampFormatter.format(java.time.Instant.now())
                 val crashFile = java.io.File(logDir, "crash-$timestamp.log")
                 java.io.PrintWriter(java.io.FileWriter(crashFile)).use { writer ->
                     writer.println("Thread: ${thread.name}")

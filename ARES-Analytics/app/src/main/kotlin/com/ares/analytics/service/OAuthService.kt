@@ -48,7 +48,7 @@ class OAuthService(
     private val authFilePath: String = AppDataPaths.file("auth.json").path,
     private val httpClient: HttpClient = HttpClient {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(AppJson)
         }
     },
     private val loadPersistedAuthOnInit: Boolean = true,

@@ -28,8 +28,8 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.client.statement.bodyAsText
+import com.ares.analytics.shared.AppJson
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
 
 /**
  * Orchestrates local sessions, robot-hosted logs, and cloud synchronization.
@@ -50,7 +50,7 @@ class CloudViewModel(
 
     private val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(AppJson)
         }
         install(HttpTimeout) {
             requestTimeoutMillis = 30 * 60 * 1000L

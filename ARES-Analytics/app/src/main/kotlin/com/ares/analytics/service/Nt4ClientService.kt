@@ -339,7 +339,7 @@ open class Nt4ClientService(
     suspend fun publishFrame(frame: TelemetryFrame) {
         val finalFrame = sessionMutex.withLock {
             val sessionId = _currentSession.value?.sessionId ?: LIVE_SESSION_ID
-            frame.copy(sessionId = sessionId).also { pendingFrames.send(it) }
+            (if (frame.sessionId == sessionId) frame else frame.copy(sessionId = sessionId)).also { pendingFrames.send(it) }
         }
         telemetryStore.accept(finalFrame, notifyConsumers = !isReplayActive.value)
     }

@@ -22,6 +22,22 @@ internal object AresFormatters {
         .ofPattern("yyyy-MM-dd HH:mm", Locale.US)
         .withZone(ZoneId.systemDefault())
 
+    private val dateTimeSeconds: DateTimeFormatter = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US)
+        .withZone(ZoneId.systemDefault())
+
+    private val timeHoursMinutes: DateTimeFormatter = DateTimeFormatter
+        .ofPattern("HH:mm", Locale.US)
+        .withZone(ZoneId.systemDefault())
+
+    private val compactTimestamp: DateTimeFormatter = DateTimeFormatter
+        .ofPattern("yyyyMMdd_HHmmss", Locale.US)
+        .withZone(ZoneId.systemDefault())
+
+    private val compactTimestampHyphen: DateTimeFormatter = DateTimeFormatter
+        .ofPattern("yyyyMMdd-HHmmss", Locale.US)
+        .withZone(ZoneId.systemDefault())
+
     fun formatTimeMillis(epochMillis: Long): String =
         timeMillis.format(Instant.ofEpochMilli(epochMillis))
 
@@ -30,4 +46,16 @@ internal object AresFormatters {
 
     fun formatDateTimeMinutes(epochMillis: Long): String =
         dateTimeMinutes.format(Instant.ofEpochMilli(epochMillis))
+
+    fun formatDateTimeSeconds(epochMillis: Long): String =
+        dateTimeSeconds.format(Instant.ofEpochMilli(epochMillis))
+
+    fun formatTimeHoursMinutes(epochMillis: Long): String =
+        timeHoursMinutes.format(Instant.ofEpochMilli(epochMillis))
+
+    fun formatCompactTimestamp(epochMillis: Long): String =
+        compactTimestamp.format(Instant.ofEpochMilli(epochMillis))
+
+    fun formatCompactTimestampHyphen(epochMillis: Long): String =
+        compactTimestampHyphen.format(Instant.ofEpochMilli(epochMillis))
 }

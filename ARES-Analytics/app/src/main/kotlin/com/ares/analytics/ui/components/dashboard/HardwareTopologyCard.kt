@@ -28,13 +28,13 @@ import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.Nt4ClientService
 import com.areslib.telemetry.schema.TopologyNode
 import com.areslib.telemetry.schema.TopologyNodeType
+import com.ares.analytics.shared.AppJsonPretty
 import com.ares.analytics.ui.components.core.AresCard
 import com.ares.analytics.ui.components.core.CardHeader
 import com.ares.analytics.ui.theme.*
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
-private val prettyJson = Json { prettyPrint = true }
+private val prettyJson = AppJsonPretty
 
 @Composable
 fun HardwareTopologyCard(

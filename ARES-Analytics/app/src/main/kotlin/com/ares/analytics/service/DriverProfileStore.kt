@@ -1,5 +1,6 @@
 package com.ares.analytics.service
 
+import com.ares.analytics.shared.AppJsonPretty
 import com.ares.analytics.shared.models.DriverProfile
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -102,7 +103,7 @@ internal class DriverProfileStore private constructor(private val file: File) {
     companion object {
         private const val MAX_BYTES = 1_048_576
         private const val MAX_PROFILES = 256
-        private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
+        private val json = AppJsonPretty
         // Neither keys nor values keep a disposed store alive. The store itself retains its key
         // while any service uses it, preserving one shared lock/snapshot for live instances.
         private val stores = WeakHashMap<File, WeakReference<DriverProfileStore>>()

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import com.ares.analytics.shared.AppJsonPretty
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -35,7 +36,7 @@ class LearningProgressService(
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val learnerIdFactory: () -> String = { "learner-${UUID.randomUUID()}" },
 ) {
-    private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
+    private val json = AppJsonPretty
     private val writeMutex = Mutex()
     private val _classroom = MutableStateFlow(loadClassroomStore())
     val classroom: StateFlow<AcademyClassroomStore> = _classroom.asStateFlow()

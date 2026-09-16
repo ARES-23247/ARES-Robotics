@@ -19,9 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.MatchInfo
 import com.ares.analytics.ui.theme.*
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.ares.analytics.ui.util.AresFormatters
 
 @Composable
 fun MatchScheduleCard(
@@ -30,7 +28,6 @@ fun MatchScheduleCard(
     onSelectMatch: (MatchInfo, String) -> Unit, // (match, allianceColor)
     modifier: Modifier = Modifier
 ) {
-    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val now = System.currentTimeMillis()
 
     // Find the next upcoming match (scheduled time is in the future, or closest to now)
@@ -122,7 +119,7 @@ fun MatchScheduleCard(
                             }
                             match.scheduledTime?.let {
                                 Text(
-                                    "Scheduled: ${timeFormat.format(Date(it))}",
+                                    "Scheduled: ${AresFormatters.formatTimeHoursMinutes(it)}",
                                     fontSize = 11.sp,
                                     color = AresTextSecondary
                                 )

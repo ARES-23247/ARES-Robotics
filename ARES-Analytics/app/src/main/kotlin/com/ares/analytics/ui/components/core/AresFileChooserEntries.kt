@@ -26,8 +26,8 @@ import com.ares.analytics.ui.theme.*
 import androidx.compose.ui.input.key.*
 import androidx.compose.foundation.focusable
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
+import com.ares.analytics.ui.util.AresFormatters
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -281,8 +281,7 @@ private fun resolveFileIcon(file: File, directory: Boolean): ImageVector {
 
 private fun formatTimestamp(millis: Long): String {
     if (millis <= 0) return "--"
-    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-    return sdf.format(Date(millis))
+    return AresFormatters.formatDateTimeMinutes(millis)
 }
 
 private fun formatFileSize(bytes: Long): String {

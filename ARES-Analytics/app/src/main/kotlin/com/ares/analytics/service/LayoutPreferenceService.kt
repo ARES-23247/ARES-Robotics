@@ -4,6 +4,7 @@ import com.ares.analytics.service.dashboard.BuiltInDashboardLayoutProfiles
 import com.ares.analytics.service.dashboard.DashboardLayoutProfileCatalog
 import com.ares.analytics.service.dashboard.DashboardWidgetCatalog
 import com.ares.analytics.service.dashboard.dashboardLayoutValidationErrors
+import com.ares.analytics.shared.AppJsonPretty
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -66,7 +67,7 @@ class LayoutPreferenceService(
     private val profileCatalog: DashboardLayoutProfileCatalog = BuiltInDashboardLayoutProfiles,
     private val beforeAtomicReplace: ((temporary: Path, destination: Path) -> Unit)? = null,
 ) {
-    private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
+    private val json = AppJsonPretty
     private val canonicalRoot = File(baseDir).canonicalFile.toPath()
 
     init {

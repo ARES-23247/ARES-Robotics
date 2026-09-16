@@ -21,6 +21,7 @@ import com.ares.analytics.ui.components.core.AresDialog
 import com.ares.analytics.ui.components.core.AresDialogVariant
 import com.ares.analytics.ui.components.forms.AresTextField
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.util.AresFormatters
 import com.ares.analytics.viewmodel.RobotRun
 import com.ares.analytics.viewmodel.SessionSyncInfo
 
@@ -128,7 +129,7 @@ fun CloudDeletionConfirmationDialog(
 
 private fun sessionDisplayName(summary: SessionSummary): String {
     val runName = runCatching {
-        java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date(summary.createdAt))
+        AresFormatters.formatDateTimeSeconds(summary.createdAt)
     }.getOrDefault("Unknown date")
     val match = summary.matchNumber?.let { " • Match " }.orEmpty()
     return " • "
@@ -232,16 +233,15 @@ fun SessionSyncRow(
                 colors = CheckboxDefaults.colors(checkedColor = AresCyan)
             )
             Column(modifier = Modifier.weight(1f)) {
-                val formatter = java.text.SimpleDateFormat("yyyyMMdd_HHmmss")
                 val runName = try {
-                    formatter.format(java.util.Date(summary.createdAt))
+                    AresFormatters.formatCompactTimestamp(summary.createdAt)
                 } catch (e: Exception) {
                     "Unknown Date"
                 }
                 Text("Session: ", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 val sizeStr = if (summary.fileSizeBytes > 0) " | Size:  KB" else ""
                 val dateStr = try {
-                    java.text.SimpleDateFormat("MMM dd, HH:mm").format(java.util.Date(summary.createdAt))
+                    AresFormatters.formatDateTimeShort(summary.createdAt)
                 } catch (e: Exception) {
                     "unknown"
                 }
