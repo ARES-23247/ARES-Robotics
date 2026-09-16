@@ -1,8 +1,8 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.shared.AppJson
+import com.ares.analytics.util.Sha256
 import kotlinx.serialization.Serializable
-import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
 
@@ -14,7 +14,7 @@ fun generateCodeVerifier(): String {
 }
 
 fun generateCodeChallenge(codeVerifier: String): String {
-    val digest = MessageDigest.getInstance("SHA-256")
+    val digest = Sha256.newDigest()
         .digest(codeVerifier.toByteArray(Charsets.US_ASCII))
     return Base64.getUrlEncoder().withoutPadding().encodeToString(digest)
 }

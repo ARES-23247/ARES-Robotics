@@ -144,6 +144,7 @@ class FrcLimelightIO(
      * @param inputs Pre-allocated [VisionIOInputs] target container.
      */
     override fun updateInputs(inputs: VisionIOInputs) {
+        inputs.clusterTargets = emptyList()
 
         inputs.cameraPoses = cameraPoses
         

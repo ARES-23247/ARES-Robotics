@@ -148,18 +148,29 @@ data class Matrix3x3(
         // Divide each cofactor before undoing normalization. A shared reciprocal
         // 1 / (det * scale) can overflow even when every inverse entry is finite.
 
+        val inv00 = (c00 / det) / scale
+        val inv01 = (-(a01 * a22 - a02 * a21) / det) / scale
+        val inv02 = ((a01 * a12 - a02 * a11) / det) / scale
+
+        val inv10 = (-c01 / det) / scale
+        val inv11 = ((a00 * a22 - a02 * a20) / det) / scale
+        val inv12 = (-(a00 * a12 - a02 * a10) / det) / scale
+
+        val inv20 = (c02 / det) / scale
+        val inv21 = (-(a00 * a21 - a01 * a20) / det) / scale
+        val inv22 = ((a00 * a11 - a01 * a10) / det) / scale
+
+        if (!inv00.isFinite() || !inv01.isFinite() || !inv02.isFinite() ||
+            !inv10.isFinite() || !inv11.isFinite() || !inv12.isFinite() ||
+            !inv20.isFinite() || !inv21.isFinite() || !inv22.isFinite()
+        ) {
+            return Matrix3x3()
+        }
+
         return Matrix3x3(
-             (c00 / det) / scale,
-            (-(a01 * a22 - a02 * a21) / det) / scale,
-             ((a01 * a12 - a02 * a11) / det) / scale,
-            
-            (-c01 / det) / scale,
-             ((a00 * a22 - a02 * a20) / det) / scale,
-            (-(a00 * a12 - a02 * a10) / det) / scale,
-            
-             (c02 / det) / scale,
-            (-(a00 * a21 - a01 * a20) / det) / scale,
-             ((a00 * a11 - a01 * a10) / det) / scale
+            inv00, inv01, inv02,
+            inv10, inv11, inv12,
+            inv20, inv21, inv22
         )
     }
 

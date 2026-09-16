@@ -2,6 +2,7 @@
 package com.ares.analytics.service
 
 import com.ares.analytics.BuildConfig
+import com.ares.analytics.shared.AppJson
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -68,7 +69,7 @@ data class WindowsUpdateCandidate(
 class UpdateCheckerService(
     private val httpClient: HttpClient = HttpClient {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(AppJson)
         }
     },
     private val serviceScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())

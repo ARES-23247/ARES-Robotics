@@ -29,6 +29,8 @@ import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemHardwareDocument
 import com.areslib.subsystem.SubsystemHardwareKind
 import com.areslib.subsystem.SubsystemPlatform
+import com.areslib.subsystem.SubsystemVisualAnchor
+import com.areslib.subsystem.SubsystemVisualPlacementDocument
 import com.areslib.subsystem.supportsPlatform
 
 fun SubsystemHardwareKind.isActuator(): Boolean =
@@ -363,3 +365,28 @@ fun ConceptCard(title: String, body: String) {
         }
     }
 }
+
+internal fun subsystemControlOutputUnit(kind: SubsystemHardwareKind?): String = when (kind) {
+    SubsystemHardwareKind.MOTOR -> "V"
+    SubsystemHardwareKind.PRISM_DRIVER -> "µs"
+    SubsystemHardwareKind.BUZZER -> "MIDI note"
+    SubsystemHardwareKind.DIGITAL_OUTPUT -> "0 / 1"
+    else -> "normalized"
+}
+
+internal fun defaultVisualPlacement(kind: SubsystemHardwareKind): SubsystemVisualPlacementDocument =
+    placementForAnchor(
+        if (kind == SubsystemHardwareKind.PRISM_DRIVER) SubsystemVisualAnchor.UNDERBODY
+        else SubsystemVisualAnchor.LEFT_SIDE,
+    )
+
+internal fun placementForAnchor(anchor: SubsystemVisualAnchor): SubsystemVisualPlacementDocument = when (anchor) {
+    SubsystemVisualAnchor.LEFT_SIDE -> SubsystemVisualPlacementDocument(anchor, leftFraction = 0.5)
+    SubsystemVisualAnchor.RIGHT_SIDE -> SubsystemVisualPlacementDocument(anchor, leftFraction = -0.5)
+    SubsystemVisualAnchor.FRONT -> SubsystemVisualPlacementDocument(anchor, forwardFraction = 0.5)
+    SubsystemVisualAnchor.REAR -> SubsystemVisualPlacementDocument(anchor, forwardFraction = -0.5)
+    SubsystemVisualAnchor.CENTER,
+    SubsystemVisualAnchor.UNDERBODY,
+    SubsystemVisualAnchor.UNSPECIFIED -> SubsystemVisualPlacementDocument(anchor)
+}
+

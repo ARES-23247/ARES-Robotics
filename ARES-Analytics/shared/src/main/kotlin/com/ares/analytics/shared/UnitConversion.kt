@@ -58,6 +58,11 @@ enum class RobotUnit(val symbol: String, val category: UnitCategory, val factorT
 object UnitConversion {
     private val camelWordBoundary = Regex("([a-z0-9])([A-Z])")
     private val ampereWord = Regex("(?i)(^|[^a-z0-9])amp(?:ere)?s?($|[^a-z0-9])")
+    private val secondWord = Regex("(?i)(^|[^a-z0-9])(?:sec|secs|seconds?)($|[^a-z0-9])")
+    private val millisecondWord = Regex("(?i)(^|[^a-z0-9])(?:ms|millis|milliseconds?|latency|looptime)($|[^a-z0-9])")
+    private val rotationWord = Regex("(?i)(^|[^a-z0-9])(?:rot|rots|rotations?)($|[^a-z0-9])")
+    private val radianWord = Regex("(?i)(^|[^a-z0-9])(?:rad|rads|radians?)($|[^a-z0-9])")
+    private val degreeWord = Regex("(?i)(^|[^a-z0-9])(?:deg|degs|degrees?)($|[^a-z0-9])")
     private val cartesianAxes = setOf(
         "x", "y", "z", "pose_x", "pose_y", "pose_z", "position_x", "position_y", "position_z"
     )
@@ -66,6 +71,8 @@ object UnitConversion {
     fun convert(value: Double, from: RobotUnit, to: RobotUnit): Double {
         if (from.category != to.category) throw IllegalArgumentException("Cannot convert from ${from.category} to ${to.category}")
         if (from == to) return value
+        if (value.isNaN()) return Double.NaN
+        if (value.isInfinite()) return value
 
         if (from.category == UnitCategory.TEMPERATURE) {
             val celsius = when (from) {
@@ -88,12 +95,18 @@ object UnitConversion {
     fun detectUnitFromKey(key: String): RobotUnit? {
         val lowerKey = key.lowercase()
         val leaf = lowerKey.substringAfterLast('/')
-        val isAngular = lowerKey.contains("rot") ||
-            lowerKey.contains("ang") ||
+        val spaced = camelWordBoundary.replace(key, "$1 $2")
+        val isAngular = rotationWord.containsMatchIn(spaced) ||
+            radianWord.containsMatchIn(spaced) ||
+            degreeWord.containsMatchIn(spaced) ||
+            lowerKey.contains("angle") ||
             lowerKey.contains("omega")
         val isCartesianAxis = leaf in cartesianAxes
         val hasAmpereWord = lowerKey.contains("amp") &&
-            ampereWord.containsMatchIn(camelWordBoundary.replace(key, "$1 $2"))
+            ampereWord.containsMatchIn(spaced)
+        val hasMsWord = millisecondWord.containsMatchIn(spaced)
+        val hasSecWord = secondWord.containsMatchIn(spaced)
+
         return when {
             lowerKey.contains("millivolt") -> RobotUnit.MILLIVOLT
             lowerKey.contains("milliamp") -> RobotUnit.MILLIAMPERE
@@ -105,12 +118,12 @@ object UnitConversion {
             lowerKey.contains("rpm") -> RobotUnit.RPM
             (lowerKey.contains("velocity") || lowerKey.contains("vel")) && isAngular -> RobotUnit.RAD_PER_SEC
             lowerKey.contains("velocity") || lowerKey.contains("vel") -> RobotUnit.METER_PER_SEC
-            lowerKey.contains("deg") -> RobotUnit.DEGREE
-            lowerKey.contains("rad") -> RobotUnit.RADIAN
-            lowerKey.contains("rot") -> RobotUnit.ROTATION
+            degreeWord.containsMatchIn(spaced) -> RobotUnit.DEGREE
+            radianWord.containsMatchIn(spaced) -> RobotUnit.RADIAN
+            rotationWord.containsMatchIn(spaced) -> RobotUnit.ROTATION
             lowerKey.contains("angle") || lowerKey.contains("heading") || lowerKey.contains("yaw") || lowerKey.contains("pitch") || lowerKey.contains("roll") -> RobotUnit.RADIAN
-            lowerKey.contains("ms") || lowerKey.contains("millis") || lowerKey.contains("latency") || lowerKey.contains("looptime") -> RobotUnit.MILLISECOND
-            lowerKey.contains("time") || lowerKey.contains("sec") -> RobotUnit.SECOND
+            hasMsWord -> RobotUnit.MILLISECOND
+            lowerKey.contains("time") || hasSecWord -> RobotUnit.SECOND
             lowerKey.contains("distance") || lowerKey.contains("position") || lowerKey.contains("pose") || isCartesianAxis -> RobotUnit.METER
             else -> null
         }

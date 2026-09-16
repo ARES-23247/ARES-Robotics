@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -423,3 +425,11 @@ class DashboardViewModel(
         }
     }
 }
+
+/** Serializes layout disk writes and their corresponding in-memory state commit. */
+internal class DashboardLayoutTransactionQueue {
+    private val mutex = Mutex()
+
+    suspend fun <T> transact(block: suspend () -> T): T = mutex.withLock { block() }
+}
+

@@ -1,7 +1,6 @@
 package com.areslib.sim.field
 
 import com.google.gson.Gson
-import com.google.gson.JsonObject
 import org.dyn4j.dynamics.Body
 import org.dyn4j.geometry.MassType
 import org.dyn4j.world.World

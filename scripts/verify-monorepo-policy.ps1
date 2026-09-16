@@ -2,11 +2,15 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $root = Split-Path -Parent $PSScriptRoot
 & python (Join-Path $PSScriptRoot 'verify_agent_guidance.py')
 if ($LASTEXITCODE -ne 0) { throw 'Shared agent guidance verification failed.' }
 & (Join-Path $PSScriptRoot 'verify-doc-links.ps1')
 if ($LASTEXITCODE -ne 0) { throw 'Markdown link verification failed.' }
+& python (Join-Path $PSScriptRoot 'generate_codebase_ledger.py') --verify
+if ($LASTEXITCODE -ne 0) { throw 'Codebase maintainability ledger verification failed.' }
 $manifest = Join-Path $root 'release/ares-versions.properties'
 if (-not (Test-Path -LiteralPath $manifest)) { throw 'Canonical release manifest is missing.' }
 $release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $manifest)

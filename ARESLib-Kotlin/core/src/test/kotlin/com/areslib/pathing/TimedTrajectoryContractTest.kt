@@ -52,7 +52,7 @@ class TimedTrajectoryContractTest {
         val trajectory = TimedTrajectory(linked, engine = TrajectoryEngine.JERK_LIMITED)
         assertEquals(0, linked.indexedReads)
         assertTrue(trajectory.states is RandomAccess)
-        assertSame(linked.first, trajectory.states.first(), "Already immutable empty-force states need no copy")
+        assertSame(linked.first(), trajectory.states.first(), "Already immutable empty-force states need no copy")
         val copy = trajectory.copy()
         val (states, events, engine) = copy
         assertEquals(trajectory, copy); assertEquals(trajectory.hashCode(), copy.hashCode())

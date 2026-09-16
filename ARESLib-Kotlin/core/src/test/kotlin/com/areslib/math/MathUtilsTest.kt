@@ -74,4 +74,30 @@ class MathUtilsTest {
             kotlin.test.assertTrue(once >= -Math.PI && once < Math.PI)
         }
     }
+
+    @Test
+    fun `test angle and rate conversion extensions`() {
+        assertEquals(Math.PI / 2.0, (2.5 * Math.PI).wrapToPi(), 1e-6)
+        assertEquals(0.0, (2.0 * Math.PI).wrapTo2Pi(), 1e-6)
+        assertEquals(1.5 * Math.PI, (-0.5 * Math.PI).wrapTo2Pi(), 1e-6)
+        assertEquals(0.0, Double.NaN.wrapTo2Pi(), 1e-6)
+
+        assertEquals(180.0, Math.PI.toDegrees(), 1e-6)
+        assertEquals(Math.PI, 180.0.toRadians(), 1e-6)
+
+        // 1 rot/sec = 2*PI rad/sec = 60 RPM
+        assertEquals(60.0, (2.0 * Math.PI).radPerSecToRpm(), 1e-6)
+        assertEquals(2.0 * Math.PI, 60.0.rpmToRadPerSec(), 1e-6)
+        assertEquals(0.0, Double.NaN.radPerSecToRpm(), 1e-6)
+        assertEquals(0.0, Double.NaN.rpmToRadPerSec(), 1e-6)
+    }
+
+    @Test
+    fun `test productRoundoff precision`() {
+        val a = 1.0000001
+        val b = 2.0000002
+        val prod = a * b
+        val roundoff = productRoundoff(a, b, prod)
+        kotlin.test.assertTrue(roundoff.isFinite())
+    }
 }

@@ -51,4 +51,17 @@ class VectorDrawingUtilsTest {
             render(start, end, head = Float.NaN), render(start, end, angle = Double.NaN))
         for (pixels in images) assertTrue((0..63).all { x -> (0..63).all { y -> pixels[x, y].alpha == 0f } })
     }
+
+    @Test
+    fun `scratchPath renders identically and resets cleanly`() {
+        val scratch = androidx.compose.ui.graphics.Path()
+        val start = Offset(10f, 32f)
+        val end = Offset(50f, 32f)
+        val bitmap = ImageBitmap(64, 64)
+        CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(bitmap), Size(64f, 64f)) {
+            drawVectorArrow(start, end, Color.Red, filledHead = true, scratchPath = scratch)
+        }
+        val pixels = bitmap.toPixelMap()
+        assertTrue(pixels[42, 30].alpha > 0.8f)
+    }
 }

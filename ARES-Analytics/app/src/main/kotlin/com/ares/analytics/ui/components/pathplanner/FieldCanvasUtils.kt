@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
+import com.ares.analytics.ui.canvas.drawVectorArrow
 import com.ares.analytics.ui.theme.*
 import com.areslib.math.wrapAngle
 
@@ -234,44 +235,30 @@ fun DrawScope.drawCoordinateAxes(
     val yAxisOffset = getCanvasOffsetBase(Waypoint(0.0, 0.8), canvasW, canvasH, fieldW, fieldH, league)
     val strokeW = 3.dp.toPx()
     val arrowSize = 10.dp.toPx()
+    val xAngle = kotlin.math.atan2((xAxisOffset.y - originOffset.y).toDouble(), (xAxisOffset.x - originOffset.x).toDouble())
+    val yAngle = kotlin.math.atan2((yAxisOffset.y - originOffset.y).toDouble(), (yAxisOffset.x - originOffset.x).toDouble())
 
     // X Axis (Red)
-    drawLine(color = AresRed, start = originOffset, end = xAxisOffset, strokeWidth = strokeW)
-    // X Axis Arrow Head
-    val xAngle = kotlin.math.atan2((xAxisOffset.y - originOffset.y).toDouble(), (xAxisOffset.x - originOffset.x).toDouble())
-    val xArrowPath = scratchXArrowPath.apply {
-        reset()
-        moveTo(xAxisOffset.x, xAxisOffset.y)
-        lineTo(
-            xAxisOffset.x - arrowSize * kotlin.math.cos(xAngle - Math.PI / 6).toFloat(),
-            xAxisOffset.y - arrowSize * kotlin.math.sin(xAngle - Math.PI / 6).toFloat()
-        )
-        lineTo(
-            xAxisOffset.x - arrowSize * kotlin.math.cos(xAngle + Math.PI / 6).toFloat(),
-            xAxisOffset.y - arrowSize * kotlin.math.sin(xAngle + Math.PI / 6).toFloat()
-        )
-        close()
-    }
-    drawPath(path = xArrowPath, color = AresRed)
+    drawVectorArrow(
+        start = originOffset,
+        end = xAxisOffset,
+        color = AresRed,
+        strokeWidth = strokeW,
+        arrowHeadLength = arrowSize,
+        filledHead = true,
+        scratchPath = scratchXArrowPath
+    )
 
     // Y Axis (Green)
-    drawLine(color = AresGreen, start = originOffset, end = yAxisOffset, strokeWidth = strokeW)
-    // Y Axis Arrow Head
-    val yAngle = kotlin.math.atan2((yAxisOffset.y - originOffset.y).toDouble(), (yAxisOffset.x - originOffset.x).toDouble())
-    val yArrowPath = scratchYArrowPath.apply {
-        reset()
-        moveTo(yAxisOffset.x, yAxisOffset.y)
-        lineTo(
-            yAxisOffset.x - arrowSize * kotlin.math.cos(yAngle - Math.PI / 6).toFloat(),
-            yAxisOffset.y - arrowSize * kotlin.math.sin(yAngle - Math.PI / 6).toFloat()
-        )
-        lineTo(
-            yAxisOffset.x - arrowSize * kotlin.math.cos(yAngle + Math.PI / 6).toFloat(),
-            yAxisOffset.y - arrowSize * kotlin.math.sin(yAngle + Math.PI / 6).toFloat()
-        )
-        close()
-    }
-    drawPath(path = yArrowPath, color = AresGreen)
+    drawVectorArrow(
+        start = originOffset,
+        end = yAxisOffset,
+        color = AresGreen,
+        strokeWidth = strokeW,
+        arrowHeadLength = arrowSize,
+        filledHead = true,
+        scratchPath = scratchYArrowPath
+    )
 
     // Axis Labels
     val textStyle = TextStyle(

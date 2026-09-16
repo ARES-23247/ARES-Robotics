@@ -24,10 +24,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.ui.theme.*
-import kotlinx.coroutines.launch
 import com.ares.analytics.ui.components.core.*
 
 @Composable
@@ -36,22 +37,33 @@ fun VisionQualityCard(
     sessionId: String?,
     modifier: Modifier = Modifier
 ) {
-    val scope = rememberCoroutineScope()
-    var visionFrames by remember { mutableStateOf<List<TelemetryFrame>>(emptyList()) }
+    var visionFrames by remember(sessionId) { mutableStateOf<List<TelemetryFrame>>(emptyList()) }
 
     LaunchedEffect(sessionId) {
         if (sessionId != null) {
-            scope.launch {
-                visionFrames = databaseService.getTelemetryForKeyPatterns(
+            val frames = withContext(Dispatchers.IO) {
+                databaseService.getTelemetryForKeyPatterns(
                     sessionId,
                     listOf("%Vision%Innovation%")
                 )
             }
+            visionFrames = frames
         } else {
             visionFrames = emptyList()
         }
     }
 
+    VisionQualityCard(
+        visionFrames = visionFrames,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun VisionQualityCard(
+    visionFrames: List<TelemetryFrame>,
+    modifier: Modifier = Modifier
+) {
     AresCard(
         modifier = modifier
     ) {

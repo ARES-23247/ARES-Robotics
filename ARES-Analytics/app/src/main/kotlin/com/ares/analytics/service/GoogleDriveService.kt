@@ -1,5 +1,6 @@
 package com.ares.analytics.service
 
+import com.ares.analytics.shared.AppJson
 import com.ares.analytics.shared.models.DriveDestinationConfig
 import com.ares.analytics.shared.models.DriveDestinationType
 import com.ares.analytics.shared.models.WorkspaceCollaborationMode
@@ -41,7 +42,7 @@ internal class DrivePreconditionFailedException(message: String) : IllegalStateE
 
 private fun createGoogleDriveHttpClient(): HttpClient = HttpClient(CIO) {
     install(ContentNegotiation) {
-        json(Json { ignoreUnknownKeys = true })
+        json(AppJson)
     }
 }
 

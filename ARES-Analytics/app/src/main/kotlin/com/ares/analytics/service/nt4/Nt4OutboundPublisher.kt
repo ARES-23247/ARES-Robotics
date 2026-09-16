@@ -126,7 +126,7 @@ internal class Nt4OutboundPublisher(
         return sendBinaryUpdate(
             pubUid,
             0.toByte(),
-            byteArrayOf(if (value) 0xc3.toByte() else 0xc2.toByte())
+            if (value) BOOLEAN_TRUE_BYTES else BOOLEAN_FALSE_BYTES
         )
     }
 
@@ -295,6 +295,8 @@ internal class Nt4OutboundPublisher(
     companion object {
         private const val DRIVE_FRAME_PUB_UID = 1_020
         private const val MAX_STRING_BYTES = 65_536
+        private val BOOLEAN_TRUE_BYTES = byteArrayOf(0xc3.toByte())
+        private val BOOLEAN_FALSE_BYTES = byteArrayOf(0xc2.toByte())
         private val FIXED_PUBLISH_UIDS = mapOf(
             "ARES/DriverStation/Command" to 1_011,
             "ARES/DriverStation/SelectedOpMode" to 1_012,

@@ -9,6 +9,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.ares.analytics.shared.AppJson
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
@@ -47,7 +48,7 @@ data class MatchInfo(
 class EventApiService(
     private val httpClient: HttpClient = HttpClient {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true; coerceInputValues = true })
+            json(AppJson)
         }
     }
 ) {

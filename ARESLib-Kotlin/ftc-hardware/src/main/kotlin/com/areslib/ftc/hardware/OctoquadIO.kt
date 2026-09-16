@@ -8,7 +8,6 @@ import com.areslib.hardware.actuator.MotorIO
 import com.areslib.hardware.actuator.RevEncoderVersion
 import com.areslib.hardware.drive.OdometryIO
 import com.areslib.math.geometry.Pose2d
-import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.wrapAngle
 
 @I2cDeviceType
@@ -305,7 +304,7 @@ class OctoQuadEncoderIO(private val octoQuad: OctoQuadFWv3, private val channel:
 class OctoQuadAbsolutePWMEncoder(
     private val octoQuad: OctoQuadFWv3,
     private val channel: Int,
-    private val version: com.areslib.hardware.actuator.RevEncoderVersion = com.areslib.hardware.actuator.RevEncoderVersion.V1,
+    private val version: RevEncoderVersion = RevEncoderVersion.V1,
     private val ticksPerRev: Double = 8192.0
 ) : MotorIO {
     private var offset = 0.0

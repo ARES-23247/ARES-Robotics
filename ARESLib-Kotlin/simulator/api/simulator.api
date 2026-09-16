@@ -2,6 +2,7 @@ public final class com/areslib/hardware/vision/SimVisionIO : com/areslib/hardwar
 	public fun <init> ()V
 	public fun <init> (Ljava/util/List;)V
 	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun configureTargetClusters (Ljava/util/List;)V
 	public fun getCameraPoses ()Ljava/util/List;
 	public final fun injectMeasurement (Lcom/areslib/hardware/vision/VisionIOInputs;DDDD)V
 	public static synthetic fun injectMeasurement$default (Lcom/areslib/hardware/vision/SimVisionIO;Lcom/areslib/hardware/vision/VisionIOInputs;DDDDILjava/lang/Object;)V

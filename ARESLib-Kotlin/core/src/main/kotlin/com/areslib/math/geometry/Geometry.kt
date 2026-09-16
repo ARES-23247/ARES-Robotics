@@ -31,6 +31,50 @@ data class Translation2d(val x: Double = 0.0, val y: Double = 0.0) {
      * @return Vector magnitude in meters ($m$).
      */
     val norm: Double get() = hypot(x, y)
+
+    operator fun plus(other: Translation2d): Translation2d = Translation2d(x + other.x, y + other.y)
+    operator fun minus(other: Translation2d): Translation2d = Translation2d(x - other.x, y - other.y)
+    operator fun times(scalar: Double): Translation2d = Translation2d(x * scalar, y * scalar)
+    operator fun div(scalar: Double): Translation2d = Translation2d(x / scalar, y / scalar)
+    operator fun unaryMinus(): Translation2d = Translation2d(-x, -y)
+
+    /**
+     * Rotates this translation vector around the origin by the given rotation angle.
+     */
+    fun rotateBy(rotation: Rotation2d): Translation2d {
+        val cos = rotation.cos
+        val sin = rotation.sin
+        return Translation2d(x * cos - y * sin, x * sin + y * cos)
+    }
+
+    /** Calculates Euclidean distance to another translation point. */
+    fun distanceTo(other: Translation2d): Double = hypot(other.x - x, other.y - y)
+
+    /** Calculates squared Euclidean distance to another point (avoids square root). */
+    fun distanceSquared(other: Translation2d): Double {
+        val dx = other.x - x
+        val dy = other.y - y
+        return dx * dx + dy * dy
+    }
+
+    /** Dot product with another translation vector. */
+    fun dot(other: Translation2d): Double = x * other.x + y * other.y
+
+    /** Direction angle of this vector from the origin. */
+    fun angle(): Rotation2d = Rotation2d(kotlin.math.atan2(y, x))
+
+    /**
+     * Normalizes this translation vector to a unit vector with norm 1.0.
+     * Returns Translation2d(0.0, 0.0) if the norm is zero or non-finite.
+     */
+    fun normalize(): Translation2d {
+        val magnitude = norm
+        return if (magnitude.isFinite() && magnitude > 1e-15) {
+            Translation2d(x / magnitude, y / magnitude)
+        } else {
+            Translation2d(0.0, 0.0)
+        }
+    }
 }
 
 /**
@@ -51,12 +95,22 @@ data class Translation2d(val x: Double = 0.0, val y: Double = 0.0) {
      * $$ \theta_{\text{wrapped}} = (\theta + \pi \pmod{2\pi}) - \pi $$
      */
     val radians: Double get() = wrapAngle(rawRadians)
+
+    /** The rotation value in degrees ($^\circ$). */
+    val degrees: Double get() = Math.toDegrees(radians)
     
     /** The cosine of the rotation angle. Zero-GC. */
     val cos: Double get() = cos(radians)
     
     /** The sine of the rotation angle. Zero-GC. */
     val sin: Double get() = sin(radians)
+
+    operator fun plus(other: Rotation2d): Rotation2d = Rotation2d(radians + other.radians)
+    operator fun minus(other: Rotation2d): Rotation2d = Rotation2d(radians - other.radians)
+    operator fun times(scalar: Double): Rotation2d = Rotation2d(radians * scalar)
+    operator fun unaryMinus(): Rotation2d = Rotation2d(-radians)
+
+    fun rotateBy(other: Rotation2d): Rotation2d = this + other
     
     companion object {
         /**
@@ -66,6 +120,11 @@ data class Translation2d(val x: Double = 0.0, val y: Double = 0.0) {
          * @return A Rotation2d instance.
          */
         fun fromDegrees(degrees: Double): Rotation2d = Rotation2d(Math.toRadians(degrees))
+
+        /**
+         * Factory method to construct a Rotation2d from radians.
+         */
+        fun fromRadians(radians: Double): Rotation2d = Rotation2d(radians)
     }
 }
 
@@ -93,6 +152,30 @@ data class Pose2d(
 ) {
     /** Extracts the translational component $(x, y)$ of the pose. */
     val translation: Translation2d get() = Translation2d(x, y)
+
+    /** Transforms this pose by a local delta displacement and delta heading. */
+    fun transformBy(deltaTranslation: Translation2d, deltaHeading: Rotation2d): Pose2d {
+        val rotatedDelta = deltaTranslation.rotateBy(heading)
+        return Pose2d(x + rotatedDelta.x, y + rotatedDelta.y, heading + deltaHeading)
+    }
+
+    /** Calculates 2D translational distance to another pose. */
+    fun distanceTo(other: Pose2d): Double = translation.distanceTo(other.translation)
+
+    /**
+     * Calculates the relative pose of this pose with respect to [other] as the reference origin frame.
+     *
+     * Expresses the displacement and relative orientation in the [other] body coordinate frame:
+     * $$ \Delta \mathbf{t} = (\mathbf{t} - \mathbf{t}_{\text{other}}).\text{rotateBy}(-\text{other.heading}) $$
+     * $$ \Delta \theta = \text{heading} - \text{other.heading} $$
+     *
+     * @param other The reference origin pose.
+     * @return The relative pose in [other]'s coordinate frame.
+     */
+    fun relativeTo(other: Pose2d): Pose2d {
+        val deltaTrans = Translation2d(x - other.x, y - other.y).rotateBy(-other.heading)
+        return Pose2d(deltaTrans.x, deltaTrans.y, heading - other.heading)
+    }
 }
 
 /**

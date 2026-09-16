@@ -42,3 +42,8 @@ internal inline fun <T> withDuckDbTransaction(connection: Connection, activateNa
         }
     }
 }
+
+/** Activates the native transaction before appending; call under the repository write lock. */
+internal inline fun <T> withDuckDbAppenderTransaction(connection: Connection, block: () -> T): T =
+    withDuckDbTransaction(connection, activateNativeTransaction = true, block = block)
+

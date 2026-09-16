@@ -6,6 +6,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
 $releaseProperties = ConvertFrom-StringData (
     Get-Content -Raw -LiteralPath (Join-Path $workspaceRoot 'release/ares-versions.properties')

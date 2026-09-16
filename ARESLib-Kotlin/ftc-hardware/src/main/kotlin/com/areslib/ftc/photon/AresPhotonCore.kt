@@ -256,7 +256,10 @@ object AresPhotonCore : OpModeManagerNotifier.Notifications {
             val toRemove = HashMap<String, HardwareDevice>()
             for (module in map.getAll(LynxModule::class.java)) {
                 if (module !is AresPhotonLynxModule) {
-                    toRemove[map.getNamesOf(module).first()] = module
+                    val firstName = map.getNamesOf(module).firstOrNull()
+                    if (firstName != null) {
+                        toRemove[firstName] = module
+                    }
                 }
             }
             for ((s, module) in toRemove) {

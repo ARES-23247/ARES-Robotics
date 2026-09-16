@@ -13,6 +13,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.util.DesktopFileChoosers
+import java.awt.Desktop
+import java.io.File
+import java.net.URI
 
 /**
  * Visual variant styling for AresDialog actions.
@@ -106,3 +110,21 @@ fun AresDialog(
         shape = RoundedCornerShape(12.dp)
     )
 }
+
+/** Opens the native directory chooser at the current robot repository when possible. */
+internal fun chooseProjectDirectory(currentPath: String?): File? =
+    DesktopFileChoosers.chooseDirectory(
+        dialogTitle = "Choose robot repository",
+        initialPath = currentPath,
+        approveButtonText = "Use this project"
+    )
+
+/** Opens an external link when the current desktop supports browsing; failure is non-fatal. */
+internal fun openExternalLink(url: String): Boolean = runCatching {
+    if (!Desktop.isDesktopSupported()) return@runCatching false
+    val desktop = Desktop.getDesktop()
+    if (!desktop.isSupported(Desktop.Action.BROWSE)) return@runCatching false
+    desktop.browse(URI(url))
+    true
+}.getOrDefault(false)
+

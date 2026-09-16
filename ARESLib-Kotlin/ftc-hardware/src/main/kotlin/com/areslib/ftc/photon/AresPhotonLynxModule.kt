@@ -32,33 +32,31 @@ class AresPhotonLynxModule(
         return super.getNewMessageNumber()
     }
 
-    @Throws(InterruptedException::class, LynxUnsupportedCommandException::class)
     /** Routes cached/eligible commands through [AresPhotonCore], otherwise delegates to the SDK. */
+    @Throws(InterruptedException::class, LynxUnsupportedCommandException::class)
     override fun sendCommand(command: LynxMessage) {
         if (!AresPhotonCore.isEnabled.get()) {
             super.sendCommand(command)
             return
         }
-        if (command is LynxCommand<*>) {
-            if (AresPhotonCore.shouldParallelize(command)) {
-                val success = AresPhotonCore.registerSend(command)
-                if (!success) {
-                    super.sendCommand(command)
-                }
-                return
+        if (command is LynxCommand<*> && AresPhotonCore.shouldParallelize(command)) {
+            val success = AresPhotonCore.registerSend(command)
+            if (!success) {
+                super.sendCommand(command)
             }
+            return
         }
         super.sendCommand(command)
     }
 
-    @Throws(InterruptedException::class)
     /** Preserves the SDK transmission lock for both direct and fallback sends. */
+    @Throws(InterruptedException::class)
     override fun acquireNetworkTransmissionLock(message: LynxMessage) {
         super.acquireNetworkTransmissionLock(message)
     }
 
-    @Throws(InterruptedException::class)
     /** Releases the SDK transmission lock. */
+    @Throws(InterruptedException::class)
     override fun releaseNetworkTransmissionLock(message: LynxMessage) {
         super.releaseNetworkTransmissionLock(message)
     }

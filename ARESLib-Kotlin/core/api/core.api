@@ -109,6 +109,19 @@ public final class com/areslib/action/RobotAction$ChainPaths : com/areslib/actio
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/areslib/action/RobotAction$ClusterTargetsReceived : com/areslib/action/RobotAction {
+	public fun <init> (Ljava/util/List;J)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()J
+	public final fun copy (Ljava/util/List;J)Lcom/areslib/action/RobotAction$ClusterTargetsReceived;
+	public static synthetic fun copy$default (Lcom/areslib/action/RobotAction$ClusterTargetsReceived;Ljava/util/List;JILjava/lang/Object;)Lcom/areslib/action/RobotAction$ClusterTargetsReceived;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getTargets ()Ljava/util/List;
+	public fun getTimestampMs ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/action/RobotAction$DefaultImpls {
 	public static fun getTimestampMs (Lcom/areslib/action/RobotAction;)J
 }
@@ -904,6 +917,23 @@ public final class com/areslib/control/safety/CurrentBudgetState : java/lang/Enu
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/control/safety/CurrentBudgetState;
 	public static fun values ()[Lcom/areslib/control/safety/CurrentBudgetState;
+}
+
+public final class com/areslib/control/safety/HomingInterlock {
+	public static final field INSTANCE Lcom/areslib/control/safety/HomingInterlock;
+	public final fun isAllConfigured ([Lcom/areslib/control/safety/MechanismConfigurationStatus;)Z
+	public final fun isAllHomed ([Lcom/areslib/control/safety/MechanismHomingStatus;)Z
+	public final fun isHomingChordPressed (ZZZZ)Z
+	public final fun isHomingRequestAllowed (ZZ)Z
+	public final fun isSafetyHealthy (ZZLjava/lang/Throwable;)Z
+}
+
+public abstract interface class com/areslib/control/safety/MechanismConfigurationStatus {
+	public abstract fun getConfigurationValid ()Z
+}
+
+public abstract interface class com/areslib/control/safety/MechanismHomingStatus {
+	public abstract fun getHomed ()Z
 }
 
 public final class com/areslib/control/tuning/ArmFeedforwardCoeffs {
@@ -1730,10 +1760,103 @@ public final class com/areslib/hardware/sensor/MultizoneDistanceSensorIO$Default
 	public static fun copyDistancesMetersInto (Lcom/areslib/hardware/sensor/MultizoneDistanceSensorIO;[D)I
 }
 
+public final class com/areslib/hardware/vision/AprilTagCluster {
+	public fun <init> (Ljava/lang/String;Ljava/util/List;DD)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getId ()Ljava/lang/String;
+	public final fun getMaxDisagreementMeters ()D
+	public final fun getMaxRangeMeters ()D
+	public final fun getMembers ()Ljava/util/List;
+}
+
+public final class com/areslib/hardware/vision/AprilTagClusterMember {
+	public fun <init> (IDDD)V
+	public final fun component1 ()I
+	public final fun component2 ()D
+	public final fun component3 ()D
+	public final fun component4 ()D
+	public final fun copy (IDDD)Lcom/areslib/hardware/vision/AprilTagClusterMember;
+	public static synthetic fun copy$default (Lcom/areslib/hardware/vision/AprilTagClusterMember;IDDDILjava/lang/Object;)Lcom/areslib/hardware/vision/AprilTagClusterMember;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOffsetX ()D
+	public final fun getOffsetY ()D
+	public final fun getOffsetZ ()D
+	public final fun getTagId ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/areslib/hardware/vision/AprilTagClusterTracker {
+	public fun <init> (Lcom/areslib/hardware/vision/AprilTagCluster;)V
+	public final fun addTag (IDDDDDD)V
+	public final fun beginFrame ()V
+	public final fun finishFrame (Lcom/areslib/hardware/vision/ClusterTargetMeasurement;Ljava/lang/String;JJ)Z
+}
+
+public final class com/areslib/hardware/vision/ClusterTargetMeasurement {
+	public fun <init> ()V
+	public final fun getClusterId ()Ljava/lang/String;
+	public final fun getContributingTags ()I
+	public final fun getFrameId ()J
+	public final fun getSourceId ()Ljava/lang/String;
+	public final fun getSpreadMeters ()D
+	public final fun getTimestampMs ()J
+	public final fun getVisibleTags ()I
+	public final fun getXMeters ()D
+	public final fun getYMeters ()D
+	public final fun getZMeters ()D
+	public final fun setClusterId (Ljava/lang/String;)V
+	public final fun setContributingTags (I)V
+	public final fun setFrameId (J)V
+	public final fun setSourceId (Ljava/lang/String;)V
+	public final fun setSpreadMeters (D)V
+	public final fun setTimestampMs (J)V
+	public final fun setVisibleTags (I)V
+	public final fun setXMeters (D)V
+	public final fun setYMeters (D)V
+	public final fun setZMeters (D)V
+	public final fun snapshot ()Lcom/areslib/hardware/vision/ClusterTargetSnapshot;
+}
+
+public final class com/areslib/hardware/vision/ClusterTargetSnapshot {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;JJDDDIID)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()D
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()J
+	public final fun component4 ()J
+	public final fun component5 ()D
+	public final fun component6 ()D
+	public final fun component7 ()D
+	public final fun component8 ()I
+	public final fun component9 ()I
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;JJDDDIID)Lcom/areslib/hardware/vision/ClusterTargetSnapshot;
+	public static synthetic fun copy$default (Lcom/areslib/hardware/vision/ClusterTargetSnapshot;Ljava/lang/String;Ljava/lang/String;JJDDDIIDILjava/lang/Object;)Lcom/areslib/hardware/vision/ClusterTargetSnapshot;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBearingRadians ()D
+	public final fun getClusterId ()Ljava/lang/String;
+	public final fun getContributingTags ()I
+	public final fun getElevationRadians ()D
+	public final fun getFrameId ()J
+	public final fun getRangeMeters ()D
+	public final fun getSourceId ()Ljava/lang/String;
+	public final fun getSpreadMeters ()D
+	public final fun getTimestampMs ()J
+	public final fun getVisibleTags ()I
+	public final fun getXMeters ()D
+	public final fun getYMeters ()D
+	public final fun getZMeters ()D
+	public fun hashCode ()I
+	public final fun isFresh (JJ)Z
+	public static synthetic fun isFresh$default (Lcom/areslib/hardware/vision/ClusterTargetSnapshot;JJILjava/lang/Object;)Z
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/areslib/hardware/vision/CompositeVisionIO : com/areslib/hardware/vision/VisionIO, java/lang/AutoCloseable {
 	public static final field CORRELATION_WINDOW_MICROS J
 	public fun <init> (Ljava/util/List;)V
 	public fun close ()V
+	public fun configureTargetClusters (Ljava/util/List;)V
 	public fun getCameraPoses ()Ljava/util/List;
 	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public fun setImuMode (I)V
@@ -1808,6 +1931,7 @@ public final class com/areslib/hardware/vision/VisionFrameGate {
 }
 
 public abstract interface class com/areslib/hardware/vision/VisionIO : com/areslib/hardware/LoggableDevice {
+	public fun configureTargetClusters (Ljava/util/List;)V
 	public fun getCameraPoses ()Ljava/util/List;
 	public fun setImuMode (I)V
 	public fun setOrientation (DDDDDDD)V
@@ -1816,6 +1940,7 @@ public abstract interface class com/areslib/hardware/vision/VisionIO : com/aresl
 }
 
 public final class com/areslib/hardware/vision/VisionIO$DefaultImpls {
+	public static fun configureTargetClusters (Lcom/areslib/hardware/vision/VisionIO;Ljava/util/List;)V
 	public static fun getCameraPoses (Lcom/areslib/hardware/vision/VisionIO;)Ljava/util/List;
 	public static fun logTelemetry (Lcom/areslib/hardware/vision/VisionIO;Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public static fun setImuMode (Lcom/areslib/hardware/vision/VisionIO;I)V
@@ -1825,19 +1950,22 @@ public final class com/areslib/hardware/vision/VisionIO$DefaultImpls {
 
 public final class com/areslib/hardware/vision/VisionIOInputs {
 	public fun <init> ()V
-	public fun <init> (ZLjava/util/List;Ljava/util/List;)V
-	public synthetic fun <init> (ZLjava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ZLjava/util/List;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (ZLjava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Z
 	public final fun component2 ()Ljava/util/List;
 	public final fun component3 ()Ljava/util/List;
-	public final fun copy (ZLjava/util/List;Ljava/util/List;)Lcom/areslib/hardware/vision/VisionIOInputs;
-	public static synthetic fun copy$default (Lcom/areslib/hardware/vision/VisionIOInputs;ZLjava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/hardware/vision/VisionIOInputs;
+	public final fun component4 ()Ljava/util/List;
+	public final fun copy (ZLjava/util/List;Ljava/util/List;Ljava/util/List;)Lcom/areslib/hardware/vision/VisionIOInputs;
+	public static synthetic fun copy$default (Lcom/areslib/hardware/vision/VisionIOInputs;ZLjava/util/List;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/hardware/vision/VisionIOInputs;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCameraPoses ()Ljava/util/List;
+	public final fun getClusterTargets ()Ljava/util/List;
 	public final fun getMeasurements ()Ljava/util/List;
 	public fun hashCode ()I
 	public final fun isConnected ()Z
 	public final fun setCameraPoses (Ljava/util/List;)V
+	public final fun setClusterTargets (Ljava/util/List;)V
 	public final fun setConnected (Z)V
 	public final fun setMeasurements (Ljava/util/List;)V
 	public fun toString ()Ljava/lang/String;
@@ -2192,6 +2320,25 @@ public final class com/areslib/input/RawButtonSource : com/areslib/input/Digital
 	public fun sample (Lcom/areslib/input/InputFrame;J)Z
 }
 
+public final class com/areslib/input/RumblePacer {
+	public static final field Companion Lcom/areslib/input/RumblePacer$Companion;
+	public static final field DEFAULT_ACTIVE_DURATION_MS J
+	public static final field DEFAULT_COOLDOWN_DURATION_MS J
+	public fun <init> ()V
+	public fun <init> (JJ)V
+	public synthetic fun <init> (JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getActiveDurationMs ()J
+	public final fun getCooldownDurationMs ()J
+	public final fun isCoolingDown ()Z
+	public final fun isRumbleActive ()Z
+	public final fun reset ()V
+	public final fun update (JZZ)D
+}
+
+public final class com/areslib/input/RumblePacer$Companion {
+	public final fun elapsedAtLeast (JJJ)Z
+}
+
 public final class com/areslib/input/SuppressibleButtonSource : com/areslib/input/DigitalSource {
 	public fun <init> (ILcom/areslib/input/ButtonSuppressionState;)V
 	public final fun getButtonIndex ()I
@@ -2416,7 +2563,13 @@ public final class com/areslib/math/InterpolatingTable {
 }
 
 public final class com/areslib/math/MathUtilsKt {
+	public static final fun radPerSecToRpm (D)D
+	public static final fun rpmToRadPerSec (D)D
+	public static final fun toDegrees (D)D
+	public static final fun toRadians (D)D
 	public static final fun wrapAngle (D)D
+	public static final fun wrapTo2Pi (D)D
+	public static final fun wrapToPi (D)D
 }
 
 public final class com/areslib/math/coordinate/AllianceMirroring {
@@ -3150,13 +3303,16 @@ public final class com/areslib/math/geometry/Pose2d {
 	public final fun component3-34MxtGU ()D
 	public final fun copy-P0pL4v8 (DDD)Lcom/areslib/math/geometry/Pose2d;
 	public static synthetic fun copy-P0pL4v8$default (Lcom/areslib/math/geometry/Pose2d;DDDILjava/lang/Object;)Lcom/areslib/math/geometry/Pose2d;
+	public final fun distanceTo (Lcom/areslib/math/geometry/Pose2d;)D
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getHeading-34MxtGU ()D
 	public final fun getTranslation ()Lcom/areslib/math/geometry/Translation2d;
 	public final fun getX ()D
 	public final fun getY ()D
 	public fun hashCode ()I
+	public final fun relativeTo (Lcom/areslib/math/geometry/Pose2d;)Lcom/areslib/math/geometry/Pose2d;
 	public fun toString ()Ljava/lang/String;
+	public final fun transformBy-k23O6gw (Lcom/areslib/math/geometry/Translation2d;D)Lcom/areslib/math/geometry/Pose2d;
 }
 
 public final class com/areslib/math/geometry/Pose3d {
@@ -3215,18 +3371,25 @@ public final class com/areslib/math/geometry/Rotation2d {
 	public static fun equals-impl (DLjava/lang/Object;)Z
 	public static final fun equals-impl0 (DD)Z
 	public static final fun getCos-impl (D)D
+	public static final fun getDegrees-impl (D)D
 	public static final fun getRadians-impl (D)D
 	public final fun getRawRadians ()D
 	public static final fun getSin-impl (D)D
 	public fun hashCode ()I
 	public static fun hashCode-impl (D)I
+	public static final fun minus-eZevST4 (DD)D
+	public static final fun plus-eZevST4 (DD)D
+	public static final fun rotateBy-eZevST4 (DD)D
+	public static final fun times-dTqqlZQ (DD)D
 	public fun toString ()Ljava/lang/String;
 	public static fun toString-impl (D)Ljava/lang/String;
+	public static final fun unaryMinus-34MxtGU (D)D
 	public final synthetic fun unbox-impl ()D
 }
 
 public final class com/areslib/math/geometry/Rotation2d$Companion {
 	public final fun fromDegrees-dTqqlZQ (D)D
+	public final fun fromRadians-dTqqlZQ (D)D
 }
 
 public final class com/areslib/math/geometry/Rotation3d {
@@ -3274,16 +3437,27 @@ public final class com/areslib/math/geometry/Translation2d {
 	public fun <init> ()V
 	public fun <init> (DD)V
 	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun angle-34MxtGU ()D
 	public final fun component1 ()D
 	public final fun component2 ()D
 	public final fun copy (DD)Lcom/areslib/math/geometry/Translation2d;
 	public static synthetic fun copy$default (Lcom/areslib/math/geometry/Translation2d;DDILjava/lang/Object;)Lcom/areslib/math/geometry/Translation2d;
+	public final fun distanceSquared (Lcom/areslib/math/geometry/Translation2d;)D
+	public final fun distanceTo (Lcom/areslib/math/geometry/Translation2d;)D
+	public final fun div (D)Lcom/areslib/math/geometry/Translation2d;
+	public final fun dot (Lcom/areslib/math/geometry/Translation2d;)D
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getNorm ()D
 	public final fun getX ()D
 	public final fun getY ()D
 	public fun hashCode ()I
+	public final fun minus (Lcom/areslib/math/geometry/Translation2d;)Lcom/areslib/math/geometry/Translation2d;
+	public final fun normalize ()Lcom/areslib/math/geometry/Translation2d;
+	public final fun plus (Lcom/areslib/math/geometry/Translation2d;)Lcom/areslib/math/geometry/Translation2d;
+	public final fun rotateBy-zuP-jqc (D)Lcom/areslib/math/geometry/Translation2d;
+	public final fun times (D)Lcom/areslib/math/geometry/Translation2d;
 	public fun toString ()Ljava/lang/String;
+	public final fun unaryMinus ()Lcom/areslib/math/geometry/Translation2d;
 }
 
 public final class com/areslib/math/geometry/Translation3d {
@@ -6210,8 +6384,8 @@ public final class com/areslib/state/VisionSolverType : java/lang/Enum {
 
 public final class com/areslib/state/VisionState {
 	public fun <init> ()V
-	public fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZIZLjava/lang/String;)V
-	public synthetic fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZIZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZIZLjava/lang/String;Ljava/util/List;)V
+	public synthetic fun <init> (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZIZLjava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()J
 	public final fun component10 ()Lcom/areslib/state/Matrix3x3Snapshot;
 	public final fun component11 ()I
@@ -6228,6 +6402,7 @@ public final class com/areslib/state/VisionState {
 	public final fun component21 ()I
 	public final fun component22 ()Z
 	public final fun component23 ()Ljava/lang/String;
+	public final fun component24 ()Ljava/util/List;
 	public final fun component3 ()D
 	public final fun component4 ()Z
 	public final fun component5 ()Ljava/util/List;
@@ -6235,9 +6410,10 @@ public final class com/areslib/state/VisionState {
 	public final fun component7 ()Z
 	public final fun component8 ()Ljava/lang/String;
 	public final fun component9 ()Lcom/areslib/state/Matrix3x3Snapshot;
-	public final fun copy (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZIZLjava/lang/String;)Lcom/areslib/state/VisionState;
-	public static synthetic fun copy$default (Lcom/areslib/state/VisionState;JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZIZLjava/lang/String;ILjava/lang/Object;)Lcom/areslib/state/VisionState;
+	public final fun copy (JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZIZLjava/lang/String;Ljava/util/List;)Lcom/areslib/state/VisionState;
+	public static synthetic fun copy$default (Lcom/areslib/state/VisionState;JDDZLjava/util/List;Lcom/areslib/hardware/vision/VisionFilterConfig;ZLjava/lang/String;Lcom/areslib/state/Matrix3x3Snapshot;Lcom/areslib/state/Matrix3x3Snapshot;IIDIJLjava/lang/String;JILcom/areslib/state/VisionSolverType;ZIZLjava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/areslib/state/VisionState;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getClusterTargets ()Ljava/util/List;
 	public final fun getCovarianceAfterUpdate ()Lcom/areslib/state/Matrix3x3Snapshot;
 	public final fun getCovarianceBeforeUpdate ()Lcom/areslib/state/Matrix3x3Snapshot;
 	public final fun getDiagnosticMeasurementAccepted ()Z

@@ -31,8 +31,9 @@ class TrajectoryProviderBoundaryTest {
     @Test fun `subspacing translation from rest has a reachable intermediate sample`() {
         val result = JerkLimitedTrajectoryProvider.generate(auditRequest(listOf(Pose2d(), Pose2d(0.01, 0.0))))
         assertTrue(result.isSuccess, result.diagnostics.toString())
-        assertTrue(result.trajectory!!.states.size >= 3)
-        assertEquals(0.01, result.trajectory!!.states.last().pose.x)
+        val trajectory = result.trajectory!!
+        assertTrue(trajectory.states.size >= 3)
+        assertEquals(0.01, trajectory.states.last().pose.x)
     }
 
     @Test fun `intermediate waypoint orientation is preserved in generated profile`() {

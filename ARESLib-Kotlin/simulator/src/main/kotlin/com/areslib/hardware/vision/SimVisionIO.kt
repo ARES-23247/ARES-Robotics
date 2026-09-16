@@ -18,6 +18,7 @@ class SimVisionIO(
 ) : VisionIO {
     /** Marks the source connected and supplies configured camera mount poses. */
     override fun updateInputs(inputs: VisionIOInputs) {
+        inputs.clusterTargets = emptyList()
         inputs.cameraPoses = cameraPoses
         inputs.isConnected = true
         

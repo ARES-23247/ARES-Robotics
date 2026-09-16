@@ -13,7 +13,7 @@ application goal status was also verified as **paused** before the checkpoint co
 - Audit branch: `codex/robot-loop-math-audit`, in the existing isolated worktree
   `.codex-validation/audit-pass191/` beneath the main monorepo checkout. Do not confuse that directory
   name with the current pass number. Do not move or overwrite unrelated work in the main checkout.
-- Latest completed batch: [pass 277, generated runtime lifecycle and math](generated-runtime-lifecycle-math-audit.md).
+- Latest completed batch: [pass 277, generated runtime lifecycle and math](archive/HISTORICAL_AUDITS_INDEX.md).
   Its 33 reviewed file paths, content fingerprints, dispositions, validation summaries, and source
   identities are preserved in the tracked [checkpoint data](checkpoints/pass277.json).
 - All accumulated file-level review scopes and evidence remain in [file-reviews.json](file-reviews.json).

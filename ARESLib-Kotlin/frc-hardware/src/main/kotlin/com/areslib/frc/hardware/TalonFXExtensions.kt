@@ -14,16 +14,17 @@ import edu.wpi.first.wpilibj.DriverStation
  * config still fails to apply after all attempts, the failure is reported to the FRC
  * [DriverStation] so it surfaces on the driver console / Driver Station log.
  *
- * @receiver Collection of physical CTRE [TalonFX] motor controller instances.
- * @param block Configuration lambda executed on a temporary [TalonFXConfiguration] instance.
- *
- * @see TalonFX
- * @see TalonFXConfiguration
- */
-/**
  * Applies one configuration to every motor and returns `true` only when every device reports an
  * OK status within [maxAttempts]. Mechanism initialization can use this checked variant to inhibit
  * outputs when current limits or closed-loop gains were not accepted by hardware.
+ *
+ * @receiver Collection of physical CTRE [TalonFX] motor controller instances.
+ * @param maxAttempts Maximum retry attempts on non-OK status.
+ * @param block Configuration lambda executed on a temporary [TalonFXConfiguration] instance.
+ * @return `true` only when every device reports an OK status within [maxAttempts].
+ *
+ * @see TalonFX
+ * @see TalonFXConfiguration
  */
 fun Iterable<TalonFX>.applyConfigChecked(
     maxAttempts: Int = 5,

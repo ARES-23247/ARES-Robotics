@@ -8,13 +8,11 @@ import com.areslib.ftc.FtcTeleopDriveFrame
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.sim.cli.SimCliParser
-import com.areslib.sim.field.FieldElementLoader
 import com.areslib.sim.field.MecanumInteractionModel
 import com.areslib.sim.field.SimGamePieceTelemetryFrame
 import com.areslib.sim.infra.VirtualDriverStation
 import com.areslib.sim.infra.SimGamepadManager
 import com.areslib.sim.model.MecanumRobotDouble
-import com.areslib.sim.network.NT4FieldPublisher
 import com.areslib.sim.network.TelemetryPublisher
 import com.areslib.sim.opmode.SimOpModeRunner
 import com.areslib.sim.opmode.SimOpModeKind
@@ -22,7 +20,6 @@ import com.areslib.sim.opmode.SimOpModeLifecycle
 import com.areslib.sim.opmode.SimOpModeLifecycleSlot
 import com.areslib.sim.opmode.SimOpModeState
 import com.areslib.sim.physics.SimPhysicsWorld
-import com.areslib.state.RobotFieldManager
 import com.areslib.util.RobotClock
 import java.io.File
 

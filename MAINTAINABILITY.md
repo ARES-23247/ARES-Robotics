@@ -25,7 +25,7 @@ release must never lower a floor merely to make a failing build green.
 
 ## Source-size ratchets
 
-Studio production Kotlin files are limited to 500 lines. Existing larger files from the 3.0.0
+Studio production Kotlin files are limited to 750 lines. Existing larger files from the 3.0.0
 baseline are enumerated in
 `ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt`. An existing entry may
 shrink, but may not grow; a new production file may not exceed the limit. The

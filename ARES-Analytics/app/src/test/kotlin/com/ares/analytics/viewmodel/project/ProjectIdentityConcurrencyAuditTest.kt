@@ -159,7 +159,7 @@ class ProjectIdentityConcurrencyAuditTest {
             val savedRevision = assertNotNull(session?.state?.value?.revision)
             val saved = repository.load(root.path).getOrThrow()
             repository.saveReviewed(root.path, AresProjectMetadataCodec.contentHash(saved), document(0.53))
-            session?.snapshot(root.path, ControllerInputPlatform.FTC, forceReload = true)
+            session.snapshot(root.path, ControllerInputPlatform.FTC, forceReload = true)
             test.runCurrent()
             assertEquals(savedRevision, model.state.value.projectRevision)
             model.update(ProjectIdentityField.DISPLAY_NAME, "Another draft"); model.review(); model.applyReviewed(); drain()

@@ -1721,6 +1721,7 @@ public final class com/areslib/ftc/vision/FtcLimelightIO : com/areslib/hardware/
 	public fun <init> (Lcom/qualcomm/hardware/limelightvision/Limelight3A;Ljava/util/List;Ljava/lang/String;)V
 	public synthetic fun <init> (Lcom/qualcomm/hardware/limelightvision/Limelight3A;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close ()V
+	public fun configureTargetClusters (Ljava/util/List;)V
 	public fun getCameraPoses ()Ljava/util/List;
 	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public fun setImuMode (I)V
@@ -1731,6 +1732,7 @@ public final class com/areslib/ftc/vision/FtcLimelightIO : com/areslib/hardware/
 public final class com/areslib/ftc/vision/FtcVisionPortalIO : com/areslib/hardware/vision/VisionIO {
 	public fun <init> (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;Ljava/util/List;)V
 	public synthetic fun <init> (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun configureTargetClusters (Ljava/util/List;)V
 	public fun getCameraPoses ()Ljava/util/List;
 	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V
 	public fun setImuMode (I)V

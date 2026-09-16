@@ -91,7 +91,8 @@ class TrajectoryGenerationContractTest {
         }
         val tiny = JerkLimitedTrajectoryProvider.generate(auditRequest(listOf(Pose2d(), Pose2d(1e-8, 0.0, Rotation2d(0.5)))))
         assertTrue(tiny.isSuccess, tiny.diagnostics.toString())
-        assertEquals(0.0, tiny.trajectory!!.states.first().pose.heading.radians)
-        assertEquals(0.5, tiny.trajectory!!.states.last().pose.heading.radians, 1e-10)
+        val trajectory = tiny.trajectory!!
+        assertEquals(0.0, trajectory.states.first().pose.heading.radians)
+        assertEquals(0.5, trajectory.states.last().pose.heading.radians, 1e-10)
     }
 }

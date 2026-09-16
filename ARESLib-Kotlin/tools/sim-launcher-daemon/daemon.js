@@ -178,7 +178,11 @@ if (hasSSL) {
       const url = new URL(req.url || "", "http://localhost");
       const hostParam = url.searchParams.get("host");
       if (hostParam) {
-        targetHost = hostParam;
+        if (/^(localhost|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.test(hostParam)) {
+          targetHost = hostParam;
+        } else {
+          console.warn(`[Proxy] Rejected untrusted targetHost: ${hostParam}, defaulting to 127.0.0.1`);
+        }
       }
     } catch (e) {}
 
@@ -316,7 +320,12 @@ const onConnection = (ws) => {
         const gradlewCmd = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
         const args = [":simulator:run"];
         if (msg.params && msg.params.configId) {
-          args.push(`--args=--field-config ${msg.params.configId}`);
+          const configId = String(msg.params.configId);
+          if (/^[a-zA-Z0-9_\-\.]+$/.test(configId)) {
+            args.push(`--args=--field-config ${configId}`);
+          } else {
+            console.warn(`[Daemon] Rejected invalid configId parameter: ${configId}`);
+          }
         }
 
         try {

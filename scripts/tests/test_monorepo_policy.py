@@ -28,6 +28,7 @@ class MonorepoPolicyTest(unittest.TestCase):
         self.write('scripts/verify-monorepo-policy.ps1', SCRIPT.read_text(encoding='utf-8'))
         # These dependencies have their own real test suites. Isolate this policy's behavior.
         self.write('scripts/verify_agent_guidance.py', 'pass\n')
+        self.write('scripts/generate_codebase_ledger.py', 'pass\n')
         self.write('scripts/verify-doc-links.ps1', '$global:LASTEXITCODE = 0\n')
         self.write('release/ares-versions.properties', '\n'.join(f'{k}=1.0.0' for k in ('aresVersion','studioVersion','ftcStarterVersion','frcStarterVersion','xrpStarterVersion','lightbotExampleVersion','biobuzzExampleVersion'))+'\ngithubMavenRepository=https://example.invalid/maven\n')
         pins=[]

@@ -18,7 +18,10 @@ import com.areslib.project.requireXrpRuntimeOptions
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentGraphEditor
 import com.ares.analytics.viewmodel.subsystem.SubsystemDocumentAuthoring
 import com.ares.analytics.viewmodel.subsystem.SubsystemProjectPersistence
-import com.ares.analytics.viewmodel.subsystem.SubsystemRemovalStateTransitions
+import com.ares.analytics.viewmodel.subsystem.SubsystemRemovalCoordinator
+import com.ares.analytics.viewmodel.subsystem.SubsystemAiProposalCoordinator
+import com.ares.analytics.viewmodel.subsystem.SubsystemStarterGeneratorOps
+import com.ares.analytics.viewmodel.subsystem.SubsystemCreationOps
 import com.areslib.subsystem.SubsystemControlLoopDocument
 import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemDocument
@@ -89,6 +92,42 @@ class SubsystemGeneratorViewModel(
     private val reloadGeneration = java.util.concurrent.atomic.AtomicLong()
     private val _state = MutableStateFlow(SubsystemGeneratorState(projectPath, league))
     val state: StateFlow<SubsystemGeneratorState> = _state.asStateFlow()
+
+    private val removalCoordinator = SubsystemRemovalCoordinator(
+        documents = documents,
+        persistence = persistence,
+        projectGenerator = projectGenerator,
+        checkpointRecorder = checkpointRecorder,
+        scope = scope,
+        aiProposalGeneration = aiProposalGeneration,
+        getState = { _state.value },
+        updateState = { updater -> _state.update(updater) },
+        revalidate = { it.revalidated() },
+    )
+    private val aiProposalCoordinator = SubsystemAiProposalCoordinator(
+        designAssistant = designAssistant,
+        reviewGson = reviewGson,
+        scope = scope,
+        aiProposalGeneration = aiProposalGeneration,
+        getState = { _state.value },
+        updateState = { updater -> _state.update(updater) },
+        revalidate = { it.revalidated() },
+    )
+    private val starterGeneratorOps = SubsystemStarterGeneratorOps(
+        projectGenerator = projectGenerator,
+        getState = { _state.value },
+        updateState = { updater -> _state.update(updater) },
+    )
+    private val creationOps = SubsystemCreationOps(
+        league = league,
+        platform = platform,
+        basePackage = basePackage,
+        aiProposalGeneration = aiProposalGeneration,
+        getState = { _state.value },
+        updateState = { updater -> _state.update(updater) },
+        revalidate = { it.revalidated() },
+        blockDraftReplacement = { blockDraftReplacement() },
+    )
 
     init {
         projectGenerator?.let { generator ->
@@ -186,74 +225,13 @@ class SubsystemGeneratorViewModel(
         }
     }
 
-    fun newSubsystem(template: SubsystemTemplate = _state.value.selectedTemplate) {
-        if (blockDraftReplacement()) return
-        require(template.supportsPlatform(platform)) { "${template.name} is not supported for $platform projects" }
-        aiProposalGeneration.incrementAndGet()
-        val used = _state.value.documents.mapTo(hashSetOf()) { it.documentId }
-        var suffix = 1
-        var id = "new-subsystem"
-        while (id in used) id = "new-subsystem-${++suffix}"
-        val name = if (suffix == 1) "NewSubsystem" else "NewSubsystem$suffix"
-        val document = SubsystemTemplates.create(template, id, name, platform)
-            .withAvailableTemplateConnections(_state.value.documents)
-        _state.update { current ->
-            current.copy(
-                documents = current.documents + document,
-                selectedDocumentId = document.documentId,
-                draft = SubsystemEditorDraft(document),
-                selectedHardwareUid = null,
-                selectedFieldUid = null,
-                selectedLoopUid = null,
-                selectedTuningParameterUid = null,
-                activeStage = SubsystemBuilderStage.PURPOSE,
-                visitedStages = setOf(SubsystemBuilderStage.PURPOSE),
-                selectedTemplate = document.template,
-                dirty = true,
-                status = "New ${template.name.lowercase().replace('_', ' ')} draft created.",
-                aiProposalInProgress = false,
-                aiProposal = null,
-                aiProposalError = null,
-                showTemplatePicker = false,
-            ).revalidated()
-        }
-    }
+    fun newSubsystem(template: SubsystemTemplate = _state.value.selectedTemplate) = creationOps.newSubsystem(template)
 
     fun setTemplatePickerVisible(visible: Boolean) = _state.update { it.copy(showTemplatePicker = visible) }
 
     fun selectTemplate(template: SubsystemTemplate) = _state.update { it.copy(selectedTemplate = template) }
 
-    fun applyTemplate(template: SubsystemTemplate) {
-        require(template.supportsPlatform(platform)) { "${template.name} is not supported for $platform projects" }
-        val currentDocument = _state.value.draft?.document ?: return
-        val templateDocument = SubsystemTemplates.create(
-            template = template,
-            documentId = currentDocument.documentId,
-            kotlinTypeName = currentDocument.kotlinTypeName,
-            platform = currentDocument.platform,
-            displayName = currentDocument.displayName,
-        ).withAvailableTemplateConnections(
-            _state.value.documents.filterNot { it.documentId == currentDocument.documentId },
-        ).copy(
-            revision = currentDocument.revision,
-            parentContentHash = currentDocument.parentContentHash,
-            uid = currentDocument.uid,
-        )
-
-        _state.update { current ->
-            val draft = current.draft ?: return@update current
-            current.copy(
-                draft = draft.edit { templateDocument },
-                selectedHardwareUid = null,
-                selectedFieldUid = null,
-                selectedLoopUid = null,
-                selectedTuningParameterUid = null,
-                selectedTemplate = template,
-                dirty = true,
-                status = "Applied ${template.name.lowercase().replace('_', ' ')} starter template.",
-            ).revalidated()
-        }
-    }
+    fun applyTemplate(template: SubsystemTemplate) = creationOps.applyTemplate(template)
 
     fun selectStage(stage: SubsystemBuilderStage) = _state.update {
         it.copy(activeStage = stage, visitedStages = it.visitedStages + stage)
@@ -314,76 +292,7 @@ class SubsystemGeneratorViewModel(
         state.copy(activeStage = stage, visitedStages = state.visitedStages + stage)
     }
 
-    fun registerHandAuthoredSubsystem() {
-        if (blockDraftReplacement()) return
-        aiProposalGeneration.incrementAndGet()
-        val used = _state.value.documents.mapTo(hashSetOf()) { it.documentId }
-        var suffix = 1
-        var id = "existing-subsystem"
-        while (id in used) id = "existing-subsystem-${++suffix}"
-        val name = if (suffix == 1) "ExistingSubsystem" else "ExistingSubsystem$suffix"
-        val safeId = id.replace('-', '_')
-        val packageName = "$basePackage.$safeId"
-        val sourceRoot = when (league) {
-            League.FTC -> "TeamCode/src/main/java"
-            League.FRC -> "src/main/kotlin"
-            League.XRP -> "src"
-        }
-        val implementation = if (league == League.XRP) {
-            SubsystemImplementationDocument(
-                kind = SubsystemImplementationKind.HAND_AUTHORED,
-                ownership = SubsystemSourceOwnership.USER_OWNED,
-                sourceFiles = listOf("extensions/$safeId.py"),
-                pythonModuleName = "extensions.$safeId",
-                pythonFactoryName = "create_subsystem",
-                pythonSimulationFactoryName = "create_simulated_subsystem",
-                simulation = SubsystemSimulationDocument(SubsystemSimulationSupport.HAND_AUTHORED_SIMULATOR),
-                teaching = SubsystemTeachingDocument(
-                    level = SubsystemTeachingLevel.INTERMEDIATE,
-                    summary = "Team-owned Python subsystem registered explicitly with ARES.",
-                ),
-            )
-        } else {
-            SubsystemImplementationDocument(
-                kind = SubsystemImplementationKind.HAND_AUTHORED,
-                ownership = SubsystemSourceOwnership.USER_OWNED,
-                modulePath = if (league == League.FTC) ":TeamCode" else ":",
-                sourceFiles = listOf("$sourceRoot/${packageName.replace('.', '/')}/${name}Subsystem.kt"),
-                subsystemClassName = "$packageName.${name}Subsystem",
-                ioContractClassName = "$packageName.${name}IO",
-                hardwareAdapterClassName = "$packageName.${if (league == League.FTC) "Ftc" else "Frc"}${name}IO",
-                simulation = SubsystemSimulationDocument(SubsystemSimulationSupport.UNAVAILABLE),
-                teaching = SubsystemTeachingDocument(
-                    level = SubsystemTeachingLevel.INTERMEDIATE,
-                    summary = "Existing team-owned subsystem registered with ARES.",
-                ),
-            )
-        }
-        val document = SubsystemTemplates.create(SubsystemTemplate.ADVANCED_CUSTOM, id, name, platform).copy(
-            generateMockIo = false,
-            generateTest = false,
-            implementation = implementation,
-        )
-        _state.update { current ->
-            current.copy(
-                documents = current.documents + document,
-                selectedDocumentId = id,
-                draft = SubsystemEditorDraft(document),
-                selectedHardwareUid = null,
-                selectedFieldUid = null,
-                selectedLoopUid = null,
-                selectedTuningParameterUid = document.tuningParameters.firstOrNull()?.uid,
-                activeStage = SubsystemBuilderStage.PURPOSE,
-                visitedStages = setOf(SubsystemBuilderStage.PURPOSE),
-                selectedTemplate = SubsystemTemplate.ADVANCED_CUSTOM,
-                dirty = true,
-                status = "Hand-authored subsystem registration created. Review its source and runtime contract.",
-                aiProposalInProgress = false,
-                aiProposal = null,
-                aiProposalError = null,
-            ).revalidated()
-        }
-    }
+    fun registerHandAuthoredSubsystem() = creationOps.registerHandAuthoredSubsystem()
 
     fun nextStage() = _state.update { state ->
         val stages = SubsystemBuilderStage.entries
@@ -460,87 +369,11 @@ class SubsystemGeneratorViewModel(
     }
 
     /** Requests form edits only. The assistant cannot save, generate, or write project source. */
-    fun requestAiProposal(studentRequest: String) {
-        val request = studentRequest.trim()
-        val base = _state.value.draft?.document ?: return
-        val assistant = designAssistant
-        if (request.isBlank()) {
-            _state.update { it.copy(aiProposalError = "Describe the mechanism or the change you want first.") }
-            return
-        }
-        if (assistant == null) {
-            _state.update { it.copy(aiProposalError = "The AI form assistant is not available in this app session.") }
-            return
-        }
-        _state.update {
-            it.copy(aiProposalInProgress = true, aiProposal = null, aiProposalError = null)
-        }
-        val requestGeneration = aiProposalGeneration.incrementAndGet()
-        scope.launch {
-            runCatching {
-                val rawProposal = assistant.propose(base, request)
-                val candidate = sanitizeSubsystemDesignCandidate(base, rawProposal.candidate)
-                val proposal = rawProposal.copy(candidate = candidate)
-                val problems = SubsystemSchema.validate(candidate).map {
-                    SubsystemProblem(SubsystemProblemSeverity.ERROR, it.path, it.message)
-                } + safetyWarnings(candidate)
-                SubsystemAiProposalReview(
-                    base = base,
-                    proposal = proposal,
-                    diff = structuredLineDiff(
-                        reviewGson.toJson(base),
-                        reviewGson.toJson(candidate),
-                        contextLines = 2,
-                    ),
-                    problems = problems.distinctBy { Triple(it.severity, it.path, it.message) },
-                )
-            }
-                .onSuccess { review ->
-                    _state.update { current ->
-                        if (requestGeneration != aiProposalGeneration.get()) {
-                            current
-                        } else if (current.draft?.document != base) {
-                            current.copy(
-                                aiProposalInProgress = false,
-                                aiProposalError = "The form changed while Gemini was working. Request a fresh proposal.",
-                            )
-                        } else {
-                            current.copy(aiProposalInProgress = false, aiProposal = review, aiProposalError = null)
-                        }
-                    }
-                }
-                .onFailure { error ->
-                    _state.update {
-                        if (requestGeneration != aiProposalGeneration.get()) it else it.copy(
-                            aiProposalInProgress = false,
-                            aiProposal = null,
-                            aiProposalError = error.message ?: "Gemini could not create a subsystem proposal.",
-                        )
-                    }
-                }
-        }
-    }
+    fun requestAiProposal(studentRequest: String) = aiProposalCoordinator.requestAiProposal(studentRequest)
 
-    fun dismissAiProposal() = _state.update { it.copy(aiProposal = null, aiProposalError = null) }
+    fun dismissAiProposal() = aiProposalCoordinator.dismissAiProposal()
 
-    fun applyAiProposal() = _state.update { current ->
-        val review = current.aiProposal ?: return@update current
-        val draft = current.draft ?: return@update current
-        when {
-            !review.canApply -> current.copy(aiProposalError = "Fix the proposal's validation errors before applying it.")
-            draft.document != review.base -> current.copy(
-                aiProposal = null,
-                aiProposalError = "The form changed after this proposal was created. Request a fresh proposal.",
-            )
-            else -> current.copy(
-                draft = draft.edit { review.proposal.candidate },
-                dirty = true,
-                aiProposal = null,
-                aiProposalError = null,
-                status = "Applied Gemini's form proposal. Review it, then Save when you are satisfied.",
-            ).revalidated()
-        }
-    }
+    fun applyAiProposal() = aiProposalCoordinator.applyAiProposal()
 
     fun setHomingMethod(method: SubsystemHomingMethod) = edit { document ->
         SubsystemDocumentAuthoring.setHomingMethod(document, method)
@@ -803,174 +636,21 @@ class SubsystemGeneratorViewModel(
             .onFailure { error -> _state.update { it.copy(status = error.message ?: "Subsystem could not be saved.") } }
     }
 
-    fun requestRemoveSubsystem() {
-        val current = _state.value
-        val draft = current.draft?.document ?: return
-        val root = runCatching { File(current.projectPath).canonicalFile }.getOrNull()
-        val canonicalFile = runCatching { documents.subsystems.file(current.projectPath, draft.documentId) }
-            .getOrElse { error ->
-                _state.update { it.copy(status = error.message ?: "The subsystem location is invalid.") }
-                return
-            }
-        val plan = if (canonicalFile.isFile) {
-            runCatching { persistence.removalPlan(current.projectPath, current.projectRevision, draft.documentId) }
-                .getOrElse { error ->
-                    _state.update {
-                        it.copy(status = error.message ?: "The saved subsystem could not be reviewed for removal.")
-                    }
-                    return
-                }
-        } else null
-        _state.update { state -> SubsystemRemovalStateTransitions.prepareRemoval(state, draft, plan, root) }
-    }
+    fun requestRemoveSubsystem() = removalCoordinator.requestRemoveSubsystem()
 
-    fun cancelRemoveSubsystem() = _state.update { it.copy(pendingRemoval = null) }
+    fun cancelRemoveSubsystem() = removalCoordinator.cancelRemoveSubsystem()
 
-    fun confirmRemoveSubsystem() {
-        val current = _state.value
-        val request = current.pendingRemoval ?: return
-        if (!request.persisted) {
-            removeDocumentFromSession(request.documentId, "Discarded the unsaved ${request.displayName} draft.")
-            return
-        }
-        val expectedHash = request.contentHash ?: return
-        runCatching {
-            persistence.remove(current.projectPath, current.projectRevision, request.documentId, expectedHash)
-        }.onSuccess { removed ->
-            val root = File(current.projectPath).canonicalFile
-            val recoveryPath = removed.recoveryFile.relativeTo(root).invariantSeparatorsPath
-            removeDocumentFromSession(
-                request.documentId,
-                "Removed ${removed.displayName}. Kotlin source was preserved.",
-                SubsystemRecoveryNotice(
-                    documentId = removed.documentId,
-                    displayName = removed.displayName,
-                    contentHash = removed.contentHash,
-                    recoveryPath = recoveryPath,
-                ),
-            )
-            projectGenerator?.generateAresProject(current.projectPath, current.league)
-            scope.launch {
-                runCatching {
-                    checkpointRecorder.checkpoint(
-                        current.projectPath,
-                        "Removed ${removed.displayName} subsystem",
-                        setOf(
-                            removed.removedFile.relativeTo(root).invariantSeparatorsPath,
-                            removed.recoveryFile.relativeTo(root).invariantSeparatorsPath,
-                        ),
-                    )
-                }.onFailure { failure ->
-                    _state.update {
-                        it.copy(status = "Subsystem removed safely, but automatic Project History checkpoint failed: ${failure.message}")
-                    }
-                }
-            }
-        }.onFailure { error ->
-            _state.update {
-                it.copy(
-                    pendingRemoval = null,
-                    status = error.message ?: "The subsystem could not be removed.",
-                )
-            }
-        }
-    }
+    fun confirmRemoveSubsystem() = removalCoordinator.confirmRemoveSubsystem()
 
-    fun restoreRemovedSubsystem() {
-        val current = _state.value
-        val recovery = current.recentRecovery ?: return
-        runCatching {
-            persistence.restore(
-                current.projectPath,
-                current.projectRevision,
-                recovery.documentId,
-                recovery.contentHash,
-                recovery.recoveryPath,
-            )
-        }.onSuccess { restored ->
-            aiProposalGeneration.incrementAndGet()
-            _state.update {
-                SubsystemRemovalStateTransitions.restoreDocument(
-                    current = it,
-                    restored = restored,
-                    revision = persistence.currentRevision(it.projectRevision),
-                ).revalidated()
-            }
-            projectGenerator?.generateAresProject(current.projectPath, current.league)
-            scope.launch {
-                runCatching {
-                    val root = File(current.projectPath).canonicalFile
-                    checkpointRecorder.checkpoint(
-                        current.projectPath,
-                        "Restored ${restored.displayName} subsystem",
-                        setOf(documents.subsystems.file(current.projectPath, restored.documentId).relativeTo(root).invariantSeparatorsPath),
-                    )
-                }.onFailure { failure ->
-                    _state.update {
-                        it.copy(status = "Subsystem restored, but automatic Project History checkpoint failed: ${failure.message}")
-                    }
-                }
-            }
-        }.onFailure { error ->
-            _state.update {
-                it.copy(status = error.message ?: "The subsystem recovery copy could not be restored.")
-            }
-        }
-    }
+    fun restoreRemovedSubsystem() = removalCoordinator.restoreRemovedSubsystem()
 
-    fun dismissRecoveryNotice() = _state.update { it.copy(recentRecovery = null) }
+    fun dismissRecoveryNotice() = removalCoordinator.dismissRecoveryNotice()
 
-    private fun refreshProjectSession(projectPath: String, league: League) {
-        persistence.refresh(projectPath, league)
-    }
+    fun generate() = starterGeneratorOps.generate { if (_state.value.dirty) save() }
 
-    private fun removeDocumentFromSession(
-        documentId: String,
-        message: String,
-        recovery: SubsystemRecoveryNotice? = null,
-    ) {
-        aiProposalGeneration.incrementAndGet()
-        _state.update { current ->
-            SubsystemRemovalStateTransitions.removeDocument(
-                current = current,
-                documentId = documentId,
-                message = message,
-                revision = persistence.currentRevision(current.projectRevision),
-                recovery = recovery,
-            ).revalidated()
-        }
-    }
+    fun cancelStarterReplacement() = starterGeneratorOps.cancelStarterReplacement()
 
-    fun generate() {
-        if (_state.value.dirty) save()
-        val current = _state.value
-        if (current.dirty) return
-        if (current.hasProtectedUserOwnedConflict) {
-            _state.update {
-                it.copy(status = "Generation stopped: a USER-OWNED file differs from the preview and cannot be replaced.")
-            }
-            return
-        }
-        val replacements = current.previewFiles.filter { it.change == SubsystemFileChange.REPLACE_STARTER }
-        if (replacements.isNotEmpty()) {
-            _state.update { it.copy(pendingStarterReplacements = replacements, status = null) }
-            return
-        }
-        projectGenerator?.applySubsystemStarters(current.projectPath, current.league)
-    }
-
-    fun cancelStarterReplacement() = _state.update { it.copy(pendingStarterReplacements = emptyList()) }
-
-    fun confirmStarterReplacement() {
-        val current = _state.value
-        val token = current.starterConfirmationToken
-        if (current.pendingStarterReplacements.isEmpty() || token == null) return
-        _state.update { it.copy(pendingStarterReplacements = emptyList(), starterConfirmationToken = null) }
-        runCatching { projectGenerator?.applySubsystemStarters(current.projectPath, current.league, token) }
-            .onFailure { error ->
-                _state.update { it.copy(status = error.message ?: "The starter proposal changed; review it again.") }
-            }
-    }
+    fun confirmStarterReplacement() = starterGeneratorOps.confirmStarterReplacement()
 
     private fun SubsystemGeneratorState.revalidated(
         external: List<SubsystemProblem> = problems.filter { it.path.startsWith("project:") },

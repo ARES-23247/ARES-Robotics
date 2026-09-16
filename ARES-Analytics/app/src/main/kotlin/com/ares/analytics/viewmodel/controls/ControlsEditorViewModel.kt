@@ -4,41 +4,17 @@ import com.ares.analytics.service.GamepadState
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.AresProjectGenerator
 import com.ares.analytics.service.ControlsDesignAssistant
-import com.ares.analytics.service.ControlsDesignContext
-import com.ares.analytics.service.ControlsDesignProposal
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
-import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.service.project.AresProjectDocuments
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
 import com.ares.analytics.shared.models.League
-import com.areslib.catalog.ActionDescriptor
-import com.areslib.catalog.CapabilityParameterDescriptor
-import com.areslib.catalog.CapabilityParameterType
-import com.areslib.catalog.initialCapabilityArguments
-import com.areslib.controls.AnalogControlPolicyDocument
-import com.areslib.controls.AxisTransformDocument
 import com.areslib.controls.ControlBindingDocument
-import com.areslib.controls.ControlEvent
 import com.areslib.controls.ControlSchemeDocument
-import com.areslib.controls.ControlSchemeCodec
-import com.areslib.controls.ControlSourceDocument
 import com.areslib.controls.ControlSourceKind
-import com.areslib.controls.ControlTargetDocument
 import com.areslib.controls.ControlTargetKind
-import com.areslib.controls.ControlThresholdDirection
-import com.areslib.controls.ControlTimingDocument
-import com.areslib.controls.ControllerAnchorDocument
-import com.areslib.controls.ControllerAssignment
-import com.areslib.controls.ControllerControlDocument
-import com.areslib.controls.ControllerControlTypeDocument
-import com.areslib.controls.ControllerDeviceMatcherDocument
-import com.areslib.controls.ControllerInputMappingDocument
 import com.areslib.controls.ControllerInputPlatform
-import com.areslib.controls.ControllerProfileDocument
 import com.areslib.controls.ControllerSurfaceDocument
-import com.areslib.controls.RoutineInvocationPolicy
-import com.areslib.project.AresProjectMetadataDocument
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,7 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 /**
  * Offline-first controller editor. It only reads and writes the selected repository's `.ares`
@@ -73,6 +48,7 @@ class ControlsEditorViewModel(
     )
     val state: StateFlow<ControlsEditorState> = _state.asStateFlow()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val aiProposalCoordinator = ControlsAiProposalCoordinator(designAssistant, scope)
 
     init {
         projectGenerator?.let { generator ->
@@ -191,8 +167,6 @@ class ControlsEditorViewModel(
                 if (assignment.slot == state.selectedControllerSlot) assignment.copy(profileId = profileId) else assignment
             })
         }
-        // Built-in templates do not exist in the project until assigned; saving is idempotent for
-        // an already-persisted profile and guarantees codegen never sees a dangling profile ID.
         _state.update { current ->
             current.copy(
                 dirty = true,
@@ -228,48 +202,7 @@ class ControlsEditorViewModel(
         }
     }
 
-    fun createBinding() = mutateSelection { current ->
-        if (current.draftHasUnappliedChanges) {
-            return@mutateSelection current.copy(status = "Apply or discard the current binding draft before creating another.")
-        }
-        val control = current.selectedControl ?: return@mutateSelection current
-        val scheme = current.selectedScheme ?: return@mutateSelection current
-        val slot = current.selectedControllerSlot ?: return@mutateSelection current
-        val id = uniqueBindingId(scheme, control.controlId)
-        val axis = control.type == ControllerControlTypeDocument.AXIS
-        val source = if (axis) {
-            ControlSourceDocument(
-                kind = ControlSourceKind.AXIS_THRESHOLD,
-                controllerSlot = slot,
-                controlIds = listOf(control.controlId),
-                transform = AxisTransformDocument(),
-                pressThreshold = 0.65,
-                releaseThreshold = 0.50
-            )
-        } else {
-            ControlSourceDocument(ControlSourceKind.BUTTON, slot, listOf(control.controlId))
-        }
-        val target = current.actions.firstOrNull()?.let { descriptor ->
-            ControlTargetDocument(
-                ControlTargetKind.ACTION,
-                descriptor.key,
-                initialCapabilityArguments(descriptor.parameters),
-            )
-        } ?: current.routineIds.firstOrNull()?.let { routine ->
-            ControlTargetDocument(ControlTargetKind.ROUTINE, routine)
-        } ?: ControlTargetDocument(ControlTargetKind.ACTION, "choose.action")
-        current.copy(
-            selectedBindingId = null,
-            draftBinding = ControlBindingDocument(
-                bindingId = id,
-                displayName = "${control.displayName} binding",
-                source = source,
-                event = ControlEvent.PRESS,
-                target = target
-            ),
-            draftHasUnappliedChanges = true
-        ).revalidated()
-    }
+    fun createBinding() = mutateSelection { createDefaultBindingDraft(it).revalidated() }
 
     /** Starts a reviewed two-or-more-button chord without saving or generating code. */
     fun createChordBinding() = mutateSelection { createChordBindingDraft(it).revalidated() }
@@ -281,38 +214,8 @@ class ControlsEditorViewModel(
      * Starts a normal reviewed binding draft for a missing catalog action on the selected control.
      * It never chooses a physical control, applies the draft, saves a file, or runs generation.
      */
-    fun createBindingForAction(actionKey: String) = mutateSelection { current ->
-        if (current.draftHasUnappliedChanges) {
-            return@mutateSelection current.copy(status = "Apply or discard the current binding draft first.")
-        }
-        val action = current.actions.firstOrNull { it.key == actionKey }
-            ?: return@mutateSelection current.copy(status = "That action is no longer in the project catalog. Reload controls.")
-        val control = current.selectedControl
-            ?: return@mutateSelection current.copy(status = "Select the button or axis that should run '${action.displayName}', then choose Bind.")
-        if (control.type != ControllerControlTypeDocument.BUTTON) {
-            return@mutateSelection current.copy(
-                status = "Select a button for '${action.displayName}'. Continuous axis actions require an explicit value contract.",
-            )
-        }
-        val scheme = current.selectedScheme ?: return@mutateSelection current
-        val slot = current.selectedControllerSlot ?: return@mutateSelection current
-        val draft = ControlBindingDocument(
-            bindingId = uniqueBindingId(scheme, "${control.controlId}-${action.key}"),
-            displayName = action.displayName,
-            source = ControlSourceDocument(ControlSourceKind.BUTTON, slot, listOf(control.controlId)),
-            event = ControlEvent.PRESS,
-            target = ControlTargetDocument(
-                ControlTargetKind.ACTION,
-                action.key,
-                initialCapabilityArguments(action.parameters),
-            ),
-        )
-        current.copy(
-            selectedBindingId = null,
-            draftBinding = draft,
-            draftHasUnappliedChanges = true,
-            status = "Review the input event and arguments, then add the binding. Nothing has been saved yet.",
-        ).revalidated()
+    fun createBindingForAction(actionKey: String) = mutateSelection {
+        createBindingForActionDraft(it, actionKey).revalidated()
     }
 
     fun editBinding(bindingId: String) = mutateSelection { current ->
@@ -352,54 +255,16 @@ class ControlsEditorViewModel(
     }
 
     fun setSourceKind(kind: ControlSourceKind) = updateDraft { draft ->
-        val selected = _state.value.selectedControlId ?: draft.source.controlIds.firstOrNull().orEmpty()
-        val source = when (kind) {
-            ControlSourceKind.BUTTON -> ControlSourceDocument(kind, draft.source.controllerSlot, listOf(selected))
-            ControlSourceKind.CHORD -> ControlSourceDocument(kind, draft.source.controllerSlot, listOf(selected), chordWindowSeconds = .075)
-            ControlSourceKind.AXIS_THRESHOLD -> ControlSourceDocument(
-                kind, draft.source.controllerSlot, listOf(selected), AxisTransformDocument(), .65, .50
-            )
-            ControlSourceKind.AXIS_VALUE -> ControlSourceDocument(
-                kind, draft.source.controllerSlot, listOf(selected), AxisTransformDocument()
-            )
-            ControlSourceKind.AXIS_ZONE -> ControlSourceDocument(
-                kind, draft.source.controllerSlot, listOf(selected), AxisTransformDocument(),
-                zoneMinimum = -.25, zoneMaximum = .25, zoneHysteresis = .05
-            )
-        }
-        draft.copy(
-            source = source,
-            event = defaultControlEvent(kind),
-            suppressConstituentBindings = kind == ControlSourceKind.CHORD,
-            analogPolicy = if (kind == ControlSourceKind.AXIS_VALUE || kind == ControlSourceKind.AXIS_ZONE) {
-                AnalogControlPolicyDocument()
-            } else null
-        )
+        setDraftSourceKind(draft, kind, _state.value.selectedControlId)
     }
 
     fun setTarget(kind: ControlTargetKind, key: String) = updateDraft { draft ->
-        val action = _state.value.actions.firstOrNull { it.key == key }
-        val previousAction = _state.value.actions.firstOrNull { it.key == draft.target.key }
-        val defaultControlName = _state.value.selectedControl?.let { "${it.displayName} binding" }
-        draft.copy(
-            displayName = if (
-                action != null &&
-                (draft.displayName == defaultControlName || draft.displayName == previousAction?.displayName)
-            ) {
-                action.displayName
-            } else {
-                draft.displayName
-            },
-            target = ControlTargetDocument(
-                kind = kind,
-                key = key,
-                arguments = if (kind == ControlTargetKind.ACTION && action != null) {
-                    initialCapabilityArguments(action.parameters)
-                } else {
-                    emptyMap()
-                },
-                routinePolicy = draft.target.routinePolicy
-            )
+        setDraftTarget(
+            draft = draft,
+            actions = _state.value.actions,
+            selectedControlDisplayName = _state.value.selectedControl?.displayName,
+            kind = kind,
+            key = key
         )
     }
 
@@ -407,148 +272,21 @@ class ControlsEditorViewModel(
      * Applies the common safe momentary-output pattern as one reviewed edit: command the chosen
      * voltage/duty-cycle while held and explicitly command zero when the button is released.
      */
-    fun addSafeMomentaryPair() = mutateSelection { current ->
-        val draft = current.draftBinding
-            ?: return@mutateSelection current.copy(status = "Create a binding draft first.")
-        if (current.selectedBindingId != null) {
-            return@mutateSelection current.copy(status = "Safe pairs can be added from a new binding. Edit existing bindings individually.")
-        }
-        if (draft.source.kind != ControlSourceKind.BUTTON) {
-            return@mutateSelection current.copy(status = "A safe hold-and-release pair requires one button input.")
-        }
-        val action = current.actions.firstOrNull { it.key == draft.target.key }
-            ?: return@mutateSelection current.copy(status = "Choose a project action first.")
-        val outputParameter = momentaryOutputParameter(action)
-            ?: return@mutateSelection current.copy(status = "That action is not a momentary voltage or duty-cycle output.")
-        if (current.problems.any { it.severity == ControlsProblemSeverity.ERROR && (it.bindingId == null || it.bindingId == draft.bindingId) }) {
-            return@mutateSelection current.copy(status = "Fix the highlighted binding errors before adding the safe pair.")
-        }
-        val scheme = current.selectedScheme ?: return@mutateSelection current
-        val runBinding = draft.copy(
-            displayName = "${action.displayName} while held",
-            event = ControlEvent.HELD,
-        )
-        val stopBinding = draft.copy(
-            bindingId = uniqueBindingId(scheme.copy(bindings = scheme.bindings + runBinding), "${draft.bindingId}-release"),
-            displayName = "Stop ${action.category.ifBlank { "output" }.lowercase()} on release",
-            event = ControlEvent.RELEASE,
-            target = draft.target.copy(arguments = draft.target.arguments + (outputParameter.key to "0")),
-        )
-        val updated = scheme.copy(bindings = scheme.bindings + runBinding + stopBinding)
-        current.replaceScheme(updated).copy(
-            selectedBindingId = runBinding.bindingId,
-            draftBinding = null,
-            draftHasUnappliedChanges = false,
-            dirty = true,
-            dirtySchemeIds = current.dirtySchemeIds + updated.documentId,
-            status = "Added a safe pair: hold to command output and release to command zero.",
-        ).revalidated()
-    }
+    fun addSafeMomentaryPair() = mutateSelection { addSafeMomentaryPairDraft(it).revalidated() }
 
     fun setTargetArgument(key: String, value: String) = updateDraft { draft ->
         draft.copy(target = draft.target.copy(arguments = draft.target.arguments + (key to value)))
     }
 
-    fun applyDraft() = mutateSelection { current ->
-        val draft = current.draftBinding ?: return@mutateSelection current
-        if (current.problems.any { it.severity == ControlsProblemSeverity.ERROR && (it.bindingId == null || it.bindingId == draft.bindingId) }) {
-            return@mutateSelection current.copy(status = "Fix the highlighted binding errors before applying.")
-        }
-        val scheme = current.selectedScheme ?: return@mutateSelection current
-        val updated = if (current.selectedBindingId == null) {
-            scheme.copy(bindings = scheme.bindings + draft)
-        } else {
-            scheme.copy(bindings = scheme.bindings.map { if (it.bindingId == current.selectedBindingId) draft else it })
-        }
-        current.replaceScheme(updated).copy(
-            selectedBindingId = draft.bindingId,
-            draftBinding = null,
-            dirty = true,
-            dirtySchemeIds = current.dirtySchemeIds + updated.documentId,
-            draftHasUnappliedChanges = false,
-            status = "Binding applied locally. Save to create a project revision.",
-        ).revalidated()
-    }
+    fun applyDraft() = mutateSelection { applyDraftBinding(it).revalidated() }
 
     fun requestAiProposal(studentRequest: String) {
-        val current = _state.value
-        val request = studentRequest.trim()
-        val scheme = current.selectedScheme
-        val assistant = designAssistant
-        when {
-            request.isBlank() -> _state.update { it.copy(aiProposalError = "Describe the bindings you want first.") }
-            assistant == null -> _state.update { it.copy(aiProposalError = "Gemini is not available in this app session.") }
-            scheme == null -> _state.update { it.copy(aiProposalError = "Select a control scheme first.") }
-            current.draftHasUnappliedChanges -> _state.update { it.copy(aiProposalError = "Apply or discard the current binding draft before asking Gemini.") }
-            else -> {
-                val context = ControlsDesignContext(
-                    actionKeys = current.actions.mapTo(linkedSetOf()) { it.key },
-                    routineIds = current.routineIds.toSet(),
-                    profileControls = current.profiles.associate { profile ->
-                        profile.documentId to profile.controls.filter { control ->
-                            control.mappings.any { it.platform == current.targetPlatform }
-                        }.mapTo(linkedSetOf()) { it.controlId }
-                    },
-                )
-                val baseHash = ControlSchemeCodec.contentHash(scheme)
-                _state.update { it.copy(aiProposalInProgress = true, aiProposal = null, aiProposalError = null) }
-                scope.launch {
-                    runCatching { assistant.propose(scheme, context, request) }
-                        .onSuccess { proposal ->
-                            val problems = proposal.candidate.bindings.flatMap { binding ->
-                                if (binding.target.kind != ControlTargetKind.ACTION) emptyList() else {
-                                    val action = current.actions.firstOrNull { it.key == binding.target.key }
-                                    if (action == null) listOf(ControlsProblem(ControlsProblemSeverity.ERROR, "Unknown action '${binding.target.key}'.", binding.bindingId))
-                                    else validateArguments(action, binding.target.arguments).map {
-                                        ControlsProblem(ControlsProblemSeverity.ERROR, it, binding.bindingId)
-                                    }
-                                }
-                            }
-                            val review = ControlsAiProposalReview(
-                                proposal = proposal,
-                                changes = describeControlsChanges(scheme, proposal.candidate),
-                                problems = problems,
-                                baseContentHash = baseHash,
-                            )
-                            _state.update { latest ->
-                                val latestScheme = latest.selectedScheme
-                                if (latestScheme == null || ControlSchemeCodec.contentHash(latestScheme) != baseHash) latest.copy(
-                                    aiProposalInProgress = false,
-                                    aiProposalError = "The bindings changed while Gemini was working. Request a fresh proposal.",
-                                ) else latest.copy(aiProposalInProgress = false, aiProposal = review)
-                            }
-                        }
-                        .onFailure { error -> _state.update {
-                            it.copy(aiProposalInProgress = false, aiProposalError = error.message ?: "Gemini could not create a controls proposal.")
-                        } }
-                }
-            }
-        }
+        aiProposalCoordinator.request(_state, studentRequest)
     }
 
     fun dismissAiProposal() = _state.update { it.copy(aiProposal = null, aiProposalError = null) }
 
-    fun applyAiProposal() = _state.update { current ->
-        val review = current.aiProposal ?: return@update current
-        val scheme = current.selectedScheme ?: return@update current
-        when {
-            !review.canApply -> current.copy(aiProposalError = "Gemini's proposal has blocking validation errors.")
-            ControlSchemeCodec.contentHash(scheme) != review.baseContentHash -> current.copy(
-                aiProposal = null,
-                aiProposalError = "The bindings changed. Request a fresh proposal.",
-            )
-            else -> current.replaceScheme(review.proposal.candidate).copy(
-                dirty = true,
-                dirtySchemeIds = current.dirtySchemeIds + scheme.documentId,
-                selectedBindingId = null,
-                draftBinding = null,
-                draftHasUnappliedChanges = false,
-                aiProposal = null,
-                aiProposalError = null,
-                status = "Applied Gemini's proposal locally. Review the bindings and Save when ready.",
-            ).revalidated()
-        }
-    }
+    fun applyAiProposal() = _state.update { aiProposalCoordinator.apply(it) }
 
     fun deleteBinding(bindingId: String) = editScheme { scheme, _ ->
         scheme.copy(bindings = scheme.bindings.filterNot { it.bindingId == bindingId })
@@ -560,67 +298,17 @@ class ControlsEditorViewModel(
         }
     }
 
-    fun beginDesktopLearning(state: GamepadState) = mutateSelection { current ->
-        val control = current.selectedControl ?: return@mutateSelection current
-        if (!state.connected) return@mutateSelection current.copy(status = "Connect the controller to learn its desktop input.")
-        current.copy(
-            learning = ControlLearningSession(control.controlId, state.rawButtons, state.rawAxes),
-            status = "Move or press ${control.displayName}; only the Desktop GLFW mapping will change."
-        )
+    fun beginDesktopLearning(state: GamepadState) = mutateSelection {
+        ControlsHardwareBindingCoordinator.beginDesktopLearning(it, state)
     }
 
     fun observeDesktopInput(state: GamepadState) {
-        val learning = _state.value.learning ?: return
-        if (!state.connected) return
-        val control = _state.value.selectedProfile?.controls?.firstOrNull { it.controlId == learning.controlId }
-            ?: return
-        when (control.type) {
-            ControllerControlTypeDocument.BUTTON -> {
-                val newButtons = state.rawButtons.indices.filter { index ->
-                    state.rawButtons[index] && !learning.baselineButtons.getOrElse(index) { false }
-                }
-                if (newButtons.size == 1) {
-                    setMapping(learning.controlId, ControllerInputPlatform.DESKTOP_GLFW, newButtons.single())
-                }
-            }
-            ControllerControlTypeDocument.AXIS -> {
-                val movedAxes = state.rawAxes.indices.filter { index ->
-                    abs(state.rawAxes[index] - learning.baselineAxes.getOrElse(index) { 0f }) >= .35f
-                }
-                if (movedAxes.size == 1) {
-                    setMapping(learning.controlId, ControllerInputPlatform.DESKTOP_GLFW, movedAxes.single())
-                }
-            }
-        }
+        _state.update { ControlsHardwareBindingCoordinator.observeDesktopInput(it, state) }
     }
 
     /** Explicit target-platform entry; desktop observations are never copied here. */
-    fun setMapping(controlId: String, platform: ControllerInputPlatform, index: Int?) = mutateSelection { current ->
-        if (index != null && index < 0) return@mutateSelection current.copy(status = "Input indexes cannot be negative.")
-        val profile = current.selectedProfile ?: return@mutateSelection current
-        val control = profile.controls.firstOrNull { it.controlId == controlId } ?: return@mutateSelection current
-        val mapping = index?.let {
-            ControllerInputMappingDocument(
-                platform = platform,
-                buttonIndex = it.takeIf { control.type == ControllerControlTypeDocument.BUTTON },
-                axisIndex = it.takeIf { control.type == ControllerControlTypeDocument.AXIS }
-            )
-        }
-        val updated = profile.copy(controls = profile.controls.map { candidate ->
-            if (candidate.controlId != controlId) candidate else candidate.copy(
-                mappings = candidate.mappings.filterNot { it.platform == platform } + listOfNotNull(mapping)
-            )
-        })
-        current.copy(
-            profiles = current.profiles.map { if (it.documentId == updated.documentId) updated else it },
-            dirty = true,
-            dirtyProfileIds = current.dirtyProfileIds + updated.documentId,
-            learning = null,
-            status = when (platform) {
-                ControllerInputPlatform.DESKTOP_GLFW -> "Learned Desktop GLFW index $index. FTC/FRC mappings were not changed."
-                else -> "Set ${platform.name} index $index. Verify it on that platform before competition."
-            }
-        ).revalidated()
+    fun setMapping(controlId: String, platform: ControllerInputPlatform, index: Int?) = mutateSelection {
+        ControlsHardwareBindingCoordinator.setMapping(it, controlId, platform, index)
     }
 
     fun save() {
@@ -719,49 +407,7 @@ class ControlsEditorViewModel(
         _state.update(transform)
     }
 
-    private fun ControlsEditorState.replaceScheme(scheme: ControlSchemeDocument): ControlsEditorState = copy(
-        schemes = schemes.map { if (it.documentId == scheme.documentId) scheme else it }
-    )
-
     override fun close() {
         scope.cancel()
     }
-}
-
-internal fun momentaryOutputParameter(action: ActionDescriptor): CapabilityParameterDescriptor? =
-    action.parameters.firstOrNull { parameter ->
-        if (parameter.type != CapabilityParameterType.NUMBER) return@firstOrNull false
-        val normalizedUnit = parameter.unit.orEmpty().trim().lowercase()
-        normalizedUnit in setOf(
-            "v",
-            "volt",
-            "volts",
-            "%",
-            "percent",
-            "power",
-            "duty cycle",
-            "duty_cycle",
-        )
-    }
-
-internal fun describeControlsChanges(
-    before: ControlSchemeDocument,
-    after: ControlSchemeDocument,
-): List<String> = buildList {
-    if (before.name != after.name) add("Rename scheme '${before.name}' → '${after.name}'")
-    if (before.description != after.description) add("Update the scheme description")
-    val beforeById = before.bindings.associateBy { it.bindingId }
-    val afterById = after.bindings.associateBy { it.bindingId }
-    (afterById.keys - beforeById.keys).sorted().forEach { id ->
-        add("Add binding: ${afterById.getValue(id).displayName}")
-    }
-    (beforeById.keys - afterById.keys).sorted().forEach { id ->
-        add("Remove binding: ${beforeById.getValue(id).displayName}")
-    }
-    (beforeById.keys intersect afterById.keys).sorted().forEach { id ->
-        if (beforeById.getValue(id) != afterById.getValue(id)) {
-            add("Change binding: ${afterById.getValue(id).displayName}")
-        }
-    }
-    if (isEmpty()) add("No form changes")
 }

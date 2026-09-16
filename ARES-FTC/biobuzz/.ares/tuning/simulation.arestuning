@@ -1,11 +1,11 @@
 {
   "schemaVersion": 2,
-  "uid": "ares.starter.profile.simulation",
+  "uid": "biobuzz-reference.profile.simulation",
   "profileId": "simulation",
   "displayName": "Uncalibrated simulation baseline",
   "description": "Conservative simulation values. These are not physical calibration evidence and must not be used to approve deployment.",
   "projectId": "biobuzz-reference",
-  "drivebaseUid": "ares.starter.drivebase.mecanum",
+  "drivebaseUid": "biobuzz-reference.drivebase.mecanum",
   "authority": "CANONICAL_CHECKED_IN",
   "values": [
     {"parameterUid":"ftc.drive.ticks-per-meter","value":{"doubleValue":2000.0}},

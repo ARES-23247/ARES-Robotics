@@ -345,3 +345,32 @@ abstract class HolonomicDriveFacade @kotlin.jvm.JvmOverloads constructor(
         )
     }
 }
+
+/**
+ * A highly simplified, student-facing modular facade for a Mecanum drivetrain subsystem.
+ *
+ * Inherits all coordinate transformation, heading holding, path following, and drive logic
+ * from [HolonomicDriveFacade].
+ */
+class MecanumDriveFacade @kotlin.jvm.JvmOverloads constructor(
+    store: Store,
+    headingGains: PIDFCoefficients = PIDFCoefficients(2.2, 0.0, 0.12),
+    headingDeadzoneDeg: Double = 0.75
+) : HolonomicDriveFacade(store, headingGains, headingDeadzoneDeg)
+
+/**
+ * A highly simplified, student-facing modular facade for a Swerve drivetrain subsystem.
+ *
+ * Inherits standard coordinate transformations, heading locking, and driving math from [HolonomicDriveFacade],
+ * and adds swerve-specific features like active braking configuration.
+ */
+class SwerveDriveFacade(store: Store) : HolonomicDriveFacade(store) {
+    /**
+     * Commands all swerve modules to lock into an "X" configuration (orthogonal angles)
+     * with exactly 0.0 speed. This resists pushes from opponent robots.
+     */
+    fun brake() {
+        resetHoldControllers()
+        store.dispatch(RobotAction.SetDriveMode(com.areslib.state.DriveMode.X_BRAKE))
+    }
+}

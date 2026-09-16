@@ -1,6 +1,18 @@
 package com.areslib.hardware.sensor
 
 /**
+ * Pure abstraction for reading a distance/range sensor (e.g. ToF, LiDAR, ultrasonic).
+ * Keeps the sensor logic completely simulation-friendly and decoupled from the FTC SDK.
+ */
+interface DistanceSensorIO {
+    /**
+     * Returns the measured distance in meters.
+     * Returns Double.NaN or Double.POSITIVE_INFINITY if out of range or sensor is offline.
+     */
+    val distanceMeters: Double
+}
+
+/**
  * Pure abstraction for reading a multizone Time-of-Flight rangefinder (like the VL53L5CX 8x8 or 4x4 sensor).
  * This makes multizone distance tracking mockable, simulation-friendly, and decoupled.
  */

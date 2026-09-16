@@ -39,6 +39,7 @@ object ActionReplay {
 
     private val builtInByName: Map<String, Class<out RobotAction>> = linkedMapOf(
         "DriveHardwareUpdate" to RobotAction.DriveHardwareUpdate::class.java,
+        "ClusterTargetsReceived" to RobotAction.ClusterTargetsReceived::class.java,
         "VisionMeasurementsReceived" to RobotAction.VisionMeasurementsReceived::class.java,
         "PoseUpdate" to RobotAction.PoseUpdate::class.java,
         "SetAlliance" to RobotAction.SetAlliance::class.java,
@@ -347,7 +348,7 @@ object ActionReplay {
                 }
                 type == java.lang.Integer.TYPE -> value.isJsonPrimitive && value.asJsonPrimitive.isNumber &&
                     runCatching { BigDecimal(value.asString).intValueExact() }.isSuccess
-                type == java.lang.Double.TYPE || type == java.lang.Double::class.java ->
+                type == java.lang.Double.TYPE || type == Double::class.javaObjectType ->
                     value.isJsonPrimitive && value.asJsonPrimitive.isNumber && value.asDouble.isFinite()
                 type == String::class.java -> value.isJsonPrimitive && value.asJsonPrimitive.isString
                 type.isEnum -> value.isJsonPrimitive && value.asJsonPrimitive.isString &&

@@ -11,8 +11,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import com.ares.analytics.shared.AppJson
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /**
  * Data container describing a discovered CTRE CAN bus hardware device (TalonFX, CANcoder, Pigeon2, Kraken X60).
@@ -40,7 +40,7 @@ class PhoenixDiagnosticsService(
     private val nt4ClientService: Nt4ClientService,
     private val httpClient: HttpClient = HttpClient {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(AppJson)
         }
     }
 ) {

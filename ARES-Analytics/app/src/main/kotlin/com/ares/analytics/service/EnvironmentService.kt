@@ -2,6 +2,7 @@ package com.ares.analytics.service
 
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.shared.AppJsonPretty
 import com.ares.analytics.shared.models.AppWorkspaces
 import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +35,7 @@ class EnvironmentService(
     private val workspacesPath: String = AppDataPaths.file("workspaces.json").path,
     private val secretsWriter: (File, ByteArray) -> Unit = ::writeSecrets,
 ) {
-    private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
+    private val json = AppJsonPretty
 
     suspend fun loadWorkspaces(): AppWorkspaces = withContext(Dispatchers.IO) {
         val file = File(workspacesPath)

@@ -101,9 +101,10 @@ class StarterDriveSimulation(
     fun step(state: RobotState, dtSeconds: Double, timestampMs: Long): RobotAction.PoseUpdate {
         val dt = if (dtSeconds.isFinite()) dtSeconds.coerceIn(0.0, 0.05) else 0.0
         val drive = state.drive
-        val commandedVx = drive.xVelocityMetersPerSecond.takeIf(Double::isFinite) ?: 0.0
-        val commandedVy = drive.yVelocityMetersPerSecond.takeIf(Double::isFinite) ?: 0.0
-        val omega = drive.angularVelocityRadiansPerSecond.takeIf(Double::isFinite) ?: 0.0
+        // Primitive checks also avoid boxing before the JVM finishes escape analysis.
+        val commandedVx = if (drive.xVelocityMetersPerSecond.isFinite()) drive.xVelocityMetersPerSecond else 0.0
+        val commandedVy = if (drive.yVelocityMetersPerSecond.isFinite()) drive.yVelocityMetersPerSecond else 0.0
+        val omega = if (drive.angularVelocityRadiansPerSecond.isFinite()) drive.angularVelocityRadiansPerSecond else 0.0
         val previousX = xMeters
         val previousY = yMeters
         val deltaHeading = omega * dt

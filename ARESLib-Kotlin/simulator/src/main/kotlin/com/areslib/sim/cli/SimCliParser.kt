@@ -81,7 +81,7 @@ object SimCliParser {
         val envBaseUrl = System.getenv("ARESWEB_API_URL") ?: System.getProperty("aresweb.api.url")
         val baseUrl = envBaseUrl ?: "http://localhost:5001/aresfirst-portal/us-central1/api"
         return try {
-            val url = URL("$baseUrl/simulations/field-config/$arg")
+            val url = java.net.URI.create("$baseUrl/simulations/field-config/$arg").toURL()
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
             conn.connectTimeout = 5000

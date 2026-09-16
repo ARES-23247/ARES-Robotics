@@ -1,11 +1,13 @@
 package com.ares.analytics.ui.components.dashboard
 
+import androidx.compose.runtime.Immutable
 import com.ares.analytics.shared.RobotUnit
 import com.ares.analytics.shared.UnitCategory
 import com.ares.analytics.shared.UnitConversion
 import kotlin.math.abs
 import kotlin.math.max
 
+@Immutable
 internal data class TelemetryChartBounds(
     val min: Double,
     val max: Double,
@@ -113,4 +115,25 @@ internal fun convertTelemetryChartValue(
     UnitConversion.convert(value, sourceUnit, displayUnit)
 } else {
     value
+}
+
+@Immutable
+data class TelemetryPoint(val timestampMs: Long, val value: Double)
+
+fun buildSignalTree(keys: List<String>): SignalNode {
+    val root = SignalNode("", "", false)
+    for (topic in keys) {
+        val parts = topic.split("/").filter { it.isNotEmpty() }
+        var current = root
+        var currentPath = ""
+        for (i in parts.indices) {
+            val part = parts[i]
+            currentPath += "/$part"
+            val isLeaf = (i == parts.lastIndex)
+            current = current.children.getOrPut(part) {
+                SignalNode(part, currentPath, isLeaf)
+            }
+        }
+    }
+    return root
 }
