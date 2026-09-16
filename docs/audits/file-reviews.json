@@ -12,7 +12,7 @@
       ]
     },
     ".agents/skills/ares-build-release/SKILL.md": {
-      "sha256": "2a22a986117754d458ac596f784db867166682ee39d76efba439dcb98f3a17bf",
+      "sha256": "0be27a96b9f83f6e7fc8ba12da45b94c5fb25bf7159805a48d4a5af3f47fa07e",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
@@ -41,7 +41,7 @@
       ]
     },
     ".agents/skills/ares-build-release/references/failure-modes.md": {
-      "sha256": "7df7639a9ae1e9dd98c7e49280aaceaa1b9a16f9cfef867582cf7b3efd352094",
+      "sha256": "0a720e0c346a445d8e6e0ad09d5d3e2aa6eb635a6e86fa665fb969d22ff50820",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
@@ -80,7 +80,7 @@
       ]
     },
     ".agents/skills/ares-subsystem-authoring/references/review-checklist.md": {
-      "sha256": "d695a2ee24255e3ab3b2b2111660d442d2be7edfc35a805becaa4197375aa2fc",
+      "sha256": "669243e936977289ae7fa06308a3da76fab7b780ea3e6107b2e0d693556e1a56",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Full normative authoring/descriptor/checklist guidance review: generated versus user ownership, source reference/schema/tuning routing, capability metadata, homing/follower/feedforward/safety/teaching requirements. References verified against current paths and schema declarations. This checks instructions, not achievement of every runtime/UI requirement.",
@@ -90,7 +90,7 @@
       ]
     },
     ".agents/skills/ares-workspace/SKILL.md": {
-      "sha256": "c2ea677860fd664fe5aed81f60eb8e38e75c830ca34e3920fd06a0ec5fa9967d",
+      "sha256": "1c7ec14720ac6ae4ba5fbd9cfb22fca850ca0b3e92112ef70c329198abd0db11",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Full product-map/runtime-contract/workspace guidance review: canonical ownership, Redux/clock/coordinates/telemetry/safety boundaries, references and skill routing. Paths and invariant consistency checked; normative rules are not a claim of full runtime compliance.",
@@ -230,7 +230,7 @@
       ]
     },
     ".github/workflows/build-distributions.yml": {
-      "sha256": "ff70c1dcfbc002a093ca3d713ee53457b340ea3b291c19898815e155b8cfbf0c",
+      "sha256": "c29127be718b0eedd24bb6a95d6a8083b405e8b28adf04478bd0164052cf727f",
       "review": "pending",
       "validation": "pending",
       "scope": "Unverified campaign submission: GitHub Actions CI workflow for release artifacts, distribution packaging, and multi-platform build verification.",
@@ -863,7 +863,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.AutoImportServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "523f5b63e5f1af9a7f9a4135110987fbd35446b233e6b018d30e0085dccbd341",
+      "sha256": "6dcaff60201ddb9740bc68b4e14e1b03923f3bdab4d7fd9f9f82497e54ec03a8",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -933,7 +933,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DashboardHealthService.kt": {
-      "sha256": "1c6fd7a113ee23e4c49a2d4bbcfd2aca09c40dca6b7558dc9a945d5b06bf59cc",
+      "sha256": "df2ac2f2c297e039af0c3d5374b20d42f3dfdbda1cd06ec81d29790c43143c85",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Audited health metrics sampler: counter rollover handling, epoch resets, zero-division guards, and sample rate calculation. Scope teardown leak noted for Desktop service registry wiring.",
@@ -1078,7 +1078,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.DriverProfilePersistenceAuditTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "860d64a7c979d637504e860aa56e345731ff6eb5d6f0bd3175ef9479a08b85c2"
+      "sha256": "4f556f438bd83292319f7b79d6caeab2a87b29d09107504bc13aabaf6749f019"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/EnvironmentService.kt": {
       "review": "reviewed",
@@ -1088,7 +1088,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveDestinationTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "2bc2f164c85161d1a9a702d502070c138cc0b1e42edf8ee15f19ae3430261ec0"
+      "sha256": "0503f33348143c7af9e80201f4d6bd5e3a164a28613799f048aa185e5a35a9d0"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/EventApiService.kt": {
       "review": "reviewed",
@@ -1098,7 +1098,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "663e7a1c013acdc27ec043203b458941f04d9fddacb1099263b797b9afc5c841"
+      "sha256": "f408637c64f0e375a8338f499ce278806973a036d3d16e51154cd99991a484a7"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExclusiveFilePublication.kt": {
       "sha256": "64f936ffb409d4add63af09f580a261e81fc992319e1edf29c5cd23824e075e5",
@@ -1118,7 +1118,7 @@
       "evidence": [
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "ce09b59eb53eae41fd02a400c948eb0866bc879c35f57d73fe95b90126c1cc8f",
+      "sha256": "0566ec41292538a89b321c37dc1043c31586672346bdca31e032e5a8971e7675",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -1203,7 +1203,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveServiceIntegrityTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "4fdda9d354a7a3382c10b0c2b85885a8a049cbfced18b1e0819104e6869ad7c5"
+      "sha256": "7c5fecbd40ca9cdd137244605e83d888e95c1d630ba1918c2616e2fcc99eb6b9"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleOAuthClientConfig.kt": {
       "sha256": "59ca8db7183ff60c2fb3bb80b5f49374c1effa033ab5cc50375421bdec264369",
@@ -1277,7 +1277,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "df43794ab846ec27750c203ea1d6a318c08aa0ddb56cf5702b929368c955c355"
+      "sha256": "a3d08addae38b384728265d85da31139c1865c95d6dfac5c039546e543e4bc15"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/LearningProgressService.kt": {
       "review": "reviewed",
@@ -1287,7 +1287,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "73a271c311b07c283b50f2ccdc6fb116b410d8bdd8836f4e8f9b4c297a24ff0c"
+      "sha256": "935b5bea491209522d5f8cde4942e2ef848d72db0a7d37261e3a165b8c38c484"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/LogParserService.kt": {
       "sha256": "109c1c8d77573039dda084edfd1fe01c30e1e0089eba7180b376f9090754a941",
@@ -1318,7 +1318,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "c35415ff2360bccdb9a280f4fabba297169088d9207297085c7464cc9ffe8bb7"
+      "sha256": "73abb8274002c66182e51b7d4cfefc9aef998c26f651bc159d176113e07e1d04"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ManualLogImportService.kt": {
       "sha256": "c49b75ca575ea50dd410920f3542b9bf5f3fbaff1c4c400aa9f3aa94f4d460a9",
@@ -1359,7 +1359,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4ClientServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "797c88f612621354d76f47c008afc2a45843343af18683f9c451fc4674072fec",
+      "sha256": "30448643c95e93e338e2d126fc45173aef3fa995af936f9b1c12b3f246786df0",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -1398,7 +1398,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthLoopbackServerTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "8369c5c27eab4d42d814f0d77556df0b1d10238ea05edc6742fc577f51942495"
+      "sha256": "60a1e68646519c90efdf91e085aa33cf01d6b8a28377d6ea45266b151492b5cb"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthModels.kt": {
       "review": "reviewed",
@@ -1408,7 +1408,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "d1e0ab26cd7e564c3c193adc29841065e2d8a5aa3ef2204d3445d725ae27dfe2"
+      "sha256": "17afa8b36ea2846fc4730a6188572f55e58d1821a533f7c30e9ff630f489de22"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthService.kt": {
       "review": "reviewed",
@@ -1418,7 +1418,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "4a3594074e797b0012597a0366bc700a07944af91eb1f03fcec6cccc4a17737c"
+      "sha256": "f791c292ece23164aefed5eb40d20d01226f0a622fe609fd08d1a2f519bdbf29"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthTokenStore.kt": {
       "sha256": "5f20e96bf3263822f77d65e3ade8166cffeeb91aed6b9258deb5ee593c6ef626",
@@ -1437,7 +1437,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "bcf0740d34b1b02aae4d894c2e6a3a9a062563f3f005e102391392c97d296cdc"
+      "sha256": "6672eb1e97c05251d9fa41c26fa4c295e79bc3b4d1569dfd20a684e4504fda40"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/PlatformAlertThresholds.kt": {
       "sha256": "64f43cea945f227de1d1ad775d113e037c429e364a0cab19bd2c8e7946e831b8",
@@ -1670,7 +1670,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.RunComparisonServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "c76b72bd848187902f9a35318aeddbdaa6748f3fb4041168cee866c9e3be63be",
+      "sha256": "cebe814007a3ffc3249d4300abac3a3a92b08562ff3ce8c602b30037e1d96ef4",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -1698,7 +1698,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "41e3822dedef3747583b085adb974924cf212f892635e34c44098327dc10f2a9"
+      "sha256": "daa3ed136e6af7b96e44e4071eaa7fae503cae439bbdf54e37520ab64a634187"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SessionBundleService.kt": {
       "sha256": "7709a66f72c6023f3395d9a3c86d7b0b51521fbeabe6d6fbb75b0e507a5ea9ac",
@@ -1824,7 +1824,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineUploadAtomicityTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "dcc00cb7b7bed040a3317f38afb58ff8abcc04e48536e2f14d91cde4d91a2a5e"
+      "sha256": "d8978329e3543aadf899bee86c45bf3c708e5aa1aa1f308e7ade125271d95afa"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SysIdLogParser.kt": {
       "sha256": "0c2444b29e592dcb994344c14a56498089ce54e0642e4b214a9a6c6e56bb6c32",
@@ -1890,7 +1890,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "6085d4e10dba64e1720d7cc5e095c10730cc58b5938ff0a7ff07622d412d2044"
+      "sha256": "9d9002ab648e7b7251496f774e068da5e7066f35595a8567cce6c6df5e378ec9"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/VideoSyncService.kt": {
       "sha256": "6253adb4698c0a0833fd82e8aea9e820134515f6a8c94c1147cbed10c89dc49f",
@@ -2429,7 +2429,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4IntegrationDiagnosticTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "a21e558fe6376897fef9029ed3773438687356cf213f8f1f2e7efee42fd536c9",
+      "sha256": "f7f128bb32eca8d9486603d00df117ce6c0fb7317e64d833c5eb53dd6d15136c",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -2446,7 +2446,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4OutboundPublisher.kt": {
-      "sha256": "b52347ab1f3138ca06a56b881d7d5e92d571b911bd589337070821bc038caafa",
+      "sha256": "32ce5fc610a71e324eadf8b105f3fae6d433452e1b93a85c18a9879d6c0c60b0",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Audited binary update encoding, ThreadLocal buffer management, atomic drive frame contract enforcement, attach connectionId ordering, and synchronized time sync replies. Verified by Nt4ClientServiceTest and Nt4IntegrationDiagnosticTest.",
@@ -7089,7 +7089,7 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoImportServiceTest.kt": {
-      "sha256": "24f1fe6f518a618bccf19c0fa471715deb0023b03c406e24abf8afcb68cbb0b9",
+      "sha256": "0023c2b33282da43fefd6c2badb809e8a1757ae13455937bdb143b8c592da79d",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Comprehensive suite of 12 unit and integration tests for local log auto-import, external deletion eviction, quarantine deduplication, and process execution timeouts. Verified 12/12 passing.",
@@ -7342,7 +7342,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.DriverProfilePersistenceAuditTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "6d1eefa5bf42a6beb8da35fe2b904b2bac2a91c436f7809c13098160d58eca27"
+      "sha256": "b8c2bd3f79149daac2ec47d8a075573dab7de74eae7b17fd05449557699662ea"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/EnvironmentServiceCanonicalIdentityTest.kt": {
       "sha256": "568c88daf1e5426023e135a8b361b8b415b1cccaae3a57d79cedc1e80e1a4d85",
@@ -7410,7 +7410,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveDestinationTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "df2f7fd3c813a82e5c0e118667f88fd25c5d643891f63a0b75f0f2f6fdd407a7"
+      "sha256": "ef5e568f1e9279313c848cd901c6ab872527c18ed2848e14afe0fdfe68775a9d"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveServiceIntegrityTest.kt": {
       "review": "reviewed",
@@ -7420,7 +7420,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveServiceIntegrityTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "55032807758217a08136da9f07c2dc8125bf03c1772a4ace2d3720419a4ac404"
+      "sha256": "c56ccaeab0621a35ba092767b30b42195e6c0c760f10f275dcc259526eb3c4d8"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleOAuthClientConfigTest.kt": {
       "sha256": "55667aaeaa259948fd44f212a2356e00feffaf64bfc967d6a08302ad96d2862f",
@@ -7586,7 +7586,7 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4ClientServiceTest.kt": {
-      "sha256": "56604839a8c8b1ff509af122ad3cb63597328d86e2a96e9090e7e73429c5ef7f",
+      "sha256": "b1ebbfd83d812ceaef4ebf5996ee1af33a23a14f30a8e3beeab554c15dad89d7",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Comprehensive test of Nt4ClientService: packed binary decoding, loopback drive control, physical command gating, topic announce/unannounce, telemetry flow, receipt time usage, console routing, binary codec interop, atomic drive frame validation, exclusive recording session locking, graceful shutdown, target reset, and concurrent atomic divergence rate-limiting. Verified 29/29 passing.",
@@ -7596,7 +7596,7 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4DisposalAuditTest.kt": {
-      "sha256": "b84532df9ed83c15e9d094daf27b810df51d0275eeff8974a25d7470db4d342a",
+      "sha256": "abd420c2492d508f0da6dba21a5cfd44f117d70ca50f65bb68dbea44218d304b",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified 6 disposal lifecycle regression tests on mock database: normal, failed, canceled, and repeated terminal lifetime, retained retry data recovery, and worker cleanup joining. Verified 6/6 passing.",
@@ -7606,7 +7606,7 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4IntegrationDiagnosticTest.kt": {
-      "sha256": "d6bd9ee8ca1c57b450790642906576f534e21ae630506cb36da7ee9496b1b5d4",
+      "sha256": "c630b9c9cb6e83abbf664218e351aa37780ba02908dc968cc0cbef38af007e3d",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified end-to-end loopback NT4 pipeline diagnostic: ephemeral loopback server startup, multi-topic publication, client WebSocket handshake, active topic discovery, OpMode selection, and latest value verification. Verified passing.",
@@ -7642,7 +7642,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthLoopbackServerTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "768d97d0d8d98f0fbf053f7667e3327a87547d7a361b6fe27c92451b66901a61"
+      "sha256": "642b853853e3dcb1f8105bf46ed706e4d24fe165e47eaa504ea3c2c1103c742b"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthServiceTest.kt": {
       "sha256": "132de3e5bf476c2ab510e8a89589fe78314d78184f7a78f1a298240bb68d7891",
@@ -7865,7 +7865,7 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RunComparisonServiceTest.kt": {
-      "sha256": "0e8670e4aa8de258fffeb56def8f560dca859a14adc9640569b48dae4c529a04",
+      "sha256": "65babb62104c80af39d0f4f28b0b04797cd334a60c79a0407ae4bfaf8b5785ea",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified RunComparisonService: deterministic alignment on autonomous start / teleop start / annotations, oracle property validation against golden fixtures, metric summary calculations, findings classification, Markdown sanitization, strict same-timestamp derived metric joining, sampleOrder deduplication, and workspace boundary checks. Verified 6/6 passing.",
@@ -8027,7 +8027,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineDeleteAtomicityTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "21c187dacd7be8f12749131774b550f8dc0dfcea86bae1e7253f42521e1f85bc"
+      "sha256": "1e724f02d50f1fac8b1783b2c9243ef4690a8d77309f33e1fa05a3a1d5e5b02c"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SyncEngineManifestConvergenceTest.kt": {
       "review": "reviewed",
@@ -8037,7 +8037,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineManifestConvergenceTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "0bae73846b19d82e8fb6ecb1aa2376984e3af5e4f9cb584f1911d1f0836df2ea"
+      "sha256": "579213dae9ff41d81429abf21a7f143bd490200e471629bebdc8871bdfad3f50"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SyncEngineUploadAtomicityTest.kt": {
       "review": "reviewed",
@@ -8047,7 +8047,7 @@
         "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineUploadAtomicityTest.xml",
         "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "801906d484474a874499b163ac9f7a73e74ccb0bccc3c42fe6d91165950a7451"
+      "sha256": "83dcca6df493107d1e20606fbabd91bc5a5e6dc820cfe27523b8d0992da4d1ca"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SysIdAnalysisMathAuditTest.kt": {
       "sha256": "56c52b57531e8965b458d165a28abd0021ba4315b5f5d5f21b647c301d4608bb",
@@ -10548,7 +10548,7 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "7b0259cc07352ffd536f39bb1bb96158c982704c4f79432592d11a95f61554f4",
+      "sha256": "15b866e712c4abcf176bbca134473c686ca34b39281c5103134157de1e227339",
       "review": "pending",
       "validation": "pending",
       "scope": "Unverified campaign submission: Machine-readable file size ledger tracking 1,110 production files across all four subprojects with zero violations.",
@@ -30454,7 +30454,7 @@
       ]
     },
     "docs/audits/DEEP_AUDIT_GOAL.md": {
-      "sha256": "154c94fb3ba2780e87b706a3524a73953eb2d51a4aa77e79d9ad1e8f0c5717dc",
+      "sha256": "61605d62df8f1a5c591e9abd75365f03093c1a3a26f22969b78bd9d65e8d2074",
       "review": "pending",
       "validation": "pending",
       "scope": "Unverified campaign submission: Saved goal specification for deep, evidence-backed audit across 2,964 tracked files, subagent ownership, and exit criteria.",
@@ -30478,7 +30478,7 @@
         "docs/audits/DEEP_AUDIT_REPORT.md",
         "docs/audits/DEEP_AUDIT_REPORT.md"
       ],
-      "sha256": "5dc8dcc395b5910842c47d66ca8ef8d78bb8bb05668157e0cb4ae0bc18e8dfd7",
+      "sha256": "c3d9ac25cad167e077bacd6a26d35fd02fe922a02d8891a6fda5a94cf9493cf3",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -30728,7 +30728,7 @@
         "docs/audits/DEEP_AUDIT_GOAL.md",
         "docs/audits/DEEP_AUDIT_REPORT.md"
       ],
-      "sha256": "d1da053c65dc01658175a1293306a6eb2f6dd1fd6d446d35a9638b35e983b40b",
+      "sha256": "4325e4c9b7bad149bff422d14d4a1e1894419ef6c16b34cd881a4baf44ade28c",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -30785,7 +30785,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "bbf96359cb16d0b0e816d0cd97a1f6da1e86eb25edb12cc923146c456e4f9b34",
+      "sha256": "b5dc30ceae59294a8767c364f8607815660d26bc3e14507d53d7b4f773875175",
       "review": "pending",
       "validation": "pending",
       "scope": "Unverified campaign submission: Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -31226,7 +31226,7 @@
       }
     },
     "release/ares-versions.properties": {
-      "sha256": "92a472f9cba67d2293761d20d760aef5229b8375da13186c0b71046c08e746d0",
+      "sha256": "b744d79f580bd21ffbb04824c9ab647986764d3f9ca8966b376b62b9fa65eaa7",
       "review": "pending",
       "validation": "pending",
       "scope": "Unverified campaign submission: Canonical version manifest for ARES monorepo components (ARESLib 19.1.1, Studio 7.0.60, FTC/FRC 19.1.2).",
