@@ -14,8 +14,8 @@ env:
   STUDIO_VERSION: 7.0.60
   FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.60/ARES-FTC-Starter-19.1.2.zip
   FTC_STARTER_SHA256: 7cf15b8d38dbda1c213dc4e6cad6ae2a6aea2ce9af8a3e75766ebc6b56ca2b5b
-  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.60/ARES-FRC-Starter-19.1.1.zip
-  FRC_STARTER_SHA256: 346e30551729488ffe2a87daf8445000c69cb8b34f3ef63f6ce45b38f187a330
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.60/ARES-FRC-Starter-19.1.2.zip
+  FRC_STARTER_SHA256: 917d8e89cf92a92594c48ef4e41201147d1a732c6ea56271cd5f5d843b4b00e4
   XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.60/ARES-XRP-Starter-3.0.61.zip
   XRP_STARTER_SHA256: f65777aee7a5b784adaa9e4a692e2b62102a3a19c05341ae283b0bd000bbc17a
   LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.60/ARES-Lightbot-Example-3.0.63.zip

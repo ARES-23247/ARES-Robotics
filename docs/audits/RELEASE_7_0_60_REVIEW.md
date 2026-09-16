@@ -30,6 +30,11 @@ The earlier broad audit goal remains paused.
   drivetrain builder. The canonical drivetrain and tuning profile now share BioBuzz ownership.
   A bundled-archive test opens the actual document through `DrivebaseBuilderViewModel` and checks
   project ownership and tuning consistency. Runtime-only generated-code tests did not detect this.
+- Fixed a pre-existing FRC starter simulation allocation path exposed by the generated-project CI
+  run. Three nullable `Double.takeIf` expressions boxed values until JVM escape analysis eliminated
+  them. Primitive finite checks retain the same invalid-input behavior without those allocations.
+  The unchanged 1,024-byte allocation budget passes with escape analysis disabled: 3,600,000 bytes
+  before the fix versus zero afterward across 50,000 frames. FRC Starter is versioned 19.1.2.
 
 ## Local evidence
 

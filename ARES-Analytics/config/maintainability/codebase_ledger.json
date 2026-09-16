@@ -5952,7 +5952,7 @@
     {
       "path": "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterDriveSimulation.kt",
       "product": "ARES-FRC-Starter",
-      "lines": 170,
+      "lines": 171,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
