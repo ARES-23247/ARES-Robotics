@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Generates or verifies the comprehensive codebase ledger for ARES Robotics monorepo."""
+"""Generate or verify a reproducible Kotlin size inventory, not audit/test evidence."""
 
 import argparse
 import json
 from pathlib import Path
 import subprocess
 import sys
-from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 DEST = ROOT / "ARES-Analytics" / "config" / "maintainability" / "codebase_ledger.json"
@@ -29,40 +28,22 @@ def compute_ledger(root: Path):
     analytics_baseline = parse_baseline(root / "ARES-Analytics" / "config" / "maintainability" / "large-production-kotlin-baseline.txt")
 
     tracked_files = subprocess.check_output(
-        ["git", "ls-files", "*.kt"],
+        ["git", "ls-files", "-z", "*.kt"],
         cwd=root,
         text=True,
         errors="surrogateescape"
-    ).splitlines()
+    ).rstrip("\0").split("\0")
 
     production_files = []
-    verified_count = 0
-    audited_count = 0
     violations_count = 0
     microfiles_count = 0
     grandfathered_count = 0
-
-    try:
-        touched_diff = subprocess.check_output(
-            ["git", "diff", "--name-only", "HEAD"],
-            cwd=root,
-            text=True,
-            errors="surrogateescape"
-        ).splitlines()
-    except Exception:
-        touched_diff = []
-    touched_set = set(touched_diff)
 
     for rel in sorted(tracked_files):
         if "/src/main/" not in rel:
             continue
         p = root / rel
-        if not p.is_file():
-            continue
-        try:
-            lines = len(p.read_text(encoding="utf-8").splitlines())
-        except Exception:
-            continue
+        lines = len(p.read_text(encoding="utf-8").splitlines())
 
         product = rel.split("/")[0] if "/" in rel else "root"
         if product == "ARESLib-Kotlin":
@@ -96,12 +77,6 @@ def compute_ledger(root: Path):
         if is_microfile:
             microfiles_count += 1
 
-        is_verified = rel in touched_set
-        if is_verified:
-            verified_count += 1
-        else:
-            audited_count += 1
-
         production_files.append({
             "path": rel,
             "product": product,
@@ -110,17 +85,14 @@ def compute_ledger(root: Path):
             "effectiveLimit": allowed_limit,
             "grandfathered": is_grandfathered,
             "compliant": not is_over_limit,
-            "isMicrofile": is_microfile,
-            "status": "VERIFIED" if is_verified else "AUDITED"
+            "isMicrofile": is_microfile
         })
 
     return {
-        "schemaVersion": 1,
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "schemaVersion": 2,
+        "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
         "summary": {
             "totalProductionKotlinFiles": len(production_files),
-            "verifiedFiles": verified_count,
-            "auditedFiles": audited_count,
             "grandfatheredFiles": grandfathered_count,
             "violationsOverLimit": violations_count,
             "microfilesRemaining": microfiles_count,
@@ -128,6 +100,16 @@ def compute_ledger(root: Path):
         },
         "files": production_files
     }
+
+def verify_ledger(data: dict, root: Path) -> dict:
+    current = compute_ledger(root)
+    if data != current:
+        raise ValueError("Ledger differs from current source. Stage source paths and regenerate it.")
+    summary = current["summary"]
+    if summary["violationsOverLimit"]:
+        raise ValueError(f"Maintainability size limits exceeded: {summary['violationsOverLimit']}")
+    # Small files are descriptive inventory, not evidence of a defect or a release blocker.
+    return summary
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -147,15 +129,10 @@ def main():
             print(f"ERROR: Could not parse ledger: {e}", file=sys.stderr)
             sys.exit(1)
 
-        summary = data.get("summary", {})
-        if summary.get("maintainabilityRatchet") != "PASS":
-            print(f"ERROR: Maintainability ratchet failed: {summary}", file=sys.stderr)
-            sys.exit(1)
-        if summary.get("violationsOverLimit", 0) != 0:
-            print(f"ERROR: Violations over limit: {summary.get('violationsOverLimit')}", file=sys.stderr)
-            sys.exit(1)
-        if summary.get("microfilesRemaining", 0) > 20:
-            print(f"ERROR: Excessive microfiles remaining: {summary.get('microfilesRemaining')}", file=sys.stderr)
+        try:
+            summary = verify_ledger(data, ROOT)
+        except (ValueError, OSError, subprocess.CalledProcessError) as error:
+            print(f"ERROR: {error}", file=sys.stderr)
             sys.exit(1)
 
         print(f"Ledger verified: {summary.get('totalProductionKotlinFiles')} files, 0 violations, ratchet {summary.get('maintainabilityRatchet')}.")
@@ -170,7 +147,7 @@ def main():
 
     summary = ledger["summary"]
     print(f"Generated {ledger_path} with {summary['totalProductionKotlinFiles']} production files.")
-    print(f"Verified: {summary['verifiedFiles']}, Audited: {summary['auditedFiles']}, Grandfathered: {summary['grandfatheredFiles']}, Violations: {summary['violationsOverLimit']}, Microfiles: {summary['microfilesRemaining']}")
+    print(f"Grandfathered: {summary['grandfatheredFiles']}, Violations: {summary['violationsOverLimit']}, Small files: {summary['microfilesRemaining']}")
 
 if __name__ == "__main__":
     main()

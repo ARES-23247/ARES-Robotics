@@ -79,6 +79,7 @@ class OAuthService(
     private val tokenStore: OAuthTokenStore = createOAuthTokenStore(authFilePath, secretsWriter)
 
     private val loopbackServer = OAuthLoopbackServer(
+        lock = authLifecycleLock,
         serviceScope = serviceScope,
         consumePendingRequest = ::consumePendingRequest,
         launchPendingCodeExchange = { pending, code, params ->
@@ -514,6 +515,7 @@ class OAuthService(
         nextState: (AuthState) -> AuthState
     ): AuthAttempt? {
         var jobsToCancel: List<Job> = emptyList()
+        var stopPreviousServer: (() -> Unit)? = null
         val attempt = synchronized(authLifecycleLock) {
             if (disposed) return@synchronized null
             val current = _authState.value
@@ -523,12 +525,13 @@ class OAuthService(
             pendingOAuthRequest.set(null)
             jobsToCancel = authWorkJobs.toList()
             authWorkJobs.clear()
+            stopPreviousServer = loopbackServer.detach()
             _authState.value = nextState(current)
             AuthAttempt(generation, current)
         }
         if (attempt != null) {
             jobsToCancel.forEach { it.cancel() }
-            loopbackServer.stop()
+            stopPreviousServer?.invoke()
         }
         return attempt
     }
@@ -636,18 +639,20 @@ class OAuthService(
         markDisposed: Boolean
     ) {
         var jobsToCancel: List<Job> = emptyList()
+        var stopPreviousServer: (() -> Unit)? = null
         synchronized(authLifecycleLock) {
             authGeneration.incrementAndGet()
             if (markDisposed) disposed = true
             pendingOAuthRequest.set(null)
             jobsToCancel = authWorkJobs.toList()
             authWorkJobs.clear()
+            stopPreviousServer = loopbackServer.detach()
             _authState.value = nextState
             _drivePickerState.value = DrivePickerState.Idle
             if (deletePersistedAuth) tokenStore.delete()
         }
         jobsToCancel.forEach { it.cancel() }
-        loopbackServer.stop()
+        stopPreviousServer?.invoke()
     }
 
     private fun bootCallbackServer(port: Int, generation: Long) {

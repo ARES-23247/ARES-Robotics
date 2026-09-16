@@ -13,7 +13,6 @@ internal data class TelemetryChartBounds(
     val max: Double,
 )
 
-@Immutable
 internal data class TelemetryChartSeries(
     val key: String,
     val points: List<TelemetryPoint>,
@@ -21,7 +20,6 @@ internal data class TelemetryChartSeries(
     val displayUnit: RobotUnit?,
 )
 
-@Immutable
 internal data class TelemetryChartGroup(
     val category: UnitCategory?,
     val series: List<TelemetryChartSeries>,
@@ -29,7 +27,6 @@ internal data class TelemetryChartGroup(
     val unitSymbol: String,
 )
 
-@Immutable
 internal data class TelemetryChartSnapshot(
     val groups: List<TelemetryChartGroup>,
 )

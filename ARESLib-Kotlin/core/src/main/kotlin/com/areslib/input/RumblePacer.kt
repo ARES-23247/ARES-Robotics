@@ -14,6 +14,10 @@ class RumblePacer(
     val activeDurationMs: Long = DEFAULT_ACTIVE_DURATION_MS,
     val cooldownDurationMs: Long = DEFAULT_COOLDOWN_DURATION_MS,
 ) {
+    init {
+        require(activeDurationMs > 0) { "Rumble duration must be positive" }
+        require(cooldownDurationMs >= 0) { "Rumble cooldown must be nonnegative" }
+    }
     var isRumbleActive: Boolean = false
         private set
 
@@ -53,8 +57,11 @@ class RumblePacer(
             lastDeactivationTimestampMs = nowMs
         }
 
-        if (triggerRisingEdge && !isRumbleActive && (!isCoolingDown ||
-                elapsedAtLeast(nowMs, lastDeactivationTimestampMs, cooldownDurationMs))) {
+        if (isCoolingDown && elapsedAtLeast(nowMs, lastDeactivationTimestampMs, cooldownDurationMs)) {
+            isCoolingDown = false
+        }
+
+        if (triggerRisingEdge && alertConditionActive && !isRumbleActive && !isCoolingDown) {
             isRumbleActive = true
             rumbleStartTimestampMs = nowMs
         }

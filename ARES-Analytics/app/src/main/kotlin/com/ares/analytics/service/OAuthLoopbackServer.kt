@@ -18,13 +18,13 @@ internal data class PendingOAuthRequest(
 )
 
 internal class OAuthLoopbackServer(
+    private val lock: Any,
     private val serviceScope: CoroutineScope,
     private val consumePendingRequest: (String?) -> PendingOAuthRequest?,
     private val launchPendingCodeExchange: (PendingOAuthRequest, String, Parameters) -> Unit,
 ) {
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
     private var serverGeneration: Long? = null
-    private val lock = Any()
 
     fun boot(port: Int, generation: Long, isGenerationCurrent: (Long) -> Boolean) {
         stop(generation)
@@ -68,6 +68,11 @@ internal class OAuthLoopbackServer(
     }
 
     fun stop(expectedGeneration: Long? = null) {
+        detach(expectedGeneration)?.invoke()
+    }
+
+    /** Detach under the shared auth lifecycle lock; shutdown outside it cannot close a successor. */
+    fun detach(expectedGeneration: Long? = null): (() -> Unit)? {
         val serverToStop = synchronized(lock) {
             if (expectedGeneration != null && serverGeneration != expectedGeneration) {
                 null
@@ -78,7 +83,7 @@ internal class OAuthLoopbackServer(
                 }
             }
         }
-        stopEmbeddedServer(serverToStop)
+        return serverToStop?.let { captured -> { stopEmbeddedServer(captured) } }
     }
 
     private fun stopEmbeddedServer(

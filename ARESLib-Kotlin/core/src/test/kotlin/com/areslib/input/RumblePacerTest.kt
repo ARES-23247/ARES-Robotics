@@ -37,6 +37,28 @@ class RumblePacerTest {
         // After 2000ms cooldown expires, new trigger is accepted
         assertEquals(1.0, pacer.update(nowMs = 13_001L, triggerRisingEdge = true, alertConditionActive = true))
         assertTrue(pacer.isRumbleActive)
+        assertFalse(pacer.isCoolingDown)
+    }
+
+    @Test
+    fun `expired cooldown clears without another alert and stale triggers cannot rumble`() {
+        val pacer = RumblePacer(100, 200)
+        assertEquals(0.0, pacer.update(1_000, true, false))
+        assertFalse(pacer.isRumbleActive)
+        assertEquals(1.0, pacer.update(1_000, true, true))
+        assertEquals(0.0, pacer.update(1_100, false, true))
+        assertTrue(pacer.isCoolingDown)
+        assertEquals(0.0, pacer.update(1_300, false, false))
+        assertFalse(pacer.isCoolingDown)
+        assertEquals(0.0, pacer.update(1_301, true, false))
+        assertEquals(1.0, pacer.update(1_302, true, true))
+    }
+
+    @Test
+    fun `invalid durations are rejected before polling`() {
+        assertThrows(IllegalArgumentException::class.java) { RumblePacer(0, 100) }
+        assertThrows(IllegalArgumentException::class.java) { RumblePacer(-1, 100) }
+        assertThrows(IllegalArgumentException::class.java) { RumblePacer(100, -1) }
     }
 
     @Test
