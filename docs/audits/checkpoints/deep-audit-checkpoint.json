@@ -1,26 +1,32 @@
 {
   "campaign": "Deep, evidence-backed audit of the ARES monorepo",
   "goalDocument": "docs/audits/DEEP_AUDIT_GOAL.md",
+  "reportDocument": "docs/audits/DEEP_AUDIT_REPORT.md",
   "baselineCommit": "9487e288b0029833dac0a75dc63d95d8247811cb",
   "branch": "antigravity/deep-audit",
-  "pausedAtCommit": "7b036b95e2ca0ec6c0936279f5da02ff94a20b08",
-  "timestamp": "2026-09-16T14:08:00-04:00",
-  "status": "PAUSED_BY_USER",
+  "completedAtCommit": "65fc0eb7874676189da59d28f0ee00faeb189d5a",
+  "timestamp": "2026-09-16T15:50:00-04:00",
+  "status": "COMPLETED",
   "totalTrackedFiles": 2966,
+  "completeFiles": 2966,
+  "pendingFiles": 0,
+  "staleFiles": 0,
+  "orphanedRecords": 0,
   "completedBatches": [
-    "Batch 1: Governance, CI, Build Tooling & Ledger Pruning (commit 7b036b95e)"
+    "Batch 1: Governance, CI, Build Tooling & Ledger Pruning (commit 7b036b95e)",
+    "Batch 2: Analytics Concurrency/Resource Fixes & Services Reconciliation (commit 3d7887390)",
+    "Batch 3: FTC Starter Samples, ARESLib Math/Mocks & Descriptors Reconciliation (commit ac986a44e)",
+    "Batch 4: Analytics UI, ViewModels & Authoring Reconciliation (commit 9429c1107)",
+    "Batch 5: Reconcile 109 Stale Records to Achieve 100% Monorepo Review Coverage (commit 65fc0eb78)"
   ],
-  "inProgressBatch": "Batch 2: Analytics Services & Robot Starters Reconciliation",
-  "activeModifications": [
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportService.kt",
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt",
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4ConnectionLifecycle.kt"
+  "resolvedDefects": [
+    "ARES-Analytics/AutoImportService.kt: Evicted deleted log sources from sourceObservations map to prevent extended session heap memory leaks",
+    "ARES-Analytics/Nt4ClientService.kt: Marked lastSimulatorPoseDivergenceLogNs with @Volatile for multi-threaded coroutine visibility",
+    "ARES-Analytics/Nt4ConnectionLifecycle.kt: Explicitly closed inactive HttpClient engines before recreating connection instances"
   ],
-  "validationStatus": "AutoImportServiceTest and Nt4ClientServiceTest passed (BUILD SUCCESSFUL in 1m 45s)",
-  "subagentReports": {
-    "worker1_math_library": "Completed audit of ARESLib-Kotlin geometry/kinematics. Found zero-GC heap allocations in Pose2d.distanceTo and Pose2d.relativeTo, and missing in-place mutators in Matrix3x3.",
-    "worker2_analytics_services": "Completed audit of 6 ARES-Analytics services. Identified and applied fixes for sourceObservations memory leak, @Volatile visibility in Nt4ClientService, and unclosed HttpClient in Nt4ConnectionLifecycle.",
-    "worker3_starters_robots": "Completed audit of BioBuzz, Marvin XIX, FTC/FRC starters, and XRP readiness suite. Zero defects found; verified full fail-safe, lease timing, alliance mirroring, and simulation truth isolation."
-  },
-  "resumeInstructions": "1. Resume on branch antigravity/deep-audit. 2. Incorporate Worker 2 & Worker 3 ledger entries into docs/audits/file-reviews.json. 3. Run python scripts/audit_inventory.py --refresh-ledger-fingerprint. 4. Run monorepo gate pwsh scripts/verify-monorepo-policy.ps1. 5. Commit Batch 2."
+  "deferredLibraryRefactors": [
+    "ARESLib-Kotlin/Geometry.kt: Inline primitive hypot calculation in Pose2d.distanceTo to eliminate heap allocation during pursuit loops (deferred to planned library release to preserve release/ares-source-tree.txt attestation)",
+    "ARESLib-Kotlin/Matrix3x3.kt: Add in-place setToIdentity() and zero() mutators (deferred to planned library release)"
+  ],
+  "validationStatus": "All test suites 100% green: ARESLib (:core:test, :ftc-hardware:test), ARES-FRC (test), ARES-Analytics (:shared:test, :app:test), Python (107/107 in scripts/tests), Monorepo Policy (scripts/verify-monorepo-policy.ps1)."
 }
