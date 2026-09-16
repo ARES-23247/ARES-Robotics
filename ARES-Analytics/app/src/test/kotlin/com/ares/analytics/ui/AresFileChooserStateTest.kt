@@ -5,17 +5,22 @@ import com.ares.analytics.ui.components.core.AresFileChooserState
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import java.io.File
+import kotlin.coroutines.CoroutineContext
 import kotlin.io.path.createTempDirectory
 import kotlin.test.*
 
 class AresFileChooserStateTest {
-    private fun withState(mode: AresFileChooserMode, block: suspend (File, AresFileChooserState, MutableList<List<File>>) -> Unit) = runBlocking { withContext(Dispatchers.Main) {
+    private fun withState(mode: AresFileChooserMode, ioDispatcher: CoroutineDispatcher = Dispatchers.IO, block: suspend (File, AresFileChooserState, MutableList<List<File>>) -> Unit) = runBlocking { withContext(Dispatchers.Main) {
         val root = createTempDirectory("ares-chooser-state").toFile().canonicalFile
         val results = mutableListOf<List<File>>()
         try {
             val state = AresFileChooserState(mode, "Test", root, null, null, listOf("json"), null,
-                { results.add(it) }, {})
+                { results.add(it) }, {}, ioDispatcher = ioDispatcher)
             try {
                 state.awaitIdle()
                 block(root, state, results)
@@ -136,5 +141,32 @@ class AresFileChooserStateTest {
         state.awaitIdle()
         assertEquals(File(root, "new-folder"), state.currentDirectory)
         assertTrue(state.currentDirectory.isDirectory)
+    }
+
+    @Test fun inlineFolderCreationKeepsFollowupNavigationTracked() {
+        val pending = ArrayDeque<Runnable>()
+        val io = object : CoroutineDispatcher() {
+            private var requests = 0
+            // Initial listing and creation complete inline; the follow-up listing is held.
+            override fun isDispatchNeeded(context: CoroutineContext) = ++requests >= 3
+            override fun dispatch(context: CoroutineContext, block: Runnable) { pending.addLast(block) }
+        }
+        withState(AresFileChooserMode.DIRECTORY, io) { root, state, _ ->
+            state.newFolderName = "new-folder"
+            state.createFolder()
+            assertEquals(1, pending.size)
+            assertTrue(File(root, "new-folder").isDirectory)
+            assertTrue(state.loading)
+            coroutineScope {
+                val idle = async(start = CoroutineStart.UNDISPATCHED) { state.awaitIdle() }
+                try {
+                    assertFalse(idle.isCompleted, "Folder creation must retain its pending navigation job")
+                    pending.removeFirst().run()
+                    idle.await()
+                    assertEquals(File(root, "new-folder"), state.currentDirectory)
+                    assertFalse(state.loading)
+                } finally { idle.cancel() }
+            }
+        }
     }
 }

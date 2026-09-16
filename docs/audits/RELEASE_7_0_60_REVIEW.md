@@ -35,6 +35,10 @@ The earlier broad audit goal remains paused.
   them. Primitive finite checks retain the same invalid-input behavior without those allocations.
   The unchanged 1,024-byte allocation budget passes with escape analysis disabled: 3,600,000 bytes
   before the fix versus zero afterward across 50,000 frames. FRC Starter is versioned 19.1.2.
+- Fixed a pre-existing file chooser job-tracking race exposed by the separate Studio consumer CI
+  run. Immediate folder creation could overwrite the pending navigation job with its completed
+  predecessor. Operations now record ownership before starting. A controlled dispatcher reproduces
+  the old failure deterministically and verifies that waiting for idle includes follow-up navigation.
 
 ## Local evidence
 
@@ -55,6 +59,9 @@ One library candidate, `19.1.1-rc.c85fa2951f3c`, binds library tree
   The drivetrain screen exposed the identity mismatch described above. After the fix, the actual
   BioBuzz 1.1.3 archive opened its drivetrain editor without the ownership error. The additional
   archive/authoring regression and regenerated BioBuzz robot/simulator/APK checks also passed.
+- After the chooser ownership fix, all chooser state/async/render tests passed, along with the
+  opt-in native Windows test. Both dialogs rendered; real approval and cancellation each closed
+  the owned window and completed its result. Captures are retained in the app's diagnostics output.
 
 Desktop dashboard smoke baseline: all 12,000 expected samples persisted, zero drops; approximately
 353,539 frames/s ingestion, 11.99 ms query p95, 26.07 ms replay-scrub p95, and 1.27 MiB heap growth.

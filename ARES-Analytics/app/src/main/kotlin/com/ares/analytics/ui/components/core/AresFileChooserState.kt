@@ -64,7 +64,7 @@ internal class AresFileChooserState(
         loading = true
         listingError = null
         selectedFiles = emptySet()
-        operation = scope.launch {
+        launchOperation {
             try {
                 val result = withContext(ioDispatcher) {
                     val target = dir.canonicalFile
@@ -75,7 +75,7 @@ internal class AresFileChooserState(
                         .map { File(userHome, it) }.filter { it.isDirectory }.toSet()
                     Triple(directory, read, shortcuts to File.listRoots().orEmpty().toList())
                 }
-                if (request != requestId) return@launch
+                if (request != requestId) return@launchOperation
                 currentDirectory = result.first
                 pathEditText = result.first.absolutePath
                 entries = result.second
@@ -159,6 +159,13 @@ internal class AresFileChooserState(
     }
     fun close() { ++requestId; scope.cancel() }
 
+    private fun launchOperation(work: suspend CoroutineScope.() -> Unit) {
+        // Store ownership before immediate execution can start a follow-up operation.
+        val next = scope.launch(start = CoroutineStart.LAZY, block = work)
+        operation = next
+        next.start()
+    }
+
     val effectiveApproveText = approveButtonText ?: when (mode) {
         AresFileChooserMode.DIRECTORY -> "Select Folder"
         AresFileChooserMode.SAVE_FILE -> "Save"
@@ -175,7 +182,7 @@ internal class AresFileChooserState(
         if (loading || busy) return
         busy = true
         errorText = null
-        operation = scope.launch {
+        launchOperation {
             try {
                 val result = withContext(ioDispatcher) { work() }
                 busy = false

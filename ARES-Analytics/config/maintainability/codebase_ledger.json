@@ -2572,7 +2572,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserState.kt",
       "product": "ARES-Analytics",
-      "lines": 230,
+      "lines": 237,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
