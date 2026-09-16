@@ -24,3 +24,25 @@ object RobotLog {
     @JvmStatic fun dd(tag: String, message: String) { println("D/RobotLog-$tag: $message") }
     @JvmStatic fun vv(tag: String, message: String) { println("V/RobotLog-$tag: $message") }
 }
+
+/**
+ * Class implementation for Serial Number.
+ *
+ * Robotics framework control component.
+ */
+open class SerialNumber(val serialNumber: String = "") {
+    val isEmbeddedSerialNumber: Boolean = false
+    override fun toString(): String = serialNumber
+
+    companion object {
+        @JvmStatic
+        fun fromString(serialNumber: String): SerialNumber = SerialNumber(serialNumber)
+    }
+}
+
+/**
+ * Class implementation for Web Handler Manager.
+ *
+ * Robotics framework control component.
+ */
+open class WebHandlerManager

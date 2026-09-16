@@ -1,6 +1,10 @@
 package org.aresfirst.marvin.marvin
 
 import com.areslib.Store
+import com.areslib.subsystem.SubsystemControllerBase
+
+/** Shared Redux dispatch-on-change support for Marvin mechanism facades. */
+abstract class MarvinControllerBase(store: Store) : SubsystemControllerBase(store)
 
 /** Coordinates the feeder transfer latch and optional floor-roller assist. */
 class MarvinFeederController(store: Store) : MarvinControllerBase(store) {
@@ -65,5 +69,53 @@ class MarvinFeederController(store: Store) : MarvinControllerBase(store) {
 
     internal companion object {
         const val TRANSFER_DURATION_MS = 450L
+    }
+}
+
+/** Redux facade for the cowl's mechanism-rotation target and software travel clamp. */
+class MarvinCowlController(store: Store) : MarvinControllerBase(store) {
+
+    /** Commands mechanism rotations, clamped to the same limit configured in TalonFX IO. */
+    fun setCowlAngleRotations(rotations: Double) {
+        require(rotations.isFinite()) { "Cowl target rotations must be finite" }
+        val clampedRotations = rotations.coerceIn(0.0, MarvinConfig.cowlMaxRotations)
+        dispatchOnChange(store.state.superstructure.marvin.cowl.targetAngleRotations, clampedRotations, ::SetCowlAngle) {}
+    }
+
+    /** True only when this loop's cowl sample is valid and within the firing tolerance. */
+    fun isAngleAligned(targetRotations: Double): Boolean {
+        val cowl = store.state.superstructure.marvin.cowl
+        return targetRotations.isFinite() &&
+            cowl.angleValid &&
+            cowl.angleRotations.isFinite() &&
+            kotlin.math.abs(cowl.angleRotations - targetRotations) <= COWL_READY_TOLERANCE_ROTATIONS
+    }
+
+    private companion object {
+        const val COWL_READY_TOLERANCE_ROTATIONS = 0.05
+    }
+}
+
+/** Redux facade for RPM commands and the fail-closed flywheel readiness gate. */
+class MarvinFlywheelController(store: Store) : MarvinControllerBase(store) {
+
+    /** Enables flywheel output and records [targetRpm] in RPM. */
+    fun spinUp(targetRpm: Double) {
+        require(targetRpm.isFinite() && targetRpm >= 0.0) { "Flywheel target RPM must be finite and nonnegative" }
+        dispatchOnChange(store.state.superstructure.marvin.flywheel.targetVelocityRpm, targetRpm, ::SetFlywheelSpeed) {}
+        dispatchOnChange(store.state.superstructure.marvin.flywheelActive, true, ::SetFlywheelActive) {}
+    }
+
+    /** Clears both the velocity target and active-output latch. */
+    fun stop() {
+        dispatchOnChange(store.state.superstructure.marvin.flywheel.targetVelocityRpm, 0.0, ::SetFlywheelSpeed) {}
+        dispatchOnChange(store.state.superstructure.marvin.flywheelActive, false, ::SetFlywheelActive) {}
+    }
+
+    /** True only for a fresh sample within 150 RPM of a nontrivial target. */
+    fun isRpmAligned(targetRpm: Double): Boolean {
+        val flywheel = store.state.superstructure.marvin.flywheel
+        return flywheel.velocityValid && flywheel.allMotorsAtTarget && targetRpm > 100.0 &&
+            kotlin.math.abs(flywheel.velocityRpm - targetRpm) < 150.0
     }
 }

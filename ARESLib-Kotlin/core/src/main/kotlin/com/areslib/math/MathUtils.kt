@@ -38,3 +38,40 @@ fun wrapAngle(angleRad: Double): Double {
     }
 }
 
+/** Wraps this angle in radians to $[-\pi, \pi)$. */
+fun Double.wrapToPi(): Double = wrapAngle(this)
+
+/** Wraps this angle in radians to $[0, 2\pi)$. Returns 0.0 on non-finite input. */
+fun Double.wrapTo2Pi(): Double {
+    if (!isFinite()) return 0.0
+    val wrapped = this % TWO_PI
+    return if (wrapped < 0.0) wrapped + TWO_PI else wrapped
+}
+
+/** Converts this value from radians to degrees. */
+fun Double.toDegrees(): Double = Math.toDegrees(this)
+
+/** Converts this value from degrees to radians. */
+fun Double.toRadians(): Double = Math.toRadians(this)
+
+/** Converts angular velocity in radians per second to rotations per minute. */
+fun Double.radPerSecToRpm(): Double = if (!isFinite()) 0.0 else (this / TWO_PI) * 60.0
+
+/** Converts rotational speed in rotations per minute to radians per second. */
+fun Double.rpmToRadPerSec(): Double = if (!isFinite()) 0.0 else (this / 60.0) * TWO_PI
+
+/**
+ * Low part of a rounded product using Dekker splitting. Callers scale operands first so
+ * multiplying by 2^27+1 and forming partial products cannot overflow. This is not a general
+ * replacement for fused multiply-add on arbitrary inputs. No arrays or boxed pairs are created.
+ */
+internal fun productRoundoff(a: Double, b: Double, product: Double): Double {
+    val splitA = 134_217_729.0 * a
+    val highA = splitA - (splitA - a)
+    val lowA = a - highA
+    val splitB = 134_217_729.0 * b
+    val highB = splitB - (splitB - b)
+    val lowB = b - highB
+    return ((highA * highB - product) + highA * lowB + lowA * highB) + lowA * lowB
+}
+

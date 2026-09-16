@@ -33,6 +33,7 @@ import com.ares.analytics.ui.util.AresFormatters
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
 
@@ -66,7 +67,9 @@ fun ConsoleViewer(
         sessionLogs.clear()
         if (primarySessionId != null) {
             try {
-                val dbLogs = databaseService.getConsoleMessages(primarySessionId)
+                val dbLogs = withContext(Dispatchers.IO) {
+                    databaseService.getConsoleMessages(primarySessionId)
+                }
                 sessionLogs.addAll(dbLogs)
             } catch (e: Exception) {
                 e.printStackTrace()

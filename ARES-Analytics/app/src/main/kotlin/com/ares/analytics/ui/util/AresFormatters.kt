@@ -58,4 +58,24 @@ internal object AresFormatters {
 
     fun formatCompactTimestampHyphen(epochMillis: Long): String =
         compactTimestampHyphen.format(Instant.ofEpochMilli(epochMillis))
+
+    fun formatBytes(bytes: Long): String {
+        if (bytes <= 0L) return "0 B"
+        if (bytes < 1024L) return "$bytes B"
+        val kb = bytes / 1024.0
+        if (kb < 1024.0) return String.format(Locale.US, "%.1f KB", kb)
+        val mb = kb / 1024.0
+        if (mb < 1024.0) return String.format(Locale.US, "%.1f MB", mb)
+        val gb = mb / 1024.0
+        return String.format(Locale.US, "%.1f GB", gb)
+    }
+
+    fun formatRate(bytesPerSec: Double): String {
+        if (!bytesPerSec.isFinite() || bytesPerSec <= 0.0) return "0 B/s"
+        if (bytesPerSec < 1024.0) return String.format(Locale.US, "%.0f B/s", bytesPerSec)
+        val kb = bytesPerSec / 1024.0
+        if (kb < 1024.0) return String.format(Locale.US, "%.1f KB/s", kb)
+        val mb = kb / 1024.0
+        return String.format(Locale.US, "%.1f MB/s", mb)
+    }
 }

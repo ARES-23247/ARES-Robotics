@@ -2416,7 +2416,13 @@ public final class com/areslib/math/InterpolatingTable {
 }
 
 public final class com/areslib/math/MathUtilsKt {
+	public static final fun radPerSecToRpm (D)D
+	public static final fun rpmToRadPerSec (D)D
+	public static final fun toDegrees (D)D
+	public static final fun toRadians (D)D
 	public static final fun wrapAngle (D)D
+	public static final fun wrapTo2Pi (D)D
+	public static final fun wrapToPi (D)D
 }
 
 public final class com/areslib/math/coordinate/AllianceMirroring {
@@ -3150,6 +3156,7 @@ public final class com/areslib/math/geometry/Pose2d {
 	public final fun component3-34MxtGU ()D
 	public final fun copy-P0pL4v8 (DDD)Lcom/areslib/math/geometry/Pose2d;
 	public static synthetic fun copy-P0pL4v8$default (Lcom/areslib/math/geometry/Pose2d;DDDILjava/lang/Object;)Lcom/areslib/math/geometry/Pose2d;
+	public final fun distanceTo (Lcom/areslib/math/geometry/Pose2d;)D
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getHeading-34MxtGU ()D
 	public final fun getTranslation ()Lcom/areslib/math/geometry/Translation2d;
@@ -3157,6 +3164,7 @@ public final class com/areslib/math/geometry/Pose2d {
 	public final fun getY ()D
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+	public final fun transformBy-k23O6gw (Lcom/areslib/math/geometry/Translation2d;D)Lcom/areslib/math/geometry/Pose2d;
 }
 
 public final class com/areslib/math/geometry/Pose3d {
@@ -3215,18 +3223,25 @@ public final class com/areslib/math/geometry/Rotation2d {
 	public static fun equals-impl (DLjava/lang/Object;)Z
 	public static final fun equals-impl0 (DD)Z
 	public static final fun getCos-impl (D)D
+	public static final fun getDegrees-impl (D)D
 	public static final fun getRadians-impl (D)D
 	public final fun getRawRadians ()D
 	public static final fun getSin-impl (D)D
 	public fun hashCode ()I
 	public static fun hashCode-impl (D)I
+	public static final fun minus-eZevST4 (DD)D
+	public static final fun plus-eZevST4 (DD)D
+	public static final fun rotateBy-eZevST4 (DD)D
+	public static final fun times-dTqqlZQ (DD)D
 	public fun toString ()Ljava/lang/String;
 	public static fun toString-impl (D)Ljava/lang/String;
+	public static final fun unaryMinus-34MxtGU (D)D
 	public final synthetic fun unbox-impl ()D
 }
 
 public final class com/areslib/math/geometry/Rotation2d$Companion {
 	public final fun fromDegrees-dTqqlZQ (D)D
+	public final fun fromRadians-dTqqlZQ (D)D
 }
 
 public final class com/areslib/math/geometry/Rotation3d {
@@ -3274,16 +3289,26 @@ public final class com/areslib/math/geometry/Translation2d {
 	public fun <init> ()V
 	public fun <init> (DD)V
 	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun angle-34MxtGU ()D
 	public final fun component1 ()D
 	public final fun component2 ()D
 	public final fun copy (DD)Lcom/areslib/math/geometry/Translation2d;
 	public static synthetic fun copy$default (Lcom/areslib/math/geometry/Translation2d;DDILjava/lang/Object;)Lcom/areslib/math/geometry/Translation2d;
+	public final fun distanceSquared (Lcom/areslib/math/geometry/Translation2d;)D
+	public final fun distanceTo (Lcom/areslib/math/geometry/Translation2d;)D
+	public final fun div (D)Lcom/areslib/math/geometry/Translation2d;
+	public final fun dot (Lcom/areslib/math/geometry/Translation2d;)D
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getNorm ()D
 	public final fun getX ()D
 	public final fun getY ()D
 	public fun hashCode ()I
+	public final fun minus (Lcom/areslib/math/geometry/Translation2d;)Lcom/areslib/math/geometry/Translation2d;
+	public final fun plus (Lcom/areslib/math/geometry/Translation2d;)Lcom/areslib/math/geometry/Translation2d;
+	public final fun rotateBy-zuP-jqc (D)Lcom/areslib/math/geometry/Translation2d;
+	public final fun times (D)Lcom/areslib/math/geometry/Translation2d;
 	public fun toString ()Ljava/lang/String;
+	public final fun unaryMinus ()Lcom/areslib/math/geometry/Translation2d;
 }
 
 public final class com/areslib/math/geometry/Translation3d {

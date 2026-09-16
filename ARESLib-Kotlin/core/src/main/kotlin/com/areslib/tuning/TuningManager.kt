@@ -1,10 +1,24 @@
 package com.areslib.tuning
 
 import com.areslib.telemetry.ITelemetry
+import com.areslib.telemetry.TelemetryTopicNormalizer
 import com.areslib.telemetry.schema.TuningAcknowledgement
 import com.areslib.telemetry.schema.TuningAcknowledgementCodec
 import com.areslib.util.RobotClock
 import java.nio.file.Path
+
+/** Strict declaration-driven NetworkTables contract. */
+object TuningTopics {
+    const val SCHEMA_VERSION = 3
+    const val ROOT = "Tuning"
+    const val SCHEMA_VERSION_TOPIC = "$ROOT/SchemaVersion"
+
+    /** Normalizes transport-only leading slashes; aliases are intentionally unsupported. */
+    fun canonicalize(topic: String): String {
+        val normalized = TelemetryTopicNormalizer.normalizeTopic(topic)
+        return if (normalized.startsWith("$ROOT/")) normalized else "$ROOT/$normalized"
+    }
+}
 
 /**
  * Declaration-driven tuning transport.

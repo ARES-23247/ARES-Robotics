@@ -17,8 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -37,16 +39,18 @@ fun MotorHealthCard(
     sessionId: String?,
     modifier: Modifier = Modifier
 ) {
-    val scope = rememberCoroutineScope()
-    var currentFrames by remember { mutableStateOf<List<TelemetryFrame>>(emptyList()) }
+    var currentFrames by remember(sessionId) { mutableStateOf<List<TelemetryFrame>>(emptyList()) }
 
     LaunchedEffect(sessionId) {
         if (sessionId != null) {
             while (isActive) {
-                currentFrames = databaseService.getTelemetryForKeyPatterns(
-                    sessionId,
-                    listOf("Hardware/Motors/%/Current%")
-                )
+                val frames = withContext(Dispatchers.IO) {
+                    databaseService.getTelemetryForKeyPatterns(
+                        sessionId,
+                        listOf("Hardware/Motors/%/Current%")
+                    )
+                }
+                currentFrames = frames
                 if (sessionId != "live-telemetry") break
                 delay(1000)
             }
@@ -55,6 +59,17 @@ fun MotorHealthCard(
         }
     }
 
+    MotorHealthCard(
+        currentFrames = currentFrames,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun MotorHealthCard(
+    currentFrames: List<TelemetryFrame>,
+    modifier: Modifier = Modifier
+) {
     AresCard(
         modifier = modifier
     ) {

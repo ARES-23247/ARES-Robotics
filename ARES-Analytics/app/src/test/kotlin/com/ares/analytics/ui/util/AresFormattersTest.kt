@@ -66,4 +66,25 @@ class AresFormattersTest {
             executor.shutdownNow()
         }
     }
+
+    @Test
+    fun `formatBytes produces correct units and boundaries`() {
+        assertEquals("0 B", AresFormatters.formatBytes(-10L))
+        assertEquals("0 B", AresFormatters.formatBytes(0L))
+        assertEquals("512 B", AresFormatters.formatBytes(512L))
+        assertEquals("1.0 KB", AresFormatters.formatBytes(1024L))
+        assertEquals("1.5 KB", AresFormatters.formatBytes(1536L))
+        assertEquals("1.0 MB", AresFormatters.formatBytes(1024L * 1024L))
+        assertEquals("2.5 GB", AresFormatters.formatBytes((2.5 * 1024L * 1024L * 1024L).toLong()))
+    }
+
+    @Test
+    fun `formatRate produces human readable transfer rates`() {
+        assertEquals("0 B/s", AresFormatters.formatRate(-5.0))
+        assertEquals("0 B/s", AresFormatters.formatRate(0.0))
+        assertEquals("0 B/s", AresFormatters.formatRate(Double.NaN))
+        assertEquals("500 B/s", AresFormatters.formatRate(500.0))
+        assertEquals("1.5 KB/s", AresFormatters.formatRate(1536.0))
+        assertEquals("3.0 MB/s", AresFormatters.formatRate(3.0 * 1024.0 * 1024.0))
+    }
 }

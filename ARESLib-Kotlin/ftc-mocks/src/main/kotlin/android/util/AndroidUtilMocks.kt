@@ -1,3 +1,4 @@
+@file:Suppress("UNUSED_PARAMETER")
 package android.util
 
 /**
@@ -67,5 +68,19 @@ object Log {
     @JvmStatic
     fun getStackTraceString(tr: Throwable?): String {
         return tr?.toString() ?: ""
+    }
+}
+
+/**
+ * Object implementation for Base64.
+ *
+ * Robotics framework control component.
+ */
+object Base64 {
+    const val NO_WRAP = 2
+
+    @JvmStatic
+    fun encodeToString(input: ByteArray, flags: Int): String {
+        return java.util.Base64.getEncoder().encodeToString(input)
     }
 }

@@ -1,6 +1,22 @@
 package com.areslib.hardware.actuator
 
 import com.areslib.hardware.SubsystemIO
+import com.areslib.telemetry.ITelemetry
+
+/**
+ * Pure abstraction for reading/writing to a physical servo.
+ * Keeps the :core module decoupled from Qualcomm SDK.
+ */
+interface ServoIO : SubsystemIO {
+    override fun logTelemetry(telemetry: ITelemetry, prefix: String) {
+        telemetry.putNumber("$prefix/Position", position)
+    }
+
+    /**
+     * Servo position (0.0 to 1.0)
+     */
+    var position: Double
+}
 
 /**
  * Pure abstraction for reading/writing to a physical motor.

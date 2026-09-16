@@ -1,4 +1,7 @@
+@file:Suppress("UNUSED_PARAMETER")
 package com.qualcomm.robotcore.hardware
+
+import org.firstinspires.ftc.robotcore.external.navigation.Quaternion
 
 /**
  * Minimal source-compatible subset of the FTC SDK hardware-device contract.
@@ -24,6 +27,30 @@ interface HardwareDevice {
         Lynx, AMS, STMicroelectronics, StepperMotor, I2cDeviceSynchImplSimple,
         I2cDeviceSynchImpl, Broadcom, MaxBotix, GoBilda, Rev
     }
+}
+
+/**
+ * Interface implementation for I2c Device Synch Simple.
+ *
+ * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
+ */
+interface I2cDeviceSynchSimple : HardwareDevice {
+    fun read8(ireg: Int): Byte = 0
+    fun write8(ireg: Int, data: Int) {}
+}
+
+/** FTC SDK constructor boundary; hardware adapters must compile against this interface. */
+interface ImuOrientationOnRobot {
+    fun imuCoordinateSystemOrientationFromPerspectiveOfRobot(): Quaternion
+    fun imuRotationOffset(): Quaternion
+    fun angularVelocityTransform(): Quaternion
+}
+
+/**
+ * Mock representation of an FTC [VoltageSensor].
+ */
+interface VoltageSensor : HardwareDevice {
+    val voltage: Double
 }
 
 /**
@@ -88,11 +115,4 @@ open class HardwareMap {
     open fun put(serialNumber: com.qualcomm.robotcore.util.SerialNumber, deviceName: String, device: HardwareDevice) {}
     /** Compatibility no-op; populate the typed [DeviceMapping] fields or override this method. */
     open fun put(deviceName: String, device: HardwareDevice) {}
-}
-
-/**
- * Mock representation of an FTC [VoltageSensor].
- */
-interface VoltageSensor : HardwareDevice {
-    val voltage: Double
 }

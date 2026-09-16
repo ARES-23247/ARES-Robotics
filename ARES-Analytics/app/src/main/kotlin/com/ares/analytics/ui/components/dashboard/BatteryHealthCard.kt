@@ -20,8 +20,10 @@ import com.ares.analytics.ui.components.core.GlassCard
 import com.ares.analytics.ui.components.core.MetricValueBadge
 import com.ares.analytics.ui.components.core.StatusIndicatorPill
 import com.ares.analytics.ui.theme.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 
 @Composable
 fun BatteryHealthCard(
@@ -29,16 +31,19 @@ fun BatteryHealthCard(
     sessionId: String?,
     modifier: Modifier = Modifier
 ) {
-    var voltageFrames by remember { mutableStateOf<List<TelemetryFrame>>(emptyList()) }
+    var voltageFrames by remember(sessionId) { mutableStateOf<List<TelemetryFrame>>(emptyList()) }
 
     LaunchedEffect(sessionId) {
         if (sessionId != null) {
             while (isActive) {
-                voltageFrames = databaseService.getTelemetryForFilters(
-                    sessionId,
-                    TelemetryMetricCatalog.BATTERY_VOLTAGE.keys.toList(),
-                    emptyList()
-                )
+                val frames = withContext(Dispatchers.IO) {
+                    databaseService.getTelemetryForFilters(
+                        sessionId,
+                        TelemetryMetricCatalog.BATTERY_VOLTAGE.keys.toList(),
+                        emptyList()
+                    )
+                }
+                voltageFrames = frames
                 if (sessionId != "live-telemetry") break
                 delay(1000)
             }
@@ -46,6 +51,18 @@ fun BatteryHealthCard(
             voltageFrames = emptyList()
         }
     }
+
+    BatteryHealthCard(
+        voltageFrames = voltageFrames,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun BatteryHealthCard(
+    voltageFrames: List<TelemetryFrame>,
+    modifier: Modifier = Modifier
+) {
     val latestVoltage = voltageFrames.lastOrNull()?.value ?: 12.0
     val minVoltage = voltageFrames.minOfOrNull { it.value } ?: 12.0
     val statusColor = when {

@@ -27,7 +27,8 @@ internal fun DrawScope.drawVectorArrow(
     strokeWidth: Float = 2f,
     arrowHeadLength: Float = 10f,
     arrowHeadAngleRad: Double = Math.PI / 6.0,
-    filledHead: Boolean = false
+    filledHead: Boolean = false,
+    scratchPath: Path? = null
 ) {
     if (!start.x.isFinite() || !start.y.isFinite() || !end.x.isFinite() || !end.y.isFinite() ||
         !strokeWidth.isFinite() || strokeWidth < 0f || !arrowHeadLength.isFinite() || arrowHeadLength < 0f ||
@@ -54,7 +55,13 @@ internal fun DrawScope.drawVectorArrow(
     drawLine(color = color, start = start, end = end, strokeWidth = strokeWidth)
 
     if (filledHead) {
-        val path = Path().apply {
+        val path = scratchPath?.apply {
+            reset()
+            moveTo(end.x, end.y)
+            lineTo(wing1.x, wing1.y)
+            lineTo(wing2.x, wing2.y)
+            close()
+        } ?: Path().apply {
             moveTo(end.x, end.y)
             lineTo(wing1.x, wing1.y)
             lineTo(wing2.x, wing2.y)
