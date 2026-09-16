@@ -3,7 +3,7 @@
 **The open-ended file audit has been superseded by a bounded
 [robot-readiness checkpoint](ROBOT_READINESS_GOAL.md).** Follow that saved objective and its scenario,
 performance, and safety exit criteria. The [paused checkpoint](RESUME.md),
-[pass 277](generated-runtime-lifecycle-math-audit.md), and ledger preserve the useful prior work.
+[pass 277](archive/HISTORICAL_AUDITS_INDEX.md), and ledger preserve the useful prior work.
 The selected local checkpoint is complete; see the [readiness report](ROBOT_READINESS_REPORT.md).
 The later authorized [Studio/template alignment follow-up](RELEASE_ALIGNMENT_REPORT.md) records
 resolution of the local release gates and subsequent validation. Hardware and protected release

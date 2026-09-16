@@ -5,8 +5,13 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $root = Split-Path -Parent $PSScriptRoot
-$historical = @('ARESLib-Kotlin/audit_report_areslib_kotlin.md', 'CLEAN_SLATE_ARCHITECTURE_COMPLETION.md')
-$historicalPrefixes = @('.planning/', 'ARES-Analytics/docs/cycles/', 'ARES-Analytics/reports/')
+$historical = @(
+    'ARESLib-Kotlin/audit_report_areslib_kotlin.md',
+    'CLEAN_SLATE_ARCHITECTURE_COMPLETION.md',
+    'docs/robot-loop-audit.md',
+    'docs/mathematics-audit.md'
+)
+$historicalPrefixes = @('.planning/', 'docs/milestones/', 'ARES-Analytics/docs/cycles/', 'ARES-Analytics/reports/')
 $trackedOutput = @(git -C $root ls-files -z -- '*.md')
 if ($LASTEXITCODE -ne 0) { throw 'Unable to enumerate tracked Markdown files.' }
 $tracked = ($trackedOutput -join "`n").Split([char[]]@([char]0), [System.StringSplitOptions]::RemoveEmptyEntries)
