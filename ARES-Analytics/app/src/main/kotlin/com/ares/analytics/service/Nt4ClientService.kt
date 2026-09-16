@@ -82,7 +82,7 @@ open class Nt4ClientService(
     private val _robotLighting = MutableStateFlow(RobotLightingTelemetryState())
     /** One normalized lighting state shared by the dashboard card and field renderer. */
     val robotLighting: StateFlow<RobotLightingTelemetryState> = _robotLighting.asStateFlow()
-    private var lastSimulatorPoseDivergenceLogNs = Long.MIN_VALUE
+    @Volatile private var lastSimulatorPoseDivergenceLogNs = Long.MIN_VALUE
 
     init {
         serviceScope.launch(start = CoroutineStart.UNDISPATCHED) {

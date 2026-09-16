@@ -253,6 +253,7 @@ internal class Nt4ConnectionLifecycle(
             synchronized(this) {
                 client = localClient
                 if (client == null || !client.coroutineContext.isActive) {
+                    localClient?.close()
                     client = HttpClient(OkHttp) { install(WebSockets) }
                     localClient = client
                 }
@@ -267,6 +268,7 @@ internal class Nt4ConnectionLifecycle(
             synchronized(this) {
                 client = remoteClient
                 if (client == null || !client.coroutineContext.isActive) {
+                    remoteClient?.close()
                     client = HttpClient(OkHttp) { install(WebSockets) }
                     remoteClient = client
                 }
