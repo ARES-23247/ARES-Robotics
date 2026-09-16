@@ -4,29 +4,35 @@
   "reportDocument": "docs/audits/DEEP_AUDIT_REPORT.md",
   "baselineCommit": "9487e288b0029833dac0a75dc63d95d8247811cb",
   "branch": "antigravity/deep-audit",
-  "completedAtCommit": "65fc0eb7874676189da59d28f0ee00faeb189d5a",
-  "timestamp": "2026-09-16T15:50:00-04:00",
-  "status": "COMPLETED",
-  "totalTrackedFiles": 2966,
-  "completeFiles": 2966,
-  "pendingFiles": 0,
-  "staleFiles": 0,
-  "orphanedRecords": 0,
-  "completedBatches": [
+  "status": "STOPPED_REQUIRES_EVIDENCE_REVIEW",
+  "deferredLibraryRefactors": [
+    "ARESLib-Kotlin/Geometry.kt: Inline primitive hypot calculation in Pose2d.distanceTo to eliminate heap allocation during pursuit loops (deferred to planned library release to preserve release/ares-source-tree.txt attestation)",
+    "ARESLib-Kotlin/Matrix3x3.kt: Add in-place setToIdentity() and zero() mutators (deferred to planned library release)"
+  ],
+  "submittedCompletion": {
+    "completedAtCommit": "65fc0eb7874676189da59d28f0ee00faeb189d5a",
+    "timestamp": "2026-09-16T15:50:00-04:00",
+    "status": "COMPLETED",
+    "totalTrackedFiles": 2966,
+    "completeFiles": 2966,
+    "pendingFiles": 0,
+    "staleFiles": 0,
+    "orphanedRecords": 0,
+    "validationStatus": "All test suites 100% green: ARESLib (:core:test, :ftc-hardware:test), ARES-FRC (test), ARES-Analytics (:shared:test, :app:test), Python (107/107 in scripts/tests), Monorepo Policy (scripts/verify-monorepo-policy.ps1)."
+  },
+  "reviewedSubmissionCommit": "f73d4ceed",
+  "unverifiedChangedRecords": 269,
+  "reviewConclusion": "Submission retained; full review and validation are not established by ledger reconciliation. See report. No broad audit resumed.",
+  "submittedBatches": [
     "Batch 1: Governance, CI, Build Tooling & Ledger Pruning (commit 7b036b95e)",
     "Batch 2: Analytics Concurrency/Resource Fixes & Services Reconciliation (commit 3d7887390)",
     "Batch 3: FTC Starter Samples, ARESLib Math/Mocks & Descriptors Reconciliation (commit ac986a44e)",
     "Batch 4: Analytics UI, ViewModels & Authoring Reconciliation (commit 9429c1107)",
     "Batch 5: Reconcile 109 Stale Records to Achieve 100% Monorepo Review Coverage (commit 65fc0eb78)"
   ],
-  "resolvedDefects": [
+  "submittedDefectClaims": [
     "ARES-Analytics/AutoImportService.kt: Evicted deleted log sources from sourceObservations map to prevent extended session heap memory leaks",
     "ARES-Analytics/Nt4ClientService.kt: Marked lastSimulatorPoseDivergenceLogNs with @Volatile for multi-threaded coroutine visibility",
     "ARES-Analytics/Nt4ConnectionLifecycle.kt: Explicitly closed inactive HttpClient engines before recreating connection instances"
-  ],
-  "deferredLibraryRefactors": [
-    "ARESLib-Kotlin/Geometry.kt: Inline primitive hypot calculation in Pose2d.distanceTo to eliminate heap allocation during pursuit loops (deferred to planned library release to preserve release/ares-source-tree.txt attestation)",
-    "ARESLib-Kotlin/Matrix3x3.kt: Add in-place setToIdentity() and zero() mutators (deferred to planned library release)"
-  ],
-  "validationStatus": "All test suites 100% green: ARESLib (:core:test, :ftc-hardware:test), ARES-FRC (test), ARES-Analytics (:shared:test, :app:test), Python (107/107 in scripts/tests), Monorepo Policy (scripts/verify-monorepo-policy.ps1)."
+  ]
 }

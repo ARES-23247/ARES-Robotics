@@ -1,7 +1,10 @@
 # Deep, Evidence-Backed Audit of the ARES Monorepo
 
 ## Status and Authority
-- **Status:** **Active Campaign** (Initiated 2026-09-16)
+- **Status:** **Stopped; submitted completion requires evidence review** (Initiated 2026-09-16)
+- **Review disposition:** The original objective below is retained for provenance. The submitted
+  claim of complete coverage is not established; see [the reviewed report](DEEP_AUDIT_REPORT.md).
+  This document does not instruct an agent to resume the broad campaign during release work.
 - **Goal Type:** Tracked Repository Goal
 - **Baseline Commit:** `9487e288b0029833dac0a75dc63d95d8247811cb` (Protected `origin/main` Release: Studio 7.0.60, ARESLib 19.1.1)
 - **Isolated Branch:** `antigravity/deep-audit`
@@ -31,7 +34,7 @@ the combined changes through rigorous, meaningful integration checkpoints.
    - Worker subagents act as domain-partitioned reviewers and researchers writing isolated report fragments.
    - Builds are serialized; simultaneous Gradle builds against the same target outputs are forbidden.
 4. **Preservation of Previous Audit Work:**
-   - Historical readiness reports (`ROBOT_READINESS_REPORT.md`, `DESKTOP_READINESS_REPORT.md`, `BIOBUZZ_READINESS_REPORT.md`) and archive indices (`HISTORICAL_AUDITS_INDEX.md`) remain authoritative records of past physical and scenario validations.
+   - Historical readiness reports (`ROBOT_READINESS_REPORT.md`, `DESKTOP_READINESS_REPORT.md`, `BIOBUZZ_READINESS_REPORT.md`) and archive indices (`HISTORICAL_AUDITS_INDEX.md`) retain their recorded software/scenario evidence and explicit hardware limitations.
    - Proven fixes from prior passes must be retained.
 5. **Physical Hardware Limitation:**
    - Physical robot hardware is currently offline/unavailable. Software simulation, mathematical derivations, analytical trajectory models, and unit/integration test evidence must be distinguished from live hardware tests.

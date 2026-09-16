@@ -253,10 +253,10 @@ class AutoImportService(
                             "[AUTO-IMPORT] Imported ${file.name}; source could not be removed and will be ignored by fingerprint"
                         )
                     } else {
-                        sourceObservations.remove(file.absolutePath)
+                        sourceObservations.remove(sourceId)
                     }
                     if (dsEventsSource?.delete() == true) {
-                        sourceObservations.remove(dsEventsSource.absolutePath)
+                        sourceObservations.remove("local:${dsEventsSource.absoluteFile.toPath().normalize()}")
                     }
                     _importNotifications.emit("[AUTO-IMPORT] Successfully imported ${file.name} (Session ID: ${sessionId.take(8)}...)")
 
