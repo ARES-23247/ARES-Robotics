@@ -1,5 +1,8 @@
 package com.areslib.ftc.vision
 
+import com.areslib.hardware.vision.AprilTagCluster
+import com.areslib.hardware.vision.AprilTagClusterTracker
+import com.areslib.hardware.vision.ClusterTargetMeasurement
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
 import com.areslib.state.VisionMeasurement
@@ -35,6 +38,26 @@ class FtcLimelightIO(
     private val sourceId: String = "ftc-limelight"
 ) : VisionIO, AutoCloseable {
     
+    private var closed = false
+    private var clusterTrackers = emptyArray<AprilTagClusterTracker>()
+    private var clusterOutputs = emptyArray<ClusterTargetMeasurement>()
+    private val clusterResults = ArrayList<ClusterTargetMeasurement>()
+    private var lastInputs: VisionIOInputs? = null
+
+    override fun configureTargetClusters(clusters: List<AprilTagCluster>) {
+        check(!closed) { "Limelight is closed" }
+        require(clusters.map { it.id }.distinct().size == clusters.size) { "Duplicate cluster ID" }
+        val ids = HashSet<Int>()
+        for (cluster in clusters) for (member in cluster.members) {
+            require(ids.add(member.tagId)) { "Tag ${member.tagId} belongs to multiple clusters" }
+        }
+        clusterTrackers = Array(clusters.size) { AprilTagClusterTracker(clusters[it]) }
+        clusterOutputs = Array(clusters.size) { ClusterTargetMeasurement() }
+        clusterResults.clear()
+        lastInputs?.measurements = emptyList()
+        lastInputs?.clusterTargets = emptyList()
+    }
+
     private var lastWarningTime = 0L
     
     // Object pools to prevent GC overhead
@@ -84,6 +107,14 @@ class FtcLimelightIO(
      */
     override fun updateInputs(inputs: VisionIOInputs) {
 
+        lastInputs = inputs
+        inputs.clusterTargets = emptyList()
+        clusterResults.clear()
+        if (closed) {
+            inputs.isConnected = false
+            inputs.measurements = emptyList()
+            return
+        }
         inputs.cameraPoses = cameraPoses
         try {
             val connected = limelight.isConnected()
@@ -100,6 +131,13 @@ class FtcLimelightIO(
                 currentMeasurementList.clear()
 
                 val fiducials = result.getFiducialResults()
+                if (clusterTrackers.isNotEmpty()) {
+                    updateClusters(result, fiducials, inputs)
+                    // Moving tags cannot establish robot field position. Even a mixed frame's
+                    // combined MegaTag pose may include them, so targeting cameras publish none.
+                    inputs.measurements = emptyList()
+                    return
+                }
                 
                 // MegaTag2 uses the robot IMU heading supplied above and is substantially
                 // more resistant to single-tag pose ambiguity. Fall back to MT1 only when
@@ -234,6 +272,8 @@ class FtcLimelightIO(
         } catch (e: Throwable) {
             inputs.isConnected = false
             inputs.measurements = emptyList()
+            inputs.clusterTargets = emptyList()
+            clusterResults.clear()
             val now = com.areslib.util.RobotClock.currentTimeMillis()
             if (now - lastWarningTime > 2000L) {
                 System.err.println("FtcLimelightIO: Exception in updateInputs: ${e.message}")
@@ -246,7 +286,48 @@ class FtcLimelightIO(
      * Releases vision resources.
      */
     override fun close() {
+        if (closed) return
+        closed = true
+        clusterResults.clear()
+        lastInputs?.isConnected = false
+        lastInputs?.measurements = emptyList()
+        lastInputs?.clusterTargets = emptyList()
         limelight.stop()
+    }
+
+    private fun updateClusters(
+        result: com.qualcomm.hardware.limelightvision.LLResult,
+        fiducials: List<com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult>,
+        inputs: VisionIOInputs
+    ) {
+        val captureLatency = result.captureLatency
+        val targetingLatency = result.targetingLatency
+        val latency = captureLatency + targetingLatency
+        if (!captureLatency.isFinite() || captureLatency < 0.0 ||
+            !targetingLatency.isFinite() || targetingLatency < 0.0 || latency > MAX_RESULT_STALENESS_MS) return
+        val frame = result.getControlHubTimeStamp()
+        val timestamp = frame - kotlin.math.ceil(latency).toLong()
+        val now = com.areslib.util.RobotClock.currentTimeMillis()
+        if (timestamp < 0 || timestamp > now || now - timestamp > MAX_RESULT_STALENESS_MS) return
+        for (tracker in clusterTrackers) tracker.beginFrame()
+        for (i in fiducials.indices) {
+            val tag = fiducials[i]
+            val pose = tag.getTargetPoseCameraSpace() ?: continue
+            val position = pose.position
+            val orientation = pose.orientation
+            val unit = org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.METER
+            val angles = org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.RADIANS
+            for (tracker in clusterTrackers) tracker.addTag(tag.getFiducialId(),
+                unit.fromUnit(position.unit, position.x), unit.fromUnit(position.unit, position.y),
+                unit.fromUnit(position.unit, position.z), orientation.getRoll(angles),
+                orientation.getPitch(angles), orientation.getYaw(angles))
+        }
+        for (i in clusterTrackers.indices) {
+            if (clusterTrackers[i].finishFrame(clusterOutputs[i], sourceId, timestamp, frame)) {
+                clusterResults.add(clusterOutputs[i])
+            }
+        }
+        inputs.clusterTargets = clusterResults
     }
 
     private fun applyObservationStdDevs(

@@ -38,6 +38,8 @@ class ActionReplayTest {
         val actions: List<RobotAction> = listOf(
             RobotAction.DriveHardwareUpdate(1.0, 2.0, 0.3, 0.1, 0.2, 0.03, 1L),
             RobotAction.VisionMeasurementsReceived(emptyList(), 2L, Vector3(0.1, 0.2, 0.3), false),
+            RobotAction.ClusterTargetsReceived(listOf(com.areslib.hardware.vision.ClusterTargetSnapshot(
+                "cell", "front", 2L, 2L, .1, -.2, 2.0, 2, 3, .02)), 2L),
             RobotAction.PoseUpdate(3.0, 4.0, 0.5, 3L, isReset = true),
             RobotAction.SetAlliance(Alliance.RED, 4L),
             RobotAction.SetDriveMode(DriveMode.POSITION_HOLD, 5L),

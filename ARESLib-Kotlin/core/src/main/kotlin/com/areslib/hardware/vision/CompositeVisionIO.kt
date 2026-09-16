@@ -25,6 +25,7 @@ class CompositeVisionIO(ios: List<VisionIO>) : VisionIO, AutoCloseable {
     private val children: Array<VisionIO> = distinctChildren(ios)
     private val childInputs = Array(children.size) { VisionIOInputs() }
     private val candidates = ArrayList<VisionMeasurement>((children.size * 4).coerceAtLeast(4))
+    private val clusterTargets = ArrayList<ClusterTargetMeasurement>()
     private val selected = ArrayList<VisionMeasurement>((children.size * 2).coerceAtLeast(2))
     private val aggregateCameraPoses = ArrayList<Pose3d>(children.size)
     private var currentInputs: VisionIOInputs? = null
@@ -54,6 +55,7 @@ class CompositeVisionIO(ios: List<VisionIO>) : VisionIO, AutoCloseable {
                 if (closed) return
                 if (subInputs.isConnected) {
                     anyConnected = true
+                    for (i in subInputs.clusterTargets.indices) clusterTargets.add(subInputs.clusterTargets[i])
                     for (measurementIndex in subInputs.measurements.indices) {
                         val measurement = subInputs.measurements[measurementIndex]
                         if (hasValidVisionObservation(measurement)) candidates.add(measurement)
@@ -93,6 +95,7 @@ class CompositeVisionIO(ios: List<VisionIO>) : VisionIO, AutoCloseable {
             }
             inputs.isConnected = anyConnected
             inputs.measurements = selected
+            inputs.clusterTargets = clusterTargets
             inputs.cameraPoses = aggregateCameraPoses
         } catch (failure: Throwable) {
             invalidate()
@@ -149,6 +152,12 @@ class CompositeVisionIO(ios: List<VisionIO>) : VisionIO, AutoCloseable {
         failure?.let { throw it }
     }
 
+    override fun configureTargetClusters(clusters: List<AprilTagCluster>) {
+        check(!closed && !busy) { "Vision configuration requires an open, idle source" }
+        invalidate()
+        for (child in children) child.configureTargetClusters(clusters)
+    }
+
     /** Closes each owned child once, even after failures; a closed composite cannot resume polling. */
     override fun close() {
         if (closed) return
@@ -167,6 +176,7 @@ class CompositeVisionIO(ios: List<VisionIO>) : VisionIO, AutoCloseable {
     }
 
     private fun invalidate() {
+        clusterTargets.clear()
         candidates.clear()
         selected.clear()
         aggregateCameraPoses.clear()
@@ -214,6 +224,7 @@ class CompositeVisionIO(ios: List<VisionIO>) : VisionIO, AutoCloseable {
         fun clearInputs(inputs: VisionIOInputs) {
             inputs.isConnected = false
             inputs.measurements = emptyList()
+            inputs.clusterTargets = emptyList()
             inputs.cameraPoses = emptyList()
         }
 

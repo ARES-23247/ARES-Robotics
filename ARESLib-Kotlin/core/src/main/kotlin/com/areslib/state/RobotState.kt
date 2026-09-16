@@ -298,7 +298,9 @@ data class VisionState(
     val diagnosticMeasurementIndex: Int = -1,
     /** Result for [diagnosticMeasurementIndex], independent of the last batch or NIS outcome. */
     val diagnosticMeasurementAccepted: Boolean = false,
-    val diagnosticMeasurementRejectionReason: String? = null
+    val diagnosticMeasurementRejectionReason: String? = null,
+    /** Latest moving-target observations; never field landmarks or EKF inputs. */
+    val clusterTargets: List<com.areslib.hardware.vision.ClusterTargetSnapshot> = emptyList()
 )
 
 /**

@@ -32,3 +32,6 @@ ares_run_summary.json
 scratch/
 # Scratch crash-test main, never shipped
 simulator/src/main/kotlin/com/areslib/sim/TestCrash.kt
+
+# Independent geometry fixtures are source, not robot logs.
+!core/src/test/resources/vision/cluster-reference.csv

@@ -22,3 +22,13 @@ Pollen is 2.8 inches and 0.055 pounds; nectar is 3.6 inches and 0.091 pounds. Fl
 The project ships its CAD-derived static background and canonical field document. Moving cells and balls are live overlays. One existing simulator world owns robot motion and contacts; the season interaction model owns balls, flower storage, and hive motion. Complete NT4 snapshots feed the Dashboard and replay.
 
 This is a simulation-only reference until its hardware is reviewed and validated. Lightbot is a separate example. A score widget, 3D, web hosting, and multiplayer are deferred.
+
+The example also configures an optional `limelight` camera for the four official BioBuzz AprilTag
+clusters. Its preset uses 3.25-inch tags (82.55 mm) with IDs 30–45 and the SDK 12.0 cell-opening
+offsets. Set the camera to a Classic 36h11, Full 3D pipeline. The runtime reconstructs the shared
+aiming point from whichever members remain visible and publishes camera-relative targets in
+`robot.base.store.state.vision.clusterTargets`. Configured targeting cameras cannot feed moving
+tags into field localization. Automatic aiming/firing is not bound to any button by this change.
+Check freshness and enable, select a cluster/camera, and apply measured shooter mounting offsets
+before using the targets in a controller. The simulator integration test injects optical poses;
+real camera detection, calibration, range, and motion latency remain hardware checkpoints.

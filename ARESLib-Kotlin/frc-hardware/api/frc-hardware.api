@@ -73,6 +73,7 @@ public final class com/areslib/frc/FrcLimelightIO : com/areslib/hardware/vision/
 	public fun <init> (Ljava/lang/String;Ljava/util/List;II[I)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;II[IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close ()V
+	public fun configureTargetClusters (Ljava/util/List;)V
 	public fun getCameraPoses ()Ljava/util/List;
 	public final fun getDefaultPipeline ()I
 	public final fun getImuMode ()I
