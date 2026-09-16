@@ -818,20 +818,7 @@
         "ARESLib-Kotlin/build/audit-pass37-studio.log",
         "ARESLib-Kotlin/build/audit-pass37-policy.log"
       ],
-      "sha256": "3f4ff4972d020126b2761d327df66adcba82c862b22f9a353d97b95b969641ed"
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertRuleSemantics.kt": {
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Entire helper reviewed and executed: finite scalar/binary comparisons with inclusive allowed bounds, fixed or disabled loop contract, all catalog aliases and ordinary custom topics. No arbitrary temporal-parameter support claimed.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass37-before.log",
-        "ARESLib-Kotlin/build/audit-pass37-focused.log",
-        "ARESLib-Kotlin/build/audit-pass37-studio.log",
-        "ARESLib-Kotlin/build/audit-pass37-policy.log"
-      ],
-      "sha256": "b87094930c98e9ae038b0c1dbbf39091756292499c7d4c9c83751efcac54b252"
+      "sha256": "f260db39d940b8f87573974d91b8d8a8a3c503ca507805b14d7a8a5329501050"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AlertTransitions.kt": {
       "sha256": "27e8660e24eed15f53625fcf0b94d78751d99c6404220c68f243c898ab301a49",
@@ -862,7 +849,7 @@
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
       ],
-      "sha256": "04f091174c7a5d2080d5a1629cbfd6957b29051bcb4f96f1953d104fecfc871d"
+      "sha256": "c48cc8cd85534ee6e288763e8156b2a67da5c0cfb073843e2a7963d43021ee59"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportService.kt": {
       "sha256": "624f82545ff4554575c8c31ce6ee3c2a5c69cb6bbdf2b440a034947432d12f7b",
@@ -1127,17 +1114,6 @@
         "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExistingPathResolution.kt": {
-      "sha256": "babf790c38135b7371fd4d0f5d219f1715df3db931e6f9b359b6d9b889970120",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated resolveExistingPath for canonical path resolution with non-existent trailing parts. Verified upward traversal checking Files.exists with LinkOption.NOFOLLOW_LINKS, resolving highest existing ancestor with toRealPath(), and safely reattaching missing suffix parts via ArrayDeque.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/focused-summary.json",
-        "ARESLib-Kotlin/build/audit-pass198-verified-evidence/studio-app-summary.json"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExportService.kt": {
       "sha256": "c724dfe1da49b0fb91d563df7d75454fe00317d8a7a0e1d5c5f8068b1f3c9f01",
       "review": "reviewed",
@@ -1148,7 +1124,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExternalProcessSupport.kt": {
-      "sha256": "35c207a06d86d13cc41ac38b5f68287d2f4ed3715abde28d9142000b28d16909",
+      "sha256": "858e73a8dca8e720f6c4bd76dfaf8084b8aafb35f6eae8709a0433ca2dd81453",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified child process lifecycle support: non-blocking stdout/stderr draining on Dispatchers.IO preventing pipe deadlocks in awaitProcessExit, and terminateProcessTree recursively finding and forcibly killing descendant processes in reverse order with deadline polling and stream closing.",
@@ -1481,15 +1457,6 @@
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ProjectProcessGate.kt": {
-      "sha256": "2933b508d15b9c9b4b89d85ac99e6e96b90dd899cf7bb7bcf3da07d29b57e3fe",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Verified exclusive execution gate (runExclusive) using coroutine Mutex to serialize project-mutating Gradle builds, code generation, and deployment operations across concurrent services.",
-      "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/QueryResult.kt": {
       "sha256": "73e1140921c559043f73850476046d165d2a4cf940edcb4247e973ed45ae6a37",
       "review": "reviewed",
@@ -1660,7 +1627,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SessionBundleService.kt": {
-      "sha256": "277ba45f9e338a9fbfc9016470f55f182166b67ce8e3821a3d793a79e1d402ef",
+      "sha256": "7709a66f72c6023f3395d9a3c86d7b0b51521fbeabe6d6fbb75b0e507a5ea9ac",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated versioned cloud session archive packaging and extraction (.ares-session.zip). Verified zip security: exactly two entries (manifest.json and telemetry.parquet), no directory entries, zip slip protection. Verified size bounds: max manifest 64MB, max telemetry 2GB, exact byte stream accounting with Math.addExact. Verified SHA-256 validation, atomic zip creation with writeFileAtomically, and fsync on extracted telemetry.",
@@ -1670,15 +1637,6 @@
         "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
         "ARESLib-Kotlin/build/audit-pass23-studio.log",
         "ARESLib-Kotlin/build/audit-pass23-policy.log"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SessionRunLabels.kt": {
-      "sha256": "4af7071168d71c88dea305b2dd7efd412f2710ab74ae4b940271cb29995a517c",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Verified human-readable run label formatting: matches match numbers, Academy practice scenarios (academy-practice-source:), or truncated 8-character UUIDs.",
-      "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SimulatorProcessService.kt": {
@@ -1828,20 +1786,8 @@
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/TelemetryPublication.kt": {
-      "sha256": "1d961d15b4993a685b48248e746565519c6f7bf40404092a01f9bf1639689295",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Entire target envelope and raw SharedFlow view reviewed; one underlying buffer, preserved reference/replay ordering, cancellation and bounded slow-collector behavior tested. Coroutine inheritance opt-in explicitly recorded.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass30-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass30-studio.log",
-        "ARESLib-Kotlin/build/audit-pass30-policy.log"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/TelemetryStore.kt": {
-      "sha256": "519960d2a699b49332d5167d62a62e4bf601e69b04530ccd0ad134761129ebbf",
+      "sha256": "2e9772b730d9d5f2611d3224c36d9ee788c22706e2c3cd4e58d66f20ca0e0d9d",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated central fan-out point for live and replay telemetry. Verified bounded memory with maxTrackedTopics (4,096) with LRU eviction, maxFramesPerTopic (2,000), and historyWindowMs (120,000ms). Verified backpressure isolation with BufferOverflow.DROP_OLDEST on publications flow, preventing slow UI consumers from blocking NT4 ingestion or safety-critical drive controls. Verified topic canonicalization and monotonic targetEpoch tracking on clear.",
@@ -2014,18 +1960,8 @@
         "ARESLib-Kotlin/build/audit-pass25-studio.log"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DuckDbAppenderTransaction.kt": {
-      "sha256": "b32d1bd0bd2b415e2c42f5b59c995caef027afd022d08d0018a48c6b9926f368",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Entire native wrapper delegates to shared helper with native transaction activation. Native rollback/cleanup and repository suites passed; 1/1 line covered.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass25-studio.log"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DuckDbTransaction.kt": {
-      "sha256": "b67da3b86c3ccefe33a23b2b28478300d5e040de80c8e23f8286684f274b05dc",
+      "sha256": "6d70b0cee7057eaa0dc54ef5f86dbbe365bfb8174beffc241368032e6100adf2",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Entire generic transaction helper: ownership, SQL/native activation selection, commit, Throwable rollback, uncertain-writer close, suppressed cleanup failures and auto-commit restoration. Existing cleanup/native and new repository tests passed; Kover 24/24 lines, 14/48 branches, remaining cleanup combinations explicitly open.",
@@ -2691,15 +2627,6 @@
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningParameterKeys.kt": {
-      "sha256": "c825698243b59a600b01925d373d66a70a90a1580a391de0024ea83e22ac46f3",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated TuningParameterKeys canonical parameter constant definitions. Verified key naming conventions for PID (kP, kI, kD, kF), feedforward (kS, kV, kA, kG), motion magic constraints, and unit consistency across FTC, FRC, and XRP platforms.",
-      "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningProfileModels.kt": {
       "review": "reviewed",
       "validation": "passed",
@@ -2741,7 +2668,7 @@
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
       ],
-      "sha256": "7d41d10c3631fcaf355d3185ffa2bca6987cf1c1199636a5a0afaab21b1676b4"
+      "sha256": "46eacb6cb71f6deb7da0a2cf12df9e4b3944c376ffe0343364a8cf8d99d61c89"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/verification/GeneratedVerificationCatalog.kt": {
       "sha256": "020d15f3afca85a121b5b5d4d76c2624475783fd4a759d52a98e0e1ddd995007",
@@ -2798,7 +2725,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/GitRemoteOperations.kt": {
-      "sha256": "5927df12ad6b5612a2237ddf5ba7a0d600287e20091921820f689e8c2112f714",
+      "sha256": "68bb37cc5b479fc28e28aa88378ec68ff3796de5d467b616ca8d31649ff76669",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated GitRemoteOperations JGit wrapper for push and fetch operations. Verified custom CredentialsProvider using refreshed OAuth bearer tokens, branch push specifications, user-friendly exception translation (network, auth, rejected push, missing remote), and clean repository resource closing.",
@@ -2874,15 +2801,6 @@
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified ProjectReviewTokenFactory and ProjectVersionControlLimits (MAX_REVIEWED_FILE_BYTES = 20MB, MAX_REVIEWED_CHANGE_BYTES = 100MB, MAX_RESTORED_PROJECT_BYTES = 500MB). Validated domain-separated composite SHA-256 tokens for workingTreeToken (with canonical root containment verification and Math.addExact byte overflow detection) and restoreToken.",
-      "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectRoot.kt": {
-      "sha256": "ad6ce77e951623e09d2482a8a84e7e87cbaf9476430776bd80fb0d73aae30016",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Verified requireCanonicalProjectRoot canonical root resolution and contract enforcement: requires non-blank path, existing directory, and existence of .ares/project.json marker file.",
       "evidence": [
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
@@ -3213,7 +3131,7 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ChooserApproval.kt": {
-      "sha256": "4d693534abaa07239f7d3f65893463cfcb0db1a15c5e3f9a56522da42db1468b",
+      "sha256": "18ed84df7687d237e1474dd394b8cc535d5d0704087cde98a2ddbc5d6e63da46",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Audited file chooser approval and validation engine. Verified file extension auto-appending, path security checks against parent escaping, and overwrite decision branches.",
@@ -3221,20 +3139,11 @@
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ChooserEntry.kt": {
-      "sha256": "7b09bd574514eb6818ecfe9bdf4af45c0ffe8b32c7daa8a7d1ea08a991cfc239",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/DesktopInteractions.kt": {
+      "sha256": "05473461caee5397b5c4b9411f96d61aac618b49e87b97203ab67189479646fc",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited filesystem entry model and NIO single-pass directory reader. Verified safe extraction of `BasicFileAttributes` (size, modification time, directory flag) with non-fatal exception fallbacks.",
-      "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/DesktopBrowser.kt": {
-      "sha256": "8946e5e8a2f42e0b700c0add5b5565d1fcd15010f71823dd4802896f963ebfc0",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Audited system browser invocation helper. Verified safe `Desktop.getDesktop().browse(URI)` call with exception containment for non-fatal handling on headless or restricted environments.",
+      "scope": "Co-located native project directory chooser and desktop browser link opening.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -3280,15 +3189,6 @@
       "review": "reviewed",
       "validation": "passed",
       "scope": "Audited explicit physical deployment modal. Verified critical safety disclaimers (e.g. ensure robot is disabled and elevated on blocks), explicit confirmation check, and target robot IP display.",
-      "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ProjectDirectoryPicker.kt": {
-      "sha256": "74dc7bdf2233398d682f0adc8722f5423489097acbd80010cf92b6bfcead9985",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Audited robot workspace directory picker helper. Verified directory validation, gradle/maven project marker detection, and directory chooser dialog launcher.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -4388,17 +4288,8 @@
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemControlPresentation.kt": {
-      "sha256": "d776a93f9b62d079c59cf0b4db866707853b53d842abdeacedc6867eb88500e7",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated subsystemControlOutputUnit mapping SubsystemHardwareKind to canonical units (V for MOTOR, \u00b5s for PRISM_DRIVER, MIDI note for BUZZER, 0/1 for DIGITAL_OUTPUT, normalized for others).",
-      "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemEditorCommon.kt": {
-      "sha256": "9f5f3c6c888f5714ba69bf0373efce719cc87b9583c509fdd04e7f8690dadcea",
+      "sha256": "4c983a54c3951e2e91a34ffe23c97025be06fff3383098d88d739e8418acec33",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated common subsystem UI primitives; verified isActuator classification, connectionLabel generation per platform (FTC, FRC, XRP), supportedHardwareKinds filtering, requiresMeasurement checks for closed-loop controllers, and safe numeric input composables with empty/null handling.",
@@ -4457,15 +4348,6 @@
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated builder stages (TUNING, CAPABILITIES, SIMULATION_AND_TESTING, REVIEW); verified live tunable parameter declarations, action catalog mapping (subsystem.{id}.set.{field}), mock IO and unit test generation flags, interactive fault injection lab, and code artifact categorization (starter vs plumbing).",
-      "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemVisualPlacement.kt": {
-      "sha256": "38ce80027eed6d8844afd090f6be96de4d1e2cb038033b50e46187ba50ecf841",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated defaultVisualPlacement and placementForAnchor mapping anchors to standard robot coordinate fractions (+X forward: FRONT = +0.5, REAR = -0.5; +Y left: LEFT_SIDE = +0.5, RIGHT_SIDE = -0.5; UNDERBODY/CENTER = 0.0).",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -5400,17 +5282,8 @@
       ],
       "sha256": "ad0adb04d04f9e2c9c0e161d7de23900571d673dde720684d32ca548f02afba5"
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/DashboardLayoutTransactionQueue.kt": {
-      "sha256": "b10b0beb6c87c7f62d8183e96fa509e25f22277a7353bba1d5eae09309552571",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Verified DashboardLayoutTransactionQueue Mutex serialization ensuring atomic disk writes and corresponding in-memory state updates without interleaved layout mutations.",
-      "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/DashboardViewModel.kt": {
-      "sha256": "5f671ed2a39e936c249323a9e792f8098cd47135a3caa18a93f3a20d4a4d9cb0",
+      "sha256": "0e029fa1487e351f17061cb15594253d759c5c16c50a5c9fe6d8bb4a0db45858",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified DashboardViewModel coordination of role profiles, live streaming vs historical replay session modes, layout profile switching and persistence, widget addition/removal, log imports (.hoot and general log files), non-blocking cloud sync failure reporting, and distinct low-frequency DashboardShellState emission.",
@@ -5480,17 +5353,8 @@
         "docs/audits/pass293-pending-elevation-audit.md"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingLightbotDefaults.kt": {
-      "sha256": "b67796bd2eb1bcfdd0e73f698692cf274dbca29e2fb86651624f3f1ef30d9702",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Verified OnboardingLightbotDefaults constants: LIGHTBOT_PROJECT_FOLDER ('Lightbot-Example'), LIGHTBOT_TEAM_ID ('23247'), LIGHTBOT_SEASON_ID ('2026'), and LIGHTBOT_ROBOT_ID / NAME ('Lightbot').",
-      "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingValidation.kt": {
-      "sha256": "99c038f6ecf4231e3fbb954bdb302d6fd342ba22a1299578a325e01c0a1eca63",
+      "sha256": "563d632dd3803e43ffc30835f101ba3882b19921de9de465112ff130a719fb33",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Verified OnboardingValidation logic: plannedProjectPath resolution, advanceAfterDetection state transition, evaluateJavaBuildTools (evaluating JDK 17/21 compliance, version parsing for legacy and semantic version strings), and step-bounded validateOnboardingFields validation rules.",
@@ -5735,17 +5599,8 @@
         "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json"
       ]
     },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldCameraGestureController.kt": {
-      "sha256": "dc5fad47b853c8b4781652f4d9c56fc71f567543b422ad3c48456443252becbf",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Verified FieldCameraGestureController mutable pan/zoom gesture state (zoomLevel, panOffsetX, panOffsetY) with reset() functionality, kept outside high-frequency field-view state flows.",
-      "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
-    },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorInteraction.kt": {
-      "sha256": "b8ac6bbd47712528019a2d3eb776e0deec957a7c9b18a6346fcac918b7aa2e12",
+      "sha256": "5d959da02613367e140e3477e57892ef2e48d7e519be784548c4d484f3b7e0ee",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Validated field geometry interaction helpers. Verified measurement unit conversions, axis-aligned bounding box (AABB) intersection testing, obstacle and game piece overlap detection, and AprilTag placement margin tolerances (0.25m).",
@@ -5762,16 +5617,6 @@
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass153-verified-evidence/"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldImageLoader.kt": {
-      "sha256": "b087db8f91716731ef042f5f5f9cbbe76fe8b0fe4d8ed8e1ad96ff4dd4ff8f2d",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Full wrapper functional review: blank-to-null, trimmed configured path, canonical assets containment via ProjectLayout, file requirement, encoded bytes/native decode and Result failures. Three all-league tests and existing document tests pass. Skia internals, large-image/native-memory stress, filesystem races and rendered window excluded.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass156-verified-evidence/"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldPoseBufferManager.kt": {
@@ -28867,7 +28712,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "dac529f2d1b7888326d449834f84f098d99d25c1f43099c9d3af94f33e06b12b",
+      "sha256": "653abd4730e80d6c7dda53e72d7fd3ed312170071e76748f960a9a4c2424b8ff",
       "review": "reviewed",
       "validation": "not-applicable",
       "scope": "Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",

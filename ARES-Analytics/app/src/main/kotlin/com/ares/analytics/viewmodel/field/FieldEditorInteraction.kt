@@ -1,11 +1,15 @@
 package com.ares.analytics.viewmodel.field
 
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import com.ares.analytics.shared.AprilTagPlacement
 import com.ares.analytics.shared.FieldWaypoint
 import com.ares.analytics.shared.GamePiece
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.shared.PathPoint
+import com.ares.analytics.util.ProjectLayout
+import org.jetbrains.skia.Image
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -234,3 +238,35 @@ private fun Obstacle.axisAlignedBounds(): AxisAlignedBounds? = when (this) {
         AxisAlignedBounds(minX, maxX, minY, maxY)
     }
 }
+
+/** Mutable pan/zoom gesture state kept outside the larger field-view state flow. */
+class FieldCameraGestureController {
+    var zoomLevel: Float = 1.0f
+    var panOffsetX: Float = 0.0f
+    var panOffsetY: Float = 0.0f
+
+    fun reset() {
+        zoomLevel = 1.0f
+        panOffsetX = 0.0f
+        panOffsetY = 0.0f
+    }
+}
+
+/** Shared portable image-loading boundary for the editor, planners, and dashboard. */
+internal object FieldImageLoader {
+    fun load(projectPath: String, league: League, configuredPath: String?): Result<ImageBitmap?> = runCatching {
+        val displayPath = configuredPath?.trim()?.takeIf(String::isNotEmpty) ?: return@runCatching null
+        if (displayPath == "classpath:field-presets/ftc/2026-2027-biobuzz.png") {
+            val bytes = requireNotNull(javaClass.classLoader.getResourceAsStream(displayPath.removePrefix("classpath:"))) {
+                "Bundled BIOBUZZ field image is missing."
+            }.use { it.readBytes() }
+            return@runCatching Image.makeFromEncoded(bytes).toComposeImageBitmap()
+        }
+        val imageFile = ProjectLayout.fieldImageFile(projectPath, league, displayPath)
+        require(imageFile.isFile) {
+            "Field image '$displayPath' was not found in the robot assets folder."
+        }
+        Image.makeFromEncoded(imageFile.readBytes()).toComposeImageBitmap()
+    }
+}
+

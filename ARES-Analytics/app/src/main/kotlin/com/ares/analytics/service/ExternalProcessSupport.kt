@@ -6,6 +6,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.TimeUnit
@@ -73,3 +75,11 @@ internal suspend fun terminateProcessTree(process: Process) {
 
 private const val PROCESS_TREE_KILL_GRACE_MS = 2_000L
 private const val PROCESS_TREE_POLL_MS = 10L
+
+/** Serializes project-mutating Gradle and device operations across dedicated services. */
+internal class ProjectProcessGate {
+    private val mutex = Mutex()
+
+    suspend fun <T> runExclusive(operation: suspend () -> T): T = mutex.withLock { operation() }
+}
+
