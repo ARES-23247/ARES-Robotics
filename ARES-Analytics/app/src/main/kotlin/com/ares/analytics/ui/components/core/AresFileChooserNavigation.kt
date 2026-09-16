@@ -12,6 +12,9 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,7 +45,7 @@ Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(
-            imageVector = if (mode == AresFileChooserMode.DIRECTORY) Icons.Default.FolderOpen else Icons.Default.InsertDriveFile,
+            imageVector = if (mode == AresFileChooserMode.DIRECTORY) Icons.Default.FolderOpen else Icons.AutoMirrored.Filled.InsertDriveFile,
             contentDescription = null,
             tint = AresCyan,
             modifier = Modifier.size(22.dp)
@@ -86,7 +89,7 @@ Row(
         modifier = Modifier.size(32.dp),
     ) {
         Icon(
-            Icons.Default.ArrowBack,
+            Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Back",
             tint = if (historyIndex > 0) AresCyan else AresTextSecondary.copy(alpha = 0.4f),
             modifier = Modifier.size(18.dp)
@@ -98,7 +101,7 @@ Row(
         modifier = Modifier.size(32.dp),
     ) {
         Icon(
-            Icons.Default.ArrowForward,
+            Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = "Forward",
             tint = if (historyIndex < history.lastIndex) AresCyan else AresTextSecondary.copy(alpha = 0.4f),
             modifier = Modifier.size(18.dp)

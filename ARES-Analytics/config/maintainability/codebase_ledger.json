@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-16T12:23:11.598611+00:00",
+  "generatedAt": "2026-09-16T12:48:52.515521+00:00",
   "summary": {
-    "totalProductionKotlinFiles": 1105,
-    "verifiedFiles": 54,
-    "auditedFiles": 1051,
+    "totalProductionKotlinFiles": 1107,
+    "verifiedFiles": 7,
+    "auditedFiles": 1100,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 17,
@@ -1252,7 +1252,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SessionBundleService.kt",
@@ -2049,13 +2049,13 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4OutboundPublisher.kt",
       "product": "ARES-Analytics",
-      "lines": 332,
+      "lines": 334,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "AUDITED"
+      "status": "VERIFIED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4Topic.kt",
@@ -2539,7 +2539,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/CommandPalette.kt",
@@ -2649,7 +2649,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/controls/ControlLearningCards.kt",
@@ -2759,7 +2759,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresEmptyState.kt",
@@ -2797,7 +2797,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserEntries.kt",
       "product": "ARES-Analytics",
-      "lines": 287,
+      "lines": 288,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2808,13 +2808,13 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserNavigation.kt",
       "product": "ARES-Analytics",
-      "lines": 260,
+      "lines": 263,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "AUDITED"
+      "status": "VERIFIED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserSidebar.kt",
@@ -2907,13 +2907,13 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ChartContainer.kt",
       "product": "ARES-Analytics",
-      "lines": 125,
+      "lines": 127,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "AUDITED"
+      "status": "VERIFIED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ChooserApproval.kt",
@@ -3078,7 +3078,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/BrownoutProtectionCard.kt",
@@ -3111,7 +3111,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ControlLoopProfilerCard.kt",
@@ -3474,7 +3474,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/PathTuningVisualizer.kt",
@@ -3688,13 +3688,13 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartModel.kt",
       "product": "ARES-Analytics",
-      "lines": 136,
+      "lines": 142,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "AUDITED"
+      "status": "VERIFIED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartPanel.kt",
@@ -3749,7 +3749,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/WidgetPicker.kt",
@@ -3969,7 +3969,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldElementsRenderer.kt",
@@ -5344,7 +5344,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/util/DesktopFileChoosers.kt",
@@ -6609,7 +6609,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/Dyn4jSimulation.kt",
@@ -6642,7 +6642,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningController.kt",
@@ -6829,7 +6829,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinReducer.kt",
@@ -7005,7 +7005,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-FTC-Starter/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/config/AresRuntimePolicy.kt",
@@ -7148,7 +7148,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESLocalizationCalibration.kt",
@@ -7943,6 +7943,17 @@
       "status": "AUDITED"
     },
     {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/safety/HomingInterlock.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 79,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false,
+      "status": "VERIFIED"
+    },
+    {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/tuning/FeedforwardCoeffs.kt",
       "product": "ARESLib-Kotlin",
       "lines": 71,
@@ -8061,7 +8072,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/IndicatorLightIO.kt",
@@ -8083,7 +8094,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/actuator/PrismDriverIO.kt",
@@ -8182,7 +8193,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/CompositeVisionIO.kt",
@@ -8328,6 +8339,17 @@
       "status": "AUDITED"
     },
     {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/input/RumblePacer.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 78,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false,
+      "status": "VERIFIED"
+    },
+    {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/DifferentialDriveKinematics.kt",
       "product": "ARESLib-Kotlin",
       "lines": 134,
@@ -8402,7 +8424,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/logging/ARESDataLogger.kt",
@@ -8545,7 +8567,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/coordinate/AllianceMirroring.kt",
@@ -8765,7 +8787,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/Geometry3d.kt",
@@ -9051,7 +9073,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/PathNumerics.kt",
@@ -9623,7 +9645,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotFieldPolygonValidation.kt",
@@ -9656,7 +9678,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RoutineState.kt",
@@ -9733,7 +9755,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/PowerManager.kt",
@@ -9755,7 +9777,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemCapabilities.kt",
@@ -9909,7 +9931,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/GamepadTelemetry.kt",
@@ -9953,7 +9975,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/SimInputBridge.kt",
@@ -9986,7 +10008,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/tuning/TuningOverlayWriter.kt",
@@ -10008,7 +10030,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/util/PoseStorage.kt",
@@ -10921,7 +10943,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/content/res/AssetManager.kt",
@@ -10932,7 +10954,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/os/Build.kt",
@@ -10954,7 +10976,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/FtcDashboardMocks.kt",
@@ -10965,7 +10987,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/canvas/Canvas.kt",
@@ -10976,7 +10998,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/telemetry/TelemetryPacket.kt",
@@ -10987,7 +11009,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/areslib/ftc/MockIndicatorLightIO.kt",
@@ -11009,7 +11031,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/bosch/BNO055IMU.kt",
@@ -11020,7 +11042,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/gobilda/GoBildaPinpointDriver.kt",
@@ -11075,7 +11097,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/commands/standard/LynxStandardCommandMocks.kt",
@@ -11086,7 +11108,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/rev/RevHubOrientationOnRobot.kt",
@@ -11097,7 +11119,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/sparkfun/SparkFunOTOS.kt",
@@ -11141,7 +11163,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/Gamepad.kt",
@@ -11185,7 +11207,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/SensorMocks.kt",
@@ -11207,7 +11229,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/annotations/Annotations.kt",
@@ -11218,7 +11240,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType.kt",
@@ -11229,7 +11251,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/usb/UsbMocks.kt",
@@ -11240,7 +11262,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/util/ElapsedTime.kt",
@@ -11262,7 +11284,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/ftccommon/external/ExternalMocks.kt",
@@ -11273,7 +11295,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/Telemetry.kt",
@@ -11295,7 +11317,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/navigation/FtcNavigationMocks.kt",
@@ -11317,7 +11339,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/FtcVisionMocks.kt",
@@ -11328,7 +11350,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/apriltag/AprilTagMocks.kt",
@@ -11350,7 +11372,7 @@
       "grandfathered": false,
       "compliant": true,
       "isMicrofile": false,
-      "status": "VERIFIED"
+      "status": "AUDITED"
     },
     {
       "path": "ARESLib-Kotlin/project-compiler/src/main/kotlin/com/areslib/project/compiler/ProjectArtifactManifest.kt",

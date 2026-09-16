@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -275,7 +276,7 @@ private fun resolveFileIcon(file: File, directory: Boolean): ImageVector {
         "json", "jsonl", "rlog", "revlog", "hoot", "csv", "parquet" -> Icons.Default.Analytics
         "kt", "java", "py", "xml", "gradle", "kts", "properties" -> Icons.Default.Code
         "zip", "tar", "gz", "7z", "jar" -> Icons.Default.Archive
-        else -> Icons.Default.InsertDriveFile
+        else -> Icons.AutoMirrored.Filled.InsertDriveFile
     }
 }
 

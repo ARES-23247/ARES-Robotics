@@ -906,6 +906,23 @@ public final class com/areslib/control/safety/CurrentBudgetState : java/lang/Enu
 	public static fun values ()[Lcom/areslib/control/safety/CurrentBudgetState;
 }
 
+public final class com/areslib/control/safety/HomingInterlock {
+	public static final field INSTANCE Lcom/areslib/control/safety/HomingInterlock;
+	public final fun isAllConfigured ([Lcom/areslib/control/safety/MechanismConfigurationStatus;)Z
+	public final fun isAllHomed ([Lcom/areslib/control/safety/MechanismHomingStatus;)Z
+	public final fun isHomingChordPressed (ZZZZ)Z
+	public final fun isHomingRequestAllowed (ZZ)Z
+	public final fun isSafetyHealthy (ZZLjava/lang/Throwable;)Z
+}
+
+public abstract interface class com/areslib/control/safety/MechanismConfigurationStatus {
+	public abstract fun getConfigurationValid ()Z
+}
+
+public abstract interface class com/areslib/control/safety/MechanismHomingStatus {
+	public abstract fun getHomed ()Z
+}
+
 public final class com/areslib/control/tuning/ArmFeedforwardCoeffs {
 	public fun <init> ()V
 	public fun <init> (DDDD)V
@@ -2190,6 +2207,25 @@ public final class com/areslib/input/RawButtonSource : com/areslib/input/Digital
 	public fun isNeutral (Lcom/areslib/input/InputFrame;J)Z
 	public fun reset ()V
 	public fun sample (Lcom/areslib/input/InputFrame;J)Z
+}
+
+public final class com/areslib/input/RumblePacer {
+	public static final field Companion Lcom/areslib/input/RumblePacer$Companion;
+	public static final field DEFAULT_ACTIVE_DURATION_MS J
+	public static final field DEFAULT_COOLDOWN_DURATION_MS J
+	public fun <init> ()V
+	public fun <init> (JJ)V
+	public synthetic fun <init> (JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getActiveDurationMs ()J
+	public final fun getCooldownDurationMs ()J
+	public final fun isCoolingDown ()Z
+	public final fun isRumbleActive ()Z
+	public final fun reset ()V
+	public final fun update (JZZ)D
+}
+
+public final class com/areslib/input/RumblePacer$Companion {
+	public final fun elapsedAtLeast (JJJ)Z
 }
 
 public final class com/areslib/input/SuppressibleButtonSource : com/areslib/input/DigitalSource {
