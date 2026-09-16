@@ -1,5 +1,6 @@
 package com.ares.analytics.viewmodel
 
+import com.ares.analytics.shared.models.DriveDestinationConfig
 import com.ares.analytics.shared.models.SessionSummary
 import kotlinx.serialization.Serializable
 
@@ -71,4 +72,21 @@ sealed class CloudIntent {
     data class DeleteMultipleLocalSessions(val sessionIds: List<String>) : CloudIntent()
     data class DeleteSessionRemote(val sessionId: String, val teamId: String) : CloudIntent()
     data class DeleteMultipleRemoteSessions(val sessionIdsAndTeamIds: List<Pair<String, String>>) : CloudIntent()
+}
+
+internal fun shouldLoadRemoteCloudIndex(
+    isAuthenticated: Boolean,
+    driveDestination: DriveDestinationConfig?,
+): Boolean = isAuthenticated && driveDestination != null
+
+internal fun robotLogRefreshFailureMessage(robotIp: String, error: Throwable): String {
+    val root = generateSequence(error) { it.cause }.last()
+    val detail = root.message?.lineSequence()?.firstOrNull()?.trim().orEmpty()
+    return buildString {
+        append("[CloudViewModel] Robot log refresh failed for ")
+        append(robotIp)
+        append(": ")
+        append(root::class.simpleName ?: "Error")
+        if (detail.isNotEmpty()) append(" — ").append(detail)
+    }
 }

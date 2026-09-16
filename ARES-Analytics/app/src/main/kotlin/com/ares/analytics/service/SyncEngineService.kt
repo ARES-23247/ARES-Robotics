@@ -9,6 +9,7 @@ import com.ares.analytics.shared.models.allowsAutomaticExternalUpdates
 import com.ares.analytics.util.Sha256
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
@@ -653,5 +654,31 @@ class SyncEngineService(
         const val CLOUD_UPLOAD_ATTEMPTS = 3
         const val CLOUD_UPLOAD_RETRY_DELAY_MS = 1_000L
         const val MAX_CLOUD_SESSION_BYTES = 2L * 1024L * 1024L * 1024L
+    }
+}
+
+/** Owns the archive from allocation through retries, validation and atomic database import. */
+internal suspend fun <T> withDownloadedCloudArchive(
+    prefix: String,
+    download: suspend (File) -> Unit,
+    restore: suspend (File) -> T,
+): T {
+    val archive = File.createTempFile(prefix, ".ares-session.zip")
+    try {
+        var attempt = 0
+        while (true) {
+            try {
+                download(archive)
+                break
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (++attempt >= 3) throw error
+                delay(attempt * 1000L)
+            }
+        }
+        return restore(archive)
+    } finally {
+        archive.delete()
     }
 }

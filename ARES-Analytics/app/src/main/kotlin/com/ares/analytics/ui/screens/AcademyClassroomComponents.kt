@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -136,5 +137,22 @@ internal fun chooseAcademyReportFile(studentName: String, pathId: String): File?
         filterDescription = "Markdown document (*.md)",
         extensions = listOf("md")
     )
+}
+
+@Composable
+internal fun TeachingNotice(title: String, body: String, accent: Color) {
+    Surface(
+        color = accent.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.7f)),
+        shape = RoundedCornerShape(10.dp),
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(title, color = accent, fontWeight = FontWeight.Bold)
+            Text(body, color = AresTextPrimary, lineHeight = 20.sp)
+        }
+    }
 }
 
