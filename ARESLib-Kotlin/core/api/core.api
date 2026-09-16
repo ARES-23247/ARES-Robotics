@@ -3199,6 +3199,7 @@ public final class com/areslib/math/geometry/Pose2d {
 	public final fun getX ()D
 	public final fun getY ()D
 	public fun hashCode ()I
+	public final fun relativeTo (Lcom/areslib/math/geometry/Pose2d;)Lcom/areslib/math/geometry/Pose2d;
 	public fun toString ()Ljava/lang/String;
 	public final fun transformBy-k23O6gw (Lcom/areslib/math/geometry/Translation2d;D)Lcom/areslib/math/geometry/Pose2d;
 }
@@ -3340,6 +3341,7 @@ public final class com/areslib/math/geometry/Translation2d {
 	public final fun getY ()D
 	public fun hashCode ()I
 	public final fun minus (Lcom/areslib/math/geometry/Translation2d;)Lcom/areslib/math/geometry/Translation2d;
+	public final fun normalize ()Lcom/areslib/math/geometry/Translation2d;
 	public final fun plus (Lcom/areslib/math/geometry/Translation2d;)Lcom/areslib/math/geometry/Translation2d;
 	public final fun rotateBy-zuP-jqc (D)Lcom/areslib/math/geometry/Translation2d;
 	public final fun times (D)Lcom/areslib/math/geometry/Translation2d;

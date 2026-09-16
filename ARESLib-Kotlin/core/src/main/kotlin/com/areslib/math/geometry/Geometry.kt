@@ -62,6 +62,19 @@ data class Translation2d(val x: Double = 0.0, val y: Double = 0.0) {
 
     /** Direction angle of this vector from the origin. */
     fun angle(): Rotation2d = Rotation2d(kotlin.math.atan2(y, x))
+
+    /**
+     * Normalizes this translation vector to a unit vector with norm 1.0.
+     * Returns Translation2d(0.0, 0.0) if the norm is zero or non-finite.
+     */
+    fun normalize(): Translation2d {
+        val magnitude = norm
+        return if (magnitude.isFinite() && magnitude > 1e-15) {
+            Translation2d(x / magnitude, y / magnitude)
+        } else {
+            Translation2d(0.0, 0.0)
+        }
+    }
 }
 
 /**
@@ -148,6 +161,21 @@ data class Pose2d(
 
     /** Calculates 2D translational distance to another pose. */
     fun distanceTo(other: Pose2d): Double = translation.distanceTo(other.translation)
+
+    /**
+     * Calculates the relative pose of this pose with respect to [other] as the reference origin frame.
+     *
+     * Expresses the displacement and relative orientation in the [other] body coordinate frame:
+     * $$ \Delta \mathbf{t} = (\mathbf{t} - \mathbf{t}_{\text{other}}).\text{rotateBy}(-\text{other.heading}) $$
+     * $$ \Delta \theta = \text{heading} - \text{other.heading} $$
+     *
+     * @param other The reference origin pose.
+     * @return The relative pose in [other]'s coordinate frame.
+     */
+    fun relativeTo(other: Pose2d): Pose2d {
+        val deltaTrans = Translation2d(x - other.x, y - other.y).rotateBy(-other.heading)
+        return Pose2d(deltaTrans.x, deltaTrans.y, heading - other.heading)
+    }
 }
 
 /**
