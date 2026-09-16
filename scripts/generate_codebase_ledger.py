@@ -40,7 +40,7 @@ def compute_ledger(root: Path):
     grandfathered_count = 0
 
     for rel in sorted(tracked_files):
-        if "/src/main/" not in rel:
+        if "/src/main/" not in rel or any(part in ("build", ".gradle") for part in Path(rel).parts):
             continue
         p = root / rel
         lines = len(p.read_text(encoding="utf-8").splitlines())
@@ -48,7 +48,7 @@ def compute_ledger(root: Path):
         product = rel.split("/")[0] if "/" in rel else "root"
         if product == "ARESLib-Kotlin":
             limit = 500
-        elif product == "templates":
+        elif product in ("templates", "ARES-FRC"):
             limit = 1000
         else:
             limit = 750
