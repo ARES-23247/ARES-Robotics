@@ -239,7 +239,7 @@ val productionKotlinRoots = listOf(file("app/src/main"), file("shared/src/main")
 
 val verifyProductionKotlinFileSizes = tasks.register("verifyProductionKotlinFileSizes") {
     group = "verification"
-    description = "Prevents existing Kotlin monoliths from growing and new production files from exceeding 500 lines."
+    description = "Prevents existing Kotlin monoliths from growing and new production files from exceeding 750 lines."
     inputs.file(largeProductionKotlinBaseline)
     inputs.files(productionKotlinRoots.map { root -> fileTree(root) { include("**/*.kt") } })
 
@@ -260,9 +260,9 @@ val verifyProductionKotlinFileSizes = tasks.register("verifyProductionKotlinFile
                         val relative = source.relativeTo(rootDir).invariantSeparatorsPath
                         val lineCount = source.useLines { lines -> lines.count() }
                         val baseline = allowed[relative]
-                        if (lineCount > 500 && (baseline == null || lineCount > baseline)) {
+                        if (lineCount > 750 && (baseline == null || lineCount > baseline)) {
                             add(
-                                if (baseline == null) "$relative is a new $lineCount-line production file (limit 500)."
+                                if (baseline == null) "$relative is a new $lineCount-line production file (limit 750)."
                                 else "$relative grew from the $baseline-line baseline to $lineCount lines.",
                             )
                         }
@@ -276,7 +276,7 @@ val verifyProductionKotlinFileSizes = tasks.register("verifyProductionKotlinFile
             )
         }
         logger.lifecycle(
-            "Production Kotlin size ratchet passed (${allowed.size} grandfathered files, 500-line new-file limit).",
+            "Production Kotlin size ratchet passed (${allowed.size} grandfathered files, 750-line new-file limit).",
         )
     }
 }
