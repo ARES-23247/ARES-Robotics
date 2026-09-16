@@ -372,7 +372,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportService.kt",
       "product": "ARES-Analytics",
-      "lines": 664,
+      "lines": 678,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1842,7 +1842,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4ConnectionLifecycle.kt",
       "product": "ARES-Analytics",
-      "lines": 287,
+      "lines": 294,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1862,7 +1862,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4OutboundPublisher.kt",
       "product": "ARES-Analytics",
-      "lines": 334,
+      "lines": 335,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

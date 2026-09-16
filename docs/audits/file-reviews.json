@@ -827,12 +827,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportArchiveOps.kt": {
       "sha256": "51deda53fc638a34ba8e707a1453d8fe88ee7c4372cc670a06c518de91e284c7",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Companion operations for AutoImportService: content-addressed SHA-256 fingerprinting of raw and paired .dslog/.dsevents archives, safe path traversal sanitization (safeArchiveFile), and quarantine packaging.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited path traversal prevention, composite fingerprint hashing, atomic copy/move operations, and quarantine manifest persistence. Verified by AutoImportServiceTest suite (12 passed tests).",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportService.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.AutoImportServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -842,12 +842,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportProcessRunner.kt": {
       "sha256": "b76dc4a959ef71c849af2b7aa019f41d00a9ed36adc7c000bc486d5d809cf6bd",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Process runner for remote ADB and SSH/SCP log pullers. Implements strict process execution timeouts (10s list, 60s transfer) with guaranteed stream closure and forced process tree destruction on timeout.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited process execution runner: bounded stdout/stderr draining, pipe deadlock prevention, timeout enforcement, exit code validation, and forced SIGKILL termination. Verified by process probe tests in AutoImportServiceTest.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportService.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.AutoImportServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -856,13 +856,14 @@
       }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportService.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Release review of local source insertion/deletion keys and stability gate, including companion-key consistency. Real CSV/database regression fails before correction and passes afterward. Full remote/quarantine behavior was not re-audited.",
+      "scope": "Complete lifecycle audit of AutoImportService: observation map stabilization, external deletion eviction, staging hash atomicity, quarantine manifest dedup, and process runner interaction. Fixed observation leak on externally deleted files via pruneStaleLocalObservations(). Software-simulated; physical robot link (ADB/SSH) offline.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_61_REVIEW.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.AutoImportServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "3202f0b076ea0936d17f3ab32573a20e3383b56ba68ca4f78ed09b41e95b764c",
+      "sha256": "523f5b63e5f1af9a7f9a4135110987fbd35446b233e6b018d30e0085dccbd341",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -932,15 +933,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DashboardHealthService.kt": {
-      "sha256": "df2ac2f2c297e039af0c3d5374b20d42f3dfdbda1cd06ec81d29790c43143c85",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Entire sampler, snapshot models and logging conversion reviewed. Observed rate baselines, target epoch/counter resets, finite byte availability, unsigned totals, correct subset prefetch ratio, status thresholds, nullable unmeasured dashboard drops and scope-owned disposal. 18 new virtual-time tests and full Studio gate passed; Kover 105/106 lines, 51/56 branches. Source snapshots/freshness are not atomic; rendering/hardware and explicit coverage gaps are documented.",
+      "sha256": "1c6fd7a113ee23e4c49a2d4bbcfd2aca09c40dca6b7558dc9a945d5b06bf59cc",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited health metrics sampler: counter rollover handling, epoch resets, zero-division guards, and sample rate calculation. Scope teardown leak noted for Desktop service registry wiring.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass26-studio-final.log",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -1133,14 +1131,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExportService.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified lossless telemetry export service for CSV list, sample-and-hold wide CSV table, and binary WPILOG formats. Validated DuckDB keyset cursor streaming (EXPORT_PAGE_SIZE = 5,000) preventing heap exhaustion, atomic destination file installation, spreadsheet formula neutralization (=, +, -, @), and WPILOG immutable type validation.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited export pipeline: keyset streaming, heap exhaustion bounds, spreadsheet formula injection sanitization, preflight validation against live modification, and two-phase atomic file replacement.",
       "evidence": [
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ExportServiceTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "0566ec41292538a89b321c37dc1043c31586672346bdca31e032e5a8971e7675",
+      "sha256": "ce09b59eb53eae41fd02a400c948eb0866bc879c35f57d73fe95b90126c1cc8f",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -1402,13 +1399,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Release diff review of volatile diagnostic timestamp and affected dispatch/lifecycle integration. Local client, shutdown, and loopback tests passed. No full-file or atomic logging-rate guarantee.",
+      "scope": "Audited NT4 client concurrency, atomic simulator pose divergence rate-limiting, session mutex and pending frames channel queueing, and terminal disposal. Fixed check-then-act race on divergence rate limiting using AtomicLong CAS while preserving <= 750 line ratchet. Verified via 29 tests in Nt4ClientServiceTest. Loopback NT4 instance; physical robot network offline.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_61_REVIEW.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4ClientServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "61104c87ec6d2b4e0ed371c968b53dcd829f9e7fe366fe7f32d8eeb704f28c5b",
+      "sha256": "797c88f612621354d76f47c008afc2a45843343af18683f9c451fc4674072fec",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -1417,12 +1415,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ConnectionMetrics.kt": {
       "sha256": "6d8dd5466e5b351a821d5661df69e32b29c5c1c7fd3f33afedf425c260ed23de",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Connection metrics collector for NT4 streaming: tracks frame receipt rates, bytes streamed, dropped frames, and connection uptime counters.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited connection metrics collector: monotonic frame and byte counters, uptime calculation, and rate smoothing. Verified by Nt4ClientServiceTest.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4ClientServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -1690,12 +1688,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RunComparisonFindingsAnalyzer.kt": {
       "sha256": "f472469507a557bacb95c0786b2b1408983a515dbf7d6b347427fa59a7a60637",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Deterministic findings analyzer for paired telemetry runs: computes peak error deltas, trajectory divergence, tracking standard deviations, and alert occurrences between primary and comparison runs.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited deterministic anomaly detection and findings classification across voltage, current, loop time, tracking, and temporal correlation windows. Verified by RunComparisonServiceTest.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RunComparisonService.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.RunComparisonServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -1705,12 +1703,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RunComparisonMarkdownExporter.kt": {
       "sha256": "3f9815aaed54f4c5da36d02a6da15d4ed6a7158fcd7ae6310ac19b5fc617a2be",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Markdown report exporter for paired telemetry run comparisons: formats tabular metrics, fault summaries, and aligned timestamps into portable GitHub-flavored Markdown.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Markdown report exporter: HTML/markdown control character sanitization, non-certification disclaimers, and metric table generation. Verified by RunComparisonServiceTest.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RunComparisonService.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.RunComparisonServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -1720,12 +1718,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RunComparisonModels.kt": {
       "sha256": "015ec425fa0ece587867fa404bc8b1c654b129271db2eea6ec7cc82b9cb75615",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Immutable domain models and data classes for paired run comparison reports, metric definitions, alignment strategies, and comparison series.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited immutable comparison domain models, alignment kinds, and finding classifications. Verified by RunComparisonServiceTest.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RunComparisonService.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.RunComparisonServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -1734,14 +1732,14 @@
       }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RunComparisonService.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified deterministic paired-run telemetry comparison. Validated strict workspace tenant filtering on selected sessions, bounded frame queries, exact timestamp matching for composite metrics without future-sample interpolation, thread-safe stateless Dispatchers.IO execution, and atomic markdown report export.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited paired-run telemetry comparison: strict workspace tenant validation, zero-interpolation sample alignment at exact microsecond timestamps, and compatibility keys. Verified by RunComparisonServiceTest (6/6 tests passing).",
       "evidence": [
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RunComparisonServiceTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.RunComparisonServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "cebe814007a3ffc3249d4300abac3a3a92b08562ff3ce8c602b30037e1d96ef4",
+      "sha256": "c76b72bd848187902f9a35318aeddbdaa6748f3fb4041168cee866c9e3be63be",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -2513,13 +2511,15 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4ConnectionLifecycle.kt": {
-      "review": "partial",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Release diff review of inactive HTTP-client closure and surrounding start/stop/retry ownership. Existing shutdown and loopback checks passed. No independently measured engine-leak claim.",
+      "scope": "Audited client WebSocket connection lifecycle, receive timeout exception boundary, graceful close handshakes, and reconnection backoff. Fixed bug where TimeoutCancellationException terminated the reconnection loop. Verified by Nt4ClientServiceTest and Nt4IntegrationDiagnosticTest.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_61_REVIEW.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4ClientServiceTest.xml",
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4IntegrationDiagnosticTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "9b312f564a8bbce4ca6111ed09d435f8b3674c4cf9244ebbbd584ff08a46e327",
+      "sha256": "a21e558fe6376897fef9029ed3773438687356cf213f8f1f2e7efee42fd536c9",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -2536,16 +2536,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4OutboundPublisher.kt": {
-      "sha256": "c49e851113a7dd27f0fb6e87521c0c18c62c3f1945ebe15f1e5c869e7e467ed3",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated lines 1-333: attach, detach, fixedPublishMessage, dynamicPublishMessages, sendTimeSyncRequest, acceptTimeSyncReply, nextDriveSessionNonce, publishDriveFrame, publishDouble, publishBoolean, publishString, publishTuningRequest, encodeNt4BinaryUpdate, ensurePublisher, publishInputDouble, publishInputString, publishInputDoubleArray, and sendBinaryUpdate. Verified zero-allocation hot path in 50 Hz control loop via ThreadLocal buffers (publishDoubleBuffer, publishDoubleArrayBuffer), synchronous DriveFrameContractValidator checks under driveFramePublishMutex, monotonic clock translation, server receipt timestamp (0L) semantics for command/tuning reliability across paused simulator clocks, string payload length limits (<= 65,536 bytes), atomic tuning request encoding (value + nonce in single frame), and thread-safe dynamic publisher caching.",
+      "sha256": "b52347ab1f3138ca06a56b881d7d5e92d571b911bd589337070821bc038caafa",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited binary update encoding, ThreadLocal buffer management, atomic drive frame contract enforcement, attach connectionId ordering, and synchronized time sync replies. Verified by Nt4ClientServiceTest and Nt4IntegrationDiagnosticTest.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4ClientServiceTest.xml",
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4IntegrationDiagnosticTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -7181,12 +7179,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoImportServiceTest.kt": {
-      "sha256": "90688bae869789ef96995236d463b2319e1d7b43a6df1576953f6d3b34b536d9",
-      "review": "partial",
+      "sha256": "24f1fe6f518a618bccf19c0fa471715deb0023b03c406e24abf8afcb68cbb0b9",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed and exercised local-import regression requiring a recreated source to establish stability again, and ran the existing import suite. Remaining helper tests were executed but not all reviewed in full.",
+      "scope": "Comprehensive suite of 12 unit and integration tests for local log auto-import, external deletion eviction, quarantine deduplication, and process execution timeouts. Verified 12/12 passing.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_61_REVIEW.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.AutoImportServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoTunerInputAuditTest.kt": {
@@ -7675,31 +7674,33 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4ClientServiceTest.kt": {
-      "sha256": "72f2a54701d6abb979b9c3c0c08589bdf13b4cd499575f8c97694def2a65581e",
+      "sha256": "56604839a8c8b1ff509af122ad3cb63597328d86e2a96e9090e7e73429c5ef7f",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Comprehensive test of Nt4ClientService: packed binary decoding for drive input acknowledgements and mecanum motor frames, loopback drive control restriction, physical command gating, topic announce/unannounce, telemetry flow, receipt time usage for live persistence, console topic routing, binary protocol codec interop, canonical subscription prefixes, atomic drive frame contract validation, exclusive recording session locking, graceful shutdown, and target reset.",
+      "scope": "Comprehensive test of Nt4ClientService: packed binary decoding, loopback drive control, physical command gating, topic announce/unannounce, telemetry flow, receipt time usage, console routing, binary codec interop, atomic drive frame validation, exclusive recording session locking, graceful shutdown, target reset, and concurrent atomic divergence rate-limiting. Verified 29/29 passing.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4ClientServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4DisposalAuditTest.kt": {
-      "sha256": "abd420c2492d508f0da6dba21a5cfd44f117d70ca50f65bb68dbea44218d304b",
+      "sha256": "b84532df9ed83c15e9d094daf27b810df51d0275eeff8974a25d7470db4d342a",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 251: Complete six-method regression file reviewed/executed. Four failure baseline plus reusable-stop positive case retained; normal/failed/canceled/repeated terminal lifetime, retained retry data/manual recovery, blocked later start and held-worker cleanup joining. Observes actual private owner without public test API; baseline failures forcibly release workers. Mock database, no physical device.",
+      "scope": "Verified 6 disposal lifecycle regression tests on mock database: normal, failed, canceled, and repeated terminal lifetime, retained retry data recovery, and worker cleanup joining. Verified 6/6 passing.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass251-verified-evidence/summary.json"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4DisposalAuditTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4IntegrationDiagnosticTest.kt": {
-      "sha256": "c630b9c9cb6e83abbf664218e351aa37780ba02908dc968cc0cbef38af007e3d",
+      "sha256": "d6bd9ee8ca1c57b450790642906576f534e21ae630506cb36da7ee9496b1b5d4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified end-to-end NT4 pipeline diagnostic: ephemeral loopback server startup, multi-topic publication, client connection and WebSocket handshake, active topic discovery, OpMode selection, and latest value verification.",
+      "scope": "Verified end-to-end loopback NT4 pipeline diagnostic: ephemeral loopback server startup, multi-topic publication, client WebSocket handshake, active topic discovery, OpMode selection, and latest value verification. Verified passing.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.Nt4IntegrationDiagnosticTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4LiveWireDiagnosticTest.kt": {
@@ -7957,12 +7958,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/RunComparisonServiceTest.kt": {
-      "sha256": "65babb62104c80af39d0f4f28b0b04797cd334a60c79a0407ae4bfaf8b5785ea",
+      "sha256": "0e8670e4aa8de258fffeb56def8f560dca859a14adc9640569b48dae4c529a04",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified RunComparisonService: deterministic alignment on autonomous start / teleop start / annotations, oracle property validation against golden fixtures, metric summary calculations, findings classification, Markdown sanitization, strict same-timestamp derived metric joining, sampleOrder deduplication, and workspace boundary checks.",
+      "scope": "Verified RunComparisonService: deterministic alignment on autonomous start / teleop start / annotations, oracle property validation against golden fixtures, metric summary calculations, findings classification, Markdown sanitization, strict same-timestamp derived metric joining, sampleOrder deduplication, and workspace boundary checks. Verified 6/6 passing.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.RunComparisonServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ScalarDiagnosticAuditTest.kt": {

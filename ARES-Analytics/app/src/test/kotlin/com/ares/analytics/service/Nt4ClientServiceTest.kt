@@ -4,6 +4,8 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.SessionSummary
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -632,5 +634,29 @@ class Nt4ClientServiceTest {
         assertTrue(nt4ClientService.telemetryStore.history(frame.key).isEmpty())
         assertTrue(nt4ClientService.getActiveTopics().isEmpty())
         assertNull(withTimeoutOrNull(100) { nt4ClientService.uiTelemetryFlow.first() })
+    }
+
+    @Test
+    fun `simulator pose divergence logging is atomically rate-limited under concurrent dispatch`() = runBlocking(Dispatchers.Default) {
+        val frame = SimulatorPoseFrameSnapshot(
+            sequence = 1L,
+            trueX = 0.0, trueY = 0.0, trueHeading = 0.0,
+            ekfX = 5.0, ekfY = 5.0, ekfHeading = 0.0,
+            odomX = 0.0, odomY = 0.0, odomHeading = 0.0,
+            timestampMs = 1L,
+            timestampUs = 1_000L, targetEpoch = 1L
+        )
+
+        nt4ClientService.lastSimulatorPoseDivergenceLogNs.set(Long.MIN_VALUE)
+
+        val threadCount = 32
+        val logResults = (0 until threadCount).map {
+            async {
+                nt4ClientService.logSimulatorPoseDivergence(frame)
+            }
+        }.awaitAll()
+
+        val successCount = logResults.count { it }
+        assertEquals(1, successCount, "Exactly one concurrent thread must succeed in logging pose divergence")
     }
 }
