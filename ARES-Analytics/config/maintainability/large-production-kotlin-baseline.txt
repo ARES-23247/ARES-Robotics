@@ -55,7 +55,6 @@ app/src/main/kotlin/com/ares/analytics/ui/screens/ImportCenterScreen.kt=521
 app/src/main/kotlin/com/ares/analytics/ui/screens/IntegrationCenterScreen.kt=586
 app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreen.kt=928
 app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/SyncStep.kt=656
-app/src/main/kotlin/com/ares/analytics/ui/screens/ProfileScreen.kt=1114
 app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectBackupScreen.kt=700
 app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectIdentityScreen.kt=616
 app/src/main/kotlin/com/ares/analytics/ui/screens/RunHistoryScreen.kt=600
