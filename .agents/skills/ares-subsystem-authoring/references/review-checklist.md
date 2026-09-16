@@ -22,6 +22,12 @@ soft limits, current validity, and zero-allocation periodic behavior where appli
 ## Verification and teaching
 
 - Generated tests exercise behavior rather than only source shape.
+- For changed bundled starters/examples or their import path, extract the actual packaged archive
+  and load its documents through the production Studio authoring model. Check project ownership,
+  drivetrain/tuning identity, controller bindings, and editable validation state, then generate and
+  validate the affected runtime. Source fixtures and generated-code tests alone can miss an
+  unusable editor. Use the [desktop tester](../../compose-desktop-tester/SKILL.md) when rendered
+  interaction is part of the changed flow; report unavailable platform evidence explicitly.
 - Mock and real adapters share command limits, homing, faults, and close semantics.
 - Hardware-created natural state remains explicit/editable, and ID renames update references without
   changing immutable editor identity.
