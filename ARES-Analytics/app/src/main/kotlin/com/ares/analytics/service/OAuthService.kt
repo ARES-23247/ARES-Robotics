@@ -100,6 +100,8 @@ class OAuthService(
         bootCallbackServer = ::bootCallbackServer,
         launchBrowser = ::launchBrowser,
         testGoogleCredentials = ::testGoogleCredentials,
+        clearPendingRequest = ::clearPendingRequest,
+        stopServer = ::stopServer,
     )
 
     init {
@@ -268,8 +270,18 @@ class OAuthService(
         if (!registerPendingRequest(pendingRequest)) return null
 
         if (interactive) {
-            bootCallbackServer(callbackPort, generation)
-            launchBrowser(loginUrl, generation)
+            try {
+                bootCallbackServer(callbackPort, generation)
+                launchBrowser(loginUrl, generation)
+            } catch (t: Throwable) {
+                clearPendingRequest(generation)
+                stopServer(generation)
+                updateStateIfCurrent(
+                    generation,
+                    AuthState.Error("Failed to start local authentication listener: ${t.message ?: "network port unavailable"}")
+                )
+                return null
+            }
         }
         return state
     }

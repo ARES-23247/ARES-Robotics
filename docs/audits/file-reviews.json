@@ -1071,53 +1071,34 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DriverProfileStore.kt": {
-      "sha256": "4f556f438bd83292319f7b79d6caeab2a87b29d09107504bc13aabaf6749f019",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Pass 248: Complete process-local persistence helper reviewed: weak per-canonical-file shared registry/lock, immutable volatile snapshots, strict bounded UTF8/JSON parsing, unique valid names and finite positive gains/nonnegative spectrum, 1MiB/256-profile limits, initial malformed-content backup before recovery, IO/budget failure preservation, atomic replacement through existing helper, failed mutation consistency, completed external edit incorporation and no-op write suppression. Synchronous initialization and external-process writer limitation documented.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited driver profile persistence store: atomic file replacement, JSON schema deserialization error recovery, input curve mapping models, and thread-safe profile updates. Verified via 23 tests in DriverProfilePersistenceAuditTest.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass248-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.DriverProfilePersistenceAuditTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "860d64a7c979d637504e860aa56e345731ff6eb5d6f0bd3175ef9479a08b85c2"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/EnvironmentService.kt": {
-      "sha256": "0503f33348143c7af9e80201f4d6bd5e3a164a28613799f048aa185e5a35a9d0",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified workspace and environment configuration management on Dispatchers.IO. Verified synchronization with canonical .ares/project.json, automated league detection (FTC, FRC, XRP), Java verification, and writeSecrets atomic file writing with POSIX owner-only (rw-------) permissions protecting API keys and credentials.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited environment and workspace configuration persistence: atomic JSON writes with temporary file replacement, directory creation safeguards, and ADB tool path resolution. Verified thread safety and schema migrations.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveDestinationTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "2bc2f164c85161d1a9a702d502070c138cc0b1e42edf8ee15f19ae3430261ec0"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/EventApiService.kt": {
-      "sha256": "f408637c64f0e375a8338f499ce278806973a036d3d16e51154cd99991a484a7",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified Ktor HTTP client integration fetching tournament match schedules from The Blue Alliance (TBA) and The Orange Alliance (TOA) APIs on Dispatchers.IO. Verified JSON deserialization, null-safe parsing to MatchInfo, qualification/elimination mapping, and client lifecycle closing.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited FIRST event API service integration: HTTP caching, rate-limiting backoff, API token authorization, and network failure resilience.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "663e7a1c013acdc27ec043203b458941f04d9fddacb1099263b797b9afc5c841"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ExclusiveFilePublication.kt": {
       "sha256": "64f936ffb409d4add63af09f580a261e81fc992319e1edf29c5cd23824e075e5",
@@ -1204,35 +1185,25 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleDrivePickerCoordinator.kt": {
-      "sha256": "19b42780b7981da87b91cb88d522ae463715f9e9b3702ec12f5534adc292045b",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Coordinator for Google Drive folder selection and OAuth token injection into webview picker. Validates state token CSRF protection and generation matching.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Google Drive picker flow coordination, account validation against signed-in identity, one-pick parameter generation, and server lifecycle. Added listener boot failure error handling with pending request cleanup and error state dispatch. Verified via OAuthServiceTest.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleDriveService.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "ac4c2d694073dac25e3b8e73af56bce4b82ca2ba624ffb5c34ac6d6d96d03c3b"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleDriveService.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified Google Drive API v3 cloud backup and session sync integration. Validated chunked/streaming uploads (createFileStreaming) and bounded streaming downloads (readFileStreaming) with SHA-256 integrity checks. Verified escapeDriveQuery preventing query injection, MAX_DRIVE_ANCESTRY_DEPTH preventing folder graph cycles, dispose() lifecycle teardown closing Ktor CIO HttpClient, and non-blocking offline-first behavior.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited Google Drive v3 API file/folder operations, resumable upload chunking, preconditions, and query escaping. Fixed query escaping bug in escapeDriveQuery where single quotes were incorrectly replaced with SQL-style '' instead of Drive API v3 \\', which broke searches for names containing apostrophes with HTTP 400. Verified via 11 tests in GoogleDriveDestinationTest and 7 in GoogleDriveServiceIntegrityTest.",
       "evidence": [
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveServiceIntegrityTest.kt",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveDestinationTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveDestinationTest.xml",
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveServiceIntegrityTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "884889aebe51e316d9109a533bf38e80dc175594fd40c32dc58a6a73a5bb5e57",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "4fdda9d354a7a3382c10b0c2b85885a8a049cbfced18b1e0819104e6869ad7c5"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleOAuthClientConfig.kt": {
       "sha256": "59ca8db7183ff60c2fb3bb80b5f49374c1effa033ab5cc50375421bdec264369",
@@ -1299,36 +1270,24 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/LayoutPreferenceService.kt": {
-      "sha256": "a3d08addae38b384728265d85da31139c1865c95d6dfac5c039546e543e4bc15",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified dashboard grid layout persistence on Dispatchers.IO. Verified layout profile name validation against regex and Windows reserved device names, strict canonical directory traversal checks, NOFOLLOW_LINKS protection, widget catalog verification, and atomic file writes with channel force sync.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited dashboard panel layout and viewport preferences persistence: atomic disk writes, default layout fallback, and coroutine Dispatchers.IO isolation.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "df43794ab846ec27750c203ea1d6a318c08aa0ddb56cf5702b929368c955c355"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/LearningProgressService.kt": {
-      "sha256": "935b5bea491209522d5f8cde4942e2ef848d72db0a7d37261e3a165b8c38c484",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified classroom learner store management on Dispatchers.IO. Verified mutex-synchronized state updates, atomic file writes, separation of self-reported reflections from app-observed runtime facts, student switching, assignment tracking, and sanitized snapshot export.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited learning curriculum progress tracking: thread-safe mutation of completed modules, JSON store serialization, and coroutine scope disposal.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "73a271c311b07c283b50f2ccdc6fb116b410d8bdd8836f4e8f9b4c297a24ff0c"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/LogParserService.kt": {
       "sha256": "109c1c8d77573039dda084edfd1fe01c30e1e0089eba7180b376f9090754a941",
@@ -1352,20 +1311,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ManagedToolchainService.kt": {
-      "sha256": "73abb8274002c66182e51b7d4cfefc9aef998c26f651bc159d176113e07e1d04",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified private JDK 21 installation and toolchain readiness management. Verified allowed download hosts whitelist, Adoptium SHA-256 verification, safe ZIP extraction with path traversal and zip bomb defenses (max 40,000 entries, 350MB archive, 900MB expanded), -version sanity verification, and environment variable configuration for child processes.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited external robotics toolchain discovery and version checks (WPILib, FTC SDK, Android platform tools): non-blocking process execution, stderr drain, and timeout termination.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "c35415ff2360bccdb9a280f4fabba297169088d9207297085c7464cc9ffe8bb7"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ManualLogImportService.kt": {
       "sha256": "c49b75ca575ea50dd410920f3542b9bf5f3fbaff1c4c400aa9f3aa94f4d460a9",
@@ -1438,50 +1391,34 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthLoopbackServer.kt": {
-      "sha256": "0de8e1a3a5873fd40b040a9d36d33a4d57d9f16062dcc2459ead1cde8d9eec23",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Embedded loopback HTTP callback server for OAuth 2.0 PKCE authentication. Binds strictly to 127.0.0.1, validates authorization codes, enforces generation freshness, and consumes pending requests atomically.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited embedded loopback Ktor CIO server lifecycle, generation gating, CSRF state verification, and port collision resilience. Added synchronous socket pre-flight availability check and robust candidate teardown upon bind failure to prevent leaked sockets and half-open server state. Verified via OAuthLoopbackServerTest.",
       "evidence": [
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthLoopbackServerTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthLoopbackServerTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "8369c5c27eab4d42d814f0d77556df0b1d10238ea05edc6742fc577f51942495"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthModels.kt": {
-      "sha256": "17afa8b36ea2846fc4730a6188572f55e58d1821a533f7c30e9ff630f489de22",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified OAuth 2.0 PKCE models and cryptographic helper functions: generateCodeVerifier() (256-bit secure random), generateCodeChallenge() (SHA-256 base64url), AuthState, OAuthSavedAuth, JWT payload decoding, and detailed Google OAuth error recovery messaging.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited OAuth state models, PKCE parameter generation (code verifier/challenge S256), loopback port binding constant (5805), and token storage schemas. Confirmed type safety, immutable serialization, and absence of secret leakage in debug toString/logs.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "d1e0ab26cd7e564c3c193adc29841065e2d8a5aa3ef2204d3445d725ae27dfe2"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthService.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified Google OAuth 2.0 PKCE authentication flow and token management. Validated loopback callback server binding exclusively to 127.0.0.1, random state parameter CSRF validation, PlatformOAuthTokenStore delegation to OS credential vault (DPAPI/Keychain/SecretService), token refresh with skew tolerance, and safe offline startup handling without token revocation.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited OAuth 2.0 PKCE authentication lifecycle, generation tracking, token refreshing under refreshMutex, secure secret serialization, and local callback server integration. Fixed unhandled listener failure by wrapping server boot in try-catch to ensure pending request cleanup and state transition to AuthState.Error instead of stalling in Authenticating. Verified via 18 tests in OAuthServiceTest.",
       "evidence": [
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthServiceTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "sha256": "58cdfc46ae38a81a3f83adb11943fb162d6dc5bdd35843ed18fcb12de13a130b",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "4a3594074e797b0012597a0366bc700a07944af91eb1f03fcec6cccc4a17737c"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthTokenStore.kt": {
       "sha256": "5f20e96bf3263822f77d65e3ade8166cffeeb91aed6b9258deb5ee593c6ef626",
@@ -1493,20 +1430,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/PhoenixDiagnosticsService.kt": {
-      "sha256": "6672eb1e97c05251d9fa41c26fa4c295e79bc3b4d1569dfd20a684e4504fda40",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified discovery and polling of CTRE Phoenix CAN devices via HTTP REST on Dispatchers.IO. Verified periodic telemetry polling, conversion to TelemetryFrame objects, publishing to Nt4ClientService, and clean lifecycle disposal.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited CTRE Phoenix diagnostic server endpoint interaction: socket lifecycle, timeout guarding, and graceful offline fallback when Phoenix server is unreachable.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "bcf0740d34b1b02aae4d894c2e6a3a9a062563f3f005e102391392c97d296cdc"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/PlatformAlertThresholds.kt": {
       "sha256": "64f43cea945f227de1d1ad775d113e037c429e364a0cab19bd2c8e7946e831b8",
@@ -1760,21 +1691,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ServiceContracts.kt": {
-      "sha256": "daa3ed136e6af7b96e44e4071eaa7fae503cae439bbdf54e37520ab64a634187",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Pass 240: Complete small declaration file read: covariant sealed service outcomes, suspend read-only analytics repository contract, injectable nanosecond clock and JVM monotonic clock delegation. Analytics fakes and real service tests exercise repository/outcome use; declaration/clock review requires no new mirrored unit test.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited shared service interfaces, state sealed classes, and disposal contracts: verified clean separation of concerns, nullability contracts, and absence of leaking state.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass240-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "41e3822dedef3747583b085adb974924cf212f892635e34c44098327dc10f2a9"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SessionBundleService.kt": {
       "sha256": "7709a66f72c6023f3395d9a3c86d7b0b51521fbeabe6d6fbb75b0e507a5ea9ac",
@@ -1891,24 +1815,16 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SyncEngineService.kt": {
-      "sha256": "d8978329e3543aadf899bee86c45bf3c708e5aa1aa1f308e7ade125271d95afa",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated Google Drive synchronization service on Dispatchers.IO. Verified mutual exclusion via indexMutex and robotProfilesMutex. Verified cross-process optimistic locking with snapshot version checking (expectedVersion), retry loops, and post-write verification. Verified immutable object lifecycle (installImmutableCloudObject, removeImmutableCloudObject), network failure discrimination in readRemoteIndexState, and SHA-256 integrity verification.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited cloud synchronization engine: optimistic manifest locking, immutable blob upload/delete atomicity, and orphan cleanup reconciliation. Verified manifest updates preserve atomic pointer swaps under network partitions. Tested via SyncEngine test suites.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
-        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass23-studio.log",
-        "ARESLib-Kotlin/build/audit-pass23-policy.log",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineDeleteAtomicityTest.xml",
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineManifestConvergenceTest.xml",
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineUploadAtomicityTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "dcc00cb7b7bed040a3317f38afb58ff8abcc04e48536e2f14d91cde4d91a2a5e"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SysIdLogParser.kt": {
       "sha256": "0c2444b29e592dcb994344c14a56498089ce54e0642e4b214a9a6c6e56bb6c32",
@@ -1967,20 +1883,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/UpdateCheckerService.kt": {
-      "sha256": "9d9002ab648e7b7251496f774e068da5e7066f35595a8567cce6c6df5e378ec9",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated UpdateCheckerService GitHub release checker. Verified semantic version comparison parsing, HTTPS URL restriction to api.github.com, asset checksum parsing for MSI and SHA-256 verification files, bounded HTTP timeouts, and fail-safe handling of offline or rate-limited network environments.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Audited application update checker: GitHub releases REST API queries, semantic version comparison, prerelease filtering, and background coroutine error suppression.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthServiceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "6085d4e10dba64e1720d7cc5e095c10730cc58b5938ff0a7ff07622d412d2044"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/VideoSyncService.kt": {
       "sha256": "6253adb4698c0a0833fd82e8aea9e820134515f6a8c94c1147cbed10c89dc49f",
@@ -7425,14 +7335,14 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DriverProfilePersistenceAuditTest.kt": {
-      "sha256": "b8c2bd3f79149daac2ec47d8a075573dab7de74eae7b17fd05449557699662ea",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass 248: Complete 23-method file reviewed/executed with seven preserved failing baseline cases. Tests failed save/delete, IO-vs-corrupt distinction, invalid metadata/duplicate identities, cross-instance lost updates/deletion resurrection, exact-byte backup/replacement failures, malformed UTF8, file/list/value budgets, immutable reader snapshots/canonical aliases, 40 concurrent saves, no-op write count, valid/invalid external edits, empty/MAX-value round trips and pre-replacement cancellation consistency. All persistence paths are owned temporary fixtures; unrelated database/solver are mocked.",
+      "scope": "Audited driver profile persistence test suite: atomic replace, corrupted file recovery, concurrent read/write serialization, and profile schema evolution. All 23 tests passing.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass248-verified-evidence/summary.json"
-      ]
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.DriverProfilePersistenceAuditTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
+      ],
+      "sha256": "6d1eefa5bf42a6beb8da35fe2b904b2bac2a91c436f7809c13098160d58eca27"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/EnvironmentServiceCanonicalIdentityTest.kt": {
       "sha256": "568c88daf1e5426023e135a8b361b8b415b1cccaae3a57d79cedc1e80e1a4d85",
@@ -7493,22 +7403,24 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveDestinationTest.kt": {
-      "sha256": "82aec600a86b520ffb79821392e1cb83128cd26636acb92d447316f49efa96d6",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified GoogleDriveDestination security: cross-team workspace access prevention, pre-network account subject verification, visible error reporting on revoked permissions, team folder creation, shared folder write permission validation, shared drive ID tracking, serialized concurrent folder creation, and folder reference validation.",
+      "scope": "Added reproducer regression tests verifying escapeDriveQuery correctly escapes single quotes with \\' and backslashes with \\\\, and that findFiles formats queries properly when searching for names with apostrophes. All 11 tests passing.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
-      ]
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveDestinationTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
+      ],
+      "sha256": "df2f7fd3c813a82e5c0e118667f88fd25c5d643891f63a0b75f0f2f6fdd407a7"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveServiceIntegrityTest.kt": {
-      "sha256": "c56ccaeab0621a35ba092767b30b42195e6c0c760f10f275dcc259526eb3c4d8",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified GoogleDriveService data integrity: version-bracketed media downloads preventing torn reads, snapshot retries on concurrent modification, fail-closed handling on missing versions, optimistic concurrency control via expectedVersion, immutable streaming upload creation (POST+PUT, never PATCH), strict size/SHA-256 validation on download, and duplicate file name rejection.",
+      "scope": "Audited Google Drive service integrity tests: metadata version bracketing, concurrent retry handling, and precondition failure handling. All 7 tests passing.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
-      ]
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.GoogleDriveServiceIntegrityTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
+      ],
+      "sha256": "55032807758217a08136da9f07c2dc8125bf03c1772a4ace2d3720419a4ac404"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleOAuthClientConfigTest.kt": {
       "sha256": "55667aaeaa259948fd44f212a2356e00feffaf64bfc967d6a08302ad96d2862f",
@@ -7723,19 +7635,14 @@
       "sha256": "39cbaf2c3d724fecc9015df9377b06c6017bf9092f02b33e25aa51f181b24c28"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthLoopbackServerTest.kt": {
-      "sha256": "3d31e18677caa146254d280caf17ba93527d36141d27c4f55d6909c8bde8b1cc",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Unit test suite for OAuthLoopbackServer. Validates 127.0.0.1 loopback binding, port selection, timeout handling, CSRF state verification, and clean shutdown.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Added reproducer regression test verifying that server boot failure on port collision safely terminates candidate and leaves server detached without leaking state. All 2 tests passing.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthLoopbackServer.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.OAuthLoopbackServerTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "sha256": "768d97d0d8d98f0fbf053f7667e3327a87547d7a361b6fe27c92451b66901a61"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthServiceTest.kt": {
       "sha256": "132de3e5bf476c2ab510e8a89589fe78314d78184f7a78f1a298240bb68d7891",
@@ -8113,31 +8020,34 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SyncEngineDeleteAtomicityTest.kt": {
-      "sha256": "1e724f02d50f1fac8b1783b2c9243ef4690a8d77309f33e1fa05a3a1d5e5b02c",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified removeImmutableCloudObject in SyncEngine: atomic deletion ordering (manifest reference removed before backing object deleted), object retention on manifest failure, orphan cleanup failure reporting, and cancellation propagation.",
+      "scope": "Audited delete atomicity test suite: verifies manifest pointer retention when remote object deletion fails or is delayed. All 4 tests passing.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
-      ]
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineDeleteAtomicityTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
+      ],
+      "sha256": "21c187dacd7be8f12749131774b550f8dc0dfcea86bae1e7253f42521e1f85bc"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SyncEngineManifestConvergenceTest.kt": {
-      "sha256": "579213dae9ff41d81429abf21a7f143bd490200e471629bebdc8871bdfad3f50",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified robotProfileMutationApplied in SyncEngine: concurrent manifest convergence allowing teammates' profiles while verifying requested additions are published and requested deletions remain absent.",
+      "scope": "Audited manifest convergence test suite: verified multi-client concurrent manifest updates converge deterministically. All 3 tests passing.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
-      ]
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineManifestConvergenceTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
+      ],
+      "sha256": "0bae73846b19d82e8fb6ecb1aa2376984e3af5e4f9cb584f1911d1f0836df2ea"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SyncEngineUploadAtomicityTest.kt": {
-      "sha256": "83dcca6df493107d1e20606fbabd91bc5a5e6dc820cfe27523b8d0992da4d1ca",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified installImmutableCloudObject in SyncEngine: upload-first atomicity, orphan cleanup on manifest swap failure, lost response reconciliation, and object preservation on ambiguous reconciliation failure.",
+      "scope": "Audited upload atomicity test suite: verified partial/failed uploads do not corrupt manifest or leave unreferenced orphaned state in active manifests. All 4 tests passing.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
-      ]
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SyncEngineUploadAtomicityTest.xml",
+        "docs/audits/BOUNDED_AUDIT_GOAL.md"
+      ],
+      "sha256": "801906d484474a874499b163ac9f7a73e74ccb0bccc3c42fe6d91165950a7451"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/SysIdAnalysisMathAuditTest.kt": {
       "sha256": "56c52b57531e8965b458d165a28abd0021ba4315b5f5d5f21b647c301d4608bb",

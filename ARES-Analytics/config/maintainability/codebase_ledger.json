@@ -672,7 +672,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleDrivePickerCoordinator.kt",
       "product": "ARES-Analytics",
-      "lines": 172,
+      "lines": 183,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -862,7 +862,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthLoopbackServer.kt",
       "product": "ARES-Analytics",
-      "lines": 130,
+      "lines": 146,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -882,7 +882,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthService.kt",
       "product": "ARES-Analytics",
-      "lines": 707,
+      "lines": 719,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

@@ -9,6 +9,9 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+
 internal data class PendingOAuthRequest(
     val state: String,
     val generation: Long,
@@ -25,9 +28,17 @@ internal class OAuthLoopbackServer(
 ) {
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
     private var serverGeneration: Long? = null
+    private fun verifyPortAvailable(port: Int) {
+        if (port <= 0) return
+        ServerSocket().use { socket ->
+            socket.reuseAddress = false
+            socket.bind(InetSocketAddress("127.0.0.1", port))
+        }
+    }
 
     fun boot(port: Int, generation: Long, isGenerationCurrent: (Long) -> Boolean) {
         stop(generation)
+        verifyPortAvailable(port)
         val candidate = embeddedServer(CIO, host = "127.0.0.1", port = port) {
             routing {
                 get("/callback") {
@@ -58,10 +69,15 @@ internal class OAuthLoopbackServer(
             if (!isGenerationCurrent(generation)) {
                 false
             } else {
-                candidate.start(wait = false)
-                server = candidate
-                serverGeneration = generation
-                true
+                try {
+                    candidate.start(wait = false)
+                    server = candidate
+                    serverGeneration = generation
+                    true
+                } catch (t: Throwable) {
+                    stopEmbeddedServer(candidate)
+                    throw t
+                }
             }
         }
         if (!installed) stopEmbeddedServer(candidate)
