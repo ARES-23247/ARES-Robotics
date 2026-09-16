@@ -106,6 +106,13 @@ class AutoImportServiceTest {
         assertTrue(importSuccessCalled, "onImportSuccess was not called")
 
         assertTrue(!mockLog.exists(), "Original log file was not deleted/moved")
+        assertFalse(
+            autoImportService.observeStableSource(
+                "local:${mockLog.absoluteFile.toPath().normalize()}",
+                AutoImportService.SourceSnapshot(mockContents.toByteArray().size.toLong(), originalLastModified),
+            ),
+            "A deleted source must not leave an observation that lets a recreated log bypass stabilization",
+        )
 
         // Verify session was inserted into database
         val sessions = databaseService.getSessions()

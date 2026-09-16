@@ -372,7 +372,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportService.kt",
       "product": "ARES-Analytics",
-      "lines": 660,
+      "lines": 664,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1842,7 +1842,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4ConnectionLifecycle.kt",
       "product": "ARES-Analytics",
-      "lines": 285,
+      "lines": 287,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

@@ -1,6 +1,6 @@
 ---
 name: ares-workspace
-description: Resolve ARES product ownership and change cross-product runtime contracts, including Redux, telemetry, coordinates, and hardware safety.
+description: Develop or audit ARES across products, including ownership, Redux, telemetry, coordinates, hardware safety, and evidence-backed file reviews.
 ---
 
 # ARES Workspace
@@ -12,6 +12,8 @@ and the affected product's guidance.
 ## Read for the affected boundary
 
 - Use [repository-map.md](references/repository-map.md) when ownership or integration points are unclear.
+- For a requested audit, use [audit-workflow.md](references/audit-workflow.md) to define its scope,
+  preserve review evidence, and coordinate workers when parallel agent work is authorized.
 - Use [runtime-contracts.md](references/runtime-contracts.md) when changing controls, hardware,
   telemetry, simulation, vision, coordinates, tuning, or hot loops. Trace the affected producers
   and consumers far enough to preserve their contract; unrelated runtime paths need no audit.

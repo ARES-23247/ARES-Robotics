@@ -20,7 +20,8 @@ Do not mix modes or rely on ambient `mavenLocal()` artifacts. Read versions from
 - For build/test tasks and coordinates, use [commands.md](references/commands.md).
   Run the checks relevant to the changed product and contract; an ordinary consumer change
   does not require rebuilding the library or publishing a candidate.
-- For dependency or Gradle failures, use [failure-modes.md](references/failure-modes.md).
+- For dependency, Gradle, test, or performance failures, use
+  [failure-modes.md](references/failure-modes.md).
 - For Studio launch or rendered UI validation, use
   [compose-desktop-tester](../compose-desktop-tester/SKILL.md), including its process ownership checks.
   Simulator task selection is in [commands.md](references/commands.md).
