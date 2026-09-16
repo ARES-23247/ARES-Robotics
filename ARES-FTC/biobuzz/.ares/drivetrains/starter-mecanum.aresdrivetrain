@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "uid": "ares.starter.drivebase.mecanum",
+  "uid": "biobuzz-reference.drivebase.mecanum",
   "drivebaseId": "starter-mecanum",
   "displayName": "BIOBUZZ FTC mecanum",
   "description": "Generic four-motor FTC mecanum model for desktop simulation. Hardware names and measurements must be reviewed before physical use.",
@@ -584,5 +584,5 @@
     }
   ],
   "calibrationProvenance": [],
-  "canonicalProfileUid": "ares.starter.profile.simulation"
+  "canonicalProfileUid": "biobuzz-reference.profile.simulation"
 }
