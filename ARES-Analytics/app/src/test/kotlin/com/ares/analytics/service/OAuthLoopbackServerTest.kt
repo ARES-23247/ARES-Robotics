@@ -59,12 +59,17 @@ class OAuthLoopbackServerTest {
                 server.boot(occupiedPort, generation) { it == generation }
             }
             assertTrue(
-                exception is java.net.BindException ||
-                    exception.cause is java.net.BindException ||
-                    exception.message?.contains("Address already in use") == true ||
-                    exception.message?.contains("Failed to bind") == true
+                exception.stackTraceToString(),
+                generateSequence(exception as Throwable) { it.cause }.any {
+                    it is java.net.BindException || it.message?.contains("Failed to bind", ignoreCase = true) == true
+                }
             )
             assertNull(server.detach())
+            occupyingSocket.close()
+            server.boot(occupiedPort, generation) { it == generation }
+            val request = HttpRequest.newBuilder(URI("http://127.0.0.1:$occupiedPort/callback"))
+                .timeout(Duration.ofSeconds(5)).GET().build()
+            assertEquals(200, HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).statusCode())
         } finally {
             occupyingSocket.close()
             server.stop()

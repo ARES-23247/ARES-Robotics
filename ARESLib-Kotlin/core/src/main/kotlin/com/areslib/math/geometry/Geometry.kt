@@ -35,12 +35,7 @@ data class Translation2d(val x: Double = 0.0, val y: Double = 0.0) {
     operator fun plus(other: Translation2d): Translation2d = Translation2d(x + other.x, y + other.y)
     operator fun minus(other: Translation2d): Translation2d = Translation2d(x - other.x, y - other.y)
     operator fun times(scalar: Double): Translation2d = Translation2d(x * scalar, y * scalar)
-    operator fun div(scalar: Double): Translation2d =
-        if (scalar.isFinite() && kotlin.math.abs(scalar) > 1e-15) {
-            Translation2d(x / scalar, y / scalar)
-        } else {
-            Translation2d(0.0, 0.0)
-        }
+    operator fun div(scalar: Double): Translation2d = Translation2d(x / scalar, y / scalar)
     operator fun unaryMinus(): Translation2d = Translation2d(-x, -y)
 
     /**

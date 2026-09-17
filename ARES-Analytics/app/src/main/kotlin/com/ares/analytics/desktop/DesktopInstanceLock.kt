@@ -20,15 +20,14 @@ internal class DesktopInstanceLock private constructor(
 
     companion object {
         /** Returns null when another instance holds the lock; the caller must exit quietly. */
-        fun tryAcquire(): DesktopInstanceLock? {
+        fun tryAcquire(lockDir: java.io.File = AppDataPaths.rootDirectory()): DesktopInstanceLock? {
+            lockDir.mkdirs()
+            val lockFile = java.io.File(lockDir, "app.lock")
+            val randomAccessFile = java.io.RandomAccessFile(lockFile, "rw")
             return try {
-                val lockDir = AppDataPaths.rootDirectory()
-                lockDir.mkdirs()
-                val lockFile = java.io.File(lockDir, "app.lock")
-                val randomAccessFile = java.io.RandomAccessFile(lockFile, "rw")
                 val lock = try {
                     randomAccessFile.channel.tryLock()
-                } catch (e: Exception) {
+                } catch (e: java.nio.channels.OverlappingFileLockException) {
                     null
                 }
                 if (lock == null) {
@@ -38,7 +37,8 @@ internal class DesktopInstanceLock private constructor(
                     DesktopInstanceLock(randomAccessFile, lock)
                 }
             } catch (e: Exception) {
-                null
+                runCatching(randomAccessFile::close)
+                throw e
             }
         }
     }

@@ -40,17 +40,15 @@ internal class RoutinePlaybackController(
                     val nowNs = System.nanoTime()
                     val dt = ((nowNs - lastNs) / 1_000_000_000.0).coerceIn(0.0, 0.25)
                     lastNs = nowNs
-                    var completed = false
                     state.update { current ->
+                        if (!current.isPlaying) return@update current
                         val nextTime = current.playbackTime + dt
                         if (nextTime >= current.estimatedDuration) {
-                            completed = true
                             current.copy(playbackTime = current.estimatedDuration, isPlaying = false)
                         } else {
                             current.copy(playbackTime = nextTime)
                         }
                     }
-                    if (completed) break
                 }
             }
         }

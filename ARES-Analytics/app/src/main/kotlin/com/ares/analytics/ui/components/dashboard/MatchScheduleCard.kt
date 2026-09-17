@@ -30,10 +30,10 @@ fun MatchScheduleCard(
 ) {
     val now = System.currentTimeMillis()
 
-    // Find the next upcoming match (scheduled time is in the future, or first match)
+    // Find the next upcoming match (scheduled time is in the future, or closest to now)
     val nextMatch = matches.filter { (it.scheduledTime ?: 0L) >= now }
         .minByOrNull { it.scheduledTime ?: Long.MAX_VALUE }
-        ?: matches.firstOrNull()
+        ?: matches.lastOrNull()
 
     Column(
         modifier = modifier

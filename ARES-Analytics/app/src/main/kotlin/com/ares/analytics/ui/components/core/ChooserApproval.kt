@@ -66,11 +66,13 @@ internal fun approveChooserSelection(
         val effectiveName = if (extensions.isNotEmpty() && extensions.none { name.endsWith(".$it", true) }) {
             "$name.${extensions.first()}"
         } else name
-        val target = File(directory, effectiveName).canonicalFile
-        validateChooserSaveTarget(target)
-        require(target.toPath().normalize().startsWith(directory.canonicalFile.toPath().normalize())) {
+        val requested = File(directory, effectiveName).absoluteFile.toPath().normalize()
+        require(requested.startsWith(directory.absoluteFile.toPath().normalize())) {
             "Cannot save outside the current folder."
         }
+        // Preserve an explicitly selected symlink; the canonical target is shown for overwrite approval.
+        val target = requested.toFile().canonicalFile
+        validateChooserSaveTarget(target)
         if (target.exists()) ChooserAction.Overwrite(target) else ChooserAction.Selected(listOf(target))
     }
 }
@@ -80,4 +82,3 @@ internal fun validateChooserSaveTarget(target: File) {
     require(!target.isDirectory) { "Select a file, not a folder." }
     require(target.parentFile?.isDirectory == true) { "The destination folder does not exist." }
 }
-

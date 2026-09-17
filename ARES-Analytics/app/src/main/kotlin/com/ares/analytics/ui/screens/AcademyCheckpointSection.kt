@@ -57,7 +57,7 @@ internal fun CheckpointSection(
             val completed = checkpoint.id in completedIds
             val automatic = checkpoint.evidence != LearningCheckpointEvidence.SELF_REPORTED
             val highlighted = checkpoint.id == highlightedCheckpointId
-            var reflectionDraft by remember(checkpoint.id) {
+            var reflectionDraft by remember(checkpoint.id, checkpointReflections[checkpoint.id]) {
                 mutableStateOf(checkpointReflections[checkpoint.id].orEmpty())
             }
             Surface(

@@ -7,10 +7,8 @@ import io.ktor.server.engine.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
-
-import java.net.InetSocketAddress
-import java.net.ServerSocket
 
 internal data class PendingOAuthRequest(
     val state: String,
@@ -28,18 +26,15 @@ internal class OAuthLoopbackServer(
 ) {
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
     private var serverGeneration: Long? = null
-    private fun verifyPortAvailable(port: Int) {
-        if (port <= 0) return
-        ServerSocket().use { socket ->
-            socket.reuseAddress = false
-            socket.bind(InetSocketAddress("127.0.0.1", port))
-        }
-    }
 
     fun boot(port: Int, generation: Long, isGenerationCurrent: (Long) -> Boolean) {
         stop(generation)
-        verifyPortAvailable(port)
-        val candidate = embeddedServer(CIO, host = "127.0.0.1", port = port) {
+        // CIO reports startup failure through start() and its engine coroutine. Own that coroutine
+        // so a recoverable bind error cannot escape to the application's uncaught-crash handler.
+        val candidate = serviceScope.embeddedServer(CIO, host = "127.0.0.1", port = port,
+            parentCoroutineContext = CoroutineExceptionHandler { _, failure ->
+                System.err.println("[OAuthLoopbackServer] Callback listener failed: ${failure.message}")
+            }) {
             routing {
                 get("/callback") {
                     val returnedState = call.request.queryParameters["state"]

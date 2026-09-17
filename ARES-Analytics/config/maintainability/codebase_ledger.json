@@ -2,10 +2,10 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1110,
+    "totalProductionKotlinFiles": 1111,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
-    "microfilesRemaining": 18,
+    "microfilesRemaining": 19,
     "maintainabilityRatchet": "PASS"
   },
   "files": [
@@ -672,7 +672,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleDrivePickerCoordinator.kt",
       "product": "ARES-Analytics",
-      "lines": 183,
+      "lines": 184,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -862,7 +862,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthLoopbackServer.kt",
       "product": "ARES-Analytics",
-      "lines": 146,
+      "lines": 141,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -882,7 +882,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthService.kt",
       "product": "ARES-Analytics",
-      "lines": 719,
+      "lines": 722,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2652,7 +2652,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ChooserApproval.kt",
       "product": "ARES-Analytics",
-      "lines": 83,
+      "lines": 84,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2820,9 +2820,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ConsoleDisplayMessages.kt",
+      "product": "ARES-Analytics",
+      "lines": 18,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": true
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ConsoleViewer.kt",
       "product": "ARES-Analytics",
-      "lines": 423,
+      "lines": 417,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4402,7 +4412,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenScopes.kt",
       "product": "ARES-Analytics",
-      "lines": 243,
+      "lines": 241,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4972,7 +4982,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 728,
+      "lines": 721,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5522,7 +5532,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePlaybackController.kt",
       "product": "ARES-Analytics",
-      "lines": 58,
+      "lines": 56,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -7682,7 +7692,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/WheelKinematicsMath.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 61,
+      "lines": 55,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8012,7 +8022,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/Geometry.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 203,
+      "lines": 198,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,

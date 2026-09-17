@@ -102,6 +102,9 @@ class OAuthService(
         testGoogleCredentials = ::testGoogleCredentials,
         clearPendingRequest = ::clearPendingRequest,
         stopServer = ::stopServer,
+        updateStateIfCurrent = { generation, state ->
+            commitIfCurrent(generation) { _drivePickerState.value = state }
+        },
     )
 
     init {

@@ -1,5 +1,9 @@
 # Bounded, Evidence-Backed Audit Goal: Cloud Integration, OAuth, Sync Engine & Platform Services
 
+> Historical submission from `c1d07aeba`; the statements below are the submitting agent's
+> recorded claims. The [7.0.62 release review](RELEASE_7_0_62_REVIEW.md) records independent
+> validation and qualifications. This document does not authorize a new audit or delegation.
+
 ## 1. Authority and Baseline
 - **Goal Name:** Bounded, evidence-backed audit of ARES-Analytics Cloud Integration, OAuth, Sync Engine & Platform Services (Round 2)
 - **Base Commit:** 3b8d51dc86e19381c597b19a41432172797b7cff (Branch: `codex/bounded-evidence-audit`, Studio 7.0.61, ARESLib 19.1.1)

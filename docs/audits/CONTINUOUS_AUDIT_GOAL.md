@@ -1,5 +1,10 @@
 # Continuous Evidence-Backed Audit Goal
 
+> Historical campaign proposal from `c1d07aeba`, not an active goal for this release task.
+> File totals and submitted PASS labels do not establish complete coverage. See the
+> [7.0.62 release review](RELEASE_7_0_62_REVIEW.md) for corrections and independently observed
+> evidence. Further audit work requires its own selected scope; do not automatically resume this campaign.
+
 ## 1. Objective
 Establish an ongoing, systematic audit campaign to review, validate, and burn down the remaining pending and stale inventory across the ARES monorepo. Every authored file in the target inventory must receive substantive, documented inspection, test-backed verification, and a cryptographically hashed record in `docs/audits/file-reviews.json`, strictly adhering to the bounded audit framework established in PR #104 and `.agents/skills/ares-workspace/references/audit-workflow.md`.
 

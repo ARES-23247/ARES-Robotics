@@ -27,7 +27,7 @@ import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 /**
  * Escapes a literal for use inside a single-quoted segment of a Google Drive API v3
  * query string. The Drive query language uses `'...'` string literals and escapes a
- * literal backslash as `\\` and a single quote as `''`. Failing to escape lets a `'` in
+ * literal backslash as `\\` and a single quote as `\'`. Failing to escape lets a `'` in
  * a name/substring break out of the literal and inject query clauses (AUDIT M9).
  */
 internal fun escapeDriveQuery(value: String): String = value.replace("\\", "\\\\").replace("'", "\\'")

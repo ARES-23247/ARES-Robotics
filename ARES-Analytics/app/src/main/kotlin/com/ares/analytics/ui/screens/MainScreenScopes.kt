@@ -177,16 +177,14 @@ internal fun createWorkspaceRouteActions(
     reloadRuns = { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) },
     associateSessionWithMatch = { sessionId, match, allianceColor ->
         workspaceScope.launch {
-            runCatching {
-                val opponents = if (allianceColor == "red") match.blueAlliance else match.redAlliance
-                services.databaseService.associateSessionWithMatch(
-                    sessionId = sessionId,
-                    matchNumber = match.matchNumber,
-                    allianceColor = allianceColor,
-                    opponentTeams = opponents,
-                )
-                mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
-            }
+            val opponents = if (allianceColor == "red") match.blueAlliance else match.redAlliance
+            services.databaseService.associateSessionWithMatch(
+                sessionId = sessionId,
+                matchNumber = match.matchNumber,
+                allianceColor = allianceColor,
+                opponentTeams = opponents,
+            )
+            mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload)
         }
     },
     setDiagnosticsResponse = {
@@ -213,19 +211,19 @@ internal fun createWorkspaceRouteActions(
     },
 )
 
-internal fun chooseStandaloneArchiveDestination(config: WorkspaceConfig): File? = runCatching {
+internal fun chooseStandaloneArchiveDestination(config: WorkspaceConfig): File? {
     val projectRoot = File(config.projectPath).canonicalFile
     val defaultName = config.robotId
         .ifBlank { config.robotName.ifBlank { "ares-robot" } }
         .replace(Regex("[^A-Za-z0-9._-]"), "-") + "-standalone.zip"
-    DesktopFileChoosers.chooseSaveFile(
+    return DesktopFileChoosers.chooseSaveFile(
         dialogTitle = "Export standalone robot archive",
         defaultFileName = defaultName,
-        initialDirectory = projectRoot.parentFile ?: File(System.getProperty("user.home")),
+        initialDirectory = projectRoot.parentFile,
         filterDescription = "ZIP archive",
         extensions = listOf("zip"),
     )
-}.getOrNull()
+}
 
 internal suspend fun exportStandaloneArchive(
     config: WorkspaceConfig,

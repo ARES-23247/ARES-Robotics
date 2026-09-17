@@ -65,7 +65,7 @@ fun BatteryHealthCard(
 ) {
     val latestVoltage = voltageFrames.lastOrNull()?.value
     val minVoltage = voltageFrames.minOfOrNull { it.value }
-    val hasTelemetry = latestVoltage != null && !latestVoltage.isNaN()
+    val hasTelemetry = latestVoltage != null && latestVoltage.isFinite()
     val effectiveVoltage = latestVoltage ?: 0.0
     val statusColor = when {
         !hasTelemetry -> AresTextSecondary
@@ -101,7 +101,7 @@ fun BatteryHealthCard(
             )
             MetricValueBadge(
                 label = "MINIMUM LOGGED",
-                value = if (minVoltage != null && !minVoltage.isNaN()) String.format("%.2f V", minVoltage) else "-- V",
+                value = if (minVoltage != null && minVoltage.isFinite()) String.format("%.2f V", minVoltage) else "-- V",
                 statusColor = AresTextSecondary
             )
         }

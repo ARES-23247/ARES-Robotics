@@ -56,7 +56,7 @@ interface MotorIO : SubsystemIO, com.areslib.hardware.CurrentSourceIO {
      */
     fun setVoltage(volts: Double, batteryVolts: Double) {
         this.power = if (volts.isFinite() && batteryVolts.isFinite() && batteryVolts > 0.1) {
-            ((volts / batteryVolts) * powerScale).coerceIn(-1.0, 1.0)
+            (volts / batteryVolts).coerceIn(-1.0, 1.0)
         } else 0.0
     }
 

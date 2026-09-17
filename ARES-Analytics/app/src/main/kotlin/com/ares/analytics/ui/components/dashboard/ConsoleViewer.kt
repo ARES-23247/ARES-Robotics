@@ -83,14 +83,8 @@ fun ConsoleViewer(
     // Replay synchronisation
     val replayFrame by replayEngineService.currentFrame.collectAsState()
     val replayState by replayEngineService.state.collectAsState()
-    val displayMessages = remember(allMessages.size, replayFrame, replayState, isReplayMode) {
-        val playheadMs = replayFrame?.timestampMs
-        if (isReplayMode && replayState != ReplayState.STOPPED && playheadMs != null) {
-            allMessages.filter { it.timestampMs <= playheadMs }
-        } else {
-            allMessages
-        }
-    }
+    val displayMessages = rememberConsoleDisplayMessages(allMessages,
+        replayFrame?.timestampMs?.takeIf { isReplayMode && replayState != ReplayState.STOPPED })
 
     // Filters & Search
     var searchText by remember { mutableStateOf("") }
@@ -121,7 +115,7 @@ fun ConsoleViewer(
         }
     }
     val listState = rememberLazyListState()
-    LaunchedEffect(filteredMessages.size) {
+    LaunchedEffect(filteredMessages.size, filteredMessages.lastOrNull()) {
         if (autoScroll && filteredMessages.isNotEmpty()) {
             listState.animateScrollToItem(filteredMessages.size - 1)
         }
