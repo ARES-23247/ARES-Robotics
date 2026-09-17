@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Opt-in end-to-end check for the generic, hardware-neutral FTC and FRC starter candidates.
+ * Opt-in end-to-end check for the generic, hardware-neutral FTC, FRC, and XRP starter candidates.
  *
  * Unlike [OfficialProjectTemplateIntegrationTest], this test accepts local source archives whose
  * release repositories do not exist yet. It still exercises the production SHA-256 verification,
@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
  */
 class GenericStarterTemplateIntegrationTest {
     @Test
-    fun `generic starter candidates create and build fresh FTC and FRC projects`() = runBlocking {
+    fun `generic starter candidates create and build fresh FTC FRC and XRP projects`() = runBlocking {
         val archiveDirectory = propertyOrEnvironment(
             "ares.genericStarterArchiveDir",
             "ARES_GENERIC_STARTER_ARCHIVE_DIR",
@@ -120,7 +120,10 @@ class GenericStarterTemplateIntegrationTest {
         validationVersion: String,
     ) {
         val windows = System.getProperty("os.name").contains("win", ignoreCase = true)
-        val command = buildList {
+        val command = if (league == League.XRP) {
+            if (windows) listOf("cmd.exe", "/d", "/s", "/c", "ares.bat", "build")
+            else listOf("sh", "ares", "build")
+        } else buildList {
             if (windows) addAll(listOf("cmd.exe", "/c", "gradlew.bat")) else add("./gradlew")
             when (league) {
                 League.FTC -> addAll(
@@ -134,7 +137,7 @@ class GenericStarterTemplateIntegrationTest {
                     ),
                 )
                 League.FRC -> addAll(listOf("generateAresProject", "verifyAresProject", "test", "build"))
-                League.XRP -> addAll(listOf("generateAresProject", "test"))
+                League.XRP -> error("XRP uses its Python-native project wrapper")
             }
             add("-ParesVersion=$validationVersion")
             add("-ParesRepository=$repositoryUri")

@@ -46,6 +46,12 @@ or proof of the complete authoring-to-export-to-reopen workflow.
    and broad review claims. Restored prior evidence and retained each submitted record separately
    under `projectRoundtripSubmission`. Current edits are partial review; validation is recorded
    independently. Hash refresh and green suites do not establish full-file coverage.
+6. **Correct: pre-existing opt-in test harness.** Enabling `GenericStarterTemplateIntegrationTest`
+   exposed its obsolete Gradle invocation for Python-native XRP. Fresh FTC and FRC projects passed,
+   while XRP failed because `gradlew.bat` does not exist. The test now invokes `ares.bat build` on
+   Windows (and `sh ares build` on POSIX), with Gradle/dependency arguments confined to FTC/FRC.
+   This follows the already-correct official-template test's platform boundary; it changes no robot
+   runtime or safety gate. The failing opt-in evidence is retained separately.
 
 ## Validation
 
@@ -71,7 +77,36 @@ above and the absolute file URI of its repository; there is no ambient `mavenLoc
   Retained this run's log/XML under `studio-template-alignment-before.log` and `before-template-alignment/`.
 - CI path classifier/boundary checks: 25 tests passed. The first sandboxed invocation failed on
   temporary Git-fixture permissions; the same checks passed with filesystem access. Both logs retained.
-- Final Studio/template and source-policy results are recorded when the local checkpoint closes.
+- New archive integrity: all 606 ZIP entries compare byte-for-byte with the canonical exported source
+  copies (normalizing text CRLF to LF), and all five archive SHA-256 values match the pinned manifest.
+- Source policy, shared guidance, Markdown links, and maintainability checks pass: 1,111 production
+  files and no size-policy violations. These are policy/accounting results, not file-review coverage.
+- Final Studio evidence: 118 unchanged scoped service/persistence/template tests pass in the integrated
+  run, plus the corrected generic-template integration test passes on its focused rerun: 119 selected
+  tests supported, no remaining failures or skips. This is not a full Studio suite run.
+- The opt-in rerun creates fresh FTC/FRC/XRP projects through the actual Studio template service, then
+  passes 17/206/124 consumer tests respectively, FTC headless drivetrain/rotation acceptance and APK
+  assembly, and FRC `build`. Detailed results are in `studio-final-summary.json`,
+  `generic-starter-verified.log`, and `fresh-{ftc,frc,xrp}-validation.log`.
+
+Reproduction tasks (from the respective product roots, always with the candidate `-ParesVersion`
+and absolute `-ParesRepository` above, and `--no-parallel --console=plain`):
+
+| Product | Tasks |
+| --- | --- |
+| ARESLib | `test apiCheck publishReleaseValidation` (producer needs only the version override) |
+| FTC + FTC starter + exported BioBuzz | `generateAresProject :TeamCode:verifyAresProject :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug` |
+| FRC + FRC starter | `generateAresProject verifyAresProject test` |
+| Studio | `:app:test --tests 'com.ares.analytics.service.versioncontrol.*' --tests 'com.ares.analytics.service.project.persistence.*' --tests '*RobotProjectTemplateServiceTest' --tests '*GenericStarterTemplateIntegrationTest' --tests '*BiobuzzTemplateAuthoringTest'` |
+
+For the opt-in Studio creation/build check, supply `ARES_GENERIC_STARTER_ARCHIVE_DIR` containing
+the new FTC/FRC/XRP archives named `ftc.zip`, `frc.zip`, `xrp.zip`; set
+`ARES_GENERIC_STARTER_OUTPUT_DIR` to a fresh disposable directory,
+`ARES_GENERIC_STARTER_VALIDATION_REPOSITORY` to the local candidate repository,
+`ARES_GENERIC_STARTER_VALIDATION_VERSION=19.1.3-rc.roundtrip.dbb5b9f.1`, and
+`ARES_GENERIC_STARTER_TEMPLATE_VERSION=19.1.3` (the test's dependency pin). The test additionally
+  runs FTC `:TeamCode:runVerification`, FRC `build`, and XRP's Python-native `ares build` on newly
+created projects. Preserve any existing output directory; use a new one for a new run.
 
 The existing changed-part classifier routes ARESLib changes through library, robot/starter, Studio,
 and packaging checks. New regressions run in the existing codegen and app test tasks; no CI redesign.
@@ -87,3 +122,7 @@ ownership/rollback suites are useful evidence but do not by themselves close tha
 No target hardware, native Studio interaction, whole-project transaction guarantee, or performance
 improvement is claimed here. Local source validation is not a publishable release candidate: future
 publication still requires complete native release validation and the protected CI/attestation/merge process.
+
+The [next-agent prompt](NEXT_PROJECT_ROUNDTRIP_PROMPT.md) starts from the reviewed local branch and
+targets the remaining export/reopen and failure-recovery integration scenarios. No next audit batch
+was started during this review.

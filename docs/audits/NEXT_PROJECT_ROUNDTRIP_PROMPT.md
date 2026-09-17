@@ -30,6 +30,8 @@ write or passing serializer round trip does not establish a whole-project transa
 Fix demonstrated high-impact defects. Capture fail-before/pass-after evidence with independent
 expectations where practical. Measure before proposing performance changes. Defer cosmetic work,
 speculative guards, and unrelated refactors. Keep safety and ownership checks intact.
+Use focused tests while editing, then run the affected consumer checks at the combined checkpoint.
+Reuse still-valid evidence; repeat broad suites only for changed inputs, failures, or an unresolved risk.
 
 You may use up to two read-only subagents with disjoint review paths; keep one coordinating writer
 and serialize builds sharing outputs. Do not recursively delegate.
