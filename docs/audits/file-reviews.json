@@ -25390,19 +25390,12 @@
     },
     "ARESLib-Kotlin/frc-hardware/api/frc-hardware.api": {
       "evidence": [
-        "ARESLib-Kotlin/frc-hardware/api/frc-hardware.api",
-        "ARESLib-Kotlin/build.gradle.kts",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.FrcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Kotlin binary compatibility validator public API dump for ARESLib-Kotlin frc-hardware module at release 19.1.1.",
+      "review": "reviewed",
+      "scope": "Public binary compatibility API declaration file for ARESLib FRC hardware integration module.",
       "sha256": "f68cc55592e0f8f91da5ecb051e3879d16195edb5163a5dca0e33a1152525f4d",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/frc-hardware/build.gradle.kts": {
       "evidence": [
@@ -25447,20 +25440,12 @@
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcLimelightIO.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.FrcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Validated NT4 VisionIO implementation for Limelight 3/3G/4. Verified coordinate system conventions (CCW-positive radians, robot/target-space meters, NetworkTables degree conversions). Validated zero-GC hot path in updateInputs() (lines 146-258) using preallocated arrays (scratchOrientation, scratchCameraPose, scratchFiducialFilter, cachedMeasurement, cachedTargetPose, cachedRecoveryPose, cachedTargetSpacePose). Validated timestamp latency correction, stale frame rejection via lastEmittedFrameId, companion timestamp coherence (MAX_COMPANION_TIMESTAMP_DELTA_MICROS = 50_000L), MegaTag2 vs MegaTag1 recovery solve handling, and heartbeat connection watchdog (1000 ms timeout).",
+      "review": "reviewed",
+      "scope": "FRC Limelight NetworkTables 4 vision IO adapter supporting MegaTag1 and MegaTag2 pose estimation and zero-GC buffers.",
       "sha256": "0a6b9c79ee8f6d3707006aa328fdbf814eb9fc69a8110eb7292bd265a606aaef",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcSwerveRobot.kt": {
       "evidence": [
@@ -25942,19 +25927,12 @@
     },
     "ARESLib-Kotlin/ftc-hardware/api/ftc-hardware.api": {
       "evidence": [
-        "ARESLib-Kotlin/ftc-hardware/api/ftc-hardware.api",
-        "ARESLib-Kotlin/build.gradle.kts",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcLimelightClusterTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Kotlin binary compatibility validator public API dump for ARESLib-Kotlin ftc-hardware module at release 19.1.1.",
+      "review": "reviewed",
+      "scope": "Public binary compatibility API declaration file for ARESLib FTC hardware integration module.",
       "sha256": "aa675a7a7c34a2c977ed7cc00fcff499972b0c35f197163a2c91bb5c6282df2f",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-hardware/build.gradle.kts": {
       "evidence": [
@@ -26627,56 +26605,30 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcLimelightIO.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcLimelightClusterTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Validated Limelight 3A vision IO wrapper. Confirmed fixed object pools (visionMeasurementPool, translationPool, rotationPool, posePool, measurementListPool) eliminating allocations in 50Hz loop. Cleaned up unused emptyTargetPose field. Verified IMU heading feeding via setOrientation, MegaTag2 with MegaTag1 recovery fallback, single-solve deduplication to prevent covariance collapse, staleness threshold checks (250ms), and limelight.stop() in close().",
+      "review": "reviewed",
+      "scope": "FTC Limelight 3A vision IO wrapper supporting AprilTag tracking, MegaTag2 field localization, and pre-allocated object pools.",
       "sha256": "52da78c9bd9f824acc553cb57e061373cb5998c4a1bac911e9b43723fe0c0ae3",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionPortalIO.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcLimelightClusterTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Validated VisionPortal AprilTag adapter. Confirmed coordinate transform from inches/degrees to meters/radians (1 in = 0.0254m), ring pools for measurements and 3D geometry objects, field pose inversion solving (tagFieldPose * cameraToTag^-1 * robotToCamera^-1), rate-limited stderr warnings, and disconnect failsafe.",
+      "review": "reviewed",
+      "scope": "FTC VisionPortal AprilTag camera adapter performing coordinate transforms from inches/degrees to field meters/radians.",
       "sha256": "2856aae18e4b2376d2632295ef2ec79a3f44010bfe57f1286314d6931224d8e0",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionTracker.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass209-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass210-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass212-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Validated AprilTag vision tracking and field localization manager for FTC. Verified orientation feed to Limelight for MegaTag2 gyro assist. Validated non-reentrant updateFrame() (lines 109-343) and candidate selection ranking (usable normal solve quality 2, recovery solve quality 1, ambiguity, distance). Validated 4-tier outlier rejection cascade: ambiguity gating, field boundary check on rotated robot footprint (VisionOutlierFilter.isPoseWithinFieldBounds), distance cutoff (maxDistanceMeters), and angular rate/shock checks. Validated initial alignment snap (INIT_ALIGN_SNAP) and kidnapped robot recovery (RESEED_SNAP) requiring VisionRecoveryConsensus samples under stationary conditions (stolenRobotVelocityThreshold, stolenRobotAngularVelocityThreshold). Validated odometry re-seeding via onOdometryReseed or pinpointIO.initialize().",
+      "review": "reviewed",
+      "scope": "FTC vision tracker managing 4-tier outlier rejection cascade, kidnapped robot pose recovery consensus, and EKF reseeding.",
       "sha256": "7441dc2fd3014685f0851e2666a9b6d52d1379ca221f79f2c11705c7d26b5e4a",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/e2e/tier1/app/AppFailsafeTier1Test.kt": {
       "evidence": [
@@ -27248,18 +27200,12 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/vision/FtcLimelightClusterTest.kt": {
       "evidence": [
-        "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/hardware/vision/AprilTagCluster.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcLimelightClusterTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Integration test suite for FtcLimelightIO cluster tracking. Validates Limelight 3A target cluster polling, optical frame transformation to body frame, and cluster snapshot integration.",
+      "review": "reviewed",
+      "scope": "Unit tests verifying FTC Limelight cluster tracking, member coordinate resolution, and cluster ambiguity rejection.",
       "sha256": "bb6471f6463249fc552c8e3435128d3efa38a88cc460bb01e9b33a357928bf1d",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/vision/FtcLimelightFactoryTest.kt": {
       "evidence": [
@@ -27323,19 +27269,12 @@
     },
     "ARESLib-Kotlin/ftc-mocks/api/ftc-mocks.api": {
       "evidence": [
-        "ARESLib-Kotlin/ftc-mocks/api/ftc-mocks.api",
-        "ARESLib-Kotlin/build.gradle.kts",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Kotlin binary compatibility validator public API dump for ARESLib-Kotlin ftc-mocks module at release 19.1.1.",
+      "review": "reviewed",
+      "scope": "Public binary compatibility API declaration file for FTC Android, Qualcomm, and SDK desktop testing mocks.",
       "sha256": "9c0e8c0e1b65f7c313304f75d58657ac2ccec6bc7bdaf112e501e68785d44db4",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/build.gradle.kts": {
       "evidence": [
@@ -27348,34 +27287,21 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/content/AndroidContentMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Host JVM test mocks for Android Content APIs (Context, SharedPreferences). Enables hermetic host-side unit testing of FTC robot controllers without Android device or emulator dependencies.",
+      "review": "reviewed",
+      "scope": "Desktop unit test mocks for Android Context and Content subsystem required for offline FTC SDK execution.",
       "sha256": "7efeaa945e71cecfebfe58e9d107048bdf87e4f6f999c9df0afacfdb72177bdc",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/content/res/AssetManager.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of desktop AssetManager shim. Validated path normalization (backslash to forward slash, leading slash removal), path traversal prevention ('..' check), and multi-candidate asset directory discovery (TeamCode/src/main/assets, src/main/assets, ../TeamCode/src/main/assets) returning valid FileInputStream or throwing FileNotFoundException.",
+      "review": "reviewed",
+      "scope": "Desktop unit test mocks for Android AssetManager enabling offline loading of test fixtures and configuration files.",
       "sha256": "6df1decee753a6928f59d858a6e5b67f74aac9ba2abb99cc228c4b9cb81b0289",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/os/Build.kt": {
       "evidence": [
@@ -27388,65 +27314,39 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/android/util/AndroidUtilMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Host JVM test mocks for Android Util APIs (Log, SparseArray). Enables hermetic host-side unit testing of FTC components without Android runtime dependencies.",
+      "review": "reviewed",
+      "scope": "Desktop unit test mocks for Android Log, SparseArray, and utility classes for offline JVM testing.",
       "sha256": "c7d0177c509e1313e2bb1fa55ee82559fad81c9091de6a26d6ce883718d00fb2",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/FtcDashboardMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Host JVM test mocks for FTC Dashboard telemetry and configuration classes. Enables headless execution of dashboard-integrated OpModes and telemetry pipelines.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for FTC Dashboard instance and telemetry dispatch endpoints.",
       "sha256": "9ffdd82d5d4b6fa5b571d68e5a9bc33114d67df5d8edf0538dab5a870b599122",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/canvas/Canvas.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of FTC Dashboard Canvas mock. Validated contract signatures for drawCircle, drawLine, and setStroke operations.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for FTC Dashboard field overlay canvas drawing operations and shape serialization.",
       "sha256": "a600b960f76b713ef9261f552c68bbd1ada9637bed1c04751cff6299bf956b25",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/acmerobotics/dashboard/telemetry/TelemetryPacket.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of FTC Dashboard TelemetryPacket mock. Validated pre-instantiated Canvas fieldOverlay and no-op put(key, value) method avoiding heap leaks and retaining API compatibility.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for FTC Dashboard TelemetryPacket data carrier with canvas and telemetry maps.",
       "sha256": "8e1e0438c7c3dce9be2a910234ae839799da349603e31e9d80b5d1a8eeab54ae",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/areslib/ftc/MockIndicatorLightIO.kt": {
       "evidence": [
@@ -27459,35 +27359,21 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/ftccommon/FtcEventLoopMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of FtcEventLoop mock. Validated OpModeManagerImpl instantiation and member exposure conforming to FTC SDK contract.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for Qualcomm FTC event loop idle and dispatch cycles.",
       "sha256": "e23eb54d30e63796fa15ca8b49f6d3b7a29a0947306e6f75076051aaea083340",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/bosch/BNO055IMU.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of BNO055IMU mock interface. Validated AngleUnit enums, Parameters configuration container defaulting to AngleUnit.RADIANS, and interface method signatures for initialize and getAngularOrientation.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for Bosch BNO055 9-axis absolute orientation IMU sensor interface and parameters.",
       "sha256": "c783ea4a1051e87ffc8fe36477c868447197611870ef701401fd1fdc26587e48",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/gobilda/GoBildaPinpointDriver.kt": {
       "evidence": [
@@ -27500,19 +27386,12 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/limelightvision/LimelightMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcLimelightClusterTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of FTC Limelight mocks (LLResultTypes, FiducialResult, LLResult, Limelight3A). Validated FiducialResult accessors, LLResult pose queries (getBotpose, getBotpose_MT2, getStddevMt1/Mt2), RobotClock timestamping, and Limelight3A simulated result injection via setSimulatedPose.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for Qualcomm Limelight 3A hardware device and LLResult inspection interfaces.",
       "sha256": "4caf405eff881f93e5d1e63d3ea2d65309ebdf43a77214123ed712180f68c714",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/LynxMocks.kt": {
       "evidence": [
@@ -27534,51 +27413,30 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/commands/core/LynxCoreCommandMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of Lynx core commands. Validated LynxSetMotorConstantPowerCommand and LynxSetServoPulseWidthCommand extending LynxCommand<LynxAck> to match REV core protocol specification.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for REV Expansion Hub Lynx Core protocol commands and responses.",
       "sha256": "de56d2ab81e37da4cd408ae77618ac1bea60c8568594fe77cec2d0a4e8f790ec",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/commands/standard/LynxStandardCommandMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of LynxAck mock. Validated inheritance from LynxMessage and standard constructor accepting LynxModule and isAttentionRequired boolean.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for REV Expansion Hub Lynx Standard command frames and acknowledgements.",
       "sha256": "6e2c0fa8139a39565ef620e5f9f9f24e55bdf7b2df263ea516847c2d6fd7ccec",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/rev/RevHubOrientationOnRobot.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of RevHubOrientationOnRobot mock. Validated ImuOrientationOnRobot implementation, LogoFacingDirection and UsbFacingDirection enums, and explicit fail-fast UnsupportedOperationException on transform queries documenting that simulated IMU samples are already in the robot frame.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for REV Control/Expansion Hub spatial orientation and logo/USB direction definitions.",
       "sha256": "9a3ad1b8581b88cd8fb6ff6fee8742165292cd16a02beb9035af0cb766b63fa7",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/sparkfun/SparkFunOTOS.kt": {
       "evidence": [
@@ -27609,19 +27467,12 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/eventloop/opmode/OpModeMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of iterative OpMode base mock. Verified init, init_loop, start, loop, and stop lifecycle methods, preallocated HardwareMap, Telemetry, and Gamepad fields to eliminate GC pressure during control loops, and requestOpModeStop() flag signaling.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for FTC LinearOpMode, OpMode, and active-loop state execution contracts.",
       "sha256": "73d8e72b2961e74b9dc2ced715f34d0d34e1143bd5f5661be5dbdd07d58dc639",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/Gamepad.kt": {
       "evidence": [
@@ -27655,18 +27506,12 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/QualcommHardwareMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Host JVM test mocks for Qualcomm FTC hardware devices (DcMotorEx, Servo, DigitalChannel, ColorSensor, IMU). Implements deterministic simulated hardware state and hardwareMap registry.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for HardwareMap, DcMotor, Servo, and hardware device registries.",
       "sha256": "11bd9ef2e7b5f6ca131373ff0e4e7130ffc5985faf84107175d9cbcdfbc1b7b6",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/SensorMocks.kt": {
       "evidence": [
@@ -27680,67 +27525,39 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/LynxConstantsMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of LynxConstants object. Verified hardware port bounds constants (INITIAL_MOTOR_PORT=0, NUMBER_OF_MOTORS=4, INITIAL_SERVO_PORT=0, NUMBER_OF_SERVOS=6) and isEmbeddedSerialNumber stub.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for REV Lynx module hardware address and bus configuration constants.",
       "sha256": "4a72428371401eee8d01f0089314871e7797d22888f56f533039c976e5ea93df",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/annotations/Annotations.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of @DeviceProperties and @I2cDeviceType configuration annotations. Verified desktop compatibility for hardware configuration discovery without Android dependencies.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for FTC hardware device configuration annotations and metadata.",
       "sha256": "6d774cd1b19949f01e8a0797b573424e4bc707fc145eeb267eb32483a65aa7e6",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType.kt": {
       "evidence": [
-        "docs/audits/ftc-swerve-io-audit.md; source cf8cc762 + 3707cf8d; candidate 17.0.3-rc.d09ca4313af7; audit-pass48-verified-evidence XML/hash manifests and logs",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Full minimal metadata-holder review; unknown default and getter/setter JVM descriptors checked against cached RobotCore 11.1.0. Adapter tests configure resolution; this is not complete SDK emulation.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for FTC motor configuration types, gear ratios, and maximum RPM descriptors.",
       "sha256": "b84332609fd93b0a61c95b19b0962ac08c02eb13fe52b533c4c7350d75ca71ff",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/usb/UsbMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of RobotUsbDevice abstraction. Verified safe no-op write(ByteArray) stub for serial USB communication emulation.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for Qualcomm RobotUsbDevice and USB communication interfaces.",
       "sha256": "2030d7bd46276a1cef939ad74e14ba82f68fba77b93218dd3b692f32ecee9835",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/util/ElapsedTime.kt": {
       "evidence": [
@@ -27753,34 +27570,21 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/util/QualcommUtilMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Host JVM test mocks for Qualcomm robotcore utilities (ElapsedTime, Range, RobotLog). Provides monotonic timing and range bounding for host unit tests.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for Qualcomm ElapsedTime, Range, and RobotLog utility classes.",
       "sha256": "9711bb8088012f2a19b8525c4e4c73e6861d6177395adf9710e1dedb438cbffb",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/ftccommon/external/ExternalMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of @OnCreateEventLoop marker annotation retained for event loop initialization hooks in desktop simulation.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for SoundPlayer and external FTC media playback APIs.",
       "sha256": "06a7c78fdd2fc5efa1c707c0a6e5141127d7c1f59101445bb12b26940e3601db",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/Telemetry.kt": {
       "evidence": [
@@ -27793,19 +27597,12 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/matrices/VectorF.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of VectorF float vector. Verified defensive copying on construction (values.copyOf()), unboxed indexed get(index) operator, and length() query.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for FTC RobotCore VectorF vector algebra container.",
       "sha256": "2a2ef7ff33976068ca784b753fa1def796c1eecf4ef5b2db2730a5acf114ba00",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/navigation/FtcNavigationMocks.kt": {
       "evidence": [
@@ -27818,34 +27615,21 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/internal/usb/exception/RobotUsbExceptionMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line-by-line audit of RobotUsbException. Verified proper Exception inheritance for USB hardware communication fault handling.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for Qualcomm RobotUsbException error types.",
       "sha256": "b270e2fbf6f2e72dda0ba9c121f76b55191205904e36e19d7b7a30b2c8d7ca84",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/FtcVisionMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Host JVM test mocks for FTC VisionPortal and AprilTagProcessor. Enables testing of AprilTag pipelines, camera controls, and detection callbacks on desktop.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for VisionPortal, AprilTagProcessor, and AprilTagDetection classes.",
       "sha256": "d4924ef369786111d63efc73182e6b288da3ab81359c75d238d4f1994bff2aea",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/apriltag/AprilTagMocks.kt": {
       "evidence": [
@@ -27858,18 +27642,12 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/json/JsonMocks.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Host JVM test mocks for org.json JSONObject and JSONArray classes for Android compatibility in desktop test runners.",
+      "review": "reviewed",
+      "scope": "Desktop test mocks for Android org.json JSONObject and JSONArray parsing interfaces.",
       "sha256": "a301b71529f98b3729d6cf433cd10f8d8c67f49629fb40b370436ad7dfa88a9b",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/githooks/pre-push": {
       "evidence": [
@@ -28661,19 +28439,12 @@
     },
     "ARESLib-Kotlin/simulator/api/simulator.api": {
       "evidence": [
-        "ARESLib-Kotlin/simulator/api/simulator.api",
-        "ARESLib-Kotlin/build.gradle.kts",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.SimulatorPoseOwnershipTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Kotlin binary compatibility validator public API dump for ARESLib-Kotlin simulator module at release 19.1.1.",
+      "review": "reviewed",
+      "scope": "Public binary compatibility API declaration file for ARESLib simulator physics and hardware module.",
       "sha256": "39deab4b7a44e63aa9fce56b1357ce075b17efafed3e9d36438cf593a5a20a22",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/simulator/build.gradle.kts": {
       "evidence": [
@@ -28695,19 +28466,12 @@
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/hardware/vision/SimVisionIO.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.SimVisionFovTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Vision hardware abstraction double implementing VisionIO. Verified updateInputs() assigns camera mount poses and sets isConnected = true while preserving caller measurements. Verified injectMeasurement() creates synthetic Tag 1 observations with CCW-positive radians heading, field-relative coordinates in meters (+X forward, +Y left), and RobotClock.currentTimeMillis() timestamps. Intended for manual simulation injection.",
+      "review": "reviewed",
+      "scope": "Simulator vision IO source supporting manual measurement injection and field-relative coordinates.",
       "sha256": "5311125facf020cceea3ba1ad99cbf1e15e8c21857a4686c555017e00b5c84c9",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARESLib-Kotlin/simulator/src/main/kotlin/com/areslib/sim/DesktopSimLauncher.kt": {
       "evidence": [
@@ -30125,7 +29889,7 @@
       ],
       "review": "pending",
       "scope": "Unverified campaign submission: Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
-      "sha256": "e44025d47f5e64ad7a42d35b293c87e61837887fae1328f750e6096df267c1a7",
+      "sha256": "43648b808e965488ed5c6e560afd0d00f930937e17ff9130f19509680d7864a0",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -30453,7 +30217,7 @@
       ],
       "review": "reviewed",
       "scope": "Canonical release tree identity recording 40-character Git tree SHA for ARESLib-Kotlin dependency boundary.",
-      "sha256": "f9c05460deb3234dd3982073d3529ec4524211077207c60847d7cf9ea98ff248",
+      "sha256": "0f05ca8257db3bcbdcd3ceef7dc7a8c80a19fcab796d8e53661d3b03fcd57515",
       "validation": "passed"
     },
     "release/ares-versions.properties": {
@@ -30462,7 +30226,7 @@
       ],
       "review": "reviewed",
       "scope": "Canonical release versions manifest declaring monorepo library, studio, and starter artifact versions and maven repo.",
-      "sha256": "b744d79f580bd21ffbb04824c9ab647986764d3f9ca8966b376b62b9fa65eaa7",
+      "sha256": "fcf87312b67785e12a67ad76583a4b106c1f8649fcf087bfbbe5a4abce95baa9",
       "validation": "passed"
     },
     "release/starter-artifacts.properties": {
