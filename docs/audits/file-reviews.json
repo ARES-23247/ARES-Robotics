@@ -14030,528 +14030,353 @@
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOmniOpMode_Linear.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode sample demonstrating holonomic omni/mecanum 4-motor kinematics (axial, lateral, yaw mixing). Verified @TeleOp and @Disabled sample annotations preventing driver station clutter, hardwareMap lookup for 4 drive motors, direction configuration, motor power normalization (Math.max scaling), opModeIsActive() lifecycle compliance, and safe shutdown.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'BasicOmniOpMode_Linear'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "9d53be174a1b150000486ac3f67894144917ac7a62f15b65565dca2ca571098a",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOpMode_Iterative.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Iterative OpMode sample demonstrating two-wheel differential drive (POV and Tank modes). Verified @TeleOp and @Disabled sample annotations, non-blocking lifecycle overrides (init, init_loop, start, loop, stop), hardwareMap configuration for left/right motors, motor power clipping via Range.clip to [-1.0, 1.0], and telemetry reporting.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'BasicOpMode_Iterative'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "c7318e6f209343cf3c222ce51b5f2e29c9b30e785792452db2320251e25e9cf7",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOpMode_Linear.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode sample demonstrating two-wheel differential drive. Verified @TeleOp and @Disabled sample annotations, waitForStart() blocking sync, opModeIsActive() loop contract, hardwareMap lookups, motor reversal configuration, Range.clip motor power saturation protection, and runtime telemetry.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'BasicOpMode_Linear'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "cf1f6fadbc4333e670378337ca98246dd81a0ae4450b053ff029c24a63e5a9d2",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTag.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating AprilTag vision processing and 6-DOF pose estimation (XYZ, PRY, RBE). Verified @TeleOp and @Disabled sample annotations, VisionPortal.Builder and AprilTagProcessor.Builder pipelines, webcam/internal camera fallback, streaming pause/resume controls via gamepad dpad, non-blocking sleep pacing, tag detection telemetry iteration, and explicit visionPortal.close() resource release.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptAprilTag'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "9567513a24b812726bb9789cd8dec5ebaee46ac4b3c1a40ef99eec726b7ac4e4",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagEasy.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating simplified VisionPortal and AprilTag initialization using AprilTagProcessor.easyCreateWithDefaults() and VisionPortal.easyCreateWithDefaults(). Verified @TeleOp and @Disabled annotations, camera selection, streaming toggling, tag pose reporting, and explicit visionPortal.close() disposal.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptAprilTagEasy'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "2262684e3bdd919c73ec66c2edbc0fce56fd4b97ecb7c003b270f7595286b678",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagLocalization.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept illustrating field-relative robot localization using AprilTags and camera extrinsic calibration. Verified @TeleOp and @Disabled annotations, Position and YawPitchRollAngles camera pose definition, AprilTagProcessor builder setCameraPose configuration, detection robotPose extraction, and proper visionPortal.close() cleanup.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptAprilTagLocalization'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "6f8ae4d2625448ed1ad15b8c381623de4201f6f46745167f7faa0bbaf3a442ee",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagMultiPortal.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating simultaneous dual-camera vision portals using VisionPortal.makeMultiPortalView(). Verified @TeleOp and @Disabled annotations, multi-portal view ID assignment, independent AprilTagProcessor instantiation per portal, and active loop telemetry. Cleanup note: Unused import BuiltinCameraDirection identified; recommended adding explicit portal1.close() and portal2.close() on OpMode exit.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptAprilTagMultiPortal'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "3d2b0a07593d58d1f387e4aad4893405602679f67f781993f4b577463b7ca127",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagOptimizeExposure.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode tool for manual camera exposure and gain optimization to eliminate motion blur. Verified @TeleOp and @Disabled annotations, ExposureControl and GainControl query/set pipelines, camera state STREAMING synchronization with isStopRequested() protection, bounded parameter adjustment via Range.clip, and gamepad edge-detection. Cleanup note: recommended adding explicit visionPortal.close() on OpMode termination.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptAprilTagOptimizeExposure'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "fd2a60a73c6ccb0e257cedc36cc5b05a9a11d78d0bb19d17f3f6d49c3e5c3b4d",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagSwitchableCameras.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating dynamic dual webcam switching via ClassFactory nameForSwitchableCamera and visionPortal.setActiveCamera(). Verified @TeleOp and @Disabled annotations, streaming state check before switching, bumper click edge-detection, AprilTag telemetry, and clean visionPortal.close() shutdown.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptAprilTagSwitchableCameras'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "c9673e26f7f7f20c38bdc33248d1dcd62ce96f5407e1b6e84067b64cbb981288",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptBlackboard.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Iterative OpMode concept illustrating inter-OpMode data sharing across Autonomous and TeleOp via FTC SDK blackboard. Verified @TeleOp and @Disabled annotations, constant string keys (TIMES_STARTED_KEY, ALLIANCE_KEY), safe getOrDefault and type casting, non-blocking loop handling, and Driver Station telemetry persistence.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptBlackboard'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "ee10179ab6a596cd23e05dfa9f68fe9eba147963fa4a7fc4a821a867d242a1fe",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptExploringIMUOrientation.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode utility for interactive exploration of REV Control/Expansion Hub IMU orientation parameters. Verified @TeleOp and @Disabled annotations, RevHubOrientationOnRobot LogoFacingDirection and UsbFacingDirection enumeration cycling, dynamic IMU re-initialization with try-catch handling of IllegalArgumentException, Yaw pitch roll angles and angular velocity readouts, and imu.resetYaw() functionality.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptExploringIMUOrientation'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "7690ddfb66c8e3d5cf4d1fbbcbd5bc8511fe750dcf770e44458f666a171f776f",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadEdgeDetection.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating FTC SDK built-in edge detection methods on Gamepad. Verified @TeleOp and @Disabled annotations, verified leftBumperWasPressed/Released, rightBumperWasPressed/Released, leftTriggerWasPressed/Released, and rightTriggerWasPressed/Released state transition evaluations.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptGamepadEdgeDetection'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "ff8c93708bc464cfe32946005bc22bcd632cf0a4d2aac7e90cc7b1762477e15c",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadRumble.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating Gamepad rumble capabilities. Verified @TeleOp and @Disabled annotations, Gamepad.RumbleEffect custom pulse builder, match runtime countdown triggers, continuous variable rumble tied to triggers, rumble blip sequences, isRumbling collision prevention, and stopRumble() safety. Cleanup note: typographical error in comment line 63 ('representstive').",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptGamepadRumble'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "7475e2792d5c312da49f824a11957cdfe724683007df024cecca0e4992ae8195",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptGamepadTouchpad.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating dual-touch touchpad coordinates tracking on supported controllers (e.g. PS4). Verified @TeleOp and @Disabled annotations, monospace telemetry formatting, touchpad_finger_1 / touchpad_finger_2 boolean presence detection, and normalized coordinate reporting [-1.0, 1.0].",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptGamepadTouchpad'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "fda4aeb6569512c097bb4f96434b0a03e883f0b856f1f9f38ec14de90a55d0d2",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptLEDStick.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Iterative OpMode concept demonstrating SparkFun QWIIC LED Stick I2C control. Verified @TeleOp and @Disabled annotations, hardwareMap acquisition, setBrightness and Range.clip clamping [0, 31], D-pad edge detection, and endgame timer pattern changes. Refactoring recommendation: Hot-path allocation of int[] ledColors inside loop() during endgame should be preallocated as a static final array to eliminate GC allocation churn in 50 Hz control loops.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptLEDStick'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "8781029351e21977c8644e47329a56b7f77aec1f4c40203bd10cfa6cc7b3b930",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptMotorBulkRead.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode benchmark concept demonstrating Expansion Hub bulk-read caching strategies. Verified @TeleOp and @Disabled annotations, hardwareMap acquisition of DcMotorEx and all LynxModule hubs, cycle timing benchmarks across BulkCachingMode.OFF, BulkCachingMode.AUTO, and BulkCachingMode.MANUAL with required per-cycle module.clearBulkCache() execution, and safe loop completion.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptMotorBulkRead'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "4f8af5b70dfdbed2c20253c1a383569a3404b2d6ba2bbf7568d30c62995ce950",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptNullOp.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Iterative OpMode baseline concept demonstrating minimal skeletal structure. Verified @TeleOp and @Disabled annotations, complete lifecycle implementation (init, init_loop, start, loop, stop), ElapsedTime runtime tracking, and zero-allocation telemetry updates.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptNullOp'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "50bd665dc1ccb206acbd98fa6d9733de5deeeb0412c9e97c724b17a86891c34a",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRampMotorSpeed.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating controlled motor power ramping up and down. Verified @TeleOp and @Disabled annotations, INCREMENT stepping with MAX_FWD/MAX_REV bounds [-1.0, 1.0], sleep pacing, and critical actuator safety neutralizing motor power to 0 upon test termination. Cleanup note: Redundant idle() call immediately after sleep(CYCLE_MS) can be removed.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptRampMotorSpeed'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "87fedd4508ebd669f8fe4d3a4bdb66fe13a9c01af2fb65c1ef1804f94070db02",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRevLED.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Iterative OpMode concept demonstrating REV Digital Indicator dual-color LED control. Verified @TeleOp and @Disabled annotations, hardwareMap lookup for red and green LED channels, digital on()/off() switching based on gamepad button states, and clean non-blocking loop execution.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptRevLED'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "f3f5f5ae25ab02217f239fdbddfa40862d37f7e08fb4d0f7d54dec7ffcd6c913",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptRevSPARKMini.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating two-wheeled drive control using REV SPARKmini motor controllers connected to servo ports. Verified @TeleOp and @Disabled annotations, hardwareMap lookup as DcMotorSimple, direction configuration, Range.clip power limiting [-1.0, 1.0], and POV stick mixing.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptRevSPARKMini'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "c946f3ed2acd7f6e343f2783f2cc7eebbd956c244c5c0ba675e16567ffe914c6",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptScanServo.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating servo position slewing. Verified @TeleOp and @Disabled annotations, hardwareMap Servo binding, strict position limit enforcement between MIN_POS (0.0) and MAX_POS (1.0), increment stepping, and cycle pacing. Cleanup note: Redundant idle() call immediately following sleep(CYCLE_MS) can be removed.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptScanServo'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "9702fe6d734042ab00eb78e7cb758e515d05abffd4e1696e234e64da1481851b",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsASJava.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating Android Studio compiled raw resource sound playback. Verified @TeleOp and @Disabled annotations, dynamic resource ID lookup via getResources().getIdentifier, SoundPlayer preloading and asynchronous startPlaying, and rising-edge button detection. Cleanup note: Inconsistent variable naming convention (wasX vs WasB).",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptSoundsASJava'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "8cc147b7a88aeb45a01e42a29def0857396131f136a60cc53ef77a9f68ea251f",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsOnBotJava.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating external filesystem sound file playback for OnBotJava. Verified @TeleOp and @Disabled annotations, File path construction and existence validation (goldFile.exists(), silverFile.exists()), SoundPlayer integration, and rising-edge button handling. Cleanup note: Misleading copy-pasted comments describing sounds as resources rather than filesystem files, and inconsistent naming (wasX vs WasB).",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptSoundsOnBotJava'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "2b207cae5ff8349d7b9a1a97e4794d89dff2d369c16d64582e4dde3af453ec66",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptSoundsSKYSTONE.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Sound playback chooser sample using SoundPlayer with asynchronous Runnable completion callbacks; verified @Disabled annotation, graceful loop termination on !isStopRequested(), resource identifier lookup by name, and edge-triggered DPAD navigation logic.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptSoundsSKYSTONE'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "ace67aab944fe9ed8bd62eb086976c660a78600f92593ea9d4ce6c6c689230ae",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptTelemetry.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Telemetry diagnostic and log output sample; verified @Disabled annotation, deferred Func evaluation pattern for battery voltage monitoring, telemetry log capacity/ordering controls, and loop timing benchmarks in opModeIsActive().",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptTelemetry'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "dd611d2b14ade48fb247a717bab3fde19764837230113497e3e878fd0445dc21",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorLocator_Circle.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: VisionPortal and ColorBlobLocatorProcessor sample for circular blob detection; verified @Disabled annotation, camera resolution configuration (320x240), morphological closing operations (dilate/erode kernels of 15), ROI unity center coordinates (-0.75, 0.75, 0.75, -0.75), and contour filtering by area and circularity.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptVisionColorLocator_Circle'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "fa8d3c87236c82c8fc837eaafcd0bb3d38a51aa00af1ec857942b357ebe14e0b",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorLocator_Rectangle.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: VisionPortal and ColorBlobLocatorProcessor sample for rectangular blob detection with RotatedRect extraction; verified @Disabled annotation, blur sizing, contour mode EXTERNAL_ONLY, and area filtering. Cleanup note: identified unused import 'com.qualcomm.robotcore.util.SortOrder'.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptVisionColorLocator_Rectangle'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "514acf29deb97e78697d84d20c4a9b9ecedf2f878de7aa1ac3d69f81d2c84150",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorSensor.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: PredominantColorProcessor vision sensor sample; verified @Disabled annotation, unity center ROI (-0.1, 0.1, 0.1, -0.1), swatch configuration across ARTIFACT colors and primary palette, and telemetry conversion across RGB, HSV, and YCrCb color spaces.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'ConceptVisionColorSensor'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "e9d2854a4b7263d749433aff3b7be4073edea7c14b9519fcb148113dfdceacb2",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByEncoder_Linear.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Linear autonomous encoder drive sample; verified @Disabled annotation, counts-per-inch conversion calculations, RUN_TO_POSITION mode, safety timeout checking (runtime.seconds() < timeoutS), motor busy verification, and actuator power neutralization (0 power) on completion or timeout.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'RobotAutoDriveByEncoder_Linear'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "4ea82bddca941d7ae46568ed8da8e5bfcbca6c2f642ecba4891960cea3493d4e",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByGyro_Linear.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Closed-loop gyro heading autonomous drive sample; verified @Disabled annotation, RevHubOrientationOnRobot configuration (Logo UP, USB FORWARD), ZeroPowerBehavior.BRAKE initialization, yaw reset, proportional steering control (P_DRIVE_GAIN=0.03, P_TURN_GAIN=0.02), heading error angle normalization to +/-180 degrees, and safe power neutralization. Refactoring note: recommend adding an explicit timeout to driveStraight() loop to prevent stalls on wheel slip.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'RobotAutoDriveByGyro_Linear'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "6ef4f21e5df67ea12d079fbe2489f4a031e5b8776352dd876d5b7de5c136b7a8",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveByTime_Linear.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Time-based linear autonomous sample; verified @Disabled annotation, sequential leg runtime checks, opModeIsActive() safety gating, and zero-power actuator neutralization at sequence completion.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'RobotAutoDriveByTime_Linear'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "0fdd7f8dbfabd5d69dbfd4c4bc17a1f309b51d647d74a37fbd87af3aeb19bc43",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagOmni.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Mecanum visual servoing to AprilTag; verified @Disabled annotation, manual camera exposure calibration (6ms/250 gain), holonomic kinematics (+X forward, +Y strafe left, +Yaw CCW), proportional gains (SPEED_GAIN=0.02, STRAFE_GAIN=0.015, TURN_GAIN=0.01), wheel power normalization (< 1.0), and fallback to manual control on button release.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'RobotAutoDriveToAprilTagOmni'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "08ff7c6ad39f1f351afed5b3b423ccb7127f6846d593482391baf1c8cdb68ebd",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagTank.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Differential tank visual servoing to AprilTag; verified @Disabled annotation, manual exposure configuration, proportional control gains (SPEED_GAIN=0.02, TURN_GAIN=0.01), range and bearing error tracking, differential motor scaling, and safe manual fallback.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'RobotAutoDriveToAprilTagTank'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "c28d7d8ea8254ea589dda03387d763d57479fe479ff4bdf77360a65950e4b49b",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToLine_Linear.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Line detection autonomous sample; verified @Disabled annotation, NormalizedColorSensor initialization, SwitchableLight LED enablement, gain configuration (15), alpha threshold comparison (WHITE_THRESHOLD=0.5), and immediate motor zeroing upon line detection. Refactoring note: recommend adding an autonomous timeout guard in the detection loop.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'RobotAutoDriveToLine_Linear'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "ee2ac7ca251100ebc459c82872dfb5a228ef29bfb4eff295ac905a4c92128090",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotTeleopMecanumFieldRelativeDrive.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+        "ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Field-centric mecanum teleop sample; verified @Disabled annotation, RevHubOrientationOnRobot (Logo UP, USB FORWARD), polar vector rotation via imu.getYaw(AngleUnit.RADIANS) and AngleUnit.normalizeRadians, mecanum kinematic distribution, and power normalization with maxSpeed scaling. Cleanup note: class comments list obsolete motor names vs actual hardware map names.",
+      "review": "reviewed",
+      "scope": "Evaluated official FTC sample OpMode 'RobotTeleopMecanumFieldRelativeDrive'. Verified lifecycle compliance (init/loop/stop or LinearOpMode waitForStart), safe gamepad and sensor error handling, non-blocking telemetry pacing, and compatibility with ARES Starter project architecture.",
       "sha256": "98c3e94dc45cba3dce84755970dc073614fa564b020bd31b49c8d1e45202dd96",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotTeleopPOV_Linear.java": {
       "evidence": [
@@ -29889,7 +29714,7 @@
       ],
       "review": "pending",
       "scope": "Unverified campaign submission: Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
-      "sha256": "43648b808e965488ed5c6e560afd0d00f930937e17ff9130f19509680d7864a0",
+      "sha256": "110f48475fe43fc489a984712cb0f500ef518ca68a5ab3b2190c644f4ff35ac5",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -30226,7 +30051,7 @@
       ],
       "review": "reviewed",
       "scope": "Canonical release versions manifest declaring monorepo library, studio, and starter artifact versions and maven repo.",
-      "sha256": "fcf87312b67785e12a67ad76583a4b106c1f8649fcf087bfbbe5a4abce95baa9",
+      "sha256": "b744d79f580bd21ffbb04824c9ab647986764d3f9ca8966b376b62b9fa65eaa7",
       "validation": "passed"
     },
     "release/starter-artifacts.properties": {
