@@ -2212,7 +2212,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporter.kt",
       "product": "ARES-Analytics",
-      "lines": 203,
+      "lines": 266,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

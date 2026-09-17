@@ -1,9 +1,6 @@
 package com.ares.analytics.service.project
 
 import com.ares.analytics.BuildConfig
-import com.ares.analytics.service.AresGenerationPhase
-import com.ares.analytics.service.ProjectBuildService
-import com.ares.analytics.service.project.persistence.ProjectMutationTransaction
 import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import com.areslib.codegen.AresProjectCodegenCli
 import com.areslib.controls.ControllerInputPlatform
@@ -17,7 +14,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ProjectRoundtripIntegrationTest {
@@ -62,26 +58,7 @@ class ProjectRoundtripIntegrationTest {
         assertEquals(3.6576, initialDocs.metadata?.fieldLengthMeters)
         assertEquals(3.6576, initialDocs.metadata?.fieldWidthMeters)
 
-        // 2. Materialize subsystem starters and introduce a genuine USER-OWNED extension
-        val generatedMainDir = File(project, "build/generated/ares/main/kotlin")
-        val generatedTestDir = File(project, "build/generated/ares/test/kotlin")
-        val drivebaseDir = File(project, "build/generated/ares/drivebase/kotlin")
         val startersDir = File(project, "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/subsystems")
-        val runtimeOutputFile = File(generatedMainDir, "org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt")
-
-        val codegenArgs = arrayOf(
-            "--project", project.absolutePath,
-            "--output", runtimeOutputFile.absolutePath,
-            "--package", "org.firstinspires.ftc.teamcode.generated",
-            "--platform", "FTC",
-            "--subsystems-starter-output", startersDir.absolutePath,
-            "--subsystems-generated-output", generatedMainDir.absolutePath,
-            "--subsystems-generated-test-output", generatedTestDir.absolutePath,
-            "--subsystems-package", "org.firstinspires.ftc.teamcode.subsystems",
-            "--drivebase-output", drivebaseDir.absolutePath,
-            "--drivebase-package", "org.firstinspires.ftc.teamcode.generated.drivebase",
-            "--ftc-zero-code-runtime",
-        )
 
         // 2. Introduce genuine USER-OWNED extensions in TeamRobotExtensions and custom subsystem source
         val teamExtensionsFile = File(project, "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/extensions/TeamRobotExtensions.kt")
@@ -184,7 +161,7 @@ class ProjectRoundtripIntegrationTest {
     }
 
     @Test
-    fun `intermediate write failure triggers fail-closed verification gate and clean recovery`(): Unit = runBlocking {
+    fun `modified generated output fails verification and regeneration restores it`(): Unit = runBlocking {
         val workspace = temporaryDirectory.resolve("failure-workspace").toFile().apply { mkdirs() }
         val project = extractBundledBioBuzz(workspace)
 
@@ -217,8 +194,8 @@ class ProjectRoundtripIntegrationTest {
         assertTrue(runtimeOutputFile.isFile)
         assertTrue(manifestFile.isFile)
 
-        // Simulate an intermediate failure: runtime output was updated, but process terminated before manifest was written/synced
-        val staleManifestContent = manifestFile.readText()
+        // Model stale output after a completed generation. This does not interrupt the generator.
+        val canonicalBefore = ProjectSession().snapshot(project.path, ControllerInputPlatform.FTC).revision.canonicalContentSha256
         runtimeOutputFile.writeText(runtimeOutputFile.readText() + "\n// intermediate partial edit\n")
 
         // Consumer verification check must fail closed immediately
@@ -235,6 +212,7 @@ class ProjectRoundtripIntegrationTest {
         val session = ProjectSession()
         val snapshot = session.snapshot(project.path, ControllerInputPlatform.FTC)
         assertEquals("BIOBUZZ Bot", snapshot.documents.query.metadata?.identity?.displayName)
+        assertEquals(canonicalBefore, snapshot.revision.canonicalContentSha256)
 
         // Re-running full generation restores everything to a clean, synchronized state
         val recoveryRun = AresProjectCodegenCli.run(codegenArgs)
@@ -297,42 +275,6 @@ class ProjectRoundtripIntegrationTest {
             listOf("biobuzz-intake", "biobuzz-shooter"),
             recoveredSnapshot.documents.query.subsystems.map { it.documentId }.sorted(),
         )
-    }
-
-    @Test
-    fun `stopping active generation transitions observable state to FAILED and clears running`(): Unit = runBlocking {
-        val service = ProjectBuildService(aresRepositoryUri = null)
-        val probeDir = temporaryDirectory.resolve("build-cancel-probe").toFile().apply { mkdirs() }
-
-        val windows = System.getProperty("os.name").contains("win", ignoreCase = true)
-        val waitCommand = if (windows) {
-            listOf("powershell.exe", "-Command", "Start-Sleep -Seconds 30")
-        } else {
-            listOf("sh", "-c", "sleep 30")
-        }
-
-        try {
-            service.runManagedProcessForTest(waitCommand, generationOperation = true)
-            // Verify generation state transitions to RUNNING
-            kotlinx.coroutines.withTimeout(5_000L) {
-                while (service.aresGenerationState.value.phase != AresGenerationPhase.RUNNING) {
-                    kotlinx.coroutines.delay(10L)
-                }
-            }
-            assertEquals(AresGenerationPhase.RUNNING, service.aresGenerationState.value.phase)
-            assertTrue(service.processState.value.buildRunning)
-
-            // Kill active build/generation
-            service.killActiveBuildAndJoin()
-
-            // Verify generation state transitions to FAILED with cancellation message
-            assertEquals(AresGenerationPhase.FAILED, service.aresGenerationState.value.phase)
-            assertTrue(service.aresGenerationState.value.message.contains("canceled", ignoreCase = true))
-            assertFalse(service.processState.value.buildRunning)
-        } finally {
-            service.shutdown()
-            probeDir.deleteRecursively()
-        }
     }
 
     private fun extractBundledBioBuzz(targetDirectory: File): File {

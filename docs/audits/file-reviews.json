@@ -1836,13 +1836,22 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ProjectBuildService.kt": {
-      "sha256": "71978d0d6b87d8f0fd898f3d34cb3ea17ba0f55e0876bb38c7de0bda54add111",
-      "review": "reviewed",
+      "sha256": "9ca9321454cdc3559a66da29b235d3910b108b2554fc85851abd46d999f383f2",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified Gradle compile-only verification and ARES project generation process management. Verified mutual exclusion via ProjectProcessGate and buildLifecycleMutex, non-blocking process log streaming via SharedFlow(replay=200, dropOldest), transient Windows cache lock retry, generation tracking, and process tree termination on cancellation.",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ],
+      "roundtripIntegrationPriorReview": {
+        "sha256": "71978d0d6b87d8f0fd898f3d34cb3ea17ba0f55e0876bb38c7de0bda54add111",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified Gradle compile-only verification and ARES project generation process management. Verified mutual exclusion via ProjectProcessGate and buildLifecycleMutex, non-blocking process log streaming via SharedFlow(replay=200, dropOldest), transient Windows cache lock retry, generation tracking, and process tree termination on cancellation.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ProjectDependencyPreflight.kt": {
       "sha256": "49620bf9ae5acfe678f2450922593eb5510aa08d326c5128955aeda4baa9eb8b",
@@ -3328,24 +3337,33 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporter.kt": {
-      "sha256": "d170620fba9f9480df8dde653188fc7456735ee29a3ac3d1d4d3816165707197",
+      "sha256": "83c55d2863c549c1c371d3cd7645fd4c0e50f98d90b5cfa53fc89a4d81b5a84f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
       ],
-      "projectRoundtripSubmission": {
+      "roundtripIntegrationPriorReview": {
         "sha256": "d170620fba9f9480df8dde653188fc7456735ee29a3ac3d1d4d3816165707197",
-        "review": "reviewed",
+        "review": "partial",
         "validation": "passed",
-        "scope": "Audit and fix for portable project archive export: excluded .ares/local (transient tuning and verification runs), .ares/recovery (transaction rollbacks and deleted subsystem backups), and internal .ares dot/lock files while safely traversing canonical .ares documents and user code. Verified with ProjectArchiveExporterTest.",
+        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
         "evidence": [
-          "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml"
-        ]
-      },
-      "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+          "docs/audits/pass293-pending-elevation-audit.md",
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        ],
+        "projectRoundtripSubmission": {
+          "sha256": "d170620fba9f9480df8dde653188fc7456735ee29a3ac3d1d4d3816165707197",
+          "review": "reviewed",
+          "validation": "passed",
+          "scope": "Audit and fix for portable project archive export: excluded .ares/local (transient tuning and verification runs), .ares/recovery (transaction rollbacks and deleted subsystem backups), and internal .ares dot/lock files while safely traversing canonical .ares documents and user code. Verified with ProjectArchiveExporterTest.",
+          "evidence": [
+            "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml"
+          ]
+        },
+        "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectBackupAutoSyncService.kt": {
       "sha256": "21a6a82da63e715c233002e4611b3c92fb6fbfc8a7d9f5152c55e151eabe97f2",
@@ -9857,24 +9875,33 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporterTest.kt": {
-      "sha256": "979489cbdc551065e2833953bc53133e267b1bfe885db34a2fc4123355e04c5b",
+      "sha256": "16b0eed29ac6eb5a31c6435be03b9f3dea0efb0b3cb21b3e78e2dafa891c008c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md",
-        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
       ],
-      "projectRoundtripSubmission": {
-        "sha256": "1956497591e5425aa0707c52426298ffa6d99b6a5fd03e65ac85a4eec4d10531",
-        "review": "reviewed",
+      "roundtripIntegrationPriorReview": {
+        "sha256": "979489cbdc551065e2833953bc53133e267b1bfe885db34a2fc4123355e04c5b",
+        "review": "partial",
         "validation": "passed",
-        "scope": "Added unit test portable archive excludes local transient data and recovery transactions: verified exclusion of .ares/local, .ares/recovery, and .ares/.project-mutation-transaction while verifying canonical .ares/project.json and source inclusion in exported zip archive.",
+        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
         "evidence": [
-          "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml"
-        ]
-      },
-      "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+          "docs/audits/pass292-pending-elevation-audit.md",
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        ],
+        "projectRoundtripSubmission": {
+          "sha256": "1956497591e5425aa0707c52426298ffa6d99b6a5fd03e65ac85a4eec4d10531",
+          "review": "reviewed",
+          "validation": "passed",
+          "scope": "Added unit test portable archive excludes local transient data and recovery transactions: verified exclusion of .ares/local, .ares/recovery, and .ares/.project-mutation-transaction while verifying canonical .ares/project.json and source inclusion in exported zip archive.",
+          "evidence": [
+            "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml"
+          ]
+        },
+        "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectReviewTokenFactoryTest.kt": {
       "sha256": "60a07fe9f1a294a6ce5583eff5ac9ae86147c23d8c2d2c2e99970820513e7e0d",
@@ -11796,29 +11823,38 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "6b64f7ac3bddb3f107577f6f81f913f535a7643c64e1bfe181b1ca532e815959",
+      "sha256": "8af1f3ac4fab93f42239f15777098715f7a86439869228599d26cc8279a844b2",
       "review": "partial",
       "validation": "passed",
-      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+      "scope": "Reviewed and regenerated this batch production line-count delta; policy verified. Size accounting is not file-review coverage.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md",
-        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "runtimeAuditSubmission": {
+      "roundtripIntegrationPriorReview": {
+        "sha256": "6b64f7ac3bddb3f107577f6f81f913f535a7643c64e1bfe181b1ca532e815959",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
         "evidence": [
-          "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+          "docs/audits/RELEASE_7_0_62_REVIEW.md",
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
         ],
-        "review": "reviewed",
-        "scope": "Machine-readable maintainability ledger tracking line counts, file size compliance, and ratchet state across monorepo.",
-        "sha256": "b1139f4988361c9f6a5e73d2917e12400173aa8cd449bcaf30456e151551057e",
-        "validation": "passed"
-      },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "submission": {
+          "commit": "f73d4ceed",
+          "review": "reviewed",
+          "validation": "passed"
+        },
+        "runtimeAuditSubmission": {
+          "evidence": [
+            "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+          ],
+          "review": "reviewed",
+          "scope": "Machine-readable maintainability ledger tracking line counts, file size compliance, and ratchet state across monorepo.",
+          "sha256": "b1139f4988361c9f6a5e73d2917e12400173aa8cd449bcaf30456e151551057e",
+          "validation": "passed"
+        },
+        "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      }
     },
     "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
       "sha256": "a79add11b7d79d56e88607ec84e8add59e06a7952773663eff7c6f9e70e5b57e",
@@ -33796,36 +33832,21 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "2df54c04446ab754d729ffb1d23fc7d7ab2bcbd9c139a21cb0229aa2eb5acbc0",
+      "sha256": "dea42f47002fcee962e657be4daf911e54e58a5f0fb8c915e99da1ba6bab3d79",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this batch ledger delta: restored historical records, retained eight submitted claims separately, recorded current partial review and actual validation, and replaced five retired archive paths. No repository-wide coverage claim.",
+      "scope": "Reviewed only the roundtrip integration peer-review ledger delta. Prior identities and evidence are retained separately; new claims bind scoped fixes and actual validation. No repository-wide coverage claim.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md",
-        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "not-applicable"
-      },
-      "runtimeAuditSubmission": {
-        "evidence": [
-          "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
-        ],
-        "review": "reviewed",
-        "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
-        "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
-        "validation": "passed"
-      },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
-      "projectRoundtripSubmission": {
-        "sha256": "40b81af787a0adf273406926732b2c9653623b1d16bfbc3cf08566c2628c97d3",
+      "roundtripIntegrationPriorReview": {
+        "sha256": "2df54c04446ab754d729ffb1d23fc7d7ab2bcbd9c139a21cb0229aa2eb5acbc0",
         "review": "partial",
         "validation": "passed",
-        "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
+        "scope": "Reviewed this batch ledger delta: restored historical records, retained eight submitted claims separately, recorded current partial review and actual validation, and replaced five retired archive paths. No repository-wide coverage claim.",
         "evidence": [
-          "docs/audits/RELEASE_7_0_62_REVIEW.md"
+          "docs/audits/RELEASE_7_0_62_REVIEW.md",
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
         ],
         "submission": {
           "commit": "f73d4ceed",
@@ -33841,9 +33862,33 @@
           "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
           "validation": "passed"
         },
-        "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
-      },
-      "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+        "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+        "projectRoundtripSubmission": {
+          "sha256": "40b81af787a0adf273406926732b2c9653623b1d16bfbc3cf08566c2628c97d3",
+          "review": "partial",
+          "validation": "passed",
+          "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
+          "evidence": [
+            "docs/audits/RELEASE_7_0_62_REVIEW.md"
+          ],
+          "submission": {
+            "commit": "f73d4ceed",
+            "review": "reviewed",
+            "validation": "not-applicable"
+          },
+          "runtimeAuditSubmission": {
+            "evidence": [
+              "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+            ],
+            "review": "reviewed",
+            "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
+            "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
+            "validation": "passed"
+          },
+          "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+        },
+        "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+      }
     },
     "docs/audits/pass288-pending-elevation-audit.md": {
       "sha256": "630d690dd95c6145d34f6aa0eab06d86b756725f3dee5b411dd4e45583efcba9",
@@ -34881,13 +34926,22 @@
       ]
     },
     "docs/audits/NEXT_PROJECT_ROUNDTRIP_PROMPT.md": {
-      "sha256": "8c7be37b86d994777057d14c1823d1ed56df3da0c375730b6ae7afbdddfeeb07",
+      "sha256": "e86d134ef3eef59a2c39fa7fc661a991c35062d8379119761c3cf34bdd824328",
       "review": "partial",
-      "validation": "not-applicable",
-      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: preserved historical claims with corrections, actual independent test evidence and limitations, or bounded next-agent instructions as applicable. Local Markdown links and source policy passed.",
       "evidence": [
-        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
-      ]
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ],
+      "roundtripIntegrationPriorReview": {
+        "sha256": "8c7be37b86d994777057d14c1823d1ed56df3da0c375730b6ae7afbdddfeeb07",
+        "review": "partial",
+        "validation": "not-applicable",
+        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        ]
+      }
     },
     "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md": {
       "sha256": "e03c1b87f5ed5eedd2d436dad7c6da076874350048641aef6ba63c83af4dceb7",
@@ -34896,6 +34950,51 @@
       "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
         "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ProjectGenerationLifecycleTest.kt": {
+      "sha256": "aa0226dc6dcd6ec89c8824967a5fc7b8da2e53c8990bcfa8746c7019cbdfc5cc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ProjectRoundtripIntegrationTest.kt": {
+      "sha256": "6cbf815ede5e6549c58edc86e42ec24e760250c1e109e8d43baaa3c8bb9ca16b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/NEXT_ROUNDTRIP_CONSUMER_PROMPT.md": {
+      "sha256": "3ecfafccf45f1fa37680b4be234be528f56d937513c6709dfc1011bf1afb9721",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: preserved historical claims with corrections, actual independent test evidence and limitations, or bounded next-agent instructions as applicable. Local Markdown links and source policy passed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md": {
+      "sha256": "be9a4bacb40fa26830db8f97e26cff27de50e4626dc0d275b31afd76979c1415",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: preserved historical claims with corrections, actual independent test evidence and limitations, or bounded next-agent instructions as applicable. Local Markdown links and source policy passed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_REVIEW.md": {
+      "sha256": "15eff5fc46df96bfa468efa62d55ac3e572ccb237dcc8f1a95bc6b9c0f94e8cd",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: preserved historical claims with corrections, actual independent test evidence and limitations, or bounded next-agent instructions as applicable. Local Markdown links and source policy passed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
       ]
     }
   }

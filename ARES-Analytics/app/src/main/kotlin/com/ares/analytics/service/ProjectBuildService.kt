@@ -285,14 +285,14 @@ class ProjectBuildService internal constructor(
             generation,
             AresGenerationState(AresGenerationPhase.RUNNING, "Applying reviewed subsystem starters and generated plumbing...")
         )
-        val taskName = if (confirmationToken == null) "generateSubsystemStarters" else "replaceSubsystemStarters"
-        val task = if (league == League.FTC) ":TeamCode:$taskName" else taskName
-        val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
-        commandFactory.requireProjectDependenciesCompatible(root)
-        commandFactory.requireProjectWrapper(root, league, isWindows)
-        val command = commandFactory.authoring(league, task, isWindows, confirmationToken)
         val diagnosticLines = ArrayDeque<String>(GENERATION_DIAGNOSTIC_LINE_LIMIT)
         try {
+            val taskName = if (confirmationToken == null) "generateSubsystemStarters" else "replaceSubsystemStarters"
+            val task = if (league == League.FTC) ":TeamCode:$taskName" else taskName
+            val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
+            commandFactory.requireProjectDependenciesCompatible(root)
+            commandFactory.requireProjectWrapper(root, league, isWindows)
+            val command = commandFactory.authoring(league, task, isWindows, confirmationToken)
             val exitCode = runOwnedBuildProcess(
                 generation,
                 commandFactory.configureEnvironment(ProcessBuilder(command).directory(root).redirectErrorStream(true)),

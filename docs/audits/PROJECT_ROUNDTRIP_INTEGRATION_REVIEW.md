@@ -1,5 +1,14 @@
 # Project Round-Trip, Safe Extraction, and Generation Recovery Review
 
+> Historical submission report for `e491ac315`, retained to preserve the other agent's claims.
+> The independent [peer review](PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md) supersedes its
+> readiness conclusions and records reproduced failures and corrective validation. In particular,
+> the original extraction left partial destinations on failure; its cancellation test bypassed
+> the changed generation methods; and the "intermediate write failure" test edited a completed
+> output rather than interrupting generation. These tests did not compile or run the reopened
+> BioBuzz consumer or exercise a generic starter. No complete end-to-end, whole-project
+> transaction, quota-test, or shipped archive-import UI claim is established by this report.
+
 Date: 2026-09-17. Scope: Studio project export, safe extraction, session reopening, generation determinism, USER-OWNED source preservation, cancellation handling, and multi-document transaction recovery. Strictly local; no remote push, publish, release, or merge.
 
 ## Baseline & Context

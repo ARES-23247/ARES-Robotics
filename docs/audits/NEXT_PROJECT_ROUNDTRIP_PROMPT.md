@@ -1,5 +1,8 @@
 # Next bounded project-roundtrip checkpoint
 
+This historical prompt led to submission `e491ac315`. Its reviewed follow-up is now
+[the consumer round-trip prompt](NEXT_ROUNDTRIP_CONSUMER_PROMPT.md); use that for the next task.
+
 Copy the following prompt to the other agent after the local review merge:
 
 ```text
