@@ -30,6 +30,7 @@ import com.ares.analytics.shared.models.ConsoleMessage
 import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.util.AresFormatters
+import com.ares.analytics.ui.util.DesktopFileChoosers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -82,7 +83,7 @@ fun ConsoleViewer(
     // Replay synchronisation
     val replayFrame by replayEngineService.currentFrame.collectAsState()
     val replayState by replayEngineService.state.collectAsState()
-    val displayMessages = remember(allMessages, replayFrame, replayState, isReplayMode) {
+    val displayMessages = remember(allMessages.size, replayFrame, replayState, isReplayMode) {
         val playheadMs = replayFrame?.timestampMs
         if (isReplayMode && replayState != ReplayState.STOPPED && playheadMs != null) {
             allMessages.filter { it.timestampMs <= playheadMs }
@@ -194,25 +195,19 @@ fun ConsoleViewer(
                 // Export Logs button
                 IconButton(
                     onClick = {
+                        val targetFile = DesktopFileChoosers.chooseSaveFile(
+                            dialogTitle = "Export Console Logs",
+                            defaultFileName = "ares_console_logs.txt",
+                            filterDescription = "Text file",
+                            extensions = listOf("txt", "log")
+                        ) ?: return@IconButton
                         scope.launch(Dispatchers.IO) {
-                            try {
-                                val frame = java.awt.Frame()
-                                val fileDialog = java.awt.FileDialog(frame, "Export Console Logs", java.awt.FileDialog.SAVE)
-                                fileDialog.file = "ares_console_logs.txt"
-                                fileDialog.isVisible = true
-                                val directory = fileDialog.directory
-                                val file = fileDialog.file
-                                if (directory != null && file != null) {
-                                    val targetFile = java.io.File(directory, file)
-                                    targetFile.writeText(filteredMessages.joinToString("\n") { msg ->
-                                        val time = AresFormatters.formatTimeMillis(msg.timestampMs)
-                                        "[$time] [${msg.severity}] ${msg.text}"
-                                    })
-                                }
-                                frame.dispose()
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                            runCatching {
+                                targetFile.writeText(filteredMessages.joinToString("\n") { msg ->
+                                    val time = AresFormatters.formatTimeMillis(msg.timestampMs)
+                                    "[$time] [${msg.severity}] ${msg.text}"
+                                })
+                            }.onFailure(Throwable::printStackTrace)
                         }
                     },
                     modifier = Modifier.size(28.dp)

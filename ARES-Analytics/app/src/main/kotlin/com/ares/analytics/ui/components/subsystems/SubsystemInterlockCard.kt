@@ -54,7 +54,7 @@ fun InterlockMatrixCard(document: SubsystemDocument, state: SubsystemGeneratorSt
                     if (targetOptions.isNotEmpty()) {
                         DropdownSelector("Other subsystem", target?.let { "${it.displayName} (${it.documentId})" } ?: "Select a subsystem", targetOptions) { selectedName ->
                             val selected = targets.getOrNull(targetOptions.indexOf(selectedName)) ?: return@DropdownSelector
-                            val field = selected.stateFields.first()
+                            val field = selected.stateFields.firstOrNull() ?: return@DropdownSelector
                             viewModel.updateInterlock(interlock.interlockId) {
                                 it.copy(
                                     targetSubsystemUid = selected.uid,
@@ -68,7 +68,7 @@ fun InterlockMatrixCard(document: SubsystemDocument, state: SubsystemGeneratorSt
                     val fields = target?.stateFields.orEmpty()
                     if (fields.isNotEmpty()) {
                         DropdownSelector("Observed state value", interlock.targetFieldId, fields.map { it.fieldId }) { selected ->
-                            val field = fields.first { it.fieldId == selected }
+                            val field = fields.firstOrNull { it.fieldId == selected } ?: return@DropdownSelector
                             viewModel.updateInterlock(interlock.interlockId) {
                                 it.copy(
                                     targetFieldId = selected,

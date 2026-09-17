@@ -470,20 +470,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/DesktopInstanceLock.kt": {
-      "sha256": "4cda2078afd7a98d46b97d5edab767d8b0f2fd8bd7d4578f177713f4357d57d5",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified single-instance OS file lock implementation over ~/.ares-analytics/app.lock using FileChannel.tryLock(). Verified automatic kernel cleanup on JVM death, safe close handling, and DesktopCrashHandler uncaught exception logging to disk with immediate process exit if uncaught exception strikes AWT-EventQueue to avoid orphan lock retention.",
+      "sha256": "f100f80be6921183b1916b2f977e05e809cf5ff6c70fb6784aaa4dff71fc3ac3",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Desktop application single-instance file lock coordinator, process shutdown hook, and crash reporting handler.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopInstanceLockTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/DesktopScheduler.kt": {
       "sha256": "d76286b85b417ba80deb1fb9c141971e22f6f9508364d22ecd46c0e97927db91",
@@ -2886,21 +2879,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/canvas/VectorDrawingUtils.kt": {
-      "sha256": "190696144caadc0f48c26249339c6a4f467ee275903e96c38110df69a9580bb1",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full arrow helper and current call sites: correct rear-facing wings, open/filled branch, short-vector no-op, finite/style/wing guards and widened coordinate subtraction. Actual offscreen raster tests pass. Current callers use open heads. No Studio-window, extreme renderer color-space or physical-display claim.",
+      "sha256": "5be4791b5bad8006399874f63507121c9eca9fc8e228e41aaf2a2198ca1915ac",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Vector drawing utilities for Compose canvas rendering, arrow heads, angle bounds validation, and transforms.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.canvas.VectorDrawingUtilsTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/CommandPalette.kt": {
       "sha256": "9798d1b939ba7e62f269bcb0979ba7cd21f02b4cbc9d14e00381740614d15d09",
@@ -2984,20 +2969,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/cloud/CloudComponents.kt": {
-      "sha256": "19aace24f48d5f2304af29fc365c2c431e01de88f189e32271b440cb87a52318",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited cloud synchronization indicators and confirmation dialogs. Verified `CloudDeletionConfirmationDialog` safety requirement enforcing a minimum 16-character confirmation token before allowing remote file deletion on physical robot hardware, plus sync status chips.",
+      "sha256": "c963dae43ef012a50d4ab00df5702ba0722115d68ec136898718923eae727d27",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Cloud UI components, upload queue cards, telemetry sync progress displays, and session formatters.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/controls/ControlLearningCards.kt": {
       "sha256": "5dacaf5c792d0bf8d34909c4266616f3168a73557c750efd2211588d5dc1df7f",
@@ -3081,20 +3059,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresDialog.kt": {
-      "sha256": "bde389eb7f7c137b917b79fc47fe3085dc33c1aa2dd62f14194016b9ba86a868",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited modal dialog container with `AresDialogVariant` (DEFAULT, DESTRUCTIVE, WARNING, INFO). Verified modal barrier dismissibility, keyboard Escape dismissal, primary/secondary action focus order, and destructive action color tokens.",
+      "sha256": "91bfc544e94584f7ae17fd4965ea8ea467a56304f7f9566b35415bcbb39187ae",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Modal dialog primitives, external URI scheme validation, and theme-consistent action styling for desktop UI.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.AresFileChooserStateTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresEmptyState.kt": {
       "sha256": "07664bc89032edfc6ad09485c8a0f8e05e8125cf0bfd4a7bb2fe2512eec314bb",
@@ -3125,35 +3096,21 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserEntries.kt": {
       "sha256": "9306b14a4b6c081ae8e63ba011c480dead2be631d809eda4ef38bcadd5b00372",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited file chooser directory contents table. Verified column sorting (name, date modified, size), keyboard arrow navigation (Up/Down/Enter), double-click folder descent, and flavor icon badges.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "File chooser entry listing, directory entry sorting, and file type classification.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.AresFileChooserStateTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserNavigation.kt": {
       "sha256": "433c991e028d8479db3c8f7f2940f71864260de23c1abb6abd3aba46ef747a5e",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited file chooser navigation breadcrumbs and toolbar. Verified history back/forward/up stack transitions, manual absolute path text input editing with validation, and reload triggers.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Breadcrumb navigation, directory history traversal, and path resolution for desktop file choosers.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.AresFileChooserStateTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserSidebar.kt": {
       "sha256": "3e6c4d16e3c4de6cdc90dcfd074ce22957312eb1d0d901a6bc027f3aac66b69f",
@@ -3165,20 +3122,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserState.kt": {
-      "sha256": "63b77934d70286fcf7b8aaa2fcd4111db00665446afc73b26792284b49b5dff2",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited file chooser coroutine state machine. Verified offloading disk I/O to `Dispatchers.IO`, race condition protection using monotonic request IDs, and hidden/system file filtering policies.",
+      "sha256": "038be19bd25900cbb3b0a8e547e268176f632ab5045811f5a6edcbe2bc93483b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Atomic mutable snapshot state management, directory listing caching, and Windows folder creation safety.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.AresFileChooserStateTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresInspectorDrawer.kt": {
       "sha256": "b27264a79c4cd1027a3aa710311731366a9d35ddeb290f4446ca6601d0c66efd",
@@ -3244,12 +3194,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ChooserApproval.kt": {
-      "sha256": "18ed84df7687d237e1474dd394b8cc535d5d0704087cde98a2ddbc5d6e63da46",
+      "sha256": "011429e28f86a0cf72540e5b8258fe2dfcf671aeff1bf594451dfe753cfcf7c2",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited file chooser approval and validation engine. Verified file extension auto-appending, path security checks against parent escaping, and overwrite decision branches.",
+      "scope": "File selection approval validation, path traversal prevention, and resilient file attribute inspection.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.AresFileChooserStateTest.xml"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ExecutionToolbar.kt": {
@@ -3378,20 +3328,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/BatteryHealthCard.kt": {
-      "sha256": "f8698db4ace6cf7df9bc24aaf429ef6ce7984b63f4b4fbe0435fbc44042a624d",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited battery voltage and health diagnostics widget. Verified real-time voltage tracking, sag history, brownout risk warning thresholds (e.g. < 11.5V warning, < 9.5V critical), and zero-allocation metric row updates.",
+      "sha256": "1aee7489532dabd8aef2d414330399257ecf38fbb0d1549c3a6e1acb4a6e4d74",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Dashboard battery health card with voltage sag metrics, disconnected telemetry guards, and threshold warnings.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/BrownoutProtectionCard.kt": {
       "sha256": "89c8b628c1fabb2b3a8cf7d72bd82c402d0448d4579a1e92130e8a926af145cb",
@@ -3412,20 +3355,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ConsoleViewer.kt": {
-      "sha256": "103ec26ec0337057c91bab88a48d752bd172ab23b0ac599f20a850c313203cdf",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited live and replay console log viewer. Verified regex and severity level filtering, auto-scroll pinning, log export to text file, and virtualization via LazyColumn.",
+      "sha256": "56211bbb6313dbf5100e61a0f903b1b790bbf28c4cf9078b6c6884cf5bd15205",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Console log viewer with search filtering, log severity coloring, and thread-safe desktop file export.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ControlLoopProfilerCard.kt": {
       "sha256": "a4d0535e768184eb92fe5ac4eb1f3fbeaac629066f588e6b97da01cd189de318",
@@ -3447,21 +3383,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthObservation.kt": {
-      "sha256": "75cd3183a7be2b82dc425d04430cf03beccabb54ca2f190e7dd4f1732f5afa1a",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Entire bounded tracker, live flow, resolver and Compose hook reviewed. 32 new pass tests include per-topic expiry, signed time wrap/backward unknown age, target reset/validation race, retained-frame rejection, 10000-frame publication bounds, cancellation and actual Compose source transitions. 53/54 lines, 58/66 branches; 100ms presentation latency and upstream freshness/atomicity limits documented.",
+      "sha256": "fcab43fb440b8d9d908e486fb6f6615e5bdde996dd2ceee8b2e5604bbe36c148",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Robot controller telemetry health observations, normalized topic key lookups, and diagnostic parsing.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass27-studio-final.log",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardAlertPresentation.kt": {
       "sha256": "3c6b8ccfa58a66e3159c7112f8965a211eb159f3604314e3cb796e0e371212e5",
@@ -3635,21 +3563,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyCard.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Pass 219: Complete card/row/icon/color/filter/export/session/telemetry review with producer and database traces. Actual offscreen rendering reproduced duplicate controller keys and frozen current. Card now consumes indexed unique-depth rows, keyed cached-session state and one fresh telemetry observer; suppresses live readings for cache/offline, uses canonical motor identity, finite numeric values and encoder-native velocity label. Markdown escaping, repeated-copy feedback token and visible 56dp search field fixed. Headless nested/live/cached captures inspected; native HWND/clipboard interaction not claimed.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass219-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
       "sha256": "aa3597552457bba38d224e31f978a9e62f3dac9576ffd7966b862020dd55837c",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "CAN bus and hardware topology card displaying device statuses, bus utilization, and diagnostic errors.",
+      "evidence": [
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/HardwareTopologyPresentation.kt": {
       "review": "reviewed",
@@ -3717,20 +3637,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/MatchScheduleCard.kt": {
-      "sha256": "f09daadc73589aacc76aafa47ed5792587561c77e86d90c7081772779df89688",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited match schedule inspection card. Verified upcoming match determination algorithm based on current system time, current team highlighting with gold border, alliance coloring (Red vs Blue), memoized timestamp formatting, and LazyColumn virtualization.",
+      "sha256": "d725e6ee2f5d9f27824e4c9287a7ed9a017f39d0ed355ddd129d4f3eb7b57f87",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Tournament match schedule display, current and upcoming match resolution, and match countdown timers.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/MecanumVisualizer.kt": {
       "sha256": "3f897ecfdfcbe1999d721a31d6d2c456fc32bf74a19ad1671b90cea33885ffea",
@@ -3752,19 +3665,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/MotorHealthCard.kt": {
       "sha256": "0c5b96308f5d2b5161daa587b3dc3ec77c2661b23ea5a9e184edf50f34b10c0c",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited motor health and current draw card. Verified live session 1000ms polling vs single historical session query via DatabaseService, top-2 motor grouping, and canvas spline time-series chart with vertical gradient fill and 10.0A baseline scaling.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Motor temperature, current draw, and duty cycle health visualization cards with warning thresholds.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/PathTuningVisualizer.kt": {
       "sha256": "bd69b22efe0cdc4356d7b99cfe0ceaf846757e0ad386454f90ea61104564e324",
@@ -3867,20 +3773,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SingleGamepadVisualizer.kt": {
-      "sha256": "3241cc70e4e92c177f92b58b9d96716cc0006acc160d073f6f53fd6dc7797802",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated gamepad input visualizer for axes, triggers, and buttons; verified stick deadband handling, canvas rendering of PS4/Xbox controller geometry, and responsive keyboard/gamepad emulation.",
+      "sha256": "4587f46074df455ca0cbf18a39b436d05274f787bed6192d3326fade2034fa7f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Interactive gamepad visualizer displaying analog joystick inputs, trigger values, and button actuation.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SingleSignalWidget.kt": {
       "sha256": "c6ab878066ac2cf9d859a857af173804eaa6c8ad3457223d57d91842441b6ec2",
@@ -3950,19 +3849,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartModel.kt": {
       "sha256": "57e9b16cc04bc090b7a9f285b33c946fbe9d9ea99a3e90b70410412b7845b73a",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated TelemetryChartModel physical dimension grouping, small multiples layout configuration, auto-ranging min/max bounds calculation with 10% safety margin, and physical unit conversions.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Telemetry series chart viewport models, coordinate bounds calculation, and real-time point downsampling.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartPanel.kt": {
       "sha256": "4f4f72dd6ad81f243f70c494720c3f5369052374c14f267999d2baaab27950c5",
@@ -4001,20 +3893,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/VisionQualityCard.kt": {
-      "sha256": "f84d38470e90c718363571aa6f599dea1e4b38ddd1a941705c038811d61d8419",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated vision pipeline diagnostics, tag detection count, ambiguity percentage, camera latency, and innovation threshold canvas drawing (dashed line at +/- 5cm threshold).",
+      "sha256": "7f3b99544c17562464419b3b61fdc06c80fff70cc469913480a0e9b0e1c25731",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Vision target tracking card, AprilTag detection latency, EKF innovation residual metrics, and pose confidence.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/WidgetPicker.kt": {
       "sha256": "b1a82a56d69346940953641b2992cbbe64d638bd0cd23cefad74f1d4be787367",
@@ -4198,21 +4083,14 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasUtils.kt": {
-      "sha256": "8823a04b35312e3922a84f9891aef0b0634d36a5e268e571d978d29cd6254f6d",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated field-to-canvas and canvas-to-field coordinate transformations (getCanvasOffsetBase, getRobotCoordBase, getTransformedCanvasOffset, getDragDeltaInFieldCoords) adhering strictly to +X forward, +Y left, CCW radians for FTC and XRP (center origin), and blue corner origin for FRC. Verified cached path rendering for zero GC pressure during interactive panning/zooming.",
+      "sha256": "32a922d048157b96d80ff875600a3ce63349121a40f779fa439bccb34a80fa31",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Field coordinate projection utilities, pixel-to-field math, coordinate axis rendering, and numerical guards.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass148-verified-evidence/",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.components.pathplanner.FieldCanvasMathAuditTest.xml",
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.components.pathplanner.FieldCanvasGesturesTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldElementsRenderer.kt": {
       "sha256": "7692820041b547fd9db609916066b03ef644a6c1bf01823ff28a331475eeed53",
@@ -4235,20 +4113,13 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldObstacleSelection.kt": {
       "sha256": "98e1d68a7f71ae5f7a561397c0705412b72ae0dae2544d41d66743b72e6d2527",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full helper source: rank contained finite field-scale geometry with existing shape-distance priority/stable ties; empty polygon handling; shared circle/rotated rectangle/polygon containment and hypot distance. Upstream invalid dimensions/extreme geometry and native input lifecycle excluded.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Field obstacle selection, circular and polygon obstacle hit-testing, and interaction bounding boxes.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass159-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.components.pathplanner.FieldObstacleSelectionTest.xml",
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.components.pathplanner.FieldItemHitTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/GamePieceCatalogDialog.kt": {
       "sha256": "a9e3c4d9f9cfe2498bab87bc36789a486e06c1468c0ff6b0b0b0a53407909d2b",
@@ -4378,19 +4249,12 @@
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/routine/RoutineParameterEditors.kt": {
       "sha256": "b1da90ac0208d483e124088762f755050773fab7f0d3c6364b2c6e784846bb88",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0\u00b0, 90\u00b0, 180\u00b0, -90\u00b0), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Autonomous routine step parameter editors with input validation, numeric boundary checks, and tooltips.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/routine/RoutineReferencePickers.kt": {
       "sha256": "bedcb749de84ee7071e80843bcc95f8282a9d5b987b62387aef1effdd7868370",
@@ -4474,20 +4338,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemInterlockCard.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified InterlockMatrixCard Compose component. Ensures positional interlock configuration between generated subsystems, strict type-safe comparison gating (LESS_THAN for numeric, EQUALS_STATE for boolean/state), and disallows custom fallback overrides on ARES-generated subsystems to enforce configured actuator safe outputs.",
+      "sha256": "5d69abb9f103248a33061c3fe5f0bef19ddb770de7bdeb53a7173854483a06d4",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Subsystem state transition matrix card, interlock rules visualization, and safe state transition displays.",
       "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemDocumentAuthoringTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "sha256": "36f03f45321fdca057a977324ac39eb1085d8fcb415b0db0451f6040188c6db4",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemPurposeSection.kt": {
       "sha256": "838af849c5a1810c31b9d960edd3c784f3013a1ec5cf57cae56cb3e666baecc8",
@@ -4499,21 +4356,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStateflowSection.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated visual finite state machine editor for subsystem state flows. Verified state and transition definitions, continuous angle wrapping shortest-path math, feedforward model bindings, safety timeout guards, and homing condition validators. Ensured immutable state update dispatching.",
+      "sha256": "0e50c906cd0346fc3de3e53b4f38210275e1b28e290a59e6c588b2782b63e09f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Subsystem stateflow editor section, dropdown safe indexing, state transition definitions, and graph layouts.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass226-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "sha256": "2e9d917faf8d2be0594bfa047c41bcb76198fc181a56966d5121eca0f7230c07",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemTuningReviewSection.kt": {
       "sha256": "e89dcb55f20eea2c2b8405c8eb0d16f416f80e9a10ebe985a9a6d8b7f692ba0f",
@@ -4698,36 +4547,22 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyCheckpointSection.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified CheckpointSection Compose component. Displays student learning checkpoints, automatic app evidence observation states, accessible semantics state descriptions, and safe reflection input handling up to 4000 characters.",
+      "sha256": "6b16867a39b92c7159af6cb20445435d67456510b1245474c808a04024ab1e7e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Academy interactive checkpoint section, reflection draft persistence, and lesson progression UI.",
       "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/learning/LearningCatalogTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "sha256": "178683273438ca670624408b6b665f1b9596851f7811ef51eeae0e7ea9a420aa",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyClassroomComponents.kt": {
       "sha256": "dd8d1fc5d1f4e8429728284fac9f19bcca6306857a8414e4e7e36af315f1233a",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Reusable classroom UI components providing accessible setup cards, assignment rows, mentor instructions, and safety warnings for educational sessions.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Classroom curriculum navigation, interactive coding exercise components, and quiz assessment panels.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyClassroomPane.kt": {
       "sha256": "237dab7489eea63539e53cbff2c55cd817eed49f9366233f99e72225dc6b7794",
@@ -4757,20 +4592,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyScreen.kt": {
-      "sha256": "be9899e38f56b72d4ffb57ff95ff23db933d4e5bfb40cccb5dc37e80d9a707be",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Academy mission control layout featuring responsive single/multi-pane adaptations, progress tracking, lesson navigation, and full accessibility semantics.",
+      "sha256": "937c51213f7bf0abd29b978d9396ad830726914ce5b32c10b014a1fbe5b295ff",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "ARES Academy curriculum dashboard, learning path tracks, lesson catalog navigation, and feedback modals.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyTuningMissions.kt": {
       "sha256": "823dcda133070366e5a7736ffe53a44bf64ec9bd3a07033cd4e9e362b15096d1",
@@ -6609,6 +6437,15 @@
       "scope": "Verified architectural dependency boundaries across the codebase: domain package must never import ui, viewmodel, service, or androidx.compose; service package must never import ui or viewmodel, maintaining strict clean architecture and Redux layer separation.",
       "evidence": [
         "docs/audits/pass292-pending-elevation-audit.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopInstanceLockTest.kt": {
+      "sha256": "cddc893bae0d9881e136ef34591bd8165124509c10d927fca2e9455dbd1debf5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests verifying single-instance lock file acquisition, cross-process exclusion, and graceful release.",
+      "evidence": [
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopInstanceLockTest.xml"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopShutdownCoordinatorTest.kt": {
@@ -8561,20 +8398,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/AresFileChooserStateTest.kt": {
-      "sha256": "e895eb9365260b9ad75ed0ffdf5b2a40ed26eba5949a08169e31f05b3fc430c0",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated AresFileChooserStateTest across 9 state transition scenarios: verified directory refresh on file creation/deletion, keyboard selection with overwrite prompting, automatic default extension appending, rejection of directories as save targets, rejection of disappeared destination parents, relative path resolution, and sanitized new folder creation.",
+      "sha256": "390fb23e8a0498f6e8c8bb0a9c08419e6aea1d9749c479f4afc437597d59e59f",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests verifying AresFileChooserState navigation, directory caching, folder creation safety, and approvals.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.AresFileChooserStateTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/AresFileChooserVisualTest.kt": {
       "sha256": "6b25bfd99fa2a51f8fbff1e4774b3eaeed4e00ebf8a1b67f52cb0d6379272602",
@@ -8623,20 +8453,12 @@
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/canvas/VectorDrawingUtilsTest.kt": {
       "sha256": "5e7493b4fe56a5c13ac2a77fddceea340e9a7037a0d97057499a285f61be0d48",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full three-test offscreen raster review: horizontal/vertical shaft and rear wings, filled triangle vs open gap, blank zero/invalid drawing. No native Studio UI claim.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests verifying VectorDrawingUtils arrow angles, zero-length vector guards, and coordinate translations.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.canvas.VectorDrawingUtilsTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/LinkageAndBehaviorComponentsTest.kt": {
       "sha256": "51991d6096f6c286498ac092a9355f58240f64c313f3767a6db002c7dff6506b",
@@ -10381,7 +10203,7 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "98071caef6af88ac5f170297c835a6138dd64d254c2b8ba078eeb2868f7ebde1",
+      "sha256": "d9b0da28cc8c1ac0e67f6bbc1ebe16a29b8af2c904477672a174d4b4534810c6",
       "review": "pending",
       "validation": "pending",
       "scope": "Unverified campaign submission: Machine-readable file size ledger tracking 1,110 production files across all four subprojects with zero violations.",
@@ -30285,7 +30107,7 @@
         "docs/audits/CONTINUOUS_AUDIT_GOAL.md",
         "docs/audits/README.md"
       ],
-      "sha256": "d5f48c58007c55e7408018714511be16df502e66255c1c4437159780964e23b4"
+      "sha256": "aa3241ac02e46b6116494ecff433f98889e90bc596d30693c4488fddf37ee19d"
     },
     "docs/audits/DASHBOARD_FULLSCREEN_CHECKPOINT.md": {
       "sha256": "a902e12c00433c2175eadbc98be2d3859ccbf37ec52d83408170c55017d4b6a8",
@@ -30628,7 +30450,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "5af1b94fdfa50037f59f405a3d5ef47d370ecc3c730c28ec7f35a6a1ebdca0ab",
+      "sha256": "74c70cfefe97e798e23633d69b87d81132c1c318105562db84e9e11c702a51fd",
       "review": "pending",
       "validation": "pending",
       "scope": "Unverified campaign submission: Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",

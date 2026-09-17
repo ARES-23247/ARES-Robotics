@@ -63,16 +63,20 @@ fun BatteryHealthCard(
     voltageFrames: List<TelemetryFrame>,
     modifier: Modifier = Modifier
 ) {
-    val latestVoltage = voltageFrames.lastOrNull()?.value ?: 12.0
-    val minVoltage = voltageFrames.minOfOrNull { it.value } ?: 12.0
+    val latestVoltage = voltageFrames.lastOrNull()?.value
+    val minVoltage = voltageFrames.minOfOrNull { it.value }
+    val hasTelemetry = latestVoltage != null && !latestVoltage.isNaN()
+    val effectiveVoltage = latestVoltage ?: 0.0
     val statusColor = when {
-        latestVoltage < 11.5 -> AresError
-        latestVoltage < 12.5 -> AresAmber
+        !hasTelemetry -> AresTextSecondary
+        effectiveVoltage < 11.5 -> AresError
+        effectiveVoltage < 12.5 -> AresAmber
         else -> AresCyan
     }
     val statusText = when {
-        latestVoltage < 11.5 -> "CRITICAL BROWNOUT RISK"
-        latestVoltage < 12.5 -> "Warning: Voltage Dropping"
+        !hasTelemetry -> "No Telemetry / Offline"
+        effectiveVoltage < 11.5 -> "CRITICAL BROWNOUT RISK"
+        effectiveVoltage < 12.5 -> "Warning: Voltage Dropping"
         else -> "Healthy State"
     }
 
@@ -81,7 +85,7 @@ fun BatteryHealthCard(
     ) {
         CardHeader(
             title = "Battery Diagnostics",
-            icon = if (latestVoltage < 11.5) Icons.Default.BatteryAlert else Icons.Default.BatteryChargingFull,
+            icon = if (hasTelemetry && effectiveVoltage < 11.5) Icons.Default.BatteryAlert else Icons.Default.BatteryChargingFull,
             iconTint = statusColor
         )
 
@@ -92,12 +96,12 @@ fun BatteryHealthCard(
         ) {
             MetricValueBadge(
                 label = "LATEST VOLTAGE",
-                value = String.format("%.2f V", latestVoltage),
+                value = if (hasTelemetry) String.format("%.2f V", effectiveVoltage) else "-- V",
                 statusColor = statusColor
             )
             MetricValueBadge(
                 label = "MINIMUM LOGGED",
-                value = String.format("%.2f V", minVoltage),
+                value = if (minVoltage != null && !minVoltage.isNaN()) String.format("%.2f V", minVoltage) else "-- V",
                 statusColor = AresTextSecondary
             )
         }

@@ -140,7 +140,8 @@ fun AcademyScreen(
     val scope = rememberCoroutineScope()
     val initialLesson = remember {
         progress.activeLessonId?.let(LearningCatalog::lesson)
-            ?: LearningCatalog.lesson(LearningCatalog.paths.first().lessonIds.first())!!
+            ?: LearningCatalog.paths.firstOrNull()?.lessonIds?.firstOrNull()?.let(LearningCatalog::lesson)
+            ?: LearningCatalog.lessons.first()
     }
     var query by remember { mutableStateOf("") }
     var selectedLevel by remember { mutableStateOf<LearningLevel?>(null) }

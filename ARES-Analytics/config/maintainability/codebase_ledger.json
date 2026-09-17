@@ -32,7 +32,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/DesktopInstanceLock.kt",
       "product": "ARES-Analytics",
-      "lines": 82,
+      "lines": 90,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2402,7 +2402,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/cloud/CloudComponents.kt",
       "product": "ARES-Analytics",
-      "lines": 324,
+      "lines": 323,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2502,7 +2502,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresDialog.kt",
       "product": "ARES-Analytics",
-      "lines": 130,
+      "lines": 133,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2572,7 +2572,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserState.kt",
       "product": "ARES-Analytics",
-      "lines": 237,
+      "lines": 251,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2652,7 +2652,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ChooserApproval.kt",
       "product": "ARES-Analytics",
-      "lines": 64,
+      "lines": 83,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2792,7 +2792,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/BatteryHealthCard.kt",
       "product": "ARES-Analytics",
-      "lines": 139,
+      "lines": 143,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2822,7 +2822,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ConsoleViewer.kt",
       "product": "ARES-Analytics",
-      "lines": 428,
+      "lines": 423,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2852,7 +2852,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthObservation.kt",
       "product": "ARES-Analytics",
-      "lines": 153,
+      "lines": 154,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3602,7 +3602,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasUtils.kt",
       "product": "ARES-Analytics",
-      "lines": 287,
+      "lines": 293,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3902,7 +3902,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStateflowSection.kt",
       "product": "ARES-Analytics",
-      "lines": 674,
+      "lines": 678,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4162,7 +4162,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 667,
+      "lines": 668,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

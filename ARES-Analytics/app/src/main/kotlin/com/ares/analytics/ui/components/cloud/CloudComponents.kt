@@ -52,27 +52,27 @@ fun CloudDeletionConfirmationDialog(
             val fileCount = request.runs.sumOf { it.files.size }
             val totalBytes = request.runs.sumOf { it.totalSizeBytes }
             DeletionDialogCopy(
-                title = if (request.runs.size == 1) "Delete robot log run?" else "Delete  robot log runs?",
+                title = if (request.runs.size == 1) "Delete robot log run?" else "Delete ${request.runs.size} robot log runs?",
                 location = "Connected robot storage",
-                itemNames = request.runs.map { "Run " },
-                details = " raw , ",
+                itemNames = request.runs.map { "Run ${it.runId}" },
+                details = "$fileCount raw log files, ${formatBytes(totalBytes)}",
                 retainedCopyNote = "Any copies already imported into this computer or uploaded to cloud storage are kept.",
                 confirmLabel = "Delete from robot"
             )
         }
         is PendingCloudDeletion.LocalSessions -> DeletionDialogCopy(
-            title = if (request.sessions.size == 1) "Delete local session?" else "Delete  local sessions?",
+            title = if (request.sessions.size == 1) "Delete local session?" else "Delete ${request.sessions.size} local sessions?",
             location = "Local DuckDB on this computer",
             itemNames = request.sessions.map { sessionDisplayName(it.summary) },
-            details = " ",
+            details = "${request.sessions.size} sessions selected",
             retainedCopyNote = "Cloud copies are kept. Sessions without a cloud copy will no longer be available on this computer.",
             confirmLabel = "Delete local copy"
         )
         is PendingCloudDeletion.CloudSessions -> DeletionDialogCopy(
-            title = if (request.sessions.size == 1) "Delete cloud session?" else "Delete  cloud sessions?",
+            title = if (request.sessions.size == 1) "Delete cloud session?" else "Delete ${request.sessions.size} cloud sessions?",
             location = "Google Drive cloud storage",
             itemNames = request.sessions.map { sessionDisplayName(it.summary) },
-            details = " ",
+            details = "${request.sessions.size} sessions selected",
             retainedCopyNote = "Local DuckDB copies are kept. Cloud-only sessions will no longer be available on another computer.",
             confirmLabel = "Delete cloud copy"
         )
@@ -105,7 +105,7 @@ fun CloudDeletionConfirmationDialog(
                     Text(name, color = AresTextPrimary, fontSize = 12.sp)
                 }
                 if (copy.itemNames.size > 5) {
-                    Text("+  more", color = AresTextSecondary, fontSize = 12.sp)
+                    Text("+ ${copy.itemNames.size - 5} more", color = AresTextSecondary, fontSize = 12.sp)
                 }
                 Text(copy.details, color = AresTextSecondary, fontSize = 11.sp)
             }
@@ -115,8 +115,7 @@ fun CloudDeletionConfirmationDialog(
                 AresTextField(
                     value = deleteToken,
                     onValueChange = { deleteToken = it },
-                    label = "Robot log-delete token",
-                    singleLine = true,
+                    label = "Server Deletion Token",
                     visualTransformation = PasswordVisualTransformation(),
                     supportingText = { Text("Must match the token configured on the robot log server.") },
                     modifier = Modifier.fillMaxWidth()
@@ -131,8 +130,8 @@ private fun sessionDisplayName(summary: SessionSummary): String {
     val runName = runCatching {
         AresFormatters.formatDateTimeSeconds(summary.createdAt)
     }.getOrDefault("Unknown date")
-    val match = summary.matchNumber?.let { " • Match " }.orEmpty()
-    return " • "
+    val match = summary.matchNumber?.let { " • Match $it" }.orEmpty()
+    return "${summary.sessionId.take(8)} • $runName$match"
 }
 
 private fun formatBytes(bytes: Long): String = AresFormatters.formatBytes(bytes)
