@@ -20,7 +20,7 @@ def parse_baseline(path: Path) -> dict:
             continue
         if "=" in line:
             k, v = line.split("=", 1)
-            ceiling[k.strip()] = int(v.strip())
+            ceiling[k.strip().replace("\\", "/")] = int(v.strip())
     return ceiling
 
 def compute_ledger(root: Path):
@@ -40,6 +40,7 @@ def compute_ledger(root: Path):
     grandfathered_count = 0
 
     for rel in sorted(tracked_files):
+        rel = rel.replace("\\", "/")
         if "/src/main/" not in rel or any(part in ("build", ".gradle") for part in Path(rel).parts):
             continue
         p = root / rel

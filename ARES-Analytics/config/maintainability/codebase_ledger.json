@@ -4372,7 +4372,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 722,
+      "lines": 736,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4402,7 +4402,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenScopes.kt",
       "product": "ARES-Analytics",
-      "lines": 241,
+      "lines": 243,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4852,7 +4852,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/util/AresFormatters.kt",
       "product": "ARES-Analytics",
-      "lines": 81,
+      "lines": 89,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5822,7 +5822,7 @@
     {
       "path": "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/UnitConversion.kt",
       "product": "ARES-Analytics",
-      "lines": 131,
+      "lines": 134,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

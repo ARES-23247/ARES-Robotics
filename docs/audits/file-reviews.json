@@ -2086,26 +2086,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryRepository.kt": {
-      "sha256": "eabc502c5b60abca0143813ad4bb2f336e0d04ce234a0e6246b2affea5101e93",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated lines 1-630: executeNativeCsvImport, insertTelemetryFrames, insertTelemetryFramesAppender, getSessionTimestampRange, getTelemetryRange, getLatestTelemetryBefore, getTelemetryRangeBatched, countTelemetryFrames, getTelemetryForKey, getTelemetrySeries, getTelemetryPageForKeys, getTelemetryExportPreflight, getTelemetryExportValueTypes, getTelemetryExportPage, getTelemetryForFilters, getDistinctTelemetryKeys, getTelemetryForKeyPatterns, getDistinctTimestamps, countTimestampGaps, deleteTelemetryFrames, pruneTelemetryFrames, and getTelemetryDensity. Verified zero-GC high-throughput ingestion via native DuckDB Appender API, ephemeral vs persistent connection routing by session ID, atomic sample ordering via AtomicLong, min/max viewport downsampling via ARG_MIN/ARG_MAX, stable cursor pagination, strict topic normalization, and parameter-bound queries.",
+      "sha256": "ab42a3c282028cc79cae92881eb9223475a9bcc46a3cb125d34deb6fc15d162e",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "DuckDB telemetry storage repository managing timeseries bulk append, filtered queries, keyset pagination, and atomic transactions.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass24-before.log",
-        "ARESLib-Kotlin/build/audit-pass24-focused.log",
-        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
-        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
-        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass24-policy.log",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.AnalysisTelemetryRepositoryAuditTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/drivebase/DrivebaseModels.kt": {
       "sha256": "efa1cf2b82edb744363eb026ea1acd3c77541f227defb232d4c9ed7580ab02c6",
@@ -4785,68 +4772,40 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreen.kt": {
-      "sha256": "fe566253da8622031c6b6b76d3ae7423f3e4982282a0862e0ab41653cd014db7",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Primary desktop application shell handling keyboard navigation, loopback simulator control authorization, emergency stop (Ctrl+Shift+K), and workspace lifecycles.",
+      "sha256": "97797c18df5e3bbc26d398c2c1fafde7276693db39e2d3c787437abddc5a7f19",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Main desktop shell screen coordinator managing sidebar, navigation targets, keyboard drive safety, and modal overlays.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenHeaderBar.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified MainScreenHeaderBar Compose component. Manages workspace selection, mission headers, responsive layout toggling (<1450dp compactShell), execution toolbar integration, and contextual coach/help actions.",
-      "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/MainViewModelWorkspaceTransitionTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
       "sha256": "47c0b26e9414ec0a49bd745996eb6b931399bd8f8b7b9ac2b90fecf63e38c002",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Desktop application header bar rendering workspace selector, build/run actions, layout controls, and league badge.",
+      "evidence": [
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenOverlays.kt": {
       "sha256": "340d286fd3bb46a38ffc0ed5314de213523d7f03f1dae35470c987a8916e4671",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Desktop overlay layer providing Coach Drawer, Command Palette, Deployment Confirmation Dialog, and Workspace Deletion Dialog.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Modal overlays for command palette, terminal drawer, learning coach, workspace deletion, and physical robot deployment.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenScopes.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified MainScreenScopes lifecycle and dependency wiring. Enforces workspace-scoped coroutine cancellation via key(workspaceId), provides immutable feature scope bundles, and safeguards standalone archive exports via DesktopFileChoosers and atomic export.",
+      "sha256": "d9e0e57da29f148925f4733d17bf4485336817feea27d53586cfe31cf6993efd",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Scoped route action factories, match association callbacks, and standalone project archive export coordinators.",
       "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporterTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "sha256": "2b20fe6adc8749e18140f92f249e6dc64e26930ebac3d7f41d80e706f63334ab",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MatchStrategyScreen.kt": {
       "sha256": "bb505b8b2b2aa5cec6377d0b06d39780c0710805a7009d339b0112ec07eab6b9",
@@ -5253,21 +5212,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/util/AresFormatters.kt": {
-      "sha256": "20fac01b43b8404c4f310f15caca7490b46fc304a19fadeecfd130402513e2f4",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full immutable DateTimeFormatter utility: explicit US locale, captured system zone, three patterns and millisecond Instant conversion. Concurrent output agrees with independently prepared SimpleDateFormat expectations for representative epoch/leap/modern/post-2038 dates. OS zone changes after initialization and extreme chronology not certified.",
+      "sha256": "f29fc3111baf7189fe779c327c7549cb68eb060f27a4d2ba31fe0deae85856fb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Centralized thread-safe date, timestamp, byte size, and data transfer rate formatters with boundary rounding handling.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.util.AresFormattersTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/util/DesktopFileChoosers.kt": {
       "sha256": "75a75ddedf77827ad1cfea7bbd59243facdbc1c87065941ba89ce57f4099c387",
@@ -6289,83 +6240,48 @@
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.3.zip": {
       "sha256": "004880b33be2b2fd95b1f771d7eaf06c2a79bacea307d710e79644f07af6d3ce",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Packaged BioBuzz template project archive verified against starter-artifacts.properties sha256.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Bundled immutable BIOBUZZ autonomous starter project archive for FTC league robot authoring.",
       "evidence": [
-        "release/starter-artifacts.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-19.1.2.zip": {
       "sha256": "917d8e89cf92a92594c48ef4e41201147d1a732c6ea56271cd5f5d843b4b00e4",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Packaged FRC Starter template project archive verified against starter-artifacts.properties sha256.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Bundled immutable FRC starter project archive providing default robot superstructure and subsystem authoring.",
       "evidence": [
-        "release/starter-artifacts.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-19.1.2.zip": {
       "sha256": "7cf15b8d38dbda1c213dc4e6cad6ae2a6aea2ce9af8a3e75766ebc6b56ca2b5b",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Packaged FTC Starter template project archive verified against starter-artifacts.properties sha256.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Bundled immutable FTC starter project archive providing default robot superstructure and OpMode authoring.",
       "evidence": [
-        "release/starter-artifacts.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.63.zip": {
       "sha256": "1635c97d44ff8f7100cc524b62d9d3a5e210dca43137cda5d84af3c008803145",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Packaged Lightbot Example template project archive verified against starter-artifacts.properties sha256.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Bundled immutable Lightbot example project archive providing educational classroom simulation missions.",
       "evidence": [
-        "release/starter-artifacts.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.61.zip": {
       "sha256": "f65777aee7a5b784adaa9e4a692e2b62102a3a19c05341ae283b0bd000bbc17a",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Packaged XRP Starter template project archive verified against starter-artifacts.properties sha256.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Bundled immutable XRP starter project archive providing MicroPython and loopback simulator robotics scaffolding.",
       "evidence": [
-        "release/starter-artifacts.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/main/resources/update/install-windows-update.ps1": {
       "sha256": "f7a616525a92d9f40e4f67df81594f20b1a4b7831d01960b425cc70aeece870f",
@@ -8115,20 +8031,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/BiobuzzTemplateAuthoringTest.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified BiobuzzTemplateAuthoringTest test suite. Confirms the bundled BioBuzz example archive unpacks, validates path safety, and loads into DrivebaseBuilderViewModel with intact project identity and tuning parameters.",
-      "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/BiobuzzTemplateAuthoringTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
       "sha256": "77012b07e5a56432c03039e1d748ccacb6ca3e9678f533836060783fad04d2d3",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Integration tests validating bundled Biobuzz starter project template extraction, integrity, and authoring metadata.",
+      "evidence": [
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/GenericStarterTemplateIntegrationTest.kt": {
       "sha256": "853732acc2df2d02a3bab1a745d66934e9e8abfcbe8e09ec35d6156bf5b70001",
@@ -9285,21 +9194,13 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/util/AresFormattersTest.kt": {
-      "sha256": "9dfe2ce6f5ce90e0bc9569b82805cdaf65e026fbab5c733cc0265667e088688b",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full three-test review: milliseconds and pattern shape; replaced tautological repeated-call equality with 200 four-thread operations against independent precomputed calendar expectations. No global locale/timezone mutation, own executor shutdown.",
+      "sha256": "59c2d83a52f4396bb9b43d11b33d7811ac1d84128871d4fadd818b7d61743e3c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests verifying date formatting shapes, concurrent thread safety, boundary rounding, and extreme epoch timestamps.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.ui.util.AresFormattersTest.xml"
+      ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/util/DesktopFileChoosersTest.kt": {
       "sha256": "14e0c2f780228da11486d82b07c9e1d8926dab76b792d4bed3274b3206c2d064",
@@ -10203,36 +10104,22 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "d9b0da28cc8c1ac0e67f6bbc1ebe16a29b8af2c904477672a174d4b4534810c6",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Machine-readable file size ledger tracking 1,110 production files across all four subprojects with zero violations.",
+      "sha256": "4c9e199846b8088d88eecad8067e19962d3e415ba5fe59188ba2f8c916b3368c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Machine-readable maintainability ledger tracking line counts, file size compliance, and ratchet state across monorepo.",
       "evidence": [
-        "ARES-Analytics/config/maintainability/codebase_ledger.json",
-        "scripts/generate_codebase_ledger.py",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
       "sha256": "a79add11b7d79d56e88607ec84e8add59e06a7952773663eff7c6f9e70e5b57e",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Production Kotlin size baseline maintaining 0 grandfathered files with strict 750-line ceiling.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Maintainability ceiling configuration file tracking allowed grandfathered files above standard line count limit.",
       "evidence": [
-        "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "ARES-Analytics/docs/BRANDING_AND_UPGRADES.md": {
       "sha256": "e5a9dd382f3540216b3acd3cda81ebd197335bfadadb1242c19eb3243732b14b",
@@ -11249,22 +11136,13 @@
       ]
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/UnitConversion.kt": {
-      "sha256": "af1a9e5fa11e79a6537a906d26c5768270b371815b910dcb6d60e0ceb175cc04",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated engineering unit conversion system and topic unit inference. Verified dimension compatibility checks across 9 unit categories, non-affine temperature conversion (Celsius, Fahrenheit, Kelvin), linear factor-to-base conversions for length, velocity, angle, time, voltage, and current, and conservative regex-based topic unit detection.",
+      "sha256": "01272e044f8b28cbb06b424b728bd4ed0b2254047e73deb0402a083690cbd913",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Physical unit metadata, SI base factor conversions, temperature conversions, and conservative topic unit detection.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/shared/build/test-results/test/TEST-com.ares.analytics.shared.UnitConversionTest.xml"
+      ]
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/models/GoogleOAuthBrokerModels.kt": {
       "sha256": "ce980a44ebdeef37815c2fb3c16dfc3079830335364469e7c13dd5ad90560357",
@@ -11389,22 +11267,13 @@
       ]
     },
     "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/UnitConversionTest.kt": {
-      "sha256": "ae22891450aa1fe788c5ecb71b2e06e8c4fcb6384442174a56f4faafbbcae231",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full seven-method class reviewed: dimensional separation, canonical examples, all-unit identity extremes, affine overflow/reference points, subnormal scale, amp-word false positives/genuine current and explicit milli/Kelvin units. Two new inference tests failed before and pass after; shared22-test suite passes.",
+      "sha256": "6f099a89a01b9c454d0b0cec09ec2170f463f3337f768f5ddcf8a7239ffaba24",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests verifying physical unit conversions, dimensional incompatibility, angular velocity inference, and extremes.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/shared/build/test-results/test/TEST-com.ares.analytics.shared.UnitConversionTest.xml"
+      ]
     },
     "ARES-Analytics/storage.rules": {
       "sha256": "7a1225501b0e554ad7575f3456e1a91d28c46a1f37c8b80db91fb04d076931db",
@@ -30107,7 +29976,7 @@
         "docs/audits/CONTINUOUS_AUDIT_GOAL.md",
         "docs/audits/README.md"
       ],
-      "sha256": "aa3241ac02e46b6116494ecff433f98889e90bc596d30693c4488fddf37ee19d"
+      "sha256": "c3d62f6d7f75cfab05cdb2b8693f2e753590b78ec754f53d3c9cf1cf824dfbee"
     },
     "docs/audits/DASHBOARD_FULLSCREEN_CHECKPOINT.md": {
       "sha256": "a902e12c00433c2175eadbc98be2d3859ccbf37ec52d83408170c55017d4b6a8",
@@ -30450,7 +30319,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "74c70cfefe97e798e23633d69b87d81132c1c318105562db84e9e11c702a51fd",
+      "sha256": "590ef726782ce7463eb3982ec6af199e41907ac1867452f0c20fd7ce23e9100e",
       "review": "pending",
       "validation": "pending",
       "scope": "Unverified campaign submission: Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
@@ -30876,51 +30745,30 @@
     },
     "release/ares-source-tree.txt": {
       "sha256": "f9c05460deb3234dd3982073d3529ec4524211077207c60847d7cf9ea98ff248",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Git tree hash identity for ARESLib-Kotlin matching release 19.1.1 source tree c85fa2951f3c3d168aee03fbe009b6c0586d65b6.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Canonical release tree identity recording 40-character Git tree SHA for ARESLib-Kotlin dependency boundary.",
       "evidence": [
-        "release/ares-source-tree.txt",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "release/ares-versions.properties": {
       "sha256": "b744d79f580bd21ffbb04824c9ab647986764d3f9ca8966b376b62b9fa65eaa7",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Canonical version manifest for ARES monorepo components (ARESLib 19.1.1, Studio 7.0.60, FTC/FRC 19.1.2).",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Canonical release versions manifest declaring monorepo library, studio, and starter artifact versions and maven repo.",
       "evidence": [
-        "release/ares-versions.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "release/starter-artifacts.properties": {
       "sha256": "dcc15df7f66f5969089f554ecd9703fd700324f1b9167e852970d28018e9f810",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Cryptographic SHA-256 hashes of starter project zip archives verifying distribution integrity.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Canonical SHA-256 cryptographic hashes for bundled starter project archives across all supported robot leagues.",
       "evidence": [
-        "release/starter-artifacts.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
+      ]
     },
     "scripts/audit_inventory.py": {
       "sha256": "a5c566b1f2bbdafc9f6b441061299a99cce32f9db2921e921b478469c868d99b",
@@ -30982,36 +30830,22 @@
       ]
     },
     "scripts/generate_cluster_reference.py": {
-      "sha256": "bfaf9ca1c616de1fc196c3bfab2f9d291ca696395a8b7ec8e3d5438863b04b12",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Offline Limelight multi-tag cluster reference generator using SciPy rotation vectors independently of Kotlin Euler transforms.",
+      "sha256": "f3938594298d2d4a80737af4a89e3f24e65ab87ad9dffdecacf8162d45434752",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Offline vision cluster test reference generator synthesizing rigid tag targets and deterministic rotations.",
       "evidence": [
-        "scripts/generate_cluster_reference.py",
-        "ARESLib-Kotlin/core/src/test/resources/vision/cluster-reference.csv",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "scripts/generate_codebase_ledger.py": {
-      "sha256": "0eee589a70e0973280be50001af0b1025c3b36e8cecd9b7d8ae5a3920f1832b4",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Monorepo maintainability size inventory generator and CI verification ratchet tool with 750-line ceiling enforcement.",
+      "sha256": "9f94aba889d497cd3742c12436a1243201764571e9bc2fd9b185c7bb176c6db2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Maintainability ledger generator script measuring production Kotlin source line counts, microfiles, and ratchets.",
       "evidence": [
-        "scripts/generate_codebase_ledger.py",
-        "scripts/tests/test_codebase_ledger.py",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "scripts/prepare-clean-monorepo-checkout.ps1": {
       "sha256": "e838616c967ddd3c37b6ef18fbde8e1e73a06b6660019ccc7c2d1ebe599227cd",
@@ -31149,18 +30983,12 @@
     },
     "scripts/tests/test_codebase_ledger.py": {
       "sha256": "a8a97b719bd676242b2eb6077f071245c225c3248f26eb8ab8ccd3b5be2b6a56",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Unit test suite for codebase ledger inventory generation, violation detection, and ratchet thresholds.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests verifying codebase maintainability ledger ratchet enforcement and modification invalidation.",
       "evidence": [
-        "scripts/tests/test_codebase_ledger.py",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "scripts/tests/test_doc_links.py": {
       "sha256": "64a9ec056d21e0095370eaf024d1b4993193be15aaf6022d7d7901e175636890",
@@ -31194,18 +31022,12 @@
     },
     "scripts/tests/test_monorepo_policy.py": {
       "sha256": "c12ebab64a99dda1e232201dbf744775b3d8fc823a1b0da4c79396a35393e40e",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Unit test suite for monorepo policy verifier: guidance, doc links, version manifest, and source tree hash checks.",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Unit tests verifying monorepo policy boundary enforcement across PowerShell and pwsh shells.",
       "evidence": [
-        "scripts/tests/test_monorepo_policy.py",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "scripts/tests/test_release_candidate.py": {
       "sha256": "f83de81b2ced83e0612e41c5117fe9b1500baee2ff3557d4ed1b23fb23cf7446",
@@ -31257,20 +31079,13 @@
       ]
     },
     "scripts/verify-monorepo-policy.ps1": {
-      "sha256": "8d31f436dffe1cce324fa66d9f27b6cf3ec0195f2f2e935f3b97927152e5e621",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Reconcile UTF-8 encoding configuration and codebase ledger ratchet verification call into root policy script.",
+      "sha256": "26921af6bcd5d459874c6abf693b9f2cbb1d578d15c9b5bb2784dd0019b6de42",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Monorepo release policy gatekeeper validating guidance, doc links, maintainability ledger, versions, and boundaries.",
       "evidence": [
-        "scripts/verify-monorepo-policy.ps1",
-        "scripts/tests/test_monorepo_policy.py",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
-      ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      }
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ]
     },
     "scripts/verify_agent_guidance.py": {
       "sha256": "7a3a557096b31a1badaca786b22ec1717aacc50a93f5f5fd0b7fc3cfa5c90dcd",
