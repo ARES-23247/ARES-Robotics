@@ -3327,12 +3327,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporter.kt": {
-      "sha256": "5aa01ed8b55eab274f4556743e896128b98e2ce3da6abc77cbb68264cc031fa9",
+      "sha256": "d170620fba9f9480df8dde653188fc7456735ee29a3ac3d1d4d3816165707197",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated ProjectArchiveExporter portable ZIP archive creator. Verified canonical project root verification, destination path validation (must be outside project root and not already exist), symlink rejection to prevent directory escaping, exclusion of build and IDE directories (.git, .gradle, build, .idea, .vscode, out), automated skipping and reporting of sensitive credentials, individual (<= 100 MB) and total (<= 1 GB) file size bounds with overflow-safe Math.addExact arithmetic, mandatory .ares/project.json presence, deterministic zip timestamps, and atomic file creation.",
+      "scope": "Audit and fix for portable project archive export: excluded .ares/local (transient tuning and verification runs), .ares/recovery (transaction rollbacks and deleted subsystem backups), and internal .ares dot/lock files while safely traversing canonical .ares documents and user code. Verified with ProjectArchiveExporterTest.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectBackupAutoSyncService.kt": {
@@ -9844,12 +9844,12 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporterTest.kt": {
-      "sha256": "ca9d89504651faba8e7dcee1ba09398a1856da2013ab3a5ef573831a01711599",
+      "sha256": "1956497591e5425aa0707c52426298ffa6d99b6a5fd03e65ac85a4eec4d10531",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated ProjectArchiveExporterTest: verified export of clean portable ZIP archives including .ares/ and source files while strictly omitting .git/ metadata, build/ output directories, and sensitive credential files (credentials.json); verified rejection of export destination paths inside the project tree.",
+      "scope": "Added unit test portable archive excludes local transient data and recovery transactions: verified exclusion of .ares/local, .ares/recovery, and .ares/.project-mutation-transaction while verifying canonical .ares/project.json and source inclusion in exported zip archive.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectReviewTokenFactoryTest.kt": {
@@ -21417,14 +21417,12 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/AresProjectCodegenCli.kt": {
-      "sha256": "5dbfe81b6cd44f33f0b17846edca4227e6ba270c1ad4a53e03837b75c77f7836",
+      "sha256": "63b2dfc53cd82b69230b24f6cb07aaea48f9baeb850961a4443f6de025c2d259",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass276: Entire CLI assembly/render/sync/manifest flow inspected. Shared source-set ownership preflight, physical containment, check-only behavior, typed project validation and generated-runtime/manifest recognition exercised. Older verification headers and whitespace repair are covered. All seven existing CLI cases plus14 ownership cases pass. No whole-project rollback or external concurrent-directory guarantee.",
+      "scope": "Audit and fix for CLI project codegen: guarded against unintended side-effect writes during --preview-subsystem-starters (ensuring zero disk writes across output runtime, drivebase, superstructure, and verification manifests), and enforced that --subsystems-only mode skips drivebase and superstructure synchronization. Verified with AresProjectCodegenCliTest and FTC Starter previewSubsystemChanges.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
+        "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresProjectCodegenCliTest.xml"
       ]
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/AresProjectCodegenOptions.kt": {
@@ -21519,13 +21517,12 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/KotlinProjectContentHasher.kt": {
-      "sha256": "5aef17c124d4f3f68db3f18a3245e493618c2b2f8f959ec87192d15c168111bd",
+      "sha256": "9831dc57013bbe05068c7d45ffc6d3c2a456ba64f83d71ed2ebbf2b346340130",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass276: Entire labeled length-delimited hash stream and hexadecimal conversion reviewed. Format version and sorted dispatch ownership now distinguish generated versus hand-authored action behavior. Canonical document codecs, input ordering and output/source identities checked; regression fails before fix and passes afterward.",
+      "scope": "Audit and fix for project codegen content hashing: enforced deterministic sorting of routines by documentId within kotlinProjectContentHash to ensure hash stability across arbitrary input collection ordering. Verified with AresKotlinProjectGeneratorTest.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json"
+        "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresKotlinProjectGeneratorTest.xml"
       ]
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/KotlinSourceRendering.kt": {
@@ -21739,25 +21736,21 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/AresKotlinProjectGeneratorTest.kt": {
-      "sha256": "ffa8e76a908c3a9fa20e4087263673b024042078e1d4bdc33d395102632613cf",
+      "sha256": "1df6e3169151b39591ae40d58768d7f924c278d8470dc04a1410f9f6240c3478",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass277: Full existing project-generation fixture review retained. Updated the expected private drive helper signature for per-host state ownership. Full module cases and robot consumer generation pass; independently compiled generated two-host execution supplies lifecycle evidence beyond string assertions.",
+      "scope": "Added unit test kotlin project content hash is deterministic regardless of routine input ordering: verified invariant hash generation between forward and reverse routine collection orders.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/checkpoints/pass277.json",
-        "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json"
+        "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresKotlinProjectGeneratorTest.xml"
       ]
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/AresProjectCodegenCliTest.kt": {
-      "sha256": "94271f975e099087a6b24ca7af85fae3205289d2e142f11c4d0cea41373e623c",
+      "sha256": "7f0fc55de80fe9d88a7eac61a907d1ec87d5f32b7e6729ece68b8288a665b49f",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Pass276: Entire seven-case actual-project fixture inspected: metadata and runtime generation, stale source/manifest checks, whitespace regeneration, superstructure dispatch, reused request action, outside-root refusal, obsolete generated cleanup and canonical zero-parameter drivebase profile. Disposable cleanup fixture now declares ownership explicitly. All identities retained and cases pass.",
+      "scope": "Added unit test subsystem preview and subsystems only do not write drivebase or superstructure plumbing: verified that preview writes zero files, and subsystems-only apply generates subsystem starters without modifying drivebase or superstructure outputs.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json"
+        "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresProjectCodegenCliTest.xml"
       ]
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/CodegenFileOwnershipAuditTest.kt": {
@@ -33727,7 +33720,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f812dd1f5c7bfe38fa8524df5fe537ca59ab2d260e7d869d24e7b17be1c0d459",
+      "sha256": "40b81af787a0adf273406926732b2c9653623b1d16bfbc3cf08566c2628c97d3",
       "review": "partial",
       "validation": "passed",
       "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
@@ -34065,10 +34058,10 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "8378b2a3d70be5a2c492bd2e6672f107c0dcdc40dd838cc969f3b5bda574b17e",
+      "sha256": "972f476586290cb9d4ce794896a4d63e57a2107b2371018e724dbf20be42eaae",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Canonical release tree identity recording 40-character Git tree SHA for ARESLib-Kotlin dependency boundary.",
       "evidence": [
         "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],

@@ -54,8 +54,37 @@ class ProjectArchiveExporterTest {
         assertFalse(destination.exists())
     }
 
+    @Test
+    fun `portable archive excludes local transient data and recovery transactions`() = runBlocking {
+        val root = canonicalProject("archive-local-recovery-project")
+        File(root, ".ares/local/tuning").mkdirs()
+        File(root, ".ares/local/tuning/overlay.json").writeText("{\"overlay\":true}")
+        File(root, ".ares/local/verification/run-1").mkdirs()
+        File(root, ".ares/local/verification/run-1/report.json").writeText("{\"verified\":true}")
+        File(root, ".ares/recovery/transactions/tx-123").mkdirs()
+        File(root, ".ares/recovery/transactions/tx-123/manifest.tsv").writeText("V\t2\n")
+        File(root, ".ares/recovery/subsystems").mkdirs()
+        File(root, ".ares/recovery/subsystems/arm.aressubsystem").writeText("{\"subsystem\":true}")
+        File(root, ".ares/.project-mutation-transaction").writeText("lock")
+        File(root, "TeamCode/src/main/kotlin").mkdirs()
+        File(root, "TeamCode/src/main/kotlin/Robot.kt").writeText("class Robot")
+        val destination = temporaryDirectory.resolve("robot-clean-export.aresproject.zip").toFile()
+
+        val result = exporter.export(root.path, destination.path)
+
+        ZipFile(destination).use { zip ->
+            val entries = zip.entries().asSequence().map { it.name }.toSet()
+            assertTrue(".ares/project.json" in entries)
+            assertTrue("TeamCode/src/main/kotlin/Robot.kt" in entries)
+            assertFalse(entries.any { it.startsWith(".ares/local/") })
+            assertFalse(entries.any { it.startsWith(".ares/recovery/") })
+            assertFalse(entries.any { it.startsWith(".ares/.") })
+        }
+    }
+
     private fun canonicalProject(name: String): File = temporaryDirectory.resolve(name).toFile().apply {
         File(this, ".ares").mkdirs()
         File(this, ".ares/project.json").writeText("{}")
     }
 }
+

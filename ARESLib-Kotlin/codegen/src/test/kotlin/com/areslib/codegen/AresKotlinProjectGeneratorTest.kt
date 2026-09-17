@@ -707,6 +707,20 @@ class AresKotlinProjectGeneratorTest {
         )
     )
 
+    @Test
+    fun `kotlin project content hash is deterministic regardless of routine input ordering`() {
+        val routineA = simpleRoutine("alpha", RoutineStep.action("intake.stop"))
+        val routineB = simpleRoutine("beta", RoutineStep.action("intake.stop"))
+        val request = KotlinProjectCodegenRequest(
+            packageName = "org.example.generated",
+            catalog = catalog(actions = listOf(ActionDescriptor("intake.stop", "Stop intake", "Stops intake."))),
+            routines = listOf(routineA, routineB),
+        )
+        val hashForward = kotlinProjectContentHash(request, listOf(routineA, routineB))
+        val hashReverse = kotlinProjectContentHash(request, listOf(routineB, routineA))
+        assertEquals(hashForward, hashReverse)
+    }
+
     private fun catalog(
         actions: List<ActionDescriptor>,
         conditions: List<ConditionDescriptor> = emptyList()

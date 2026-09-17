@@ -89,6 +89,11 @@ class ProjectArchiveExporter {
 
 private fun isExcludedArchivePath(path: String): Boolean {
     val segments = path.replace('\\', '/').lowercase(Locale.ROOT).split('/').filter(String::isNotEmpty)
-    return segments.any { it in setOf(".git", ".gradle", "build", ".idea", ".vscode", "out") } ||
-        segments.lastOrNull() in setOf("local.properties", ".ds_store", "thumbs.db")
+    if (segments.isEmpty()) return false
+    if (segments.any { it in setOf(".git", ".gradle", "build", ".idea", ".vscode", "out") }) return true
+    if (segments[0] == ".ares" && segments.size >= 2) {
+        if (segments[1] in setOf("local", "recovery") || segments[1].startsWith(".")) return true
+    }
+    val fileName = segments.last()
+    return fileName in setOf("local.properties", ".ds_store", "thumbs.db")
 }
