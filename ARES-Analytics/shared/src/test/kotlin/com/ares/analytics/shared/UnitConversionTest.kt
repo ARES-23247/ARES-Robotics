@@ -129,4 +129,27 @@ class UnitConversionTest {
         assertEquals(-40.0, UnitConversion.convert(-40.0, RobotUnit.CELSIUS, RobotUnit.FAHRENHEIT), 1e-9)
         assertEquals(-40.0, UnitConversion.convert(-40.0, RobotUnit.FAHRENHEIT, RobotUnit.CELSIUS), 1e-9)
     }
+
+    @Test
+    fun `angular velocity topic inference resolves velocity rather than static angle`() {
+        assertEquals(RobotUnit.DEG_PER_SEC, UnitConversion.detectUnitFromKey("Drive/DegPerSec"))
+        assertEquals(RobotUnit.DEG_PER_SEC, UnitConversion.detectUnitFromKey("Arm/deg_per_sec"))
+        assertEquals(RobotUnit.DEG_PER_SEC, UnitConversion.detectUnitFromKey("Shooter/deg/s"))
+        assertEquals(RobotUnit.RAD_PER_SEC, UnitConversion.detectUnitFromKey("Drive/RadPerSec"))
+        assertEquals(RobotUnit.RAD_PER_SEC, UnitConversion.detectUnitFromKey("Turret/rad_per_sec"))
+        assertEquals(RobotUnit.RAD_PER_SEC, UnitConversion.detectUnitFromKey("Flywheel/rad/s"))
+    }
+
+    @Test
+    fun `angle, electrical, and time conversions perform accurate translations`() {
+        assertEquals(180.0, UnitConversion.convert(Math.PI, RobotUnit.RADIAN, RobotUnit.DEGREE), 1e-9)
+        assertEquals(1.0, UnitConversion.convert(360.0, RobotUnit.DEGREE, RobotUnit.ROTATION), 1e-9)
+        assertEquals(2 * Math.PI, UnitConversion.convert(1.0, RobotUnit.ROTATION, RobotUnit.RADIAN), 1e-9)
+
+        assertEquals(12000.0, UnitConversion.convert(12.0, RobotUnit.VOLT, RobotUnit.MILLIVOLT), 1e-9)
+        assertEquals(0.05, UnitConversion.convert(50.0, RobotUnit.MILLIAMPERE, RobotUnit.AMPERE), 1e-9)
+
+        assertEquals(1500.0, UnitConversion.convert(1.5, RobotUnit.SECOND, RobotUnit.MILLISECOND), 1e-9)
+        assertEquals(2.0, UnitConversion.convert(120.0, RobotUnit.SECOND, RobotUnit.MINUTE), 1e-9)
+    }
 }

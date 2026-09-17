@@ -48,6 +48,9 @@ fun getCanvasOffsetBase(
     fieldH: Double,
     league: League
 ): Offset {
+    if (canvasW <= 0f || canvasH <= 0f || fieldW <= 0.0 || fieldH <= 0.0 || !wp.x.isFinite() || !wp.y.isFinite()) {
+        return Offset.Zero
+    }
     return if (league == League.FTC || league == League.XRP) {
         if (league == League.XRP) {
             return Offset(
@@ -73,6 +76,9 @@ fun getRobotCoordBase(
     fieldH: Double,
     league: League
 ): Waypoint {
+    if (canvasW <= 0f || canvasH <= 0f || !offset.x.isFinite() || !offset.y.isFinite()) {
+        return Waypoint(0.0, 0.0)
+    }
     return if (league == League.FTC || league == League.XRP) {
         if (league == League.XRP) {
             return Waypoint(
@@ -155,6 +161,7 @@ fun getBaseCanvasFromScreen(
         sx = cx + dx * cosR - dy * sinR
         sy = cy + dx * sinR + dy * cosR
     }
+    if (zoomScale <= 1e-4f || !zoomScale.isFinite()) return Offset.Zero
     return Offset(
         x = (sx - panOffset.x) / zoomScale,
         y = (sy - panOffset.y) / zoomScale
@@ -180,6 +187,9 @@ fun getDragDeltaInFieldCoords(
     zoomScale: Float,
     viewRotationDeg: Float = 0f
 ): Waypoint {
+    if (zoomScale <= 1e-4f || !zoomScale.isFinite() || canvasW <= 0f || canvasH <= 0f) {
+        return Waypoint(0.0, 0.0)
+    }
     var dxPx = dragAmount.x
     var dyPx = dragAmount.y
     if (viewRotationDeg != 0f) {
@@ -219,9 +229,6 @@ fun cubicHermite(p0: Double, v0: Double, p1: Double, v1: Double, t: Double): Dou
     return h00 * p0 + h10 * v0 + h01 * p1 + h11 * v1
 }
 
-private val scratchXArrowPath = Path()
-private val scratchYArrowPath = Path()
-
 fun DrawScope.drawCoordinateAxes(
     canvasW: Float,
     canvasH: Float,
@@ -230,6 +237,7 @@ fun DrawScope.drawCoordinateAxes(
     league: League,
     textMeasurer: TextMeasurer
 ) {
+    if (canvasW <= 0f || canvasH <= 0f || fieldW <= 0.0 || fieldH <= 0.0) return
     val originOffset = getCanvasOffsetBase(Waypoint(0.0, 0.0), canvasW, canvasH, fieldW, fieldH, league)
     val xAxisOffset = getCanvasOffsetBase(Waypoint(0.8, 0.0), canvasW, canvasH, fieldW, fieldH, league)
     val yAxisOffset = getCanvasOffsetBase(Waypoint(0.0, 0.8), canvasW, canvasH, fieldW, fieldH, league)
@@ -245,8 +253,7 @@ fun DrawScope.drawCoordinateAxes(
         color = AresRed,
         strokeWidth = strokeW,
         arrowHeadLength = arrowSize,
-        filledHead = true,
-        scratchPath = scratchXArrowPath
+        filledHead = true
     )
 
     // Y Axis (Green)
@@ -256,8 +263,7 @@ fun DrawScope.drawCoordinateAxes(
         color = AresGreen,
         strokeWidth = strokeW,
         arrowHeadLength = arrowSize,
-        filledHead = true,
-        scratchPath = scratchYArrowPath
+        filledHead = true
     )
 
     // Axis Labels

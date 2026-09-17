@@ -252,8 +252,13 @@ fun MainScreen(services: ServiceRegistry) {
     LaunchedEffect(dashboardWindowFocused) {
         if (!dashboardWindowFocused) services.keyboardDriveState.disarm()
     }
+    val isAnyOverlayActive = isTerminalOpen || commandPaletteOpen || coachDrawerOpen ||
+        workspacePendingDeletion != null || deployDialogOpen
+    LaunchedEffect(isAnyOverlayActive) {
+        if (isAnyOverlayActive) services.keyboardDriveState.disarm()
+    }
     val localSimulatorControlAuthorized =
-        dashboardWindowFocused && activeNav == NavigationTarget.DASHBOARD &&
+        !isAnyOverlayActive && dashboardWindowFocused && activeNav == NavigationTarget.DASHBOARD &&
             targetSelection == TargetSelection.LOCAL_SIM &&
             isRobotLinkConnected &&
             (currentConfig.league == League.XRP || isLoopbackDriveControlHost(services.nt4ClientService.serverIp))
@@ -448,6 +453,7 @@ fun MainScreen(services: ServiceRegistry) {
                         }
                         Key.K -> {
                             if (keyEvent.isShiftPressed) {
+                                pendingSimulatorLaunch = false
                                 services.projectBuildService.killActiveBuild()
                                 services.robotDeploymentService.cancel()
                                 services.simulatorProcessService.stop()
@@ -461,6 +467,9 @@ fun MainScreen(services: ServiceRegistry) {
                 } else if (keyEvent.key == Key.Escape && keyEvent.type == KeyEventType.KeyDown) {
                     when {
                         commandPaletteOpen -> { commandPaletteOpen = false; true }
+                        coachDrawerOpen -> { coachDrawerOpen = false; true }
+                        workspacePendingDeletion != null -> { workspacePendingDeletion = null; true }
+                        deployDialogOpen -> { deployDialogOpen = false; true }
                         isTerminalOpen -> { mainViewModel.onIntent(MainIntent.SetTerminalOpen(false)); true }
                         else -> false
                     }
@@ -480,7 +489,11 @@ fun MainScreen(services: ServiceRegistry) {
                 isSimRunning = isSimRunning,
                 league = currentConfig.league,
                 onNavigate = {
-                    if (it == NavigationTarget.ACADEMY) { requestedLessonId = null; requestedGlossaryTerm = null }
+                    if (it == NavigationTarget.ACADEMY) {
+                        requestedLessonId = null
+                        requestedGlossaryTerm = null
+                        requestedCheckpointId = null
+                    }
                     mainViewModel.onIntent(MainIntent.SetActiveNav(it))
                 },
                 onOpenCommandPalette = { commandPaletteOpen = true },
@@ -538,6 +551,7 @@ fun MainScreen(services: ServiceRegistry) {
                             if (destination == NavigationTarget.ACADEMY) {
                                 requestedLessonId = null
                                 requestedGlossaryTerm = null
+                                requestedCheckpointId = null
                             }
                             mainViewModel.onIntent(MainIntent.SetActiveNav(destination))
                         },

@@ -106,4 +106,53 @@ class CloudViewModelTest {
         )
         assertFalse(message.contains('\n'))
     }
+
+    @Test
+    fun `authState updates reactively transition isAuthenticated in state`() = runTest {
+        val directory = Files.createTempDirectory("ares-cloud-auth-").toFile()
+        val database = DatabaseService(directory.resolve("telemetry.duckdb").path)
+        val authStateFlow = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
+        val oauth = mock(OAuthService::class.java)
+        `when`(oauth.authState).thenReturn(authStateFlow)
+        val workspace = WorkspaceConfig(
+            teamId = "23247",
+            seasonId = "2026",
+            robotId = "lightbot",
+            projectPath = directory.path,
+            league = League.FTC,
+        )
+        val viewModel = CloudViewModel(
+            databaseService = database,
+            syncEngineService = mock(SyncEngineService::class.java),
+            oauthService = oauth,
+            nt4ClientService = mock(Nt4ClientService::class.java),
+            robotLogIngestionService = mock(RobotLogIngestionService::class.java),
+            workspaceConfig = workspace,
+            scope = backgroundScope,
+        )
+        try {
+            withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(5_000) { viewModel.state.first { !it.isSyncing } }
+            }
+            assertFalse(viewModel.state.value.isAuthenticated)
+
+            authStateFlow.value = AuthState.Authenticated(
+                idToken = "test-token",
+                uid = "pilot-1",
+                email = "pilot@ares.org",
+                displayName = "Test Pilot",
+            )
+
+            val updated = withContext(Dispatchers.Default.limitedParallelism(1)) {
+                withTimeout(2_000) {
+                    viewModel.state.first { it.isAuthenticated }
+                }
+            }
+            assertTrue(updated.isAuthenticated)
+        } finally {
+            viewModel.dispose()
+            database.close()
+            directory.deleteRecursively()
+        }
+    }
 }

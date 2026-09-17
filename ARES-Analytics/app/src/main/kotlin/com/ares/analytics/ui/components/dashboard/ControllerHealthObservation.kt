@@ -37,7 +37,8 @@ internal class ControllerHealthTracker {
     @Synchronized fun snapshot(nowNanos: Long, targetEpoch: Long): ControllerHealthObservation {
         selectEpoch(targetEpoch)
         fun current(key: String): TelemetryFrame? {
-            val index = HEALTH_KEY_INDEX.getValue(key)
+            val normalizedKey = TelemetryMetricCatalog.normalizeTopic(key)
+            val index = HEALTH_KEY_INDEX[normalizedKey] ?: return null
             val age = nowNanos - receivedAt[index]
             return frames[index]?.takeIf { age in 0..STALE_AFTER_NANOS }
         }

@@ -48,8 +48,14 @@ internal fun wheelSpeedScale(maxMagnitude: Double, limit: Double): Double = when
 
 /** A tiny scale can underflow before multiplication even when the scaled speed is representable. */
 internal fun scaledWheelSpeed(value: Double, maxMagnitude: Double, limit: Double, scale: Double): Double {
-    if (scale.isNaN()) return 0.0
-    if (scale >= 1.0) return value
-    val result = if (scale >= java.lang.Double.MIN_NORMAL) value * scale else (value / maxMagnitude) * limit
+    if (!value.isFinite() || !limit.isFinite() || limit <= 0.0 || scale.isNaN()) return 0.0
+    if (scale >= 1.0) return value.coerceIn(-limit, limit)
+    val result = if (scale >= java.lang.Double.MIN_NORMAL) {
+        value * scale
+    } else if (maxMagnitude > 0.0) {
+        (value / maxMagnitude) * limit
+    } else {
+        0.0
+    }
     return result.coerceIn(-limit, limit)
 }

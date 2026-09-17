@@ -235,7 +235,8 @@ fun ControlInspectorBody(
             Box(Modifier.weight(1f)) {
                 val strategyLabels = allowedStrategies.associateBy { it.controlStrategyLabel() }
                 DropdownSelector("Strategy", loop.strategy.controlStrategyLabel(), strategyLabels.keys.toList()) { label ->
-                    viewModel.changeControlLoopStrategy(loop.loopId, requireNotNull(strategyLabels[label]))
+                    val strategy = strategyLabels[label] ?: return@DropdownSelector
+                    viewModel.changeControlLoopStrategy(loop.loopId, strategy)
                 }
             }
             ConceptHelp(
@@ -253,7 +254,8 @@ fun ControlInspectorBody(
             val selectedActuatorLabel = actuatorOptions.entries.firstOrNull { it.value.hardwareId == loop.actuatorId }?.key
                 ?: loop.actuatorId
             DropdownSelector("Actuator", selectedActuatorLabel, actuatorOptions.keys.toList()) { label ->
-                viewModel.changeControlLoopActuator(loop.loopId, requireNotNull(actuatorOptions[label]).hardwareId)
+                val actuator = actuatorOptions[label] ?: return@DropdownSelector
+                viewModel.changeControlLoopActuator(loop.loopId, actuator.hardwareId)
             }
         }
         if (targetFields.isNotEmpty()) {
@@ -261,7 +263,8 @@ fun ControlInspectorBody(
             val selectedTargetLabel = targetOptions.entries.firstOrNull { it.value.fieldId == loop.targetFieldId }?.key
                 ?: loop.targetFieldId
             DropdownSelector("Target state", selectedTargetLabel, targetOptions.keys.toList()) { label ->
-                viewModel.changeControlLoopTarget(loop.loopId, requireNotNull(targetOptions[label]).fieldId)
+                val target = targetOptions[label] ?: return@DropdownSelector
+                viewModel.changeControlLoopTarget(loop.loopId, target.fieldId)
             }
         }
         if (loop.strategy.requiresMeasurement()) {
@@ -275,7 +278,7 @@ fun ControlInspectorBody(
                     .firstOrNull { it.value.fieldId == loop.measurementFieldId }
                     ?.key ?: measurementOptions.keys.first()
                 DropdownSelector("Measurement feedback", selectedMeasurementLabel, measurementOptions.keys.toList()) { label ->
-                    val measurement = requireNotNull(measurementOptions[label])
+                    val measurement = measurementOptions[label] ?: return@DropdownSelector
                     viewModel.updateControlLoop(loop.loopId) {
                         it.copy(
                             measurementFieldId = measurement.fieldId,
@@ -400,7 +403,7 @@ fun ControlInspectorBody(
                 loop.feedforward.kind.feedforwardLabel(),
                 feedforwardLabels.keys.toList(),
             ) { label ->
-                val kind = requireNotNull(feedforwardLabels[label])
+                val kind = feedforwardLabels[label] ?: return@DropdownSelector
                 viewModel.updateControlLoop(loop.loopId) { current ->
                     val angle = if (kind == SubsystemFeedforwardKind.ARM) {
                         current.feedforward.gravityAngleFieldId
@@ -456,8 +459,9 @@ fun ControlInspectorBody(
                     val selectedAngle = angleOptions.entries.firstOrNull { it.value.fieldId == loop.feedforward.gravityAngleFieldId }?.key
                         ?: angleOptions.keys.first()
                     DropdownSelector("Arm angle measurement (rad)", selectedAngle, angleOptions.keys.toList()) { selected ->
+                        val angle = angleOptions[selected] ?: return@DropdownSelector
                         viewModel.updateControlLoop(loop.loopId) {
-                            it.copy(feedforward = it.feedforward.copy(gravityAngleFieldId = requireNotNull(angleOptions[selected]).fieldId))
+                            it.copy(feedforward = it.feedforward.copy(gravityAngleFieldId = angle.fieldId))
                         }
                     }
                 } else if (loop.feedforward.kind == SubsystemFeedforwardKind.ARM) {
@@ -465,7 +469,7 @@ fun ControlInspectorBody(
                 }
                 if (loop.feedforward.kind == SubsystemFeedforwardKind.TWO_DOF_ARM) {
                     DropdownSelector("Linkage joint", (loop.feedforward.linkageJoint ?: 1).toString(), listOf("1", "2")) { selected ->
-                        viewModel.updateControlLoop(loop.loopId) { it.copy(feedforward = it.feedforward.copy(linkageJoint = selected.toInt())) }
+                        viewModel.updateControlLoop(loop.loopId) { it.copy(feedforward = it.feedforward.copy(linkageJoint = selected.toIntOrNull() ?: 1)) }
                     }
                 }
                 OutlinedButton(onClick = { showFeedforwardLab = !showFeedforwardLab }, modifier = Modifier.fillMaxWidth()) {

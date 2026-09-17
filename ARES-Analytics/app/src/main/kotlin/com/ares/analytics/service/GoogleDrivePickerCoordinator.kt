@@ -25,6 +25,8 @@ internal class GoogleDrivePickerCoordinator(
     private val bootCallbackServer: (Int, Long) -> Unit,
     private val launchBrowser: (String, Long, (String) -> Unit) -> Unit,
     private val testGoogleCredentials: (String) -> GoogleOAuthClientCredentials,
+    private val clearPendingRequest: (Long) -> Unit,
+    private val stopServer: (Long?) -> Unit,
 ) {
     fun startGoogleDriveFolderPicker(
         workspaceConfig: WorkspaceConfig? = null,
@@ -146,9 +148,18 @@ internal class GoogleDrivePickerCoordinator(
         if (!registerPendingRequest(request)) return null
         drivePickerState.value = DrivePickerState.Picking
         if (interactive) {
-            bootCallbackServer(callbackPort, generation)
-            launchBrowser(pickerUrl, generation) { message ->
-                drivePickerState.value = DrivePickerState.Error(message)
+            try {
+                bootCallbackServer(callbackPort, generation)
+                launchBrowser(pickerUrl, generation) { message ->
+                    drivePickerState.value = DrivePickerState.Error(message)
+                }
+            } catch (t: Throwable) {
+                clearPendingRequest(generation)
+                stopServer(generation)
+                drivePickerState.value = DrivePickerState.Error(
+                    "Failed to start local authentication listener: ${t.message ?: "network port unavailable"}"
+                )
+                return null
             }
         }
         return state

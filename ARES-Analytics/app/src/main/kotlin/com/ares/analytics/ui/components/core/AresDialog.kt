@@ -92,7 +92,7 @@ fun AresDialog(
                     enabled = isConfirmEnabled,
                     colors = ButtonDefaults.buttonColors(containerColor = confirmBtnContainer, contentColor = confirmBtnContent)
                 ) {
-                    Text(confirmText, color = confirmBtnContent, fontWeight = FontWeight.Bold)
+                    Text(confirmText, fontWeight = FontWeight.Bold)
                 }
             }
         },
@@ -121,10 +121,13 @@ internal fun chooseProjectDirectory(currentPath: String?): File? =
 
 /** Opens an external link when the current desktop supports browsing; failure is non-fatal. */
 internal fun openExternalLink(url: String): Boolean = runCatching {
+    val uri = URI(url.trim())
+    val scheme = uri.scheme?.lowercase() ?: return@runCatching false
+    if (scheme !in listOf("http", "https")) return@runCatching false
     if (!Desktop.isDesktopSupported()) return@runCatching false
     val desktop = Desktop.getDesktop()
     if (!desktop.isSupported(Desktop.Action.BROWSE)) return@runCatching false
-    desktop.browse(URI(url))
+    desktop.browse(uri)
     true
 }.getOrDefault(false)
 

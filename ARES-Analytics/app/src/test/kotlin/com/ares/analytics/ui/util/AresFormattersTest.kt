@@ -83,8 +83,28 @@ class AresFormattersTest {
         assertEquals("0 B/s", AresFormatters.formatRate(-5.0))
         assertEquals("0 B/s", AresFormatters.formatRate(0.0))
         assertEquals("0 B/s", AresFormatters.formatRate(Double.NaN))
+        assertEquals("0 B/s", AresFormatters.formatRate(Double.POSITIVE_INFINITY))
+        assertEquals("0 B/s", AresFormatters.formatRate(Double.NEGATIVE_INFINITY))
         assertEquals("500 B/s", AresFormatters.formatRate(500.0))
         assertEquals("1.5 KB/s", AresFormatters.formatRate(1536.0))
         assertEquals("3.0 MB/s", AresFormatters.formatRate(3.0 * 1024.0 * 1024.0))
+        assertEquals("1.2 GB/s", AresFormatters.formatRate(1.2 * 1024.0 * 1024.0 * 1024.0))
+    }
+
+    @Test
+    fun `formatBytes and formatRate handle boundary rounding near 1024`() {
+        // Just under 1 MB rounds to 1.0 MB instead of 1024.0 KB
+        assertEquals("1.0 MB", AresFormatters.formatBytes(1048526L))
+        // Just under 1 GB rounds to 1.0 GB instead of 1024.0 MB
+        assertEquals("1.0 GB", AresFormatters.formatBytes(1073690000L))
+    }
+
+    @Test
+    fun `extreme epoch timestamps clamp safely without throwing DateTimeException`() {
+        val minFormatted = AresFormatters.formatDateTimeShort(Long.MIN_VALUE)
+        assertTrue(minFormatted.isNotBlank(), minFormatted)
+
+        val maxFormatted = AresFormatters.formatDateTimeShort(Long.MAX_VALUE)
+        assertTrue(maxFormatted.isNotBlank(), maxFormatted)
     }
 }

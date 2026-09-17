@@ -91,7 +91,7 @@ private fun VisionInnovationChart(frames: List<TelemetryFrame>) {
     val minTime = frames.first().timestampMs.toDouble()
     val maxTime = frames.last().timestampMs.toDouble()
     val timeRange = (maxTime - minTime).coerceAtLeast(1.0)
-    val maxInnovation = (frames.maxOf { it.value }).coerceAtLeast(0.2) // minimum 20cm limit
+    val maxInnovation = (frames.maxOf { kotlin.math.abs(it.value) }).coerceAtLeast(0.2) // minimum 20cm limit
 
     Canvas(
         modifier = Modifier

@@ -12,6 +12,7 @@ import io.ktor.websocket.readBytes
 import io.ktor.websocket.readText
 import io.ktor.websocket.send
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -178,7 +179,13 @@ internal class Nt4ConnectionLifecycle(
                         }
                         try {
                             while (isActive) {
-                                when (val frame = withTimeout(RECEIVE_TIMEOUT_MS) { incoming.receive() }) {
+                                val frame = try {
+                                    withTimeout(RECEIVE_TIMEOUT_MS) { incoming.receive() }
+                                } catch (_: TimeoutCancellationException) {
+                                    println("[Nt4ClientService] Receive timed out after ${RECEIVE_TIMEOUT_MS}ms for $url")
+                                    break
+                                }
+                                when (frame) {
                                     is Frame.Text -> inboundRouter.handleText(frame.readText(), target)
                                     is Frame.Binary -> inboundRouter.handleBinary(frame.readBytes(), target)
                                     else -> Unit

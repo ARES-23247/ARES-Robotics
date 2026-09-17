@@ -556,6 +556,58 @@ class AutoImportServiceTest {
         directory
     }
 
+    @Test
+    fun `external deletion of unimported log evicts observation and enforces restabilization`() = runBlocking {
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "ares_prune_test_${System.currentTimeMillis()}").apply { mkdirs() }
+        val logsDir = File(tempDir, "logs").apply { mkdirs() }
+        val mockLog = File(logsDir, "temp_run.csv").apply { writeText("TimestampMs,val\n1000,1.0\n") }
+        val snapshot = AutoImportService.SourceSnapshot(mockLog.length(), mockLog.lastModified())
+        val sourceId = "local:${mockLog.absoluteFile.toPath().normalize()}"
+
+        val config = WorkspaceConfig(
+            teamId = "1234",
+            seasonId = "2026",
+            robotId = "ares-test",
+            projectPath = tempDir.absolutePath,
+            league = League.FTC
+        )
+        val tempDb = File.createTempFile("auto_import_db_prune", ".db").apply { deleteOnExit() }
+        val databaseService = DatabaseService(tempDb.absolutePath)
+        val sysIdService = SysIdService(databaseService)
+        val driverAnalysisService = DriverAnalysisService(databaseService, sysIdService)
+        val summaryEngineService = SummaryEngineService(databaseService, sysIdService, driverAnalysisService)
+        val logParserService = LogParserService(databaseService, summaryEngineService)
+        val hootDecoderService = HootDecoderService(databaseService, summaryEngineService, sysIdService)
+
+        val service = AutoImportService(
+            logParserService = logParserService,
+            hootDecoderService = hootDecoderService,
+            adbConnected = MutableStateFlow(false),
+            configProvider = { config },
+            scope = this,
+        )
+
+        // First observation registers the file (not yet stable)
+        assertFalse(service.observeStableSource(sourceId, snapshot))
+
+        // File is deleted externally before next scan
+        assertTrue(mockLog.delete())
+
+        // Pruning must detect missing file on disk and evict its observation
+        val evictedCount = service.pruneStaleLocalObservations()
+        assertEquals(1, evictedCount)
+
+        // Recreate the file with the same snapshot
+        mockLog.writeText("TimestampMs,val\n1000,1.0\n")
+        mockLog.setLastModified(snapshot.modified)
+
+        // Enforce that the recreated file must go through full stabilization rather than bypassing it
+        assertFalse(
+            service.observeStableSource(sourceId, snapshot),
+            "A recreated file must not bypass stabilization via a stale observation of a deleted file"
+        )
+    }
+
     private companion object {
         const val PROCESS_PROBE_CLASS = "AutoImportProcessProbe"
         val PROBE_LOCK = Any()

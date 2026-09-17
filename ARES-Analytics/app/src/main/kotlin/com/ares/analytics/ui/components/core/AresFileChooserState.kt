@@ -76,16 +76,18 @@ internal class AresFileChooserState(
                     Triple(directory, read, shortcuts to File.listRoots().orEmpty().toList())
                 }
                 if (request != requestId) return@launchOperation
-                currentDirectory = result.first
-                pathEditText = result.first.absolutePath
-                entries = result.second
-                quickAccess = result.third.first
-                roots = result.third.second
-                if (historyTarget != null) historyIndex = historyTarget
-                else if (recordHistory) {
-                    history = history.take(historyIndex + 1) + currentDirectory
-                    historyIndex = history.lastIndex
-                } else if (history.size == 1) history = listOf(currentDirectory)
+                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                    currentDirectory = result.first
+                    pathEditText = result.first.absolutePath
+                    entries = result.second
+                    quickAccess = result.third.first
+                    roots = result.third.second
+                    if (historyTarget != null) historyIndex = historyTarget
+                    else if (recordHistory) {
+                        history = history.take(historyIndex + 1) + currentDirectory
+                        historyIndex = history.lastIndex
+                    } else if (history.size == 1) history = listOf(currentDirectory)
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
@@ -209,8 +211,20 @@ internal class AresFileChooserState(
         val directory = currentDirectory
         val name = newFolderName.trim()
         fileAction {
-            require(name.isNotEmpty() && name !in setOf(".", "..") && '/' !in name && '\\' !in name) {
-                "Enter a single folder name."
+            val forbiddenChars = setOf('/', '\\', ':', '*', '?', '"', '<', '>', '|')
+            val reservedNames = setOf(
+                "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4",
+                "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+            )
+            require(
+                name.isNotEmpty() &&
+                    name !in setOf(".", "..") &&
+                    name.none { it in forbiddenChars } &&
+                    name.uppercase() !in reservedNames &&
+                    !name.endsWith('.') &&
+                    !name.endsWith(' ')
+            ) {
+                "Enter a valid folder name without special characters or reserved names."
             }
             val folder = File(directory, name)
             check(folder.mkdir()) { "Could not create folder; it may already exist or be read-only." }
