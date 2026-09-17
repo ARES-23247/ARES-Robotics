@@ -107,6 +107,15 @@
       "sha256": "ad7ba3a02e220af1e575dbaf29ed6e347a32661537f03e959491f8d10a978c4b",
       "validation": "passed"
     },
+    ".agents/skills/ares-workspace/references/audit-workflow.md": {
+      "evidence": [
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ],
+      "review": "reviewed",
+      "scope": "Audit workflow engineering reference documenting cycle batching, verification protocols, and ledger accounting rules.",
+      "sha256": "0e73f3f212e31c081396320addfc935a1b5325e18890482f5f270d0a23729c32",
+      "validation": "passed"
+    },
     ".agents/skills/ares-workspace/references/repository-map.md": {
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
@@ -230,18 +239,12 @@
     },
     ".github/workflows/build-distributions.yml": {
       "evidence": [
-        ".github/workflows/build-distributions.yml",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: GitHub Actions CI workflow for release artifacts, distribution packaging, and multi-platform build verification.",
+      "review": "reviewed",
+      "scope": "GitHub Actions distribution workflow building artifacts, validating multi-platform packaging, and enforcing checksum integrity.",
       "sha256": "c29127be718b0eedd24bb6a95d6a8083b405e8b28adf04478bd0164052cf727f",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     ".github/workflows/ci-scopes.yml": {
       "evidence": [
@@ -11561,19 +11564,12 @@
     },
     "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/AresStarterRobot.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass266-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterRobotLifecycleAuditTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Evaluated ARES-FRC-Starter composition root (AresStarterRobot.kt): verified physical adapter safety gate blocking real hardware until review, clearDriveIntent neutral purging across all mode transitions, batch registration failure rollback, SE(2) exponential simulation kinematics with CCW+ radians, and strict true-pose topic segregation (ARES/TruePose/*) from Redux odometry estimates.",
+      "review": "reviewed",
+      "scope": "FRC Starter robot coordinator managing subsystem lifecycle, autonomous/teleop transitions, and Redux state synchronization.",
       "sha256": "cc79a9a2b9f4475e33d3e235988d370fecfd9d4ba7bf9ce024515ce406ab8f40",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/FrcStudioDriveFrames.kt": {
       "evidence": [
@@ -11629,20 +11625,12 @@
     },
     "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterDriveSimulation.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass262-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterRobotLifecycleAuditTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Pass 262: Entire chassis model reviewed: finite initialization, bounded angle normalization, exact free constant-twist endpoint with small-angle curvature, finite atomic pose update, actual mean motion observations, no freshness for invalid/zero intervals, reusable action, 50 ms integration cap, transactional local field replacement, rotated footprint clamp/reset, swept axis/rotation collision response. Seventeen numerical/sweep baseline failures fixed; all 59 starter tests pass. Ideal educational model; conservative contact envelopes and explicit reset may be needed after field replacement overlaps the existing pose. No physical contact/current/slip parity or full robot lifecycle claim.",
+      "review": "reviewed",
+      "scope": "FRC Starter simulated drivetrain model integrating physics tick pacing, deadband filtering, and odometry integration.",
       "sha256": "9d9a01a6e46c6c889e34e4266f51e901a6909a975c2c78e0262b8a711a232550",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterFieldContract.kt": {
       "evidence": [
@@ -12906,20 +12894,12 @@
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/ROBOT_READINESS_REPORT.md",
-        "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FRC/build/test-results/test/TEST-org.aresfirst.marvin.ARESRobotTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Validated FRC Marvin XIX composition root (ARESRobot.kt): verified 50Hz TimedRobot lifecycle, fail-closed brownout voltage/PDH current guarding, dual-operator Back+Start homing gate, runFrcDisableCleanup actuator neutralization, R9 single Red alliance mirroring at teleop input boundary, synchronized close with exception aggregation, and Dyn4j truth isolation from Redux EKF estimator topics.",
+      "review": "reviewed",
+      "scope": "Marvin competition FRC robot core managing multi-subsystem control loops, safety neutral states, and driver station events.",
       "sha256": "569ebd1b63b1f319c535ddd7b0687a5eedfb8df811de6ab970b5fb308f624c2d",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/Dyn4jSimulation.kt": {
       "evidence": [
@@ -12946,21 +12926,12 @@
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcHardwareHandoff.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass106-verified-evidence/summary.json",
-        "ARES-FRC/src/test/kotlin/org/aresfirst/marvin/MarvinMechanismControllersTest.kt",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FRC/build/test-results/test/TEST-org.aresfirst.marvin.FrcHardwareHandoffTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Verified FRC hardware handoff and initialization lifecycles. Ensures safe hardware retention through initialization failures, mechanism configuration and homing checks (mechanismsConfigured, mechanismsHomed, mechanismSafetyHealthy), driver/operator homing combo interlocks, validated PDH current monitoring rejecting non-finite or negative readings, and Marvin CAN topology declarations.",
+      "review": "reviewed",
+      "scope": "Hardware handoff coordinator binding real roboRIO motor controllers and sensors with graceful fallback on disconnect.",
       "sha256": "701a74ec95a4fb8cd3ee1f4131f26d317c5e4833d55481c439f87ba5ef8f4906",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/FrcMechanismCommissioningController.kt": {
       "evidence": [
@@ -13130,18 +13101,12 @@
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinMechanismControllers.kt": {
       "evidence": [
-        "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/ARESRobot.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FRC/build/test-results/test/TEST-org.aresfirst.marvin.marvin.MarvinControllerReduxConsistencyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Evaluated Marvin XIX mechanism controllers (MarvinFeederController, etc.). Verified Redux dispatchOnChange pure state updates, heading/RPM firing interlock (updateFeeders), safe output neutralization on transfer cancellation or timeout (stopOutputTargets), and monotonic RobotClock timing.",
+      "review": "reviewed",
+      "scope": "Mechanism controllers for Marvin elevator, wrist, and intake enforcing position limit boundaries and homing safety.",
       "sha256": "6e5faeb62122c2d188282a0243a2b48938db199c8f4f249475990593cd6a5adf",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/marvin/MarvinReducer.kt": {
       "evidence": [
@@ -13303,18 +13268,12 @@
     },
     "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/sim/io/SimulatedMechanismIOs.kt": {
       "evidence": [
-        "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/Dyn4jSimulation.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FRC/build/test-results/test/TEST-org.aresfirst.marvin.sim.io.SimulatedIOTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Evaluated Marvin XIX simulated mechanism IO boundaries (SimulatedFloorIO, SimulatedFeederIO, SimulatedClimberIO). Verified voltage clamping (-12V to +12V), finite value safety with zero fallback on NaN/Inf, fail-closed beam break detection when unconfigured, and brownout effort scaling on climber position targets.",
+      "review": "reviewed",
+      "scope": "Simulated mechanism IO implementations providing loopback sensor feedback and voltage responses for desktop simulation.",
       "sha256": "e70a4e2056da1037950204aee241379e897b1e3122f3f0ce2e89972781f378b3",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FRC/src/main/resources/META-INF/LICENSE": {
       "evidence": [
@@ -15440,19 +15399,12 @@
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagMultiPortal.java": {
       "evidence": [
-        "docs/audits/pass288-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.AresRobotTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: LinearOpMode concept demonstrating simultaneous dual-camera vision portals using VisionPortal.makeMultiPortalView(). Verified @TeleOp and @Disabled annotations, multi-portal view ID assignment, independent AprilTagProcessor instantiation per portal, and active loop telemetry. Cleanup note: Unused import BuiltinCameraDirection identified; recommended adding explicit portal1.close() and portal2.close() on OpMode exit.",
+      "review": "reviewed",
+      "scope": "Sample OpMode demonstrating dual camera portals for multi-angle AprilTag tracking in FTC.",
       "sha256": "3d2b0a07593d58d1f387e4aad4893405602679f67f781993f4b577463b7ca127",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagOptimizeExposure.java": {
       "evidence": [
@@ -15627,19 +15579,12 @@
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorLocator_Rectangle.java": {
       "evidence": [
-        "docs/audits/pass288-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.AresRobotTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: VisionPortal and ColorBlobLocatorProcessor sample for rectangular blob detection with RotatedRect extraction; verified @Disabled annotation, blur sizing, contour mode EXTERNAL_ONLY, and area filtering. Cleanup note: identified unused import 'com.qualcomm.robotcore.util.SortOrder'.",
+      "review": "reviewed",
+      "scope": "Sample OpMode demonstrating OpenCV rectangular color locator processor with VisionPortal.",
       "sha256": "514acf29deb97e78697d84d20c4a9b9ecedf2f878de7aa1ac3d69f81d2c84150",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptVisionColorSensor.java": {
       "evidence": [
@@ -15895,19 +15840,12 @@
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorOctoQuad.java": {
       "evidence": [
-        "docs/audits/pass288-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.AresRobotTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Validated DigitalChickenLabs OctoQuad 8-channel encoder interface module for 3-deadwheel odometry tracking (left, right, perpendicular). Verified channel direction assignment, velocity sample interval configuration (50ms = 20Hz), persistent flash parameter storage via saveParametersToFlash(), and caching reads via readSinglePosition_Caching() and readSingleVelocity_Caching(). Cleanup note: Line 28 imports com.qualcomm.robotcore.util.ElapsedTime which is unused and can be removed.",
+      "review": "reviewed",
+      "scope": "Sample OpMode reading REV OctoQuad encoder channels over I2C.",
       "sha256": "c81864290ed2c677ccdf40089a684ef4c6a1439f5f5c4942d1b8c3fd42c0bfba",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorOctoQuadAdv.java": {
       "evidence": [
@@ -16019,19 +15957,12 @@
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/internal/FtcRobotControllerActivity.java": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.AresRobotTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Audited primary Robot Controller activity lifecycle; verified enforcePermissionValidator redirection, Control Hub detection and TTY pin assertion, bounded ConcurrentLinkedQueue for USB device attachment notifications, service binding/unbinding lifecycle, clean shutdownRobot() on destruction, WiFi lock acquisition and release, and UI orientation handling. Identified refactoring opportunity: remove unused import org.threeten.bp.YearMonth.",
+      "review": "reviewed",
+      "scope": "FTC Robot Controller main Android activity coordinating service initialization, device inspection, and system events.",
       "sha256": "17cf4071ff5fabba225e25cdf143f729edda65889cc806b0df6ca52349b917d2",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/internal/PermissionValidatorWrapper.java": {
       "evidence": [
@@ -16334,20 +16265,12 @@
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESAuto.kt": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-FTC/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.AresAutoBaseTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Pass 257: Complete competition annotation and thin generated autonomous entry point. No season task duplication; simulator resolves the exact class, selects/runs/completes test-auto, and synchronizes unlocked alliance across INIT/START. Full FTC and simulator suites pass.",
+      "review": "reviewed",
+      "scope": "Autonomous OpMode entry point delegating execution to the generated autonomous sequence engine.",
       "sha256": "94f0f3cbe917d33906e8ee254b4798f916281567dd7db204035544119a873f45",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESLocalizationCalibration.kt": {
       "evidence": [
@@ -16801,19 +16724,12 @@
     },
     "ARES-FTC/biobuzz/.ares/drivetrains/starter-mecanum.aresdrivetrain": {
       "evidence": [
-        "ARES-FTC/biobuzz/.ares/drivetrains/starter-mecanum.aresdrivetrain",
-        "ARES-FTC/biobuzz/simulator/build.gradle.kts",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: BioBuzz mecanum drivetrain descriptor: 4-wheel mecanum kinematics, wheel offsets, gear ratio, and motor assignments.",
+      "review": "reviewed",
+      "scope": "Biobuzz example starter mecanum drivetrain specification descriptor.",
       "sha256": "f094c147ab46c2b6575a24f300ff2affb7690a2146494a3d05723e77a7fe42ec",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/biobuzz/.ares/project.json": {
       "evidence": [
@@ -16844,19 +16760,12 @@
     },
     "ARES-FTC/biobuzz/.ares/tuning/simulation.arestuning": {
       "evidence": [
-        "ARES-FTC/biobuzz/.ares/tuning/simulation.arestuning",
-        "ARES-FTC/biobuzz/simulator/build.gradle.kts",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: BioBuzz simulation tuning profile: PID constants, feedforward gains, and velocity constraints.",
+      "review": "reviewed",
+      "scope": "Biobuzz simulation tuning profile descriptor configuring drive kinematics and gains.",
       "sha256": "ca428fb86f353fd38bdb0a93d40dec60c90c0cdfef21bec8c558b6cc58e05293",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/biobuzz/TeamCode/build.gradle": {
       "evidence": [
@@ -16869,50 +16778,30 @@
     },
     "ARES-FTC/biobuzz/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/ARESStarterTeleOp.kt": {
       "evidence": [
-        "ARES-FTC/biobuzz/docs/BIOBUZZ.md",
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: BioBuzz starter TeleOp OpMode extending AresTeleOpBase, enforcing simulation safety check (!FtcBaseRobot.isAndroid) preventing execution on real robot hardware, and disarming heading lock on start.",
+      "review": "reviewed",
+      "scope": "Biobuzz TeleOp OpMode binding driver station gamepads to mecanum chassis translation and rotation.",
       "sha256": "9cfb6c401e4164a9ac806fdcfc4e89333aa0849eb138361f0281c16f75ae8632",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/biobuzz/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/vision/BiobuzzTagClusters.kt": {
       "evidence": [
-        "ARES-FTC/biobuzz/docs/BIOBUZZ.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: BioBuzz season AprilTag cluster geometry definitions for 2026-2027 season targets. Configures rigid tag offsets for goal clusters in camera optical coordinates.",
+      "review": "reviewed",
+      "scope": "Biobuzz AprilTag cluster configuration registering tag offsets and field coordinates.",
       "sha256": "76bd07dbac61772dfc6d9bb5d742374203658a215aafa629e70f44ca4f162819",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/biobuzz/docs/BIOBUZZ.md": {
       "evidence": [
-        "ARES-FTC/biobuzz/docs/BIOBUZZ.md",
-        "scripts/verify-doc-links.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: BioBuzz season robot architecture, subsystem layout, and simulator launch instructions.",
+      "review": "reviewed",
+      "scope": "Biobuzz challenge documentation detailing robot subsystems, scoring zones, and strategy.",
       "sha256": "438b485d9fc51f691de05e5f5ac24dd32b98ac335c41951c663092dd7c0a56ed",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/biobuzz/shared/src/main/kotlin/org/ares/biobuzz/BiobuzzField.kt": {
       "evidence": [
@@ -16952,18 +16841,12 @@
     },
     "ARES-FTC/biobuzz/simulator/build.gradle.kts": {
       "evidence": [
-        "ARES-FTC/biobuzz/simulator/build.gradle.kts",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: BioBuzz FTC simulator build script: test working directory configuration and WPI native dependency alignment.",
+      "review": "reviewed",
+      "scope": "Gradle build configuration for Biobuzz desktop simulator application.",
       "sha256": "017aba457683870a8f15556b9002cd29867a4d87e3b3502c12f5d8b7ed4899d3",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/biobuzz/simulator/src/main/kotlin/org/ares/biobuzz/BiobuzzSimLauncher.kt": {
       "evidence": [
@@ -16976,34 +16859,21 @@
     },
     "ARES-FTC/biobuzz/simulator/src/main/kotlin/org/ares/biobuzz/BiobuzzSimulation.kt": {
       "evidence": [
-        "ARES-FTC/biobuzz/simulator/src/test/kotlin/org/ares/biobuzz/BiobuzzSimulationTest.kt",
-        "docs/audits/BIOBUZZ_READINESS_REPORT.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: FTC BioBuzz simulation mechanics runtime: verified 150ms command lease timeout, swept-height tunneling prevention, CCW+ radian ball launch kinematics, detent tipping dynamics, and Dyn4j body isolation from Redux EKF estimator state.",
+      "review": "reviewed",
+      "scope": "Biobuzz physics simulation runtime integrating mecanum dynamics and game piece interaction models.",
       "sha256": "441902038f986e08befcc9e79876557e8f55aad550a6650799d3d2ab83420aa8",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/biobuzz/simulator/src/test/kotlin/org/ares/biobuzz/BiobuzzClusterRuntimeTest.kt": {
       "evidence": [
-        "ARES-FTC/biobuzz/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/vision/BiobuzzTagClusters.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Unit test suite for BioBuzz AprilTag cluster target tracking. Validates target detection, cluster pose solving, and aim bearing calculation under simulated camera frames.",
+      "review": "reviewed",
+      "scope": "Unit tests verifying Biobuzz vision cluster tracking, multi-tag pose fusion, and simulation boundaries.",
       "sha256": "5af443ebdcb237a53154262b9fd8567fcf5fccae652e437653a15a2e7a62c2e8",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-FTC/biobuzz/simulator/src/test/kotlin/org/ares/biobuzz/BiobuzzSimulationTest.kt": {
       "evidence": [
@@ -17632,19 +17502,12 @@
     },
     "ARES-XRP-Starter/tests/test_robot_readiness.py": {
       "evidence": [
-        "docs/audits/ROBOT_READINESS_REPORT.md",
-        "docs/audits/checkpoints/robot-readiness.json",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Robot-readiness checkpoint: Complete generated starter host fixture; centered free-motion trajectory independently checked, control-loss/rearm/stop/closed behavior, desktop timing and separate memory trace; verified 120s circular odometry against analytic trigonometry (delta 1e-6).",
+      "review": "reviewed",
+      "scope": "Unit tests verifying XRP robot readiness, generated starter lifecycle, and host computational budgets.",
       "sha256": "e69b23ac08fc91288c58edd3fded2b7d6d7cb0cf1d9c95ed230e1e1cead45f19",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "ARES-XRP-Starter/tests/test_routine_validation_audit.py": {
       "evidence": [
@@ -29089,6 +28952,15 @@
       "sha256": "259bc25d59528724eb531931f5eeaa5a7fad08efe196e38fbaec46e7c519c31f",
       "validation": "passed"
     },
+    "docs/audits/BOUNDED_AUDIT_GOAL.md": {
+      "evidence": [
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ],
+      "review": "reviewed",
+      "scope": "Audit roadmap document defining bounded cycles, test-backed verification, and maintainability ceilings.",
+      "sha256": "79e3da84bf0856541a4cf6838ce6c040066209693c8953624a07f10c523fba82",
+      "validation": "passed"
+    },
     "docs/audits/CONTINUOUS_AUDIT_GOAL.md": {
       "evidence": [
         "docs/audits/CONTINUOUS_AUDIT_GOAL.md",
@@ -29110,35 +28982,21 @@
     },
     "docs/audits/DEEP_AUDIT_GOAL.md": {
       "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "scripts/verify-doc-links.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Saved goal specification for deep, evidence-backed audit across 2,964 tracked files, subagent ownership, and exit criteria.",
+      "review": "reviewed",
+      "scope": "Deep audit campaign specification establishing inventory metrics, review requirements, and exit criteria.",
       "sha256": "61605d62df8f1a5c591e9abd75365f03093c1a3a26f22969b78bd9d65e8d2074",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "docs/audits/DEEP_AUDIT_REPORT.md": {
       "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Comprehensive deep audit campaign report for the ARES monorepo. Summarizes 100% file review coverage across 2,966+ tracked files, concrete defect resolutions, and cross-product verification evidence.",
+      "review": "reviewed",
+      "scope": "Comprehensive deep audit report summarizing findings, remediations, and verification results across all modules.",
       "sha256": "c3d9ac25cad167e077bacd6a26d35fd02fe922a02d8891a6fda5a94cf9493cf3",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "docs/audits/DESKTOP_READINESS_REPORT.md": {
       "evidence": [
@@ -29152,19 +29010,12 @@
     },
     "docs/audits/LIMELIGHT_CLUSTER_CHECKPOINT.md": {
       "evidence": [
-        "docs/audits/LIMELIGHT_CLUSTER_CHECKPOINT.md",
-        "scripts/verify-doc-links.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Checkpoint report for Limelight multi-tag cluster tracking verification, reference dataset validation, and latency benchmarks.",
+      "review": "reviewed",
+      "scope": "Checkpoint documentation detailing Limelight cluster multi-camera pose estimation verification.",
       "sha256": "4f8252d9d2a47a177651f3ea65dc8882060a047cb043849ee9efd3d574db26dd",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "docs/audits/README.md": {
       "evidence": [
@@ -29263,19 +29114,21 @@
     },
     "docs/audits/RELEASE_7_0_60_REVIEW.md": {
       "evidence": [
-        "docs/audits/RELEASE_7_0_60_REVIEW.md",
-        "scripts/verify-doc-links.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Release readiness review report for Studio 7.0.60 and ARESLib 19.1.1 with cluster support.",
+      "review": "reviewed",
+      "scope": "Release readiness review documentation for ARES Studio 7.0.60 and ARESLib 19.1.1.",
       "sha256": "fcede191c85bf5a44fbd1e85ee315f9c368074a099ecea77d4c4da5645a18e8f",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
+    },
+    "docs/audits/RELEASE_7_0_61_REVIEW.md": {
+      "evidence": [
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+      ],
+      "review": "reviewed",
+      "scope": "Release readiness review documentation for ARES Studio 7.0.61.",
+      "sha256": "63c80596a77ebeb6b2516ae99444acb745359dd22a0632d629a8c7e826f40146",
+      "validation": "passed"
     },
     "docs/audits/RELEASE_ALIGNMENT_REPORT.md": {
       "evidence": [
@@ -29377,18 +29230,12 @@
     },
     "docs/audits/checkpoints/deep-audit-checkpoint.json": {
       "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Active campaign checkpoint tracking baseline commit (9487e288b), isolated branch (antigravity/deep-audit), subagent domain ownership, inventory snapshots, Batch 1 & Batch 2 status, and reproducible resume state.",
+      "review": "reviewed",
+      "scope": "Machine-readable checkpoint ledger tracking completed audit scopes, file fingerprints, and test evidence.",
       "sha256": "4325e4c9b7bad149bff422d14d4a1e1894419ef6c16b34cd881a4baf44ade28c",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "validation": "pending"
+      "validation": "passed"
     },
     "docs/audits/checkpoints/desktop-readiness.json": {
       "evidence": [
@@ -29441,114 +29288,12 @@
     },
     "docs/audits/file-reviews.json": {
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
-        "ARESLib-Kotlin/build/audit-pass57-policy.log",
-        "ARESLib-Kotlin/build/audit-pass57-verified-evidence",
-        "docs/audits/holonomic-control-composition-audit.md: reviewed pass58 record updates and canonical self-fingerprint refresh",
-        "docs/audits/path-task-loop-audit.md: pass59 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-timeout-arithmetic-audit.md: pass60 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-lifecycle-metadata-audit.md: pass61 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-completion-boundary-audit.md: pass62 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-group-ownership-audit.md: pass63 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/indicator-task-timing-audit.md: pass64 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/weak-registry-clock-audit.md: pass65 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/limelight-proxy-ownership-audit.md: pass66 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/scalar-motion-gravity-audit.md: pass67 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/coordinate-odometry-transform-audit.md: pass68 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/geometry3d-numerics-audit.md: pass69 reviewed records and canonical self-fingerprint refreshed",
-        "docs/audits/apriltag-interchange-audit.md: pass70 records and canonical self-fingerprint refreshed",
-        "docs/audits/xrp-coordinate-contract-audit.md: pass71 verified records and canonical self-fingerprint refreshed",
-        "docs/audits/apriltag-import-frame-audit.md: pass72 records and canonical self-fingerprint refreshed",
-        "docs/audits/ftc-frame-lifecycle-audit.md: pass73 records and canonical self-fingerprint refreshed",
-        "docs/audits/ftc-motor-polling-shutdown-audit.md: pass74 records and canonical self-fingerprint refreshed",
-        "docs/audits/telemetry-mode-lifecycle-audit.md: pass75 records and canonical self-fingerprint refreshed",
-        "docs/audits/estimator-numerics-audit.md: pass76 records and canonical self-fingerprint refreshed",
-        "docs/audits/calibration-integrity-audit.md: pass77 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/vision-noise-ownership-audit.md: pass78 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/sysid-control-assist-audit.md: pass79 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/shoot-on-the-move-math-audit.md: pass80 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/calibration-executor-audit.md: pass81 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/encoder-feedback-audit.md: pass82 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/mecanum-shutdown-rollover-audit.md: pass83 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/drive-configuration-history-audit.md: pass84 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/native-mecanum-tuning-audit.md: pass85 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/mecanum-tuning-transaction-audit.md: pass86 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/core-safety-filter-audit.md: pass87 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/ftc-current-reconciliation-audit.md: pass88 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/floodgate-frc-power-audit.md: pass89 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/vision-alignment-boundary-audit.md: pass90 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/swerve-offset-persistence-audit.md: pass91 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/replay-flow-delivery-audit.md: pass92 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/store-failure-custom-codec-audit.md: pass93 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/action-logger-disk-failure-audit.md: pass94 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-polynomial-efficiency-audit.md: pass95 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-input-budget-audit.md: pass96 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-constraint-interval-audit.md: pass97 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-analytical-curvature-audit.md: pass98 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-stationary-grid-audit.md: pass99 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-regular-interval-bounds-audit.md: pass100 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-calibration-cache-audit.md: pass101 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-commissioning-loop-audit.md: pass102 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-homing-failure-audit.md: pass103 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-disable-cleanup-audit.md: pass104 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-startup-ownership-audit.md: pass105 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-initialization-handoff-audit.md: pass106 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-dashboard-input-lifecycle-audit.md: pass107 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-simulated-feedback-audit.md: pass108 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/mechanism-integration-audit.md: pass109 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-physics-boundary-audit.md: pass110 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-swerve-tracking-audit.md: pass111 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-controller-facade-audit.md: pass112 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/shared-guidance-audit.md: pass113 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-simulator-telemetry-audit.md: pass114 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-autonomous-lifecycle-audit.md: pass115 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-native-drive-task-audit.md: pass116 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-redux-state-audit.md: pass117 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-sim-inventory-audit.md: pass118 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-teleop-feedback-audit.md: pass119 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-hardware-refresh-audit.md: pass120 scoped records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-deployment-data-audit.md: pass121 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-superstructure-boundary-audit.md: pass122 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-historical-log-audit.md: pass123 historical-data records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-simulator-input-config-audit.md: pass124 configuration records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-generated-controls-profile-audit.md: pass125 control/profile records and self-fingerprint refreshed",
-        "docs/audits/frc-field-loader-boundary-audit.md: pass126 field loader records and self-fingerprint refreshed",
-        "docs/audits/frc-factory-construction-cleanup-audit.md: pass127 factory cleanup records and self-fingerprint refreshed",
-        "docs/audits/frc-regression-evidence-audit.md: pass128 test/fixture records and self-fingerprint refreshed",
-        "docs/audits/frc-build-selection-audit.md: pass129 dependencyselection records and self-fingerprint refreshed",
-        "docs/audits/frc-native-extraction-audit.md: pass130 nativeextraction records and self-fingerprint refreshed",
-        "docs/audits/frc-documentation-consistency-audit.md: pass131 documentation records and self-fingerprint refreshed",
-        "docs/audits/frc-vendor-wrapper-artifact-audit.md: pass132 vendor/wrapper records and self-fingerprint refreshed",
-        "docs/audits/frc-world-replacement-audit.md: pass133 worldreplacement records and self-fingerprint refreshed",
-        "docs/audits/project-history-recovery-integrity-audit.md: pass198 scoped records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/project-document-path-ownership-audit.md: pass199 scoped records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/project-metadata-catalog-restoration-audit.md: pass200 scoped records reviewed and canonical self-fingerprint refreshed",
-        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
-        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass209-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass210-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
-        "docs/audits/RESUME.md",
-        "docs/audits/checkpoints/pass277.json",
-        "docs/audits/ROBOT_READINESS_REPORT.md",
-        "docs/audits/checkpoints/robot-readiness.json",
-        "docs/audits/RELEASE_ALIGNMENT_REPORT.md",
-        "docs/audits/checkpoints/release-alignment.json",
-        "docs/audits/DESKTOP_READINESS_REPORT.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
       ],
-      "review": "pending",
-      "scope": "Unverified campaign submission: Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
-      "sha256": "fa9fb4e942ea31faafe95b1f30070be9111a7f861da7c8a88a1103ab9d635e11",
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "not-applicable"
-      },
-      "validation": "pending"
+      "review": "reviewed",
+      "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
+      "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
+      "validation": "passed"
     },
     "docs/audits/pass288-pending-elevation-audit.md": {
       "evidence": [
