@@ -1,0 +1,143 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "project-model",
+    "version": "19.1.2",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulation-foundation",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "19.1.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-model-19.1.2.jar",
+          "url": "project-model-19.1.2.jar",
+          "size": 69518,
+          "sha512": "10361e001dc6467d97af65765d6dc075e38eb99baaad4558594e0e8a513f4e9c01377ff17f8ef272649d7d461d26c476011918c163c38a6f4a7bc535434a1004",
+          "sha256": "0d3da326bec52b9224124d0f87823a4b75b7e5c009d7895bdced0d246cb752ea",
+          "sha1": "cb777f7567f5c1a6350b62d13f64c8f4c7287987",
+          "md5": "7a46dcf4547726d2d228c5d89252a031"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "simulation-foundation",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "19.1.2"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "project-model-19.1.2.jar",
+          "url": "project-model-19.1.2.jar",
+          "size": 69518,
+          "sha512": "10361e001dc6467d97af65765d6dc075e38eb99baaad4558594e0e8a513f4e9c01377ff17f8ef272649d7d461d26c476011918c163c38a6f4a7bc535434a1004",
+          "sha256": "0d3da326bec52b9224124d0f87823a4b75b7e5c009d7895bdced0d246cb752ea",
+          "sha1": "cb777f7567f5c1a6350b62d13f64c8f4c7287987",
+          "md5": "7a46dcf4547726d2d228c5d89252a031"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "project-model-19.1.2-sources.jar",
+          "url": "project-model-19.1.2-sources.jar",
+          "size": 11758,
+          "sha512": "19fd7f3d5c15368fabbd23443a1e1312cf29e6854e93448b507401df514ecf4fa05ac193ea0dc92a8b649579999c30f393f011dc74548f0686badb335c109218",
+          "sha256": "07b4a97f3e2f1079ee1f2b12449983cb5db21571dcb509749c525e0e2dc7fc7f",
+          "sha1": "04cbb8f360ed0ba282103dc772444f46e744ece6",
+          "md5": "0ee248cb2088178c04c08d2ff466e41c"
+        }
+      ]
+    }
+  ]
+}

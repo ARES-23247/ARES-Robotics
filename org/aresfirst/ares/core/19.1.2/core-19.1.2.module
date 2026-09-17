@@ -1,0 +1,178 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "core",
+    "version": "19.1.2",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "telemetry-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.java-websocket",
+          "module": "Java-WebSocket",
+          "version": {
+            "requires": "1.6.0"
+          }
+        },
+        {
+          "group": "org.nanohttpd",
+          "module": "nanohttpd",
+          "version": {
+            "requires": "2.3.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "core-19.1.2.jar",
+          "url": "core-19.1.2.jar",
+          "size": 1807376,
+          "sha512": "58019f7399f62b493a17214cb444b43ae1423a4ca623f2838cdfe73b92f33c36ca507cb535a560b3d2ed51f02e291f51bcdc31d78dcd004faf7171fc0129f33b",
+          "sha256": "2b64cded3df366e4be63cbafba9ce86d1b538f21543802b855b11ad62516ab4e",
+          "sha1": "920e0799b6d05ca0512b028d5266c68a7746954f",
+          "md5": "bade8c2777c41c28f136a1a47b34b839"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.14.0"
+          }
+        },
+        {
+          "group": "org.msgpack",
+          "module": "msgpack-core",
+          "version": {
+            "requires": "0.9.12"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-core",
+          "version": {
+            "requires": "1.11.0"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "telemetry-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.java-websocket",
+          "module": "Java-WebSocket",
+          "version": {
+            "requires": "1.6.0"
+          }
+        },
+        {
+          "group": "org.nanohttpd",
+          "module": "nanohttpd",
+          "version": {
+            "requires": "2.3.1"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "core-19.1.2.jar",
+          "url": "core-19.1.2.jar",
+          "size": 1807376,
+          "sha512": "58019f7399f62b493a17214cb444b43ae1423a4ca623f2838cdfe73b92f33c36ca507cb535a560b3d2ed51f02e291f51bcdc31d78dcd004faf7171fc0129f33b",
+          "sha256": "2b64cded3df366e4be63cbafba9ce86d1b538f21543802b855b11ad62516ab4e",
+          "sha1": "920e0799b6d05ca0512b028d5266c68a7746954f",
+          "md5": "bade8c2777c41c28f136a1a47b34b839"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "core-19.1.2-sources.jar",
+          "url": "core-19.1.2-sources.jar",
+          "size": 508729,
+          "sha512": "0cce394417bbc81cddbc7d239d83a23c4ce43778fb2326d6c55974bedc9e73f2cfebc56976501539a8d1560747ef17367d9de1b78a6b3d2255b99a35e3816be8",
+          "sha256": "7a165eaa9ed781dc4f0e47be791974d11e8a4e9bfa744076b824d4e307d33a38",
+          "sha1": "4a06dec31a889051ca8199812be139ace20679d7",
+          "md5": "e92612d945dd66f720289895f7a53163"
+        }
+      ]
+    }
+  ]
+}

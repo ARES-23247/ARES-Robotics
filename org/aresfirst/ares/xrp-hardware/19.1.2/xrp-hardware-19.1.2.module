@@ -1,0 +1,143 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.aresfirst.ares",
+    "module": "xrp-hardware",
+    "version": "19.1.2",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.5"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "telemetry-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "xrp-hardware-19.1.2.jar",
+          "url": "xrp-hardware-19.1.2.jar",
+          "size": 34318,
+          "sha512": "7912bca7937a122f54b53d9b3228acc577d0f393c4dd200bb0faf689a1177d7962d274e4aa07ee552b99422c231ccbed9b7ffcb7b83af8d0db452d92849e11ad",
+          "sha256": "696331862b426409e3b5f69dac2146e99391348f27112813df81e553489b93ea",
+          "sha1": "e25df1fa390567a3be23395c947463e9f85c95a9",
+          "md5": "c5f68735b05795c77dc8c7844e779b90"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib"
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "core",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "telemetry-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        },
+        {
+          "group": "org.aresfirst.ares",
+          "module": "project-schema",
+          "version": {
+            "requires": "19.1.2"
+          }
+        }
+      ],
+      "dependencyConstraints": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "xrp-hardware-19.1.2.jar",
+          "url": "xrp-hardware-19.1.2.jar",
+          "size": 34318,
+          "sha512": "7912bca7937a122f54b53d9b3228acc577d0f393c4dd200bb0faf689a1177d7962d274e4aa07ee552b99422c231ccbed9b7ffcb7b83af8d0db452d92849e11ad",
+          "sha256": "696331862b426409e3b5f69dac2146e99391348f27112813df81e553489b93ea",
+          "sha1": "e25df1fa390567a3be23395c947463e9f85c95a9",
+          "md5": "c5f68735b05795c77dc8c7844e779b90"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "xrp-hardware-19.1.2-sources.jar",
+          "url": "xrp-hardware-19.1.2-sources.jar",
+          "size": 12214,
+          "sha512": "2a5c66c185fd9c8dd4031defefa7058d97762168ff6c24de64aa2beb33d461125cd30274a773ba53795d5931529b834a481af755872be4623056ad0e295e53e1",
+          "sha256": "f0daada0df8b4854a84308f4c8a54dda64894aeaa6586bf053f284eda325493d",
+          "sha1": "6d944323abcf112bbf796ae405a4299456b0ecc3",
+          "md5": "3dc786d8f8db23b1e575baa54916c9c4"
+        }
+      ]
+    }
+  ]
+}
