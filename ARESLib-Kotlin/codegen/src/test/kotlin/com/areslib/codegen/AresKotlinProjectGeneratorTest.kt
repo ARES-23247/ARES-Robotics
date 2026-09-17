@@ -708,7 +708,7 @@ class AresKotlinProjectGeneratorTest {
     )
 
     @Test
-    fun `kotlin project content hash is deterministic regardless of routine input ordering`() {
+    fun `generated source and hashes are deterministic regardless of routine input ordering`() {
         val routineA = simpleRoutine("alpha", RoutineStep.action("intake.stop"))
         val routineB = simpleRoutine("beta", RoutineStep.action("intake.stop"))
         val request = KotlinProjectCodegenRequest(
@@ -716,9 +716,12 @@ class AresKotlinProjectGeneratorTest {
             catalog = catalog(actions = listOf(ActionDescriptor("intake.stop", "Stop intake", "Stops intake."))),
             routines = listOf(routineA, routineB),
         )
-        val hashForward = kotlinProjectContentHash(request, listOf(routineA, routineB))
-        val hashReverse = kotlinProjectContentHash(request, listOf(routineB, routineA))
-        assertEquals(hashForward, hashReverse)
+        val forward = AresKotlinProjectGenerator.generate(request)
+        val reverse = AresKotlinProjectGenerator.generate(request.copy(routines = listOf(routineB, routineA)))
+        assertEquals(forward, reverse)
+        assertTrue(AresKotlinProjectGenerator.hasValidEmbeddedSourceHash(forward.source))
+        val changed = AresKotlinProjectGenerator.generate(request.copy(routines = listOf(routineA)))
+        assertNotEquals(forward.contentHash, changed.contentHash)
     }
 
     private fun catalog(

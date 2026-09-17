@@ -2,8 +2,9 @@ package com.ares.analytics.service.versioncontrol
 
 import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.nio.file.Files
 import java.util.zip.ZipFile
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -12,7 +13,9 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class ProjectArchiveExporterTest {
-    private val temporaryDirectory = Files.createTempDirectory("ares-project-archive-test")
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+    private val temporaryDirectory get() = temporaryFolder.root.toPath()
     private val exporter = ProjectArchiveExporter()
 
     @Test
@@ -69,17 +72,34 @@ class ProjectArchiveExporterTest {
         File(root, "TeamCode/src/main/kotlin").mkdirs()
         File(root, "TeamCode/src/main/kotlin/Robot.kt").writeText("class Robot")
         val destination = temporaryDirectory.resolve("robot-clean-export.aresproject.zip").toFile()
+        val canonicalDocuments = mapOf(
+            ".ares/tuning/simulation.arestuning" to "canonical tuning",
+            ".ares/subsystems/arm.aressubsystem" to "canonical subsystem",
+            ".ares/routines/score.aresroutine" to "canonical routine",
+            ".ares/field.json" to "canonical field",
+        )
+        canonicalDocuments.forEach { (path, content) ->
+            File(root, path).apply { parentFile.mkdirs(); writeText(content) }
+        }
 
         val result = exporter.export(root.path, destination.path)
 
         ZipFile(destination).use { zip ->
             val entries = zip.entries().asSequence().map { it.name }.toSet()
+            assertEquals(canonicalDocuments.keys + setOf(".ares/project.json", "TeamCode/src/main/kotlin/Robot.kt"), entries)
+            assertEquals(entries.size, result.fileCount)
+            canonicalDocuments.forEach { (path, content) ->
+                assertEquals(content, zip.getInputStream(zip.getEntry(path)).bufferedReader().use { it.readText() })
+            }
             assertTrue(".ares/project.json" in entries)
             assertTrue("TeamCode/src/main/kotlin/Robot.kt" in entries)
             assertFalse(entries.any { it.startsWith(".ares/local/") })
             assertFalse(entries.any { it.startsWith(".ares/recovery/") })
             assertFalse(entries.any { it.startsWith(".ares/.") })
         }
+        val repeated = temporaryDirectory.resolve("repeated.aresproject.zip").toFile()
+        exporter.export(root.path, repeated.path)
+        assertTrue(destination.readBytes().contentEquals(repeated.readBytes()), "Unchanged project exports must be deterministic")
     }
 
     private fun canonicalProject(name: String): File = temporaryDirectory.resolve(name).toFile().apply {
@@ -87,4 +107,3 @@ class ProjectArchiveExporterTest {
         File(this, ".ares/project.json").writeText("{}")
     }
 }
-

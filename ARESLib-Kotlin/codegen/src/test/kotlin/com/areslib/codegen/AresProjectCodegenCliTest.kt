@@ -30,7 +30,10 @@ import com.areslib.tuning.TuningProfileDocument
 import com.areslib.tuning.TuningProfileDocumentCodec
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
@@ -435,8 +438,12 @@ class AresProjectCodegenCliTest {
         assertTrue(Files.isRegularFile(drivebaseOutput.resolve("GeneratedAresTuningConfig.kt")))
     }
 
-    @Test
-    fun `subsystem preview and subsystems only do not write drivebase or superstructure plumbing`() {
+    @ParameterizedTest
+    @CsvSource("false,false", "false,true", "true,false", "true,true")
+    fun `subsystem preview and subsystems only preserve unrelated outputs`(
+        previewSubsystemsOnly: Boolean,
+        existingOutputs: Boolean,
+    ) {
         val ares = Files.createDirectories(temporary.resolve(".ares"))
         val drivetrainRoot = Files.createDirectories(ares.resolve("drivetrains"))
         val tuningRoot = Files.createDirectories(ares.resolve("tuning"))
@@ -521,6 +528,17 @@ class AresProjectCodegenCliTest {
         val startersOutput = temporary.resolve("src/main/kotlin/starters")
         val generatedOutput = temporary.resolve("build/generated/subsystems")
         val generatedTestOutput = temporary.resolve("build/generated/subsystems-test")
+        val superstructureOutput = temporary.resolve("build/generated/superstructure")
+        val manifest = temporary.resolve("build/generated/ares/verification/ares-project-verification.json")
+        val protectedOutputs = listOf(output, drivebaseOutput.resolve("Keep.kt"),
+            superstructureOutput.resolve("Keep.kt"), manifest)
+        if (existingOutputs) {
+            protectedOutputs.forEach {
+                Files.createDirectories(it.parent)
+                Files.writeString(it, "Keep this existing output unchanged: ${it.fileName}")
+            }
+        }
+        val before = snapshotProjectFiles()
 
         val previewArgs = arrayOf(
             "--project", temporary.toString(),
@@ -533,20 +551,16 @@ class AresProjectCodegenCliTest {
             "--subsystems-generated-output", generatedOutput.toString(),
             "--subsystems-generated-test-output", generatedTestOutput.toString(),
             "--subsystems-package", "example.generated.subsystems",
-            "--subsystems-only",
+            "--superstructure-output", superstructureOutput.toString(),
             "--preview-subsystem-starters",
         )
 
-        AresProjectCodegenCli.run(previewArgs)
+        AresProjectCodegenCli.run(if (previewSubsystemsOnly) previewArgs + "--subsystems-only" else previewArgs)
 
-        assertFalse(Files.exists(drivebaseOutput), "Preview must not write drivebase outputs")
-        assertFalse(Files.exists(output), "Preview must not write project runtime output")
+        assertEquals(before, snapshotProjectFiles(), "Preview must preserve every existing file and create none")
         assertFalse(Files.exists(startersOutput), "Preview must not write subsystem starters")
         assertFalse(Files.exists(generatedOutput), "Preview must not write subsystem generated plumbing")
-        assertFalse(
-            Files.exists(temporary.resolve("build/generated/ares/verification/ares-project-verification.json")),
-            "Preview must not write verification manifest",
-        )
+        assertFalse(Files.exists(generatedTestOutput), "Preview must not write verification tests")
 
         val applyArgs = arrayOf(
             "--project", temporary.toString(),
@@ -559,6 +573,7 @@ class AresProjectCodegenCliTest {
             "--subsystems-generated-output", generatedOutput.toString(),
             "--subsystems-generated-test-output", generatedTestOutput.toString(),
             "--subsystems-package", "example.generated.subsystems",
+            "--superstructure-output", superstructureOutput.toString(),
             "--subsystems-only",
             "--apply-subsystem-starters",
         )
@@ -567,14 +582,19 @@ class AresProjectCodegenCliTest {
 
         assertTrue(Files.isRegularFile(startersOutput.resolve("arm/ArmState.kt")), "Apply must write subsystem starters")
         assertTrue(Files.exists(generatedOutput), "Apply must write subsystem generated plumbing")
-        assertFalse(Files.exists(drivebaseOutput), "Subsystems-only apply must not write drivebase outputs")
-        assertFalse(Files.exists(output), "Subsystems-only apply must not write project runtime output")
-        assertFalse(
-            Files.exists(temporary.resolve("build/generated/ares/verification/ares-project-verification.json")),
-            "Subsystems-only apply must not write verification manifest",
-        )
+        val after = snapshotProjectFiles()
+        before.forEach { (path, bytes) -> assertEquals(bytes, after[path], "Existing file changed: $path") }
+        val allowedRoots = listOf(startersOutput, generatedOutput, generatedTestOutput)
+        (after.keys - before.keys).forEach { path ->
+            assertTrue(allowedRoots.any { temporary.resolve(path).startsWith(it) }, "Unexpected write: $path")
+        }
     }
 
+    private fun snapshotProjectFiles(): Map<String, String> = Files.walk(temporary).use { paths ->
+        paths.filter(Files::isRegularFile).toList().associate {
+            temporary.relativize(it).toString() to java.util.Base64.getEncoder().encodeToString(Files.readAllBytes(it))
+        }
+    }
 
     private fun projectMetadata(): String = AresProjectMetadataCodec.encode(
         AresProjectMetadataDocument(

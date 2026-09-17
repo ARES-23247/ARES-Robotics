@@ -34,7 +34,7 @@ internal fun kotlinProjectContentHash(
     }
     request.projectMetadata?.let { record("project-metadata", AresProjectMetadataCodec.encode(it)) }
     record("catalog", CapabilityCatalogCodec.encode(request.catalog))
-    routines.sortedBy { it.documentId }.forEach { record("routine:${it.documentId}", AresRoutineCodec.encode(it)) }
+    routines.forEach { record("routine:${it.documentId}", AresRoutineCodec.encode(it)) }
     request.autonomousCatalog?.let { record("autonomous-catalog", AutonomousCatalogCodec.encode(it)) }
     request.controllerProfiles.sortedBy { it.documentId }.forEach {
         record("controller-profile:${it.documentId}", ControllerProfileCodec.encode(it))
