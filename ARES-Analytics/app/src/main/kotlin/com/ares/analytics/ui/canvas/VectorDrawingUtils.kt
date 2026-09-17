@@ -32,7 +32,7 @@ internal fun DrawScope.drawVectorArrow(
 ) {
     if (!start.x.isFinite() || !start.y.isFinite() || !end.x.isFinite() || !end.y.isFinite() ||
         !strokeWidth.isFinite() || strokeWidth < 0f || !arrowHeadLength.isFinite() || arrowHeadLength < 0f ||
-        !arrowHeadAngleRad.isFinite()) return
+        !arrowHeadAngleRad.isFinite() || arrowHeadAngleRad <= 0.0 || arrowHeadAngleRad >= Math.PI) return
     val dx = end.x.toDouble() - start.x
     val dy = end.y.toDouble() - start.y
     val lengthSq = dx * dx + dy * dy

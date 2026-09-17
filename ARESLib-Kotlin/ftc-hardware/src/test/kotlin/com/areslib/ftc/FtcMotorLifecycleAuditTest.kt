@@ -16,6 +16,22 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.*
 
 class FtcMotorLifecycleAuditTest {
+    @Test fun `voltage command applies motor power scale once after duty saturation`() {
+        RobotClock.useMockTime(1000)
+        val hardware = MockFtcMotorEx()
+        val motor = RevMotorController(hardware)
+        try {
+            motor.powerScale = 0.5
+            motor.setVoltage(6.0, 12.0)
+            assertEquals(0.25, hardware.power, 1e-12)
+            motor.setVoltage(24.0, 12.0)
+            assertEquals(0.5, hardware.power, 1e-12)
+            motor.setVoltage(-6.0, 12.0)
+            assertEquals(-0.25, hardware.power, 1e-12)
+            motor.setVoltage(6.0, 0.0)
+            assertEquals(0.0, hardware.power, 1e-12)
+        } finally { motor.close() }
+    }
     @AfterTest fun cleanup() {
         RevBulkDataReader.unregisterAll()
         RobotClock.useSystemTime()

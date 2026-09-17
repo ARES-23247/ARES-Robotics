@@ -340,6 +340,7 @@ object RobotFieldDocument {
  */
 object RobotFieldManager {
     // Default fallback layout
+    @Volatile
     var activeConfig: RobotFieldConfig = RobotFieldConfig(
         name = "Default FTC Field",
         fieldType = FieldType.FTC

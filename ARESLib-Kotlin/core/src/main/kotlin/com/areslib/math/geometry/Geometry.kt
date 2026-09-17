@@ -155,12 +155,15 @@ data class Pose2d(
 
     /** Transforms this pose by a local delta displacement and delta heading. */
     fun transformBy(deltaTranslation: Translation2d, deltaHeading: Rotation2d): Pose2d {
-        val rotatedDelta = deltaTranslation.rotateBy(heading)
-        return Pose2d(x + rotatedDelta.x, y + rotatedDelta.y, heading + deltaHeading)
+        val cos = heading.cos
+        val sin = heading.sin
+        val rotX = deltaTranslation.x * cos - deltaTranslation.y * sin
+        val rotY = deltaTranslation.x * sin + deltaTranslation.y * cos
+        return Pose2d(x + rotX, y + rotY, heading + deltaHeading)
     }
 
     /** Calculates 2D translational distance to another pose. */
-    fun distanceTo(other: Pose2d): Double = translation.distanceTo(other.translation)
+    fun distanceTo(other: Pose2d): Double = hypot(other.x - x, other.y - y)
 
     /**
      * Calculates the relative pose of this pose with respect to [other] as the reference origin frame.
@@ -173,8 +176,13 @@ data class Pose2d(
      * @return The relative pose in [other]'s coordinate frame.
      */
     fun relativeTo(other: Pose2d): Pose2d {
-        val deltaTrans = Translation2d(x - other.x, y - other.y).rotateBy(-other.heading)
-        return Pose2d(deltaTrans.x, deltaTrans.y, heading - other.heading)
+        val dx = x - other.x
+        val dy = y - other.y
+        val cos = other.heading.cos
+        val sin = other.heading.sin
+        val relX = dx * cos + dy * sin
+        val relY = -dx * sin + dy * cos
+        return Pose2d(relX, relY, heading - other.heading)
     }
 }
 

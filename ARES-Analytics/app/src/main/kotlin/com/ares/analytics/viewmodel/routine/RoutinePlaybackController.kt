@@ -34,18 +34,20 @@ internal class RoutinePlaybackController(
             }
             state.update { it.copy(isPlaying = true) }
             playbackJob = scope.launch {
-                var lastTime = System.currentTimeMillis()
+                var lastNs = System.nanoTime()
                 while (state.value.isPlaying) {
                     delay(16)
-                    val now = System.currentTimeMillis()
-                    val dt = (now - lastTime) / 1000.0
-                    lastTime = now
-                    val nextTime = state.value.playbackTime + dt
-                    if (nextTime >= state.value.estimatedDuration) {
-                        state.update { it.copy(playbackTime = state.value.estimatedDuration, isPlaying = false) }
-                        break
-                    } else {
-                        state.update { it.copy(playbackTime = nextTime) }
+                    val nowNs = System.nanoTime()
+                    val dt = ((nowNs - lastNs) / 1_000_000_000.0).coerceIn(0.0, 0.25)
+                    lastNs = nowNs
+                    state.update { current ->
+                        if (!current.isPlaying) return@update current
+                        val nextTime = current.playbackTime + dt
+                        if (nextTime >= current.estimatedDuration) {
+                            current.copy(playbackTime = current.estimatedDuration, isPlaying = false)
+                        } else {
+                            current.copy(playbackTime = nextTime)
+                        }
                     }
                 }
             }

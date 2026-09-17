@@ -45,7 +45,8 @@ fun Double.wrapToPi(): Double = wrapAngle(this)
 fun Double.wrapTo2Pi(): Double {
     if (!isFinite()) return 0.0
     val wrapped = this % TWO_PI
-    return if (wrapped < 0.0) wrapped + TWO_PI else wrapped
+    val res = if (wrapped < 0.0) wrapped + TWO_PI else wrapped
+    return if (res == 0.0) 0.0 else res
 }
 
 /** Converts this value from radians to degrees. */

@@ -162,6 +162,7 @@ class AutoImportService(
     }
 
     private suspend fun importLocalLogs(config: WorkspaceConfig) {
+        pruneStaleLocalObservations()
         val logsDirs = listOf(
             File(config.projectPath, "logs"),
             File(config.projectPath, "ftc-app/logs")
@@ -595,6 +596,19 @@ class AutoImportService(
         }
 
     // --- General Utility Methods ---
+
+    internal fun pruneStaleLocalObservations(): Int {
+        var removed = 0
+        val iterator = sourceObservations.keys.iterator()
+        while (iterator.hasNext()) {
+            val key = iterator.next()
+            if (key.startsWith("local:") && !File(key.removePrefix("local:")).exists()) {
+                iterator.remove()
+                removed++
+            }
+        }
+        return removed
+    }
 
     internal fun observeStableSource(sourceId: String, snapshot: SourceSnapshot): Boolean {
         return sourceObservations.put(sourceId, snapshot) == snapshot

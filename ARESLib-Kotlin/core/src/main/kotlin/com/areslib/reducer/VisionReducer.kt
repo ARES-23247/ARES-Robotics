@@ -33,14 +33,16 @@ object VisionReducer {
                 val validMeasurements = ArrayList<com.areslib.state.VisionMeasurement>(measurements.size)
                 for (i in 0 until measurements.size) {
                     val m = measurements[i]
-                    if (filterConfig.isValidConfiguration && (!m.ambiguityAvailable ||
+                    val pose = m.targetPose
+                    val validCoords = pose.x.isFinite() && pose.y.isFinite() && pose.z.isFinite()
+                    if (filterConfig.isValidConfiguration && validCoords && (!m.ambiguityAvailable ||
                         (m.ambiguity.isFinite() && m.ambiguity >= 0.0 && m.ambiguity <= filterConfig.maxAmbiguity))) {
                         validMeasurements.add(m)
                     }
                 }
 
                 if (validMeasurements.isEmpty()) {
-                    state.copy(hasTarget = action.measurements.isNotEmpty())
+                    state.copy(hasTarget = false)
                 } else {
                     // Retained Redux state must own every mutable measurement/pose. Hardware adapters
                     // may recycle their objects immediately after this dispatch returns.

@@ -311,7 +311,7 @@ internal class TelemetryRepository(
         require(offset >= 0) { "offset must not be negative" }
         if (keys.isEmpty()) return@withReadLock emptyList()
 
-        val normalizedKeys = keys.distinct().map(TelemetryMetricCatalog::normalizeTopic)
+        val normalizedKeys = keys.map(TelemetryMetricCatalog::normalizeTopic).distinct()
         val placeholders = normalizedKeys.joinToString(",") { "?" }
         val sql = """
             SELECT * FROM telemetry_frames
@@ -458,7 +458,7 @@ internal class TelemetryRepository(
                 statement.setLong(parameter++, after.sampleOrder)
                 statement.setLong(parameter++, after.timestampUs)
                 statement.setLong(parameter++, after.sampleOrder)
-                statement.setString(parameter++, after.key)
+                statement.setString(parameter++, TelemetryMetricCatalog.normalizeTopic(after.key))
             }
             statement.setInt(parameter, limit)
             statement.executeQuery().use { result ->

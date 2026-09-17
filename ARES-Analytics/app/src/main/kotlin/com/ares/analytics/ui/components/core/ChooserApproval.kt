@@ -14,10 +14,26 @@ internal data class ChooserEntry(
 
 internal fun readChooserDirectory(directory: File): List<ChooserEntry> {
     val files = directory.listFiles() ?: error("This folder could not be read: $directory")
-    return files.map { file ->
-        val attributes = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java)
-        ChooserEntry(file, attributes.isDirectory, attributes.lastModifiedTime().toMillis(), attributes.size(),
-            if (attributes.isDirectory) detectRobotFlavor(file) else null)
+    return files.mapNotNull { file ->
+        runCatching {
+            val path = file.toPath()
+            val attributes = try {
+                Files.readAttributes(path, BasicFileAttributes::class.java)
+            } catch (e: Exception) {
+                Files.readAttributes(path, BasicFileAttributes::class.java, java.nio.file.LinkOption.NOFOLLOW_LINKS)
+            }
+            ChooserEntry(
+                file = file,
+                directory = attributes.isDirectory,
+                modified = attributes.lastModifiedTime().toMillis(),
+                size = attributes.size(),
+                flavor = if (attributes.isDirectory) detectRobotFlavor(file) else null,
+            )
+        }.getOrElse {
+            if (file.exists()) {
+                ChooserEntry(file, file.isDirectory, file.lastModified(), file.length(), null)
+            } else null
+        }
     }
 }
 
@@ -50,7 +66,12 @@ internal fun approveChooserSelection(
         val effectiveName = if (extensions.isNotEmpty() && extensions.none { name.endsWith(".$it", true) }) {
             "$name.${extensions.first()}"
         } else name
-        val target = File(directory, effectiveName).canonicalFile
+        val requested = File(directory, effectiveName).absoluteFile.toPath().normalize()
+        require(requested.startsWith(directory.absoluteFile.toPath().normalize())) {
+            "Cannot save outside the current folder."
+        }
+        // Preserve an explicitly selected symlink; the canonical target is shown for overwrite approval.
+        val target = requested.toFile().canonicalFile
         validateChooserSaveTarget(target)
         if (target.exists()) ChooserAction.Overwrite(target) else ChooserAction.Selected(listOf(target))
     }
@@ -61,4 +82,3 @@ internal fun validateChooserSaveTarget(target: File) {
     require(!target.isDirectory) { "Select a file, not a folder." }
     require(target.parentFile?.isDirectory == true) { "The destination folder does not exist." }
 }
-

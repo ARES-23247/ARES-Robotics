@@ -54,8 +54,8 @@ fun SingleGamepadVisualizer(
     var btnLS by remember { mutableStateOf(false) }
     var btnRS by remember { mutableStateOf(false) }
 
-    when {
-        currentFrame != null && !keyboardControlEnabled -> {
+    if (currentFrame != null && !keyboardControlEnabled) {
+        LaunchedEffect(currentFrame, gamepadId) {
             lx = currentFrame.values["$gamepadId/LeftStick_X"] ?: 0.0
             ly = currentFrame.values["$gamepadId/LeftStick_Y"] ?: 0.0
             rx = currentFrame.values["$gamepadId/RightStick_X"] ?: 0.0
@@ -77,7 +77,8 @@ fun SingleGamepadVisualizer(
             btnLS = (currentFrame.values["$gamepadId/LeftStickButton"] ?: 0.0) > 0.5
             btnRS = (currentFrame.values["$gamepadId/RightStickButton"] ?: 0.0) > 0.5
         }
-        nt4ClientService != null && !keyboardControlEnabled -> {
+    }
+    else if (nt4ClientService != null && !keyboardControlEnabled) {
             // Collect in the LaunchedEffect itself so switching to local keyboard control
             // cancels this remote-telemetry writer immediately. Launching into a remembered
             // composition scope leaves the old collector alive, allowing remote zeroes and the
@@ -115,9 +116,8 @@ fun SingleGamepadVisualizer(
                 }
             }
         }
-    }
 
-    if (keyboardControlEnabled && (keyboardState != null || gamepadStateFlow != null)) {
+        if (keyboardControlEnabled && (keyboardState != null || gamepadStateFlow != null)) {
         LaunchedEffect(Unit) {
             while (true) {
                 val g = gamepadStateFlow?.value

@@ -4,6 +4,27 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class GeometryTest {
+    @Test
+    fun `pose operations agree with a known rotated field frame`() {
+        val origin = Pose2d(2.0, -1.0, Rotation2d(Math.PI / 2))
+        val moved = origin.transformBy(Translation2d(3.0, 4.0), Rotation2d(-Math.PI / 2))
+        assertEquals(-2.0, moved.x, 1e-12)
+        assertEquals(2.0, moved.y, 1e-12)
+        assertEquals(0.0, moved.heading.radians, 1e-12)
+        assertEquals(5.0, origin.distanceTo(moved), 1e-12)
+        val relative = moved.relativeTo(origin)
+        assertEquals(3.0, relative.x, 1e-12)
+        assertEquals(4.0, relative.y, 1e-12)
+        assertEquals(-Math.PI / 2, relative.heading.radians, 1e-12)
+    }
+
+    @Test
+    fun `translation division preserves nonzero scalar arithmetic`() {
+        assertEquals(Translation2d(1.0, -2.0), Translation2d(1e-16, -2e-16) / 1e-16)
+        val undefined = Translation2d(0.0, 1.0) / 0.0
+        org.junit.jupiter.api.Assertions.assertTrue(undefined.x.isNaN())
+        assertEquals(Double.POSITIVE_INFINITY, undefined.y)
+    }
 
     @Test
     fun testRotation2dWrapping() {

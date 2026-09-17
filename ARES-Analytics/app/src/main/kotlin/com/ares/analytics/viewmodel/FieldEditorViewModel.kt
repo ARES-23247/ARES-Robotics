@@ -40,6 +40,7 @@ import com.areslib.state.AprilTagMapFormat
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldValidator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,8 +59,6 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.atomic.AtomicLong
-
-
 
 /**
  * Single owner for field editor state and persistence.
@@ -220,6 +219,7 @@ class FieldEditorViewModel(
                     ))
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 if (generation == loadGeneration) {
                     _state.update {
                         it.copy(isLoading = false, errorMessage = error.message ?: "Failed to load field layout")
@@ -562,6 +562,7 @@ class FieldEditorViewModel(
                     )
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 _state.update { it.copy(simulatorStatus = "Simulator push failed: ${error.message}") }
             }
         }
@@ -635,6 +636,7 @@ class FieldEditorViewModel(
                     _state.update { it.copy(isDirty = false, saveStatus = "Saved field revision ${document.revision}") }
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 if (_state.value.document?.revision == document.revision) {
                     _state.update { it.copy(saveStatus = "Failed to save field: ${error.message}") }
                 }
@@ -656,6 +658,7 @@ class FieldEditorViewModel(
                     )
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 _state.update { it.copy(saveStatus = "Failed to import field image: ${error.message}") }
             }
         }
@@ -704,6 +707,7 @@ class FieldEditorViewModel(
                     it.copy(saveStatus = "Exported ${document.apriltags.size} AprilTag(s) to ${intent.destination.name}.")
                 }
             } catch (error: Exception) {
+                if (error is CancellationException) throw error
                 _state.update { it.copy(saveStatus = "AprilTag export failed: ${error.message}") }
             }
         }

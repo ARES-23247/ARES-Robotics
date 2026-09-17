@@ -4,6 +4,8 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.shared.models.SessionSummary
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -15,6 +17,14 @@ import com.areslib.networktables.NT4Instance
 import com.areslib.networktables.NT4Server
 import java.io.File
 import java.nio.ByteBuffer
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
+import java.net.ServerSocket
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -28,6 +38,32 @@ import kotlin.test.assertTrue
  * Nt4ClientServiceTest class.
  */
 class Nt4ClientServiceTest {
+    @Test
+    fun `silent websocket times out and reconnects until explicitly stopped`() = runBlocking {
+        val connections = AtomicInteger()
+        val port = ServerSocket(0).use { it.localPort }
+        val server = embeddedServer(CIO, host = "127.0.0.1", port = port) {
+            install(WebSockets)
+            routing {
+                webSocket("/nt/{client}", protocol = "v4.1.networktables.first.wpi.edu") {
+                    connections.incrementAndGet()
+                    for (ignored in incoming) { /* Deliberately no telemetry or time-sync replies. */ }
+                }
+            }
+        }.start(wait = false)
+        try {
+            nt4ClientService.start("127.0.0.1", "team", "season", "robot", port)
+            withTimeout(12_000) { while (connections.get() < 2) delay(25) }
+            assertTrue(nt4ClientService.stop())
+            val stoppedCount = connections.get()
+            delay(1_200)
+            assertEquals(stoppedCount, connections.get())
+            assertFalse(nt4ClientService.isConnected.value)
+        } finally {
+            nt4ClientService.stop()
+            server.stop(100, 1_000)
+        }
+    }
     @Test
     fun `packed drive acknowledgement decodes receiver ownership and applied command`() {
         val acknowledgement = decodeDriveInputAcknowledgement(
@@ -632,5 +668,29 @@ class Nt4ClientServiceTest {
         assertTrue(nt4ClientService.telemetryStore.history(frame.key).isEmpty())
         assertTrue(nt4ClientService.getActiveTopics().isEmpty())
         assertNull(withTimeoutOrNull(100) { nt4ClientService.uiTelemetryFlow.first() })
+    }
+
+    @Test
+    fun `simulator pose divergence logging is atomically rate-limited under concurrent dispatch`() = runBlocking(Dispatchers.Default) {
+        val frame = SimulatorPoseFrameSnapshot(
+            sequence = 1L,
+            trueX = 0.0, trueY = 0.0, trueHeading = 0.0,
+            ekfX = 5.0, ekfY = 5.0, ekfHeading = 0.0,
+            odomX = 0.0, odomY = 0.0, odomHeading = 0.0,
+            timestampMs = 1L,
+            timestampUs = 1_000L, targetEpoch = 1L
+        )
+
+        nt4ClientService.lastSimulatorPoseDivergenceLogNs.set(Long.MIN_VALUE)
+
+        val threadCount = 32
+        val logResults = (0 until threadCount).map {
+            async {
+                nt4ClientService.logSimulatorPoseDivergence(frame)
+            }
+        }.awaitAll()
+
+        val successCount = logResults.count { it }
+        assertEquals(1, successCount, "Exactly one concurrent thread must succeed in logging pose divergence")
     }
 }

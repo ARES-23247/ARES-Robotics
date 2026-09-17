@@ -14,29 +14,32 @@ internal class DesktopInstanceLock private constructor(
     val isHeld: Boolean get() = lock.isValid
 
     override fun close() {
-        runCatching {
-            lock.release()
-            randomAccessFile.close()
-        }.onFailure(Throwable::printStackTrace)
+        runCatching { lock.release() }.onFailure(Throwable::printStackTrace)
+        runCatching { randomAccessFile.close() }.onFailure(Throwable::printStackTrace)
     }
 
     companion object {
         /** Returns null when another instance holds the lock; the caller must exit quietly. */
-        fun tryAcquire(): DesktopInstanceLock? {
-            val lockDir = AppDataPaths.rootDirectory()
+        fun tryAcquire(lockDir: java.io.File = AppDataPaths.rootDirectory()): DesktopInstanceLock? {
             lockDir.mkdirs()
             val lockFile = java.io.File(lockDir, "app.lock")
             val randomAccessFile = java.io.RandomAccessFile(lockFile, "rw")
-            val lock = try {
-                randomAccessFile.channel.tryLock()
+            return try {
+                val lock = try {
+                    randomAccessFile.channel.tryLock()
+                } catch (e: java.nio.channels.OverlappingFileLockException) {
+                    null
+                }
+                if (lock == null) {
+                    runCatching(randomAccessFile::close)
+                    null
+                } else {
+                    DesktopInstanceLock(randomAccessFile, lock)
+                }
             } catch (e: Exception) {
-                null
-            }
-            if (lock == null) {
                 runCatching(randomAccessFile::close)
-                return null
+                throw e
             }
-            return DesktopInstanceLock(randomAccessFile, lock)
         }
     }
 }
@@ -48,7 +51,7 @@ internal class DesktopInstanceLock private constructor(
  */
 internal object DesktopCrashHandler {
     private val timestampFormatter = java.time.format.DateTimeFormatter
-        .ofPattern("yyyyMMdd-HHmmss")
+        .ofPattern("yyyyMMdd-HHmmss-SSS")
         .withZone(java.time.ZoneId.systemDefault())
 
     fun install(onFatalDesktopUiFailure: () -> Nothing) {
@@ -59,7 +62,12 @@ internal object DesktopCrashHandler {
                 logDir.mkdirs()
                 val timestamp = timestampFormatter.format(java.time.Instant.now())
                 val crashFile = java.io.File(logDir, "crash-$timestamp.log")
-                java.io.PrintWriter(java.io.FileWriter(crashFile)).use { writer ->
+                java.io.PrintWriter(
+                    java.io.OutputStreamWriter(
+                        java.io.FileOutputStream(crashFile, true),
+                        java.nio.charset.StandardCharsets.UTF_8
+                    )
+                ).use { writer ->
                     writer.println("Thread: ${thread.name}")
                     writer.println("Timestamp: ${java.time.Instant.now()}")
                     writer.println("Exception: ${throwable.message}")

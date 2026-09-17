@@ -98,6 +98,39 @@ class GoogleDriveDestinationTest {
     }
 
     @Test
+    fun `escapeDriveQuery properly escapes backslashes and single quotes for Google Drive queries`() {
+        assertEquals("Robotics", escapeDriveQuery("Robotics"))
+        assertEquals("Dave\\'s Team", escapeDriveQuery("Dave's Team"))
+        assertEquals("Path\\\\With\\\\Backslash", escapeDriveQuery("Path\\With\\Backslash"))
+        assertEquals("Dave\\'s\\\\Special\\'Folder", escapeDriveQuery("Dave's\\Special'Folder"))
+    }
+
+    @Test
+    fun `findFiles properly escapes single quotes with backslash in Drive query`() = runTest {
+        var observedQuery: String? = null
+        val client = driveClient { request ->
+            val id = request.url.encodedPath.substringAfterLast('/')
+            if (id == "team-a-root-01") {
+                metadata(id, "Team A", parents = emptyList())
+            } else {
+                observedQuery = request.url.parameters["q"]
+                respond("""{"files":[{"id":"file-123"}]}""", HttpStatusCode.OK, jsonHeaders())
+            }
+        }
+        val fixture = fixture(client, destination(rootId = "team-a-root-01"))
+        try {
+            val files = fixture.service.findFiles("Dave's Match Log.parquet", "team-a-root-01")
+            assertEquals(listOf("file-123"), files)
+            assertEquals(
+                "name = 'Dave\\'s Match Log.parquet' and 'team-a-root-01' in parents and trashed = false",
+                observedQuery,
+            )
+        } finally {
+            fixture.close()
+        }
+    }
+
+    @Test
     fun `create team folder binds stable id account and team collaboration mode`() = runTest {
         val client = driveClient { request ->
             when (request.method) {

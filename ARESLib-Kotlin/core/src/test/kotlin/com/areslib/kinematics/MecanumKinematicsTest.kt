@@ -6,6 +6,15 @@ import kotlin.test.assertEquals
 
 class MecanumKinematicsTest {
 
+    @Test
+    fun `infinite speed limit leaves finite wheel commands unchanged`() {
+        val commands = doubleArrayOf(2.0, -1.0, 0.5, -3.0)
+        MecanumKinematics.normalize(commands, Double.POSITIVE_INFINITY)
+        kotlin.test.assertContentEquals(doubleArrayOf(2.0, -1.0, 0.5, -3.0), commands)
+        assertEquals(MecanumWheelSpeeds(2.0, -1.0, 0.5, -3.0),
+            MecanumWheelSpeeds(2.0, -1.0, 0.5, -3.0).normalize(Double.POSITIVE_INFINITY))
+    }
+
     private val kinematics = MecanumKinematics(trackWidthMeters = 0.5, wheelBaseMeters = 0.5)
 
     @Test

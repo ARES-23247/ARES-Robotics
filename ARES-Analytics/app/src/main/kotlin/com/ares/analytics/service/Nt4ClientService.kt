@@ -82,7 +82,7 @@ open class Nt4ClientService(
     private val _robotLighting = MutableStateFlow(RobotLightingTelemetryState())
     /** One normalized lighting state shared by the dashboard card and field renderer. */
     val robotLighting: StateFlow<RobotLightingTelemetryState> = _robotLighting.asStateFlow()
-    @Volatile private var lastSimulatorPoseDivergenceLogNs = Long.MIN_VALUE
+    internal val lastSimulatorPoseDivergenceLogNs = java.util.concurrent.atomic.AtomicLong(Long.MIN_VALUE)
 
     init {
         serviceScope.launch(start = CoroutineStart.UNDISPATCHED) {
@@ -597,19 +597,18 @@ open class Nt4ClientService(
      * Leaves one rate-limited breadcrumb when a simulator publishes localization sources that are
      * visibly far apart. This distinguishes a producer/EKF defect from downstream UI staleness.
      */
-    private fun logSimulatorPoseDivergence(frame: SimulatorPoseFrameSnapshot) {
+    internal fun logSimulatorPoseDivergence(frame: SimulatorPoseFrameSnapshot): Boolean {
         val ekfErrorM = hypot(frame.ekfX - frame.trueX, frame.ekfY - frame.trueY)
         val odomErrorM = hypot(frame.odomX - frame.trueX, frame.odomY - frame.trueY)
         if (ekfErrorM <= SIMULATOR_POSE_DIVERGENCE_LOG_THRESHOLD_M &&
             odomErrorM <= SIMULATOR_POSE_DIVERGENCE_LOG_THRESHOLD_M
-        ) return
+        ) return false
 
         val nowNs = System.nanoTime()
-        if (lastSimulatorPoseDivergenceLogNs != Long.MIN_VALUE &&
-            nowNs - lastSimulatorPoseDivergenceLogNs < SIMULATOR_POSE_DIVERGENCE_LOG_INTERVAL_NS
-        ) return
+        val last = lastSimulatorPoseDivergenceLogNs.get()
+        if (last != Long.MIN_VALUE && nowNs - last < SIMULATOR_POSE_DIVERGENCE_LOG_INTERVAL_NS) return false
+        if (!lastSimulatorPoseDivergenceLogNs.compareAndSet(last, nowNs)) return false
 
-        lastSimulatorPoseDivergenceLogNs = nowNs
         println(
             "[SimulatorPoseFrame] divergence sequence=${frame.sequence}, " +
                 "ekfErrorM=$ekfErrorM, odomErrorM=$odomErrorM, " +
@@ -617,6 +616,7 @@ open class Nt4ClientService(
                 "ekf=(${frame.ekfX}, ${frame.ekfY}, ${frame.ekfHeading}), " +
                 "odom=(${frame.odomX}, ${frame.odomY}, ${frame.odomHeading})"
         )
+        return true
     }
 
     suspend fun publishDouble(key: String, value: Double) {

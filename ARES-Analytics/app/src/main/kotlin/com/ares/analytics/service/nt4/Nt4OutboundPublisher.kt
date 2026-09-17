@@ -59,8 +59,8 @@ internal class Nt4OutboundPublisher(
         driveFramePublishMutex.withLock { driveFrameValidator.reset() }
         serverTimeOffsetUs = null
         bestClockRoundTripUs = Long.MAX_VALUE
-        session = connectedSession
         connectionId = connectionCounter.incrementAndGet()
+        session = connectedSession
     }
 
     fun detach(connectedSession: DefaultClientWebSocketSession) {
@@ -93,6 +93,7 @@ internal class Nt4OutboundPublisher(
         session?.send(Frame.Binary(true, buffer))
     }
 
+    @Synchronized
     fun acceptTimeSyncReply(serverTimestampUs: Long, sentAtUs: Long) {
         val receivedAtUs = monotonicTimeUs()
         val roundTripUs = receivedAtUs - sentAtUs

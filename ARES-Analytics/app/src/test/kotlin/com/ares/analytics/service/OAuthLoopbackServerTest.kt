@@ -45,4 +45,35 @@ class OAuthLoopbackServerTest {
             scope.cancel()
         }
     }
+
+    @Test
+    fun `boot failure on port collision stops candidate and leaves server detached`() {
+        val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+        val lifecycleLock = Any()
+        val generation = 1L
+        val server = OAuthLoopbackServer(lifecycleLock, scope, { null }, { _, _, _ -> })
+        val occupyingSocket = ServerSocket(0)
+        val occupiedPort = occupyingSocket.localPort
+        try {
+            val exception = assertThrows(Exception::class.java) {
+                server.boot(occupiedPort, generation) { it == generation }
+            }
+            assertTrue(
+                exception.stackTraceToString(),
+                generateSequence(exception as Throwable) { it.cause }.any {
+                    it is java.net.BindException || it.message?.contains("Failed to bind", ignoreCase = true) == true
+                }
+            )
+            assertNull(server.detach())
+            occupyingSocket.close()
+            server.boot(occupiedPort, generation) { it == generation }
+            val request = HttpRequest.newBuilder(URI("http://127.0.0.1:$occupiedPort/callback"))
+                .timeout(Duration.ofSeconds(5)).GET().build()
+            assertEquals(200, HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).statusCode())
+        } finally {
+            occupyingSocket.close()
+            server.stop()
+            scope.cancel()
+        }
+    }
 }

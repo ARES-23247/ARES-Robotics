@@ -21,4 +21,4 @@ for case in range(24):
         rows.append(",".join(str(v) for v in values))
 path = Path(__file__).resolve().parents[1] / "ARESLib-Kotlin/core/src/test/resources/vision/cluster-reference.csv"
 path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+path.write_bytes(("\n".join(rows) + "\n").encode("utf-8"))

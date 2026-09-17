@@ -17,6 +17,11 @@ $release = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $manifest)
 foreach ($required in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'xrpStarterVersion', 'lightbotExampleVersion', 'biobuzzExampleVersion', 'githubMavenRepository')) {
     if ([string]::IsNullOrWhiteSpace($release[$required])) { throw "Release manifest is missing $required." }
 }
+foreach ($vKey in @('aresVersion', 'studioVersion', 'ftcStarterVersion', 'frcStarterVersion', 'xrpStarterVersion', 'lightbotExampleVersion', 'biobuzzExampleVersion')) {
+    if ($release[$vKey] -notmatch '^\d+\.\d+\.\d+$') {
+        throw "Property $vKey in release/ares-versions.properties must be a valid semver: $($release[$vKey])"
+    }
+}
 $aresSourceTreePath = Join-Path $root 'release/ares-source-tree.txt'
 if (-not (Test-Path -LiteralPath $aresSourceTreePath -PathType Leaf)) {
     throw 'Canonical ARES source-tree identity is missing.'
@@ -39,6 +44,15 @@ foreach ($retiredHash in @('ftcStarterSha256', 'frcStarterSha256', 'xrpStarterSh
 $starterArtifactsPath = Join-Path $root 'release/starter-artifacts.properties'
 if (-not (Test-Path -LiteralPath $starterArtifactsPath)) { throw 'Starter artifact manifest is missing.' }
 $starterArtifacts = ConvertFrom-StringData (Get-Content -Raw -LiteralPath $starterArtifactsPath)
+$allowedArtifactKeys = @(
+    'ftcStarterSha256', 'frcStarterSha256', 'xrpStarterSha256',
+    'lightbotExampleSha256', 'biobuzzExampleSha256'
+)
+foreach ($key in $starterArtifacts.Keys) {
+    if ($key -notin $allowedArtifactKeys) {
+        throw "Unexpected key '$key' in release/starter-artifacts.properties."
+    }
+}
 foreach ($league in @('ftc', 'frc', 'xrp')) {
     $hashKey = "${league}StarterSha256"
     $expectedHash = $starterArtifacts[$hashKey]
@@ -162,7 +176,7 @@ foreach ($component in @('ARESLib-Kotlin', 'ARES-FTC', 'ARES-FRC', 'ARES-FTC-Sta
     }
 }
 $localLauncher = Get-Content -Raw -LiteralPath (Join-Path $root 'ARES-Analytics/scripts/run-local-ares.ps1')
-if ($localLauncher -notmatch 'release\\ares-versions\.properties' -or $localLauncher -match 'ARESLib.*gradle\.properties') {
+if ($localLauncher -notmatch 'release[\\/]ares-versions\.properties' -or $localLauncher -match 'ARESLib.*gradle\.properties') {
     throw 'The local Studio launcher must derive its candidate base version from the canonical release manifest.'
 }
 

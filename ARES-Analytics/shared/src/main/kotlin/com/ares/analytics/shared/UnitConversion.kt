@@ -73,6 +73,7 @@ object UnitConversion {
         if (from == to) return value
         if (value.isNaN()) return Double.NaN
         if (value.isInfinite()) return value
+        require(from.factorToBase > 0.0 && to.factorToBase > 0.0) { "Conversion factors must be strictly positive" }
 
         if (from.category == UnitCategory.TEMPERATURE) {
             val celsius = when (from) {
@@ -116,6 +117,8 @@ object UnitConversion {
             lowerKey.contains("kelvin") -> RobotUnit.KELVIN
             lowerKey.contains("temp") || lowerKey.contains("celsius") -> RobotUnit.CELSIUS
             lowerKey.contains("rpm") -> RobotUnit.RPM
+            lowerKey.contains("degpersec") || lowerKey.contains("deg_per_sec") || lowerKey.contains("deg/s") -> RobotUnit.DEG_PER_SEC
+            lowerKey.contains("radpersec") || lowerKey.contains("rad_per_sec") || lowerKey.contains("rad/s") -> RobotUnit.RAD_PER_SEC
             (lowerKey.contains("velocity") || lowerKey.contains("vel")) && isAngular -> RobotUnit.RAD_PER_SEC
             lowerKey.contains("velocity") || lowerKey.contains("vel") -> RobotUnit.METER_PER_SEC
             degreeWord.containsMatchIn(spaced) -> RobotUnit.DEGREE

@@ -169,4 +169,26 @@ class AresFileChooserStateTest {
             }
         }
     }
+
+    @Test fun folderCreationRejectsForbiddenCharactersAndReservedNames() = withState(AresFileChooserMode.DIRECTORY) { root, state, _ ->
+        state.newFolderName = "invalid:name"
+        state.createFolder()
+        state.awaitIdle()
+        assertNotNull(state.errorText)
+        assertEquals(root, state.currentDirectory)
+
+        state.newFolderName = "CON"
+        state.createFolder()
+        state.awaitIdle()
+        assertNotNull(state.errorText)
+        assertEquals(root, state.currentDirectory)
+    }
+
+    @Test fun saveFileRejectsPathTraversalOutsideCurrentDirectory() = withState(AresFileChooserMode.SAVE_FILE) { root, state, results ->
+        state.fileNameInput = "../escaped.json"
+        state.handleApprove()
+        state.awaitIdle()
+        assertTrue(results.isEmpty(), "Approval must be rejected for path traversal")
+        assertNotNull(state.errorText)
+    }
 }

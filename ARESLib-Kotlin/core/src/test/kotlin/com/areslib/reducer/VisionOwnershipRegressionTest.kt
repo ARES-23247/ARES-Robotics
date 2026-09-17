@@ -12,6 +12,24 @@ import kotlin.test.assertEquals
 
 class VisionOwnershipRegressionTest {
     @Test
+    fun `invalid batch clears target availability without replacing retained valid history`() {
+        val valid = VisionMeasurement(timestampMs = 10L, ambiguity = 0.1)
+        val retained = VisionReducer.reduce(VisionState(),
+            RobotAction.VisionMeasurementsReceived(listOf(valid), 10L))
+        kotlin.test.assertTrue(retained.hasTarget)
+        for (rejected in listOf(
+            valid.copy(targetPose = Pose3d(Translation3d(Double.NaN, 0.0, 0.0))),
+            valid.copy(ambiguity = 1.0, ambiguityAvailable = true),
+        )) {
+            val next = VisionReducer.reduce(retained,
+                RobotAction.VisionMeasurementsReceived(listOf(rejected), 20L))
+            kotlin.test.assertFalse(next.hasTarget)
+            assertEquals(retained.measurements, next.measurements)
+            assertEquals(10L, next.lastTargetTimestampMs)
+        }
+    }
+
+    @Test
     fun `reducer snapshots pooled measurement and nested pose objects`() {
         val measurement = VisionMeasurement(
             timestampMs = 10L,
