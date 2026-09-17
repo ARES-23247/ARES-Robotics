@@ -50,7 +50,30 @@ consumers use candidate `19.1.2-rc.review778ca715b.1` from that worktree's absol
 - Full ARESLib `test apiCheck publishReleaseValidation`: 3,085 tests, no failures or skips.
   The pre-fix failures and XML results are saved under `library-regressions-before.log` and `before/`.
 - Tooling `python -m unittest discover -s scripts/tests`: 107 tests passed.
-- Studio, robot consumers, rendered desktop, policy, and package validation: pending completion.
+- FTC: 190 tests; FRC: 306; FTC starter: 17; FRC starter: 206. All passed without skips.
+  FTC checks also assembled APKs. The exported BioBuzz consumer passed 34 robot and 11 simulator
+  tests, generated-project verification, and APK assembly from the canonical starter/season overlay.
+- Studio shared: 37 tests passed; gateway: 18 passed. The first complete app run executed 2,662
+  tests with six existing opt-in skips and three failures: actual OAuth bind handling, its uncaught
+  exception contaminating the next test, and the chooser traversal assertion. After correction,
+  the affected OAuth, export, and chooser suites passed all 15 checks without skips. The full
+  release pipeline must repeat the complete suite and coverage gates on the final candidate.
+  The real NT4 silence/reconnect test and both new dashboard composition tests passed in the full run.
+- Dashboard smoke and baseline gates passed: all 12,000 expected frames persisted, zero drops,
+  about 231,637 frames/s ingestion, query p95 16.12 ms, replay-scrub p95 27.52 ms, and heap growth
+  5.81 MiB. Smoke limits are 1,000 frames/s minimum, query p95 1,000 ms, scrub p95 2,000 ms,
+  heap growth 256 MiB, and zero drops; the checked-in comparative baseline also passed. These are
+  desktop service measurements, not robot loop times or a measured before/after improvement.
+- Two native Windows launches rendered the onboarding UI at 1424 by 861 pixels. Both reached
+  settled presentation, captured the exact owned window, handled WM_CLOSE, exited, and removed
+  their isolated runtime snapshots. No other task's process was stopped. Rendered component
+  tests separately cover the changed dashboard source ownership.
+- Monorepo source policy, instruction/link checks, and the maintainability ratchet passed.
+
+Intermediate setup failures (missing local Android SDK configuration and the new test's WebSocket
+server dependency) were corrected before the consumer runs. The source-policy guard correctly
+required a committed library tree before validating its identity. Assertions, timing budgets,
+required checks, and release protections were not relaxed.
 
 Studio advances to 7.0.62; ARESLib to 19.1.2. Rebuilt archives are FTC/FRC starters 19.1.3,
 XRP starter 3.0.62, Lightbot 3.0.64, and BioBuzz 1.1.4. Canonical manifests, embedded archives,

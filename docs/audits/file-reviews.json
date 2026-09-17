@@ -274,13 +274,12 @@
       ]
     },
     ".github/workflows/build-distributions.yml": {
-      "sha256": "ff70c1dcfbc002a093ca3d713ee53457b340ea3b291c19898815e155b8cfbf0c",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: GitHub Actions CI workflow for release artifacts, distribution packaging, and multi-platform build verification.",
+      "sha256": "89b1dc2c16d477102d33d4d62c7406a36da481e4590a7555e5f6e32f93d64482",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        ".github/workflows/build-distributions.yml",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -497,12 +496,12 @@
       ]
     },
     "ARES-Analytics/app/build.gradle.kts": {
-      "sha256": "991f0f06fffedfbc0ce5adeb7deb9b396874f92095aef561ac0b94b84e39d0c1",
-      "review": "reviewed",
+      "sha256": "a69665818b7721a0f2eb5f81f51ccdb300ac7746dd9db51cacb8821ea6d2386c",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Desktop application Gradle configuration: verified Compose Multiplatform 1.12.0 and Kotlin 2.4.10 setup, DuckDB JDBC, Ktor client/server, JGit, JNA credential protection, LWJGL gamepad native bindings, dynamic BuildConfig generation from canonical release properties, brand asset verification task, runtime classpath snapshot isolation preventing classloader corruption during external rebuilds, native packaging (MSI/DMG/DEB) with upgrade UUID a3e52324-7000-4224-8700-1c7b8d9e2a3c, explicit jlink module inclusions (java.sql, java.naming, java.management, jdk.unsupported), and performance validation test profiles (dashboardSmoke, dashboardSoak, simulatorControlSoak).",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass291-pending-elevation-audit.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/Main.kt": {
@@ -524,14 +523,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/DesktopInstanceLock.kt": {
-      "sha256": "4cda2078afd7a98d46b97d5edab767d8b0f2fd8bd7d4578f177713f4357d57d5",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified single-instance OS file lock implementation over ~/.ares-analytics/app.lock using FileChannel.tryLock(). Verified automatic kernel cleanup on JVM death, safe close handling, and DesktopCrashHandler uncaught exception logging to disk with immediate process exit if uncaught exception strikes AWT-EventQueue to avoid orphan lock retention.",
+      "sha256": "7740eef194f0a3070ba3ffed5a8d1616b13d9d29d60d1fd23e2d897d5581d39a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -952,13 +949,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/AutoImportService.kt": {
+      "sha256": "6dcaff60201ddb9740bc68b4e14e1b03923f3bdab4d7fd9f9f82497e54ec03a8",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release review of local source insertion/deletion keys and stability gate, including companion-key consistency. Real CSV/database regression fails before correction and passes afterward. Full remote/quarantine behavior was not re-audited.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_61_REVIEW.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "3202f0b076ea0936d17f3ab32573a20e3383b56ba68ca4f78ed09b41e95b764c",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -1382,13 +1379,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleDrivePickerCoordinator.kt": {
-      "sha256": "19b42780b7981da87b91cb88d522ae463715f9e9b3702ec12f5534adc292045b",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Coordinator for Google Drive folder selection and OAuth token injection into webview picker. Validates state token CSRF protection and generation matching.",
+      "sha256": "2a4857c66e62a1c3f1494f09470d154af399be3b3e93337202030a4b5ab86277",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleDriveService.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -1408,15 +1404,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/GoogleDriveService.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified Google Drive API v3 cloud backup and session sync integration. Validated chunked/streaming uploads (createFileStreaming) and bounded streaming downloads (readFileStreaming) with SHA-256 integrity checks. Verified escapeDriveQuery preventing query injection, MAX_DRIVE_ANCESTRY_DEPTH preventing folder graph cycles, dispose() lifecycle teardown closing Ktor CIO HttpClient, and non-blocking offline-first behavior.",
+      "sha256": "2b2f32cc0c8467ae40e78293c8f325093c69b6b5741e6cdf5cd844054ed0e77f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveServiceIntegrityTest.kt",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveDestinationTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "884889aebe51e316d9109a533bf38e80dc175594fd40c32dc58a6a73a5bb5e57",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -1633,13 +1627,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt": {
+      "sha256": "30448643c95e93e338e2d126fc45173aef3fa995af936f9b1c12b3f246786df0",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release diff review of volatile diagnostic timestamp and affected dispatch/lifecycle integration. Local client, shutdown, and loopback tests passed. No full-file or atomic logging-rate guarantee.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_61_REVIEW.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "61104c87ec6d2b4e0ed371c968b53dcd829f9e7fe366fe7f32d8eeb704f28c5b",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -1703,13 +1697,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthLoopbackServer.kt": {
-      "sha256": "0de8e1a3a5873fd40b040a9d36d33a4d57d9f16062dcc2459ead1cde8d9eec23",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Embedded loopback HTTP callback server for OAuth 2.0 PKCE authentication. Binds strictly to 127.0.0.1, validates authorization codes, enforces generation freshness, and consumes pending requests atomically.",
+      "sha256": "8ccca612374f0d8c8e43c552377a7e8775890a1d21f02522ca0e9f4f30e06674",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthLoopbackServerTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -1756,14 +1749,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthService.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified Google OAuth 2.0 PKCE authentication flow and token management. Validated loopback callback server binding exclusively to 127.0.0.1, random state parameter CSRF validation, PlatformOAuthTokenStore delegation to OS credential vault (DPAPI/Keychain/SecretService), token refresh with skew tolerance, and safe offline startup handling without token revocation.",
+      "sha256": "34db1cc29e785dd04c7118c5a460fc474bb7a4974d6ec427e96acb4c6e3ffac4",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthServiceTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "58cdfc46ae38a81a3f83adb11943fb162d6dc5bdd35843ed18fcb12de13a130b",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -2591,20 +2583,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryRepository.kt": {
-      "sha256": "eabc502c5b60abca0143813ad4bb2f336e0d04ce234a0e6246b2affea5101e93",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated lines 1-630: executeNativeCsvImport, insertTelemetryFrames, insertTelemetryFramesAppender, getSessionTimestampRange, getTelemetryRange, getLatestTelemetryBefore, getTelemetryRangeBatched, countTelemetryFrames, getTelemetryForKey, getTelemetrySeries, getTelemetryPageForKeys, getTelemetryExportPreflight, getTelemetryExportValueTypes, getTelemetryExportPage, getTelemetryForFilters, getDistinctTelemetryKeys, getTelemetryForKeyPatterns, getDistinctTimestamps, countTimestampGaps, deleteTelemetryFrames, pruneTelemetryFrames, and getTelemetryDensity. Verified zero-GC high-throughput ingestion via native DuckDB Appender API, ephemeral vs persistent connection routing by session ID, atomic sample ordering via AtomicLong, min/max viewport downsampling via ARG_MIN/ARG_MAX, stable cursor pagination, strict topic normalization, and parameter-bound queries.",
+      "sha256": "ab42a3c282028cc79cae92881eb9223475a9bcc46a3cb125d34deb6fc15d162e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass24-before.log",
-        "ARESLib-Kotlin/build/audit-pass24-focused.log",
-        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
-        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
-        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass24-policy.log",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -2929,13 +2913,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4ConnectionLifecycle.kt": {
+      "sha256": "f7f128bb32eca8d9486603d00df117ce6c0fb7317e64d833c5eb53dd6d15136c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release diff review of inactive HTTP-client closure and surrounding start/stop/retry ownership. Existing shutdown and loopback checks passed. No independently measured engine-leak claim.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_61_REVIEW.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "9b312f564a8bbce4ca6111ed09d435f8b3674c4cf9244ebbbd584ff08a46e327",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -2969,16 +2953,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4OutboundPublisher.kt": {
-      "sha256": "c49e851113a7dd27f0fb6e87521c0c18c62c3f1945ebe15f1e5c869e7e467ed3",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated lines 1-333: attach, detach, fixedPublishMessage, dynamicPublishMessages, sendTimeSyncRequest, acceptTimeSyncReply, nextDriveSessionNonce, publishDriveFrame, publishDouble, publishBoolean, publishString, publishTuningRequest, encodeNt4BinaryUpdate, ensurePublisher, publishInputDouble, publishInputString, publishInputDoubleArray, and sendBinaryUpdate. Verified zero-allocation hot path in 50 Hz control loop via ThreadLocal buffers (publishDoubleBuffer, publishDoubleArrayBuffer), synchronous DriveFrameContractValidator checks under driveFramePublishMutex, monotonic clock translation, server receipt timestamp (0L) semantics for command/tuning reliability across paused simulator clocks, string payload length limits (<= 65,536 bytes), atomic tuning request encoding (value + nonce in single frame), and thread-safe dynamic publisher caching.",
+      "sha256": "32ce5fc610a71e324eadf8b105f3fae6d433452e1b93a85c18a9879d6c0c60b0",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -3428,15 +3408,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/canvas/VectorDrawingUtils.kt": {
-      "sha256": "190696144caadc0f48c26249339c6a4f467ee275903e96c38110df69a9580bb1",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full arrow helper and current call sites: correct rear-facing wings, open/filled branch, short-vector no-op, finite/style/wing guards and widened coordinate subtraction. Actual offscreen raster tests pass. Current callers use open heads. No Studio-window, extreme renderer color-space or physical-display claim.",
+      "sha256": "5be4791b5bad8006399874f63507121c9eca9fc8e228e41aaf2a2198ca1915ac",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -3536,14 +3513,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/cloud/CloudComponents.kt": {
-      "sha256": "19aace24f48d5f2304af29fc365c2c431e01de88f189e32271b440cb87a52318",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited cloud synchronization indicators and confirmation dialogs. Verified `CloudDeletionConfirmationDialog` safety requirement enforcing a minimum 16-character confirmation token before allowing remote file deletion on physical robot hardware, plus sync status chips.",
+      "sha256": "c963dae43ef012a50d4ab00df5702ba0722115d68ec136898718923eae727d27",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -3643,14 +3618,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresDialog.kt": {
-      "sha256": "bde389eb7f7c137b917b79fc47fe3085dc33c1aa2dd62f14194016b9ba86a868",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited modal dialog container with `AresDialogVariant` (DEFAULT, DESTRUCTIVE, WARNING, INFO). Verified modal barrier dismissibility, keyboard Escape dismissal, primary/secondary action focus order, and destructive action color tokens.",
+      "sha256": "91bfc544e94584f7ae17fd4965ea8ea467a56304f7f9566b35415bcbb39187ae",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -3757,14 +3730,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresFileChooserState.kt": {
-      "sha256": "63b77934d70286fcf7b8aaa2fcd4111db00665446afc73b26792284b49b5dff2",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited file chooser coroutine state machine. Verified offloading disk I/O to `Dispatchers.IO`, race condition protection using monotonic request IDs, and hidden/system file filtering policies.",
+      "sha256": "038be19bd25900cbb3b0a8e547e268176f632ab5045811f5a6edcbe2bc93483b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -3846,12 +3817,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/ChooserApproval.kt": {
-      "sha256": "18ed84df7687d237e1474dd394b8cc535d5d0704087cde98a2ddbc5d6e63da46",
-      "review": "reviewed",
+      "sha256": "1142a4b3244c758a57b40c3c73010b81b7a4021a88ddb199ad2882fd52cf6f5f",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Audited file chooser approval and validation engine. Verified file extension auto-appending, path security checks against parent escaping, and overwrite decision branches.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "runtimeAuditSubmission": {
         "evidence": [
@@ -3990,14 +3961,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/BatteryHealthCard.kt": {
-      "sha256": "f8698db4ace6cf7df9bc24aaf429ef6ce7984b63f4b4fbe0435fbc44042a624d",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited battery voltage and health diagnostics widget. Verified real-time voltage tracking, sag history, brownout risk warning thresholds (e.g. < 11.5V warning, < 9.5V critical), and zero-allocation metric row updates.",
+      "sha256": "eda87dcfe0b510ea708dc534e449d2d3ce7698cc69f001f8dc8258fa12b9a9a1",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -4034,14 +4003,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ConsoleViewer.kt": {
-      "sha256": "103ec26ec0337057c91bab88a48d752bd172ab23b0ac599f20a850c313203cdf",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Audited live and replay console log viewer. Verified regex and severity level filtering, auto-scroll pinning, log export to text file, and virtualization via LazyColumn.",
+      "sha256": "a4d10b5049b14019ad9dc656c3e63cd815ea55151e51d2231d0be8a46ac3c092",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -4079,15 +4046,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ControllerHealthObservation.kt": {
-      "sha256": "75cd3183a7be2b82dc425d04430cf03beccabb54ca2f190e7dd4f1732f5afa1a",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Entire bounded tracker, live flow, resolver and Compose hook reviewed. 32 new pass tests include per-topic expiry, signed time wrap/backward unknown age, target reset/validation race, retained-frame rejection, 10000-frame publication bounds, cancellation and actual Compose source transitions. 53/54 lines, 58/66 branches; 100ms presentation latency and upstream freshness/atomicity limits documented.",
+      "sha256": "fcab43fb440b8d9d908e486fb6f6615e5bdde996dd2ceee8b2e5604bbe36c148",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass27-studio-final.log",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -4539,14 +4503,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SingleGamepadVisualizer.kt": {
-      "sha256": "3241cc70e4e92c177f92b58b9d96716cc0006acc160d073f6f53fd6dc7797802",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated gamepad input visualizer for axes, triggers, and buttons; verified stick deadband handling, canvas rendering of PS4/Xbox controller geometry, and responsive keyboard/gamepad emulation.",
+      "sha256": "eb32ba3524c2caeca339e7787535fba71297d3b18262ef6b4495e9b203615362",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -4693,14 +4655,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/VisionQualityCard.kt": {
-      "sha256": "f84d38470e90c718363571aa6f599dea1e4b38ddd1a941705c038811d61d8419",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated vision pipeline diagnostics, tag detection count, ambiguity percentage, camera latency, and innovation threshold canvas drawing (dashed line at +/- 5cm threshold).",
+      "sha256": "7f3b99544c17562464419b3b61fdc06c80fff70cc469913480a0e9b0e1c25731",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -4900,15 +4860,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasUtils.kt": {
-      "sha256": "8823a04b35312e3922a84f9891aef0b0634d36a5e268e571d978d29cd6254f6d",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated field-to-canvas and canvas-to-field coordinate transformations (getCanvasOffsetBase, getRobotCoordBase, getTransformedCanvasOffset, getDragDeltaInFieldCoords) adhering strictly to +X forward, +Y left, CCW radians for FTC and XRP (center origin), and blue corner origin for FRC. Verified cached path rendering for zero GC pressure during interactive panning/zooming.",
+      "sha256": "32a922d048157b96d80ff875600a3ce63349121a40f779fa439bccb34a80fa31",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass148-verified-evidence/",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -5208,15 +5165,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemInterlockCard.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified InterlockMatrixCard Compose component. Ensures positional interlock configuration between generated subsystems, strict type-safe comparison gating (LESS_THAN for numeric, EQUALS_STATE for boolean/state), and disallows custom fallback overrides on ARES-generated subsystems to enforce configured actuator safe outputs.",
+      "sha256": "5d69abb9f103248a33061c3fe5f0bef19ddb770de7bdeb53a7173854483a06d4",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemDocumentAuthoringTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "36f03f45321fdca057a977324ac39eb1085d8fcb415b0db0451f6040188c6db4",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -5243,16 +5198,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStateflowSection.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated visual finite state machine editor for subsystem state flows. Verified state and transition definitions, continuous angle wrapping shortest-path math, feedforward model bindings, safety timeout guards, and homing condition validators. Ensured immutable state update dispatching.",
+      "sha256": "0e50c906cd0346fc3de3e53b4f38210275e1b28e290a59e6c588b2782b63e09f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass226-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "2e9d917faf8d2be0594bfa047c41bcb76198fc181a56966d5121eca0f7230c07",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -5531,14 +5483,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyScreen.kt": {
-      "sha256": "be9899e38f56b72d4ffb57ff95ff23db933d4e5bfb40cccb5dc37e80d9a707be",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Academy mission control layout featuring responsive single/multi-pane adaptations, progress tracking, lesson navigation, and full accessibility semantics.",
+      "sha256": "937c51213f7bf0abd29b978d9396ad830726914ce5b32c10b014a1fbe5b295ff",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -5741,14 +5691,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreen.kt": {
-      "sha256": "fe566253da8622031c6b6b76d3ae7423f3e4982282a0862e0ab41653cd014db7",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Primary desktop application shell handling keyboard navigation, loopback simulator control authorization, emergency stop (Ctrl+Shift+K), and workspace lifecycles.",
+      "sha256": "97797c18df5e3bbc26d398c2c1fafde7276693db39e2d3c787437abddc5a7f19",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -6249,15 +6197,12 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/util/AresFormatters.kt": {
-      "sha256": "20fac01b43b8404c4f310f15caca7490b46fc304a19fadeecfd130402513e2f4",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full immutable DateTimeFormatter utility: explicit US locale, captured system zone, three patterns and millisecond Instant conversion. Concurrent output agrees with independently prepared SimpleDateFormat expectations for representative epoch/leap/modern/post-2038 dates. OS zone changes after initialization and extreme chronology not certified.",
+      "sha256": "f29fc3111baf7189fe779c327c7549cb68eb060f27a4d2ba31fe0deae85856fb",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -6361,16 +6306,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/CloudViewModel.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated cloud and robot-hosted log management ViewModel. Verified HTTP :5002 remote log fetching, safe local tempfile download before parsing, explicit token-based remote log deletion, error state propagation, and HttpClient engine cleanup in dispose().",
+      "sha256": "a5bf091454ba921abe39196b0a94e93384bfdf5c54cd24a928ee5af86c4feff2",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass230-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "8ee52ad89db6973eddcf42a67edbbccd699bcbf96eaff8023768ed0be02d6856",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -6436,19 +6378,12 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt": {
-      "sha256": "9560c2ab2d64cae9d879de9abd2a8154494bef1b03933bd7ea31fadb850fd551",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated field editor state management ViewModel. Verified debounced atomic saving (saveMutex, 350ms debounce), undo/redo history stack management, dirty state tracking, and simulator field geometry push confirmation (SIMULATOR_FIELD_APPLIED_RECEIPT_TOPIC).",
+      "sha256": "b288278f6640c294f311c485dca9935351afbcc3ff0695ed928cd5cbe156519e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass72-before.log",
-        "ARESLib-Kotlin/build/audit-pass72-core-focused.log",
-        "ARESLib-Kotlin/build/audit-pass72-studio-focused.log",
-        "ARESLib-Kotlin/build/audit-pass72-library.log",
-        "ARESLib-Kotlin/build/audit-pass72-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -7196,15 +7131,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePlaybackController.kt": {
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified RoutinePlaybackController. Controls animation playback loop for routine trajectory previews on a coroutine scope with 16ms tick intervals, automatic end-of-duration clamping, and cancellation handling.",
+      "sha256": "5aa12f6ad20f28cccee10811fd4c45e0e1a934b70e81e280fc450b3d73db273e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/routine/RoutineBuilderViewModelTest.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "sha256": "8e2f90894b870398c8596de85fc8f5623f72869913f6717ea945d184a0899c6e",
       "submission": {
         "commit": "f73d4ceed",
         "review": "reviewed",
@@ -7439,14 +7372,12 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioViewModel.kt": {
-      "sha256": "8345afc30009809740ed1b4e0b0c33675401be6d588195fcc0b9d1b888b75254",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Verified SuperstructureStudioViewModel coordinating multi-mechanism states, postures, transitions, guards, timeouts, dynamic LUT tables, interlock rules, and health fallback policies. Validated project validation integration, SuperstructurePreviewSession interactive simulation, save review token verification, optimistic ProjectSession revision checks, and automated Project History checkpoints.",
+      "sha256": "50a01983943bd05fe0f6342cc2238542a10c8e40e8b1aaaebfff19cfc9694246",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -8200,12 +8131,12 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/AutoImportServiceTest.kt": {
-      "sha256": "90688bae869789ef96995236d463b2319e1d7b43a6df1576953f6d3b34b536d9",
+      "sha256": "0023c2b33282da43fefd6c2badb809e8a1757ae13455937bdb143b8c592da79d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed and exercised local-import regression requiring a recreated source to establish stability again, and ran the existing import suite. Remaining helper tests were executed but not all reviewed in full.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_61_REVIEW.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "runtimeAuditSubmission": {
         "evidence": [
@@ -8535,12 +8466,12 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/GoogleDriveDestinationTest.kt": {
-      "sha256": "82aec600a86b520ffb79821392e1cb83128cd26636acb92d447316f49efa96d6",
-      "review": "reviewed",
+      "sha256": "ef5e568f1e9279313c848cd901c6ab872527c18ed2848e14afe0fdfe68775a9d",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified GoogleDriveDestination security: cross-team workspace access prevention, pre-network account subject verification, visible error reporting on revoked permissions, team folder creation, shared folder write permission validation, shared drive ID tracking, serialized concurrent folder creation, and folder reference validation.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "runtimeAuditSubmission": {
         "evidence": [
@@ -8738,12 +8669,12 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4ClientServiceTest.kt": {
-      "sha256": "72f2a54701d6abb979b9c3c0c08589bdf13b4cd499575f8c97694def2a65581e",
-      "review": "reviewed",
+      "sha256": "ae0acbca22b39051e8025e221ddcb842aa243a1cc2d6a18628d22d0f8f175238",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Comprehensive test of Nt4ClientService: packed binary decoding for drive input acknowledgements and mecanum motor frames, loopback drive control restriction, physical command gating, topic announce/unannounce, telemetry flow, receipt time usage for live persistence, console topic routing, binary protocol codec interop, canonical subscription prefixes, atomic drive frame contract validation, exclusive recording session locking, graceful shutdown, and target reset.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "runtimeAuditSubmission": {
         "evidence": [
@@ -8818,13 +8749,12 @@
       "sha256": "39cbaf2c3d724fecc9015df9377b06c6017bf9092f02b33e25aa51f181b24c28"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/OAuthLoopbackServerTest.kt": {
-      "sha256": "3d31e18677caa146254d280caf17ba93527d36141d27c4f55d6909c8bde8b1cc",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Unit test suite for OAuthLoopbackServer. Validates 127.0.0.1 loopback binding, port selection, timeout handling, CSRF state verification, and clean shutdown.",
+      "sha256": "382ed9cee35d78f078204cea6cc35d0d0c6b105435b9e8048d90e31879398450",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/OAuthLoopbackServer.kt",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -9970,14 +9900,12 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/AresFileChooserStateTest.kt": {
-      "sha256": "e895eb9365260b9ad75ed0ffdf5b2a40ed26eba5949a08169e31f05b3fc430c0",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated AresFileChooserStateTest across 9 state transition scenarios: verified directory refresh on file creation/deletion, keyboard selection with overwrite prompting, automatic default extension appending, rejection of directories as save targets, rejection of disappeared destination parents, relative path resolution, and sanitized new folder creation.",
+      "sha256": "390fb23e8a0498f6e8c8bb0a9c08419e6aea1d9749c479f4afc437597d59e59f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -10892,15 +10820,12 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/util/AresFormattersTest.kt": {
-      "sha256": "9dfe2ce6f5ce90e0bc9569b82805cdaf65e026fbab5c733cc0265667e088688b",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full three-test review: milliseconds and pattern shape; replaced tautological repeated-call equality with 200 four-thread operations against independent precomputed calendar expectations. No global locale/timezone mutation, own executor shutdown.",
+      "sha256": "59c2d83a52f4396bb9b43d11b33d7811ac1d84128871d4fadd818b7d61743e3c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass166-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -10999,12 +10924,12 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/CloudViewModelTest.kt": {
-      "sha256": "c2fad846e19c590c5c26a5ac16523a89d3c3a298a73bacd3fe1a0465b7f3731d",
-      "review": "reviewed",
+      "sha256": "d606e15b0a291da2a7c9ff760d2ab0629d2245d145b00960c4e0057b99ef9033",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified CloudViewModel session lifecycle and remote indexing. Validated session reloading upon entering Cloud screen, remote cloud index prerequisites (authentication and explicit destination config), and concise single-line failure reporting for robot log retrieval.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "runtimeAuditSubmission": {
         "evidence": [
@@ -11847,14 +11772,12 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "7b0259cc07352ffd536f39bb1bb96158c982704c4f79432592d11a95f61554f4",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Machine-readable file size ledger tracking 1,110 production files across all four subprojects with zero violations.",
+      "sha256": "64c3c5f87d319e1dce76150dac6111829830a33c02910fa8caee03d5b852095b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "ARES-Analytics/config/maintainability/codebase_ledger.json",
-        "scripts/generate_codebase_ledger.py",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -12913,16 +12836,12 @@
       ]
     },
     "ARES-Analytics/shared/src/main/kotlin/com/ares/analytics/shared/UnitConversion.kt": {
-      "sha256": "af1a9e5fa11e79a6537a906d26c5768270b371815b910dcb6d60e0ceb175cc04",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated engineering unit conversion system and topic unit inference. Verified dimension compatibility checks across 9 unit categories, non-affine temperature conversion (Celsius, Fahrenheit, Kelvin), linear factor-to-base conversions for length, velocity, angle, time, voltage, and current, and conservative regex-based topic unit detection.",
+      "sha256": "01272e044f8b28cbb06b424b728bd4ed0b2254047e73deb0402a083690cbd913",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -13063,16 +12982,12 @@
       ]
     },
     "ARES-Analytics/shared/src/test/kotlin/com/ares/analytics/shared/UnitConversionTest.kt": {
-      "sha256": "ae22891450aa1fe788c5ecb71b2e06e8c4fcb6384442174a56f4faafbbcae231",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full seven-method class reviewed: dimensional separation, canonical examples, all-unit identity extremes, affine overflow/reference points, subnormal scale, amp-word false positives/genuine current and explicit milli/Kelvin units. Two new inference tests failed before and pass after; shared22-test suite passes.",
+      "sha256": "6f099a89a01b9c454d0b0cec09ec2170f463f3337f768f5ddcf8a7239ffaba24",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass141-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass142-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -23195,14 +23110,12 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/MathUtils.kt": {
-      "sha256": "dd60ed12950c256a306af4c5c68226f9f5f353e7e24edcc331e257a55fdc934b",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full angle wrapper review; represented-period decimal oracle, principal-interval bit preservation and legacy nonfinite fallback tested. Full library/API and exact-candidate robot/Studio consumer gates passed.",
+      "sha256": "1669745b268bb9f09a949967774102d7e72d38dd87e96068e9568fe146324e7f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -23445,17 +23358,12 @@
       ]
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/Geometry.kt": {
-      "sha256": "26814860f8a34dd3a603ccd2c93a90937947cf745257e877d75fd1ca73a70d76",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full geometry value types and human formatter read. Norm uses hypot, rotations use canonical wrap and trig, pose translation extraction allocates by design; includes Pose2d.relativeTo for body-frame transformation. Existing GeometryTest and Pose2dRelativeToTest passed. Human formatting retains default locale; no locale-independent serialization contract or hot-loop formatting claim.",
+      "sha256": "e866d22fee7219d0c2e813824a312fdcbde98c3fe92e5757cbb60675063ed5f2",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
-        "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/geometry/Pose2dRelativeToTest.kt",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -24051,17 +23959,12 @@
       "sha256": "35aad9de3a400ff20ed72786124cef3c710ca87fcf61b832d64dbd9b8738bc83"
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/VisionReducer.kt": {
-      "sha256": "51ffccc7392c2c88d8172c0f3974f15c05b7964ba9c06fd23b686499a187ee69",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full pure reducer and rolling immutable measurement publication read. Current innovation metadata is copied by value and invalidated on reset. Existing vision reducer/snapshot suites plus actual Store accepted, statistical rejection, early rejection, external-only and packet-reuse regressions passed. No new per-packet metadata allocation. Pass 211: Complete file reread. Dedicated selected-result fields copy by value and clear on pose reset. Confirmed buffer policy drift fixed: configured inclusive ambiguity limit, explicit availability and finite nonnegative available ambiguity replace strict hard-coded 0.2. Invalid configuration remains rejected for direct reducer callers. Store acceptance/buffer consistency and existing rolling/snapshot ownership tests passed.",
+      "sha256": "5f6d20e2abe09e4f2a90fef7ce03d5c27051fc5501dd2609e6a1a5de9fd3363d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass77-workflow-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -24436,16 +24339,12 @@
       "sha256": "8683130ed9a0d4c1e0bdfd27573255dba9678ffb6cfac0484d8f6847d3a3c7d7"
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotFieldConfig.kt": {
-      "sha256": "1d55dd5869cd53cfbadd3c618272db1a83c665c89b8749de95213798ed8faeaf",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full DTOs, dimension defaults, starting pose, joystick transforms, tag lookup, document codec and manager read. Starting pose respects centered FTC/XRP and corner-origin FRC dimensions, preserves wall insets and rejects invalid dimensions. File loading validates before global assignment. Full config/document regression suites and consumer loaders verify metadata, degree conversion, invalid field rejection and canonical layouts. Map poses are independently owned mutable values, not deeply immutable; manual assignment is a compiled-code boundary. No robot-footprint clearance or physical field calibration asserted.",
+      "sha256": "93deb7280708eaa28a53e231512b7e4631cfb5fa55f67e2cf153c49778e443b0",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -25890,12 +25789,12 @@
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/MecanumKinematicsTest.kt": {
-      "sha256": "7234d435788d0763c69b7ac198dbf586381c05bcf0afe8f03cc0c1ef22546f4f",
-      "review": "reviewed",
+      "sha256": "27a51c53c05b2137edd05c6b5bc65fe72de40f99e34cc33229c9813112ee1b9f",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated Mecanum forward and inverse kinematics. Verified coordinate standards: +X forward, +Y left, CCW positive (forward speeds -> all positive; strafe left -> alternating [-1, 1, 1, -1]; CCW rotation -> [-1, 1, -1, 1]). Verified desaturation/normalization handling zero, negative, and NaN maxSpeed by neutralizing to 0.0. Verified primitive allocation-free toWheelSpeeds(vx, vy, omega, outSpeeds) round-trip with 1e-12 precision.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/kinematics/SwerveAllocationAuditTest.kt": {
@@ -26718,16 +26617,12 @@
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/math/geometry/GeometryTest.kt": {
-      "sha256": "e227380e7a67cfb3efaa0088dabd0bfac422ebbb23a961a438fd501c67a55d8b",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Full four-method geometry fixture read/executed; angle wrapping/trig, norm, translation and current-locale human formatting. No cross-locale formatting guarantee.",
+      "sha256": "9dfcabb5b82e155753074ee0715a5cf8487a3c60031aab06483e5b003bb38a42",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass78-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass78-final-focused-evidence/summary.json",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -27553,12 +27448,12 @@
       "validation": "passed"
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/reducer/VisionOwnershipRegressionTest.kt": {
-      "sha256": "cd216ae10725ac899209d5691aee50c557166a942944151818334c4652e3baa2",
-      "review": "reviewed",
+      "sha256": "d6f3811387f9ea5b97f9dabd9dbecaf3972a95f7179db1ea911f11af21b022ef",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Line-by-line audit of lines 1-39. Validated reducer snapshots pooled measurement and nested pose objects. Verified deep defensive snapshotting of VisionMeasurement and nested Pose3d/Translation3d/Rotation3d/Quaternion instances upon entering the Redux store. Mutating original pooled instances post-dispatch has zero effect on the retained immutable state, preventing data corruption and race conditions in zero-GC pooled IO architectures.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ]
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/routine/CapabilityArgumentReaderTest.kt": {
@@ -30273,14 +30168,12 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcMotorLifecycleAuditTest.kt": {
-      "sha256": "836f10155f314400e02ea38746f8ed73e327150f86c6653ede2cb7810153e518",
-      "review": "reviewed",
+      "sha256": "b2c1c4395617b1239041b4db6f2546697befa1dbafb4c8e03c9497c424b425eb",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Full thirteen-method fixture reviewed/executed: exact neutral versus tolerance, retained ordinary caching, motor/CR close inhibition, last/duplicate registration cleanup, unrelated sensor owner, blocked SDK read and replacement generation, independent worker interruption/restart, zero/500ms stall boundary, clock rewind/overflow and recovery. Nine initial baseline cases plus separate zero-stall baseline failed before corresponding fixes. Owned threads/latches are bounded and cleaned up; signed-zero equality uses numerical comparison.",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass74-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass74-focused.log"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcRegisteredSubsystemLifecycleAuditTest.kt": {
@@ -33834,109 +33727,12 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "edf0e42045fc3d55d7391c39a6fdb0b8faf7d23261e836ce3b190ca9f9d79067",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Entire ledger parsed and validated as configuration: all records have typed statuses, scoped evidence and SHA values; live inventory checks current file fingerprints and orphans. Self-record uses ledger-json-v1 excluding only its own hash. This reviews the accounting structure, not an independent re-execution/authentication of every historical evidence claim. Pass204: refreshed exact changed-file hashes, migrated four versioned archive records, added runtime/test/report coverage and retained unresolved initialization/preview scopes; 2904 total, 1086 reviewed, 156 partial, 1662 pending. Pass205: Preserved prior scopes/evidence, refreshed reviewed changed-file identities, migrated four archive keys, added bounded new source/test/report records, and retained partial status for larger planning/editor integration. File accounting remains distinct from executed test counts. Pass206: Preserved earlier scopes/evidence, refreshed changed hashes, migrated four archive records and added bounded source/test/report reviews. Large screen and spline approximation work retain partial status. Final inventory distinguishes file review from suite execution and requires zero stale/orphan entries. Pass 207: input-runtime and adapter file review/evidence, immutable bundle-key migration and fresh source/configuration fingerprints. Pass 208: vision/filter full-file records, explicit platform-context partials, bundle-key migration and current fingerprints. Pass 209: Updated scoped evidence for vision freshness; fully reviewed shared gate/new tests/interface and report, retained partial tracker/recovery semantics and existing test fixtures. Migrated archive keys and refreshed changed source/API/version hashes. Pass 210: Updates only the eight source/API/test records, candidate and archive identities, this report and ledger self-record. Adds three reviewed regression files and one report; concrete trackers and legacy FTC tracker tests remain partial. Pass 211: Only ten source/API/test records, candidate/template identities, this report and ledger self-record updated. Adds two reviewed regression files and one report; tracker/action/state/processor partial boundaries retained. Pass 257 entries reviewed against original failure and final focused/full evidence; five existing file reviews closed, two new files included, no other completion scope expanded. Pass 258 pending records retain partial scope and withhold checkpoint completion while Studio/archive alignment awaits approval. Pass 259 records descriptor/feedforward scopes with explicit partial physical geometry and pending Studio execution; pass 258 pending records preserved. Pass 260 accounts for five removed obsolete files, field/resource fixes and complete resource/test scopes while retaining partial shared validator work. Pass 261 accounts for the polygon fix, new helper/test, four fully reviewed consumer fixtures and report; shared checkpoint remains pending with broad validator scope still partial. Pass262 records the FRC starter chassis/collision fixes and complete helper/fixture/loader/entry/resource scopes, while retaining composition root, Studio bridge and telemetry as partial. Pass263 closes field application/receipt and native telemetry ownership helpers/fixtures, while keeping drive bridge, robot composition and wider build contract partial. Pass264 completes the FRC starter drive receiver, native queue-age/mode/sampling bridge and their two fixtures; composition-root/runtime review remains open. Pass265 records FRC starter runtime fault/initialization/timing fixes, complete new lifecycle and existing guided-tuning fixture reviews, and shared failure retention; outer composition and remaining tuning ownership stay partial. Pass266 completes the outer FRC starter composition source, batch/tuning ownership and simulator disable/time review with24newtests; separate autonomous controller/marker algorithms remain for the next pass. Pass267 records FRC autonomous pose controller numerical/lifecycle fixes,20newtests and complete review of8existingauto tests; containing source remains partial for marker/selection/match lifecycle. Pass268 records FRC marker lifecycle/progress fixes and shared selection delegation with24newtests; containing source remains partial for capability/coordinate/match paths and groupedpreemption investigations. Pass269 records FRC capability/field/construction/stop fixes and22newtests; containing source remains partial for nested ownership, generated preemption, and match lifecycle boundaries. Pass270 records nested factory ownership fixes,11newtests and candidate matrix; reopens shared ownership source for exceptional preemption and metadata-hook interactions rather than retaining an unsupported complete label. Pass271 records exceptional transition/metadata cleanup,15new regression methods and repaired candidate matrix. Core lifecycle source remains partial for raw admission, reentrancy and time boundaries; FRC marker gets evidence-only update. Pass272 records task admission/queue ownership, callback guards,18newtests, compatible terminal raw reuse, fresh FRC group fixtures and released-wrapper rejection, an indicator warm-up adjustment retaining workload/limit, and repaired candidate validation. Runtime sources remain partial for remaining timing/external lifecycle boundaries. Pass273 records checked executor timing and suspension cleanup, 18 regression methods and exact-source candidate validation. Remaining runtime ownership boundaries stay partial; release identities stay validation-pending. Pass274 records size-gate repair, component lineage, duplicate-backup removal, generated API baselines and exact-source candidate validation; existing partial/validation-pending boundaries remain explicit. Pass275 records immutable pose handoff and simulator registry/template fixes, corrected baseline evidence and full shared-contract checkpoint; retains partial semantic and release-validation scopes. Pass276 records the consolidated generated output/name/hash batch and one consumer checkpoint, retaining broader renderer/runtime and release validation limitations. Pass277: Records33 related runtime/generator/consumer files and user-requested pause, with durable checkpoint evidence. Maintains partial/pending statuses and all earlier unrelated records. Robot-readiness checkpoint: preserves prior records, records bounded scenario/test/CI scope and explicit release/hardware limits; no every-file completion claim. Release alignment follow-up: replaces four superseded archive records with exact new artifact scopes, retains old records in the named prior Git checkpoint, and records Studio validation and the test-only timing fix. Desktop follow-up 2026-09-15: bounded documentation and three explicit native/baseline file records updated; prior review coverage preserved, no global coverage inferred.",
+      "sha256": "f812dd1f5c7bfe38fa8524df5fe537ca59ab2d260e7d869d24e7b17be1c0d459",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
-        "ARESLib-Kotlin/build/audit-pass57-policy.log",
-        "ARESLib-Kotlin/build/audit-pass57-verified-evidence",
-        "docs/audits/holonomic-control-composition-audit.md: reviewed pass58 record updates and canonical self-fingerprint refresh",
-        "docs/audits/path-task-loop-audit.md: pass59 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-timeout-arithmetic-audit.md: pass60 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-lifecycle-metadata-audit.md: pass61 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-completion-boundary-audit.md: pass62 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/task-group-ownership-audit.md: pass63 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/indicator-task-timing-audit.md: pass64 ledger entries reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/weak-registry-clock-audit.md: pass65 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/limelight-proxy-ownership-audit.md: pass66 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/scalar-motion-gravity-audit.md: pass67 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/coordinate-odometry-transform-audit.md: pass68 records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/geometry3d-numerics-audit.md: pass69 reviewed records and canonical self-fingerprint refreshed",
-        "docs/audits/apriltag-interchange-audit.md: pass70 records and canonical self-fingerprint refreshed",
-        "docs/audits/xrp-coordinate-contract-audit.md: pass71 verified records and canonical self-fingerprint refreshed",
-        "docs/audits/apriltag-import-frame-audit.md: pass72 records and canonical self-fingerprint refreshed",
-        "docs/audits/ftc-frame-lifecycle-audit.md: pass73 records and canonical self-fingerprint refreshed",
-        "docs/audits/ftc-motor-polling-shutdown-audit.md: pass74 records and canonical self-fingerprint refreshed",
-        "docs/audits/telemetry-mode-lifecycle-audit.md: pass75 records and canonical self-fingerprint refreshed",
-        "docs/audits/estimator-numerics-audit.md: pass76 records and canonical self-fingerprint refreshed",
-        "docs/audits/calibration-integrity-audit.md: pass77 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/vision-noise-ownership-audit.md: pass78 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/sysid-control-assist-audit.md: pass79 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/shoot-on-the-move-math-audit.md: pass80 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/calibration-executor-audit.md: pass81 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/encoder-feedback-audit.md: pass82 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/mecanum-shutdown-rollover-audit.md: pass83 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/drive-configuration-history-audit.md: pass84 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/native-mecanum-tuning-audit.md: pass85 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/mecanum-tuning-transaction-audit.md: pass86 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/core-safety-filter-audit.md: pass87 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/ftc-current-reconciliation-audit.md: pass88 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/floodgate-frc-power-audit.md: pass89 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/vision-alignment-boundary-audit.md: pass90 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/swerve-offset-persistence-audit.md: pass91 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/replay-flow-delivery-audit.md: pass92 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/store-failure-custom-codec-audit.md: pass93 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/action-logger-disk-failure-audit.md: pass94 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-polynomial-efficiency-audit.md: pass95 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-input-budget-audit.md: pass96 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-constraint-interval-audit.md: pass97 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-analytical-curvature-audit.md: pass98 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-stationary-grid-audit.md: pass99 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/spline-regular-interval-bounds-audit.md: pass100 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-calibration-cache-audit.md: pass101 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-commissioning-loop-audit.md: pass102 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-homing-failure-audit.md: pass103 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-disable-cleanup-audit.md: pass104 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-startup-ownership-audit.md: pass105 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-initialization-handoff-audit.md: pass106 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-dashboard-input-lifecycle-audit.md: pass107 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-simulated-feedback-audit.md: pass108 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/mechanism-integration-audit.md: pass109 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-physics-boundary-audit.md: pass110 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-swerve-tracking-audit.md: pass111 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-controller-facade-audit.md: pass112 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/shared-guidance-audit.md: pass113 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-simulator-telemetry-audit.md: pass114 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-autonomous-lifecycle-audit.md: pass115 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-native-drive-task-audit.md: pass116 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-redux-state-audit.md: pass117 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-sim-inventory-audit.md: pass118 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-teleop-feedback-audit.md: pass119 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-hardware-refresh-audit.md: pass120 scoped records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-deployment-data-audit.md: pass121 file scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-superstructure-boundary-audit.md: pass122 scopes and canonical self-fingerprint refreshed",
-        "docs/audits/frc-historical-log-audit.md: pass123 historical-data records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-simulator-input-config-audit.md: pass124 configuration records and canonical self-fingerprint refreshed",
-        "docs/audits/frc-generated-controls-profile-audit.md: pass125 control/profile records and self-fingerprint refreshed",
-        "docs/audits/frc-field-loader-boundary-audit.md: pass126 field loader records and self-fingerprint refreshed",
-        "docs/audits/frc-factory-construction-cleanup-audit.md: pass127 factory cleanup records and self-fingerprint refreshed",
-        "docs/audits/frc-regression-evidence-audit.md: pass128 test/fixture records and self-fingerprint refreshed",
-        "docs/audits/frc-build-selection-audit.md: pass129 dependencyselection records and self-fingerprint refreshed",
-        "docs/audits/frc-native-extraction-audit.md: pass130 nativeextraction records and self-fingerprint refreshed",
-        "docs/audits/frc-documentation-consistency-audit.md: pass131 documentation records and self-fingerprint refreshed",
-        "docs/audits/frc-vendor-wrapper-artifact-audit.md: pass132 vendor/wrapper records and self-fingerprint refreshed",
-        "docs/audits/frc-world-replacement-audit.md: pass133 worldreplacement records and self-fingerprint refreshed",
-        "docs/audits/project-history-recovery-integrity-audit.md: pass198 scoped records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/project-document-path-ownership-audit.md: pass199 scoped records reviewed and canonical self-fingerprint refreshed",
-        "docs/audits/project-metadata-catalog-restoration-audit.md: pass200 scoped records reviewed and canonical self-fingerprint refreshed",
-        "ARESLib-Kotlin/build/audit-pass205-verified-evidence",
-        "ARESLib-Kotlin/build/audit-pass206-verified-evidence",
-        "ARESLib-Kotlin/build/audit-pass207-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass208-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass209-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass210-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass211-verified-evidence/summary.json",
-        "docs/audits/RESUME.md",
-        "docs/audits/checkpoints/pass277.json",
-        "docs/audits/ROBOT_READINESS_REPORT.md",
-        "docs/audits/checkpoints/robot-readiness.json",
-        "docs/audits/RELEASE_ALIGNMENT_REPORT.md",
-        "docs/audits/checkpoints/release-alignment.json",
-        "docs/audits/DESKTOP_READINESS_REPORT.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34269,14 +34065,12 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "f9c05460deb3234dd3982073d3529ec4524211077207c60847d7cf9ea98ff248",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Git tree hash identity for ARESLib-Kotlin matching release 19.1.1 source tree c85fa2951f3c3d168aee03fbe009b6c0586d65b6.",
+      "sha256": "8378b2a3d70be5a2c492bd2e6672f107c0dcdc40dd838cc969f3b5bda574b17e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "release/ares-source-tree.txt",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34295,14 +34089,12 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "release/ares-versions.properties": {
-      "sha256": "92a472f9cba67d2293761d20d760aef5229b8375da13186c0b71046c08e746d0",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Canonical version manifest for ARES monorepo components (ARESLib 19.1.1, Studio 7.0.60, FTC/FRC 19.1.2).",
+      "sha256": "f27c438b473177f1d7f178dcc920a1f44f8830fd3b9820b7f7bf0ef2cdde13ee",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "release/ares-versions.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34321,14 +34113,12 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "release/starter-artifacts.properties": {
-      "sha256": "dcc15df7f66f5969089f554ecd9703fd700324f1b9167e852970d28018e9f810",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Cryptographic SHA-256 hashes of starter project zip archives verifying distribution integrity.",
+      "sha256": "9d277e77f8d0a9442353ffb8d8da2f12e52a97270a12b3f6bc0a4dcda89f9e2e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "release/starter-artifacts.properties",
-        "scripts/verify-monorepo-policy.ps1",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34406,14 +34196,12 @@
       ]
     },
     "scripts/generate_cluster_reference.py": {
-      "sha256": "bfaf9ca1c616de1fc196c3bfab2f9d291ca696395a8b7ec8e3d5438863b04b12",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Offline Limelight multi-tag cluster reference generator using SciPy rotation vectors independently of Kotlin Euler transforms.",
+      "sha256": "f3938594298d2d4a80737af4a89e3f24e65ab87ad9dffdecacf8162d45434752",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "scripts/generate_cluster_reference.py",
-        "ARESLib-Kotlin/core/src/test/resources/vision/cluster-reference.csv",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34721,14 +34509,12 @@
       ]
     },
     "scripts/verify-monorepo-policy.ps1": {
-      "sha256": "8d31f436dffe1cce324fa66d9f27b6cf3ec0195f2f2e935f3b97927152e5e621",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Reconcile UTF-8 encoding configuration and codebase ledger ratchet verification call into root policy script.",
+      "sha256": "26921af6bcd5d459874c6abf693b9f2cbb1d578d15c9b5bb2784dd0019b6de42",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
-        "scripts/verify-monorepo-policy.ps1",
-        "scripts/tests/test_monorepo_policy.py",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34823,13 +34609,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopInstanceLockTest.kt": {
+      "sha256": "77ba6beb13c571519304da77d30033def132a84ac8d1d04bc0af9644718b532c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
         "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "review": "pending",
-      "scope": "Submitted review awaits substantiation; see the release review. No full-file review claimed.",
-      "sha256": "cddc893bae0d9881e136ef34591bd8165124509c10d927fca2e9455dbd1debf5",
-      "validation": "pending",
       "runtimeAuditSubmission": {
         "evidence": [
           "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopInstanceLockTest.xml"
@@ -34842,13 +34628,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/BOUNDED_AUDIT_GOAL.md": {
+      "sha256": "34d5ea59912e2a29928df8499a94008304f8ff767e2731f5ff53f8e914081879",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
         "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "review": "pending",
-      "scope": "Submitted review awaits substantiation; see the release review. No full-file review claimed.",
-      "sha256": "79e3da84bf0856541a4cf6838ce6c040066209693c8953624a07f10c523fba82",
-      "validation": "pending",
       "runtimeAuditSubmission": {
         "evidence": [
           "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
@@ -34861,13 +34647,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/CONTINUOUS_AUDIT_GOAL.md": {
+      "sha256": "1dee34892fda565778280f2a925d457865232d54ca0bf8b9e44f3c83723db691",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
         "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ],
-      "review": "pending",
-      "scope": "Submitted review awaits substantiation; see the release review. No full-file review claimed.",
-      "sha256": "c3d62f6d7f75cfab05cdb2b8693f2e753590b78ec754f53d3c9cf1cf824dfbee",
-      "validation": "pending",
       "runtimeAuditSubmission": {
         "evidence": [
           "docs/audits/CONTINUOUS_AUDIT_GOAL.md",
@@ -34898,6 +34684,78 @@
         "validation": "passed"
       },
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ConsoleDisplayMessages.kt": {
+      "sha256": "eee762f309dcf9430cff3b83640689e6364392f12654dced898b99fd16c2f443",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "evidence": [
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.4.zip": {
+      "sha256": "f50b146457efa5bc9565fb8d74959ab601e5cbca352f80af91dd536d65881597",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "evidence": [
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-19.1.3.zip": {
+      "sha256": "c4746189b27a913c0aef28c6465cc1d0bc07d462791b6883032d69fbfd1be604",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "evidence": [
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-19.1.3.zip": {
+      "sha256": "bbfc905b58ca8e78cb455890019632802da5c0e85367668c5c9af7c0ac323219",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "evidence": [
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.64.zip": {
+      "sha256": "454fdf369c0925d91cee2397446c7155f9832d69454c5827d03fe3dd84047b4d",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "evidence": [
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.62.zip": {
+      "sha256": "5c34a7ec42192e2f000e18fbcb99836fa4ab6279079eac79ed33eef97855550e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "evidence": [
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardSourceRegressionTest.kt": {
+      "sha256": "0e38bc838614c31496bd079806f9b98542cd7e849f51f5ca280b0fd18cda3fba",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "evidence": [
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
+    },
+    "docs/audits/RELEASE_7_0_62_REVIEW.md": {
+      "sha256": "f775dd1219b993c4f1a19a2a6914da760a76d5c77c1ed3ee996f15df5035a1ac",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "evidence": [
+        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
     }
   }
 }
