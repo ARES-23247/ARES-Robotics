@@ -81,9 +81,113 @@ class ProjectArchiveExporter {
             )
         }
 
+    suspend fun extract(archivePath: String, destinationPath: String): File =
+        withContext(Dispatchers.IO) {
+            require(archivePath.isNotBlank()) { "Choose a project archive to extract." }
+            require(destinationPath.isNotBlank()) { "Choose where to extract the robot project." }
+            val archive = File(archivePath).canonicalFile
+            require(archive.isFile) { "Project archive does not exist: ${archive.path}" }
+            require(archive.length() <= MAX_ARCHIVE_PROJECT_BYTES) {
+                "Project archive is unexpectedly large."
+            }
+            val destination = File(destinationPath).canonicalFile
+            if (destination.exists()) {
+                val existing = destination.listFiles()
+                require(destination.isDirectory && (existing == null || existing.isEmpty())) {
+                    "Destination directory already exists and is not empty: ${destination.path}"
+                }
+            } else {
+                check(destination.mkdirs()) { "Could not create destination directory: ${destination.path}" }
+            }
+
+            var entryCount = 0
+            var extractedBytes = 0L
+            var hasProjectJson = false
+
+            java.util.zip.ZipInputStream(archive.inputStream().buffered()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    entryCount++
+                    check(entryCount <= MAX_ARCHIVE_ENTRIES) {
+                        "The project archive contains too many files."
+                    }
+                    val rawName = entry.name
+                    check(rawName.isNotBlank() && !rawName.contains('\\')) {
+                        "The project archive contains an invalid path: $rawName"
+                    }
+                    val parts = rawName.split('/').filter(String::isNotEmpty)
+                    if (parts.isEmpty()) continue
+                    check(parts.none { it == ".." || it == "." }) {
+                        "The project archive contains an unsupported relative path segment: $rawName"
+                    }
+                    check(parts.none { part -> part.substringBefore('.').uppercase(Locale.ROOT) in WINDOWS_RESERVED_NAMES }) {
+                        "The project archive contains a reserved device name: $rawName"
+                    }
+                    val relative = parts.joinToString(File.separator)
+                    val target = File(destination, relative).canonicalFile
+                    check(target.toPath().startsWith(destination.toPath())) {
+                        "The project archive attempted to write outside the destination directory: $rawName"
+                    }
+                    if (entry.isDirectory) {
+                        check(target.mkdirs() || target.isDirectory) {
+                            "Could not create directory ${target.path}."
+                        }
+                    } else {
+                        check(target.parentFile.mkdirs() || target.parentFile.isDirectory) {
+                            "Could not create parent directory ${target.parent}."
+                        }
+                        target.outputStream().buffered().use { output ->
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            var entryBytes = 0L
+                            while (true) {
+                                val read = zip.read(buffer)
+                                if (read < 0) break
+                                entryBytes += read
+                                check(entryBytes <= MAX_ARCHIVE_FILE_BYTES) {
+                                    "$rawName expanded beyond the maximum archive file limit."
+                                }
+                                extractedBytes += read
+                                check(extractedBytes <= MAX_ARCHIVE_PROJECT_BYTES) {
+                                    "The project expanded beyond its safe size limit."
+                                }
+                                output.write(buffer, 0, read)
+                            }
+                        }
+                        if (rawName == ".ares/project.json") {
+                            hasProjectJson = true
+                        }
+                    }
+                    zip.closeEntry()
+                }
+            }
+
+            check(entryCount > 0) { "The project archive was empty." }
+            check(hasProjectJson) {
+                "The project archive is missing its canonical ARES project identity (.ares/project.json)."
+            }
+
+            File(destination, "gradlew").takeIf(File::isFile)?.let { wrapper ->
+                val bytes = wrapper.readBytes()
+                if (bytes.contains('\r'.code.toByte())) {
+                    wrapper.writeBytes(bytes.filterNot { it == '\r'.code.toByte() }.toByteArray())
+                }
+                wrapper.setExecutable(true, false)
+            }
+
+            destination
+        }
+
     private companion object {
         const val MAX_ARCHIVE_FILE_BYTES = 100L * 1024L * 1024L
         const val MAX_ARCHIVE_PROJECT_BYTES = 1024L * 1024L * 1024L
+        const val MAX_ARCHIVE_ENTRIES = 50_000
+        val WINDOWS_RESERVED_NAMES = buildSet {
+            addAll(listOf("CON", "PRN", "AUX", "NUL"))
+            (1..9).forEach { index ->
+                add("COM$index")
+                add("LPT$index")
+            }
+        }
     }
 }
 

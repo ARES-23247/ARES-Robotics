@@ -102,6 +102,97 @@ class ProjectArchiveExporterTest {
         assertTrue(destination.readBytes().contentEquals(repeated.readBytes()), "Unchanged project exports must be deterministic")
     }
 
+    @Test
+    fun `safe extraction restores exported project files and normalizes gradlew`() = runBlocking {
+        val root = canonicalProject("archive-extract-source")
+        File(root, "TeamCode/src/main/kotlin").mkdirs()
+        File(root, "TeamCode/src/main/kotlin/Robot.kt").writeText("class Robot")
+        File(root, "gradlew").writeBytes("#!/bin/sh\r\necho running\r\n".toByteArray())
+        val archive = temporaryDirectory.resolve("robot-export.aresproject.zip").toFile()
+        exporter.export(root.path, archive.path)
+
+        val targetDir = temporaryDirectory.resolve("extracted-project").toFile()
+        val result = exporter.extract(archive.path, targetDir.path)
+
+        assertEquals(targetDir.canonicalPath, result.canonicalPath)
+        assertTrue(File(targetDir, ".ares/project.json").isFile)
+        assertEquals("class Robot", File(targetDir, "TeamCode/src/main/kotlin/Robot.kt").readText())
+        val gradlew = File(targetDir, "gradlew")
+        assertTrue(gradlew.isFile)
+        assertFalse(gradlew.readBytes().contains('\r'.code.toByte()))
+    }
+
+    @Test
+    fun `extraction rejects missing canonical project identity`() = runBlocking {
+        val archive = temporaryDirectory.resolve("invalid-no-project.zip").toFile()
+        java.util.zip.ZipOutputStream(archive.outputStream().buffered()).use { zip ->
+            zip.putNextEntry(java.util.zip.ZipEntry("readme.txt"))
+            zip.write("some text".toByteArray())
+            zip.closeEntry()
+        }
+        val targetDir = temporaryDirectory.resolve("extracted-invalid").toFile()
+
+        val failure = assertFailsWith<IllegalStateException> {
+            exporter.extract(archive.path, targetDir.path)
+        }
+        assertContains(failure.message.orEmpty(), "missing its canonical ARES project identity")
+    }
+
+    @Test
+    fun `extraction rejects path traversal entries`() = runBlocking {
+        val archive = temporaryDirectory.resolve("invalid-traversal.zip").toFile()
+        java.util.zip.ZipOutputStream(archive.outputStream().buffered()).use { zip ->
+            zip.putNextEntry(java.util.zip.ZipEntry(".ares/project.json"))
+            zip.write("{}".toByteArray())
+            zip.closeEntry()
+            zip.putNextEntry(java.util.zip.ZipEntry("../escaped.txt"))
+            zip.write("escaped".toByteArray())
+            zip.closeEntry()
+        }
+        val targetDir = temporaryDirectory.resolve("extracted-traversal").toFile()
+
+        val failure = assertFailsWith<IllegalStateException> {
+            exporter.extract(archive.path, targetDir.path)
+        }
+        assertContains(failure.message.orEmpty(), "unsupported relative path segment")
+    }
+
+    @Test
+    fun `extraction rejects non-empty destination`() = runBlocking {
+        val root = canonicalProject("archive-non-empty-source")
+        val archive = temporaryDirectory.resolve("robot-export-non-empty.zip").toFile()
+        exporter.export(root.path, archive.path)
+
+        val targetDir = temporaryDirectory.resolve("target-non-empty").toFile().apply {
+            mkdirs()
+            File(this, "pre-existing.txt").writeText("existing")
+        }
+
+        val failure = assertFailsWith<IllegalArgumentException> {
+            exporter.extract(archive.path, targetDir.path)
+        }
+        assertContains(failure.message.orEmpty(), "not empty")
+    }
+
+    @Test
+    fun `extraction rejects reserved device names`() = runBlocking {
+        val archive = temporaryDirectory.resolve("invalid-reserved.zip").toFile()
+        java.util.zip.ZipOutputStream(archive.outputStream().buffered()).use { zip ->
+            zip.putNextEntry(java.util.zip.ZipEntry(".ares/project.json"))
+            zip.write("{}".toByteArray())
+            zip.closeEntry()
+            zip.putNextEntry(java.util.zip.ZipEntry("AUX.txt"))
+            zip.write("device".toByteArray())
+            zip.closeEntry()
+        }
+        val targetDir = temporaryDirectory.resolve("extracted-reserved").toFile()
+
+        val failure = assertFailsWith<IllegalStateException> {
+            exporter.extract(archive.path, targetDir.path)
+        }
+        assertContains(failure.message.orEmpty(), "reserved device name")
+    }
+
     private fun canonicalProject(name: String): File = temporaryDirectory.resolve(name).toFile().apply {
         File(this, ".ares").mkdirs()
         File(this, ".ares/project.json").writeText("{}")

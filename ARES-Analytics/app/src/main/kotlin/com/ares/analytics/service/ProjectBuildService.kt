@@ -310,6 +310,10 @@ class ProjectBuildService internal constructor(
                 AresGenerationState(AresGenerationPhase.SUCCEEDED, "Subsystem starters and generated plumbing are current.")
             )
         } catch (cancelled: CancellationException) {
+            updateGenerationStateIfOwner(
+                generation,
+                AresGenerationState(AresGenerationPhase.FAILED, "Subsystem starter generation was canceled.")
+            )
             throw cancelled
         } catch (error: Exception) {
             currentCoroutineContext().ensureActive()
@@ -370,6 +374,10 @@ class ProjectBuildService internal constructor(
             )
             _buildOutput.emit("[ARES] Generation finished successfully.$suffix")
         } catch (cancelled: CancellationException) {
+            updateGenerationStateIfOwner(
+                generation,
+                AresGenerationState(AresGenerationPhase.FAILED, "Project generation was canceled.")
+            )
             throw cancelled
         } catch (error: Exception) {
             currentCoroutineContext().ensureActive()
