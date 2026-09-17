@@ -34996,6 +34996,42 @@
       "evidence": [
         "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
       ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/BiobuzzConsumerRoundtripIntegrationTest.kt": {
+      "sha256": "d2444c2cb99041440342a6b3af6e00cc15064ffdc93ea1253f2f32139e11ccff",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Complete BioBuzz consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution (:TeamCode:verifyAresProject, :TeamCode:testDebugUnitTest, :simulator:test, :TeamCode:assembleDebug), and simulated IO validation.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/GenericStarterConsumerRoundtripIntegrationTest.kt": {
+      "sha256": "7b488a5ea13f2c0fa82cc38ed0963215825337312d98a2bce8b4bde2148cf354",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Complete Generic FTC Starter consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution, and simulated IO validation.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ProjectGenerationRecoveryIntegrationTest.kt": {
+      "sha256": "4b66daa3e436a8b54693938c59d2a4a6211b55175168e8ab611f5fcb98c17771",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Real generation interruption and recovery integration tests: controlled intermediate-write failure establishing prior write, failure diagnostics, canonical document/user file preservation, stale output rejection, and clean retry; real process cancellation establishing process tree cleanup, diagnostics, canonical/user file preservation, and clean retry.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+      ]
+    },
+    "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md": {
+      "sha256": "c9b5a6ab313c7e15cc6a7a3e57e4829923ed508551e8cfa914df47ea70ae3786",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed consumer roundtrip and generation recovery documentation: BioBuzz and generic FTC starter export/reopen/generate/compile/simulator journeys, real process cancellation, intermediate-write failure, determinism proofs, and limitations. Local Markdown links and source policy passed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+      ]
     }
   }
 }
