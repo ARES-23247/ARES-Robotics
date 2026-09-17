@@ -7682,7 +7682,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/kinematics/WheelKinematicsMath.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 55,
+      "lines": 61,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7812,7 +7812,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/MathUtils.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 77,
+      "lines": 78,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8012,7 +8012,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/geometry/Geometry.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 190,
+      "lines": 203,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8502,7 +8502,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/VisionReducer.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 101,
+      "lines": 103,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8792,7 +8792,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotFieldConfig.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 407,
+      "lines": 408,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
