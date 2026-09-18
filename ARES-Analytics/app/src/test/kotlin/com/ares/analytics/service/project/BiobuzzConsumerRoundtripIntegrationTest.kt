@@ -7,7 +7,13 @@ import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.Sha256
 import com.areslib.catalog.CapabilityCatalogCodec
+import com.areslib.controls.ControlBindingDocument
+import com.areslib.controls.ControlEvent
 import com.areslib.controls.ControlSchemeCodec
+import com.areslib.controls.ControlSourceDocument
+import com.areslib.controls.ControlSourceKind
+import com.areslib.controls.ControlTargetDocument
+import com.areslib.controls.ControlTargetKind
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.project.AresProjectMetadataCodec
 import com.areslib.routine.AresRoutineCodec
@@ -78,7 +84,7 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         //    (C) Tuning settings (heading kP = 2.40)
         saveConsumerHeadingGain(initialSession, project, 2.4)
 
-        //    (D) Control settings (deadband = 0.10)
+        //    (D) Control settings (deadband = 0.10, bind Y button to enable heading lock)
         val controlsFile = File(project, ".ares/controls/driver.arescontrols")
         val originalControls = ControlSchemeCodec.decode(controlsFile.readText())
         val modifiedBindings = originalControls.bindings.map { binding ->
@@ -87,6 +93,24 @@ class BiobuzzConsumerRoundtripIntegrationTest {
                     transform = binding.source.transform?.copy(deadband = 0.10)
                 ))
             } else binding
+        }.toMutableList().apply {
+            add(
+                ControlBindingDocument(
+                    bindingId = "enable-heading-lock",
+                    displayName = "Enable Heading Lock",
+                    source = ControlSourceDocument(
+                        kind = ControlSourceKind.BUTTON,
+                        controllerSlot = "driver",
+                        controlIds = listOf("y"),
+                    ),
+                    event = ControlEvent.PRESS,
+                    target = ControlTargetDocument(
+                        kind = ControlTargetKind.ACTION,
+                        key = "drivetrain.headingLock.enable",
+                    ),
+                    enabled = true,
+                )
+            )
         }
         assertIs<ProjectSessionMutationResult.Applied<*>>(initialSession.saveControls(
             initialSession.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true).revision,
@@ -119,23 +143,37 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         }
         teamExtensionsFile.writeText(customizedTeamExtensions)
 
-        // Add consumer simulation test in simulator/ to prove USER-OWNED extension compiles and executes
+        // Add consumer simulation test in simulator/ to prove USER-OWNED extension, heading gains, and feedback timeout
         val consumerSimTestFile = File(project, "simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/BiobuzzReopenedConsumerSimulationTest.kt").apply {
             parentFile.mkdirs()
             writeText(buildString {
                 appendLine("package org.firstinspires.ftc.teamcode")
                 appendLine()
+                appendLine("import com.areslib.Store")
+                appendLine("import com.areslib.action.RobotAction")
+                appendLine("import com.areslib.control.tuning.PIDFCoefficients")
                 appendLine("import com.areslib.ftc.FtcBaseRobot")
+                appendLine("import com.areslib.ftc.FtcMecanumRobot")
+                appendLine("import com.areslib.math.geometry.Pose2d")
                 appendLine("import com.areslib.networktables.NT4Instance")
                 appendLine("import com.areslib.sim.model.MecanumRobotDouble")
                 appendLine("import com.areslib.sim.model.SimDcMotorEx")
                 appendLine("import com.areslib.sim.opmode.SimOpModeRunner")
+                appendLine("import com.areslib.state.RobotState")
+                appendLine("import com.areslib.state.SuperstructureState")
                 appendLine("import com.areslib.util.RobotClock")
                 appendLine("import org.firstinspires.ftc.teamcode.extensions.TeamRobotExtensions")
                 appendLine("import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject")
+                appendLine("import org.firstinspires.ftc.teamcode.generated.drivebase.GeneratedAresDrivebaseConfig")
+                appendLine("import org.firstinspires.ftc.teamcode.generated.drivebase.GeneratedAresTuningConfig")
                 appendLine("import org.firstinspires.ftc.teamcode.opmodes.ARESStarterTeleOp")
+                appendLine("import org.firstinspires.ftc.teamcode.subsystems.biobuzz_intake.BiobuzzIntakeController")
+                appendLine("import org.firstinspires.ftc.teamcode.subsystems.biobuzz_intake.BiobuzzIntakeState")
+                appendLine("import org.firstinspires.ftc.teamcode.subsystems.biobuzz_intake.BiobuzzIntakeSubsystem")
+                appendLine("import org.firstinspires.ftc.teamcode.subsystems.biobuzz_intake.FtcBiobuzzIntakeIO")
                 appendLine("import org.junit.After")
                 appendLine("import org.junit.Assert.assertEquals")
+                appendLine("import org.junit.Assert.assertFalse")
                 appendLine("import org.junit.Assert.assertNotNull")
                 appendLine("import org.junit.Assert.assertTrue")
                 appendLine("import org.junit.Test")
@@ -159,6 +197,12 @@ class BiobuzzConsumerRoundtripIntegrationTest {
                 appendLine("        val autonomous = GeneratedAresProject.autonomousEntries.single { it.entryId == \"custom-biobuzz-auto\" }")
                 appendLine("        assertEquals(1.2, autonomous.startingPose.xMeters, 1e-9)")
                 appendLine("        assertEquals(1, GeneratedAresProject.runtimeDefinition.routines.getValue(\"sample-routine\").steps.size)")
+                appendLine("    }")
+                appendLine()
+                appendLine("    @Test")
+                appendLine("    fun `saved heading gains govern controller output below saturation with live safe apply policy`() {")
+                appendLine("        assertEquals(2.40, GeneratedAresTuningConfig.Parameters.DRIVE_HEADINGKP, 1e-6)")
+                appendLine("        assertEquals(0.0, GeneratedAresTuningConfig.Parameters.DRIVE_HEADINGKD, 1e-6)")
                 appendLine("        RobotClock.useMockTime(1_000L)")
                 appendLine("        val robotDouble = MecanumRobotDouble()")
                 appendLine("        val lifecycle = requireNotNull(")
@@ -167,22 +211,145 @@ class BiobuzzConsumerRoundtripIntegrationTest {
                 appendLine("        try {")
                 appendLine("            lifecycle.initialize(robotDouble.hardwareMap)")
                 appendLine("            assertNotNull(FtcBaseRobot.activeInstance)")
+                appendLine("            val robot = FtcBaseRobot.activeInstance as FtcMecanumRobot")
+                appendLine("            lifecycle.gamepad1.id = 1")
                 appendLine("            lifecycle.tick()")
                 appendLine("            lifecycle.start()")
+                appendLine("            robot.resetPose(Pose2d())")
                 appendLine()
-                appendLine("            lifecycle.gamepad1.left_stick_y = -1.0f")
-                appendLine("            RobotClock.useMockTime(1_020L)")
+                appendLine("            // Enable heading lock via bound Y button")
+                appendLine("            lifecycle.gamepad1.y = true")
+                appendLine("            RobotClock.useMockTime(1_010L)")
+                appendLine("            lifecycle.tick()")
+                appendLine("            lifecycle.gamepad1.y = false")
+                appendLine()
+                appendLine("            // Initial tick with zero error establishes heading target = 0.0 rad")
+                appendLine("            robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)")
+                appendLine("            RobotClock.useMockTime(1_030L)")
+                appendLine("            Thread.sleep(35)")
+                appendLine("            lifecycle.tick()")
+                appendLine("            assertEquals(0.0, robot.store.state.drive.headingLockTargetRadians ?: Double.NaN, 1e-4)")
+                appendLine()
+                appendLine("            // Inject realistic heading error: robot heading = -0.10 rad, target = 0.0 rad (error = +0.10 rad)")
+                appendLine("            // Independent calculation with saved active profile gain kP1 = 2.40 (pure proportional, kD = 0.0):")
+                appendLine("            // u1 = 2.40 * 0.10 = 0.24 rad/s (below saturation limit 1.393 rad/s, above deadband 0.0436 rad)")
+                appendLine("            robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, -0.10)")
+                appendLine("            RobotClock.useMockTime(1_050L)")
+                appendLine("            Thread.sleep(35)")
                 appendLine("            lifecycle.tick()")
                 appendLine()
-                appendLine("            val drivePowers = listOf(robotDouble.fl, robotDouble.fr, robotDouble.rl, robotDouble.rr).map { it.power }")
-                appendLine("            assertTrue(\"Drive motors must respond to joystick\", drivePowers.any { abs(it) > 0.01 })")
+                appendLine("            // Next tick: updateProjectControls consumes fresh heading -0.10 rad (error = +0.10 rad)")
+                appendLine("            RobotClock.useMockTime(1_070L)")
+                appendLine("            Thread.sleep(35)")
+                appendLine("            lifecycle.tick()")
+                appendLine("            val omega1 = robot.store.state.drive.angularVelocityRadiansPerSecond")
+                appendLine("            assertEquals(0.24, omega1, 1e-3)")
+                appendLine("            val pFr1 = robotDouble.fr.power")
+                appendLine("            val pFl1 = robotDouble.fl.power")
+                appendLine("            assertTrue(\"Front-right wheel power must be positive for positive CCW rotation\", pFr1 > 0.01)")
+                appendLine("            assertEquals(-pFr1, pFl1, 1e-3)")
                 appendLine()
+                appendLine("            // Live update to second gain kP2 = 1.80 per LIVE_SAFE apply policy")
+                appendLine("            robot.store.dispatch(RobotAction.UpdateTuningState(")
+                appendLine("                robot.store.state.tuning.let {")
+                appendLine("                    it.copy(drive = it.drive.copy(headingGains = PIDFCoefficients(1.8, 0.0, 0.0)))")
+                appendLine("                }")
+                appendLine("            ))")
+                appendLine("            // Same error +0.10 rad under secondary gain kP2 = 1.80:")
+                appendLine("            // u2 = 1.80 * 0.10 = 0.18 rad/s (below saturation limit)")
+                appendLine("            RobotClock.useMockTime(1_090L)")
+                appendLine("            Thread.sleep(35)")
+                appendLine("            lifecycle.tick()")
+                appendLine("            val omega2 = robot.store.state.drive.angularVelocityRadiansPerSecond")
+                appendLine("            assertEquals(0.18, omega2, 1e-3)")
+                appendLine("            val pFr2 = robotDouble.fr.power")
+                appendLine("            val pFl2 = robotDouble.fl.power")
+                appendLine("            assertTrue(\"Front-right wheel power must be positive for positive CCW rotation under kP2\", pFr2 > 0.01)")
+                appendLine("            assertEquals(-pFr2, pFl2, 1e-3)")
+                appendLine()
+                appendLine("            // Linearity below saturation: controller output ratio must strictly match gain ratio (2.4 / 1.8 = 4 / 3)")
+                appendLine("            assertEquals(2.4 / 1.8, omega1 / omega2, 1e-3)")
+                appendLine("            assertEquals(4.0 / 3.0, omega1 / omega2, 1e-3)")
+                appendLine("            assertTrue(\"Higher heading gain must produce strictly higher angular velocity\", omega1 > omega2)")
+                appendLine("            assertTrue(\"Higher heading gain must produce strictly higher wheel drive effort\", pFr1 > pFr2)")
+                appendLine("        } finally {")
+                appendLine("            lifecycle.stop()")
+                appendLine("        }")
+                appendLine("    }")
+                appendLine()
+                appendLine("    @Test")
+                appendLine("    fun `saved mechanism feedback timeout governs output and recovers per rearm policy`() {")
+                appendLine("        val robotDouble = MecanumRobotDouble()")
+                appendLine("        val intakeMotor = robotDouble.hardwareMap.get(SimDcMotorEx::class.java, \"intake\")")
+                appendLine("        val intakeIO = FtcBiobuzzIntakeIO(robotDouble.hardwareMap)")
+                appendLine("        val controller = BiobuzzIntakeController(intakeIO)")
+                appendLine("        val initialRawState = BiobuzzIntakeState(intakeVoltage = 12.0, configurationHealthy = true, homed = true, calibrated = true, currentReadingValid = true)")
+                appendLine()
+                appendLine("        // 1. Missing initial feedback: before refresh(), feedbackValid is false; output must neutralize to 0.0")
+                appendLine("        assertFalse(intakeIO.feedbackValid)")
+                appendLine("        controller.update(initialRawState, 1.0)")
+                appendLine("        assertEquals(0.0, intakeMotor.power, 1e-6)")
+                appendLine()
+                appendLine("        // 2. Fresh feedback establishes nonzero output")
+                appendLine("        RobotClock.useMockTime(2_000L)")
+                appendLine("        intakeIO.refresh()")
+                appendLine("        assertTrue(intakeIO.feedbackValid)")
+                appendLine("        assertEquals(2_000L, intakeIO.feedbackTimestampMs)")
+                appendLine("        val freshState = initialRawState.copy(feedbackValid = true, feedbackTimestampMs = 2_000L)")
+                appendLine("        controller.update(freshState, 1.0)")
+                appendLine("        assertEquals(1.0, intakeMotor.power, 1e-6)")
+                appendLine()
+                appendLine("        // 3. Enable / disable toggle: disabling neutralizes, re-enabling activates")
+                appendLine("        controller.update(freshState.copy(intakeVoltage = 0.0), 1.0)")
+                appendLine("        assertEquals(0.0, intakeMotor.power, 1e-6)")
+                appendLine("        controller.update(freshState, 1.0)")
+                appendLine("        assertEquals(1.0, intakeMotor.power, 1e-6)")
+                appendLine()
+                appendLine("        // 4. Exact inclusive threshold boundary: at t = 2_000L + 120L = 2_120L, feedback is still fresh")
+                appendLine("        RobotClock.useMockTime(2_120L)")
+                appendLine("        controller.update(freshState, 1.0)")
+                appendLine("        assertEquals(1.0, intakeMotor.power, 1e-6)")
+                appendLine()
+                appendLine("        // 5. Across timeout boundary: at t = 2_000L + 121L = 2_121L, feedback is stale; output neutralizes")
+                appendLine("        RobotClock.useMockTime(2_121L)")
+                appendLine("        controller.update(freshState, 1.0)")
+                appendLine("        assertEquals(0.0, intakeMotor.power, 1e-6)")
+                appendLine()
+                appendLine("        // 6. Redux state boundary: Subsystem.readSensors marks feedbackValid false at 121ms")
+                appendLine("        val store = Store(RobotState(superstructure = SuperstructureState(subsystems = mapOf(BiobuzzIntakeSubsystem.ID to freshState))))")
+                appendLine("        val subsystem = BiobuzzIntakeSubsystem(intakeIO)")
+                appendLine("        subsystem.readSensors(store, 2_120L)")
+                appendLine("        assertTrue(BiobuzzIntakeSubsystem.state(store.state).feedbackValid)")
+                appendLine("        subsystem.readSensors(store, 2_121L)")
+                appendLine("        assertFalse(BiobuzzIntakeSubsystem.state(store.state).feedbackValid)")
+                appendLine()
+                appendLine("        // 7. Recovery according to documented rearm policy: fresh feedback safely restores output")
+                appendLine("        RobotClock.useMockTime(2_200L)")
+                appendLine("        intakeIO.refresh()")
+                appendLine("        assertEquals(2_200L, intakeIO.feedbackTimestampMs)")
+                appendLine("        subsystem.readSensors(store, 2_200L)")
+                appendLine("        assertTrue(BiobuzzIntakeSubsystem.state(store.state).feedbackValid)")
+                appendLine("        val recoveredState = BiobuzzIntakeSubsystem.state(store.state).copy(intakeVoltage = 12.0)")
+                appendLine("        controller.update(recoveredState, 1.0)")
+                appendLine("        assertEquals(1.0, intakeMotor.power, 1e-6)")
+                appendLine()
+                appendLine("        // 8. Full OpMode lifecycle integration")
+                appendLine("        val lifecycle = requireNotNull(")
+                appendLine("            SimOpModeRunner.createOpModeInstance(null, ARESStarterTeleOp::class.java.name),")
+                appendLine("        )")
+                appendLine("        try {")
+                appendLine("            lifecycle.initialize(robotDouble.hardwareMap)")
+                appendLine("            lifecycle.gamepad1.id = 1")
+                appendLine("            lifecycle.tick()")
+                appendLine("            lifecycle.start()")
                 appendLine("            lifecycle.gamepad1.a = true")
-                appendLine("            RobotClock.useMockTime(1_040L)")
+                appendLine("            RobotClock.useMockTime(2_300L)")
                 appendLine("            lifecycle.tick()")
-                appendLine()
-                appendLine("            val intakeMotor = robotDouble.hardwareMap.get(SimDcMotorEx::class.java, \"intake\")")
-                appendLine("            assertTrue(\"Intake motor power must be commanded\", intakeMotor.power > 0.01)")
+                appendLine("            assertTrue(intakeMotor.power > 0.01)")
+                appendLine("            lifecycle.gamepad1.a = false")
+                appendLine("            RobotClock.useMockTime(2_320L)")
+                appendLine("            lifecycle.tick()")
+                appendLine("            assertEquals(0.0, intakeMotor.power, 1e-6)")
                 appendLine("        } finally {")
                 appendLine("            lifecycle.stop()")
                 appendLine("        }")
@@ -218,10 +385,14 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         val extractedTuning = extractedDocs.tuningProfiles.single { it.profileId == "simulation" }
         val headingKp = extractedTuning.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue
         assertEquals(2.4, headingKp, "Tuning parameter heading.kp must retain saved value")
+        val headingKd = extractedTuning.values.single { it.parameterUid == "ftc.drive.heading.kd" }.value.doubleValue
+        assertEquals(0.0, headingKd, "Tuning parameter heading.kd must retain saved value")
 
         val extractedControls = extractedDocs.controlSchemes.single { it.documentId == "driver" }
         val feedBinding = extractedControls.bindings.single { it.bindingId == "feed-ball" }
         assertEquals(0.10, feedBinding.source.transform?.deadband, "Control deadband must retain saved value")
+        val headingLockBinding = extractedControls.bindings.single { it.bindingId == "enable-heading-lock" }
+        assertEquals("drivetrain.headingLock.enable", headingLockBinding.target.key, "Control action must retain saved value")
 
         val extractedCatalog = extractedDocs.autonomousCatalog
         val autoEntry = extractedCatalog?.entries.orEmpty().single { it.entryId == "custom-biobuzz-auto" }

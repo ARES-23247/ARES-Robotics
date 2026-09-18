@@ -111,21 +111,31 @@ internal fun consumerCanonicalSnapshot(project: File): Map<String, String> {
         .associate { it.relativeTo(ares).invariantSeparatorsPath to Sha256.fileHex(it) }
 }
 
-internal fun saveConsumerHeadingGain(session: ProjectSession, project: File, gain: Double) {
+internal fun saveConsumerHeadingGain(session: ProjectSession, project: File, gain: Double, derivativeGain: Double = 0.0) {
     val snapshot = session.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true)
     val declarations = snapshot.documents.query.tuningParameters
     val profile = snapshot.documents.query.tuningProfiles.single { it.profileId == "simulation" }
     val parameter = declarations.single { it.uid == "ftc.drive.heading.kp" }
-    val change = TuningProfileChange(
-        parameterUid = parameter.uid, key = parameter.key, displayName = parameter.displayName,
-        before = profile.values.single { it.parameterUid == parameter.uid }.value,
-        after = TuningValue(doubleValue = gain), unit = parameter.unit.orEmpty(),
-        owner = TuningValueOwner.ROBOT_PROFILE, policy = parameter.applyPolicy,
-        provenance = TuningValueProvenance("integration fixture", "Independent expected heading gain"),
+    val kdParam = declarations.single { it.uid == "ftc.drive.heading.kd" }
+    val changes = listOf(
+        TuningProfileChange(
+            parameterUid = parameter.uid, key = parameter.key, displayName = parameter.displayName,
+            before = profile.values.single { it.parameterUid == parameter.uid }.value,
+            after = TuningValue(doubleValue = gain), unit = parameter.unit.orEmpty(),
+            owner = TuningValueOwner.ROBOT_PROFILE, policy = parameter.applyPolicy,
+            provenance = TuningValueProvenance("integration fixture", "Independent expected heading gain"),
+        ),
+        TuningProfileChange(
+            parameterUid = kdParam.uid, key = kdParam.key, displayName = kdParam.displayName,
+            before = profile.values.single { it.parameterUid == kdParam.uid }.value,
+            after = TuningValue(doubleValue = derivativeGain), unit = kdParam.unit.orEmpty(),
+            owner = TuningValueOwner.ROBOT_PROFILE, policy = kdParam.applyPolicy,
+            provenance = TuningValueProvenance("integration fixture", "Pure proportional heading test"),
+        ),
     )
     val result = session.promoteTuningProfile(
         snapshot.revision, profile, TuningProfileDocumentCodec.contentHash(profile, declarations),
-        declarations, listOf(change), "consumer roundtrip test", "Verify saved configuration through export and reopen",
+        declarations, changes, "consumer roundtrip test", "Verify saved configuration through export and reopen",
     )
     check(result is ProjectSessionMutationResult.Applied) { "Tuning save failed: $result" }
 }
