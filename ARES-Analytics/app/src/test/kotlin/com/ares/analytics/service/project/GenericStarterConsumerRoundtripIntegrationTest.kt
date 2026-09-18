@@ -164,6 +164,10 @@ class GenericStarterConsumerRoundtripIntegrationTest {
             writeText(consumerSimulationSource(2.1, 0.21))
         }
 
+        writeConsumerTuningWireFixtures(project,
+            initialSession.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true)
+                .documents.query.tuningParameters.single { it.uid == "ftc.drive.heading.kp" })
+
         // 4. Export project via ProjectArchiveExporter
         val exportArchive = temporaryDirectory.resolve("generic-starter-export.aresproject.zip").toFile()
         val exportResult = exporter.export(project.path, exportArchive.path)
@@ -269,15 +273,11 @@ class GenericStarterConsumerRoundtripIntegrationTest {
             driver.verify(extractedProject)
 
             val executionState = buildService.processState.value.buildExecution
-            val testFailureDetails = if (executionState.phase != BuildExecutionPhase.SUCCEEDED) {
-                File(extractedProject, "simulator/build/test-results/test")
-                    .listFiles { _, name -> name.endsWith(".xml") }
-                    ?.joinToString("\n") { it.name + ":\n" + it.readText() } ?: "No test XMLs"
-            } else ""
+
             assertEquals(
                 BuildExecutionPhase.SUCCEEDED,
                 executionState.phase,
-                "Verification build must succeed: ${executionState.message}\nTest details:\n$testFailureDetails\nRecent output:\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n")
+                "Verification build must succeed: ${executionState.message}\nNested XML retained under consumer-roundtrip-evidence/generic/operation-3.\nRecent output:\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n")
             )
             assertEquals(0, executionState.exitCode, "Verification build exit code must be 0")
 
@@ -296,13 +296,9 @@ class GenericStarterConsumerRoundtripIntegrationTest {
             assertEquals(lowProfile.uid, lowDocs.drivetrains.single().canonicalProfileUid)
             driver.verify(lowProject)
             val lowExecution = buildService.processState.value.buildExecution
-            val lowTestFailureDetails = if (lowExecution.phase != BuildExecutionPhase.SUCCEEDED) {
-                File(lowProject, "simulator/build/test-results/test")
-                    .listFiles { _, name -> name.endsWith(".xml") }
-                    ?.joinToString("\n") { it.name + ":\n" + it.readText() } ?: "No test XMLs"
-            } else ""
+
             assertEquals(BuildExecutionPhase.SUCCEEDED, lowExecution.phase,
-                "Second saved gain build must succeed: ${lowExecution.message}\nTest details:\n$lowTestFailureDetails\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n"))
+                "Second saved gain build must succeed: ${lowExecution.message}\nNested XML retained under consumer-roundtrip-evidence/generic/operation-4.\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n"))
             assertEquals(0, lowExecution.exitCode)
 
         } finally {

@@ -1,5 +1,11 @@
 # Live heading tuning transaction: generated FTC consumer verification
 
+> Historical submission from `5be808128`, not the final peer-review verdict. Requests were
+> written directly into NT4 topics, the hold check had no competing drive command, and the
+> late-request check asserted only motor power. Only one canonical file was compared as text.
+> See the [peer review](LIVE_TUNING_CONSUMER_PEER_REVIEW.md) for corrected coverage and actual
+> limits. The report below is preserved as submitted, including its original claims.
+
 Date: 2026-09-18. Base commit: `dc7bf80c138c385fec596997c5f4038db2bb4b1c` on branch `codex/live-tuning-consumer`.
 Following: `docs/audits/NEXT_LIVE_TUNING_CONSUMER_PROMPT.md`.
 All work executed locally with a single agent. No remote pushes, pull requests, releases, or broad audits.
