@@ -3,8 +3,6 @@ package com.ares.analytics.service.project
 import com.ares.analytics.BuildConfig
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.BuildExecutionPhase
-import com.ares.analytics.service.ManagedToolchainPaths
-import com.ares.analytics.service.ProjectBuildService
 import com.ares.analytics.shared.models.League
 import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.coroutines.delay
@@ -41,22 +39,17 @@ class ProjectGenerationRecoveryIntegrationTest {
     val temporaryFolder = TemporaryFolder()
     private val temporaryDirectory get() = temporaryFolder.root.toPath()
 
-    private val candidateRepoUri = System.getProperty("ares.repository.uri")
-        ?: "file:///C:/Users/david/dev/robotics/ARES-Robotics/.codex-validation/reviewed-project-roundtrip/ARESLib-Kotlin/build/release-repository"
-    private val candidateVersion = System.getProperty("ares.version")
-        ?: "19.1.3-rc.roundtrip.dbb5b9f.1"
-
     @Test
     fun `controlled intermediate-write failure leaves partial output, rejects stale build, preserves documents, and recovers cleanly`() = runBlocking {
         val workspace = temporaryDirectory.resolve("failure-recovery-workspace").toFile().apply { mkdirs() }
         val project = extractBundledBioBuzz(workspace)
-        configureSdk(project)
+        configureConsumerSdk(project)
 
         // Mutate field configuration to verify generated output carries this change
         val metadataFile = File(project, ".ares/project.json")
         val originalMetadata = AresProjectMetadataCodec.decode(metadataFile.readText())
         val modifiedMetadata = originalMetadata.copy(fieldLengthMeters = 3.52, fieldWidthMeters = 3.52)
-        metadataFile.writeText(AresProjectMetadataCodec.encode(modifiedMetadata))
+        saveConsumerMetadata(project, modifiedMetadata)
 
         // Provide a custom USER-OWNED extension file
         val teamExtensionsFile = File(project, "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/extensions/TeamRobotExtensions.kt")
@@ -77,14 +70,14 @@ class ProjectGenerationRecoveryIntegrationTest {
         }
         assertTrue(manifestObstruction.isDirectory, "Manifest path must be obstructed by a directory")
 
-        val buildService = ProjectBuildService(
-            aresRepositoryUri = candidateRepoUri,
-            aresVersion = candidateVersion,
-        )
+        val canonicalBefore = consumerCanonicalSnapshot(project)
+        val runtimeFile = File(project, "TeamCode/build/generated/ares/main/kotlin/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt")
+        assertFalse(runtimeFile.exists(), "Partial output must be produced by this run, not inherited")
+        val driver = ConsumerRoundtripBuild("write-recovery")
+        val buildService = driver.service
         try {
             // Trigger generation with intermediate obstruction
-            buildService.generateAresProject(project.path, League.FTC)
-            awaitGenerationFinished(buildService)
+            driver.generate(project)
 
             // 1. Generation must report FAILED with diagnostics
             assertEquals(AresGenerationPhase.FAILED, buildService.aresGenerationState.value.phase)
@@ -110,10 +103,20 @@ class ProjectGenerationRecoveryIntegrationTest {
             val reloadedMetadata = AresProjectMetadataCodec.decode(metadataFile.readText())
             assertEquals(3.52, reloadedMetadata.fieldLengthMeters, "Canonical project.json must remain intact")
             assertEquals(userExtensionContent, teamExtensionsFile.readText(), "USER-OWNED extension must remain intact")
+            assertEquals(canonicalBefore, consumerCanonicalSnapshot(project))
+
+            // runBuild regenerates first. Invoke the actual check-only Gradle task separately to
+            // prove incomplete existing outputs are rejected, without silently repairing them.
+            assertTrue(driver.verifyExistingFiles(project) != 0, "Check-only verification must reject the incomplete manifest")
+            val checkOnlyLog = File(project, "build/roundtrip-verify-existing.log").readText()
+            assertTrue(checkOnlyLog.contains("ares-project-verification.json"), "Verification must fail at the obstructed manifest")
+            assertTrue(checkOnlyLog.contains(":TeamCode:verifyAresProject FAILED"), "The verifier itself must reject existing output")
+            assertFalse(checkOnlyLog.contains("> Task :TeamCode:prepareAresSubsystemPlumbing"), "Check-only verification must not regenerate output")
+            assertEquals(runtimeContent, generatedRuntime.readText(), "Check-only verification must leave existing runtime output unchanged")
+            assertTrue(manifestObstruction.isDirectory, "Check-only verification must not repair the manifest")
 
             // 4. Stale-output rejection: verification build must fail because generated outputs are unverified
-            buildService.runBuild(project.path, League.FTC)
-            awaitBuildFinished(buildService)
+            driver.verify(project)
             assertEquals(
                 BuildExecutionPhase.FAILED,
                 buildService.processState.value.buildExecution.phase,
@@ -122,15 +125,14 @@ class ProjectGenerationRecoveryIntegrationTest {
 
             // 5. Clean recovery: remove the obstruction and re-run generation
             assertTrue(manifestObstruction.deleteRecursively(), "Must successfully remove obstruction directory")
-            buildService.generateAresProject(project.path, League.FTC)
-            awaitGenerationFinished(buildService)
+            driver.generate(project)
 
             assertEquals(AresGenerationPhase.SUCCEEDED, buildService.aresGenerationState.value.phase)
             assertTrue(manifestObstruction.isFile, "Verification manifest must now be written as a valid file")
+            assertEquals(0, driver.verifyExistingFiles(project), "Check-only verification must pass after recovery")
 
             // 6. Verification build succeeds after clean recovery
-            buildService.runBuild(project.path, League.FTC)
-            awaitBuildFinished(buildService)
+            driver.verify(project)
             assertEquals(
                 BuildExecutionPhase.SUCCEEDED,
                 buildService.processState.value.buildExecution.phase,
@@ -143,16 +145,16 @@ class ProjectGenerationRecoveryIntegrationTest {
     }
 
     @Test
-    fun `real generation cancellation terminates process, preserves documents, and recovers cleanly on retry`() = runBlocking {
+    fun `cancellation after real codegen writes output terminates Gradle and recovers cleanly on retry`() = runBlocking {
         val workspace = temporaryDirectory.resolve("cancellation-recovery-workspace").toFile().apply { mkdirs() }
         val project = extractBundledBioBuzz(workspace)
-        configureSdk(project)
+        configureConsumerSdk(project)
 
         // Mutate configuration
         val metadataFile = File(project, ".ares/project.json")
         val originalMetadata = AresProjectMetadataCodec.decode(metadataFile.readText())
         val modifiedMetadata = originalMetadata.copy(fieldLengthMeters = 3.60, fieldWidthMeters = 3.60)
-        metadataFile.writeText(AresProjectMetadataCodec.encode(modifiedMetadata))
+        saveConsumerMetadata(project, modifiedMetadata)
 
         val teamExtensionsFile = File(project, "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/extensions/TeamRobotExtensions.kt")
         val userExtensionContent = buildString {
@@ -165,25 +167,53 @@ class ProjectGenerationRecoveryIntegrationTest {
         }
         teamExtensionsFile.writeText(userExtensionContent)
 
-        val buildService = ProjectBuildService(
-            aresRepositoryUri = candidateRepoUri,
-            aresVersion = candidateVersion,
-        )
+        val canonicalBefore = consumerCanonicalSnapshot(project)
+        val script = File(project, "TeamCode/build.gradle")
+        val originalScript = script.readText()
+        val pidFile = File(project, ".ares/local/roundtrip-generation.pid")
+        val releaseFile = File(project, ".ares/local/roundtrip-generation.release")
+        // Test-only task-completion barrier: actual codegen must finish writing before we can cancel.
+        // This proves cancellation of the live Gradle operation, not interruption inside the CLI writer.
+        script.appendText("\n" + """
+
+            tasks.named("generateAresProject").configure {
+                doLast {
+                    def marker = rootProject.file(".ares/local/roundtrip-generation.pid")
+                    marker.parentFile.mkdirs()
+                    marker.text = Long.toString(ProcessHandle.current().pid())
+                    while (!rootProject.file(".ares/local/roundtrip-generation.release").isFile()) {
+                        Thread.sleep(20L)
+                    }
+                }
+            }
+        """.trimIndent())
+        var generationPid: Long? = null
+        val driver = ConsumerRoundtripBuild("cancel-recovery")
+        val buildService = driver.service
         try {
             // Start real generation
             buildService.generateAresProject(project.path, League.FTC)
 
-            // Wait until the build operation is actively running
-            withTimeout(30_000L) {
-                while (!buildService.processState.value.buildRunning ||
-                    buildService.aresGenerationState.value.phase != AresGenerationPhase.RUNNING
-                ) {
+            // A RUNNING state alone can be published before any child process exists.
+            generationPid = withTimeout(180_000L) {
+                var readyPid: Long? = null
+                while (readyPid == null) {
+                    readyPid = if (pidFile.isFile) pidFile.readText().trim().toLongOrNull() else null
                     delay(10)
                 }
+                readyPid
             }
+            assertTrue(ProcessHandle.of(requireNotNull(generationPid)).map { it.isAlive }.orElse(false))
+            val writtenRuntime = File(project, "TeamCode/build/generated/ares/main/kotlin/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt")
+            assertTrue(writtenRuntime.isFile)
+            assertTrue(writtenRuntime.readText().contains("3.6"))
 
             // Cancel the active build
             buildService.killActiveBuildAndJoin()
+            withTimeout(10_000L) {
+                while (ProcessHandle.of(requireNotNull(generationPid)).map { it.isAlive }.orElse(false)) delay(20)
+            }
+            script.writeText(originalScript)
 
             // 1. Verify cancellation status and process cleanup
             assertFalse(buildService.processState.value.buildRunning, "Build running flag must be cleared after cancellation")
@@ -198,18 +228,17 @@ class ProjectGenerationRecoveryIntegrationTest {
             val reloadedMetadata = AresProjectMetadataCodec.decode(metadataFile.readText())
             assertEquals(3.60, reloadedMetadata.fieldLengthMeters, "Canonical project.json must remain intact after cancellation")
             assertEquals(userExtensionContent, teamExtensionsFile.readText(), "USER-OWNED extension must remain intact after cancellation")
+            assertEquals(canonicalBefore, consumerCanonicalSnapshot(project))
 
             // 3. Clean recovery: re-run generation to completion
-            buildService.generateAresProject(project.path, League.FTC)
-            awaitGenerationFinished(buildService)
+            driver.generate(project)
 
             assertEquals(AresGenerationPhase.SUCCEEDED, buildService.aresGenerationState.value.phase)
             val manifestFile = File(project, "build/generated/ares/verification/ares-project-verification.json")
             assertTrue(manifestFile.isFile, "Verification manifest must exist after generation recovery")
 
             // 4. Verify resulting project with a complete verification build
-            buildService.runBuild(project.path, League.FTC)
-            awaitBuildFinished(buildService)
+            driver.verify(project)
             assertEquals(
                 BuildExecutionPhase.SUCCEEDED,
                 buildService.processState.value.buildExecution.phase,
@@ -217,32 +246,10 @@ class ProjectGenerationRecoveryIntegrationTest {
             )
             assertEquals(0, buildService.processState.value.buildExecution.exitCode)
         } finally {
+            releaseFile.parentFile.mkdirs()
+            releaseFile.writeText("release test barrier")
+            script.writeText(originalScript)
             buildService.shutdownAndJoin()
-        }
-    }
-
-    private suspend fun awaitGenerationFinished(service: ProjectBuildService, timeoutMs: Long = 180_000L) = withTimeout(timeoutMs) {
-        while (!service.processState.value.buildRunning && service.aresGenerationState.value.phase != AresGenerationPhase.RUNNING) {
-            delay(10)
-        }
-        while (service.processState.value.buildRunning || service.aresGenerationState.value.phase == AresGenerationPhase.RUNNING) {
-            delay(20)
-        }
-    }
-
-    private suspend fun awaitBuildFinished(service: ProjectBuildService, timeoutMs: Long = 240_000L) = withTimeout(timeoutMs) {
-        while (!service.processState.value.buildRunning && service.processState.value.buildExecution.phase != BuildExecutionPhase.RUNNING) {
-            delay(10)
-        }
-        while (service.processState.value.buildRunning || service.processState.value.buildExecution.phase == BuildExecutionPhase.RUNNING) {
-            delay(20)
-        }
-    }
-
-    private fun configureSdk(project: File) {
-        val sdk = ManagedToolchainPaths.resolveAndroidSdk() ?: File(System.getProperty("user.home"), "AppData/Local/Android/Sdk")
-        if (sdk.isDirectory) {
-            File(project, "local.properties").writeText("sdk.dir=${sdk.path.replace('\\', '/')}\n")
         }
     }
 

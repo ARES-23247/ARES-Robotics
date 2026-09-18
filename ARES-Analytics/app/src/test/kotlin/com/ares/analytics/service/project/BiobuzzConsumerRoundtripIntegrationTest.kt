@@ -3,8 +3,6 @@ package com.ares.analytics.service.project
 import com.ares.analytics.BuildConfig
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.BuildExecutionPhase
-import com.ares.analytics.service.ManagedToolchainPaths
-import com.ares.analytics.service.ProjectBuildService
 import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.Sha256
@@ -20,9 +18,7 @@ import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineStep
 import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.tuning.TuningProfileDocumentCodec
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Rule
@@ -31,6 +27,7 @@ import java.io.File
 import java.util.zip.ZipInputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
@@ -47,16 +44,11 @@ class BiobuzzConsumerRoundtripIntegrationTest {
     private val temporaryDirectory get() = temporaryFolder.root.toPath()
     private val exporter = ProjectArchiveExporter()
 
-    private val candidateRepoUri = System.getProperty("ares.repository.uri")
-        ?: "file:///C:/Users/david/dev/robotics/ARES-Robotics/.codex-validation/reviewed-project-roundtrip/ARESLib-Kotlin/build/release-repository"
-    private val candidateVersion = System.getProperty("ares.version")
-        ?: "19.1.3-rc.roundtrip.dbb5b9f.1"
-
     @Test
     fun `biobuzz complete consumer roundtrip proves settings, user extensions, determinism, and simulated IO`() = runBlocking {
         val workspace = temporaryDirectory.resolve("biobuzz-workspace").toFile().apply { mkdirs() }
         val project = extractBundledBioBuzz(workspace)
-        configureSdk(project)
+        configureConsumerSdk(project)
         assertTrue(File(project, ".ares/project.json").isFile)
 
         // 1. Open in initial ProjectSession
@@ -71,7 +63,7 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         val metadataFile = File(project, ".ares/project.json")
         val originalMetadata = AresProjectMetadataCodec.decode(metadataFile.readText())
         val modifiedMetadata = originalMetadata.copy(fieldLengthMeters = 3.58, fieldWidthMeters = 3.58)
-        metadataFile.writeText(AresProjectMetadataCodec.encode(modifiedMetadata))
+        saveConsumerMetadata(project, modifiedMetadata)
 
         //    (B) Subsystem / Hardware settings (modify feedbackTimeoutMs to 120ms)
         val intakeFile = File(project, ".ares/subsystems/biobuzz-intake.aressubsystem")
@@ -79,18 +71,12 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         val modifiedIntake = originalIntake.copy(
             safety = originalIntake.safety.copy(feedbackTimeoutMs = 120)
         )
-        intakeFile.writeText(SubsystemDocumentCodec.encode(modifiedIntake))
+        assertIs<ProjectSessionMutationResult.Applied<*>>(initialSession.saveSubsystem(
+            initialSession.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true).revision, modifiedIntake,
+        ))
 
         //    (C) Tuning settings (heading kP = 2.40)
-        val tuningFile = File(project, ".ares/tuning/simulation.arestuning")
-        val originalTuningText = tuningFile.readText()
-        assertTrue(originalTuningText.contains("ftc.drive.heading.kp"))
-        val modifiedTuningText = originalTuningText.replace(
-            Regex("""("parameterUid"\s*:\s*"ftc\.drive\.heading\.kp"[\s\S]*?"doubleValue"\s*:\s*)1\.8"""),
-            "$1" + "2.4"
-        )
-        check(modifiedTuningText != originalTuningText) { "Tuning replacement did not modify file content" }
-        tuningFile.writeText(modifiedTuningText)
+        saveConsumerHeadingGain(initialSession, project, 2.4)
 
         //    (D) Control settings (deadband = 0.10)
         val controlsFile = File(project, ".ares/controls/driver.arescontrols")
@@ -102,36 +88,22 @@ class BiobuzzConsumerRoundtripIntegrationTest {
                 ))
             } else binding
         }
-        controlsFile.writeText(ControlSchemeCodec.encode(originalControls.copy(bindings = modifiedBindings)))
+        assertIs<ProjectSessionMutationResult.Applied<*>>(initialSession.saveControls(
+            initialSession.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true).revision,
+            emptyList(), listOf(originalControls.copy(bindings = modifiedBindings)),
+        ))
 
         //    (E) Autonomous catalog settings (create routine and register autonomous entry)
-        val routineFile = File(project, ".ares/routines/sample-routine.aresroutine").apply {
-            parentFile.mkdirs()
-            writeText(
-                AresRoutineCodec.encode(
-                    RoutineDocument(
-                        documentId = "sample-routine",
-                        name = "Sample Routine",
-                        steps = listOf(RoutineStep.wait(1.0)),
-                    )
-                )
-            )
-        }
-        val autoCatalogFile = File(project, ".ares/autonomous-catalog.json")
-        val originalCatalog = AutonomousCatalogCodec.decode(autoCatalogFile.readText())
-        val modifiedCatalog = originalCatalog.copy(
-            entries = listOf(
-                AutonomousCatalogEntry(
-                    entryId = "custom-biobuzz-auto",
-                    displayName = "Custom BioBuzz Autonomous",
-                    description = "Configured autonomous routine entry",
-                    routineId = "sample-routine",
-                    startingPose = RoutinePose(1.2, 0.8, 0.0),
-                    sortOrder = 42,
-                )
-            )
+        val routine = RoutineDocument(documentId = "sample-routine", name = "Sample Routine", steps = listOf(RoutineStep.wait(1.0)))
+        val autoEntryToSave = AutonomousCatalogEntry(
+            entryId = "custom-biobuzz-auto", displayName = "Custom BioBuzz Autonomous",
+            description = "Configured autonomous routine entry", routineId = routine.documentId,
+            startingPose = RoutinePose(1.2, 0.8, 0.0), sortOrder = 42,
         )
-        autoCatalogFile.writeText(AutonomousCatalogCodec.encode(modifiedCatalog))
+        assertIs<ProjectSessionMutationResult.Applied<*>>(initialSession.saveRoutine(
+            initialSession.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true).revision,
+            routine, autoEntryToSave,
+        ))
 
         // 3. Keep a working USER-OWNED extension in TeamRobotExtensions.kt
         val teamExtensionsFile = File(project, "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/extensions/TeamRobotExtensions.kt")
@@ -160,6 +132,7 @@ class BiobuzzConsumerRoundtripIntegrationTest {
                 appendLine("import com.areslib.sim.opmode.SimOpModeRunner")
                 appendLine("import com.areslib.util.RobotClock")
                 appendLine("import org.firstinspires.ftc.teamcode.extensions.TeamRobotExtensions")
+                appendLine("import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject")
                 appendLine("import org.firstinspires.ftc.teamcode.opmodes.ARESStarterTeleOp")
                 appendLine("import org.junit.After")
                 appendLine("import org.junit.Assert.assertEquals")
@@ -181,6 +154,11 @@ class BiobuzzConsumerRoundtripIntegrationTest {
                 appendLine("        assertEquals(1.25, extensionMultiplier, 1e-6)")
                 appendLine("        assertEquals(\"BIOBUZZ_PRESERVED_USER_EXTENSION\", TeamRobotExtensions.customDriverTag())")
                 appendLine()
+                appendLine("        assertEquals(3.58, GeneratedAresProject.FIELD_LENGTH_METERS, 1e-9)")
+                appendLine("        assertEquals(3.58, GeneratedAresProject.FIELD_WIDTH_METERS, 1e-9)")
+                appendLine("        val autonomous = GeneratedAresProject.autonomousEntries.single { it.entryId == \"custom-biobuzz-auto\" }")
+                appendLine("        assertEquals(1.2, autonomous.startingPose.xMeters, 1e-9)")
+                appendLine("        assertEquals(1, GeneratedAresProject.runtimeDefinition.routines.getValue(\"sample-routine\").steps.size)")
                 appendLine("        RobotClock.useMockTime(1_000L)")
                 appendLine("        val robotDouble = MecanumRobotDouble()")
                 appendLine("        val lifecycle = requireNotNull(")
@@ -223,7 +201,7 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         val extractedDir = temporaryDirectory.resolve("biobuzz-extracted").toFile()
         val extractedProject = exporter.extract(exportArchive.path, extractedDir.path)
         assertEquals(extractedDir.canonicalPath, extractedProject.canonicalPath)
-        configureSdk(extractedProject)
+        configureConsumerSdk(extractedProject)
 
         // 6. Reopen in a fresh ProjectSession and assert independent values
         val extractedSession = ProjectSession()
@@ -258,19 +236,10 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         assertEquals(customizedTeamExtensions, extractedExtensionFile.readText(), "USER-OWNED extension must be byte-identical")
 
         // 7. Regenerate Kotlin source via ProjectBuildService with real Gradle wrapper
-        val buildService = ProjectBuildService(
-            aresRepositoryUri = candidateRepoUri,
-            aresVersion = candidateVersion,
-        )
-        val buildLogs = java.util.concurrent.CopyOnWriteArrayList<String>()
-        val logJob = launch(Dispatchers.IO) {
-            buildService.buildOutput.collect { line ->
-                buildLogs.add(line)
-            }
-        }
+        val driver = ConsumerRoundtripBuild("biobuzz")
+        val buildService = driver.service
         try {
-            buildService.generateAresProject(extractedProject.path, League.FTC)
-            awaitGenerationFinished(buildService)
+            driver.generate(extractedProject)
             assertEquals(AresGenerationPhase.SUCCEEDED, buildService.aresGenerationState.value.phase)
 
             // 8. Determinism check: capture all generated files across directories
@@ -291,8 +260,7 @@ class BiobuzzConsumerRoundtripIntegrationTest {
             assertTrue(capturedFilesFirstRun.size > 2, "Expected multiple generated files")
 
             // Re-run generation to prove strict multi-file determinism
-            buildService.generateAresProject(extractedProject.path, League.FTC)
-            awaitGenerationFinished(buildService)
+            driver.generate(extractedProject)
             assertEquals(AresGenerationPhase.SUCCEEDED, buildService.aresGenerationState.value.phase)
 
             val capturedFilesSecondRun = listOf(generatedMainDir, generatedTestDir, generatedDrivebaseDir)
@@ -316,44 +284,17 @@ class BiobuzzConsumerRoundtripIntegrationTest {
             assertEquals(customizedTeamExtensions, extractedExtensionFile.readText(), "USER-OWNED extension must not be altered by codegen")
 
             // 9. Compile and run consumer robot and simulator tests via verification build
-            buildService.runBuild(extractedProject.path, League.FTC)
-            awaitBuildFinished(buildService)
+            driver.verify(extractedProject)
 
             val executionState = buildService.processState.value.buildExecution
             assertEquals(
                 BuildExecutionPhase.SUCCEEDED,
                 executionState.phase,
-                "Verification build must succeed: ${executionState.message}\nRecent output:\n" + buildLogs.takeLast(60).joinToString("\n")
+                "Verification build must succeed: ${executionState.message}\nRecent output:\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n")
             )
             assertEquals(0, executionState.exitCode, "Verification build exit code must be 0")
         } finally {
-            logJob.cancel()
             buildService.shutdownAndJoin()
-        }
-    }
-
-    private suspend fun awaitGenerationFinished(service: ProjectBuildService, timeoutMs: Long = 180_000L) = withTimeout(timeoutMs) {
-        while (!service.processState.value.buildRunning && service.aresGenerationState.value.phase != AresGenerationPhase.RUNNING) {
-            delay(10)
-        }
-        while (service.processState.value.buildRunning || service.aresGenerationState.value.phase == AresGenerationPhase.RUNNING) {
-            delay(20)
-        }
-    }
-
-    private suspend fun awaitBuildFinished(service: ProjectBuildService, timeoutMs: Long = 240_000L) = withTimeout(timeoutMs) {
-        while (!service.processState.value.buildRunning && service.processState.value.buildExecution.phase != BuildExecutionPhase.RUNNING) {
-            delay(10)
-        }
-        while (service.processState.value.buildRunning || service.processState.value.buildExecution.phase == BuildExecutionPhase.RUNNING) {
-            delay(20)
-        }
-    }
-
-    private fun configureSdk(project: File) {
-        val sdk = ManagedToolchainPaths.resolveAndroidSdk() ?: File(System.getProperty("user.home"), "AppData/Local/Android/Sdk")
-        if (sdk.isDirectory) {
-            File(project, "local.properties").writeText("sdk.dir=${sdk.path.replace('\\', '/')}\n")
         }
     }
 

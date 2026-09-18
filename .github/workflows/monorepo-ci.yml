@@ -344,11 +344,22 @@ jobs:
           fi
           test_tasks=()
           if [[ "$TEST_SHARED" == "true" ]]; then test_tasks+=(:shared:test); fi
-          if [[ "$TEST_APP" == "true" ]]; then test_tasks+=(:app:test); fi
+          if [[ "$TEST_APP" == "true" ]]; then test_tasks+=(:app:test :app:consumerRoundtripTest); fi
           if [[ "$TEST_GATEWAY" == "true" ]]; then test_tasks+=(:gateway:test); fi
           if (( ${#test_tasks[@]} == 0 )); then echo "No selected Studio test tasks" >&2; exit 1; fi
           ./gradlew "${test_tasks[@]}" \
             "${dependency_args[@]}" --no-parallel --no-daemon --console=plain
+
+      - name: Retain consumer round-trip evidence
+        if: always() && needs.changes.outputs.analytics_app == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: studio-consumer-roundtrip-evidence
+          path: |
+            ARES-Analytics/app/build/test-results/consumerRoundtripTest
+            ARES-Analytics/app/build/consumer-roundtrip-evidence
+          if-no-files-found: warn
+          retention-days: 14
 
   result:
     name: Monorepo CI result

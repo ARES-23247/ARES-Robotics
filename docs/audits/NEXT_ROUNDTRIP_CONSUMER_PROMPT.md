@@ -1,5 +1,9 @@
 # Next bounded consumer round-trip checkpoint
 
+This historical prompt produced submission `a4a9e6133`; see the
+[consumer peer review](PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md) for its corrections, verified
+scenarios, and remaining limits before assigning more work.
+
 Copy this prompt to the other agent:
 
 ```text

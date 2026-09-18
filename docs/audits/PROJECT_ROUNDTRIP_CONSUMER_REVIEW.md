@@ -1,5 +1,12 @@
 # Bounded Consumer Round-Trip & Real Generation Recovery Review
 
+> Historical submission report for `a4a9e6133`. The independent
+> [consumer peer review](PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md) records corrections and
+> current validation. The submitted tests used this PC's hard-coded dependency repository,
+> directly wrote configuration fixtures, and could cancel before a Gradle process existed.
+> Its cancellation and portability claims therefore required additional evidence. The current
+> heavyweight checks use `:app:consumerRoundtripTest`; the command below describes the old submission.
+
 Date: 2026-09-17. Base commit: `d1ff42edf`, branch `codex/consumer-roundtrip-integration`.
 Reviewed consumer journeys and generation recovery tests locally on Windows desktop JVM (JDK 17).
 This is a strictly local verification checkpoint; no merge, push, publication, or deployment was performed.
