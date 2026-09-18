@@ -133,7 +133,7 @@ dependencies {
     implementation("net.java.dev.jna:jna-platform:5.19.1")
 
     // Pure-Java project version history; students do not need a separate Git installation.
-    implementation("org.eclipse.jgit:org.eclipse.jgit:7.7.1.202607240634-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:7.8.0.202609011348-r")
 
     // Math & Signal Processing
     implementation("org.ejml:ejml-simple:0.46.1")
