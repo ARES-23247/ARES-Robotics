@@ -33850,7 +33850,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "70222164021c4b3dafd9ec47780f2ae54c7cccdb568d249cb1f43c2ee770ac4e",
+      "sha256": "ef5c7102d7a08898f6d288ca2e3e14d8d971d502954ec8282bd7e2a2abddebd9",
       "review": "partial",
       "validation": "passed",
       "scope": "Reviewed only the generated safety peer-review ledger delta. Preserve historical identities and evidence; bind scoped test corrections and observed results. No repository-wide review claim. Existing unrelated stale identities and missing historical paths remain outside scope; source policy and scoped fingerprint validation are recorded in the report.",
@@ -35070,29 +35070,38 @@
       }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/GenericStarterConsumerRoundtripIntegrationTest.kt": {
-      "sha256": "95d011e7c9fa5e195c17efb7f21461049db7c68fb7076489859033fdec99242d",
+      "sha256": "1f4f02c0ae394a1c041ed32ec7fb65f94c56837806de7929eb9d8d44733532dd",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the f3b44d887 saved-gain/feedback submission and corrected delta: two genuine saved/exported/reopened canonical gain runs; generated gripper feedback and real active-output OpMode stop; preserve generic deadband and roundtrip coverage. No full production dependency or hardware claim.",
+      "scope": "Integrated complete live heading-tuning transaction proof into generated generic FTC consumer simulation test source: imports NT4Server, TuningAcknowledgementCodec, File, and invokes consumerLiveTuningBehavior(savedGain). Added nested simulator test XML failure reporting in driver verification assertion. Proves full live tuning lifecycle across export/extract/reopen at multiple canonical gains.",
       "evidence": [
-        "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+        "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
       ],
-      "generatedSafetyPriorReview": {
-        "sha256": "41c8d4eea92a12b6d67d20b8bbab82efe48c734095644b9bb79e7970d2864dca",
+      "liveTuningPriorReview": {
+        "sha256": "95d011e7c9fa5e195c17efb7f21461049db7c68fb7076489859033fdec99242d",
         "review": "partial",
         "validation": "passed",
-        "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
+        "scope": "Reviewed the f3b44d887 saved-gain/feedback submission and corrected delta: two genuine saved/exported/reopened canonical gain runs; generated gripper feedback and real active-output OpMode stop; preserve generic deadband and roundtrip coverage. No full production dependency or hardware claim.",
         "evidence": [
-          "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+          "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
         ],
-        "consumerRoundtripPriorReview": {
-          "sha256": "7b488a5ea13f2c0fa82cc38ed0963215825337312d98a2bce8b4bde2148cf354",
+        "generatedSafetyPriorReview": {
+          "sha256": "41c8d4eea92a12b6d67d20b8bbab82efe48c734095644b9bb79e7970d2864dca",
           "review": "partial",
           "validation": "passed",
-          "scope": "Complete Generic FTC Starter consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution, and simulated IO validation.",
+          "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
           "evidence": [
-            "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
-          ]
+            "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+          ],
+          "consumerRoundtripPriorReview": {
+            "sha256": "7b488a5ea13f2c0fa82cc38ed0963215825337312d98a2bce8b4bde2148cf354",
+            "review": "partial",
+            "validation": "passed",
+            "scope": "Complete Generic FTC Starter consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution, and simulated IO validation.",
+            "evidence": [
+              "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+            ]
+          }
         }
       }
     },
@@ -35179,13 +35188,22 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ConsumerSafetySimulationFixture.kt": {
-      "sha256": "7e79be0546c38b395f80137efa0c9b135a2271cd993f56374e6f14dddc13b23e",
+      "sha256": "a0b93b0969134eaaa6275cf980d8bbf3ac44fa9aac519deed59c175559d94a48",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed all shared injected fixture source: independent P-only literal oracle, actual IMU sample observation, real IO-derived feedback state, timeout boundaries, component close and actual active-output OpMode stop. Compiled and executed in both generated FTC consumers at both saved gains. Scoped desktop evidence, not live tuning authorization or hardware validation.",
+      "scope": "Reviewed shared consumer simulation fixture and live heading-tuning behavior verification: unarmed request rejection (SESSION_NOT_ARMED), authorized request with live arm/lease handshake (APPLIED) holding neutral during calibration hold and executing independent P-only oracle (omega = Kp * error = 3.2 * 0.10 = 0.32 rad/s below saturation), idempotent nonce replay handling, out-of-bounds rejection (INVALID_VALUE), canonical profile byte-invariance, and stop/close neutralization with late request rejection. Fixed JUnit 4 parameter ordering in canonical assertions.",
       "evidence": [
-        "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
-      ]
+        "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
+      ],
+      "generatedSafetyPriorReview": {
+        "sha256": "7e79be0546c38b395f80137efa0c9b135a2271cd993f56374e6f14dddc13b23e",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed all shared injected fixture source: independent P-only literal oracle, actual IMU sample observation, real IO-derived feedback state, timeout boundaries, component close and actual active-output OpMode stop. Compiled and executed in both generated FTC consumers at both saved gains. Scoped desktop evidence, not live tuning authorization or hardware validation.",
+        "evidence": [
+          "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+        ]
+      }
     },
     "docs/audits/GENERATED_SAFETY_BEHAVIOR_REVIEW.md": {
       "sha256": "30454b4e5940d05b780a7948f870357243096c4b211af1a6253e57124bec9094",
@@ -35212,6 +35230,15 @@
       "scope": "Bounded local next-agent handoff for one live tuning consumer transaction, actual authorization/acknowledgement and state effect. Requires prior test inventory, source isolation, correct dependency mode, truthful ledger and no automatic publication/expansion. Prompt only; not executed.",
       "evidence": [
         "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md": {
+      "sha256": "5ea12d46a2c7c1f4efeb1ca113cce77258f940f8af2abf95f622e9662081fb37",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Local peer review and verification report for live heading-tuning transactions through the actual generated FTC consumer, establishing unarmed rejection, authorized application with independent P-only oracle, neutral hold, replay idempotency, invalid value rejection, and stop/close neutralization.",
+      "evidence": [
+        "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
       ]
     }
   }
