@@ -86,10 +86,10 @@ class TuningManager(
             publishValue("$root/Canonical", requireNotNull(runtime.canonicalValue(declaration.uid)))
             val current = requireNotNull(runtime.value(declaration.uid))
             publishValue(topic.current, current)
-            // Metadata refresh must not overwrite a dashboard proposal or erase its acknowledgement.
+            // Requested and RequestNonce belong to the dashboard. Even an initial robot write
+            // claims server ownership in NT4 and prevents clients from publishing requests.
+            // Missing request topics are idle; metadata refresh preserves acknowledgements.
             if (!metadataPublished) {
-                publishValue(topic.requested, current)
-                telemetry.putNumber(topic.requestNonce, -1.0)
                 telemetry.putNumber(topic.processedNonce, -1.0)
                 telemetry.putString(topic.lastResult, "IDLE")
                 telemetry.putString(topic.acknowledgement, "")

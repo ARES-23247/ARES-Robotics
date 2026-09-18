@@ -1,5 +1,14 @@
 package com.areslib.networktables
 
+import com.areslib.telemetry.ITelemetry
+import com.areslib.tuning.TuningApplyContext
+import com.areslib.tuning.TuningApplyPolicy
+import com.areslib.tuning.TuningManager
+import com.areslib.tuning.TuningMetadataSnapshot
+import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningParameterType
+import com.areslib.tuning.TuningValue
+import com.areslib.tuning.TypedTuningRuntime
 import org.java_websocket.WebSocket
 import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.handshake.ClientHandshake
@@ -253,6 +262,63 @@ class NT4NetworkingHardeningTest {
         server.putTopic("Client/B", 7.0)
         server.onMessage(connectionB, server.encodeNT4Message(0L, 2000L, 0L, 1, 8.0))
         assertEquals(7.0, server.getTopicEntry("Client/B")?.value?.getAsObject())
+    }
+
+    @Test
+    fun tuningMetadataLeavesRequestsClientOwnedAndAcknowledgementsServerOwned() {
+        val server = newServer()
+        val connection = webSocketProxy()
+        server.onOpen(connection, proxy<ClientHandshake> { method, _ -> defaultValue(method.returnType) })
+        // Same ownership boundary as NT4Telemetry, without binding a shared listening port.
+        val telemetry = object : ITelemetry {
+            override fun putNumber(key: String, value: Double) { server.putTopic(key, value) }
+            override fun putBoolean(key: String, value: Boolean) { server.putTopic(key, value) }
+            override fun putString(key: String, value: String) { server.putTopic(key, value) }
+            override fun putDoubleArray(key: String, value: DoubleArray) { server.putTopic(key, value) }
+            override fun getNumber(key: String, defaultValue: Double) =
+                (server.getTopicEntry(key)?.value as? NT4Value.DoubleVal)?.value ?: defaultValue
+            override fun getBoolean(key: String, defaultValue: Boolean) =
+                (server.getTopicEntry(key)?.value as? NT4Value.BooleanVal)?.value ?: defaultValue
+            override fun getString(key: String, defaultValue: String) =
+                (server.getTopicEntry(key)?.value as? NT4Value.StringVal)?.value ?: defaultValue
+        }
+        val declaration = TuningParameterDeclaration(
+            uid = "drive.kp", key = "drive.kp", componentUid = "drive", displayName = "P",
+            description = "Proportional gain", type = TuningParameterType.DOUBLE,
+            minimum = 0.0, maximum = 10.0, defaultValue = TuningValue(doubleValue = 2.0),
+            applyPolicy = TuningApplyPolicy.LIVE_SAFE,
+        )
+        val runtime = TypedTuningRuntime(
+            listOf(declaration), mapOf(declaration.uid to declaration.defaultValue),
+            TuningMetadataSnapshot("project", "drive", "base", listOf(declaration), listOf("base")),
+        )
+        val applied = mutableListOf<Double>()
+        val root = "Tuning/Parameters/drive.kp"
+        TuningManager(runtime, telemetry, { TuningApplyContext(true, false) },
+            { _, value -> applied += requireNotNull(value.doubleValue); true }, { true }).use { manager ->
+            server.onMessage(connection, publish("$root/Requested", 2000, "double"))
+            server.onMessage(connection, publish("$root/RequestNonce", 2001, "double"))
+            server.onMessage(connection, server.encodeNT4Message(0L, 2000L, 0L, 1, 3.2))
+            server.onMessage(connection, server.encodeNT4Message(0L, 2001L, 0L, 1, 1.0))
+            // Refresh with a pending request must neither replace its value nor revoke ownership.
+            manager.publishMetadataAndValues()
+            manager.update(1_000L)
+            assertEquals(listOf(3.2), applied)
+            assertEquals("APPLIED", telemetry.getString("$root/LastResult", ""))
+            val acknowledgement = telemetry.getString("$root/Acknowledgement", "")
+            server.onMessage(connection, publish("$root/Current", 3000, "double"))
+            server.onMessage(connection, publish("$root/Acknowledgement", 3001, "string"))
+            server.onMessage(connection, server.encodeNT4Message(0L, 3000L, 0L, 1, 99.0))
+            server.onMessage(connection, server.encodeNT4Message(0L, 3001L, 0L, 4, "forged"))
+            assertEquals(3.2, telemetry.getNumber("$root/Current", Double.NaN))
+            assertEquals(acknowledgement, telemetry.getString("$root/Acknowledgement", ""))
+            server.onMessage(connection, server.encodeNT4Message(0L, 2000L, 0L, 1, 4.0))
+            server.onMessage(connection, server.encodeNT4Message(0L, 2001L, 0L, 1, 2.0))
+            manager.update(2_000L)
+            assertEquals(listOf(3.2, 4.0), applied)
+            assertEquals(4.0, runtime.double(declaration.uid))
+        }
+        server.onClose(connection, 1000, "test complete", false)
     }
 
     @Test
