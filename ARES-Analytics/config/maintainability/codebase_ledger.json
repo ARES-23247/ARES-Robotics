@@ -932,7 +932,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ProjectBuildService.kt",
       "product": "ARES-Analytics",
-      "lines": 678,
+      "lines": 686,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2212,7 +2212,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporter.kt",
       "product": "ARES-Analytics",
-      "lines": 94,
+      "lines": 266,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6722,7 +6722,7 @@
     {
       "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/AresProjectCodegenCli.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 417,
+      "lines": 424,
       "lineLimit": 500,
       "effectiveLimit": 567,
       "grandfathered": true,

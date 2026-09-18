@@ -285,14 +285,14 @@ class ProjectBuildService internal constructor(
             generation,
             AresGenerationState(AresGenerationPhase.RUNNING, "Applying reviewed subsystem starters and generated plumbing...")
         )
-        val taskName = if (confirmationToken == null) "generateSubsystemStarters" else "replaceSubsystemStarters"
-        val task = if (league == League.FTC) ":TeamCode:$taskName" else taskName
-        val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
-        commandFactory.requireProjectDependenciesCompatible(root)
-        commandFactory.requireProjectWrapper(root, league, isWindows)
-        val command = commandFactory.authoring(league, task, isWindows, confirmationToken)
         val diagnosticLines = ArrayDeque<String>(GENERATION_DIAGNOSTIC_LINE_LIMIT)
         try {
+            val taskName = if (confirmationToken == null) "generateSubsystemStarters" else "replaceSubsystemStarters"
+            val task = if (league == League.FTC) ":TeamCode:$taskName" else taskName
+            val isWindows = System.getProperty("os.name").contains("win", ignoreCase = true)
+            commandFactory.requireProjectDependenciesCompatible(root)
+            commandFactory.requireProjectWrapper(root, league, isWindows)
+            val command = commandFactory.authoring(league, task, isWindows, confirmationToken)
             val exitCode = runOwnedBuildProcess(
                 generation,
                 commandFactory.configureEnvironment(ProcessBuilder(command).directory(root).redirectErrorStream(true)),
@@ -310,6 +310,10 @@ class ProjectBuildService internal constructor(
                 AresGenerationState(AresGenerationPhase.SUCCEEDED, "Subsystem starters and generated plumbing are current.")
             )
         } catch (cancelled: CancellationException) {
+            updateGenerationStateIfOwner(
+                generation,
+                AresGenerationState(AresGenerationPhase.FAILED, "Subsystem starter generation was canceled.")
+            )
             throw cancelled
         } catch (error: Exception) {
             currentCoroutineContext().ensureActive()
@@ -370,6 +374,10 @@ class ProjectBuildService internal constructor(
             )
             _buildOutput.emit("[ARES] Generation finished successfully.$suffix")
         } catch (cancelled: CancellationException) {
+            updateGenerationStateIfOwner(
+                generation,
+                AresGenerationState(AresGenerationPhase.FAILED, "Project generation was canceled.")
+            )
             throw cancelled
         } catch (error: Exception) {
             currentCoroutineContext().ensureActive()

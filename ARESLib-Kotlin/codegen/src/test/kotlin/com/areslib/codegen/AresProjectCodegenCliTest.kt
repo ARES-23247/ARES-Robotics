@@ -30,7 +30,10 @@ import com.areslib.tuning.TuningProfileDocument
 import com.areslib.tuning.TuningProfileDocumentCodec
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
@@ -433,6 +436,164 @@ class AresProjectCodegenCliTest {
         )
 
         assertTrue(Files.isRegularFile(drivebaseOutput.resolve("GeneratedAresTuningConfig.kt")))
+    }
+
+    @ParameterizedTest
+    @CsvSource("false,false", "false,true", "true,false", "true,true")
+    fun `subsystem preview and subsystems only preserve unrelated outputs`(
+        previewSubsystemsOnly: Boolean,
+        existingOutputs: Boolean,
+    ) {
+        val ares = Files.createDirectories(temporary.resolve(".ares"))
+        val drivetrainRoot = Files.createDirectories(ares.resolve("drivetrains"))
+        val tuningRoot = Files.createDirectories(ares.resolve("tuning"))
+        val subsystemRoot = Files.createDirectories(ares.resolve("subsystems"))
+        Files.writeString(ares.resolve("project.json"), projectMetadata())
+        Files.writeString(
+            ares.resolve("action-catalog.json"),
+            CapabilityCatalogCodec.encode(
+                CapabilityCatalogDocument(
+                    projectId = "test",
+                    actions = listOf(ActionDescriptor("intake.stop", "Stop intake", "Stops intake.")),
+                ),
+            ),
+        )
+
+        val motors = (0 until 4).map { index ->
+            DrivetrainComponentDocument(
+                uid = "drive.motor.$index",
+                displayName = "Motor $index",
+                role = DrivetrainComponentRole.DRIVE_MOTOR,
+                hardwareId = "motor$index",
+                currentMeasurementRequired = true,
+                currentMeasurementAvailable = true,
+                xMeters = if (index < 2) 0.18 else -0.18,
+                yMeters = if (index % 2 == 0) 0.18 else -0.18,
+            )
+        }
+        val odometry = DrivetrainComponentDocument(
+            uid = "drive.pinpoint",
+            displayName = "Pinpoint",
+            role = DrivetrainComponentRole.ODOMETRY_SENSOR,
+            hardwareId = "pinpoint",
+        )
+        val drivetrain = DrivetrainDocument(
+            uid = "drive.primary",
+            drivebaseId = "primary",
+            displayName = "Zero parameter mecanum",
+            description = "Ownership-only profile fixture",
+            kind = DrivetrainKind.FTC_MECANUM,
+            platform = DrivetrainPlatform.FTC,
+            components = motors + odometry,
+            geometry = DrivetrainGeometryDocument(0.096, 0.36, 0.36, 19.2, null, 1.0, 3.0),
+            localization = DrivetrainLocalizationDocument(
+                DrivetrainLocalizationSourceDocument("localization.pinpoint", LocalizationSourceKind.PINPOINT, listOf(odometry.uid)),
+                odometry.uid,
+            ),
+            control = DrivetrainControlDocument(listOf(DrivetrainControlKind.OPEN_LOOP), DrivetrainControlKind.OPEN_LOOP),
+            simulation = DrivetrainSimulationDocument("example.Model", "example.Adapter"),
+            parameters = emptyList(),
+            canonicalProfileUid = "project.ftc.profile.simulation",
+        )
+        val profile = TuningProfileDocument(
+            uid = drivetrain.canonicalProfileUid,
+            profileId = "simulation",
+            displayName = "Simulation",
+            description = "Ownership with no assignments",
+            projectId = "test",
+            drivebaseUid = drivetrain.uid,
+            authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
+            values = emptyList(),
+        )
+        Files.writeString(drivetrainRoot.resolve("primary.aresdrivetrain"), DrivetrainDocumentCodec.encode(drivetrain))
+        Files.writeString(tuningRoot.resolve("simulation.arestuning"), TuningProfileDocumentCodec.encode(profile, emptyList()))
+
+        val arm = SubsystemTemplates.create(
+            SubsystemTemplate.SIMPLE_ACTUATOR,
+            documentId = "arm",
+            kotlinTypeName = "Arm",
+            platform = SubsystemPlatform.FTC,
+        ).let {
+            it.copy(
+                implementation = it.implementation.copy(
+                    kind = com.areslib.subsystem.SubsystemImplementationKind.GENERATED_STARTER,
+                    ownership = com.areslib.subsystem.SubsystemSourceOwnership.GENERATED_STARTER,
+                ),
+            )
+        }
+        Files.writeString(subsystemRoot.resolve("arm.aressubsystem"), SubsystemDocumentCodec.encode(arm))
+
+        val output = temporary.resolve("build/generated/project/GeneratedAresProject.kt")
+        val drivebaseOutput = temporary.resolve("build/generated/drivebase")
+        val startersOutput = temporary.resolve("src/main/kotlin/starters")
+        val generatedOutput = temporary.resolve("build/generated/subsystems")
+        val generatedTestOutput = temporary.resolve("build/generated/subsystems-test")
+        val superstructureOutput = temporary.resolve("build/generated/superstructure")
+        val manifest = temporary.resolve("build/generated/ares/verification/ares-project-verification.json")
+        val protectedOutputs = listOf(output, drivebaseOutput.resolve("Keep.kt"),
+            superstructureOutput.resolve("Keep.kt"), manifest)
+        if (existingOutputs) {
+            protectedOutputs.forEach {
+                Files.createDirectories(it.parent)
+                Files.writeString(it, "Keep this existing output unchanged: ${it.fileName}")
+            }
+        }
+        val before = snapshotProjectFiles()
+
+        val previewArgs = arrayOf(
+            "--project", temporary.toString(),
+            "--output", output.toString(),
+            "--package", "example.generated",
+            "--platform", "FTC",
+            "--drivebase-output", drivebaseOutput.toString(),
+            "--drivebase-package", "example.generated.drivebase",
+            "--subsystems-starter-output", startersOutput.toString(),
+            "--subsystems-generated-output", generatedOutput.toString(),
+            "--subsystems-generated-test-output", generatedTestOutput.toString(),
+            "--subsystems-package", "example.generated.subsystems",
+            "--superstructure-output", superstructureOutput.toString(),
+            "--preview-subsystem-starters",
+        )
+
+        AresProjectCodegenCli.run(if (previewSubsystemsOnly) previewArgs + "--subsystems-only" else previewArgs)
+
+        assertEquals(before, snapshotProjectFiles(), "Preview must preserve every existing file and create none")
+        assertFalse(Files.exists(startersOutput), "Preview must not write subsystem starters")
+        assertFalse(Files.exists(generatedOutput), "Preview must not write subsystem generated plumbing")
+        assertFalse(Files.exists(generatedTestOutput), "Preview must not write verification tests")
+
+        val applyArgs = arrayOf(
+            "--project", temporary.toString(),
+            "--output", output.toString(),
+            "--package", "example.generated",
+            "--platform", "FTC",
+            "--drivebase-output", drivebaseOutput.toString(),
+            "--drivebase-package", "example.generated.drivebase",
+            "--subsystems-starter-output", startersOutput.toString(),
+            "--subsystems-generated-output", generatedOutput.toString(),
+            "--subsystems-generated-test-output", generatedTestOutput.toString(),
+            "--subsystems-package", "example.generated.subsystems",
+            "--superstructure-output", superstructureOutput.toString(),
+            "--subsystems-only",
+            "--apply-subsystem-starters",
+        )
+
+        AresProjectCodegenCli.run(applyArgs)
+
+        assertTrue(Files.isRegularFile(startersOutput.resolve("arm/ArmState.kt")), "Apply must write subsystem starters")
+        assertTrue(Files.exists(generatedOutput), "Apply must write subsystem generated plumbing")
+        val after = snapshotProjectFiles()
+        before.forEach { (path, bytes) -> assertEquals(bytes, after[path], "Existing file changed: $path") }
+        val allowedRoots = listOf(startersOutput, generatedOutput, generatedTestOutput)
+        (after.keys - before.keys).forEach { path ->
+            assertTrue(allowedRoots.any { temporary.resolve(path).startsWith(it) }, "Unexpected write: $path")
+        }
+    }
+
+    private fun snapshotProjectFiles(): Map<String, String> = Files.walk(temporary).use { paths ->
+        paths.filter(Files::isRegularFile).toList().associate {
+            temporary.relativize(it).toString() to java.util.Base64.getEncoder().encodeToString(Files.readAllBytes(it))
+        }
     }
 
     private fun projectMetadata(): String = AresProjectMetadataCodec.encode(

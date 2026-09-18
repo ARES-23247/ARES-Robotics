@@ -274,12 +274,13 @@
       ]
     },
     ".github/workflows/build-distributions.yml": {
-      "sha256": "89b1dc2c16d477102d33d4d62c7406a36da481e4590a7555e5f6e32f93d64482",
+      "sha256": "762bcaedf3e87a444f39ff56d73176c703eafa7db464909bbbf67e36be57a1a0",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -328,16 +329,25 @@
       ]
     },
     ".github/workflows/monorepo-ci.yml": {
-      "sha256": "e752be9af9b1ff3e38ecfeee4b2349d0f68491ed989feee3c06778157229c977",
-      "review": "reviewed",
+      "sha256": "b1c1cf8abb5fcbef4830821e78170f2864894259466fa26f29d9fd9616a3b24d",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated monorepo continuous integration workflow across changes detection and targeted matrix execution: policy validation job executing scripts/tests, verify-imported-histories.ps1, verify-doc-links.ps1, verify-monorepo-policy.ps1, and proving deterministic starter mirrors via export-starter-mirrors.ps1 -Check. Audited ARESLib candidate job (isolated version identity with Git SHA-12 suffix, API check, isolated maven repo upload, robot readiness evidence retention, and Playwright Chromium robot log dashboard test). Audited scoped downstream jobs (FTC robot/simulator with BioBuzz consumer export/testing, FRC robot simulation contracts, FTC and FRC starter mirror source testing, XRP MicroPython starter compilation/verification and unittest suite, Analytics studio/gateway test suite, and final result aggregator check_ci_results.py). Review gate immutability verifies pull-request and merge-group triggers without redundant execution on main.",
+      "scope": "Reviewed the consumerRoundtripTest task and existing app CI scope/evidence wiring delta only. Verified selected dependency forwarding, separate heavyweight consumer scope, one test fork, and existing change propagation; 25 classifier/boundary regressions and real Windows consumer builds passed. GitHub/Linux execution is unverified. No new whole-file review credit.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass230-verified-evidence/summary.json",
-        "docs/audits/ROBOT_READINESS_REPORT.md",
-        "docs/audits/checkpoints/robot-readiness.json"
-      ]
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ],
+      "consumerRoundtripPriorReview": {
+        "sha256": "e752be9af9b1ff3e38ecfeee4b2349d0f68491ed989feee3c06778157229c977",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated monorepo continuous integration workflow across changes detection and targeted matrix execution: policy validation job executing scripts/tests, verify-imported-histories.ps1, verify-doc-links.ps1, verify-monorepo-policy.ps1, and proving deterministic starter mirrors via export-starter-mirrors.ps1 -Check. Audited ARESLib candidate job (isolated version identity with Git SHA-12 suffix, API check, isolated maven repo upload, robot readiness evidence retention, and Playwright Chromium robot log dashboard test). Audited scoped downstream jobs (FTC robot/simulator with BioBuzz consumer export/testing, FRC robot simulation contracts, FTC and FRC starter mirror source testing, XRP MicroPython starter compilation/verification and unittest suite, Analytics studio/gateway test suite, and final result aggregator check_ci_results.py). Review gate immutability verifies pull-request and merge-group triggers without redundant execution on main.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass230-verified-evidence/summary.json",
+          "docs/audits/ROBOT_READINESS_REPORT.md",
+          "docs/audits/checkpoints/robot-readiness.json"
+        ]
+      }
     },
     ".github/workflows/promote-release-candidate.yml": {
       "sha256": "6d69c66c86b4579d54e9e15a64d892a7331a5e850485e82810d8f0f74316c1ba",
@@ -496,13 +506,22 @@
       ]
     },
     "ARES-Analytics/app/build.gradle.kts": {
-      "sha256": "a69665818b7721a0f2eb5f81f51ccdb300ac7746dd9db51cacb8821ea6d2386c",
+      "sha256": "b34b18a6a704b3a828c42dba2755899b6706e3138bdd81338cbac575fc53b426",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Reviewed the consumerRoundtripTest task and existing app CI scope/evidence wiring delta only. Verified selected dependency forwarding, separate heavyweight consumer scope, one test fork, and existing change propagation; 25 classifier/boundary regressions and real Windows consumer builds passed. GitHub/Linux execution is unverified. No new whole-file review credit.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
-      ]
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ],
+      "consumerRoundtripPriorReview": {
+        "sha256": "a69665818b7721a0f2eb5f81f51ccdb300ac7746dd9db51cacb8821ea6d2386c",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+        "evidence": [
+          "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/Main.kt": {
       "sha256": "6ef8fc324d2ca280f029dd835f60d18b6317e8ec59535a23ce39072209e464aa",
@@ -1835,13 +1854,22 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ProjectBuildService.kt": {
-      "sha256": "71978d0d6b87d8f0fd898f3d34cb3ea17ba0f55e0876bb38c7de0bda54add111",
-      "review": "reviewed",
+      "sha256": "9ca9321454cdc3559a66da29b235d3910b108b2554fc85851abd46d999f383f2",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified Gradle compile-only verification and ARES project generation process management. Verified mutual exclusion via ProjectProcessGate and buildLifecycleMutex, non-blocking process log streaming via SharedFlow(replay=200, dropOldest), transient Windows cache lock retry, generation tracking, and process tree termination on cancellation.",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ],
+      "roundtripIntegrationPriorReview": {
+        "sha256": "71978d0d6b87d8f0fd898f3d34cb3ea17ba0f55e0876bb38c7de0bda54add111",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified Gradle compile-only verification and ARES project generation process management. Verified mutual exclusion via ProjectProcessGate and buildLifecycleMutex, non-blocking process log streaming via SharedFlow(replay=200, dropOldest), transient Windows cache lock retry, generation tracking, and process tree termination on cancellation.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ProjectDependencyPreflight.kt": {
       "sha256": "49620bf9ae5acfe678f2450922593eb5510aa08d326c5128955aeda4baa9eb8b",
@@ -3327,13 +3355,33 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporter.kt": {
-      "sha256": "5aa01ed8b55eab274f4556743e896128b98e2ce3da6abc77cbb68264cc031fa9",
-      "review": "reviewed",
+      "sha256": "83c55d2863c549c1c371d3cd7645fd4c0e50f98d90b5cfa53fc89a4d81b5a84f",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated ProjectArchiveExporter portable ZIP archive creator. Verified canonical project root verification, destination path validation (must be outside project root and not already exist), symlink rejection to prevent directory escaping, exclusion of build and IDE directories (.git, .gradle, build, .idea, .vscode, out), automated skipping and reporting of sensitive credentials, individual (<= 100 MB) and total (<= 1 GB) file size bounds with overflow-safe Math.addExact arithmetic, mandatory .ares/project.json presence, deterministic zip timestamps, and atomic file creation.",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ],
+      "roundtripIntegrationPriorReview": {
+        "sha256": "d170620fba9f9480df8dde653188fc7456735ee29a3ac3d1d4d3816165707197",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md",
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        ],
+        "projectRoundtripSubmission": {
+          "sha256": "d170620fba9f9480df8dde653188fc7456735ee29a3ac3d1d4d3816165707197",
+          "review": "reviewed",
+          "validation": "passed",
+          "scope": "Audit and fix for portable project archive export: excluded .ares/local (transient tuning and verification runs), .ares/recovery (transaction rollbacks and deleted subsystem backups), and internal .ares dot/lock files while safely traversing canonical .ares documents and user code. Verified with ProjectArchiveExporterTest.",
+          "evidence": [
+            "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml"
+          ]
+        },
+        "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/versioncontrol/ProjectBackupAutoSyncService.kt": {
       "sha256": "21a6a82da63e715c233002e4611b3c92fb6fbfc8a7d9f5152c55e151eabe97f2",
@@ -5061,7 +5109,7 @@
       "sha256": "b1da90ac0208d483e124088762f755050773fab7f0d3c6364b2c6e784846bb88",
       "review": "pending",
       "validation": "pending",
-      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0\u00b0, 90\u00b0, 180\u00b0, -90\u00b0), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
+      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0°, 90°, 180°, -90°), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md",
         "docs/audits/DEEP_AUDIT_GOAL.md",
@@ -5159,7 +5207,7 @@
       "sha256": "a51b2491d5c3dea95e368d8623a11475c74cdff6401dba3742ee2b24b02023b4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2\u03c0 rad / spool travel), and cached measurement scale/offset/freshness bounds.",
+      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2π rad / spool travel), and cached measurement scale/offset/freshness bounds.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -7763,7 +7811,7 @@
       "sha256": "24d3a070ba007922b36888404a0852a1c25fa90188004e4491a8380c80714935",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design \u2022 Simulate \u2022 Operate \u2022 Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
+      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design • Simulate • Operate • Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
       "evidence": [
         "docs/audits/pass292-pending-elevation-audit.md"
       ]
@@ -9633,12 +9681,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/GenericStarterTemplateIntegrationTest.kt": {
-      "sha256": "853732acc2df2d02a3bab1a745d66934e9e8abfcbe8e09ec35d6156bf5b70001",
-      "review": "reviewed",
+      "sha256": "c9088136f2a13e7e1741311f5a4bfc2e78928826fb21219758c3456af81e2b8f",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated GenericStarterTemplateIntegrationTest: verified opt-in end-to-end project initialization for FTC, FRC, and XRP templates, SHA-256 archive verification, template provenance generation, local.properties generation, and build tool execution across code generation, verification, and simulation unit tests.",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
+        "docs/audits/pass292-pending-elevation-audit.md",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/OfficialProjectTemplateIntegrationTest.kt": {
@@ -9844,13 +9893,33 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectArchiveExporterTest.kt": {
-      "sha256": "ca9d89504651faba8e7dcee1ba09398a1856da2013ab3a5ef573831a01711599",
-      "review": "reviewed",
+      "sha256": "16b0eed29ac6eb5a31c6435be03b9f3dea0efb0b3cb21b3e78e2dafa891c008c",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated ProjectArchiveExporterTest: verified export of clean portable ZIP archives including .ares/ and source files while strictly omitting .git/ metadata, build/ output directories, and sensitive credential files (credentials.json); verified rejection of export destination paths inside the project tree.",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
-      ]
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ],
+      "roundtripIntegrationPriorReview": {
+        "sha256": "979489cbdc551065e2833953bc53133e267b1bfe885db34a2fc4123355e04c5b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+        "evidence": [
+          "docs/audits/pass292-pending-elevation-audit.md",
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        ],
+        "projectRoundtripSubmission": {
+          "sha256": "1956497591e5425aa0707c52426298ffa6d99b6a5fd03e65ac85a4eec4d10531",
+          "review": "reviewed",
+          "validation": "passed",
+          "scope": "Added unit test portable archive excludes local transient data and recovery transactions: verified exclusion of .ares/local, .ares/recovery, and .ares/.project-mutation-transaction while verifying canonical .ares/project.json and source inclusion in exported zip archive.",
+          "evidence": [
+            "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest.xml"
+          ]
+        },
+        "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/versioncontrol/ProjectReviewTokenFactoryTest.kt": {
       "sha256": "60a07fe9f1a294a6ce5583eff5ac9ae86147c23d8c2d2c2e99970820513e7e0d",
@@ -11772,28 +11841,38 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "64c3c5f87d319e1dce76150dac6111829830a33c02910fa8caee03d5b852095b",
+      "sha256": "8af1f3ac4fab93f42239f15777098715f7a86439869228599d26cc8279a844b2",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Reviewed and regenerated this batch production line-count delta; policy verified. Size accounting is not file-review coverage.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "passed"
-      },
-      "runtimeAuditSubmission": {
+      "roundtripIntegrationPriorReview": {
+        "sha256": "6b64f7ac3bddb3f107577f6f81f913f535a7643c64e1bfe181b1ca532e815959",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
         "evidence": [
-          "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+          "docs/audits/RELEASE_7_0_62_REVIEW.md",
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
         ],
-        "review": "reviewed",
-        "scope": "Machine-readable maintainability ledger tracking line counts, file size compliance, and ratchet state across monorepo.",
-        "sha256": "b1139f4988361c9f6a5e73d2917e12400173aa8cd449bcaf30456e151551057e",
-        "validation": "passed"
-      },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "submission": {
+          "commit": "f73d4ceed",
+          "review": "reviewed",
+          "validation": "passed"
+        },
+        "runtimeAuditSubmission": {
+          "evidence": [
+            "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+          ],
+          "review": "reviewed",
+          "scope": "Machine-readable maintainability ledger tracking line counts, file size compliance, and ratchet state across monorepo.",
+          "sha256": "b1139f4988361c9f6a5e73d2917e12400173aa8cd449bcaf30456e151551057e",
+          "validation": "passed"
+        },
+        "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      }
     },
     "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
       "sha256": "a79add11b7d79d56e88607ec84e8add59e06a7952773663eff7c6f9e70e5b57e",
@@ -11825,7 +11904,7 @@
       "sha256": "e5a9dd382f3540216b3acd3cda81ebd197335bfadadb1242c19eb3243732b14b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design \u2022 Simulate \u2022 Operate \u2022 Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
+      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design • Simulate • Operate • Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -11987,7 +12066,7 @@
       "sha256": "25eeb691d95c9c9a456a23925e8888e70fb4a6a1e14d4d46418381d84268fe61",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation \u2014 cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
+      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation — cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -11996,7 +12075,7 @@
       "sha256": "65efe035f6d197e24121378abb4ccef5f892ec495b9d81d08af34acf528e30b6",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED \u2014 DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
+      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED — DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -13748,7 +13827,7 @@
       "sha256": "becf5449b6dbfa838313319f2e844150cbb379db41e325e7520e852e58657a2e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (\u00b10.276225 m, \u00b10.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
+      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (±0.276225 m, ±0.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
@@ -14686,7 +14765,7 @@
       "sha256": "dd73c69aa80eef41532415e39cb7163f751f9bafa6451a787a3b83d7e1d90dfb",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s\u00b2), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
+      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s²), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
@@ -14860,7 +14939,7 @@
       "sha256": "2c721a57857805e10066ecb6e89657241e0bd2772ee7e2add7ea68f3ea46a5ea",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0\u00b0..108\u00b0); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
+      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0°..108°); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json",
@@ -15000,7 +15079,7 @@
       "sha256": "6cb05881ec858138fdd1d741793a641160e8aec6fc343a663e4f7d8cf589c2bc",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
+      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad ±5 cm, bumpers ±5°), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -18130,7 +18209,7 @@
       "sha256": "29e4e2bd1743ea9d4644a6cb44396f954832afa6f8263dfc12ef7765e1f85f11",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (\u00b10.225 m, \u00b10.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
+      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (±0.225 m, ±0.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
@@ -19300,7 +19379,7 @@
       "sha256": "224f2c95ea53ef4de443464c2a7190c7ed5d2803530c3eb2766c4cb272fe2d04",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
+      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad ±5 cm, bumpers ±5°), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -20964,7 +21043,7 @@
       "sha256": "980daff7a61c869a69321a8617206ae900e415dd9dd2bdae5084e61a4f48405e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8\u00b0 and freeze above 15\u00b0), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
+      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8° and freeze above 15°), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -21417,15 +21496,26 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/AresProjectCodegenCli.kt": {
-      "sha256": "5dbfe81b6cd44f33f0b17846edca4227e6ba270c1ad4a53e03837b75c77f7836",
-      "review": "reviewed",
+      "sha256": "63b2dfc53cd82b69230b24f6cb07aaea48f9baeb850961a4443f6de025c2d259",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass276: Entire CLI assembly/render/sync/manifest flow inspected. Shared source-set ownership preflight, physical containment, check-only behavior, typed project validation and generated-runtime/manifest recognition exercised. Older verification headers and whitespace repair are covered. All seven existing CLI cases plus14 ownership cases pass. No whole-project rollback or external concurrent-directory guarantee.",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
-      ]
+        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ],
+      "projectRoundtripSubmission": {
+        "sha256": "63b2dfc53cd82b69230b24f6cb07aaea48f9baeb850961a4443f6de025c2d259",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Audit and fix for CLI project codegen: guarded against unintended side-effect writes during --preview-subsystem-starters (ensuring zero disk writes across output runtime, drivebase, superstructure, and verification manifests), and enforced that --subsystems-only mode skips drivebase and superstructure synchronization. Verified with AresProjectCodegenCliTest and FTC Starter previewSubsystemChanges.",
+        "evidence": [
+          "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresProjectCodegenCliTest.xml"
+        ]
+      },
+      "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/AresProjectCodegenOptions.kt": {
       "sha256": "ed9ea6ff8c46e9772c18886369c96a46b6c6f6bf10ed861520c93b1db0be0cc3",
@@ -21525,8 +21615,19 @@
       "scope": "Pass276: Entire labeled length-delimited hash stream and hexadecimal conversion reviewed. Format version and sorted dispatch ownership now distinguish generated versus hand-authored action behavior. Canonical document codecs, input ordering and output/source identities checked; regression fails before fix and passes afterward.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json"
-      ]
+        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ],
+      "projectRoundtripSubmission": {
+        "sha256": "9831dc57013bbe05068c7d45ffc6d3c2a456ba64f83d71ed2ebbf2b346340130",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Audit and fix for project codegen content hashing: enforced deterministic sorting of routines by documentId within kotlinProjectContentHash to ensure hash stability across arbitrary input collection ordering. Verified with AresKotlinProjectGeneratorTest.",
+        "evidence": [
+          "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresKotlinProjectGeneratorTest.xml"
+        ]
+      },
+      "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/KotlinSourceRendering.kt": {
       "sha256": "487630f0bce71da56accee0fd4d061a4a414f12c4eaa0a8ed776f650e55c20d0",
@@ -21739,26 +21840,48 @@
       ]
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/AresKotlinProjectGeneratorTest.kt": {
-      "sha256": "ffa8e76a908c3a9fa20e4087263673b024042078e1d4bdc33d395102632613cf",
-      "review": "reviewed",
+      "sha256": "966b94199eb7a8704dfcb217030dd37695d31885554d8a2a6e683d6b2076744c",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass277: Full existing project-generation fixture review retained. Updated the expected private drive helper signature for per-host state ownership. Full module cases and robot consumer generation pass; independently compiled generated two-host execution supplies lifecycle evidence beyond string assertions.",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "docs/audits/checkpoints/pass277.json",
         "ARESLib-Kotlin/build/audit-pass277-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json"
-      ]
+        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ],
+      "projectRoundtripSubmission": {
+        "sha256": "1df6e3169151b39591ae40d58768d7f924c278d8470dc04a1410f9f6240c3478",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Added unit test kotlin project content hash is deterministic regardless of routine input ordering: verified invariant hash generation between forward and reverse routine collection orders.",
+        "evidence": [
+          "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresKotlinProjectGeneratorTest.xml"
+        ]
+      },
+      "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/AresProjectCodegenCliTest.kt": {
-      "sha256": "94271f975e099087a6b24ca7af85fae3205289d2e142f11c4d0cea41373e623c",
-      "review": "reviewed",
+      "sha256": "8f07407f2ccf89fc348ed6fd5db9fd74f2a4bea154578cd2c2bd41c9e0bdc36f",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass276: Entire seven-case actual-project fixture inspected: metadata and runtime generation, stale source/manifest checks, whitespace regeneration, superstructure dispatch, reused request action, outside-root refusal, obsolete generated cleanup and canonical zero-parameter drivebase profile. Disposable cleanup fixture now declares ownership explicitly. All identities retained and cases pass.",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json"
-      ]
+        "ARESLib-Kotlin/build/audit-pass276-verified-evidence/summary.json",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ],
+      "projectRoundtripSubmission": {
+        "sha256": "7f0fc55de80fe9d88a7eac61a907d1ec87d5f32b7e6729ece68b8288a665b49f",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Added unit test subsystem preview and subsystems only do not write drivebase or superstructure plumbing: verified that preview writes zero files, and subsystems-only apply generates subsystem starters without modifying drivebase or superstructure outputs.",
+        "evidence": [
+          "ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresProjectCodegenCliTest.xml"
+        ]
+      },
+      "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
     },
     "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/CodegenFileOwnershipAuditTest.kt": {
       "sha256": "2ddcf0bf3f30ce37a5475d84ca773ae60a4c936fc0a78c7a56ee0cef076b55bf",
@@ -27355,7 +27478,7 @@
       "sha256": "a03770e6a0e2bf28587c50ff62844ce151aa41c645fe82c00a743a1d3a674bb3",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-\u03c0, \u03c0) boundary.",
+      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-π, π) boundary.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
@@ -28812,7 +28935,7 @@
       "sha256": "986d38ebecf3d806e39d0e212c7a1a3313a5a121c5ed4c07ea2f1ba72f7c1bc7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0\u00b0) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
+      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0°) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
@@ -31886,7 +32009,7 @@
       "sha256": "d84ece215e96f92705e6407c6e33c29f92fa73d33d12d89d990fbe11a156a024",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2\u03c0 radian span enforcement, and trapezoidal motion profile limit verification.",
+      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2π radian span enforcement, and trapezoidal motion profile limit verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
@@ -31896,7 +32019,7 @@
       "sha256": "44e98a2467a4451c6041d3cede4bf76c046888a5b7c230e3c51482493e67c162",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s\u00b2, A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
+      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s², A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
@@ -33727,28 +33850,72 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "f812dd1f5c7bfe38fa8524df5fe537ca59ab2d260e7d869d24e7b17be1c0d459",
+      "sha256": "4b394596a7ca725a3b83afe6ef610f6fa98015b03685b30613a4ad4b634c11f8",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
+      "scope": "Reviewed only the consumer roundtrip peer-review ledger delta. Preserve submitted identities and claims as history; bind new bounded review and actual validation evidence. Seven unrelated stale records and five missing historical paths remain outside this review. No repository-wide coverage claim.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
       ],
-      "submission": {
-        "commit": "f73d4ceed",
-        "review": "reviewed",
-        "validation": "not-applicable"
-      },
-      "runtimeAuditSubmission": {
+      "consumerRoundtripPriorReview": {
+        "sha256": "dea42f47002fcee962e657be4daf911e54e58a5f0fb8c915e99da1ba6bab3d79",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only the roundtrip integration peer-review ledger delta. Prior identities and evidence are retained separately; new claims bind scoped fixes and actual validation. No repository-wide coverage claim.",
         "evidence": [
-          "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+          "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
         ],
-        "review": "reviewed",
-        "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
-        "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
-        "validation": "passed"
-      },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "roundtripIntegrationPriorReview": {
+          "sha256": "2df54c04446ab754d729ffb1d23fc7d7ab2bcbd9c139a21cb0229aa2eb5acbc0",
+          "review": "partial",
+          "validation": "passed",
+          "scope": "Reviewed this batch ledger delta: restored historical records, retained eight submitted claims separately, recorded current partial review and actual validation, and replaced five retired archive paths. No repository-wide coverage claim.",
+          "evidence": [
+            "docs/audits/RELEASE_7_0_62_REVIEW.md",
+            "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+          ],
+          "submission": {
+            "commit": "f73d4ceed",
+            "review": "reviewed",
+            "validation": "not-applicable"
+          },
+          "runtimeAuditSubmission": {
+            "evidence": [
+              "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+            ],
+            "review": "reviewed",
+            "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
+            "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
+            "validation": "passed"
+          },
+          "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+          "projectRoundtripSubmission": {
+            "sha256": "40b81af787a0adf273406926732b2c9653623b1d16bfbc3cf08566c2628c97d3",
+            "review": "partial",
+            "validation": "passed",
+            "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
+            "evidence": [
+              "docs/audits/RELEASE_7_0_62_REVIEW.md"
+            ],
+            "submission": {
+              "commit": "f73d4ceed",
+              "review": "reviewed",
+              "validation": "not-applicable"
+            },
+            "runtimeAuditSubmission": {
+              "evidence": [
+                "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+              ],
+              "review": "reviewed",
+              "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
+              "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
+              "validation": "passed"
+            },
+            "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+          },
+          "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+        }
+      }
     },
     "docs/audits/pass288-pending-elevation-audit.md": {
       "sha256": "630d690dd95c6145d34f6aa0eab06d86b756725f3dee5b411dd4e45583efcba9",
@@ -33838,7 +34005,7 @@
       "sha256": "f50dacc896f21769ff7005de214beee4c2786f82b6bb31698e794303ff4e040d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across \u00b1\u03c0, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
+      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across ±π, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -34065,12 +34232,13 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "8378b2a3d70be5a2c492bd2e6672f107c0dcdc40dd838cc969f3b5bda574b17e",
+      "sha256": "ec14b29d98d961f96b28b4040d417346a8d62941b91d59c9d32300f63355b9c6",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34086,15 +34254,41 @@
         "sha256": "0f05ca8257db3bcbdcd3ceef7dc7a8c80a19fcab796d8e53661d3b03fcd57515",
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "projectRoundtripSubmission": {
+        "sha256": "972f476586290cb9d4ce794896a4d63e57a2107b2371018e724dbf20be42eaae",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Canonical release tree identity recording 40-character Git tree SHA for ARESLib-Kotlin dependency boundary.",
+        "evidence": [
+          "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        ],
+        "submission": {
+          "commit": "f73d4ceed",
+          "review": "reviewed",
+          "validation": "passed"
+        },
+        "runtimeAuditSubmission": {
+          "evidence": [
+            "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+          ],
+          "review": "reviewed",
+          "scope": "Canonical release tree identity recording 40-character Git tree SHA for ARESLib-Kotlin dependency boundary.",
+          "sha256": "0f05ca8257db3bcbdcd3ceef7dc7a8c80a19fcab796d8e53661d3b03fcd57515",
+          "validation": "passed"
+        },
+        "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      },
+      "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
     },
     "release/ares-versions.properties": {
-      "sha256": "f27c438b473177f1d7f178dcc920a1f44f8830fd3b9820b7f7bf0ef2cdde13ee",
+      "sha256": "406c85ef53a67728d6c81636962a5ae309c6f0455bb82b5fd7a7d4f318e37bca",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34113,12 +34307,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "release/starter-artifacts.properties": {
-      "sha256": "9d277e77f8d0a9442353ffb8d8da2f12e52a97270a12b3f6bc0a4dcda89f9e2e",
+      "sha256": "4be79a5c73ef0879ccfbb08934df6cd0a928a9d737cda214442d3594497dbb6f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/RELEASE_7_0_62_REVIEW.md",
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -34694,51 +34889,6 @@
         "docs/audits/RELEASE_7_0_62_REVIEW.md"
       ]
     },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.4.zip": {
-      "sha256": "f50b146457efa5bc9565fb8d74959ab601e5cbca352f80af91dd536d65881597",
-      "review": "partial",
-      "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
-      "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-19.1.3.zip": {
-      "sha256": "c4746189b27a913c0aef28c6465cc1d0bc07d462791b6883032d69fbfd1be604",
-      "review": "partial",
-      "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
-      "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-19.1.3.zip": {
-      "sha256": "bbfc905b58ca8e78cb455890019632802da5c0e85367668c5c9af7c0ac323219",
-      "review": "partial",
-      "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
-      "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.64.zip": {
-      "sha256": "454fdf369c0925d91cee2397446c7155f9832d69454c5827d03fe3dd84047b4d",
-      "review": "partial",
-      "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
-      "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
-      ]
-    },
-    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.62.zip": {
-      "sha256": "5c34a7ec42192e2f000e18fbcb99836fa4ab6279079eac79ed33eef97855550e",
-      "review": "partial",
-      "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
-      "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
-      ]
-    },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/components/dashboard/DashboardSourceRegressionTest.kt": {
       "sha256": "0e38bc838614c31496bd079806f9b98542cd7e849f51f5ca280b0fd18cda3fba",
       "review": "partial",
@@ -34755,6 +34905,241 @@
       "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
       "evidence": [
         "docs/audits/RELEASE_7_0_62_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.5.zip": {
+      "sha256": "4f14d612123e3a34ed6515224def1cb770b758732628b05f0efcb5a0418d8222",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Generated archive integrity and consumption: SHA-256 pin and every entry compared to canonical exported source; Studio template and consumer validation scoped in the linked report. No full review of each enclosed source file.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-19.1.4.zip": {
+      "sha256": "49e39281c31dfaf3fdb620aa7cb180ea9ae331a729bc50e5e127d3a9ebaa817a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Generated archive integrity and consumption: SHA-256 pin and every entry compared to canonical exported source; Studio template and consumer validation scoped in the linked report. No full review of each enclosed source file.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-19.1.4.zip": {
+      "sha256": "85e2426a8339f86093c7384d16f7261ba0551f69b7edaf5c7c105152a1f2cce7",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Generated archive integrity and consumption: SHA-256 pin and every entry compared to canonical exported source; Studio template and consumer validation scoped in the linked report. No full review of each enclosed source file.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.65.zip": {
+      "sha256": "792a9f95f1c92dc81766b5f287cb2e38038ab24a70ffefe717318a173c3ba756",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Generated archive integrity and consumption: SHA-256 pin and every entry compared to canonical exported source; Studio template and consumer validation scoped in the linked report. No full review of each enclosed source file.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.63.zip": {
+      "sha256": "ddca813b73a64bce87d1ef5cae66c7ab043621f13d69a523d3a0a1c1f9b0d36c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Generated archive integrity and consumption: SHA-256 pin and every entry compared to canonical exported source; Studio template and consumer validation scoped in the linked report. No full review of each enclosed source file.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ]
+    },
+    "docs/audits/NEXT_PROJECT_ROUNDTRIP_PROMPT.md": {
+      "sha256": "e86d134ef3eef59a2c39fa7fc661a991c35062d8379119761c3cf34bdd824328",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: preserved historical claims with corrections, actual independent test evidence and limitations, or bounded next-agent instructions as applicable. Local Markdown links and source policy passed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ],
+      "roundtripIntegrationPriorReview": {
+        "sha256": "8c7be37b86d994777057d14c1823d1ed56df3da0c375730b6ae7afbdddfeeb07",
+        "review": "partial",
+        "validation": "not-applicable",
+        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+        ]
+      }
+    },
+    "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md": {
+      "sha256": "e03c1b87f5ed5eedd2d436dad7c6da076874350048641aef6ba63c83af4dceb7",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/ProjectGenerationLifecycleTest.kt": {
+      "sha256": "aa0226dc6dcd6ec89c8824967a5fc7b8da2e53c8990bcfa8746c7019cbdfc5cc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ProjectRoundtripIntegrationTest.kt": {
+      "sha256": "6cbf815ede5e6549c58edc86e42ec24e760250c1e109e8d43baaa3c8bb9ca16b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Bounded independent review of e491ac315: archive staging, rejection/cancellation/completeness, generation preflight and process lifecycle, and corrected roundtrip-test claims as applicable. See linked report for exact inspected boundaries, fail-before/pass-after evidence, candidate identity and limits. No whole-file or consumer-runtime coverage claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/NEXT_ROUNDTRIP_CONSUMER_PROMPT.md": {
+      "sha256": "5a24f2ade9776eaa00c4a435df37a8ffb4a533e67e05a0678bc06c9864fcb226",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: historical submission claims retain correction notices; peer report records observed checks, source identity, and limits. Local Markdown links and source policy passed. No whole-repository review claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ],
+      "consumerRoundtripPriorReview": {
+        "sha256": "3ecfafccf45f1fa37680b4be234be528f56d937513c6709dfc1011bf1afb9721",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this batch documentation: preserved historical claims with corrections, actual independent test evidence and limitations, or bounded next-agent instructions as applicable. Local Markdown links and source policy passed.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+        ]
+      }
+    },
+    "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md": {
+      "sha256": "be9a4bacb40fa26830db8f97e26cff27de50e4626dc0d275b31afd76979c1415",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: preserved historical claims with corrections, actual independent test evidence and limitations, or bounded next-agent instructions as applicable. Local Markdown links and source policy passed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_REVIEW.md": {
+      "sha256": "15eff5fc46df96bfa468efa62d55ac3e572ccb237dcc8f1a95bc6b9c0f94e8cd",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: preserved historical claims with corrections, actual independent test evidence and limitations, or bounded next-agent instructions as applicable. Local Markdown links and source policy passed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/BiobuzzConsumerRoundtripIntegrationTest.kt": {
+      "sha256": "d3d7e00849a651df812bc8cdff34cadae024cda66c10af0210e7b81db0d95a3b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ],
+      "consumerRoundtripPriorReview": {
+        "sha256": "d2444c2cb99041440342a6b3af6e00cc15064ffdc93ea1253f2f32139e11ccff",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Complete BioBuzz consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution (:TeamCode:verifyAresProject, :TeamCode:testDebugUnitTest, :simulator:test, :TeamCode:assembleDebug), and simulated IO validation.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+        ]
+      }
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/GenericStarterConsumerRoundtripIntegrationTest.kt": {
+      "sha256": "41c8d4eea92a12b6d67d20b8bbab82efe48c734095644b9bb79e7970d2864dca",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ],
+      "consumerRoundtripPriorReview": {
+        "sha256": "7b488a5ea13f2c0fa82cc38ed0963215825337312d98a2bce8b4bde2148cf354",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Complete Generic FTC Starter consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution, and simulated IO validation.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+        ]
+      }
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ProjectGenerationRecoveryIntegrationTest.kt": {
+      "sha256": "abb6150c70551e55cd420905d1fe10ecc529090760804e3d876674579946b8d6",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ],
+      "consumerRoundtripPriorReview": {
+        "sha256": "4b66daa3e436a8b54693938c59d2a4a6211b55175168e8ab611f5fcb98c17771",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Real generation interruption and recovery integration tests: controlled intermediate-write failure establishing prior write, failure diagnostics, canonical document/user file preservation, stale output rejection, and clean retry; real process cancellation establishing process tree cleanup, diagnostics, canonical/user file preservation, and clean retry.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+        ]
+      }
+    },
+    "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md": {
+      "sha256": "198ab64a4bc56bb771c9f692e82a9b62f9f2a6673eb6f8bdebbdd578e153f8ae",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: historical submission claims retain correction notices; peer report records observed checks, source identity, and limits. Local Markdown links and source policy passed. No whole-repository review claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ],
+      "consumerRoundtripPriorReview": {
+        "sha256": "c9b5a6ab313c7e15cc6a7a3e57e4829923ed508551e8cfa914df47ea70ae3786",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed consumer roundtrip and generation recovery documentation: BioBuzz and generic FTC starter export/reopen/generate/compile/simulator journeys, real process cancellation, intermediate-write failure, determinism proofs, and limitations. Local Markdown links and source policy passed.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+        ]
+      }
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ConsumerRoundtripSupport.kt": {
+      "sha256": "6ab9fb022e9d2e822a0d0186e073724b788705f89f85ff87c70f753a815b2c20",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ConsumerRoundtripSupportTest.kt": {
+      "sha256": "39a6fbd2164d8bd9e0571f2b22afc9dfe260b31f7e9c0b70e0a41b78348b2b12",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md": {
+      "sha256": "5b592da4a6054ff6f37f1b39111438208f0047bca773b3ba993bb875d6e8a0ba",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this batch documentation: historical submission claims retain correction notices; peer report records observed checks, source identity, and limits. Local Markdown links and source policy passed. No whole-repository review claim.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/NEXT_GENERATED_SAFETY_BEHAVIOR_PROMPT.md": {
+      "sha256": "8590118de69c4d3fd217bd8801a7e6d214f79cb1e7dc0aef34ae129338c41485",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Bounded next-agent assignment based on the consumer peer review: independently validate saved heading-gain and mechanism feedback-timeout behavior after release v7.0.63. Instructions only; no new runtime or hardware coverage claimed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md",
+        "docs/audits/NEXT_GENERATED_SAFETY_BEHAVIOR_PROMPT.md"
       ]
     }
   }

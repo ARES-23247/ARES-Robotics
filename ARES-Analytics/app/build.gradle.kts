@@ -331,6 +331,33 @@ val usesSiblingAresLib = providers.gradleProperty("aresUseSiblingLib")
     .map(String::toBoolean)
     .getOrElse(false)
 
+// These tests compile disposable Android consumers. Keep the ordinary app test scope lightweight,
+// and give CI an explicit, non-skipping task using the same dependency identity as Studio.
+val consumerRoundtripClasses = listOf(
+    "**/BiobuzzConsumerRoundtripIntegrationTest*",
+    "**/GenericStarterConsumerRoundtripIntegrationTest*",
+    "**/ProjectGenerationRecoveryIntegrationTest*",
+)
+val appUnitTests = tasks.named<Test>("test") {
+    exclude(consumerRoundtripClasses)
+}
+tasks.register<Test>("consumerRoundtripTest") {
+    group = "verification"
+    description = "Export, reopen, generate, build and recover real FTC consumer projects. Requires Android SDK."
+    testClassesDirs = appUnitTests.get().testClassesDirs
+    classpath = appUnitTests.get().classpath
+    include(consumerRoundtripClasses)
+    maxParallelForks = 1
+    systemProperty("ares.consumer.version", rootProject.extra["aresVersion"] as String)
+    nestedAresRepositoryUri.orNull?.let { systemProperty("ares.consumer.repository", it) }
+    systemProperty("ares.consumer.evidenceDir", layout.buildDirectory.dir("consumer-roundtrip-evidence").get().asFile.absolutePath)
+    doFirst {
+        require(!usesSiblingAresLib || nestedAresRepositoryUri.isPresent) {
+            "Consumer builds cannot inherit sibling substitution; supply an isolated ARES candidate and repository."
+        }
+    }
+}
+
 // Automated desktop walkthroughs must never persist throwaway workspaces, credentials, or
 // learning progress into the developer's real home directory. This is opt-in so ordinary
 // `:app:run` keeps the installed application's normal data. Example:

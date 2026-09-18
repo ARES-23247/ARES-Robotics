@@ -144,6 +144,11 @@ object AresProjectCodegenCli {
             )
         }
 
+        if (options.previewSubsystemStarters) {
+            syncSubsystemSources(projectRoot, compilerIr, options, projectVerificationArtifact)
+            return generated
+        }
+
         if (options.subsystemsOnly) {
             // The caller requested only subsystem reconciliation/materialization. Full project
             // plumbing is recreated by the ordinary generation/verification task.
@@ -169,8 +174,10 @@ object AresProjectCodegenCli {
         val renderedArtifacts = buildList {
             add(projectRuntimeArtifact)
             addAll(syncSubsystemSources(projectRoot, compilerIr, options, projectVerificationArtifact))
-            addAll(syncDrivebaseSources(projectRoot, compilerIr, options))
-            addAll(syncSuperstructureSources(projectRoot, compilerIr, options))
+            if (!options.subsystemsOnly) {
+                addAll(syncDrivebaseSources(projectRoot, compilerIr, options))
+                addAll(syncSuperstructureSources(projectRoot, compilerIr, options))
+            }
         }
         if (!options.subsystemsOnly) {
             syncVerificationManifest(projectRoot, compilerIr, renderedArtifacts, options)
