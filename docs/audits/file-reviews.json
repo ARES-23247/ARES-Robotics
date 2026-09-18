@@ -33850,7 +33850,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "0698f931a28260ca364b0d58a9b02fc140fc024ff70c6ceb4f74a8f7383d06ac",
+      "sha256": "4b394596a7ca725a3b83afe6ef610f6fa98015b03685b30613a4ad4b634c11f8",
       "review": "partial",
       "validation": "passed",
       "scope": "Reviewed only the consumer roundtrip peer-review ledger delta. Preserve submitted identities and claims as history; bind new bounded review and actual validation evidence. Seven unrelated stale records and five missing historical paths remain outside this review. No repository-wide coverage claim.",
@@ -35130,6 +35130,16 @@
       "scope": "Reviewed this batch documentation: historical submission claims retain correction notices; peer report records observed checks, source identity, and limits. Local Markdown links and source policy passed. No whole-repository review claim.",
       "evidence": [
         "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/NEXT_GENERATED_SAFETY_BEHAVIOR_PROMPT.md": {
+      "sha256": "8590118de69c4d3fd217bd8801a7e6d214f79cb1e7dc0aef34ae129338c41485",
+      "review": "partial",
+      "validation": "not-applicable",
+      "scope": "Bounded next-agent assignment based on the consumer peer review: independently validate saved heading-gain and mechanism feedback-timeout behavior after release v7.0.63. Instructions only; no new runtime or hardware coverage claimed.",
+      "evidence": [
+        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md",
+        "docs/audits/NEXT_GENERATED_SAFETY_BEHAVIOR_PROMPT.md"
       ]
     }
   }
