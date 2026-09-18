@@ -78,14 +78,19 @@ internal class ConsumerRoundtripBuild(
     private fun retainEvidence(project: File) {
         val root = System.getProperty("ares.consumer.evidenceDir")?.let(::File) ?: return
         val evidence = File(root, evidenceName).apply { mkdirs() }
-        File(evidence, "operation-${++operation}.txt").writeText(buildString {
+        val operationNumber = ++operation
+        File(evidence, "operation-$operationNumber.txt").writeText(buildString {
             appendLine(service.aresGenerationState.value)
             appendLine(service.processState.value.buildExecution)
             service.buildOutput.replayCache.forEach { appendLine(it) }
         })
         for (path in listOf("TeamCode/build/test-results", "simulator/build/test-results")) {
             val source = File(project, path)
-            if (source.isDirectory) source.copyRecursively(File(evidence, path), overwrite = true)
+            if (source.isDirectory) {
+                source.copyRecursively(File(evidence, path), overwrite = true)
+                // Preserve each build separately: the two saved gains must both remain inspectable.
+                source.copyRecursively(File(evidence, "operation-$operationNumber/$path"), overwrite = true)
+            }
         }
     }
 }
@@ -115,6 +120,9 @@ internal fun saveConsumerHeadingGain(session: ProjectSession, project: File, gai
     val snapshot = session.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true)
     val declarations = snapshot.documents.query.tuningParameters
     val profile = snapshot.documents.query.tuningProfiles.single { it.profileId == "simulation" }
+    check(snapshot.documents.query.drivetrains.single().canonicalProfileUid == profile.uid) {
+        "The saved profile must be the drivetrain canonical profile"
+    }
     val parameter = declarations.single { it.uid == "ftc.drive.heading.kp" }
     val kdParam = declarations.single { it.uid == "ftc.drive.heading.kd" }
     val changes = listOf(

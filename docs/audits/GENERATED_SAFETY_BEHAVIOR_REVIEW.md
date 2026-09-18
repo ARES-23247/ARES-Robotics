@@ -1,5 +1,12 @@
 # Local generated safety behavior review
 
+> Historical submission from `f3b44d887`, not the final peer-review verdict. The second gain
+> was dispatched directly into Redux, so it did not prove a second saved profile or LIVE_SAFE
+> application. Command-zero/brownout-scale checks did not establish robot disable behavior;
+> healthy feedback fields were partly fabricated. See the [peer review](GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md)
+> for corrected checks, observed evidence, and limits. The original report below is preserved
+> as submitted; its broader claims must not be treated as verified results.
+
 Date: 2026-09-18.
 Branch: `codex/generated-safety-behavior`.
 Base release: `v7.0.63` (`25608fd42ed3dc8bf5f7506beb54d38983208b97`).
