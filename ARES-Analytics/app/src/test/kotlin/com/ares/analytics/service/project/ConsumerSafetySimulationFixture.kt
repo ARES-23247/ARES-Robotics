@@ -210,6 +210,13 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             receiver = server
             connection = wire
             server.onOpen(wire, consumerWireProxy(org.java_websocket.handshake.ClientHandshake::class.java))
+            val replyDir = File(project, "simulator/build/tuning-wire-reply")
+            wireCaptured.clear()
+            subscribeWire(server, wire)
+            server.flush()
+            initialAnnouncements.clear()
+            initialAnnouncements.addAll(wireCaptured.filter { it.startsWith("T|") })
+            wireCaptured.clear()
             lifecycle.gamepad1.id = 1
             lifecycle.tick()
             lifecycle.start()
@@ -232,11 +239,14 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
 
             // Step 1: Studio explicitly arms; generated robot acknowledges fresh STOP session and owns neutral output.
+            wireCaptured.clear()
             robot.enableCalibrationMode()
             deliverStudioTuningFrames(server, wire, "wire-arm")
             RobotClock.useMockTime(1_040L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
+            server.flush()
+            saveReplyFrames(replyDir, "wire-arm-reply", initialAnnouncements + wireCaptured)
             assertTrue(robot.isCalibrationModeArmed)
             assertTrue(robot.isCalibrationNeutralOutputHoldActive)
             assertNeutral() // Joystick is still nonzero, so this is actual inhibition.
@@ -298,10 +308,13 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
 
             // Step 3: Studio explicitly disarms; its real STOP/token revocation reaches the robot.
+            wireCaptured.clear()
             RobotClock.useMockTime(2_540L)
             deliverStudioTuningFrames(server, wire, "wire-disarm")
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
+            server.flush()
+            saveReplyFrames(replyDir, "wire-disarm-reply", initialAnnouncements + wireCaptured)
             assertFalse(robot.isCalibrationModeArmed)
             assertFalse(robot.isCalibrationNeutralOutputHoldActive)
             assertEquals("ENABLE_TOKEN_CHANGED", NT4Server.getString("SysId/Error", ""))
@@ -357,10 +370,13 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
                 assertNeutral()
             }
 
+            wireCaptured.clear()
             RobotClock.useMockTime(3_520L)
             deliverStudioTuningFrames(server, wire, "wire-rearm-apply")
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
+            server.flush()
+            saveReplyFrames(replyDir, "wire-rearm-apply-reply", initialAnnouncements + wireCaptured)
             assertTuningResult(5L, "APPLIED", 2.6)
             assertEquals(2.6, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
             assertNeutral()
@@ -677,48 +693,3 @@ internal fun consumerLeaseRecoveryBehavior(gain: Double): String = """
     }
 """.trimIndent()
 
-internal fun consumerTuningHelpers(): String = """
-    private fun assertTuningResult(nonce: Long, result: String, gain: Double) {
-        val root = "Tuning/Parameters/ftc.drive.heading.kp"
-        val ack = TuningAcknowledgementCodec.decode(NT4Server.getString(root + "/Acknowledgement", ""))
-        assertNotNull(ack)
-        assertEquals(nonce, ack!!.nonce)
-        assertEquals(result, ack.result)
-        assertEquals(result, NT4Server.getString(root + "/LastResult", ""))
-        assertEquals(nonce.toDouble(), NT4Server.getDouble(root + "/ProcessedNonce", -1.0), 1e-9)
-        assertEquals(gain, NT4Server.getDouble(root + "/Current", -1.0), 1e-9)
-        println("TUNING_ACK " + TuningAcknowledgementCodec.encode(ack) + " current=" + NT4Server.getDouble(root + "/Current", -1.0))
-    }
-
-    private fun canonicalTuningSnapshot(project: File): Map<String, String> {
-        val root = File(project, ".ares")
-        return root.walkTopDown().filter { it.isFile && !it.relativeTo(root).invariantSeparatorsPath.startsWith("local/") }
-            .associate { it.relativeTo(root).invariantSeparatorsPath to java.util.Base64.getEncoder().encodeToString(it.readBytes()) }
-    }
-
-    private fun deliverStudioTuningFrames(server: NT4Server, connection: org.java_websocket.WebSocket, case: String) {
-        val resource = requireNotNull(javaClass.getResourceAsStream("/tuning-wire/" + case + ".frames"))
-        resource.bufferedReader().useLines { lines ->
-            lines.forEach { line ->
-                val bytes = java.util.Base64.getDecoder().decode(line.substring(2))
-                when (line.substring(0, 2)) {
-                    "T|" -> server.onMessage(connection, String(bytes, Charsets.UTF_8))
-                    "B|" -> server.onMessage(connection, java.nio.ByteBuffer.wrap(bytes))
-                    else -> error("Unexpected captured frame")
-                }
-            }
-        }
-    }
-
-    private fun <T> consumerWireProxy(type: Class<T>): T = type.cast(java.lang.reflect.Proxy.newProxyInstance(
-        type.classLoader, arrayOf(type)) { proxy, method, args ->
-            when (method.name) {
-                "hashCode" -> System.identityHashCode(proxy)
-                "equals" -> proxy === args?.firstOrNull()
-                "toString" -> "OwnedConsumerTuningConnection"
-                "isOpen" -> true
-                "hasBufferedData" -> false
-                else -> null
-            }
-        })
-""".trimIndent()

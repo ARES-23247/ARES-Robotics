@@ -2,13 +2,22 @@ package com.ares.analytics.service.project
 
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.TelemetryStore
+import com.ares.analytics.service.DatabaseService
+import com.ares.analytics.service.AutoTunerService
+import com.ares.analytics.service.TuningApplyState
 import com.ares.analytics.service.nt4.Nt4OutboundPublisher
 import com.ares.analytics.service.tuning.TuningTransport
+import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.viewmodel.CalibrationArmPhase
+import com.ares.analytics.viewmodel.SysIdIntent
 import com.ares.analytics.viewmodel.SysIdState
+import com.ares.analytics.viewmodel.SysIdViewModel
+import com.ares.analytics.viewmodel.TuningIntent
+import com.ares.analytics.viewmodel.TuningViewModel
+import com.ares.analytics.viewmodel.sysid.CalibrationCommandTransport
 import com.ares.analytics.viewmodel.sysid.SysIdSignalGenerator
 import com.areslib.control.assist.SysIdMechanism
-import com.areslib.tuning.TuningParameterDeclaration
-import com.areslib.tuning.TuningValue
+import com.areslib.tuning.*
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.CoroutineScope
@@ -17,16 +26,20 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.job
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.advanceTimeBy
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
 import java.io.File
+import java.nio.file.Files
 import java.util.Base64
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
+import kotlin.test.*
 
 /** Capture the real Studio writer's bytes for replay through the generated consumer's NT4 parser. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -234,3 +247,366 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
 
 @Suppress("UNCHECKED_CAST")
 private fun <T> anyWireFrame(): T { ArgumentMatchers.any<T>(); return null as T }
+
+internal fun consumerTuningHelpers(): String = """
+    private val wireCaptured = java.util.Collections.synchronizedList(ArrayList<String>())
+    private val initialAnnouncements = java.util.Collections.synchronizedList(ArrayList<String>())
+
+    private fun subscribeWire(server: NT4Server, conn: org.java_websocket.WebSocket) {
+        val json = String(java.util.Base64.getDecoder().decode("W3sibWV0aG9kIjoic3Vic2NyaWJlIiwicGFyYW1zIjp7InRvcGljcyI6WyIiXSwic3VidWlkIjoxLCJvcHRpb25zIjp7InByZWZpeCI6dHJ1ZX19fV0="), Charsets.UTF_8)
+        server.onMessage(conn, json)
+    }
+
+    private fun assertTuningResult(nonce: Long, result: String, gain: Double) {
+        val root = "Tuning/Parameters/ftc.drive.heading.kp"
+        val ack = TuningAcknowledgementCodec.decode(NT4Server.getString(root + "/Acknowledgement", ""))
+        assertNotNull(ack)
+        assertEquals(nonce, ack!!.nonce)
+        assertEquals(result, ack.result)
+        assertEquals(result, NT4Server.getString(root + "/LastResult", ""))
+        assertEquals(nonce.toDouble(), NT4Server.getDouble(root + "/ProcessedNonce", -1.0), 1e-9)
+        assertEquals(gain, NT4Server.getDouble(root + "/Current", -1.0), 1e-9)
+        println("TUNING_ACK " + TuningAcknowledgementCodec.encode(ack) + " current=" + NT4Server.getDouble(root + "/Current", -1.0))
+    }
+
+    private fun canonicalTuningSnapshot(project: File): Map<String, String> {
+        val root = File(project, ".ares")
+        return root.walkTopDown().filter { it.isFile && !it.relativeTo(root).invariantSeparatorsPath.startsWith("local/") }
+            .associate { it.relativeTo(root).invariantSeparatorsPath to java.util.Base64.getEncoder().encodeToString(it.readBytes()) }
+    }
+
+    private fun deliverStudioTuningFrames(server: NT4Server, connection: org.java_websocket.WebSocket, case: String) {
+        val resource = requireNotNull(javaClass.getResourceAsStream("/tuning-wire/" + case + ".frames"))
+        resource.bufferedReader().useLines { lines ->
+            lines.forEach { line ->
+                val bytes = java.util.Base64.getDecoder().decode(line.substring(2))
+                when (line.substring(0, 2)) {
+                    "T|" -> server.onMessage(connection, String(bytes, Charsets.UTF_8))
+                    "B|" -> server.onMessage(connection, java.nio.ByteBuffer.wrap(bytes))
+                    else -> error("Unexpected captured frame")
+                }
+            }
+        }
+    }
+
+    private fun saveReplyFrames(dir: File, name: String, frames: List<String>) {
+        dir.mkdirs()
+        val textFrames = synchronized(initialAnnouncements) { initialAnnouncements.toList() }
+        val binaryFrames = frames.filter { it.startsWith("B|") }
+        File(dir, name + ".frames").writeText((textFrames + binaryFrames).joinToString("\n", postfix = "\n"))
+    }
+
+    private fun <T> consumerWireProxy(type: Class<T>): T = type.cast(java.lang.reflect.Proxy.newProxyInstance(
+        type.classLoader, arrayOf(type)) { proxy, method, args ->
+            when (method.name) {
+                "hashCode" -> System.identityHashCode(proxy)
+                "equals" -> proxy === args?.firstOrNull()
+                "toString" -> "OwnedConsumerTuningConnection"
+                "isOpen" -> true
+                "hasBufferedData" -> false
+                "send" -> {
+                    val arg = args?.firstOrNull()
+                    when (arg) {
+                        is String -> {
+                            val line = "T|" + java.util.Base64.getEncoder().encodeToString(arg.toByteArray(Charsets.UTF_8))
+                            wireCaptured.add(line)
+                            synchronized(initialAnnouncements) {
+                                if (!initialAnnouncements.contains(line)) {
+                                    initialAnnouncements.add(line)
+                                }
+                            }
+                        }
+                        is java.nio.ByteBuffer -> {
+                            val copy = ByteArray(arg.remaining())
+                            arg.duplicate().get(copy)
+                            val line = "B|" + java.util.Base64.getEncoder().encodeToString(copy)
+                            wireCaptured.add(line)
+                        }
+                        is ByteArray -> {
+                            val line = "B|" + java.util.Base64.getEncoder().encodeToString(arg)
+                            wireCaptured.add(line)
+                        }
+                    }
+                    null
+                }
+                else -> null
+            }
+        })
+""".trimIndent()
+
+internal fun replayNt4Frames(
+    client: Nt4ClientService,
+    lines: List<String>,
+    teamId: String = "test-team",
+    seasonId: String = "test-season",
+    robotId: String = "test-robot"
+) {
+    for (line in lines) {
+        val trimmed = line.trim()
+        if (trimmed.isEmpty()) continue
+        val type = trimmed.substring(0, 1)
+        val data = Base64.getDecoder().decode(trimmed.substring(2))
+        when (type) {
+            "T" -> {
+                val text = String(data, Charsets.UTF_8)
+                runBlocking { client.handleIncomingText(text, teamId, seasonId, robotId) }
+            }
+            "B" -> {
+                runBlocking { client.handleIncomingBinary(data, teamId, seasonId, robotId) }
+            }
+            else -> error("Unknown frame type: $type")
+        }
+    }
+}
+
+internal fun verifyStudioRobotFeedbackReturnPath(replyDir: File, liveGain: Double = 2.6, measuredHeading: Double = -0.10) {
+    verifyStudioRobotFeedbackReturnPath({ name ->
+        val file = File(replyDir, "$name.frames")
+        check(file.isFile) { "Missing reply file: ${file.absolutePath}" }
+        file.readLines()
+    }, liveGain, measuredHeading)
+}
+
+internal fun verifyStudioRobotFeedbackReturnPathFromResources(liveGain: Double = 2.6, measuredHeading: Double = -0.10) {
+    verifyStudioRobotFeedbackReturnPath({ name ->
+        val resourcePath = "/tuning-wire-reply/$name.frames"
+        val stream = checkNotNull(Nt4ClientService::class.java.getResourceAsStream(resourcePath)
+            ?: Thread.currentThread().contextClassLoader.getResourceAsStream(resourcePath.removePrefix("/"))) {
+            "Missing classpath resource $resourcePath"
+        }
+        stream.bufferedReader().readLines()
+    }, liveGain, measuredHeading)
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun verifyStudioRobotFeedbackReturnPath(
+    replyFramesProvider: (name: String) -> List<String>,
+    liveGain: Double = 2.6,
+    measuredHeading: Double = -0.10
+) {
+    val tempDir = Files.createTempDirectory("studio-return-path-test").toFile()
+    val testScheduler = TestCoroutineScheduler()
+    val testDispatcher = StandardTestDispatcher(testScheduler)
+    val testScope = CoroutineScope(SupervisorJob() + testDispatcher)
+
+    try {
+        val db = Mockito.mock(DatabaseService::class.java)
+        val realClient = Nt4ClientService(db)
+        val client = Mockito.spy(realClient)
+        val connectedFlow = MutableStateFlow(true)
+        Mockito.doReturn(connectedFlow).`when`(client).isConnected
+        Mockito.doReturn(1L).`when`(client).tuningConnectionId
+        Mockito.doReturn(1L).`when`(client).controlConnectionEpoch
+
+        val transport = object : CalibrationCommandTransport {
+            val publishedCommands = mutableListOf<String>()
+            val publishedTokens = mutableListOf<String>()
+            val publishedLeases = mutableListOf<Double>()
+            override suspend fun publishString(pubuid: Int, value: String): Boolean {
+                if (pubuid == 1015) publishedCommands.add(value)
+                if (pubuid == 1016) publishedTokens.add(value)
+                return true
+            }
+            override suspend fun publishDouble(pubuid: Int, value: Double): Boolean {
+                if (pubuid == 1017) publishedLeases.add(value)
+                return true
+            }
+        }
+        val autoTuner = Mockito.mock(AutoTunerService::class.java)
+        Mockito.`when`(autoTuner.applyState).thenReturn(MutableStateFlow(TuningApplyState()))
+        val sysIdVm = SysIdViewModel(
+            autoTunerService = autoTuner,
+            nt4ClientService = client,
+            scope = testScope,
+            calibrationTransport = transport,
+            previewDispatcher = testDispatcher
+        )
+        testScheduler.runCurrent()
+
+        runBlocking {
+            client.telemetryStore.accept(
+                TelemetryFrame(timestampMs = 1_000L, sessionId = "live-telemetry", key = "SysId/ModeEnabled", value = 1.0)
+            )
+            client.telemetryStore.accept(
+                TelemetryFrame(timestampMs = 1_000L, sessionId = "live-telemetry", key = "SysId/SupportedMechanisms", value = 0.0, stringValue = "LINEAR")
+            )
+        }
+        testScheduler.runCurrent()
+
+        // =========================================================================
+        // Step 1: Withhold robot arm acknowledgement after Studio's explicit arm request.
+        // Confirm Studio does NOT present confirmed ARMED merely because publication succeeded.
+        // =========================================================================
+        sysIdVm.onIntent(SysIdIntent.ArmCalibration)
+        testScheduler.runCurrent()
+        assertEquals(CalibrationArmPhase.ARMING, sysIdVm.state.value.armPhase,
+            "Studio must remain in ARMING while robot arm reply is withheld")
+        assertFalse(sysIdVm.state.value.robotCalibrationArmed,
+            "robotCalibrationArmed must be false while reply is withheld")
+        assertEquals("STOP", transport.publishedCommands.last())
+        assertTrue(transport.publishedTokens.last().startsWith("ares-"))
+        assertEquals(1.0, transport.publishedLeases.last())
+        assertTrue(sysIdVm.signalGenerator.hasActiveArmLease())
+
+        // =========================================================================
+        // Step 2: Feed wire-arm-reply into Studio's production inbound decoding path.
+        // Confirm Studio reaches ARMED and robotCalibrationArmed = true.
+        // =========================================================================
+        val armReplyFrames = replyFramesProvider("wire-arm-reply")
+        check(armReplyFrames.isNotEmpty()) { "wire-arm-reply frames must not be empty" }
+        replayNt4Frames(client, armReplyFrames)
+        testScheduler.runCurrent()
+        assertEquals(CalibrationArmPhase.ARMED, sysIdVm.state.value.armPhase,
+            "Studio must transition to ARMED after receiving robot arm acknowledgement")
+        assertTrue(sysIdVm.state.value.robotCalibrationArmed,
+            "robotCalibrationArmed must be true after receiving robot arm acknowledgement")
+
+        // =========================================================================
+        // Step 3: Issue one valid heading-gain change through public Studio tuning action.
+        // Show request remains pending until matching robot result arrives, then agrees
+        // with robot Redux state, Current, and independent controller output expectation.
+        // =========================================================================
+        val headingDecl = TuningParameterDeclaration(
+            uid = "ftc.drive.heading.kp",
+            key = "ftc.drive.heading.kp",
+            componentUid = "drive",
+            displayName = "Heading P",
+            description = "Heading proportional gain",
+            type = TuningParameterType.DOUBLE,
+            minimum = 0.0,
+            maximum = 10.0,
+            defaultValue = TuningValue(doubleValue = 2.1),
+            applyPolicy = TuningApplyPolicy.LIVE_SAFE
+        )
+        val compDoc = TuningComponentDocument(
+            uid = "drive",
+            projectId = "robot.project",
+            displayName = "Drive",
+            description = "Drivetrain",
+            parameters = listOf(headingDecl)
+        )
+        val profile = TuningProfileDocument(
+            uid = "profile.competition",
+            profileId = "competition",
+            displayName = "Competition",
+            description = "Competition Profile",
+            projectId = "robot.project",
+            authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
+            values = listOf(TuningAssignment("ftc.drive.heading.kp", TuningValue(doubleValue = 2.1)))
+        )
+        File(tempDir, ".ares/tuning-components/drive.arestuningcomponent").apply {
+            parentFile.mkdirs()
+            writeText(TuningComponentDocumentCodec.encode(compDoc))
+        }
+        File(tempDir, ".ares/tuning/competition.arestuning").apply {
+            parentFile.mkdirs()
+            writeText(TuningProfileDocumentCodec.encode(profile, listOf(headingDecl)))
+        }
+
+        var publishedTuningValue: Double? = null
+        var publishedTuningNonce: Long? = null
+        runBlocking {
+            Mockito.doAnswer { inv ->
+                val v = inv.getArgument<TuningValue>(1)
+                val n = inv.getArgument<Long>(2)
+                publishedTuningValue = v.doubleValue
+                publishedTuningNonce = n
+                true
+            }.`when`(client).publishTuningRequest(anyWireFrame(), anyWireFrame(), ArgumentMatchers.anyLong(), ArgumentMatchers.anyLong())
+        }
+
+        val tuningVm = TuningViewModel(client, testScope, loadDispatcher = testDispatcher, workDispatcher = testDispatcher)
+        tuningVm.onIntent(TuningIntent.LoadConstants(tempDir.path))
+        testScheduler.runCurrent()
+        assertNotNull(tuningVm.state.value.selectedProfile, "Profile must be loaded")
+
+        // Nonces 1 to 4 were processed in simulation before rearm-apply (at 3,520 ms).
+        // Record processed nonce 4.0 in client's telemetry so Studio derives nonce 5L.
+        runBlocking {
+            client.telemetryStore.accept(
+                TelemetryFrame(
+                    timestampMs = 1_000L,
+                    sessionId = "live-telemetry",
+                    key = "Tuning/Parameters/ftc.drive.heading.kp/ProcessedNonce",
+                    value = 4.0
+                )
+            )
+        }
+
+        // Stage the new live gain
+        tuningVm.onIntent(TuningIntent.UpdateTypedConstant("ftc.drive.heading.kp", TuningValue(doubleValue = liveGain)))
+        testScheduler.runCurrent()
+        assertEquals(liveGain, tuningVm.state.value.proposals["ftc.drive.heading.kp"]?.doubleValue)
+
+        // Push to robot
+        tuningVm.onIntent(TuningIntent.PushToRobot("ftc.drive.heading.kp"))
+        testScheduler.runCurrent()
+        assertEquals(liveGain, publishedTuningValue)
+        assertEquals(5L, publishedTuningNonce)
+        assertTrue(tuningVm.state.value.saveStatus.contains("Waiting for Heading P acknowledgement…"),
+            "Request must remain pending until matching robot result arrives, was: ${tuningVm.state.value.saveStatus}")
+        assertFalse(tuningVm.state.value.saveStatus.contains("applied experimentally"),
+            "Status must not report applied before robot reply is processed")
+
+        // Feed wire-rearm-apply-reply through production inbound path
+        val applyReplyFrames = replyFramesProvider("wire-rearm-apply-reply")
+        check(applyReplyFrames.isNotEmpty()) { "wire-rearm-apply-reply frames must not be empty" }
+        replayNt4Frames(client, applyReplyFrames)
+        testScheduler.advanceTimeBy(100)
+        testScheduler.runCurrent()
+
+        assertTrue(tuningVm.state.value.saveStatus.contains("applied experimentally"),
+            "Studio saveStatus must confirm experimental application, was: ${tuningVm.state.value.saveStatus}")
+        assertNull(tuningVm.state.value.errorMessage, "There must be no error message")
+
+        // Verify Current in Studio agrees with 2.6
+        val currentEntry = client.latestValues["Tuning/Parameters/ftc.drive.heading.kp/Current"]
+        assertNotNull(currentEntry, "Current telemetry entry must be present")
+        assertEquals(liveGain, currentEntry.value, 1e-9, "Studio Current must agree with liveGain")
+
+        // Verify independent controller output oracle: omega = kp * error = 2.6 * (0.0 - (-0.10)) = 0.26 rad/s
+        val error = 0.0 - measuredHeading
+        val expectedOmega = liveGain * error
+        assertEquals(0.26, expectedOmega, 1e-9, "Independent P-only oracle expectation must be 0.26 rad/s")
+
+        // =========================================================================
+        // Step 4: Disarm through Studio, carry generated robot's feedback back,
+        // verify local authorization is revoked, renewal stops, and stale feedback is rejected.
+        // =========================================================================
+        sysIdVm.onIntent(SysIdIntent.DisarmCalibration("Studio operator disarmed"))
+        testScheduler.runCurrent()
+        assertEquals(CalibrationArmPhase.DISARMED, sysIdVm.state.value.armPhase)
+        assertFalse(sysIdVm.state.value.robotCalibrationArmed)
+        assertFalse(sysIdVm.signalGenerator.hasActiveArmLease())
+
+        // Feed wire-disarm-reply into Studio's production inbound path
+        val disarmReplyFrames = replyFramesProvider("wire-disarm-reply")
+        check(disarmReplyFrames.isNotEmpty()) { "wire-disarm-reply frames must not be empty" }
+        replayNt4Frames(client, disarmReplyFrames)
+        testScheduler.runCurrent()
+        assertEquals(CalibrationArmPhase.DISARMED, sysIdVm.state.value.armPhase)
+        assertFalse(sysIdVm.state.value.robotCalibrationArmed)
+        assertFalse(sysIdVm.signalGenerator.hasActiveArmLease())
+
+        // Verify renewal has stopped
+        val leasesCountBefore = transport.publishedLeases.size
+        testScheduler.advanceTimeBy(1_000)
+        testScheduler.runCurrent()
+        assertEquals(leasesCountBefore, transport.publishedLeases.size, "Lease renewal must remain stopped after disarming")
+
+        // Stale feedback rejection: replaying arm reply while disarmed must not rearm
+        replayNt4Frames(client, armReplyFrames)
+        testScheduler.runCurrent()
+        assertEquals(CalibrationArmPhase.DISARMED, sysIdVm.state.value.armPhase,
+            "Replaying arm reply while disarmed must not rearm Studio")
+        assertFalse(sysIdVm.state.value.robotCalibrationArmed,
+            "robotCalibrationArmed must remain false after stale arm feedback")
+
+    } finally {
+        testScope.cancel()
+        testScheduler.runCurrent()
+        check(testScope.coroutineContext.job.isCompleted) { "Test scope must complete cleanly" }
+        tempDir.deleteRecursively()
+    }
+}
+

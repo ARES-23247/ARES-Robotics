@@ -281,6 +281,23 @@ class GenericStarterConsumerRoundtripIntegrationTest {
             )
             assertEquals(0, executionState.exitCode, "Verification build exit code must be 0")
 
+            // 9a. Verify robot feedback return path into Studio using wire reply frames emitted by consumer simulation.
+            val replyDir = File(extractedProject, "simulator/build/tuning-wire-reply")
+            verifyStudioRobotFeedbackReturnPath(replyDir, liveGain = 2.6, measuredHeading = -0.10)
+
+            // Cache generated wire reply frames to test resources for fast, deterministic unit test replay.
+            val resourcesReplyDir = listOf(
+                File("src/test/resources/tuning-wire-reply"),
+                File("ARES-Analytics/app/src/test/resources/tuning-wire-reply")
+            ).firstOrNull { it.parentFile?.isDirectory == true } ?: File("src/test/resources/tuning-wire-reply")
+            resourcesReplyDir.mkdirs()
+            listOf("wire-arm-reply", "wire-rearm-apply-reply", "wire-disarm-reply").forEach { name ->
+                val src = File(replyDir, "$name.frames")
+                if (src.isFile) {
+                    src.copyTo(File(resourcesReplyDir, "$name.frames"), overwrite = true)
+                }
+            }
+
             // A second canonical value must survive a real save/export/reopen and regenerated runtime.
             // Direct UpdateTuningState dispatch would bypass persistence and live-apply policy.
             saveConsumerHeadingGain(extractedSession, extractedProject, 1.4)

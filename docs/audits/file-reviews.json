@@ -6677,17 +6677,26 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SysIdViewModel.kt": {
-      "sha256": "0af1c1885e2a6d2bd9de1f3c63c2ba61075bc4f9227c3cf58563f1132547a961",
+      "sha256": "b8ec98953dacf3b7cd7dddbb95e7b82b226843951aec9a5142c2808c6f06e7c7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated SysId telemetry and routine execution ViewModel. Verified active lease control identity tracking (controlConnectionEpoch), safety disarming on connection drops, digital twin simulation preview mode, and parameter estimation validation.",
+      "scope": "Exposed signalGenerator internally to support direct Studio verification of active arm leases and calibration authorization state during robot feedback return path testing without altering public visibility.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass17-studio.log"
-      ]
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
+      ],
+      "studioRobotFeedbackPriorRecord": {
+        "sha256": "0af1c1885e2a6d2bd9de1f3c63c2ba61075bc4f9227c3cf58563f1132547a961",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated SysId telemetry and routine execution ViewModel. Verified active lease control identity tracking (controlConnectionEpoch), safety disarming on connection drops, digital twin simulation preview mode, and parameter estimation validation.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass17-studio.log"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningProtocolHelpers.kt": {
       "sha256": "a01557df70d5e12a58bccc06c65e53decf23482cde9f7d3df7dd407c68f36b29",
@@ -8796,30 +8805,39 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4TuningRequestWireAuditTest.kt": {
-      "sha256": "50983429053702013a2bc12f7bd7dc6c2f5523de597ab6a975bd87727288337b",
-      "review": "partial",
+      "sha256": "c061ef5c9c7323301bd3b809e8b0d2e3c9b5b7a40fcb75c3562abc5a22549eee",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed new calibration loopback test and surrounding public tuning wire fixture. Replaced wall-time exact-sequence assumptions with an owned controlled renewal scope; verified real socket leases 1/2/3, no renewal after disarm, explicit rearm with sequence 4, and cleanup. Existing protocol cases retained and passed; no new full-file audit claim.",
+      "scope": "Added public tuning and calibration feedback return path test replaying robot wire reply frames through production Nt4ClientService inbound path, verifying arming withhold, robot arming confirmation, pending to experimental apply transition, and disarm authorization revocation.",
       "evidence": [
-        "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
       ],
-      "calibrationWirePeerReviewPriorRecord": {
-        "sha256": "d1b1c7a2d5be0842ebb7ab896497ee2480ebe23f85a0756cb4003356065f075a",
-        "review": "reviewed",
+      "studioRobotFeedbackPriorRecord": {
+        "sha256": "50983429053702013a2bc12f7bd7dc6c2f5523de597ab6a975bd87727288337b",
+        "review": "partial",
         "validation": "passed",
-        "scope": "Complete eight-method suite reviewed/executed: all typed frame shapes, bounded queue and retry, connection/registration race, invalid inputs, type conflicts, atomic ack, and loopback verification of Nt4OutboundPublisher with SysIdSignalGenerator publishing STOP command, session token, and renewable lease sequence across an owned loopback NT4Server.",
+        "scope": "Reviewed new calibration loopback test and surrounding public tuning wire fixture. Replaced wall-time exact-sequence assumptions with an owned controlled renewal scope; verified real socket leases 1/2/3, no renewal after disarm, explicit rearm with sequence 4, and cleanup. Existing protocol cases retained and passed; no new full-file audit claim.",
         "evidence": [
-          "docs/audits/STUDIO_CALIBRATION_WIRE_REVIEW.md"
+          "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
         ],
-        "studioCalibrationWirePriorRecord": {
+        "calibrationWirePeerReviewPriorRecord": {
+          "sha256": "d1b1c7a2d5be0842ebb7ab896497ee2480ebe23f85a0756cb4003356065f075a",
           "review": "reviewed",
           "validation": "passed",
-          "scope": "Pass 238: Complete seven-method suite reviewed/executed: all typed frame shapes, bounded queue and retry, connection/registration race, invalid inputs, type conflicts, and owned real client/server loopback for all five declaration types and atomic ack. Corrected suspended mock send, periodic flush and pre-bind port -1 fixture behavior. Owns and releases network/database/temp resources.",
+          "scope": "Complete eight-method suite reviewed/executed: all typed frame shapes, bounded queue and retry, connection/registration race, invalid inputs, type conflicts, atomic ack, and loopback verification of Nt4OutboundPublisher with SysIdSignalGenerator publishing STOP command, session token, and renewable lease sequence across an owned loopback NT4Server.",
           "evidence": [
-            "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-            "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
+            "docs/audits/STUDIO_CALIBRATION_WIRE_REVIEW.md"
           ],
-          "sha256": "39cbaf2c3d724fecc9015df9377b06c6017bf9092f02b33e25aa51f181b24c28"
+          "studioCalibrationWirePriorRecord": {
+            "review": "reviewed",
+            "validation": "passed",
+            "scope": "Pass 238: Complete seven-method suite reviewed/executed: all typed frame shapes, bounded queue and retry, connection/registration race, invalid inputs, type conflicts, and owned real client/server loopback for all five declaration types and atomic ack. Corrected suspended mock send, periodic flush and pre-bind port -1 fixture behavior. Owns and releases network/database/temp resources.",
+            "evidence": [
+              "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+              "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
+            ],
+            "sha256": "39cbaf2c3d724fecc9015df9377b06c6017bf9092f02b33e25aa51f181b24c28"
+          }
         }
       }
     },
@@ -33904,7 +33922,7 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "5fa2049bc6e9b3312811217c6162c30be400be227187fdba9f969fd31f385a4d",
+      "sha256": "8b0d52c45a24bcd8d98e7239498f02e83c7c383172628564835413f05b25821b",
       "review": "partial",
       "validation": "passed",
       "scope": "Reviewed only these seven calibration-wire peer-review records; preserved complete prior records and every unrelated semantic entry. Scoped content fingerprints and evidence refreshed after validation, without broader coverage claims.",
@@ -35151,61 +35169,70 @@
       }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/GenericStarterConsumerRoundtripIntegrationTest.kt": {
-      "sha256": "0dc320f5d227ebb35646d1fa4bcee3d5dd157c8374073ed474835e9294423275",
+      "sha256": "36024ffa32772f7720b5cb75843af3945255bfeee6fe2fdcc70887fb6b9d2c70",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed submitted insertion of lease-recovery test/shared helpers and surrounding generated-source composition, export/reopen, candidate propagation and retained result reporting. Both canonical saved gains execute the revised fixture through actual generated runtime. No new full-file review claim.",
+      "scope": "Integrated return path verification against emitted simulator reply frames into generic starter consumer roundtrip test (step 9a), and cached reply frames to test resources for deterministic unit replay.",
       "evidence": [
-        "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
       ],
-      "tuningLeasePeerReviewPriorRecord": {
+      "studioRobotFeedbackPriorRecord": {
         "sha256": "0dc320f5d227ebb35646d1fa4bcee3d5dd157c8374073ed474835e9294423275",
         "review": "partial",
         "validation": "passed",
-        "scope": "Reviewed integration of calibration lease expiry and recovery verification into the generic FTC consumer simulation test, executing consumerLeaseRecoveryBehavior at both saved canonical gains.",
+        "scope": "Reviewed submitted insertion of lease-recovery test/shared helpers and surrounding generated-source composition, export/reopen, candidate propagation and retained result reporting. Both canonical saved gains execute the revised fixture through actual generated runtime. No new full-file review claim.",
         "evidence": [
-          "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+          "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
         ],
-        "tuningLeaseRecoveryPriorRecord": {
-          "sha256": "e5bfe17047d9716e8c8a18f9672ea217a26cd1254c9539d61e7cb3374f4b1f14",
+        "tuningLeasePeerReviewPriorRecord": {
+          "sha256": "0dc320f5d227ebb35646d1fa4bcee3d5dd157c8374073ed474835e9294423275",
           "review": "partial",
           "validation": "passed",
-          "scope": "Reviewed integration of canonical Studio wire capture before export/reopen at two saved gains, and bounded failure diagnostics pointing to retained per-operation nested XML. Actual generated robot compiles/tests against the recorded local candidate. No global dependency or hardware review claim.",
+          "scope": "Reviewed integration of calibration lease expiry and recovery verification into the generic FTC consumer simulation test, executing consumerLeaseRecoveryBehavior at both saved canonical gains.",
           "evidence": [
-            "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+            "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
           ],
-          "liveTuningPeerReviewPriorRecord": {
-            "sha256": "1f4f02c0ae394a1c041ed32ec7fb65f94c56837806de7929eb9d8d44733532dd",
+          "tuningLeaseRecoveryPriorRecord": {
+            "sha256": "e5bfe17047d9716e8c8a18f9672ea217a26cd1254c9539d61e7cb3374f4b1f14",
             "review": "partial",
             "validation": "passed",
-            "scope": "Integrated complete live heading-tuning transaction proof into generated generic FTC consumer simulation test source: imports NT4Server, TuningAcknowledgementCodec, File, and invokes consumerLiveTuningBehavior(savedGain). Added nested simulator test XML failure reporting in driver verification assertion. Proves full live tuning lifecycle across export/extract/reopen at multiple canonical gains.",
+            "scope": "Reviewed integration of canonical Studio wire capture before export/reopen at two saved gains, and bounded failure diagnostics pointing to retained per-operation nested XML. Actual generated robot compiles/tests against the recorded local candidate. No global dependency or hardware review claim.",
             "evidence": [
-              "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
+              "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
             ],
-            "liveTuningPriorReview": {
-              "sha256": "95d011e7c9fa5e195c17efb7f21461049db7c68fb7076489859033fdec99242d",
+            "liveTuningPeerReviewPriorRecord": {
+              "sha256": "1f4f02c0ae394a1c041ed32ec7fb65f94c56837806de7929eb9d8d44733532dd",
               "review": "partial",
               "validation": "passed",
-              "scope": "Reviewed the f3b44d887 saved-gain/feedback submission and corrected delta: two genuine saved/exported/reopened canonical gain runs; generated gripper feedback and real active-output OpMode stop; preserve generic deadband and roundtrip coverage. No full production dependency or hardware claim.",
+              "scope": "Integrated complete live heading-tuning transaction proof into generated generic FTC consumer simulation test source: imports NT4Server, TuningAcknowledgementCodec, File, and invokes consumerLiveTuningBehavior(savedGain). Added nested simulator test XML failure reporting in driver verification assertion. Proves full live tuning lifecycle across export/extract/reopen at multiple canonical gains.",
               "evidence": [
-                "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+                "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
               ],
-              "generatedSafetyPriorReview": {
-                "sha256": "41c8d4eea92a12b6d67d20b8bbab82efe48c734095644b9bb79e7970d2864dca",
+              "liveTuningPriorReview": {
+                "sha256": "95d011e7c9fa5e195c17efb7f21461049db7c68fb7076489859033fdec99242d",
                 "review": "partial",
                 "validation": "passed",
-                "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
+                "scope": "Reviewed the f3b44d887 saved-gain/feedback submission and corrected delta: two genuine saved/exported/reopened canonical gain runs; generated gripper feedback and real active-output OpMode stop; preserve generic deadband and roundtrip coverage. No full production dependency or hardware claim.",
                 "evidence": [
-                  "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+                  "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
                 ],
-                "consumerRoundtripPriorReview": {
-                  "sha256": "7b488a5ea13f2c0fa82cc38ed0963215825337312d98a2bce8b4bde2148cf354",
+                "generatedSafetyPriorReview": {
+                  "sha256": "41c8d4eea92a12b6d67d20b8bbab82efe48c734095644b9bb79e7970d2864dca",
                   "review": "partial",
                   "validation": "passed",
-                  "scope": "Complete Generic FTC Starter consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution, and simulated IO validation.",
+                  "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
                   "evidence": [
-                    "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
-                  ]
+                    "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+                  ],
+                  "consumerRoundtripPriorReview": {
+                    "sha256": "7b488a5ea13f2c0fa82cc38ed0963215825337312d98a2bce8b4bde2148cf354",
+                    "review": "partial",
+                    "validation": "passed",
+                    "scope": "Complete Generic FTC Starter consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution, and simulated IO validation.",
+                    "evidence": [
+                      "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+                    ]
+                  }
                 }
               }
             }
@@ -35305,61 +35332,70 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ConsumerSafetySimulationFixture.kt": {
-      "sha256": "c149911397e5a4c859e453ab5bdce14f6c61a23c77c562f7c31c163049590ba9",
+      "sha256": "9b1db19006000c82584e9e0728aa31f26bc5956ba4f4a96a0be211d59217d14e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed updated live-tuning control-wire scenario and compatibility with preserved lease-expiry case: actual parser and generated FTC runtime, fresh IMU and published arm state, STOP/token disarm, unchanged disarmed lease, allowed manual repositioning, nonce rejection, new token and gain 2.6, independent +0.26 rad/s output, canonical/local-overlay separation and active stop/closed-manager fence. No whole-file coverage inferred.",
+      "scope": "Fixed initial topic announcement retention across consumer safety simulation ticks so that text topic registrations are preserved before clearing capture frames, and captured robot reply wire frames for arm, rearm-apply, and disarm steps.",
       "evidence": [
-        "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
       ],
-      "calibrationWirePeerReviewPriorRecord": {
-        "sha256": "12dc9eb69652e6b7a9df5cf070c926ac501f15bd16be4ae2161b7074a647a20f",
+      "studioRobotFeedbackPriorRecord": {
+        "sha256": "c149911397e5a4c859e453ab5bdce14f6c61a23c77c562f7c31c163049590ba9",
         "review": "partial",
         "validation": "passed",
-        "scope": "Reviewed Studio calibration control wire integration into consumer simulation fixture: eliminates direct topic writes, delivering real wire frames for arming STOP session, advancing lease heartbeats, tuning requests, disarming transition, manual repositioning, fresh rearm, and normal control heading response (+0.32 rad/s) satisfying TuningManager 500ms polling throttle. Canonical bytes and local overlay preserved.",
+        "scope": "Reviewed updated live-tuning control-wire scenario and compatibility with preserved lease-expiry case: actual parser and generated FTC runtime, fresh IMU and published arm state, STOP/token disarm, unchanged disarmed lease, allowed manual repositioning, nonce rejection, new token and gain 2.6, independent +0.26 rad/s output, canonical/local-overlay separation and active stop/closed-manager fence. No whole-file coverage inferred.",
         "evidence": [
-          "docs/audits/STUDIO_CALIBRATION_WIRE_REVIEW.md"
+          "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
         ],
-        "studioCalibrationWirePriorRecord": {
-          "sha256": "c3923c3da9568735d47fa6dccdca1d53f245ecd92efa3455f94becf62ddd5fb9",
+        "calibrationWirePeerReviewPriorRecord": {
+          "sha256": "12dc9eb69652e6b7a9df5cf070c926ac501f15bd16be4ae2161b7074a647a20f",
           "review": "partial",
           "validation": "passed",
-          "scope": "Reviewed lease-recovery fixture and shared tuning helpers against FTC calibration input/output ordering and tuning polling: continuous 20 ms frames, fresh observed IMU, valid at 500 ms and expired neutral at 520 ms, same-frame nonce rejection, retained handshake guards, manual repositioning, fresh rearm, independent heading output, canonical/overlay preservation and closed-manager fence. Existing heading/live-tuning/feedback cases inspected for compatibility, not a new whole-file audit.",
+          "scope": "Reviewed Studio calibration control wire integration into consumer simulation fixture: eliminates direct topic writes, delivering real wire frames for arming STOP session, advancing lease heartbeats, tuning requests, disarming transition, manual repositioning, fresh rearm, and normal control heading response (+0.32 rad/s) satisfying TuningManager 500ms polling throttle. Canonical bytes and local overlay preserved.",
           "evidence": [
-            "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
+            "docs/audits/STUDIO_CALIBRATION_WIRE_REVIEW.md"
           ],
-          "tuningLeasePeerReviewPriorRecord": {
-            "sha256": "251503bf012f39ec00f7541d181d9c1b9e95dfc3206ce957f95d4a91a817793d",
+          "studioCalibrationWirePriorRecord": {
+            "sha256": "c3923c3da9568735d47fa6dccdca1d53f245ecd92efa3455f94becf62ddd5fb9",
             "review": "partial",
             "validation": "passed",
-            "scope": "Reviewed calibration lease expiry, same-frame rejection, and explicit rearm recovery in consumer simulation fixture: neutral output under competing joystick, withheld lease across 500 ms boundary, same-frame SESSION_NOT_ARMED rejection before tuning poll, stale lease rejection, fresh rearm (token/lease sequence), APPLIED ack, and independent P-only oracle (+0.32 rad/s) after return to normal control. All canonical bytes preserved.",
+            "scope": "Reviewed lease-recovery fixture and shared tuning helpers against FTC calibration input/output ordering and tuning polling: continuous 20 ms frames, fresh observed IMU, valid at 500 ms and expired neutral at 520 ms, same-frame nonce rejection, retained handshake guards, manual repositioning, fresh rearm, independent heading output, canonical/overlay preservation and closed-manager fence. Existing heading/live-tuning/feedback cases inspected for compatibility, not a new whole-file audit.",
             "evidence": [
-              "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+              "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
             ],
-            "tuningLeaseRecoveryPriorRecord": {
-              "sha256": "b16eb5fe9fce6cadd805acfdaf762529023bd6e8b454e2e13240d23bc6360f72",
+            "tuningLeasePeerReviewPriorRecord": {
+              "sha256": "251503bf012f39ec00f7541d181d9c1b9e95dfc3206ce957f95d4a91a817793d",
               "review": "partial",
               "validation": "passed",
-              "scope": "Reviewed and corrected live-tuning fixture delta: real wire parser, unarmed rejection, held competing joystick under fresh calibration STOP, accepted gain, armed replay/invalid rejection, independent +0.32 rad/s heading oracle with observed IMU, active-output stop and explicit closed-manager fence. Exact canonical bytes and local experimental overlay retained. Earlier unchanged shared fixtures retain their prior evidence; no physical robot or full GUI journey claim.",
+              "scope": "Reviewed calibration lease expiry, same-frame rejection, and explicit rearm recovery in consumer simulation fixture: neutral output under competing joystick, withheld lease across 500 ms boundary, same-frame SESSION_NOT_ARMED rejection before tuning poll, stale lease rejection, fresh rearm (token/lease sequence), APPLIED ack, and independent P-only oracle (+0.32 rad/s) after return to normal control. All canonical bytes preserved.",
               "evidence": [
-                "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+                "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
               ],
-              "liveTuningPeerReviewPriorRecord": {
-                "sha256": "a0b93b0969134eaaa6275cf980d8bbf3ac44fa9aac519deed59c175559d94a48",
-                "review": "reviewed",
+              "tuningLeaseRecoveryPriorRecord": {
+                "sha256": "b16eb5fe9fce6cadd805acfdaf762529023bd6e8b454e2e13240d23bc6360f72",
+                "review": "partial",
                 "validation": "passed",
-                "scope": "Reviewed shared consumer simulation fixture and live heading-tuning behavior verification: unarmed request rejection (SESSION_NOT_ARMED), authorized request with live arm/lease handshake (APPLIED) holding neutral during calibration hold and executing independent P-only oracle (omega = Kp * error = 3.2 * 0.10 = 0.32 rad/s below saturation), idempotent nonce replay handling, out-of-bounds rejection (INVALID_VALUE), canonical profile byte-invariance, and stop/close neutralization with late request rejection. Fixed JUnit 4 parameter ordering in canonical assertions.",
+                "scope": "Reviewed and corrected live-tuning fixture delta: real wire parser, unarmed rejection, held competing joystick under fresh calibration STOP, accepted gain, armed replay/invalid rejection, independent +0.32 rad/s heading oracle with observed IMU, active-output stop and explicit closed-manager fence. Exact canonical bytes and local experimental overlay retained. Earlier unchanged shared fixtures retain their prior evidence; no physical robot or full GUI journey claim.",
                 "evidence": [
-                  "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
+                  "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
                 ],
-                "generatedSafetyPriorReview": {
-                  "sha256": "7e79be0546c38b395f80137efa0c9b135a2271cd993f56374e6f14dddc13b23e",
+                "liveTuningPeerReviewPriorRecord": {
+                  "sha256": "a0b93b0969134eaaa6275cf980d8bbf3ac44fa9aac519deed59c175559d94a48",
                   "review": "reviewed",
                   "validation": "passed",
-                  "scope": "Reviewed all shared injected fixture source: independent P-only literal oracle, actual IMU sample observation, real IO-derived feedback state, timeout boundaries, component close and actual active-output OpMode stop. Compiled and executed in both generated FTC consumers at both saved gains. Scoped desktop evidence, not live tuning authorization or hardware validation.",
+                  "scope": "Reviewed shared consumer simulation fixture and live heading-tuning behavior verification: unarmed request rejection (SESSION_NOT_ARMED), authorized request with live arm/lease handshake (APPLIED) holding neutral during calibration hold and executing independent P-only oracle (omega = Kp * error = 3.2 * 0.10 = 0.32 rad/s below saturation), idempotent nonce replay handling, out-of-bounds rejection (INVALID_VALUE), canonical profile byte-invariance, and stop/close neutralization with late request rejection. Fixed JUnit 4 parameter ordering in canonical assertions.",
                   "evidence": [
-                    "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
-                  ]
+                    "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
+                  ],
+                  "generatedSafetyPriorReview": {
+                    "sha256": "7e79be0546c38b395f80137efa0c9b135a2271cd993f56374e6f14dddc13b23e",
+                    "review": "reviewed",
+                    "validation": "passed",
+                    "scope": "Reviewed all shared injected fixture source: independent P-only literal oracle, actual IMU sample observation, real IO-derived feedback state, timeout boundaries, component close and actual active-output OpMode stop. Compiled and executed in both generated FTC consumers at both saved gains. Scoped desktop evidence, not live tuning authorization or hardware validation.",
+                    "evidence": [
+                      "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+                    ]
+                  }
                 }
               }
             }
@@ -35413,45 +35449,54 @@
       }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ConsumerTuningWireFixture.kt": {
-      "sha256": "e8225f817fae623e77fc2c1093a3e607c2bff18f18847f6916998d47eed06b3a",
+      "sha256": "e4fd7fb2046d9633203db2db915270cc27014b69bb8f8c4b142084b733cd1015",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed complete capture fixture: production SysIdSignalGenerator and NT4 publisher, arranged client prerequisites and explicit transport seam, exact registration counts, cancellation after 1000 virtual ms, persistent registration, distinct recovered gain 2.6, preserved lease-expiry stream, and failure-path owned-scope teardown. No robot feedback is replayed back into the capturing Studio actor.",
+      "scope": "Updated consumerWireProxy to accumulate all distinct text announcements across ticks and prepend them in saveReplyFrames to produce self-contained reply frame files. Added verifyStudioRobotFeedbackReturnPath and verifyStudioRobotFeedbackReturnPathFromResources verifying all 4 return path criteria.",
       "evidence": [
-        "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
       ],
-      "calibrationWirePeerReviewPriorRecord": {
-        "sha256": "5011487ae988d9ee67e478a9a96ff60cbcf3e6a0185481ad836e9f331230ab87",
+      "studioRobotFeedbackPriorRecord": {
+        "sha256": "e8225f817fae623e77fc2c1093a3e607c2bff18f18847f6916998d47eed06b3a",
         "review": "reviewed",
         "validation": "passed",
-        "scope": "Reviewed complete fixture: actual Studio Nt4OutboundPublisher and SysIdSignalGenerator capture fixed topic registrations, arm STOP session, advancing lease heartbeats, apply/replay/invalid tuning requests, disarm revocation, and rearm recovery into ordered binary frames for robot parser replay. Owned channels and test scopes close in finally.",
+        "scope": "Reviewed complete capture fixture: production SysIdSignalGenerator and NT4 publisher, arranged client prerequisites and explicit transport seam, exact registration counts, cancellation after 1000 virtual ms, persistent registration, distinct recovered gain 2.6, preserved lease-expiry stream, and failure-path owned-scope teardown. No robot feedback is replayed back into the capturing Studio actor.",
         "evidence": [
-          "docs/audits/STUDIO_CALIBRATION_WIRE_REVIEW.md"
+          "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
         ],
-        "studioCalibrationWirePriorRecord": {
-          "sha256": "0525cd35a0f307ca3a0f814d033a12f5ddeeecbb0f028c6496f03f6b09e48731",
+        "calibrationWirePeerReviewPriorRecord": {
+          "sha256": "5011487ae988d9ee67e478a9a96ff60cbcf3e6a0185481ad836e9f331230ab87",
           "review": "reviewed",
           "validation": "passed",
-          "scope": "Reviewed complete fixture. Actual Studio writer captures one registration per connected robot-test sequence, one atomic value/nonce binary per request, and persistent publisher IDs through replay, recovery and close. Owned sessions/channels close in finally.",
+          "scope": "Reviewed complete fixture: actual Studio Nt4OutboundPublisher and SysIdSignalGenerator capture fixed topic registrations, arm STOP session, advancing lease heartbeats, apply/replay/invalid tuning requests, disarm revocation, and rearm recovery into ordered binary frames for robot parser replay. Owned channels and test scopes close in finally.",
           "evidence": [
-            "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
+            "docs/audits/STUDIO_CALIBRATION_WIRE_REVIEW.md"
           ],
-          "tuningLeasePeerReviewPriorRecord": {
-            "sha256": "336329afa324663dd34dff818f45d7400f9b50902f53a91e969313f44d3cf5b2",
+          "studioCalibrationWirePriorRecord": {
+            "sha256": "0525cd35a0f307ca3a0f814d033a12f5ddeeecbb0f028c6496f03f6b09e48731",
             "review": "reviewed",
             "validation": "passed",
-            "scope": "Reviewed wire fixture updates: partitioned Nt4OutboundPublisher and session per test case to ensure topic announcements precede binary request frames across test JVM resets, adding test cases for expired and rearm-apply frames.",
+            "scope": "Reviewed complete fixture. Actual Studio writer captures one registration per connected robot-test sequence, one atomic value/nonce binary per request, and persistent publisher IDs through replay, recovery and close. Owned sessions/channels close in finally.",
             "evidence": [
-              "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+              "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
             ],
-            "tuningLeaseRecoveryPriorRecord": {
-              "sha256": "c787fa34b94b531cb3ba55a8be619493a23fb5c8ab4af8d3019b0de114d3abaf",
+            "tuningLeasePeerReviewPriorRecord": {
+              "sha256": "336329afa324663dd34dff818f45d7400f9b50902f53a91e969313f44d3cf5b2",
               "review": "reviewed",
               "validation": "passed",
-              "scope": "Reviewed complete new small fixture: actual Studio Nt4OutboundPublisher registration and binary encoding using canonical declarations/transport paths, captured as ordered Base64 test resources through export/reopen. Socket is a mock; production receiver parser is exercised in the generated JVM. Explicit staged-byte evidence boundary.",
+              "scope": "Reviewed wire fixture updates: partitioned Nt4OutboundPublisher and session per test case to ensure topic announcements precede binary request frames across test JVM resets, adding test cases for expired and rearm-apply frames.",
               "evidence": [
-                "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
-              ]
+                "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+              ],
+              "tuningLeaseRecoveryPriorRecord": {
+                "sha256": "c787fa34b94b531cb3ba55a8be619493a23fb5c8ab4af8d3019b0de114d3abaf",
+                "review": "reviewed",
+                "validation": "passed",
+                "scope": "Reviewed complete new small fixture: actual Studio Nt4OutboundPublisher registration and binary encoding using canonical declarations/transport paths, captured as ordered Base64 test resources through export/reopen. Socket is a mock; production receiver parser is exercised in the generated JVM. Explicit staged-byte evidence boundary.",
+                "evidence": [
+                  "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+                ]
+              }
             }
           }
         }
@@ -35650,6 +35695,42 @@
       "scope": "Reviewed bounded follow-up against uncovered return path from generated robot acknowledgements to actual Studio inbound observers; reuses existing stale-epoch/cancellation coverage, preserves local-only isolation and candidate identity, and defines explicit one-parameter stop criteria.",
       "evidence": [
         "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md": {
+      "sha256": "ea752bd6ed6c0301bbaac1c63e9b24b3fd5d0761c963d950ad3983916191ed8b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Local verification report for Studio robot feedback return path, detailing topic announcement fix, 4 verified return path criteria, 63 unit/audit tests, consumer roundtrip test, candidate identity, and monorepo policy compliance.",
+      "evidence": [
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-arm-reply.frames": {
+      "sha256": "508e736e1b5b5d1844df90958584d1c84e8a9a211a2352fbabaa1d7524c72c71",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for arm step, containing complete topic announcements and binary SysId/Armed=true frame.",
+      "evidence": [
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-rearm-apply-reply.frames": {
+      "sha256": "5a7048e727525ff1b6be2861daffefc17ac9bb0c64a2a77c02748a2a0ee07d42",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for rearm-apply step, containing complete topic announcements and binary updates with nonce 5L, result APPLIED, and Current 2.6.",
+      "evidence": [
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
+      ]
+    },
+    "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-disarm-reply.frames": {
+      "sha256": "a61f35e2f6adaf1e2a519e1f20929f4a866e005371f5f2bbba4a4df0e2f3e769",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for disarm step, containing complete topic announcements and binary SysId/Armed=false frame.",
+      "evidence": [
+        "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
       ]
     }
   }

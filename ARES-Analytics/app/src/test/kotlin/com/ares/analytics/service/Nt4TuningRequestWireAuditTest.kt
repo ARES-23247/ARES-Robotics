@@ -299,6 +299,13 @@ class Nt4TuningRequestWireAuditTest {
         }
     }
 
+    @Test
+    fun `public tuning and calibration feedback reaches Studio through production inbound path`() {
+        com.ares.analytics.service.project.verifyStudioRobotFeedbackReturnPathFromResources(liveGain = 2.6, measuredHeading = -0.10)
+    }
+
+
+
     private class Wire(capacity: Int = Channel.UNLIMITED) {
         val channel = Channel<Frame>(capacity)
         val session = mock(DefaultClientWebSocketSession::class.java)

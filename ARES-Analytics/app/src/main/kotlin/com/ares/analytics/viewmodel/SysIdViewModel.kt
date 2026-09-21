@@ -122,7 +122,7 @@ class SysIdViewModel(
 
     private val simulationPreview = SysIdSimulationPreview(_state, scope, previewDispatcher, digitalTwin, autoTunerService)
     private val regressionSolver = SysIdRegressionSolver(_state)
-    private val signalGenerator = SysIdSignalGenerator(nt4ClientService, _state, scope, calibrationTransport, tuningProposalInbox)
+    internal val signalGenerator = SysIdSignalGenerator(nt4ClientService, _state, scope, calibrationTransport, tuningProposalInbox)
     private val dataCollector = SysIdDataCollector(
         nt4ClientService,
         autoTunerService,
