@@ -12,6 +12,9 @@ import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.serialization.json.*
 import org.mockito.Mockito.*
 import java.io.File
@@ -210,6 +213,7 @@ class Nt4TuningRequestWireAuditTest {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test fun `public calibration publisher reaches an owned loopback server with stop token and renewable lease`() = runBlocking {
         assertNull(NT4Server.getInstance(), "This fixture cannot replace another test's active server")
         val directory = Files.createTempDirectory("calibration-wire-audit").toFile()
@@ -223,7 +227,10 @@ class Nt4TuningRequestWireAuditTest {
             capabilitiesKnown = true,
             supportedMechanisms = setOf(com.areslib.control.assist.SysIdMechanism.LINEAR),
         ))
-        val generator = com.ares.analytics.viewmodel.sysid.SysIdSignalGenerator(client, state, this)
+        // Control only renewal scheduling; the public client and loopback socket remain real.
+        val renewalScheduler = TestCoroutineScheduler()
+        val renewalScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(renewalScheduler))
+        val generator = com.ares.analytics.viewmodel.sysid.SysIdSignalGenerator(client, state, renewalScope)
         try {
             val port = withTimeout(5_000) {
                 while (server.port <= 0) delay(10)
@@ -235,6 +242,7 @@ class Nt4TuningRequestWireAuditTest {
             }
             // 1. Studio explicitly arms; publishes STOP, fresh token, and initial lease.
             generator.arm()
+            renewalScheduler.runCurrent()
             withTimeout(5_000) {
                 while (NT4Server.getString("SysId/Command", "") != "STOP" ||
                     !NT4Server.getString("SysId/EnableToken", "").startsWith("ares-") ||
@@ -244,6 +252,14 @@ class Nt4TuningRequestWireAuditTest {
             val firstToken = NT4Server.getString("SysId/EnableToken", "")
             assertTrue(firstToken.startsWith("ares-"))
             assertEquals(1.0, NT4Server.getDouble("SysId/EnableLease", -1.0))
+            assertTrue(generator.hasActiveArmLease())
+            for (sequence in 2..3) {
+                renewalScheduler.advanceTimeBy(200)
+                renewalScheduler.runCurrent()
+                withTimeout(5_000) {
+                    while (NT4Server.getDouble("SysId/EnableLease", -1.0) != sequence.toDouble()) delay(10)
+                }
+            }
 
             // 2. Studio explicitly disarms; sends STOP and revokes token to empty string.
             generator.disarm("test disarm")
@@ -252,22 +268,34 @@ class Nt4TuningRequestWireAuditTest {
             }
             assertEquals("STOP", NT4Server.getString("SysId/Command", ""))
             assertEquals("", NT4Server.getString("SysId/EnableToken", "pending"))
+            renewalScheduler.advanceTimeBy(1_000)
+            renewalScheduler.runCurrent()
+            assertFalse(generator.hasActiveArmLease())
+            assertTrue(renewalScope.coroutineContext.job.children.none { it.isActive })
+            assertEquals(3.0, NT4Server.getDouble("SysId/EnableLease", -1.0))
 
             // 3. Studio rearms; publishes STOP, distinct fresh token, and advancing lease sequence.
             generator.arm()
+            renewalScheduler.runCurrent()
             withTimeout(5_000) {
                 while (NT4Server.getString("SysId/EnableToken", "").isEmpty() ||
                     NT4Server.getString("SysId/EnableToken", "") == firstToken ||
-                    NT4Server.getDouble("SysId/EnableLease", -1.0) != 2.0) delay(10)
+                    NT4Server.getDouble("SysId/EnableLease", -1.0) != 4.0) delay(10)
             }
             val secondToken = NT4Server.getString("SysId/EnableToken", "")
             assertTrue(secondToken.startsWith("ares-") && secondToken != firstToken)
-            assertEquals(2.0, NT4Server.getDouble("SysId/EnableLease", -1.0))
+            assertEquals(4.0, NT4Server.getDouble("SysId/EnableLease", -1.0))
 
             generator.disarm("test finished")
         } finally {
-            try { withTimeout(5_000) { assertTrue(client.stop()) } }
-            finally { try { server.stop() } finally { database.close(); assertTrue(directory.deleteRecursively()) } }
+            try {
+                renewalScope.cancel()
+                renewalScheduler.runCurrent()
+                withTimeout(5_000) { renewalScope.coroutineContext.job.join() }
+            } finally {
+                try { withTimeout(5_000) { assertTrue(client.stop()) } }
+                finally { try { server.stop() } finally { database.close(); assertTrue(directory.deleteRecursively()) } }
+            }
         }
     }
 

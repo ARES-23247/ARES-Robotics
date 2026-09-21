@@ -240,6 +240,9 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertTrue(robot.isCalibrationModeArmed)
             assertTrue(robot.isCalibrationNeutralOutputHoldActive)
             assertNeutral() // Joystick is still nonzero, so this is actual inhibition.
+            assertTrue(NT4Server.getBoolean("SysId/Armed", false))
+            val firstEnableToken = NT4Server.getString("SysId/EnableToken", "")
+            assertTrue(firstEnableToken.startsWith("ares-"))
 
             var leaseSeq = 1
             fun tickFreshHold(time: Long, nextLease: Boolean = false) {
@@ -303,12 +306,18 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertFalse(robot.isCalibrationNeutralOutputHoldActive)
             assertEquals("ENABLE_TOKEN_CHANGED", NT4Server.getString("SysId/Error", ""))
             assertNeutral() // Neutralized during disarm transition frame.
+            assertFalse(NT4Server.getBoolean("SysId/Armed", true))
+            assertEquals("", NT4Server.getString("SysId/EnableToken", "missing"))
+            val disarmedLease = NT4Server.getDouble("SysId/EnableLease", -1.0)
 
             // Following frames (2_560L..3_000L): manual repositioning resumes with held joystick.
             for (time in 2_560L..3_000L step 20L) {
                 RobotClock.useMockTime(time)
                 awaitImuSample(robot, 0.0)
                 lifecycle.tick()
+                assertTrue(robot.store.state.drive.imuMeasurementsValid)
+                assertFalse(robot.isCalibrationModeArmed)
+                assertEquals(disarmedLease, NT4Server.getDouble("SysId/EnableLease", -1.0), 0.0)
                 assertTrue("Manual repositioning active while disarmed", motors.any { abs(it.power) > 0.01 })
             }
 
@@ -316,7 +325,9 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             // 3_020L is eligible for TuningManager update (3_020 - 2_520 = 500 ms).
             RobotClock.useMockTime(3_020L)
             deliverStudioTuningFrames(server, wire, "disarmed")
+            awaitImuSample(robot, 0.0)
             lifecycle.tick()
+            assertTrue(robot.store.state.drive.imuMeasurementsValid)
             assertTuningResult(4L, "SESSION_NOT_ARMED", 3.2)
             assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
 
@@ -328,6 +339,10 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertTrue(robot.isCalibrationModeArmed)
             assertTrue(robot.isCalibrationNeutralOutputHoldActive)
             assertNeutral()
+
+            assertTrue(NT4Server.getBoolean("SysId/Armed", false))
+            val secondEnableToken = NT4Server.getString("SysId/EnableToken", "")
+            assertTrue(secondEnableToken.startsWith("ares-") && secondEnableToken != firstEnableToken)
 
             // Keep lease fresh until next poll eligibility at 3_520L (3_020 + 500 ms).
             // Leases 10.0 and 11.0 delivered at 3_240L and 3_440L.
@@ -346,8 +361,8 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             deliverStudioTuningFrames(server, wire, "wire-rearm-apply")
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
-            assertTuningResult(5L, "APPLIED", 3.2)
-            assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+            assertTuningResult(5L, "APPLIED", 2.6)
+            assertEquals(2.6, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
             assertNeutral()
 
             // Return to normal control and verify heading controller response.
@@ -374,7 +389,7 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             awaitImuSample(robot, -0.10)
             lifecycle.tick()
 
-            // Independent P-only oracle after rejected requests: 3.2 * (0 - -0.10) = +0.32 rad/s.
+            // Independent P-only oracle after the recovered transaction: 2.6 * (0 - -0.10) = +0.26 rad/s.
             val drive = robot.store.state.drive
             assertTrue(drive.imuMeasurementsValid)
             assertEquals(0.0, robot.store.state.tuning.drive.headingGains.kI, 1e-9)
@@ -382,7 +397,7 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertEquals(-0.10, drive.poseEstimator.estimatedPose.heading.radians, 1e-3)
             assertEquals(0.0, drive.xVelocityMetersPerSecond, 1e-9)
             assertEquals(0.0, drive.yVelocityMetersPerSecond, 1e-9)
-            assertEquals(0.32, drive.angularVelocityRadiansPerSecond, 1e-3)
+            assertEquals(0.26, drive.angularVelocityRadiansPerSecond, 1e-3)
             println("TUNING_OUTPUT omega=" + drive.angularVelocityRadiansPerSecond)
             val right = robotDouble.fr.power
             assertTrue("Positive CCW effort below saturation", right > 0.01 && right < 1.0)
@@ -403,7 +418,7 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
                 GeneratedAresTuningConfig.metadata().declarations)
             assertEquals(com.areslib.tuning.TuningProfileAuthority.LOCAL_EXPERIMENTAL, overlay.authority)
             assertEquals(GeneratedAresTuningConfig.CANONICAL_PROFILE_UID, overlay.baseProfileUid)
-            assertEquals(3.2, overlay.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue!!, 1e-9)
+            assertEquals(2.6, overlay.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue!!, 1e-9)
             val overlayBytes = File(cwd, ".ares/local/tuning/runtime.arestuning").readBytes()
 
             RobotClock.useMockTime(4_200L)
@@ -414,7 +429,7 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             lifecycle.gamepad1.left_stick_y = -1.0f
             lifecycle.tick()
             manager.update()
-            assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+            assertEquals(2.6, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
             assertEquals(finalAck, NT4Server.getString(rootTopic + "/Acknowledgement", ""))
             assertEquals(5.0, NT4Server.getDouble(rootTopic + "/ProcessedNonce", -1.0), 1e-9)
             assertNeutral()

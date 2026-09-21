@@ -11,12 +11,15 @@ import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningValue
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.websocket.Frame
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.advanceTimeBy
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
@@ -28,7 +31,7 @@ import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 /** Capture the real Studio writer's bytes for replay through the generated consumer's NT4 parser. */
 @OptIn(ExperimentalCoroutinesApi::class)
 internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration: TuningParameterDeclaration) {
-    fun saveFrames(name: String, outgoing: Channel<Frame>, expectedBinaries: Int, allowText: Boolean) {
+    fun saveFrames(name: String, outgoing: Channel<Frame>, expectedBinaries: Int, expectedTexts: Int = 0) {
         var binaries = 0
         var texts = 0
         val frames = buildList {
@@ -43,7 +46,7 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
             }
         }
         check(binaries == expectedBinaries) { "$name: expected $expectedBinaries binary frames, got $binaries" }
-        check(allowText || texts == 0) { "$name: text frames not allowed here (got $texts)" }
+        check(texts == expectedTexts) { "$name: expected $expectedTexts registration frames, got $texts" }
         File(project, "simulator/src/test/resources/tuning-wire/$name.frames").apply {
             parentFile.mkdirs()
             writeText(frames.joinToString("\n", postfix = "\n"))
@@ -78,7 +81,8 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
                 publisher.publishInputDouble(pubuid, value)
         }
 
-        val testScope = TestScope(StandardTestDispatcher())
+        val scheduler = TestCoroutineScheduler()
+        val testScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(scheduler))
         try {
             publisher.attach(session)
             publisher.acceptTimeSyncReply(10_000L, 1_000L)
@@ -98,19 +102,19 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
                 TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
                 TuningValue(doubleValue = 3.5), 1L, connection,
             ))
-            saveFrames("unarmed", outgoing, expectedBinaries = 1, allowText = true)
+            saveFrames("unarmed", outgoing, expectedBinaries = 1, expectedTexts = 2)
 
-            // 2. wire-arm: fixedPublishMessage (pubuids 1011..1020) + generator.arm() (STOP, token, lease 1.0)
+            // 2. Register the production fixed topics, then publish STOP, token and lease.
             session.send(Frame.Text(publisher.fixedPublishMessage()))
             generator.arm()
-            testScope.testScheduler.runCurrent()
-            saveFrames("wire-arm", outgoing, expectedBinaries = 3, allowText = true)
+            scheduler.runCurrent()
+            saveFrames("wire-arm", outgoing, expectedBinaries = 3, expectedTexts = 1)
 
             // 3. lease renewals: generator renewal job advancing every 200 ms
             for (seq in 2..8) {
-                testScope.testScheduler.advanceTimeBy(200)
-                testScope.testScheduler.runCurrent()
-                saveFrames("wire-lease-$seq", outgoing, expectedBinaries = 1, allowText = false)
+                scheduler.advanceTimeBy(200)
+                scheduler.runCurrent()
+                saveFrames("wire-lease-$seq", outgoing, expectedBinaries = 1)
             }
 
             // 4. apply: valid heading request under active calibration
@@ -118,64 +122,76 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
                 TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
                 TuningValue(doubleValue = 3.2), 2L, connection,
             ))
-            saveFrames("apply", outgoing, expectedBinaries = 1, allowText = false)
+            saveFrames("apply", outgoing, expectedBinaries = 1)
 
             // 5. replay: same nonce 2L, conflicting value 4.0
             check(publisher.publishTuningRequest(
                 TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
                 TuningValue(doubleValue = 4.0), 2L, connection,
             ))
-            saveFrames("replay", outgoing, expectedBinaries = 1, allowText = false)
+            saveFrames("replay", outgoing, expectedBinaries = 1)
 
             // 6. invalid: fresh nonce 3L, value -5.0 below declared minimum
             check(publisher.publishTuningRequest(
                 TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
                 TuningValue(doubleValue = -5.0), 3L, connection,
             ))
-            saveFrames("invalid", outgoing, expectedBinaries = 1, allowText = false)
+            saveFrames("invalid", outgoing, expectedBinaries = 1)
 
             // 7. wire-disarm: generator.disarm() publishes STOP and revokes token to ""
             generator.disarm("Studio operator disarmed")
-            saveFrames("wire-disarm", outgoing, expectedBinaries = 2, allowText = false)
+            saveFrames("wire-disarm", outgoing, expectedBinaries = 2)
+            scheduler.advanceTimeBy(1_000)
+            scheduler.runCurrent()
+            check(!generator.hasActiveArmLease())
+            check(testScope.coroutineContext.job.children.none { it.isActive })
+            check(outgoing.tryReceive().isFailure) { "Disarmed Studio must stop renewing the lease" }
 
             // 8. disarmed: fresh nonce 4L, value 3.6 under disarmed session
             check(publisher.publishTuningRequest(
                 TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
                 TuningValue(doubleValue = 3.6), 4L, connection,
             ))
-            saveFrames("disarmed", outgoing, expectedBinaries = 1, allowText = false)
+            saveFrames("disarmed", outgoing, expectedBinaries = 1)
 
             // 9. wire-rearm: generator.arm() publishes fresh token, advancing lease (9.0), STOP
             generator.arm()
-            testScope.testScheduler.runCurrent()
-            saveFrames("wire-rearm", outgoing, expectedBinaries = 3, allowText = false)
+            scheduler.runCurrent()
+            saveFrames("wire-rearm", outgoing, expectedBinaries = 3)
 
             // 9b. lease renewals during rearm session (leases 10.0 and 11.0)
             for (seq in 10..11) {
-                testScope.testScheduler.advanceTimeBy(200)
-                testScope.testScheduler.runCurrent()
-                saveFrames("wire-lease-$seq", outgoing, expectedBinaries = 1, allowText = false)
+                scheduler.advanceTimeBy(200)
+                scheduler.runCurrent()
+                saveFrames("wire-lease-$seq", outgoing, expectedBinaries = 1)
             }
 
-            // 10. wire-rearm-apply: fresh nonce 5L, value 3.2 under recovered session
+            // 10. A different gain proves the recovered transaction reaches the consumer.
             check(publisher.publishTuningRequest(
                 TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
-                TuningValue(doubleValue = 3.2), 5L, connection,
+                TuningValue(doubleValue = 2.6), 5L, connection,
             ))
-            saveFrames("wire-rearm-apply", outgoing, expectedBinaries = 1, allowText = false)
+            saveFrames("wire-rearm-apply", outgoing, expectedBinaries = 1)
 
             // 11. wire-late: fresh nonce 6L, value 5.0 after lifecycle stop
             check(publisher.publishTuningRequest(
                 TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
                 TuningValue(doubleValue = 5.0), 6L, connection,
             ))
-            saveFrames("wire-late", outgoing, expectedBinaries = 1, allowText = false)
+            saveFrames("wire-late", outgoing, expectedBinaries = 1)
 
             generator.disarm("Session cleanup")
             while (outgoing.tryReceive().isSuccess) { /* drain */ }
         } finally {
-            publisher.detach(session)
-            outgoing.close()
+            // Even capture/assertion failures must retire the owned renewal job.
+            try {
+                testScope.cancel()
+                scheduler.runCurrent()
+                check(testScope.coroutineContext.job.isCompleted)
+            } finally {
+                publisher.detach(session)
+                outgoing.close()
+            }
         }
     }
 
@@ -207,7 +223,7 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
                     TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
                     TuningValue(doubleValue = value), nonce, connection,
                 ))
-                saveFrames(name, outgoing, expectedBinaries = 1, allowText = index == 0)
+                saveFrames(name, outgoing, expectedBinaries = 1, expectedTexts = if (index == 0) 2 else 0)
             }
         } finally {
             publisher.detach(session)
