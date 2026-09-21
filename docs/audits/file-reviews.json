@@ -5118,7 +5118,7 @@
       "sha256": "b1da90ac0208d483e124088762f755050773fab7f0d3c6364b2c6e784846bb88",
       "review": "pending",
       "validation": "pending",
-      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0°, 90°, 180°, -90°), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
+      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0\u00b0, 90\u00b0, 180\u00b0, -90\u00b0), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md",
         "docs/audits/DEEP_AUDIT_GOAL.md",
@@ -5216,7 +5216,7 @@
       "sha256": "a51b2491d5c3dea95e368d8623a11475c74cdff6401dba3742ee2b24b02023b4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2π rad / spool travel), and cached measurement scale/offset/freshness bounds.",
+      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2\u03c0 rad / spool travel), and cached measurement scale/offset/freshness bounds.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -7820,7 +7820,7 @@
       "sha256": "24d3a070ba007922b36888404a0852a1c25fa90188004e4491a8380c80714935",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design • Simulate • Operate • Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
+      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design \u2022 Simulate \u2022 Operate \u2022 Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
       "evidence": [
         "docs/audits/pass292-pending-elevation-audit.md"
       ]
@@ -11913,7 +11913,7 @@
       "sha256": "e5a9dd382f3540216b3acd3cda81ebd197335bfadadb1242c19eb3243732b14b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design • Simulate • Operate • Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
+      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design \u2022 Simulate \u2022 Operate \u2022 Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -12075,7 +12075,7 @@
       "sha256": "25eeb691d95c9c9a456a23925e8888e70fb4a6a1e14d4d46418381d84268fe61",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation — cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
+      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation \u2014 cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -12084,7 +12084,7 @@
       "sha256": "65efe035f6d197e24121378abb4ccef5f892ec495b9d81d08af34acf528e30b6",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED — DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
+      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED \u2014 DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -13836,7 +13836,7 @@
       "sha256": "becf5449b6dbfa838313319f2e844150cbb379db41e325e7520e852e58657a2e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (±0.276225 m, ±0.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
+      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (\u00b10.276225 m, \u00b10.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
@@ -14774,7 +14774,7 @@
       "sha256": "dd73c69aa80eef41532415e39cb7163f751f9bafa6451a787a3b83d7e1d90dfb",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s²), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
+      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s\u00b2), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
@@ -14948,7 +14948,7 @@
       "sha256": "2c721a57857805e10066ecb6e89657241e0bd2772ee7e2add7ea68f3ea46a5ea",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0°..108°); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
+      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0\u00b0..108\u00b0); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json",
@@ -15088,7 +15088,7 @@
       "sha256": "6cb05881ec858138fdd1d741793a641160e8aec6fc343a663e4f7d8cf589c2bc",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad ±5 cm, bumpers ±5°), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
+      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -18218,7 +18218,7 @@
       "sha256": "29e4e2bd1743ea9d4644a6cb44396f954832afa6f8263dfc12ef7765e1f85f11",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (±0.225 m, ±0.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
+      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (\u00b10.225 m, \u00b10.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
@@ -19388,7 +19388,7 @@
       "sha256": "224f2c95ea53ef4de443464c2a7190c7ed5d2803530c3eb2766c4cb272fe2d04",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad ±5 cm, bumpers ±5°), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
+      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -21052,7 +21052,7 @@
       "sha256": "980daff7a61c869a69321a8617206ae900e415dd9dd2bdae5084e61a4f48405e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8° and freeze above 15°), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
+      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8\u00b0 and freeze above 15\u00b0), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -27505,7 +27505,7 @@
       "sha256": "a03770e6a0e2bf28587c50ff62844ce151aa41c645fe82c00a743a1d3a674bb3",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-π, π) boundary.",
+      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-\u03c0, \u03c0) boundary.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
@@ -28971,7 +28971,7 @@
       "sha256": "986d38ebecf3d806e39d0e212c7a1a3313a5a121c5ed4c07ea2f1ba72f7c1bc7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0°) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
+      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0\u00b0) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
@@ -32045,7 +32045,7 @@
       "sha256": "d84ece215e96f92705e6407c6e33c29f92fa73d33d12d89d990fbe11a156a024",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2π radian span enforcement, and trapezoidal motion profile limit verification.",
+      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2\u03c0 radian span enforcement, and trapezoidal motion profile limit verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
@@ -32055,7 +32055,7 @@
       "sha256": "44e98a2467a4451c6041d3cede4bf76c046888a5b7c230e3c51482493e67c162",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s², A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
+      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s\u00b2, A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
@@ -33886,76 +33886,61 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "81ad88512483f63de0a8f61a5eb1c85abd23e3270d41a252ccc239159d0e8214",
+      "sha256": "9d3e0e885e9aea0e3a5bc67fc37b9778c9efb939d1809f0517075cb62b605ac9",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only this calibration lease expiry and recovery ledger delta, preserving complete prior records and submitted claims. Updated scoped identities/evidence for consumer simulation fixtures, wire capture, test integration, and the local review report. Unrelated historical entries remain outside scope.",
+      "scope": "Reviewed only these seven lease-peer-review ledger records; preserves complete prior records and every unrelated semantic entry. Updated evidence and fingerprints for the changed tests/docs and inspected generic integration. No broader coverage inferred.",
       "evidence": [
-        "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+        "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
       ],
-      "tuningLeaseRecoveryPriorRecord": {
-        "sha256": "9060648cecc6f232ed1cefdf8ac1dc252af5bfa0e7bd6386202e8a0d91501f72",
+      "tuningLeasePeerReviewPriorRecord": {
+        "sha256": "81ad88512483f63de0a8f61a5eb1c85abd23e3270d41a252ccc239159d0e8214",
         "review": "partial",
         "validation": "passed",
-        "scope": "Reviewed only this live-tuning peer-review ledger delta, preserving complete prior records and submitted claims. Updated scoped identities/evidence for the demonstrated request ownership defect and corrected consumer checks. Unrelated stale/missing historical entries remain outside scope; no repository-wide completion claim.",
+        "scope": "Reviewed only this calibration lease expiry and recovery ledger delta, preserving complete prior records and submitted claims. Updated scoped identities/evidence for consumer simulation fixtures, wire capture, test integration, and the local review report. Unrelated historical entries remain outside scope.",
         "evidence": [
-          "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+          "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
         ],
-        "liveTuningPeerReviewPriorRecord": {
-          "sha256": "ef5c7102d7a08898f6d288ca2e3e14d8d971d502954ec8282bd7e2a2abddebd9",
+        "tuningLeaseRecoveryPriorRecord": {
+          "sha256": "9060648cecc6f232ed1cefdf8ac1dc252af5bfa0e7bd6386202e8a0d91501f72",
           "review": "partial",
           "validation": "passed",
-          "scope": "Reviewed only the generated safety peer-review ledger delta. Preserve historical identities and evidence; bind scoped test corrections and observed results. No repository-wide review claim. Existing unrelated stale identities and missing historical paths remain outside scope; source policy and scoped fingerprint validation are recorded in the report.",
+          "scope": "Reviewed only this live-tuning peer-review ledger delta, preserving complete prior records and submitted claims. Updated scoped identities/evidence for the demonstrated request ownership defect and corrected consumer checks. Unrelated stale/missing historical entries remain outside scope; no repository-wide completion claim.",
           "evidence": [
-            "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+            "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
           ],
-          "generatedSafetyPriorReview": {
-            "sha256": "4b394596a7ca725a3b83afe6ef610f6fa98015b03685b30613a4ad4b634c11f8",
+          "liveTuningPeerReviewPriorRecord": {
+            "sha256": "ef5c7102d7a08898f6d288ca2e3e14d8d971d502954ec8282bd7e2a2abddebd9",
             "review": "partial",
             "validation": "passed",
-            "scope": "Reviewed only the consumer roundtrip peer-review ledger delta. Preserve submitted identities and claims as history; bind new bounded review and actual validation evidence. Seven unrelated stale records and five missing historical paths remain outside this review. No repository-wide coverage claim.",
+            "scope": "Reviewed only the generated safety peer-review ledger delta. Preserve historical identities and evidence; bind scoped test corrections and observed results. No repository-wide review claim. Existing unrelated stale identities and missing historical paths remain outside scope; source policy and scoped fingerprint validation are recorded in the report.",
             "evidence": [
-              "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+              "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
             ],
-            "consumerRoundtripPriorReview": {
-              "sha256": "dea42f47002fcee962e657be4daf911e54e58a5f0fb8c915e99da1ba6bab3d79",
+            "generatedSafetyPriorReview": {
+              "sha256": "4b394596a7ca725a3b83afe6ef610f6fa98015b03685b30613a4ad4b634c11f8",
               "review": "partial",
               "validation": "passed",
-              "scope": "Reviewed only the roundtrip integration peer-review ledger delta. Prior identities and evidence are retained separately; new claims bind scoped fixes and actual validation. No repository-wide coverage claim.",
+              "scope": "Reviewed only the consumer roundtrip peer-review ledger delta. Preserve submitted identities and claims as history; bind new bounded review and actual validation evidence. Seven unrelated stale records and five missing historical paths remain outside this review. No repository-wide coverage claim.",
               "evidence": [
-                "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+                "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
               ],
-              "roundtripIntegrationPriorReview": {
-                "sha256": "2df54c04446ab754d729ffb1d23fc7d7ab2bcbd9c139a21cb0229aa2eb5acbc0",
+              "consumerRoundtripPriorReview": {
+                "sha256": "dea42f47002fcee962e657be4daf911e54e58a5f0fb8c915e99da1ba6bab3d79",
                 "review": "partial",
                 "validation": "passed",
-                "scope": "Reviewed this batch ledger delta: restored historical records, retained eight submitted claims separately, recorded current partial review and actual validation, and replaced five retired archive paths. No repository-wide coverage claim.",
+                "scope": "Reviewed only the roundtrip integration peer-review ledger delta. Prior identities and evidence are retained separately; new claims bind scoped fixes and actual validation. No repository-wide coverage claim.",
                 "evidence": [
-                  "docs/audits/RELEASE_7_0_62_REVIEW.md",
-                  "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+                  "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
                 ],
-                "submission": {
-                  "commit": "f73d4ceed",
-                  "review": "reviewed",
-                  "validation": "not-applicable"
-                },
-                "runtimeAuditSubmission": {
-                  "evidence": [
-                    "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
-                  ],
-                  "review": "reviewed",
-                  "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
-                  "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
-                  "validation": "passed"
-                },
-                "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
-                "projectRoundtripSubmission": {
-                  "sha256": "40b81af787a0adf273406926732b2c9653623b1d16bfbc3cf08566c2628c97d3",
+                "roundtripIntegrationPriorReview": {
+                  "sha256": "2df54c04446ab754d729ffb1d23fc7d7ab2bcbd9c139a21cb0229aa2eb5acbc0",
                   "review": "partial",
                   "validation": "passed",
-                  "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
+                  "scope": "Reviewed this batch ledger delta: restored historical records, retained eight submitted claims separately, recorded current partial review and actual validation, and replaced five retired archive paths. No repository-wide coverage claim.",
                   "evidence": [
-                    "docs/audits/RELEASE_7_0_62_REVIEW.md"
+                    "docs/audits/RELEASE_7_0_62_REVIEW.md",
+                    "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
                   ],
                   "submission": {
                     "commit": "f73d4ceed",
@@ -33971,9 +33956,33 @@
                     "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
                     "validation": "passed"
                   },
-                  "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
-                },
-                "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+                  "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+                  "projectRoundtripSubmission": {
+                    "sha256": "40b81af787a0adf273406926732b2c9653623b1d16bfbc3cf08566c2628c97d3",
+                    "review": "partial",
+                    "validation": "passed",
+                    "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
+                    "evidence": [
+                      "docs/audits/RELEASE_7_0_62_REVIEW.md"
+                    ],
+                    "submission": {
+                      "commit": "f73d4ceed",
+                      "review": "reviewed",
+                      "validation": "not-applicable"
+                    },
+                    "runtimeAuditSubmission": {
+                      "evidence": [
+                        "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+                      ],
+                      "review": "reviewed",
+                      "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
+                      "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
+                      "validation": "passed"
+                    },
+                    "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+                  },
+                  "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+                }
               }
             }
           }
@@ -34068,7 +34077,7 @@
       "sha256": "f50dacc896f21769ff7005de214beee4c2786f82b6bb31698e794303ff4e040d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across ±π, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
+      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across \u00b1\u03c0, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -35109,50 +35118,59 @@
       "sha256": "0dc320f5d227ebb35646d1fa4bcee3d5dd157c8374073ed474835e9294423275",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed integration of calibration lease expiry and recovery verification into the generic FTC consumer simulation test, executing consumerLeaseRecoveryBehavior at both saved canonical gains.",
+      "scope": "Reviewed submitted insertion of lease-recovery test/shared helpers and surrounding generated-source composition, export/reopen, candidate propagation and retained result reporting. Both canonical saved gains execute the revised fixture through actual generated runtime. No new full-file review claim.",
       "evidence": [
-        "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+        "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
       ],
-      "tuningLeaseRecoveryPriorRecord": {
-        "sha256": "e5bfe17047d9716e8c8a18f9672ea217a26cd1254c9539d61e7cb3374f4b1f14",
+      "tuningLeasePeerReviewPriorRecord": {
+        "sha256": "0dc320f5d227ebb35646d1fa4bcee3d5dd157c8374073ed474835e9294423275",
         "review": "partial",
         "validation": "passed",
-        "scope": "Reviewed integration of canonical Studio wire capture before export/reopen at two saved gains, and bounded failure diagnostics pointing to retained per-operation nested XML. Actual generated robot compiles/tests against the recorded local candidate. No global dependency or hardware review claim.",
+        "scope": "Reviewed integration of calibration lease expiry and recovery verification into the generic FTC consumer simulation test, executing consumerLeaseRecoveryBehavior at both saved canonical gains.",
         "evidence": [
-          "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+          "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
         ],
-        "liveTuningPeerReviewPriorRecord": {
-          "sha256": "1f4f02c0ae394a1c041ed32ec7fb65f94c56837806de7929eb9d8d44733532dd",
+        "tuningLeaseRecoveryPriorRecord": {
+          "sha256": "e5bfe17047d9716e8c8a18f9672ea217a26cd1254c9539d61e7cb3374f4b1f14",
           "review": "partial",
           "validation": "passed",
-          "scope": "Integrated complete live heading-tuning transaction proof into generated generic FTC consumer simulation test source: imports NT4Server, TuningAcknowledgementCodec, File, and invokes consumerLiveTuningBehavior(savedGain). Added nested simulator test XML failure reporting in driver verification assertion. Proves full live tuning lifecycle across export/extract/reopen at multiple canonical gains.",
+          "scope": "Reviewed integration of canonical Studio wire capture before export/reopen at two saved gains, and bounded failure diagnostics pointing to retained per-operation nested XML. Actual generated robot compiles/tests against the recorded local candidate. No global dependency or hardware review claim.",
           "evidence": [
-            "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
+            "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
           ],
-          "liveTuningPriorReview": {
-            "sha256": "95d011e7c9fa5e195c17efb7f21461049db7c68fb7076489859033fdec99242d",
+          "liveTuningPeerReviewPriorRecord": {
+            "sha256": "1f4f02c0ae394a1c041ed32ec7fb65f94c56837806de7929eb9d8d44733532dd",
             "review": "partial",
             "validation": "passed",
-            "scope": "Reviewed the f3b44d887 saved-gain/feedback submission and corrected delta: two genuine saved/exported/reopened canonical gain runs; generated gripper feedback and real active-output OpMode stop; preserve generic deadband and roundtrip coverage. No full production dependency or hardware claim.",
+            "scope": "Integrated complete live heading-tuning transaction proof into generated generic FTC consumer simulation test source: imports NT4Server, TuningAcknowledgementCodec, File, and invokes consumerLiveTuningBehavior(savedGain). Added nested simulator test XML failure reporting in driver verification assertion. Proves full live tuning lifecycle across export/extract/reopen at multiple canonical gains.",
             "evidence": [
-              "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+              "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
             ],
-            "generatedSafetyPriorReview": {
-              "sha256": "41c8d4eea92a12b6d67d20b8bbab82efe48c734095644b9bb79e7970d2864dca",
+            "liveTuningPriorReview": {
+              "sha256": "95d011e7c9fa5e195c17efb7f21461049db7c68fb7076489859033fdec99242d",
               "review": "partial",
               "validation": "passed",
-              "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
+              "scope": "Reviewed the f3b44d887 saved-gain/feedback submission and corrected delta: two genuine saved/exported/reopened canonical gain runs; generated gripper feedback and real active-output OpMode stop; preserve generic deadband and roundtrip coverage. No full production dependency or hardware claim.",
               "evidence": [
-                "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+                "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
               ],
-              "consumerRoundtripPriorReview": {
-                "sha256": "7b488a5ea13f2c0fa82cc38ed0963215825337312d98a2bce8b4bde2148cf354",
+              "generatedSafetyPriorReview": {
+                "sha256": "41c8d4eea92a12b6d67d20b8bbab82efe48c734095644b9bb79e7970d2864dca",
                 "review": "partial",
                 "validation": "passed",
-                "scope": "Complete Generic FTC Starter consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution, and simulated IO validation.",
+                "scope": "Independent bounded peer review of the a4a9e6133 consumer integration submission and its test support. Corrected machine-specific setup, asynchronous completion observation, real Studio persistence, generated behavior assertions, process cancellation proof, and check-only recovery verification as applicable. Actual Windows robot/simulator consumer execution and remaining coverage limits are detailed in the linked report. No native UI or hardware validation claim.",
                 "evidence": [
-                  "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
-                ]
+                  "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+                ],
+                "consumerRoundtripPriorReview": {
+                  "sha256": "7b488a5ea13f2c0fa82cc38ed0963215825337312d98a2bce8b4bde2148cf354",
+                  "review": "partial",
+                  "validation": "passed",
+                  "scope": "Complete Generic FTC Starter consumer round-trip integration test: create/open, 5-category configuration mutation, export, safe extraction, fresh reopen, independent assertions, byte-identical USER-OWNED extension, real wrapper codegen via ProjectBuildService, multi-file determinism, verification build execution, and simulated IO validation.",
+                  "evidence": [
+                    "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_REVIEW.md"
+                  ]
+                }
               }
             }
           }
@@ -35251,37 +35269,46 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ConsumerSafetySimulationFixture.kt": {
-      "sha256": "251503bf012f39ec00f7541d181d9c1b9e95dfc3206ce957f95d4a91a817793d",
+      "sha256": "c3923c3da9568735d47fa6dccdca1d53f245ecd92efa3455f94becf62ddd5fb9",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed calibration lease expiry, same-frame rejection, and explicit rearm recovery in consumer simulation fixture: neutral output under competing joystick, withheld lease across 500 ms boundary, same-frame SESSION_NOT_ARMED rejection before tuning poll, stale lease rejection, fresh rearm (token/lease sequence), APPLIED ack, and independent P-only oracle (+0.32 rad/s) after return to normal control. All canonical bytes preserved.",
+      "scope": "Reviewed lease-recovery fixture and shared tuning helpers against FTC calibration input/output ordering and tuning polling: continuous 20 ms frames, fresh observed IMU, valid at 500 ms and expired neutral at 520 ms, same-frame nonce rejection, retained handshake guards, manual repositioning, fresh rearm, independent heading output, canonical/overlay preservation and closed-manager fence. Existing heading/live-tuning/feedback cases inspected for compatibility, not a new whole-file audit.",
       "evidence": [
-        "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+        "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
       ],
-      "tuningLeaseRecoveryPriorRecord": {
-        "sha256": "b16eb5fe9fce6cadd805acfdaf762529023bd6e8b454e2e13240d23bc6360f72",
+      "tuningLeasePeerReviewPriorRecord": {
+        "sha256": "251503bf012f39ec00f7541d181d9c1b9e95dfc3206ce957f95d4a91a817793d",
         "review": "partial",
         "validation": "passed",
-        "scope": "Reviewed and corrected live-tuning fixture delta: real wire parser, unarmed rejection, held competing joystick under fresh calibration STOP, accepted gain, armed replay/invalid rejection, independent +0.32 rad/s heading oracle with observed IMU, active-output stop and explicit closed-manager fence. Exact canonical bytes and local experimental overlay retained. Earlier unchanged shared fixtures retain their prior evidence; no physical robot or full GUI journey claim.",
+        "scope": "Reviewed calibration lease expiry, same-frame rejection, and explicit rearm recovery in consumer simulation fixture: neutral output under competing joystick, withheld lease across 500 ms boundary, same-frame SESSION_NOT_ARMED rejection before tuning poll, stale lease rejection, fresh rearm (token/lease sequence), APPLIED ack, and independent P-only oracle (+0.32 rad/s) after return to normal control. All canonical bytes preserved.",
         "evidence": [
-          "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+          "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
         ],
-        "liveTuningPeerReviewPriorRecord": {
-          "sha256": "a0b93b0969134eaaa6275cf980d8bbf3ac44fa9aac519deed59c175559d94a48",
-          "review": "reviewed",
+        "tuningLeaseRecoveryPriorRecord": {
+          "sha256": "b16eb5fe9fce6cadd805acfdaf762529023bd6e8b454e2e13240d23bc6360f72",
+          "review": "partial",
           "validation": "passed",
-          "scope": "Reviewed shared consumer simulation fixture and live heading-tuning behavior verification: unarmed request rejection (SESSION_NOT_ARMED), authorized request with live arm/lease handshake (APPLIED) holding neutral during calibration hold and executing independent P-only oracle (omega = Kp * error = 3.2 * 0.10 = 0.32 rad/s below saturation), idempotent nonce replay handling, out-of-bounds rejection (INVALID_VALUE), canonical profile byte-invariance, and stop/close neutralization with late request rejection. Fixed JUnit 4 parameter ordering in canonical assertions.",
+          "scope": "Reviewed and corrected live-tuning fixture delta: real wire parser, unarmed rejection, held competing joystick under fresh calibration STOP, accepted gain, armed replay/invalid rejection, independent +0.32 rad/s heading oracle with observed IMU, active-output stop and explicit closed-manager fence. Exact canonical bytes and local experimental overlay retained. Earlier unchanged shared fixtures retain their prior evidence; no physical robot or full GUI journey claim.",
           "evidence": [
-            "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
+            "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
           ],
-          "generatedSafetyPriorReview": {
-            "sha256": "7e79be0546c38b395f80137efa0c9b135a2271cd993f56374e6f14dddc13b23e",
+          "liveTuningPeerReviewPriorRecord": {
+            "sha256": "a0b93b0969134eaaa6275cf980d8bbf3ac44fa9aac519deed59c175559d94a48",
             "review": "reviewed",
             "validation": "passed",
-            "scope": "Reviewed all shared injected fixture source: independent P-only literal oracle, actual IMU sample observation, real IO-derived feedback state, timeout boundaries, component close and actual active-output OpMode stop. Compiled and executed in both generated FTC consumers at both saved gains. Scoped desktop evidence, not live tuning authorization or hardware validation.",
+            "scope": "Reviewed shared consumer simulation fixture and live heading-tuning behavior verification: unarmed request rejection (SESSION_NOT_ARMED), authorized request with live arm/lease handshake (APPLIED) holding neutral during calibration hold and executing independent P-only oracle (omega = Kp * error = 3.2 * 0.10 = 0.32 rad/s below saturation), idempotent nonce replay handling, out-of-bounds rejection (INVALID_VALUE), canonical profile byte-invariance, and stop/close neutralization with late request rejection. Fixed JUnit 4 parameter ordering in canonical assertions.",
             "evidence": [
-              "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
-            ]
+              "docs/audits/LIVE_TUNING_CONSUMER_REVIEW.md"
+            ],
+            "generatedSafetyPriorReview": {
+              "sha256": "7e79be0546c38b395f80137efa0c9b135a2271cd993f56374e6f14dddc13b23e",
+              "review": "reviewed",
+              "validation": "passed",
+              "scope": "Reviewed all shared injected fixture source: independent P-only literal oracle, actual IMU sample observation, real IO-derived feedback state, timeout boundaries, component close and actual active-output OpMode stop. Compiled and executed in both generated FTC consumers at both saved gains. Scoped desktop evidence, not live tuning authorization or hardware validation.",
+              "evidence": [
+                "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+              ]
+            }
           }
         }
       }
@@ -35332,21 +35359,30 @@
       }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/ConsumerTuningWireFixture.kt": {
-      "sha256": "336329afa324663dd34dff818f45d7400f9b50902f53a91e969313f44d3cf5b2",
+      "sha256": "0525cd35a0f307ca3a0f814d033a12f5ddeeecbb0f028c6496f03f6b09e48731",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed wire fixture updates: partitioned Nt4OutboundPublisher and session per test case to ensure topic announcements precede binary request frames across test JVM resets, adding test cases for expired and rearm-apply frames.",
+      "scope": "Reviewed complete fixture. Actual Studio writer captures one registration per connected robot-test sequence, one atomic value/nonce binary per request, and persistent publisher IDs through replay, recovery and close. Owned sessions/channels close in finally.",
       "evidence": [
-        "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+        "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
       ],
-      "tuningLeaseRecoveryPriorRecord": {
-        "sha256": "c787fa34b94b531cb3ba55a8be619493a23fb5c8ab4af8d3019b0de114d3abaf",
+      "tuningLeasePeerReviewPriorRecord": {
+        "sha256": "336329afa324663dd34dff818f45d7400f9b50902f53a91e969313f44d3cf5b2",
         "review": "reviewed",
         "validation": "passed",
-        "scope": "Reviewed complete new small fixture: actual Studio Nt4OutboundPublisher registration and binary encoding using canonical declarations/transport paths, captured as ordered Base64 test resources through export/reopen. Socket is a mock; production receiver parser is exercised in the generated JVM. Explicit staged-byte evidence boundary.",
+        "scope": "Reviewed wire fixture updates: partitioned Nt4OutboundPublisher and session per test case to ensure topic announcements precede binary request frames across test JVM resets, adding test cases for expired and rearm-apply frames.",
         "evidence": [
-          "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
-        ]
+          "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+        ],
+        "tuningLeaseRecoveryPriorRecord": {
+          "sha256": "c787fa34b94b531cb3ba55a8be619493a23fb5c8ab4af8d3019b0de114d3abaf",
+          "review": "reviewed",
+          "validation": "passed",
+          "scope": "Reviewed complete new small fixture: actual Studio Nt4OutboundPublisher registration and binary encoding using canonical declarations/transport paths, captured as ordered Base64 test resources through export/reopen. Socket is a mock; production receiver parser is exercised in the generated JVM. Explicit staged-byte evidence boundary.",
+          "evidence": [
+            "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+          ]
+        }
       }
     },
     "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md": {
@@ -35473,12 +35509,39 @@
       }
     },
     "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md": {
-      "sha256": "dac84ceeab450a0835cdc0d9c8eb426ca0ca624d06cf09e4d66dcf9137ba96d0",
+      "sha256": "7a3484cb7a8f8bd405598982e7feef96857d0a81ebc9d2073bb8b5904d900289",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed local report verifying calibration lease expiry, rejection, and explicit rearm recovery for heading tuning in the generated generic FTC consumer. Records exact 4-step sequence, observed simulator evidence, timing boundaries, and retained candidate properties.",
+      "scope": "Corrected submitted report against f69ddec09 source and retained original XML: actual last heartbeat/poll times, normalized power and lifecycle.stop assertions, millisecond timeout, exact rearm guards, 27 focused tests and 6 injected plus 1 existing simulator case per configuration. Distinguishes historical submission from current peer review.",
       "evidence": [
-        "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+        "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
+      ],
+      "tuningLeasePeerReviewPriorRecord": {
+        "sha256": "dac84ceeab450a0835cdc0d9c8eb426ca0ca624d06cf09e4d66dcf9137ba96d0",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed local report verifying calibration lease expiry, rejection, and explicit rearm recovery for heading tuning in the generated generic FTC consumer. Records exact 4-step sequence, observed simulator evidence, timing boundaries, and retained candidate properties.",
+        "evidence": [
+          "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+        ]
+      }
+    },
+    "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md": {
+      "sha256": "f0469df1a8ef79be369adea3969c538bc46d64d33ca1db2a5fe645ce54b280c7",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete independent peer-review report against final fixture, 27 focused Studio tests, outer generic consumer and both nested configurations, unchanged candidate hashes, source-policy and ledger checks. Records test/evidence defects separately from production behavior and explicit desktop/hardware limitations.",
+      "evidence": [
+        "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
+      ]
+    },
+    "docs/audits/NEXT_CALIBRATION_WIRE_PROMPT.md": {
+      "sha256": "a4a93313eca3e9e10d63feda084091259571e31a776e4613205b0e1d30f1d022",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed bounded follow-up prompt against remaining in-process SysId seam and existing Studio/robot coverage: real control-wire arm/disarm/rearm, one generated FTC parameter, coverage reuse, local-only isolation, candidate identity, precise output contract and stop criteria.",
+      "evidence": [
+        "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
       ]
     }
   }

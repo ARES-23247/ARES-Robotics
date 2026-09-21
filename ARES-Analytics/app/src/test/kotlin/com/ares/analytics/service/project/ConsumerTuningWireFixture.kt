@@ -16,12 +16,18 @@ import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 
 /** Capture the real Studio writer's bytes for replay through the generated consumer's NT4 parser. */
 internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration: TuningParameterDeclaration) {
-    val cases = listOf(
-        Triple("unarmed", 3.5, 1L), Triple("apply", 3.2, 2L),
-        Triple("replay", 4.0, 2L), Triple("invalid", -5.0, 3L), Triple("late", 5.0, 5L),
-        Triple("expired", 3.6, 2L), Triple("rearm-apply", 3.2, 4L),
+    // Each robot test starts a new NT4 server. Register once per connected sequence,
+    // then preserve the same publisher IDs through replay, lease recovery and close.
+    val sequences = listOf(
+        listOf(
+            Triple("unarmed", 3.5, 1L), Triple("apply", 3.2, 2L),
+            Triple("replay", 4.0, 2L), Triple("invalid", -5.0, 3L), Triple("late", 5.0, 5L),
+        ),
+        listOf(
+            Triple("expired", 3.6, 2L), Triple("rearm-apply", 3.2, 4L), Triple("lease-late", 5.0, 5L),
+        ),
     )
-    for ((name, value, nonce) in cases) {
+    for (cases in sequences) {
         val publisher = Nt4OutboundPublisher { 1_000L }
         val session = Mockito.mock(DefaultClientWebSocketSession::class.java)
         val outgoing = Channel<Frame>(Channel.UNLIMITED)
@@ -37,26 +43,32 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
             publisher.attach(session)
             publisher.acceptTimeSyncReply(10_000L, 1_000L)
             val connection = requireNotNull(publisher.tuningConnectionId)
-            check(publisher.publishTuningRequest(
-                TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
-                TuningValue(doubleValue = value), nonce, connection,
-            ))
-            var binaries = 0
-            val frames = buildList {
-                while (true) {
-                    val frame = outgoing.tryReceive().getOrNull() ?: break
-                    val type = when (frame) {
-                        is Frame.Text -> "T"
-                        is Frame.Binary -> { binaries++; "B" }
-                        else -> error("Unexpected tuning frame: $frame")
+            for ((index, request) in cases.withIndex()) {
+                val (name, value, nonce) = request
+                check(publisher.publishTuningRequest(
+                    TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
+                    TuningValue(doubleValue = value), nonce, connection,
+                ))
+                var binaries = 0
+                val frames = buildList {
+                    while (true) {
+                        val frame = outgoing.tryReceive().getOrNull() ?: break
+                        val type = when (frame) {
+                            is Frame.Text -> "T"
+                            is Frame.Binary -> { binaries++; "B" }
+                            else -> error("Unexpected tuning frame: $frame")
+                        }
+                        add(type + "|" + Base64.getEncoder().encodeToString(frame.data))
                     }
-                    add(type + "|" + Base64.getEncoder().encodeToString(frame.data))
                 }
-            }
-            check(binaries == 1) { "Value and nonce must share one production binary frame" }
-            File(project, "simulator/src/test/resources/tuning-wire/$name.frames").apply {
-                parentFile.mkdirs()
-                writeText(frames.joinToString("\n", postfix = "\n"))
+                check(binaries == 1) { "Value and nonce must share one production binary frame" }
+                check(frames.any { it.startsWith("T|") } == (index == 0)) {
+                    "Only the first request in a connected sequence may register publishers"
+                }
+                File(project, "simulator/src/test/resources/tuning-wire/$name.frames").apply {
+                    parentFile.mkdirs()
+                    writeText(frames.joinToString("\n", postfix = "\n"))
+                }
             }
         } finally {
             publisher.detach(session)

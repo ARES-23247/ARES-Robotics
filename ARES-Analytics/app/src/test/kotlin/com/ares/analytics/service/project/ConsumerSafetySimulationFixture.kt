@@ -426,21 +426,34 @@ internal fun consumerLeaseRecoveryBehavior(gain: Double): String = """
                 assertTrue(robot.isCalibrationNeutralOutputHoldActive)
                 assertNeutral()
             }
-            for (time in listOf(1_060L, 1_080L, 1_100L)) {
+            for (time in 1_060L..1_500L step 20L) {
                 tickFreshHold(time)
             }
 
-            // Step 2: Withhold lease updates across the documented 500 ms expiry boundary.
-            // Last lease was at 1,100 ms. At 1,620 ms (520 ms delta > 500 ms timeout), lease is expired.
-            // Tuning poll throttle from 1,040 ms is also satisfied (580 ms delta >= 500 ms).
-            // Deliver a valid heading request (value 3.6, nonce 2L) on this eligible tick.
-            // Prove the same frame processes lease expiry before tuning authorization, rejects with
-            // SESSION_NOT_ARMED, and leaves confirmed gain and canonical files unchanged.
-            RobotClock.useMockTime(1_620L)
+            // Keep real 20 ms robot frames and fresh sensor/gamepad input, but stop lease writes.
+            // Last heartbeat: 1,500 ms. At exactly 2,000 ms the 500 ms lease is still valid.
+            // The idle poll at 1,520 ms makes the first expired frame (2,020 ms) poll-eligible.
+            for (time in 1_520L..2_000L step 20L) {
+                RobotClock.useMockTime(time)
+                awaitImuSample(robot, 0.0)
+                lifecycle.tick()
+                assertTrue(robot.store.state.drive.imuMeasurementsValid)
+                assertTrue("Lease remains valid through exactly 500 ms", robot.isCalibrationModeArmed)
+                assertTrue(robot.isCalibrationNeutralOutputHoldActive)
+                assertEquals(leaseSequence, NT4Server.getDouble("SysId/EnableLease", -1.0), 0.0)
+                assertNeutral()
+            }
+            println("TUNING_LEASE at=2000 ageMs=500 armed=true neutral=true")
+
+            // First expired frame must disarm before the same-frame tuning request is authorized.
+            RobotClock.useMockTime(2_020L)
             awaitImuSample(robot, 0.0)
             deliverStudioTuningFrames(server, wire, "expired")
             lifecycle.tick()
 
+            assertTrue(robot.store.state.drive.imuMeasurementsValid)
+            assertNeutral()
+            println("TUNING_LEASE at=2020 ageMs=520 armed=" + robot.isCalibrationModeArmed + " neutral=true")
             assertFalse(robot.isCalibrationModeArmed)
             assertFalse(robot.isCalibrationNeutralOutputHoldActive)
             assertEquals("ENABLE_LEASE_EXPIRED", NT4Server.getString("SysId/Error", ""))
@@ -451,37 +464,43 @@ internal fun consumerLeaseRecoveryBehavior(gain: Double): String = """
             // Step 3: Show retained/replayed token/lease data cannot accidentally rearm.
             // 3a. Replaying the previous token cannot rearm.
             NT4Server.publishTopic("SysId/EnableToken", "consumer-live-1")
-            NT4Server.publishTopic("SysId/EnableLease", 5.0)
+            NT4Server.publishTopic("SysId/EnableLease", leaseSequence + 1.0)
             NT4Server.publishTopic("SysId/Command", "STOP")
-            RobotClock.useMockTime(1_640L)
+            RobotClock.useMockTime(2_040L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             assertFalse("Replaying old token must not rearm", robot.isCalibrationModeArmed)
+            assertTrue(robot.store.state.drive.imuMeasurementsValid)
+            assertTrue("Manual repositioning resumes on the frame after disarming",
+                motors.any { abs(it.power) > 0.01 })
+            assertTuningResult(2L, "SESSION_NOT_ARMED", $gain)
+            println("TUNING_LEASE at=2040 armed=false manualOutput=true")
 
-            // 3b. Stale lease sequence cannot rearm even with a new token.
+            // 3b. The last accepted lease cannot rearm even with a new token.
+            // New sessions require a DIFFERENT valid sequence; they need not exceed the old session.
             NT4Server.publishTopic("SysId/EnableToken", "consumer-live-2")
-            NT4Server.publishTopic("SysId/EnableLease", 4.0)
+            NT4Server.publishTopic("SysId/EnableLease", leaseSequence)
             NT4Server.publishTopic("SysId/Command", "STOP")
-            RobotClock.useMockTime(1_660L)
+            RobotClock.useMockTime(2_060L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
-            assertFalse("Stale lease sequence must not rearm", robot.isCalibrationModeArmed)
+            assertFalse("Retained lease sequence must not rearm", robot.isCalibrationModeArmed)
 
             // 3c. Non-STOP command cannot rearm even with new token and fresh lease.
             NT4Server.publishTopic("SysId/EnableToken", "consumer-live-2")
-            NT4Server.publishTopic("SysId/EnableLease", 10.0)
+            NT4Server.publishTopic("SysId/EnableLease", leaseSequence + 1.0)
             NT4Server.publishTopic("SysId/Command", "START_LINEAR_DRIVE")
-            RobotClock.useMockTime(1_680L)
+            RobotClock.useMockTime(2_080L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             assertFalse("Non-STOP command must not rearm", robot.isCalibrationModeArmed)
 
             // Perform documented fresh rearm procedure: new token, fresh lease, STOP command.
             NT4Server.publishTopic("SysId/EnableToken", "consumer-live-2")
-            NT4Server.publishTopic("SysId/EnableLease", 10.0)
+            NT4Server.publishTopic("SysId/EnableLease", leaseSequence + 1.0)
             NT4Server.publishTopic("SysId/Command", "STOP")
-            leaseSequence = 10.0
-            RobotClock.useMockTime(1_700L)
+            leaseSequence += 1.0
+            RobotClock.useMockTime(2_100L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             assertTrue("Fresh token and lease with STOP command must rearm", robot.isCalibrationModeArmed)
@@ -489,15 +508,14 @@ internal fun consumerLeaseRecoveryBehavior(gain: Double): String = """
             assertNeutral()
             assertEquals("", NT4Server.getString("SysId/Error", ""))
 
-            // Advance lease until next tuning poll is eligible (1,620 ms + 500 ms = 2,120 ms).
-            while (RobotClock.currentTimeMillis() < 2_100L) {
+            // Next poll is 2,020 + 500 = 2,520 ms. Maintain hold at every 20 ms frame.
+            while (RobotClock.currentTimeMillis() < 2_500L) {
                 tickFreshHold(RobotClock.currentTimeMillis() + 20L)
             }
 
             // Apply valid request with new nonce (3.2, nonce 4L).
-            RobotClock.useMockTime(2_140L)
             deliverStudioTuningFrames(server, wire, "rearm-apply")
-            tickFreshHold(2_140L)
+            tickFreshHold(2_520L)
             assertTrue(robot.isCalibrationModeArmed)
             assertTuningResult(4L, "APPLIED", 3.2)
             assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
@@ -511,21 +529,21 @@ internal fun consumerLeaseRecoveryBehavior(gain: Double): String = """
             assertFalse(robot.isCalibrationNeutralOutputHoldActive)
             robot.resetPose(Pose2d())
             lifecycle.gamepad1.y = true
-            RobotClock.useMockTime(2_160L)
+            RobotClock.useMockTime(2_540L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             lifecycle.gamepad1.y = false
             robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            RobotClock.useMockTime(2_180L)
+            RobotClock.useMockTime(2_560L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             assertEquals(0.0, robot.store.state.drive.headingLockTargetRadians ?: Double.NaN, 1e-4)
 
             robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, -0.10)
-            RobotClock.useMockTime(2_200L)
+            RobotClock.useMockTime(2_580L)
             awaitImuSample(robot, -0.10)
             lifecycle.tick()
-            RobotClock.useMockTime(2_220L)
+            RobotClock.useMockTime(2_600L)
             awaitImuSample(robot, -0.10)
             lifecycle.tick()
 
@@ -560,8 +578,12 @@ internal fun consumerLeaseRecoveryBehavior(gain: Double): String = """
             assertEquals(3.2, overlay.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue!!, 1e-9)
             val overlayBytes = File(cwd, ".ares/local/tuning/runtime.arestuning").readBytes()
 
-            RobotClock.useMockTime(3_000L)
-            deliverStudioTuningFrames(server, wire, "late")
+            RobotClock.useMockTime(3_200L)
+            // Retained session controls and a late request must not restart a stopped OpMode.
+            NT4Server.publishTopic("SysId/EnableToken", "consumer-live-2")
+            NT4Server.publishTopic("SysId/EnableLease", ++leaseSequence)
+            NT4Server.publishTopic("SysId/Command", "START_LINEAR_DRIVE")
+            deliverStudioTuningFrames(server, wire, "lease-late")
             assertEquals(5.0, NT4Server.getDouble(rootTopic + "/RequestNonce", -1.0), 1e-9)
             lifecycle.gamepad1.left_stick_y = -1.0f
             lifecycle.tick()
