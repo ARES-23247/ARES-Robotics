@@ -26,7 +26,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,7 +34,6 @@ import kotlinx.coroutines.test.advanceTimeBy
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
 import java.io.File
-import java.nio.file.Files
 import java.util.Base64
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
@@ -249,11 +247,10 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
 private fun <T> anyWireFrame(): T { ArgumentMatchers.any<T>(); return null as T }
 
 internal fun consumerTuningHelpers(): String = """
-    private val wireCaptured = java.util.Collections.synchronizedList(ArrayList<String>())
-    private val initialAnnouncements = java.util.Collections.synchronizedList(ArrayList<String>())
+    private val wireCaptured = java.util.concurrent.CopyOnWriteArrayList<String>()
 
     private fun subscribeWire(server: NT4Server, conn: org.java_websocket.WebSocket) {
-        val json = String(java.util.Base64.getDecoder().decode("W3sibWV0aG9kIjoic3Vic2NyaWJlIiwicGFyYW1zIjp7InRvcGljcyI6WyIiXSwic3VidWlkIjoxLCJvcHRpb25zIjp7InByZWZpeCI6dHJ1ZX19fV0="), Charsets.UTF_8)
+        val json = String(java.util.Base64.getDecoder().decode("W3sibWV0aG9kIjoic3Vic2NyaWJlIiwicGFyYW1zIjp7InRvcGljcyI6WyJTeXNJZC8iLCJUdW5pbmcvUGFyYW1ldGVycy9mdGMuZHJpdmUuaGVhZGluZy5rcC8iXSwic3VidWlkIjoxLCJvcHRpb25zIjp7InByZWZpeCI6dHJ1ZX19fV0="), Charsets.UTF_8)
         server.onMessage(conn, json)
     }
 
@@ -289,11 +286,14 @@ internal fun consumerTuningHelpers(): String = """
         }
     }
 
-    private fun saveReplyFrames(dir: File, name: String, frames: List<String>) {
+    private fun saveReplyFrames(server: NT4Server, conn: org.java_websocket.WebSocket, dir: File, name: String) {
+        // A real subscription emits a fresh, complete snapshot of the selected topics.
+        // Keep announcements/value ordering and snapshot concurrent sends safely.
+        wireCaptured.clear()
+        subscribeWire(server, conn)
+        server.flush()
         dir.mkdirs()
-        val textFrames = synchronized(initialAnnouncements) { initialAnnouncements.toList() }
-        val binaryFrames = frames.filter { it.startsWith("B|") }
-        File(dir, name + ".frames").writeText((textFrames + binaryFrames).joinToString("\n", postfix = "\n"))
+        File(dir, name + ".frames").writeText(wireCaptured.toList().joinToString("\n", postfix = "\n"))
     }
 
     private fun <T> consumerWireProxy(type: Class<T>): T = type.cast(java.lang.reflect.Proxy.newProxyInstance(
@@ -310,11 +310,6 @@ internal fun consumerTuningHelpers(): String = """
                         is String -> {
                             val line = "T|" + java.util.Base64.getEncoder().encodeToString(arg.toByteArray(Charsets.UTF_8))
                             wireCaptured.add(line)
-                            synchronized(initialAnnouncements) {
-                                if (!initialAnnouncements.contains(line)) {
-                                    initialAnnouncements.add(line)
-                                }
-                            }
                         }
                         is java.nio.ByteBuffer -> {
                             val copy = ByteArray(arg.remaining())
@@ -359,32 +354,21 @@ internal fun replayNt4Frames(
     }
 }
 
-internal fun verifyStudioRobotFeedbackReturnPath(replyDir: File, liveGain: Double = 2.6, measuredHeading: Double = -0.10) {
-    verifyStudioRobotFeedbackReturnPath({ name ->
-        val file = File(replyDir, "$name.frames")
-        check(file.isFile) { "Missing reply file: ${file.absolutePath}" }
-        file.readLines()
-    }, liveGain, measuredHeading)
-}
-
-internal fun verifyStudioRobotFeedbackReturnPathFromResources(liveGain: Double = 2.6, measuredHeading: Double = -0.10) {
-    verifyStudioRobotFeedbackReturnPath({ name ->
-        val resourcePath = "/tuning-wire-reply/$name.frames"
-        val stream = checkNotNull(Nt4ClientService::class.java.getResourceAsStream(resourcePath)
-            ?: Thread.currentThread().contextClassLoader.getResourceAsStream(resourcePath.removePrefix("/"))) {
-            "Missing classpath resource $resourcePath"
-        }
-        stream.bufferedReader().readLines()
-    }, liveGain, measuredHeading)
-}
-
 @OptIn(ExperimentalCoroutinesApi::class)
 internal fun verifyStudioRobotFeedbackReturnPath(
-    replyFramesProvider: (name: String) -> List<String>,
-    liveGain: Double = 2.6,
-    measuredHeading: Double = -0.10
+    project: File,
+    replyDir: File
 ) {
-    val tempDir = Files.createTempDirectory("studio-return-path-test").toFile()
+    fun replyFramesProvider(name: String) = File(replyDir, name + ".frames").also {
+        check(it.isFile) { "Missing current generated-robot reply: " + it }
+    }.readLines()
+    val evidence = File(replyDir, "controller-evidence.txt").readLines().associate {
+        val pair = it.split("=", limit = 2); pair[0] to pair[1].toDouble()
+    }
+    val liveGain = 2.6
+    val root = "Tuning/Parameters/ftc.drive.heading.kp"
+    val canonicalBefore = consumerCanonicalSnapshot(project)
+    var ownedClient: Nt4ClientService? = null
     val testScheduler = TestCoroutineScheduler()
     val testDispatcher = StandardTestDispatcher(testScheduler)
     val testScope = CoroutineScope(SupervisorJob() + testDispatcher)
@@ -393,6 +377,7 @@ internal fun verifyStudioRobotFeedbackReturnPath(
         val db = Mockito.mock(DatabaseService::class.java)
         val realClient = Nt4ClientService(db)
         val client = Mockito.spy(realClient)
+        ownedClient = client
         val connectedFlow = MutableStateFlow(true)
         Mockito.doReturn(connectedFlow).`when`(client).isConnected
         Mockito.doReturn(1L).`when`(client).tuningConnectionId
@@ -446,7 +431,6 @@ internal fun verifyStudioRobotFeedbackReturnPath(
         assertEquals("STOP", transport.publishedCommands.last())
         assertTrue(transport.publishedTokens.last().startsWith("ares-"))
         assertEquals(1.0, transport.publishedLeases.last())
-        assertTrue(sysIdVm.signalGenerator.hasActiveArmLease())
 
         // =========================================================================
         // Step 2: Feed wire-arm-reply into Studio's production inbound decoding path.
@@ -466,49 +450,27 @@ internal fun verifyStudioRobotFeedbackReturnPath(
         // Show request remains pending until matching robot result arrives, then agrees
         // with robot Redux state, Current, and independent controller output expectation.
         // =========================================================================
-        val headingDecl = TuningParameterDeclaration(
-            uid = "ftc.drive.heading.kp",
-            key = "ftc.drive.heading.kp",
-            componentUid = "drive",
-            displayName = "Heading P",
-            description = "Heading proportional gain",
-            type = TuningParameterType.DOUBLE,
-            minimum = 0.0,
-            maximum = 10.0,
-            defaultValue = TuningValue(doubleValue = 2.1),
-            applyPolicy = TuningApplyPolicy.LIVE_SAFE
-        )
-        val compDoc = TuningComponentDocument(
-            uid = "drive",
-            projectId = "robot.project",
-            displayName = "Drive",
-            description = "Drivetrain",
-            parameters = listOf(headingDecl)
-        )
-        val profile = TuningProfileDocument(
-            uid = "profile.competition",
-            profileId = "competition",
-            displayName = "Competition",
-            description = "Competition Profile",
-            projectId = "robot.project",
-            authority = TuningProfileAuthority.CANONICAL_CHECKED_IN,
-            values = listOf(TuningAssignment("ftc.drive.heading.kp", TuningValue(doubleValue = 2.1)))
-        )
-        File(tempDir, ".ares/tuning-components/drive.arestuningcomponent").apply {
-            parentFile.mkdirs()
-            writeText(TuningComponentDocumentCodec.encode(compDoc))
-        }
-        File(tempDir, ".ares/tuning/competition.arestuning").apply {
-            parentFile.mkdirs()
-            writeText(TuningProfileDocumentCodec.encode(profile, listOf(headingDecl)))
-        }
+        // This actual robot snapshot contains processed nonce 4, Current 3.2 and the fresh arm.
+        // No local injection may choose the next request's nonce.
+        replayNt4Frames(client, replyFramesProvider("wire-ready-reply"))
+        testScheduler.runCurrent()
+        assertEquals(4.0, client.latestValues[root + "/ProcessedNonce"]?.value)
+        assertEquals(3.2, client.latestValues[root + "/Current"]?.value)
 
+        val requestFrame = File(project, "simulator/src/test/resources/tuning-wire/wire-rearm-apply.frames")
+            .readLines().single { it.startsWith("B|") }
+        val consumedRequest = com.areslib.networktables.NT4WireProtocol.unpackMessageFrames(
+            Base64.getDecoder().decode(requestFrame.substring(2)))
+        assertEquals(listOf(liveGain, 5.0), consumedRequest.map { it.value })
         var publishedTuningValue: Double? = null
         var publishedTuningNonce: Long? = null
         runBlocking {
             Mockito.doAnswer { inv ->
                 val v = inv.getArgument<TuningValue>(1)
                 val n = inv.getArgument<Long>(2)
+                assertEquals("ftc.drive.heading.kp", inv.getArgument<TuningParameterDeclaration>(0).uid)
+                assertEquals(consumedRequest[0].value, v.doubleValue)
+                assertEquals(consumedRequest[1].value, n.toDouble())
                 publishedTuningValue = v.doubleValue
                 publishedTuningNonce = n
                 true
@@ -516,37 +478,31 @@ internal fun verifyStudioRobotFeedbackReturnPath(
         }
 
         val tuningVm = TuningViewModel(client, testScope, loadDispatcher = testDispatcher, workDispatcher = testDispatcher)
-        tuningVm.onIntent(TuningIntent.LoadConstants(tempDir.path))
+        tuningVm.onIntent(TuningIntent.LoadConstants(project.path))
         testScheduler.runCurrent()
         assertNotNull(tuningVm.state.value.selectedProfile, "Profile must be loaded")
-
-        // Nonces 1 to 4 were processed in simulation before rearm-apply (at 3,520 ms).
-        // Record processed nonce 4.0 in client's telemetry so Studio derives nonce 5L.
-        runBlocking {
-            client.telemetryStore.accept(
-                TelemetryFrame(
-                    timestampMs = 1_000L,
-                    sessionId = "live-telemetry",
-                    key = "Tuning/Parameters/ftc.drive.heading.kp/ProcessedNonce",
-                    value = 4.0
-                )
-            )
-        }
+        val headingKey = tuningVm.state.value.catalog.single { it.uid == "ftc.drive.heading.kp" }.key
 
         // Stage the new live gain
-        tuningVm.onIntent(TuningIntent.UpdateTypedConstant("ftc.drive.heading.kp", TuningValue(doubleValue = liveGain)))
+        tuningVm.onIntent(TuningIntent.UpdateTypedConstant(headingKey, TuningValue(doubleValue = liveGain)))
         testScheduler.runCurrent()
-        assertEquals(liveGain, tuningVm.state.value.proposals["ftc.drive.heading.kp"]?.doubleValue)
+        assertEquals(liveGain, tuningVm.state.value.proposals[headingKey]?.doubleValue)
 
         // Push to robot
-        tuningVm.onIntent(TuningIntent.PushToRobot("ftc.drive.heading.kp"))
+        tuningVm.onIntent(TuningIntent.PushToRobot(headingKey))
         testScheduler.runCurrent()
         assertEquals(liveGain, publishedTuningValue)
         assertEquals(5L, publishedTuningNonce)
-        assertTrue(tuningVm.state.value.saveStatus.contains("Waiting for Heading P acknowledgement…"),
+        assertTrue(tuningVm.state.value.saveStatus.startsWith("Waiting for "),
             "Request must remain pending until matching robot result arrives, was: ${tuningVm.state.value.saveStatus}")
         assertFalse(tuningVm.state.value.saveStatus.contains("applied experimentally"),
             "Status must not report applied before robot reply is processed")
+
+        // An older real acknowledgement must not complete this newer request.
+        replayNt4Frames(client, replyFramesProvider("wire-ready-reply"))
+        testScheduler.advanceTimeBy(100)
+        testScheduler.runCurrent()
+        assertTrue(tuningVm.state.value.saveStatus.startsWith("Waiting for "))
 
         // Feed wire-rearm-apply-reply through production inbound path
         val applyReplyFrames = replyFramesProvider("wire-rearm-apply-reply")
@@ -564,10 +520,11 @@ internal fun verifyStudioRobotFeedbackReturnPath(
         assertNotNull(currentEntry, "Current telemetry entry must be present")
         assertEquals(liveGain, currentEntry.value, 1e-9, "Studio Current must agree with liveGain")
 
-        // Verify independent controller output oracle: omega = kp * error = 2.6 * (0.0 - (-0.10)) = 0.26 rad/s
-        val error = 0.0 - measuredHeading
-        val expectedOmega = liveGain * error
-        assertEquals(0.26, expectedOmega, 1e-9, "Independent P-only oracle expectation must be 0.26 rad/s")
+        // Compare actual generated-robot observations, not arithmetic against another constant.
+        assertEquals(liveGain, evidence.getValue("gain"), 1e-9)
+        assertEquals(-0.10, evidence.getValue("heading"), 1e-3)
+        assertEquals(0.26, evidence.getValue("omega"), 1e-3)
+        assertEquals(canonicalBefore, consumerCanonicalSnapshot(project))
 
         // =========================================================================
         // Step 4: Disarm through Studio, carry generated robot's feedback back,
@@ -577,16 +534,14 @@ internal fun verifyStudioRobotFeedbackReturnPath(
         testScheduler.runCurrent()
         assertEquals(CalibrationArmPhase.DISARMED, sysIdVm.state.value.armPhase)
         assertFalse(sysIdVm.state.value.robotCalibrationArmed)
-        assertFalse(sysIdVm.signalGenerator.hasActiveArmLease())
 
         // Feed wire-disarm-reply into Studio's production inbound path
-        val disarmReplyFrames = replyFramesProvider("wire-disarm-reply")
+        val disarmReplyFrames = replyFramesProvider("wire-final-disarm-reply")
         check(disarmReplyFrames.isNotEmpty()) { "wire-disarm-reply frames must not be empty" }
         replayNt4Frames(client, disarmReplyFrames)
         testScheduler.runCurrent()
         assertEquals(CalibrationArmPhase.DISARMED, sysIdVm.state.value.armPhase)
         assertFalse(sysIdVm.state.value.robotCalibrationArmed)
-        assertFalse(sysIdVm.signalGenerator.hasActiveArmLease())
 
         // Verify renewal has stopped
         val leasesCountBefore = transport.publishedLeases.size
@@ -603,10 +558,17 @@ internal fun verifyStudioRobotFeedbackReturnPath(
             "robotCalibrationArmed must remain false after stale arm feedback")
 
     } finally {
-        testScope.cancel()
-        testScheduler.runCurrent()
-        check(testScope.coroutineContext.job.isCompleted) { "Test scope must complete cleanly" }
-        tempDir.deleteRecursively()
+        try {
+            testScope.cancel()
+            testScheduler.runCurrent()
+            check(testScope.coroutineContext.job.isCompleted) { "Test scope must complete cleanly" }
+        } finally {
+            runBlocking {
+                kotlinx.coroutines.withTimeout(5_000) {
+                    ownedClient?.let { check(it.disposeAndJoin()) { "Owned client did not flush cleanly" } }
+                }
+            }
+        }
     }
 }
 

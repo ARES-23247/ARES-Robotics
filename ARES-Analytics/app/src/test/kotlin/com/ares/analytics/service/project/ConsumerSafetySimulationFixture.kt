@@ -211,12 +211,6 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             connection = wire
             server.onOpen(wire, consumerWireProxy(org.java_websocket.handshake.ClientHandshake::class.java))
             val replyDir = File(project, "simulator/build/tuning-wire-reply")
-            wireCaptured.clear()
-            subscribeWire(server, wire)
-            server.flush()
-            initialAnnouncements.clear()
-            initialAnnouncements.addAll(wireCaptured.filter { it.startsWith("T|") })
-            wireCaptured.clear()
             lifecycle.gamepad1.id = 1
             lifecycle.tick()
             lifecycle.start()
@@ -239,14 +233,13 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
 
             // Step 1: Studio explicitly arms; generated robot acknowledges fresh STOP session and owns neutral output.
-            wireCaptured.clear()
             robot.enableCalibrationMode()
             deliverStudioTuningFrames(server, wire, "wire-arm")
             RobotClock.useMockTime(1_040L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             server.flush()
-            saveReplyFrames(replyDir, "wire-arm-reply", initialAnnouncements + wireCaptured)
+            saveReplyFrames(server, wire, replyDir, "wire-arm-reply")
             assertTrue(robot.isCalibrationModeArmed)
             assertTrue(robot.isCalibrationNeutralOutputHoldActive)
             assertNeutral() // Joystick is still nonzero, so this is actual inhibition.
@@ -308,13 +301,12 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
 
             // Step 3: Studio explicitly disarms; its real STOP/token revocation reaches the robot.
-            wireCaptured.clear()
             RobotClock.useMockTime(2_540L)
             deliverStudioTuningFrames(server, wire, "wire-disarm")
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             server.flush()
-            saveReplyFrames(replyDir, "wire-disarm-reply", initialAnnouncements + wireCaptured)
+            saveReplyFrames(server, wire, replyDir, "wire-disarm-reply")
             assertFalse(robot.isCalibrationModeArmed)
             assertFalse(robot.isCalibrationNeutralOutputHoldActive)
             assertEquals("ENABLE_TOKEN_CHANGED", NT4Server.getString("SysId/Error", ""))
@@ -370,15 +362,25 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
                 assertNeutral()
             }
 
-            wireCaptured.clear()
+            saveReplyFrames(server, wire, replyDir, "wire-ready-reply")
             RobotClock.useMockTime(3_520L)
             deliverStudioTuningFrames(server, wire, "wire-rearm-apply")
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             server.flush()
-            saveReplyFrames(replyDir, "wire-rearm-apply-reply", initialAnnouncements + wireCaptured)
+            saveReplyFrames(server, wire, replyDir, "wire-rearm-apply-reply")
             assertTuningResult(5L, "APPLIED", 2.6)
             assertEquals(2.6, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+            assertNeutral()
+
+            // Capture a chronological operator disarm from the just-applied session.
+            deliverStudioTuningFrames(server, wire, "wire-disarm")
+            RobotClock.useMockTime(3_540L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            saveReplyFrames(server, wire, replyDir, "wire-final-disarm-reply")
+            assertFalse(robot.isCalibrationModeArmed)
+            assertFalse(NT4Server.getBoolean("SysId/Armed", true))
             assertNeutral()
 
             // Return to normal control and verify heading controller response.
@@ -388,20 +390,20 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertFalse(robot.isCalibrationNeutralOutputHoldActive)
             robot.resetPose(Pose2d())
             lifecycle.gamepad1.y = true
-            RobotClock.useMockTime(3_540L)
+            RobotClock.useMockTime(3_560L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             lifecycle.gamepad1.y = false
             robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            RobotClock.useMockTime(3_560L)
+            RobotClock.useMockTime(3_580L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             assertEquals(0.0, robot.store.state.drive.headingLockTargetRadians ?: Double.NaN, 1e-4)
             robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, -0.10)
-            RobotClock.useMockTime(3_580L)
+            RobotClock.useMockTime(3_600L)
             awaitImuSample(robot, -0.10)
             lifecycle.tick()
-            RobotClock.useMockTime(3_600L)
+            RobotClock.useMockTime(3_620L)
             awaitImuSample(robot, -0.10)
             lifecycle.tick()
 
@@ -421,6 +423,11 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertEquals(-right, robotDouble.fl.power, 1e-3)
             assertEquals(-right, robotDouble.rl.power, 1e-3)
 
+            // Keep the accepted gain/output evidence independent of Studio replay.
+            File(replyDir, "controller-evidence.txt").writeText(
+                "gain=" + robot.store.state.tuning.drive.headingGains.kP + "\n" +
+                "heading=" + drive.poseEstimator.estimatedPose.heading.radians + "\n" +
+                "omega=" + drive.angularVelocityRadiansPerSecond + "\n")
             // Stop while the tuned controller is actively producing output.
             val finalAck = NT4Server.getString(rootTopic + "/Acknowledgement", "")
             lifecycle.stop()

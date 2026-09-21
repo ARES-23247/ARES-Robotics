@@ -283,20 +283,7 @@ class GenericStarterConsumerRoundtripIntegrationTest {
 
             // 9a. Verify robot feedback return path into Studio using wire reply frames emitted by consumer simulation.
             val replyDir = File(extractedProject, "simulator/build/tuning-wire-reply")
-            verifyStudioRobotFeedbackReturnPath(replyDir, liveGain = 2.6, measuredHeading = -0.10)
-
-            // Cache generated wire reply frames to test resources for fast, deterministic unit test replay.
-            val resourcesReplyDir = listOf(
-                File("src/test/resources/tuning-wire-reply"),
-                File("ARES-Analytics/app/src/test/resources/tuning-wire-reply")
-            ).firstOrNull { it.parentFile?.isDirectory == true } ?: File("src/test/resources/tuning-wire-reply")
-            resourcesReplyDir.mkdirs()
-            listOf("wire-arm-reply", "wire-rearm-apply-reply", "wire-disarm-reply").forEach { name ->
-                val src = File(replyDir, "$name.frames")
-                if (src.isFile) {
-                    src.copyTo(File(resourcesReplyDir, "$name.frames"), overwrite = true)
-                }
-            }
+            verifyStudioRobotFeedbackReturnPath(extractedProject, replyDir)
 
             // A second canonical value must survive a real save/export/reopen and regenerated runtime.
             // Direct UpdateTuningState dispatch would bypass persistence and live-apply policy.
@@ -317,6 +304,7 @@ class GenericStarterConsumerRoundtripIntegrationTest {
             assertEquals(BuildExecutionPhase.SUCCEEDED, lowExecution.phase,
                 "Second saved gain build must succeed: ${lowExecution.message}\nNested XML retained under consumer-roundtrip-evidence/generic/operation-4.\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n"))
             assertEquals(0, lowExecution.exitCode)
+            verifyStudioRobotFeedbackReturnPath(lowProject, File(lowProject, "simulator/build/tuning-wire-reply"))
 
         } finally {
             buildService.shutdownAndJoin()

@@ -84,7 +84,7 @@ internal class ConsumerRoundtripBuild(
             appendLine(service.processState.value.buildExecution)
             service.buildOutput.replayCache.forEach { appendLine(it) }
         })
-        for (path in listOf("TeamCode/build/test-results", "simulator/build/test-results", "simulator/src/test/resources/tuning-wire")) {
+        for (path in listOf("TeamCode/build/test-results", "simulator/build/test-results", "simulator/src/test/resources/tuning-wire", "simulator/build/tuning-wire-reply")) {
             val source = File(project, path)
             if (source.isDirectory) {
                 source.copyRecursively(File(evidence, path), overwrite = true)

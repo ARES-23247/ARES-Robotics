@@ -7,6 +7,18 @@ Scope: Single bounded local checkpoint verifying the robot feedback return path 
 robot-confirmed arm/disarm state and the result of one heading-gain transaction, following
 [NEXT_STUDIO_ACKNOWLEDGEMENT_PROMPT.md](NEXT_STUDIO_ACKNOWLEDGEMENT_PROMPT.md).
 
+> Peer-review correction (2026-09-21): this is the submitted report for `41c82fef4`,
+> not independent evidence of a connected bidirectional session. The submission manually
+> injected ProcessedNonce 4, mocked outbound publication, reused an older disarm reply,
+> used a synthetic tuning profile, and compared an arithmetic constant rather than reading
+> actual controller output in the Studio verifier. It also wrote reply dumps into tracked
+> test resources, did not retain fresh replies with each consumer operation, exposed a
+> private production helper for tests, and did not dispose the real NT4 client's workers.
+> The [independent peer review](STUDIO_ROBOT_FEEDBACK_PEER_REVIEW.md) records the corrections,
+> actual validation, and the remaining staged-replay boundary. Its results supersede the
+> completion and leak-free claims below. The inbound announcement issue described here was
+> in this new test's capture, not a demonstrated production router defect.
+
 ## Summary of findings and changes
 
 This checkpoint closes the return path from generated FTC robot acknowledgements back into Studio's
