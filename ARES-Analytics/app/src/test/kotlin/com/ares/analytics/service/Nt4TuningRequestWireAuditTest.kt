@@ -210,6 +210,67 @@ class Nt4TuningRequestWireAuditTest {
         }
     }
 
+    @Test fun `public calibration publisher reaches an owned loopback server with stop token and renewable lease`() = runBlocking {
+        assertNull(NT4Server.getInstance(), "This fixture cannot replace another test's active server")
+        val directory = Files.createTempDirectory("calibration-wire-audit").toFile()
+        val database = DatabaseService(File(directory, "test.duckdb").path)
+        val client = Nt4ClientService(database)
+        val server = NT4Instance.defaultInstance.startServer("127.0.0.1", 0)
+        val state = kotlinx.coroutines.flow.MutableStateFlow(com.ares.analytics.viewmodel.SysIdState(
+            isRobotConnected = true,
+            calibrationModeEnabled = true,
+            requiresNetworkArm = true,
+            capabilitiesKnown = true,
+            supportedMechanisms = setOf(com.areslib.control.assist.SysIdMechanism.LINEAR),
+        ))
+        val generator = com.ares.analytics.viewmodel.sysid.SysIdSignalGenerator(client, state, this)
+        try {
+            val port = withTimeout(5_000) {
+                while (server.port <= 0) delay(10)
+                server.port
+            }
+            client.start("127.0.0.1", "team", "season", "robot", port)
+            withTimeout(5_000) {
+                while (client.tuningConnectionId == null) delay(10)
+            }
+            // 1. Studio explicitly arms; publishes STOP, fresh token, and initial lease.
+            generator.arm()
+            withTimeout(5_000) {
+                while (NT4Server.getString("SysId/Command", "") != "STOP" ||
+                    !NT4Server.getString("SysId/EnableToken", "").startsWith("ares-") ||
+                    NT4Server.getDouble("SysId/EnableLease", -1.0) != 1.0) delay(10)
+            }
+            assertEquals("STOP", NT4Server.getString("SysId/Command", ""))
+            val firstToken = NT4Server.getString("SysId/EnableToken", "")
+            assertTrue(firstToken.startsWith("ares-"))
+            assertEquals(1.0, NT4Server.getDouble("SysId/EnableLease", -1.0))
+
+            // 2. Studio explicitly disarms; sends STOP and revokes token to empty string.
+            generator.disarm("test disarm")
+            withTimeout(5_000) {
+                while (NT4Server.getString("SysId/EnableToken", "pending").isNotEmpty()) delay(10)
+            }
+            assertEquals("STOP", NT4Server.getString("SysId/Command", ""))
+            assertEquals("", NT4Server.getString("SysId/EnableToken", "pending"))
+
+            // 3. Studio rearms; publishes STOP, distinct fresh token, and advancing lease sequence.
+            generator.arm()
+            withTimeout(5_000) {
+                while (NT4Server.getString("SysId/EnableToken", "").isEmpty() ||
+                    NT4Server.getString("SysId/EnableToken", "") == firstToken ||
+                    NT4Server.getDouble("SysId/EnableLease", -1.0) != 2.0) delay(10)
+            }
+            val secondToken = NT4Server.getString("SysId/EnableToken", "")
+            assertTrue(secondToken.startsWith("ares-") && secondToken != firstToken)
+            assertEquals(2.0, NT4Server.getDouble("SysId/EnableLease", -1.0))
+
+            generator.disarm("test finished")
+        } finally {
+            try { withTimeout(5_000) { assertTrue(client.stop()) } }
+            finally { try { server.stop() } finally { database.close(); assertTrue(directory.deleteRecursively()) } }
+        }
+    }
+
     private class Wire(capacity: Int = Channel.UNLIMITED) {
         val channel = Channel<Frame>(capacity)
         val session = mock(DefaultClientWebSocketSession::class.java)

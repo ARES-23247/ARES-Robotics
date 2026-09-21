@@ -231,10 +231,9 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertTrue("Prove the same held joystick drives before calibration owns outputs", motors.any { abs(it.power) > 0.01 })
             assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
 
+            // Step 1: Studio explicitly arms; generated robot acknowledges fresh STOP session and owns neutral output.
             robot.enableCalibrationMode()
-            NT4Server.publishTopic("SysId/EnableToken", "consumer-live-1")
-            NT4Server.publishTopic("SysId/EnableLease", 1.0)
-            NT4Server.publishTopic("SysId/Command", "STOP")
+            deliverStudioTuningFrames(server, wire, "wire-arm")
             RobotClock.useMockTime(1_040L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
@@ -242,10 +241,12 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertTrue(robot.isCalibrationNeutralOutputHoldActive)
             assertNeutral() // Joystick is still nonzero, so this is actual inhibition.
 
-            var leaseSequence = 1.0
-            fun tickFreshHold(time: Long) {
+            var leaseSeq = 1
+            fun tickFreshHold(time: Long, nextLease: Boolean = false) {
                 RobotClock.useMockTime(time)
-                NT4Server.publishTopic("SysId/EnableLease", ++leaseSequence)
+                if (nextLease) {
+                    deliverStudioTuningFrames(server, wire, "wire-lease-" + (++leaseSeq))
+                }
                 awaitImuSample(robot, 0.0)
                 lifecycle.tick()
                 assertTrue(robot.isCalibrationModeArmed)
@@ -254,11 +255,13 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             }
             fun holdUntil(time: Long) {
                 while (RobotClock.currentTimeMillis() < time) {
-                    tickFreshHold(RobotClock.currentTimeMillis() + 20L)
+                    val nextTime = RobotClock.currentTimeMillis() + 20L
+                    val deliverHeartbeat = nextTime % 200L == 40L
+                    tickFreshHold(nextTime, deliverHeartbeat)
                 }
             }
-            // Keep real 20 ms frames, observed sensors and lease heartbeats between 500 ms polls.
-            // A long clock jump could otherwise make another safety gate explain neutral output.
+
+            // Step 2: Valid typed heading request accepted under established authorization.
             holdUntil(1_500L)
             RobotClock.useMockTime(1_520L)
             deliverStudioTuningFrames(server, wire, "apply")
@@ -269,10 +272,10 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertNeutral()
             val appliedAck = NT4Server.getString(rootTopic + "/Acknowledgement", "")
 
-            // Keep the real session armed and fresh so a rejection cannot be caused by another gate.
+            // Replay same nonce with conflicting value 4.0: rejected without changing gain.
             holdUntil(2_000L)
             RobotClock.useMockTime(2_020L)
-            deliverStudioTuningFrames(server, wire, "replay") // Same nonce, conflicting value 4.0.
+            deliverStudioTuningFrames(server, wire, "replay")
             tickFreshHold(2_020L)
             assertTrue(robot.isCalibrationModeArmed)
             assertEquals(appliedAck, NT4Server.getString(rootTopic + "/Acknowledgement", ""))
@@ -280,9 +283,10 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
             assertNeutral()
 
+            // Invalid value -5.0 below declared minimum: rejected.
             holdUntil(2_500L)
             RobotClock.useMockTime(2_520L)
-            deliverStudioTuningFrames(server, wire, "invalid") // Fresh nonce, value -5 below the declared minimum.
+            deliverStudioTuningFrames(server, wire, "invalid")
             tickFreshHold(2_520L)
             assertTrue(robot.isCalibrationModeArmed)
             assertTuningResult(3L, "INVALID_VALUE", 3.2)
@@ -290,26 +294,83 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertNeutral()
             assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
 
+            // Step 3: Studio explicitly disarms; its real STOP/token revocation reaches the robot.
+            RobotClock.useMockTime(2_540L)
+            deliverStudioTuningFrames(server, wire, "wire-disarm")
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertFalse(robot.isCalibrationModeArmed)
+            assertFalse(robot.isCalibrationNeutralOutputHoldActive)
+            assertEquals("ENABLE_TOKEN_CHANGED", NT4Server.getString("SysId/Error", ""))
+            assertNeutral() // Neutralized during disarm transition frame.
+
+            // Following frames (2_560L..3_000L): manual repositioning resumes with held joystick.
+            for (time in 2_560L..3_000L step 20L) {
+                RobotClock.useMockTime(time)
+                awaitImuSample(robot, 0.0)
+                lifecycle.tick()
+                assertTrue("Manual repositioning active while disarmed", motors.any { abs(it.power) > 0.01 })
+            }
+
+            // Unarmed tuning request is rejected with SESSION_NOT_ARMED.
+            // 3_020L is eligible for TuningManager update (3_020 - 2_520 = 500 ms).
+            RobotClock.useMockTime(3_020L)
+            deliverStudioTuningFrames(server, wire, "disarmed")
+            lifecycle.tick()
+            assertTuningResult(4L, "SESSION_NOT_ARMED", 3.2)
+            assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+
+            // Step 4: Explicit fresh arming recovers and a new nonce succeeds.
+            RobotClock.useMockTime(3_040L)
+            deliverStudioTuningFrames(server, wire, "wire-rearm")
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertTrue(robot.isCalibrationModeArmed)
+            assertTrue(robot.isCalibrationNeutralOutputHoldActive)
+            assertNeutral()
+
+            // Keep lease fresh until next poll eligibility at 3_520L (3_020 + 500 ms).
+            // Leases 10.0 and 11.0 delivered at 3_240L and 3_440L.
+            for (time in 3_060L..3_500L step 20L) {
+                RobotClock.useMockTime(time)
+                if (time == 3_240L) deliverStudioTuningFrames(server, wire, "wire-lease-10")
+                if (time == 3_440L) deliverStudioTuningFrames(server, wire, "wire-lease-11")
+                awaitImuSample(robot, 0.0)
+                lifecycle.tick()
+                assertTrue(robot.isCalibrationModeArmed)
+                assertTrue(robot.isCalibrationNeutralOutputHoldActive)
+                assertNeutral()
+            }
+
+            RobotClock.useMockTime(3_520L)
+            deliverStudioTuningFrames(server, wire, "wire-rearm-apply")
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertTuningResult(5L, "APPLIED", 3.2)
+            assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+            assertNeutral()
+
+            // Return to normal control and verify heading controller response.
             lifecycle.gamepad1.left_stick_y = 0.0f
             robot.disableCalibrationMode()
             assertFalse(robot.isCalibrationModeArmed)
             assertFalse(robot.isCalibrationNeutralOutputHoldActive)
             robot.resetPose(Pose2d())
             lifecycle.gamepad1.y = true
-            RobotClock.useMockTime(2_540L)
+            RobotClock.useMockTime(3_540L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             lifecycle.gamepad1.y = false
             robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-            RobotClock.useMockTime(2_560L)
+            RobotClock.useMockTime(3_560L)
             awaitImuSample(robot, 0.0)
             lifecycle.tick()
             assertEquals(0.0, robot.store.state.drive.headingLockTargetRadians ?: Double.NaN, 1e-4)
             robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, -0.10)
-            RobotClock.useMockTime(2_580L)
+            RobotClock.useMockTime(3_580L)
             awaitImuSample(robot, -0.10)
             lifecycle.tick()
-            RobotClock.useMockTime(2_600L)
+            RobotClock.useMockTime(3_600L)
             awaitImuSample(robot, -0.10)
             lifecycle.tick()
 
@@ -345,17 +406,17 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             assertEquals(3.2, overlay.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue!!, 1e-9)
             val overlayBytes = File(cwd, ".ares/local/tuning/runtime.arestuning").readBytes()
 
-            RobotClock.useMockTime(3_200L)
-            deliverStudioTuningFrames(server, wire, "late")
+            RobotClock.useMockTime(4_200L)
+            deliverStudioTuningFrames(server, wire, "wire-late")
             // The simulator NT4 server remains owned by this test after OpMode stop. Polling the
             // retained manager additionally verifies its close fence, beyond the stopped lifecycle guard.
-            assertEquals(5.0, NT4Server.getDouble(rootTopic + "/RequestNonce", -1.0), 1e-9)
+            assertEquals(6.0, NT4Server.getDouble(rootTopic + "/RequestNonce", -1.0), 1e-9)
             lifecycle.gamepad1.left_stick_y = -1.0f
             lifecycle.tick()
             manager.update()
             assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
             assertEquals(finalAck, NT4Server.getString(rootTopic + "/Acknowledgement", ""))
-            assertEquals(3.0, NT4Server.getDouble(rootTopic + "/ProcessedNonce", -1.0), 1e-9)
+            assertEquals(5.0, NT4Server.getDouble(rootTopic + "/ProcessedNonce", -1.0), 1e-9)
             assertNeutral()
             assertTrue(overlayBytes.contentEquals(File(cwd, ".ares/local/tuning/runtime.arestuning").readBytes()))
             assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
