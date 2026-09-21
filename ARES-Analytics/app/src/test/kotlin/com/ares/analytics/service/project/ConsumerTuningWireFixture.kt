@@ -16,26 +16,27 @@ import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
 
 /** Capture the real Studio writer's bytes for replay through the generated consumer's NT4 parser. */
 internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration: TuningParameterDeclaration) {
-    val publisher = Nt4OutboundPublisher { 1_000L }
-    val session = Mockito.mock(DefaultClientWebSocketSession::class.java)
-    val outgoing = Channel<Frame>(Channel.UNLIMITED)
-    Mockito.doReturn(outgoing).`when`(session).outgoing
-    Mockito.doAnswer {
-        val frame = it.getArgument<Frame>(0)
-        @Suppress("UNCHECKED_CAST")
-        val continuation = it.rawArguments.last() as Continuation<Unit>
-        val send: suspend () -> Unit = { outgoing.send(frame) }
-        send.startCoroutineUninterceptedOrReturn(continuation)
-    }.`when`(session).send(anyWireFrame())
-    try {
-        publisher.attach(session)
-        publisher.acceptTimeSyncReply(10_000L, 1_000L)
-        val connection = requireNotNull(publisher.tuningConnectionId)
-        val cases = listOf(
-            Triple("unarmed", 3.5, 1L), Triple("apply", 3.2, 2L),
-            Triple("replay", 4.0, 2L), Triple("invalid", -5.0, 3L), Triple("late", 5.0, 5L),
-        )
-        for ((name, value, nonce) in cases) {
+    val cases = listOf(
+        Triple("unarmed", 3.5, 1L), Triple("apply", 3.2, 2L),
+        Triple("replay", 4.0, 2L), Triple("invalid", -5.0, 3L), Triple("late", 5.0, 5L),
+        Triple("expired", 3.6, 2L), Triple("rearm-apply", 3.2, 4L),
+    )
+    for ((name, value, nonce) in cases) {
+        val publisher = Nt4OutboundPublisher { 1_000L }
+        val session = Mockito.mock(DefaultClientWebSocketSession::class.java)
+        val outgoing = Channel<Frame>(Channel.UNLIMITED)
+        Mockito.doReturn(outgoing).`when`(session).outgoing
+        Mockito.doAnswer {
+            val frame = it.getArgument<Frame>(0)
+            @Suppress("UNCHECKED_CAST")
+            val continuation = it.rawArguments.last() as Continuation<Unit>
+            val send: suspend () -> Unit = { outgoing.send(frame) }
+            send.startCoroutineUninterceptedOrReturn(continuation)
+        }.`when`(session).send(anyWireFrame())
+        try {
+            publisher.attach(session)
+            publisher.acceptTimeSyncReply(10_000L, 1_000L)
+            val connection = requireNotNull(publisher.tuningConnectionId)
             check(publisher.publishTuningRequest(
                 TuningTransport.requested(declaration), TuningTransport.requestNonce(declaration),
                 TuningValue(doubleValue = value), nonce, connection,
@@ -57,10 +58,10 @@ internal suspend fun writeConsumerTuningWireFixtures(project: File, declaration:
                 parentFile.mkdirs()
                 writeText(frames.joinToString("\n", postfix = "\n"))
             }
+        } finally {
+            publisher.detach(session)
+            outgoing.close()
         }
-    } finally {
-        publisher.detach(session)
-        outgoing.close()
     }
 }
 

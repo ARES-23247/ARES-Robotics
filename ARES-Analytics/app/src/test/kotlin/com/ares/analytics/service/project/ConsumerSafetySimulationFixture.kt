@@ -364,7 +364,222 @@ internal fun consumerLiveTuningBehavior(gain: Double): String = """
             finally { connection?.let { receiver?.onClose(it, 1000, "owned test connection", false) } }
         }
     }
+""".trimIndent()
 
+internal fun consumerLeaseRecoveryBehavior(gain: Double): String = """
+    @Test
+    fun `calibration lease expiry and recovery gates live heading parameter in generated consumer`() {
+        RobotClock.useMockTime(1_000L)
+        val robotDouble = MecanumRobotDouble()
+        val lifecycle = requireNotNull(SimOpModeRunner.createOpModeInstance(null, ARESStarterTeleOp::class.java.name))
+        var receiver: NT4Server? = null
+        var connection: org.java_websocket.WebSocket? = null
+        val cwd = File("").canonicalFile
+        val project = if (File(cwd, ".ares/project.json").isFile) cwd else cwd.parentFile
+        assertTrue(File(project, ".ares/project.json").isFile)
+        val canonicalBefore = canonicalTuningSnapshot(project)
+        val rootTopic = "Tuning/Parameters/ftc.drive.heading.kp"
+        val motors = listOf(robotDouble.fl, robotDouble.fr, robotDouble.rl, robotDouble.rr)
+        fun assertNeutral() = assertTrue("Every drive output must be neutral", motors.all { abs(it.power) < 1e-9 })
+        try {
+            lifecycle.initialize(robotDouble.hardwareMap)
+            val robot = FtcBaseRobot.activeInstance as FtcMecanumRobot
+            val manager = requireNotNull(robot.tuningManager)
+            val server = requireNotNull(NT4Server.getInstance())
+            val wire = consumerWireProxy(org.java_websocket.WebSocket::class.java)
+            receiver = server
+            connection = wire
+            server.onOpen(wire, consumerWireProxy(org.java_websocket.handshake.ClientHandshake::class.java))
+            lifecycle.gamepad1.id = 1
+            lifecycle.tick()
+            lifecycle.start()
+            robot.isLiveTuningEnabled = true
+            assertFalse(robot.isCalibrationModeArmed)
+            assertEquals($gain, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+
+            // Step 1: Establish fresh calibration STOP session with local opt-in + new token + advancing lease.
+            // With competing drive joystick command, prove neutral output ownership.
+            lifecycle.gamepad1.left_stick_y = -1.0f
+            RobotClock.useMockTime(1_020L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertTrue("Competing joystick drives before calibration mode is established", motors.any { abs(it.power) > 0.01 })
+
+            robot.enableCalibrationMode()
+            NT4Server.publishTopic("SysId/EnableToken", "consumer-live-1")
+            NT4Server.publishTopic("SysId/EnableLease", 1.0)
+            NT4Server.publishTopic("SysId/Command", "STOP")
+            RobotClock.useMockTime(1_040L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertTrue(robot.isCalibrationModeArmed)
+            assertTrue(robot.isCalibrationNeutralOutputHoldActive)
+            assertNeutral()
+
+            var leaseSequence = 1.0
+            fun tickFreshHold(time: Long) {
+                RobotClock.useMockTime(time)
+                NT4Server.publishTopic("SysId/EnableLease", ++leaseSequence)
+                awaitImuSample(robot, 0.0)
+                lifecycle.tick()
+                assertTrue(robot.isCalibrationModeArmed)
+                assertTrue(robot.isCalibrationNeutralOutputHoldActive)
+                assertNeutral()
+            }
+            for (time in listOf(1_060L, 1_080L, 1_100L)) {
+                tickFreshHold(time)
+            }
+
+            // Step 2: Withhold lease updates across the documented 500 ms expiry boundary.
+            // Last lease was at 1,100 ms. At 1,620 ms (520 ms delta > 500 ms timeout), lease is expired.
+            // Tuning poll throttle from 1,040 ms is also satisfied (580 ms delta >= 500 ms).
+            // Deliver a valid heading request (value 3.6, nonce 2L) on this eligible tick.
+            // Prove the same frame processes lease expiry before tuning authorization, rejects with
+            // SESSION_NOT_ARMED, and leaves confirmed gain and canonical files unchanged.
+            RobotClock.useMockTime(1_620L)
+            awaitImuSample(robot, 0.0)
+            deliverStudioTuningFrames(server, wire, "expired")
+            lifecycle.tick()
+
+            assertFalse(robot.isCalibrationModeArmed)
+            assertFalse(robot.isCalibrationNeutralOutputHoldActive)
+            assertEquals("ENABLE_LEASE_EXPIRED", NT4Server.getString("SysId/Error", ""))
+            assertTuningResult(2L, "SESSION_NOT_ARMED", $gain)
+            assertEquals($gain, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+            assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
+
+            // Step 3: Show retained/replayed token/lease data cannot accidentally rearm.
+            // 3a. Replaying the previous token cannot rearm.
+            NT4Server.publishTopic("SysId/EnableToken", "consumer-live-1")
+            NT4Server.publishTopic("SysId/EnableLease", 5.0)
+            NT4Server.publishTopic("SysId/Command", "STOP")
+            RobotClock.useMockTime(1_640L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertFalse("Replaying old token must not rearm", robot.isCalibrationModeArmed)
+
+            // 3b. Stale lease sequence cannot rearm even with a new token.
+            NT4Server.publishTopic("SysId/EnableToken", "consumer-live-2")
+            NT4Server.publishTopic("SysId/EnableLease", 4.0)
+            NT4Server.publishTopic("SysId/Command", "STOP")
+            RobotClock.useMockTime(1_660L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertFalse("Stale lease sequence must not rearm", robot.isCalibrationModeArmed)
+
+            // 3c. Non-STOP command cannot rearm even with new token and fresh lease.
+            NT4Server.publishTopic("SysId/EnableToken", "consumer-live-2")
+            NT4Server.publishTopic("SysId/EnableLease", 10.0)
+            NT4Server.publishTopic("SysId/Command", "START_LINEAR_DRIVE")
+            RobotClock.useMockTime(1_680L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertFalse("Non-STOP command must not rearm", robot.isCalibrationModeArmed)
+
+            // Perform documented fresh rearm procedure: new token, fresh lease, STOP command.
+            NT4Server.publishTopic("SysId/EnableToken", "consumer-live-2")
+            NT4Server.publishTopic("SysId/EnableLease", 10.0)
+            NT4Server.publishTopic("SysId/Command", "STOP")
+            leaseSequence = 10.0
+            RobotClock.useMockTime(1_700L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertTrue("Fresh token and lease with STOP command must rearm", robot.isCalibrationModeArmed)
+            assertTrue(robot.isCalibrationNeutralOutputHoldActive)
+            assertNeutral()
+            assertEquals("", NT4Server.getString("SysId/Error", ""))
+
+            // Advance lease until next tuning poll is eligible (1,620 ms + 500 ms = 2,120 ms).
+            while (RobotClock.currentTimeMillis() < 2_100L) {
+                tickFreshHold(RobotClock.currentTimeMillis() + 20L)
+            }
+
+            // Apply valid request with new nonce (3.2, nonce 4L).
+            RobotClock.useMockTime(2_140L)
+            deliverStudioTuningFrames(server, wire, "rearm-apply")
+            tickFreshHold(2_140L)
+            assertTrue(robot.isCalibrationModeArmed)
+            assertTuningResult(4L, "APPLIED", 3.2)
+            assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+            assertTrue(robot.isCalibrationNeutralOutputHoldActive)
+            assertNeutral()
+
+            // Transition back to normal control and demonstrate intended controller effect.
+            lifecycle.gamepad1.left_stick_y = 0.0f
+            robot.disableCalibrationMode()
+            assertFalse(robot.isCalibrationModeArmed)
+            assertFalse(robot.isCalibrationNeutralOutputHoldActive)
+            robot.resetPose(Pose2d())
+            lifecycle.gamepad1.y = true
+            RobotClock.useMockTime(2_160L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            lifecycle.gamepad1.y = false
+            robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            RobotClock.useMockTime(2_180L)
+            awaitImuSample(robot, 0.0)
+            lifecycle.tick()
+            assertEquals(0.0, robot.store.state.drive.headingLockTargetRadians ?: Double.NaN, 1e-4)
+
+            robotDouble.updateSensors(0.02, 0.0, 0.0, 0.0, 0.0, 0.0, -0.10)
+            RobotClock.useMockTime(2_200L)
+            awaitImuSample(robot, -0.10)
+            lifecycle.tick()
+            RobotClock.useMockTime(2_220L)
+            awaitImuSample(robot, -0.10)
+            lifecycle.tick()
+
+            // Independent P-only oracle: error = 0 - (-0.10) = +0.10 rad, omega = 3.2 * 0.10 = 0.32 rad/s.
+            val drive = robot.store.state.drive
+            assertTrue(drive.imuMeasurementsValid)
+            assertEquals(0.0, robot.store.state.tuning.drive.headingGains.kI, 1e-9)
+            assertEquals(0.0, robot.store.state.tuning.drive.headingGains.kD, 1e-9)
+            assertEquals(-0.10, drive.poseEstimator.estimatedPose.heading.radians, 1e-3)
+            assertEquals(0.0, drive.xVelocityMetersPerSecond, 1e-9)
+            assertEquals(0.0, drive.yVelocityMetersPerSecond, 1e-9)
+            assertEquals(0.32, drive.angularVelocityRadiansPerSecond, 1e-3)
+            println("TUNING_OUTPUT omega=" + drive.angularVelocityRadiansPerSecond)
+            val right = robotDouble.fr.power
+            assertTrue("Positive CCW effort below saturation", right > 0.01 && right < 1.0)
+            assertEquals(right, robotDouble.rr.power, 1e-3)
+            assertEquals(-right, robotDouble.fl.power, 1e-3)
+            assertEquals(-right, robotDouble.rl.power, 1e-3)
+
+            // Step 4: Stop while output is active, prove stale session traffic cannot reactivate output.
+            val finalAck = NT4Server.getString(rootTopic + "/Acknowledgement", "")
+            lifecycle.stop()
+            assertFalse(lifecycle.isStarted)
+            assertEquals(com.areslib.sim.opmode.SimOpModeState.DISABLED, lifecycle.publishedState)
+            assertNeutral()
+            assertEquals(null, manager.localOverlayPersistenceFailure)
+            val overlay = com.areslib.tuning.TuningProfileDocumentCodec.decode(
+                File(cwd, ".ares/local/tuning/runtime.arestuning").readText(),
+                GeneratedAresTuningConfig.metadata().declarations)
+            assertEquals(com.areslib.tuning.TuningProfileAuthority.LOCAL_EXPERIMENTAL, overlay.authority)
+            assertEquals(GeneratedAresTuningConfig.CANONICAL_PROFILE_UID, overlay.baseProfileUid)
+            assertEquals(3.2, overlay.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue!!, 1e-9)
+            val overlayBytes = File(cwd, ".ares/local/tuning/runtime.arestuning").readBytes()
+
+            RobotClock.useMockTime(3_000L)
+            deliverStudioTuningFrames(server, wire, "late")
+            assertEquals(5.0, NT4Server.getDouble(rootTopic + "/RequestNonce", -1.0), 1e-9)
+            lifecycle.gamepad1.left_stick_y = -1.0f
+            lifecycle.tick()
+            manager.update()
+            assertEquals(3.2, robot.store.state.tuning.drive.headingGains.kP, 1e-9)
+            assertEquals(finalAck, NT4Server.getString(rootTopic + "/Acknowledgement", ""))
+            assertEquals(4.0, NT4Server.getDouble(rootTopic + "/ProcessedNonce", -1.0), 1e-9)
+            assertNeutral()
+            assertTrue(overlayBytes.contentEquals(File(cwd, ".ares/local/tuning/runtime.arestuning").readBytes()))
+            assertEquals(canonicalBefore, canonicalTuningSnapshot(project))
+        } finally {
+            try { lifecycle.stop() }
+            finally { connection?.let { receiver?.onClose(it, 1000, "owned test connection", false) } }
+        }
+    }
+""".trimIndent()
+
+internal fun consumerTuningHelpers(): String = """
     private fun assertTuningResult(nonce: Long, result: String, gain: Double) {
         val root = "Tuning/Parameters/ftc.drive.heading.kp"
         val ack = TuningAcknowledgementCodec.decode(NT4Server.getString(root + "/Acknowledgement", ""))

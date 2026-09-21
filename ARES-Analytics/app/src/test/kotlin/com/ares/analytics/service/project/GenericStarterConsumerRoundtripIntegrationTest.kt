@@ -384,6 +384,8 @@ class GenericStarterConsumerRoundtripIntegrationTest {
         appendLine(consumerHeadingBehavior(savedGain, expectedOmega))
         appendLine(consumerFeedbackBehavior(false))
         appendLine(consumerLiveTuningBehavior(savedGain))
+        appendLine(consumerLeaseRecoveryBehavior(savedGain))
+        appendLine(consumerTuningHelpers())
         appendLine("}")
     }
 
