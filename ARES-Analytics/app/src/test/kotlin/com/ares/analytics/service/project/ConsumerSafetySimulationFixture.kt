@@ -699,4 +699,3 @@ internal fun consumerLeaseRecoveryBehavior(gain: Double): String = """
         }
     }
 """.trimIndent()
-
