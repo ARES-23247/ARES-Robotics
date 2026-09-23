@@ -1,6 +1,6 @@
 # Autonomous local improvement with AGY workers
 
-Authorized 2026-09-23. Status: **active**. This is a new practical-improvement campaign, not a
+Authorized 2026-09-23. Status: **complete** (2026-09-23). This is a new practical-improvement campaign, not a
 restart of the historical audit-every-file objective. The user explicitly requested parallel
 AGY/Gemini workers, high effort, independent Codex review, and local-only changes.
 
@@ -34,3 +34,8 @@ as passed, bypass tool permissions, or use blanket dangerous approval flags.
 Follow the [reusable AGY workflow](../../.agents/skills/ares-workspace/references/parallel-agy-audit.md)
 and keep [the resume state](AGY_IMPROVEMENT_STATE.md) current. The canonical instructions and this
 record preserve the setup for future sessions without modifying personal permissions or credentials.
+
+Completion: [requirement-by-requirement assessment](AGY_CAMPAIGN_COMPLETION.md). The identified
+practical-priority batches are closed at source `8292ddea97473c9b9a1a70f2bb1c99dbaffe00a2`, with
+physical/native boundaries explicit. The objective and operating constraints above are preserved;
+no new broad audit or publication is authorized by completion.

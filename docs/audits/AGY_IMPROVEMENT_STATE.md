@@ -1,8 +1,36 @@
 # AGY improvement campaign: resume state
 
-Updated 2026-09-23. Goal: [autonomous local improvement](AGY_IMPROVEMENT_GOAL.md), active.
+Updated 2026-09-23. Goal: [autonomous local improvement](AGY_IMPROVEMENT_GOAL.md), complete.
 
 ## Current checkpoint — read this first
+
+The [completion assessment](AGY_CAMPAIGN_COMPLETION.md) closes the identified practical-priority
+campaign at source `8292ddea97473c9b9a1a70f2bb1c99dbaffe00a2`. The commit containing this state adds
+only completion documentation and scoped ledger updates. The original objective and all earlier
+checkpoints remain preserved. This is not full-file coverage or a physical robot-readiness claim.
+
+All named next leads have accepted fixes or explicit dispositions. Current source fingerprints,
+retained JUnit, generated-consumer evidence, native artifact hashes, NT4 observations and shutdown
+proof were checked. Latest save/editor regression suite: 116 passed; prior scoped tests are reused
+only for their recorded applicable source. No new runtime or native test was fabricated for closure.
+
+Root branch: `codex/studio-robot-feedback`; coordinator: `.codex-validation/agy-audit-coordination`.
+New evidence: coordinator `build/agy-completion-assessment/`; all prior evidence remains in place.
+No workers/builds/apps from this assessment remain running. Final read-only AGY reviewers:
+`gemini-completion-tuning` (`0863f0ec-b7f3-44a9-9610-949ee3f97177`) and
+`gemini-completion-editors` (`0a7727b6-32a9-4f11-ab7b-558b5f6b8328`), each Flash High/high, one turn.
+Both reports were independently checked; no worker completion label establishes repository correctness.
+
+Remaining boundaries: target-controller timing/electrical neutralization (hardware unavailable),
+native presentation of injected unhandled inspection failure (model regression exists), minor label
+wrapping, and unselected calibrations/crash scenarios. No measured net Codex quota saving is claimed.
+The next supported runtime action is controlled physical-controller acceptance when hardware exists.
+Publication remains unauthorized. Do not automatically resume a broad audit or start a release;
+use this record and the canonical AGY workflow if a new bounded campaign is requested.
+
+## Closed-batch history (preserved)
+
+### Previous checkpoint 8292ddea9 (completion assessment now closed)
 
 The commit containing this state closes the [Drivebase save ownership checkpoint](AGY_DRIVEBASE_SAVE_CHECKPOINT.md),
 based on `786074a44159de102c5339cee5ecce7fbbf061a4`. Later drafts/validation survive an earlier save;
@@ -29,8 +57,6 @@ source/test/native evidence; do not reopen a broad all-files audit or launch wor
 If a specific actionable defect remains, select that bounded task; otherwise perform the goal's
 requirement-by-requirement completion audit before changing status. Hardware is unavailable and native
 unhandled-inspection-exception presentation remains unverified. The autonomous goal stays active.
-
-## Closed-batch history (preserved)
 
 ### Previous checkpoint 786074a44 (superseded next action)
 
