@@ -1,6 +1,30 @@
 # AGY improvement campaign: resume state
 
 Updated 2026-09-23. Goal: [autonomous local improvement](AGY_IMPROVEMENT_GOAL.md), active.
+
+## Current checkpoint — read this first
+
+The commit containing this state closes the [rendered superstructure journey](AGY_RENDERED_SUPERSTRUCTURE_CHECKPOINT.md)
+and [delegation efficiency check](AGY_DELEGATION_EFFICIENCY.md), based on `1612a01a4`.
+Two pre-existing UI defects fixed; 70 focused tests pass; actual review/cancel/save/reload/discard and
+readiness update verified. Both owned Studio runs, snapshots and three AGY workers ended cleanly.
+No live handles or required cleanup remain. All changes are local; publication remains unauthorized.
+Coordinator: `.codex-validation/agy-audit-coordination`; root branch `codex/studio-robot-feedback`.
+Evidence: coordinator `build/agy-rendered-readiness/`. Preserve prior evidence and unrelated work.
+
+Latest workers: `gemini-superstructure-ui-review` (conversation `5f5342b7-9aff-4e4b-89de-564ee64617d5`),
+`gemini-readiness-ui-review` (`f5922e67-3002-4392-bdd6-d1a528c34d75`),
+`gemini-delegation-efficiency` (`36bc9be6-c84b-436c-bde0-b5e151872193`). All used Flash High/high.
+Do not copy worker patches over independent coordinator corrections. Prompt read limits were exceeded
+by the UI workers; use precise manifests, validate call chains before patches and inspect final diffs.
+
+Next action: reassess concrete remaining practical leads at this stable source. Native failed-readiness
+presentation and discard reload failures remain unverified; hardware is unavailable. Select only an
+actual failing workflow or measured bottleneck; if none remains actionable, close the goal with scoped
+limitations. Do not launch another broad pass or reread the closed-batch history below by default.
+
+## Closed-batch history (preserved)
+
 Baseline: protected release merge `9426ee3c86f331910b2ce1656e33c774506a44e1` (Studio 7.0.64,
 ARESLib 19.1.4); saved-workflow commit `674901bb3393d49c9b4ce6fb95c4999f82def77f`.
 New work is local only. Tuning checkpoint: `56c53cc60568855e00ca1c39c2f74c06996899e6`.
@@ -189,8 +213,7 @@ start. Source policy passes. All AGY workers and test sessions finished; no new 
 window was launched and no unrelated process was terminated.
 
 Keep the goal active. Before another assignment, verify branch/dirty state and process ownership.
-Next bounded action: verify current readiness refresh and superstructure save/reload in a rendered
-Studio operator journey, then reassess the documented practical backlog. ControlsEditor is
+That next rendered journey is now closed by the checkpoint above; reassess the documented practical backlog. ControlsEditor is
 synchronous in inspected paths and the unused persistence refresh has no production callers found.
 Intentional generation/execution snapshots need actual caller evidence before a change. Do not
 invent another broad pass or treat static no-defect findings as universal safety proof.

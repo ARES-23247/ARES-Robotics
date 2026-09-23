@@ -4642,7 +4642,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/SuperstructureStudioScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 272,
+      "lines": 299,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5692,7 +5692,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 738,
+      "lines": 742,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

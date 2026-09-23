@@ -63,10 +63,20 @@ workers on file tools and delegates build/Git commands to the coordinator's norm
 
 Record completed/failed tool calls, distinct/repeated source reads, final reported token counters,
 correction rounds and accepted changes. Deduplicate conversation/step IDs across continuation
-logs; final usage may be cumulative across turns. Treat cache and thinking counters as reported
+logs; final usage may be cumulative across turns. Merge partial tool updates by conversation/step ID,
+preserve terminal states, and select the latest cumulative result once. Session durations can include
+time between resumed turns; do not present them as worker compute time. Treat cache and thinking counters as reported
 metrics, not interchangeable billing units. Repeated reads may include necessary verification.
 Compare bounded worker briefs with prior broad briefs, and prefer reviewing finished patches over
-repeatedly reading live drafts. Preserve independent review: verify that tests fail on the defect,
+repeatedly reading live drafts. Prompt read limits are advisory, not enforced tool permissions.
+Require a concrete call chain and realistic reproduction before turning a review lead into a patch;
+trace the command boundary before labeling a presentation difference a safety defect. Supply exact
+existing test fixtures and completion predicates so workers avoid invented APIs and async false passes.
+Keep coordinator output compact: retain full logs on disk and report terminal summaries, relevant
+failures and reviewed diffs. At a checkpoint, put the current commit, live handles, next action and
+remaining blockers before historical detail in resume state. Do not reread closed-batch history unless
+new evidence requires it. Measure total work and accepted outcomes; parallelism alone proves neither
+less usage nor faster validation. Preserve independent review: verify that tests fail on the defect,
 check production visibility and resource cleanup, and compare claimed restores with actual diffs.
 
 Gemini processing does not itself invoke a Codex model, but orchestration/review still consumes

@@ -67,7 +67,7 @@ class SuperstructureStudioViewModel(
     fun reload(force: Boolean = false) {
         val starting = _state.value
         if (starting.dirty && !force) {
-            _state.update { it.copy(pendingSelectionId = it.selectedId, error = "Choose Reload again after discarding or save the current draft first.") }
+            _state.update { it.copy(pendingSelectionId = it.selectedId) }
             return
         }
         val generation = reloadGeneration.incrementAndGet()
@@ -204,7 +204,7 @@ class SuperstructureStudioViewModel(
 
     fun confirmDiscard() {
         val target = _state.value.pendingSelectionId
-        _state.update { it.copy(dirty = false, pendingSelectionId = null, error = null) }
+        _state.update { it.copy(dirty = false, review = null, pendingSelectionId = null, error = null) }
         if (target != null && target != _state.value.selectedId) select(target, force = true) else reload(force = true)
     }
 
@@ -541,7 +541,11 @@ class SuperstructureStudioViewModel(
             "Fault destination: ${draft.faultStateId}",
             "Disabled destination: ${draft.disabledStateId} (${draft.disabledPolicy.name.lowercase().replace('_', ' ')})",
         )
-        _state.value = state.copy(review = SuperstructureSaveReview(state.savedContentHash, candidateHash, token, summary), error = null)
+        _state.value = state.copy(
+            step = SuperstructureStudioStep.REVIEW,
+            review = SuperstructureSaveReview(state.savedContentHash, candidateHash, token, summary),
+            error = null,
+        )
     }
 
     fun dismissReview() = _state.update { it.copy(review = null) }
