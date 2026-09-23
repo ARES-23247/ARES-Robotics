@@ -5,7 +5,8 @@ Baseline: protected release merge `9426ee3c86f331910b2ce1656e33c774506a44e1` (St
 ARESLib 19.1.4); saved-workflow commit `674901bb3393d49c9b4ce6fb95c4999f82def77f`.
 New work is local only. Tuning checkpoint: `56c53cc60568855e00ca1c39c2f74c06996899e6`.
 Operator/guided checkpoint: `e5331cc7c5c3094160ae47c17180365a501fbd62`.
-The commit containing this state adds the workspace context and shared-session request correction.
+Workspace context checkpoint: `e93d927e84438e6c6c1171aec1b4913ee9ed74a9`.
+The commit containing this state adds field/drivebase session ownership and closes the native folder-switch check.
 
 | Role | Local branch/worktree | Ownership |
 | --- | --- | --- |
@@ -16,10 +17,13 @@ The commit containing this state adds the workspace context and shared-session r
 | Guided worker | `codex/gemini-guided-experiment-audit`, `.codex-validation/gemini-guided-experiment-audit` | Guided experiment asynchronous context and focused lifecycle regression |
 | Persistence worker | `codex/gemini-profile-persistence-audit`, `.codex-validation/gemini-profile-persistence-audit` | Bounded profile load/promotion failure review |
 | Workspace worker | `codex/gemini-workspace-lifetime-audit`, `.codex-validation/gemini-workspace-lifetime-audit` | Same-ID folder transition and Compose scope/model lifetimes |
+| Field-session worker | `codex/gemini-field-session-audit`, `.codex-validation/gemini-field-session-audit` | Field Editor asynchronous load/session ownership and focused regressions |
+| Drivebase-session worker | `codex/gemini-drivebase-session-audit`, `.codex-validation/gemini-drivebase-session-audit` | Drivebase load/reload ownership and reviewed-save regressions |
+| Caller-review worker | `codex/gemini-session-caller-review`, `.codex-validation/gemini-session-caller-review` | Read-only remaining session caller analysis; report only |
 | Promotion-context worker | `codex/gemini-promotion-context-audit`, `.codex-validation/gemini-promotion-context-audit` | Tuning load/review/promotion context |
 
 All workers used `gemini-3.8-flash-high`, effort `high`, and returned substantive final
-responses. The two latest workers ran in parallel with coordinator source/baseline validation. No worker is
+responses. The three latest workers ran in parallel with coordinator native UI and baseline validation. No worker is
 running or awaiting a correction. The user authorized up to three parallel
 AGY workers. The reusable workflow records verified manifests, bounded exploration and disjoint
 ownership; Codex owns tests and acceptance. Do not copy worker files back over the coordinator:
@@ -34,6 +38,9 @@ Final main conversations (retain these identifiers with the local evidence):
 - Persistence: `82f7fa7c-fe86-4588-a4e6-677943004aa5`, one turn.
 - Workspace: `354b5dba-47b1-4d35-b40c-8771cf747919`, two turns.
 - Promotion context: `3e29a629-8229-417c-9bcc-f9feed21d86c`, one turn.
+- Field session: `f3517140-ce0b-466e-ab58-e1c1390c8d4d`, two turns.
+- Drivebase session: `03f9bff5-dec0-4dd9-aa99-8fa233d2902b`, two turns.
+- Caller review: `709d49cf-cf6b-4cf6-9333-61dc4bfe7bcd`, two turns.
 
 Exact assignments, corrections and CLI streams remain in each worker's ignored
 `build/gemini-audit/`. Earlier shell escalation and unrelated path reads remained denied. The
@@ -111,14 +118,37 @@ a new native Studio window. Source-policy, CI classification, fingerprints and w
 are retained alongside the regression logs. All AGY workers and test sessions for this batch ended;
 unrelated processes remain untouched. Worker source must not overwrite coordinator corrections.
 
-Keep the goal active. Before another worker assignment, use this checkpoint and verify the branch,
-dirty state and process ownership. Next, trace other asynchronous ProjectSession callers to establish
-whether cancelled/superseded work can similarly change shared selection. This is a bounded review
-lead, not a conclusion that those callers are defective. A native folder-switch interaction remains
-separate from the completed Compose scene and real file/session regressions.
-Any following parallel batch must address distinct demonstrated risks with verified path manifests,
-disjoint ownership and bounded reads. Preserve the retained worker worktrees/evidence until no
-longer needed. Do not restart the audit-every-file campaign.
+The [editor session checkpoint](AGY_SESSION_CALLERS_CHECKPOINT.md) follows that lead. Field and
+drivebase obsolete loads reproduced shared-selection reversion on unchanged `e93d927e8`; drivebase
+also reproduced an old result replacing a newer draft/revision. Both callers now cancel superseded
+loads and check activity/generation inside the session lock. Constructors remain unchanged.
+Codex corrected worker fixture APIs, discard flow, barrier ordering and failure cleanup; no new
+false-cancellation defect was claimed. Baseline-final evidence is 7 tests with 4 intended assertion
+failures and 3 positive/control passes. The combined fixed suite passes 86 tests; generic FTC
+consumer integration passes 1 outer test and two fresh nested builds of 32 tests each. Source-policy
+passes. CI already selects app tests plus consumer roundtrip for app changes. No CI redesign.
+
+The actual Studio Profile Settings folder change was verified at `e93d927e8`: same workspace ID,
+A-to-B persisted path, Robot Studio selected folder and tuning source gain changing 0.08 to 0.12.
+All 24 canonical fixture files remained unchanged. Studio PID 42608, wrapper 46364, control port
+49324 and its runtime snapshot exited normally. This GUI run predates the new editor patches.
+All three AGY workers finished, including their requested corrections. Evidence lives in
+coordinator `build/agy-session-callers/` and each worker's `build/gemini-audit/`.
+
+Keep the goal active. Before another assignment, verify branch/dirty state and process ownership.
+Next bounded investigations: ProjectIdentity inspect/post-save snapshot ownership, and
+PathPlanner/RoutinePersistence refresh. Static review also found unguarded async snapshot paths
+in SubsystemGenerator and Superstructure; these are unproven leads, not accepted findings.
+The read-only worker's original protected classifications were rejected. Fixed model paths and
+local generation checks alone cannot prove protection for the shared session. Preserve both
+worker report revisions in the retained logs. Do not copy worker tests over coordinator corrections.
+
+Use up to three disjoint high-effort AGY workers with verified path manifests. Require tests that
+compile on unchanged baseline interfaces, actual DTO fixtures, discriminating old/new data and
+latch/scope cleanup on every failure. The latest 23/24/30 successful reads exceeded advisory
+budgets and each worker needed a correction; independent review remains necessary. Do not infer
+Codex quota savings from AGY counters or launch redundant workers merely to fill slots. Preserve
+old evidence/worktrees and do not restart the audit-every-file campaign.
 
 Physical neutralization, target-controller timing and unselected GUI paths remain unverified.
 The right-hand calibration selector's narrow labels are a deferred usability issue. The read

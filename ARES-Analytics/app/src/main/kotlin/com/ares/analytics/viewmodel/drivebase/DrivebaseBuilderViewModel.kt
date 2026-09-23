@@ -11,8 +11,11 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.Sha256
 import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresProjectMetadataCodec
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +23,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -38,6 +42,8 @@ class DrivebaseBuilderViewModel(
     private val canonicalProjectId = canonicalRuntimeProjectId(projectPath, projectId, league)
     private val _state = MutableStateFlow(DrivebaseBuilderState(projectPath, canonicalProjectId, league))
     val state: StateFlow<DrivebaseBuilderState> = _state.asStateFlow()
+    private val loadGeneration = AtomicLong()
+    private var loadJob: Job? = null
 
     init { onIntent(DrivebaseBuilderIntent.Reload) }
 
@@ -121,70 +127,102 @@ class DrivebaseBuilderViewModel(
         }
     }
 
-    private fun load() = scope.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
-        _state.update { it.copy(loading = true, error = null) }
-        val loaded = withContext(Dispatchers.IO) {
-            runCatching {
-                val state = _state.value
-                val sessionSnapshot = projectSession?.snapshot(
-                    state.projectPath,
-                    state.league.targetPlatform(),
-                    forceReload = true,
-                )
-                val saved = sessionSnapshot?.documents?.query?.drivetrains
-                    ?.also { require(it.size <= 1) { "This project has multiple drivetrain documents. Choose one explicitly before editing." } }
-                    ?.singleOrNull()
-                    ?.toUiDrivebase()
-                    ?: repository.load(state.projectPath).getOrThrow()
-                saved to sessionSnapshot?.revision
-            }
+    private fun load() {
+        val generation = loadGeneration.incrementAndGet()
+        loadJob?.cancel()
+        _state.update {
+            if (generation != loadGeneration.get()) it
+            else it.copy(loading = true, error = null)
         }
-        val result = loaded.map { it.first }
-        val sessionRevision = loaded.getOrNull()?.second
-        result.fold(
-            onSuccess = { saved ->
-                val draftResult = runCatching {
-                    if (saved == null) {
-                        defaultDrivebase(
-                            _state.value.projectId,
-                            defaultNoCodeDrivebaseKind(_state.value.league),
-                            _state.value.league,
-                        ).withRuntimeRequirements().requireCanonicalProjectIdentity(_state.value.projectId)
-                    } else {
-                        saved.requireCanonicalProjectIdentity(_state.value.projectId)
+        loadJob = scope.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+            if (generation != loadGeneration.get()) return@launch
+            val loaded = runCatching {
+                withContext(Dispatchers.IO) {
+                    if (generation != loadGeneration.get()) return@withContext null
+                    coroutineContext.ensureActive()
+                    val state = _state.value
+                    val sessionSnapshot = projectSession?.snapshot(
+                        state.projectPath,
+                        state.league.targetPlatform(),
+                        forceReload = true,
+                    ) {
+                        coroutineContext.ensureActive()
+                        if (generation != loadGeneration.get()) {
+                            throw CancellationException("Superseded drivebase project load")
+                        }
                     }
+                    if (generation != loadGeneration.get()) return@withContext null
+                    coroutineContext.ensureActive()
+                    val saved = sessionSnapshot?.documents?.query?.drivetrains
+                        ?.also { require(it.size <= 1) { "This project has multiple drivetrain documents. Choose one explicitly before editing." } }
+                        ?.singleOrNull()
+                        ?.toUiDrivebase()
+                        ?: repository.load(state.projectPath).getOrThrow()
+                    saved to sessionSnapshot?.revision
                 }
-                val draft = draftResult.getOrElse { failure ->
+            }
+            if (generation != loadGeneration.get()) return@launch
+            loaded.fold(
+                onSuccess = { pair ->
+                    if (pair == null || generation != loadGeneration.get()) return@fold
+                    val (saved, sessionRevision) = pair
+                    val draftResult = runCatching {
+                        if (saved == null) {
+                            defaultDrivebase(
+                                _state.value.projectId,
+                                defaultNoCodeDrivebaseKind(_state.value.league),
+                                _state.value.league,
+                            ).withRuntimeRequirements().requireCanonicalProjectIdentity(_state.value.projectId)
+                        } else {
+                            saved.requireCanonicalProjectIdentity(_state.value.projectId)
+                        }
+                    }
+                    val draft = draftResult.getOrElse { failure ->
+                        if (failure is CancellationException) throw failure
+                        _state.update {
+                            if (generation != loadGeneration.get()) it
+                            else it.copy(
+                                loading = false,
+                                error = failure.message ?: "Could not prepare the drivebase runtime contract.",
+                            )
+                        }
+                        return@fold
+                    }
+                    val tuningProfileRepairs = if (saved != null) {
+                        withContext(Dispatchers.IO) {
+                            if (generation != loadGeneration.get()) return@withContext emptyList()
+                            coroutineContext.ensureActive()
+                            repository.tuningProfileRepairIssues(_state.value.projectPath, draft)
+                        }
+                    } else emptyList()
+                    if (generation != loadGeneration.get()) return@fold
                     _state.update {
-                        it.copy(
+                        if (generation != loadGeneration.get()) it
+                        else it.copy(
+                            saved = saved,
+                            projectRevision = sessionRevision,
+                            draft = draft,
+                            issues = validateDrivebaseForLeague(draft, it.league),
                             loading = false,
-                            error = failure.message ?: "Could not prepare the drivebase runtime contract.",
+                            dirty = tuningProfileRepairs.isNotEmpty(),
+                            tuningProfileRepairIssues = tuningProfileRepairs,
+                            status = if (tuningProfileRepairs.isNotEmpty()) {
+                                "ARES prepared tuning assignments affected by the current drivebase declaration for review. Open Safety & Review to inspect and save them."
+                            } else "",
+                            error = null,
+                            selectedHardwareId = null,
                         )
                     }
-                    return@fold
+                },
+                onFailure = { failure ->
+                    if (failure is CancellationException) throw failure
+                    _state.update {
+                        if (generation != loadGeneration.get()) it
+                        else it.copy(loading = false, error = failure.message ?: "Could not load the drivebase document.")
+                    }
                 }
-                val tuningProfileRepairs = if (saved != null) {
-                    withContext(Dispatchers.IO) { repository.tuningProfileRepairIssues(_state.value.projectPath, draft) }
-                } else emptyList()
-                _state.update {
-                    it.copy(
-                        saved = saved,
-                        projectRevision = sessionRevision,
-                        draft = draft,
-                        issues = validateDrivebaseForLeague(draft, it.league),
-                        loading = false,
-                        dirty = tuningProfileRepairs.isNotEmpty(),
-                        tuningProfileRepairIssues = tuningProfileRepairs,
-                        status = if (tuningProfileRepairs.isNotEmpty()) {
-                            "ARES prepared tuning assignments affected by the current drivebase declaration for review. Open Safety & Review to inspect and save them."
-                        } else "",
-                        error = null,
-                        selectedHardwareId = null,
-                    )
-                }
-            },
-            onFailure = { failure -> _state.update { it.copy(loading = false, error = failure.message ?: "Could not load the drivebase document.") } }
-        )
+            )
+        }
     }
 
     private fun edit(candidate: DrivebaseDocument) = _state.update {

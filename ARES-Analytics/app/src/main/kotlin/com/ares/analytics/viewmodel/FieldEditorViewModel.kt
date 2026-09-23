@@ -45,6 +45,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,7 +84,8 @@ class FieldEditorViewModel(
 
     private val saveMutex = Mutex()
     private var saveJob: Job? = null
-    private var loadGeneration = 0L
+    private var loadJob: Job? = null
+    private val loadGeneration = AtomicLong(0L)
     private var activeProjectPath: String? = null
     private var activeLeague: League = League.FTC
     private val history = FieldEditorHistory()
@@ -171,17 +173,22 @@ class FieldEditorViewModel(
     }
 
     private fun load(projectPath: String?, league: League) {
+        val generation = loadGeneration.incrementAndGet()
+        loadJob?.cancel()
+        saveJob?.cancel()
         activeProjectPath = projectPath
         activeLeague = league
-        saveJob?.cancel()
-        val generation = ++loadGeneration
-        _state.update { it.copy(isLoading = true, errorMessage = null, saveStatus = "") }
-        scope.launch {
+        _state.update {
+            if (generation != loadGeneration.get()) it
+            else it.copy(isLoading = true, errorMessage = null, saveStatus = "")
+        }
+        loadJob = scope.launch {
+            if (generation != loadGeneration.get()) return@launch
             try {
                 if (projectPath.isNullOrBlank()) {
                     val imageConfig = FieldDocumentMapper.defaultImageConfig(league)
                     val document = FieldDocumentMapper.newDocument(league, imageConfig)
-                    if (generation == loadGeneration) {
+                    if (generation == loadGeneration.get()) {
                         installLoadedState(
                             FieldEditorState(
                                 document = document,
@@ -194,15 +201,32 @@ class FieldEditorViewModel(
                 }
 
                 val (loaded, projectRevision) = withContext(Dispatchers.IO) {
-                    val snapshot = projectSession?.snapshot(projectPath, league.targetPlatform(), forceReload = true)
+                    coroutineContext.ensureActive()
+                    if (generation != loadGeneration.get()) {
+                        throw CancellationException("Superseded field project load")
+                    }
+                    val snapshot = projectSession?.snapshot(projectPath, league.targetPlatform(), forceReload = true) {
+                        coroutineContext.ensureActive()
+                        if (generation != loadGeneration.get()) {
+                            throw CancellationException("Superseded field project load")
+                        }
+                    }
+                    coroutineContext.ensureActive()
+                    if (generation != loadGeneration.get()) {
+                        throw CancellationException("Superseded field project load")
+                    }
                     val field = snapshot?.documents?.query?.field
                     (field?.let(FieldDocumentStore::fromDocument) ?: FieldDocumentStore.load(projectPath, league)) to
                         snapshot?.revision
                 }
                 val bitmapResult = withContext(Dispatchers.IO) {
+                    coroutineContext.ensureActive()
+                    if (generation != loadGeneration.get()) {
+                        throw CancellationException("Superseded field project load")
+                    }
                     FieldImageLoader.load(projectPath, league, loaded.imageConfig.imagePath)
                 }
-                if (generation == loadGeneration) {
+                if (generation == loadGeneration.get()) {
                     installLoadedState(FieldEditorState(
                         document = loaded.document,
                         projectRevision = projectRevision,
@@ -220,7 +244,7 @@ class FieldEditorViewModel(
                 }
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
-                if (generation == loadGeneration) {
+                if (generation == loadGeneration.get()) {
                     _state.update {
                         it.copy(isLoading = false, errorMessage = error.message ?: "Failed to load field layout")
                     }
