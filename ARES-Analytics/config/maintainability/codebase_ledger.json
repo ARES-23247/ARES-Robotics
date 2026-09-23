@@ -5282,7 +5282,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 688,
+      "lines": 699,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

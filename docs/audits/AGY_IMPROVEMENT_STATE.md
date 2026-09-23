@@ -4,6 +4,36 @@ Updated 2026-09-23. Goal: [autonomous local improvement](AGY_IMPROVEMENT_GOAL.md
 
 ## Current checkpoint — read this first
 
+The commit containing this state closes the [editor failure recovery checkpoint](AGY_FAILURE_RECOVERY_CHECKPOINT.md),
+based on `85194cedfb1e1512be67d4ad65ee6227b928e4f0`. Superstructure and Drivebase preserve dirty drafts
+on failed discard reload; Drivebase rejects late read publication over newer state. All 108 focused
+checks pass. Native expected metadata failure/recovery passed at base 85194cedf; the 12 canonical
+fixture files were restored exactly. No new hardware or robot-performance evidence is claimed.
+
+All three workers, the owned Studio run, port 49327 and runtime snapshot ended cleanly. No live handles
+or required cleanup remain. All changes stay local; publication remains unauthorized. Coordinator:
+`.codex-validation/agy-audit-coordination`; root branch `codex/studio-robot-feedback`. Evidence:
+coordinator `build/agy-failure-recovery/`. Preserve previous evidence and unrelated processes/work.
+
+Latest external AGY workers, all Flash High/high:
+`gemini-discard-recovery` (`457af168-b7fe-4857-b60b-75741d812927`, one turn),
+`gemini-editor-discard-review` (`1c312857-516e-4f2e-aa8b-ad1266adec80`, three turns),
+`gemini-readiness-recovery-review` (`798e4e31-6454-41c9-bdf5-77529c854d7a`, one turn).
+Do not copy worker patches over independently corrected coordinator code/tests. Successful reads /
+distinct paths: 6/4, 32/8, 7/7; repeated reads and fixture corrections remain an efficiency cost.
+These are diagnostics, not proof of Codex quota savings.
+
+Next action: investigate the concrete Drivebase pending-save lead recorded in the checkpoint.
+`confirmSave` publishes after IO without a newer-state guard; trace actual enabled controls and
+reproduce later-edit/operation loss before changing it. This batch covers old reload after newer save,
+not old save after newer edits. Native unhandled inspection-exception presentation is still unverified;
+expected invalid-metadata diagnostics now have native evidence. Hardware remains unavailable.
+Keep the autonomous goal active; use bounded practical-impact work, not an all-files campaign.
+
+## Closed-batch history (preserved)
+
+### Previous checkpoint 85194cedf (superseded next action)
+
 The commit containing this state closes the [rendered superstructure journey](AGY_RENDERED_SUPERSTRUCTURE_CHECKPOINT.md)
 and [delegation efficiency check](AGY_DELEGATION_EFFICIENCY.md), based on `1612a01a4`.
 Two pre-existing UI defects fixed; 70 focused tests pass; actual review/cancel/save/reload/discard and
@@ -22,8 +52,6 @@ Next action: reassess concrete remaining practical leads at this stable source. 
 presentation and discard reload failures remain unverified; hardware is unavailable. Select only an
 actual failing workflow or measured bottleneck; if none remains actionable, close the goal with scoped
 limitations. Do not launch another broad pass or reread the closed-batch history below by default.
-
-## Closed-batch history (preserved)
 
 Baseline: protected release merge `9426ee3c86f331910b2ce1656e33c774506a44e1` (Studio 7.0.64,
 ARESLib 19.1.4); saved-workflow commit `674901bb3393d49c9b4ce6fb95c4999f82def77f`.

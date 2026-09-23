@@ -119,7 +119,7 @@ class DrivebaseBuilderViewModel(
     private fun confirmDiscard() {
         val action = _state.value.pendingDiscardAction
         val kind = _state.value.pendingKind
-        _state.update { it.copy(pendingDiscardAction = null, pendingKind = null, dirty = false) }
+        _state.update { it.copy(pendingDiscardAction = null, pendingKind = null, saveReview = null) }
         when (action) {
             DrivebaseDiscardAction.RELOAD -> load()
             DrivebaseDiscardAction.CHANGE_KIND -> kind?.let { edit(drivebaseForKind(_state.value, it)) }
@@ -129,6 +129,7 @@ class DrivebaseBuilderViewModel(
 
     private fun load() {
         val generation = loadGeneration.incrementAndGet()
+        val startState = _state.value
         loadJob?.cancel()
         _state.update {
             if (generation != loadGeneration.get()) it
@@ -196,22 +197,32 @@ class DrivebaseBuilderViewModel(
                         }
                     } else emptyList()
                     if (generation != loadGeneration.get()) return@fold
-                    _state.update {
-                        if (generation != loadGeneration.get()) it
-                        else it.copy(
-                            saved = saved,
-                            projectRevision = sessionRevision,
-                            draft = draft,
-                            issues = validateDrivebaseForLeague(draft, it.league),
-                            loading = false,
-                            dirty = tuningProfileRepairs.isNotEmpty(),
-                            tuningProfileRepairIssues = tuningProfileRepairs,
-                            status = if (tuningProfileRepairs.isNotEmpty()) {
-                                "ARES prepared tuning assignments affected by the current drivebase declaration for review. Open Safety & Review to inspect and save them."
-                            } else "",
-                            error = null,
-                            selectedHardwareId = null,
-                        )
+                    _state.update { current ->
+                        if (generation != loadGeneration.get()) current
+                        else {
+                            val mutatedSinceStart = current.draft != startState.draft ||
+                                current.saved != startState.saved ||
+                                current.saveReview != startState.saveReview ||
+                                current.projectRevision != startState.projectRevision
+                            if (mutatedSinceStart) {
+                                current.copy(loading = false)
+                            } else {
+                                current.copy(
+                                    saved = saved,
+                                    projectRevision = sessionRevision,
+                                    draft = draft,
+                                    issues = validateDrivebaseForLeague(draft, current.league),
+                                    loading = false,
+                                    dirty = tuningProfileRepairs.isNotEmpty(),
+                                    tuningProfileRepairIssues = tuningProfileRepairs,
+                                    status = if (tuningProfileRepairs.isNotEmpty()) {
+                                        "ARES prepared tuning assignments affected by the current drivebase declaration for review. Open Safety & Review to inspect and save them."
+                                    } else "",
+                                    error = null,
+                                    selectedHardwareId = null,
+                                )
+                            }
+                        }
                     }
                 },
                 onFailure = { failure ->

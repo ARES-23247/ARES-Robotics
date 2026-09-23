@@ -204,7 +204,7 @@ class SuperstructureStudioViewModel(
 
     fun confirmDiscard() {
         val target = _state.value.pendingSelectionId
-        _state.update { it.copy(dirty = false, review = null, pendingSelectionId = null, error = null) }
+        _state.update { it.copy(review = null, pendingSelectionId = null, error = null) }
         if (target != null && target != _state.value.selectedId) select(target, force = true) else reload(force = true)
     }
 
