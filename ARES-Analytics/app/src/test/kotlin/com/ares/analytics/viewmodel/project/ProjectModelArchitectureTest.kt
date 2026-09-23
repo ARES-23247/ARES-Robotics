@@ -422,11 +422,18 @@ class ProjectModelArchitectureTest {
                 "projectSession = services.projectSession" in construction,
                 "$constructor must receive the application ProjectSession instead of reconstructing project meaning.",
             )
+            val rememberStart = workspaceGraph.lastIndexOf("remember(", start)
+            assertTrue(rememberStart >= 0, "$constructor must be retained by a workspace remember key.")
+            val rememberEnd = workspaceGraph.indexOf(')', rememberStart)
+            assertTrue(
+                "projectKey" in workspaceGraph.substring(rememberStart, rememberEnd),
+                "$constructor must be recreated when the workspace project identity changes.",
+            )
         }
 
         assertTrue(
-            "remember(config.id)" in workspaceGraph,
-            "Workspace-scoped view models must be recreated when the selected workspace changes.",
+            "val projectKey = config.projectKey()" in workspaceGraph,
+            "Workspace ownership must include the canonical project context, not only the workspace ID.",
         )
     }
 

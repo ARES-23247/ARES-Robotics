@@ -20,9 +20,12 @@ import com.areslib.project.AresLeague
 import com.areslib.project.AresProjectAuthoringModel
 import com.areslib.simulation.SimulationProductId
 import com.ares.analytics.domain.project.controlsCoverage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.coroutines.coroutineContext
 
 /** Canonical project evidence used by Robot Studio. No field represents physical validation. */
 data class RobotProjectReadinessEvidence(
@@ -77,7 +80,12 @@ class RobotProjectReadinessService(
     private val projectSession: ProjectSession = ProjectSession(),
     private val hardwareSetupService: HardwareSetupService = HardwareSetupService(),
 ) {
-    suspend fun inspect(config: WorkspaceConfig): RobotProjectReadinessEvidence = withContext(Dispatchers.IO) {
+    suspend fun inspect(
+        config: WorkspaceConfig,
+        checkRequest: () -> Unit = {},
+    ): RobotProjectReadinessEvidence = withContext(Dispatchers.IO) {
+        coroutineContext.ensureActive()
+        checkRequest()
         val projectError = ProjectLayout.validationError(config.projectPath, config.league)
         if (projectError != null) {
             return@withContext RobotProjectReadinessEvidence(
@@ -92,11 +100,24 @@ class RobotProjectReadinessService(
             League.FRC -> ControllerInputPlatform.FRC
             League.XRP -> ControllerInputPlatform.XRP
         }
+        coroutineContext.ensureActive()
+        checkRequest()
+        val ioContext = coroutineContext
         val projectSnapshot = runCatching {
-            projectSession.snapshot(config.projectPath, targetPlatform, forceReload = true)
+            projectSession.snapshot(
+                projectPath = config.projectPath,
+                targetPlatform = targetPlatform,
+                forceReload = true,
+                checkRequest = {
+                    ioContext.ensureActive()
+                    checkRequest()
+                },
+            )
         }
+        val snapshotFailureException = projectSnapshot.exceptionOrNull()
+        if (snapshotFailureException is CancellationException) throw snapshotFailureException
         val snapshot = projectSnapshot.getOrNull()?.documents
-        val snapshotFailure = projectSnapshot.exceptionOrNull()?.message
+        val snapshotFailure = snapshotFailureException?.message
         val diagnostics = snapshot?.diagnostics.orEmpty()
 
         val project = snapshot?.query
@@ -131,12 +152,20 @@ class RobotProjectReadinessService(
             )
         }
         val tuning = tuningResult.getOrNull()
+
+        coroutineContext.ensureActive()
+        checkRequest()
         val hardwareResult = runCatching { hardwareSetupService.inspect(config.projectPath, config.league) }
+        val hardwareException = hardwareResult.exceptionOrNull()
+        if (hardwareException is CancellationException) throw hardwareException
         val hardware = hardwareResult.getOrNull()
         val hardwareErrors = buildList {
             hardwareResult.exceptionOrNull()?.message?.let(::add)
             addAll(hardware?.errorIssues.orEmpty().map { it.message })
         }.distinct()
+
+        coroutineContext.ensureActive()
+        checkRequest()
         val matchingRuns = databaseService.getSessions().count { session ->
             session.teamId == config.teamId &&
                 session.seasonId == config.seasonId &&

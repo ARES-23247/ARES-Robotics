@@ -3,6 +3,7 @@ package com.ares.analytics.viewmodel.robotstudio
 import com.ares.analytics.service.RobotProjectReadinessEvidence
 import com.ares.analytics.service.RobotProjectReadinessService
 import com.ares.analytics.shared.models.WorkspaceConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 
 /** Read-only project orchestrator. Specialized builders remain the sole writers of canonical files. */
 class RobotStudioViewModel(
@@ -26,11 +28,12 @@ class RobotStudioViewModel(
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, RobotStudioState().toShellState())
 
+    @Volatile
     private var config: WorkspaceConfig? = null
     private var evidence: RobotProjectReadinessEvidence? = null
     private var runtime = RobotStudioRuntimeEvidence()
     private var refreshJob: Job? = null
-    private var refreshGeneration = 0L
+    private val refreshGeneration = AtomicLong(0L)
 
     fun load(workspace: WorkspaceConfig) {
         config = workspace
@@ -39,8 +42,9 @@ class RobotStudioViewModel(
 
     fun refresh() {
         val selected = config ?: return
-        val generation = ++refreshGeneration
+        val generation = refreshGeneration.incrementAndGet()
         refreshJob?.cancel()
+        evidence = null
         _state.value = _state.value.copy(
             loading = true,
             projectName = selected.robotName.ifBlank { selected.robotId },
@@ -48,20 +52,25 @@ class RobotStudioViewModel(
             error = null,
         )
         refreshJob = scope.launch {
-            runCatching { readinessService.inspect(selected) }
-                .onSuccess { inspected ->
-                    if (generation != refreshGeneration || config?.id != selected.id) return@onSuccess
-                    evidence = inspected
-                    publish(selected, inspected)
+            try {
+                val inspected = readinessService.inspect(selected) {
+                    if (generation != refreshGeneration.get() || config != selected) {
+                        throw CancellationException("Robot Studio inspection superseded")
+                    }
                 }
-                .onFailure { error ->
-                    if (generation != refreshGeneration || config?.id != selected.id) return@onFailure
-                    _state.value = _state.value.copy(
-                        loading = false,
-                        stages = emptyList(),
-                        error = error.message ?: "Robot Studio could not inspect this project. Check the selected folder, then refresh.",
-                    )
-                }
+                if (generation != refreshGeneration.get() || config != selected) return@launch
+                evidence = inspected
+                publish(selected, inspected)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Exception) {
+                if (generation != refreshGeneration.get() || config != selected) return@launch
+                _state.value = _state.value.copy(
+                    loading = false,
+                    stages = emptyList(),
+                    error = error.message ?: "Robot Studio could not inspect this project. Check the selected folder, then refresh.",
+                )
+            }
         }
     }
 
@@ -69,7 +78,10 @@ class RobotStudioViewModel(
         if (runtime == updated) return
         runtime = updated
         val selected = config ?: return
-        evidence?.let { publish(selected, it) }
+        val currentEvidence = evidence ?: return
+        if (currentEvidence.projectPath != selected.projectPath) return
+        if (_state.value.loading) return
+        publish(selected, currentEvidence)
     }
 
     private fun publish(selected: WorkspaceConfig, inspected: RobotProjectReadinessEvidence) {

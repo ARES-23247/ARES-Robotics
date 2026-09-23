@@ -1072,7 +1072,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/RobotProjectReadinessService.kt",
       "product": "ARES-Analytics",
-      "lines": 232,
+      "lines": 261,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5502,7 +5502,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/robotstudio/RobotStudioViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 88,
+      "lines": 100,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5692,7 +5692,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 669,
+      "lines": 738,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

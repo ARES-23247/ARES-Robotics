@@ -7,7 +7,8 @@ New work is local only. Tuning checkpoint: `56c53cc60568855e00ca1c39c2f74c069968
 Operator/guided checkpoint: `e5331cc7c5c3094160ae47c17180365a501fbd62`.
 Workspace context checkpoint: `e93d927e84438e6c6c1171aec1b4913ee9ed74a9`.
 Editor session checkpoint: `484f29b295327134519b68800ba9abac0a0bae7b`.
-The commit containing this state adds identity, planner and subsystem session ownership guards.
+Project-owner checkpoint: `fdf2c7e682de242912187b324add2de3b9cef4ef`.
+The commit containing this state adds readiness and superstructure ownership fixes and corrects a stale architecture assertion.
 
 | Role | Local branch/worktree | Ownership |
 | --- | --- | --- |
@@ -25,6 +26,9 @@ The commit containing this state adds identity, planner and subsystem session ow
 | Identity-session worker | `codex/gemini-identity-session-audit`, `.codex-validation/gemini-identity-session-audit` | Identity inspection and post-save refresh ownership |
 | Planner-session worker | `codex/gemini-planner-session-audit`, `.codex-validation/gemini-planner-session-audit` | Planner/routine persistence refresh ownership |
 | Subsystem-session worker | `codex/gemini-subsystem-session-audit`, `.codex-validation/gemini-subsystem-session-audit` | Subsystem reload scope/job ownership and draft controls |
+| Readiness-session worker | `codex/gemini-readiness-session-audit`, `.codex-validation/gemini-readiness-session-audit` | Readiness inspection and RobotStudio runtime-evidence lifecycle |
+| Superstructure-session worker | `codex/gemini-superstructure-session-audit`, `.codex-validation/gemini-superstructure-session-audit` | Superstructure reload/save draft and revision ownership |
+| Entrypoint-review worker | `codex/gemini-session-entrypoint-review`, `.codex-validation/gemini-session-entrypoint-review` | Read-only remaining synchronous/authorization caller review |
 
 All workers used `gemini-3.8-flash-high`, effort `high`, and returned substantive final
 responses. The three latest workers ran in parallel with coordinator baseline validation and caller review. No worker is
@@ -48,6 +52,9 @@ Final main conversations (retain these identifiers with the local evidence):
 - Identity session: `5c96bb92-f250-4d52-be28-84c9a91c63ce`, one turn.
 - Planner session: `35c1a1d8-624b-49b3-ad40-b473e8d662cd`, one turn.
 - Subsystem session: `946c29c5-7dcb-43fc-9a77-e93203ae94af`, two turns.
+- Readiness session: `f8b3f5d8-159d-4819-8562-02901ef1c4a4`, two turns.
+- Superstructure session: `758c4f2e-6677-427d-b360-153b8c4f0178`, two turns.
+- Entrypoint review: `952106f3-de90-41a9-b6b0-2f394b5596df`, one turn.
 
 Exact assignments, corrections and CLI streams remain in each worker's ignored
 `build/gemini-audit/`. Earlier shell escalation and unrelated path reads remained denied. The
@@ -158,19 +165,42 @@ The generic FTC consumer evidence from `484f29b29` is reused because generator/l
 contracts did not change; affected editor and authoring/save callers were checked in the 141 tests.
 All three workers and test sessions ended. No unrelated process was terminated.
 
+The [readiness/superstructure checkpoint](AGY_READINESS_SUPERSTRUCTURE_CHECKPOINT.md) closes those
+model investigations against unchanged `fdf2c7e68`. Thirteen distinct new scenarios include eleven
+intended baseline assertion failures and two normal controls; the final combined suite passes 121
+tests. Readiness rejects obsolete session access and cached evidence during pending/failed refresh.
+Superstructure binds documents to their returned revision and preserves newer saves, reloads, drafts
+and input errors. Completed writes/history remain intact. No wrong-project file write was observed.
+Codex corrected worker coroutine/test APIs, permanent-collector cleanup, platform fallback and
+late-result ownership; initial worker patches must not overwrite accepted coordinator files.
+
+The baseline also exposed one audit-introduced stale architecture assertion from `e93d927e8`:
+it still expected remember(config.id), while production already used projectKey. The updated
+per-constructor key/session check and existing behavioral Compose workspace test pass (17 tests).
+The full baseline was 61 tests with just that assertion failing. The read-only worker found no
+demonstrated remaining entrypoint defect. Its invented preview caller and overly broad lock claim
+were rejected; preserve original report and independent disposition in the local evidence.
+
+Evidence is in coordinator `build/agy-readiness-superstructure/`: baseline variants, architecture
+correction, final 121-test JUnit, generated consumer results, worker metrics, caller notes and
+policy/CI/ledger verification. The fresh generic FTC consumer roundtrip passes one outer test and
+two nested TeamCode/simulator builds of 32 tests each, with retained XML checked against the run
+start. Source policy passes. All AGY workers and test sessions finished; no new native Studio
+window was launched and no unrelated process was terminated.
+
 Keep the goal active. Before another assignment, verify branch/dirty state and process ownership.
-Next bounded reproductions: RobotProjectReadinessService inspection through RobotStudioViewModel,
-and SuperstructureStudioViewModel asynchronous reload/post-save revision ownership. These remain
-unproven leads. ControlsEditor is synchronous in inspected paths; the unused persistence helper
-has no production callsites found. Intentional generation/execution authorization snapshots need
-actual caller evidence before a change. Preserve prior read-only report revisions; fixed model
-paths and UI-only generation checks do not prove shared-session protection.
+Next bounded action: verify current readiness refresh and superstructure save/reload in a rendered
+Studio operator journey, then reassess the documented practical backlog. ControlsEditor is
+synchronous in inspected paths and the unused persistence refresh has no production callers found.
+Intentional generation/execution snapshots need actual caller evidence before a change. Do not
+invent another broad pass or treat static no-defect findings as universal safety proof.
 
 Use up to three disjoint high-effort AGY workers with verified path manifests. Require tests that
 compile on unchanged baseline interfaces, actual DTO fixtures, discriminating old/new data and
-latch/scope cleanup on every failure. The latest 18/19/16 successful reads still exceeded advisory
-budgets; the subsystem worker needed a correction round and all patches needed coordinator review.
-These tasks differ from the previous 23/24/30-read batch, so no controlled speedup is claimed. Do not infer
+latch/scope cleanup on every failure. Account for permanent StateFlow collectors when joining
+request work; cancel/join whole scopes for cleanup. Latest readiness/superstructure/entrypoint reads
+were 22/50/32, with two source workers needing correction rounds and independent fixes. This does
+not establish improved delegation efficiency. Use precise follow-up excerpts and real DTO APIs. Do not infer
 Codex quota savings from AGY counters or launch redundant workers merely to fill slots. Preserve
 old evidence/worktrees and do not restart the audit-every-file campaign.
 
