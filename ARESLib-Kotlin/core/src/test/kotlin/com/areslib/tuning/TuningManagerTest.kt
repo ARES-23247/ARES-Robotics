@@ -21,7 +21,25 @@ class TuningManagerTest {
         assertEquals(1.0, fixture.telemetry.numbers["$root/Default"])
         assertEquals(2.0, fixture.telemetry.numbers["$root/Canonical"])
         assertEquals(2.0, fixture.telemetry.numbers["$root/Current"])
-        assertEquals(2.0, fixture.telemetry.numbers["$root/Requested"])
+        assertFalse(fixture.telemetry.numbers.containsKey("$root/Requested"))
+        assertFalse(fixture.telemetry.numbers.containsKey("$root/RequestNonce"))
+        fixture.armed = true
+        fixture.manager.update(1_000L)
+        assertTrue(fixture.applied.isEmpty(), "Missing client topics must remain idle even while armed")
+        assertEquals(-1.0, fixture.telemetry.numbers["$root/ProcessedNonce"])
+        assertEquals("IDLE", fixture.telemetry.strings["$root/LastResult"])
+    }
+
+    @Test
+    fun `nonce without a requested value rejects without applying a robot seeded default`() {
+        val fixture = fixture(TuningApplyPolicy.LIVE_SAFE)
+        val root = "Tuning/Parameters/drive.heading.kp"
+        fixture.armed = true
+        fixture.telemetry.numbers["$root/RequestNonce"] = 1.0
+        fixture.manager.update(1_000L)
+        assertTrue(fixture.applied.isEmpty())
+        assertEquals(2.0, fixture.runtime.double("drive.heading.kp"))
+        assertEquals("INVALID_VALUE", fixture.telemetry.strings["$root/LastResult"])
     }
 
     @Test

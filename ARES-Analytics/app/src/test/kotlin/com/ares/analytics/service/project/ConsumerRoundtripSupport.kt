@@ -78,14 +78,19 @@ internal class ConsumerRoundtripBuild(
     private fun retainEvidence(project: File) {
         val root = System.getProperty("ares.consumer.evidenceDir")?.let(::File) ?: return
         val evidence = File(root, evidenceName).apply { mkdirs() }
-        File(evidence, "operation-${++operation}.txt").writeText(buildString {
+        val operationNumber = ++operation
+        File(evidence, "operation-$operationNumber.txt").writeText(buildString {
             appendLine(service.aresGenerationState.value)
             appendLine(service.processState.value.buildExecution)
             service.buildOutput.replayCache.forEach { appendLine(it) }
         })
-        for (path in listOf("TeamCode/build/test-results", "simulator/build/test-results")) {
+        for (path in listOf("TeamCode/build/test-results", "simulator/build/test-results", "simulator/src/test/resources/tuning-wire", "simulator/build/tuning-wire-reply")) {
             val source = File(project, path)
-            if (source.isDirectory) source.copyRecursively(File(evidence, path), overwrite = true)
+            if (source.isDirectory) {
+                source.copyRecursively(File(evidence, path), overwrite = true)
+                // Preserve each build separately: the two saved gains must both remain inspectable.
+                source.copyRecursively(File(evidence, "operation-$operationNumber/$path"), overwrite = true)
+            }
         }
     }
 }
@@ -111,21 +116,34 @@ internal fun consumerCanonicalSnapshot(project: File): Map<String, String> {
         .associate { it.relativeTo(ares).invariantSeparatorsPath to Sha256.fileHex(it) }
 }
 
-internal fun saveConsumerHeadingGain(session: ProjectSession, project: File, gain: Double) {
+internal fun saveConsumerHeadingGain(session: ProjectSession, project: File, gain: Double, derivativeGain: Double = 0.0) {
     val snapshot = session.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true)
     val declarations = snapshot.documents.query.tuningParameters
     val profile = snapshot.documents.query.tuningProfiles.single { it.profileId == "simulation" }
+    check(snapshot.documents.query.drivetrains.single().canonicalProfileUid == profile.uid) {
+        "The saved profile must be the drivetrain canonical profile"
+    }
     val parameter = declarations.single { it.uid == "ftc.drive.heading.kp" }
-    val change = TuningProfileChange(
-        parameterUid = parameter.uid, key = parameter.key, displayName = parameter.displayName,
-        before = profile.values.single { it.parameterUid == parameter.uid }.value,
-        after = TuningValue(doubleValue = gain), unit = parameter.unit.orEmpty(),
-        owner = TuningValueOwner.ROBOT_PROFILE, policy = parameter.applyPolicy,
-        provenance = TuningValueProvenance("integration fixture", "Independent expected heading gain"),
+    val kdParam = declarations.single { it.uid == "ftc.drive.heading.kd" }
+    val changes = listOf(
+        TuningProfileChange(
+            parameterUid = parameter.uid, key = parameter.key, displayName = parameter.displayName,
+            before = profile.values.single { it.parameterUid == parameter.uid }.value,
+            after = TuningValue(doubleValue = gain), unit = parameter.unit.orEmpty(),
+            owner = TuningValueOwner.ROBOT_PROFILE, policy = parameter.applyPolicy,
+            provenance = TuningValueProvenance("integration fixture", "Independent expected heading gain"),
+        ),
+        TuningProfileChange(
+            parameterUid = kdParam.uid, key = kdParam.key, displayName = kdParam.displayName,
+            before = profile.values.single { it.parameterUid == kdParam.uid }.value,
+            after = TuningValue(doubleValue = derivativeGain), unit = kdParam.unit.orEmpty(),
+            owner = TuningValueOwner.ROBOT_PROFILE, policy = kdParam.applyPolicy,
+            provenance = TuningValueProvenance("integration fixture", "Pure proportional heading test"),
+        ),
     )
     val result = session.promoteTuningProfile(
         snapshot.revision, profile, TuningProfileDocumentCodec.contentHash(profile, declarations),
-        declarations, listOf(change), "consumer roundtrip test", "Verify saved configuration through export and reopen",
+        declarations, changes, "consumer roundtrip test", "Verify saved configuration through export and reopen",
     )
     check(result is ProjectSessionMutationResult.Applied) { "Tuning save failed: $result" }
 }

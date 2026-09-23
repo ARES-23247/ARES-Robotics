@@ -6,21 +6,21 @@ import com.ares.analytics.service.BuildExecutionPhase
 import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.util.Sha256
-import com.areslib.catalog.CapabilityCatalogCodec
+import com.areslib.controls.ControlBindingDocument
+import com.areslib.controls.ControlEvent
 import com.areslib.controls.ControlSchemeCodec
+import com.areslib.controls.ControlSourceDocument
+import com.areslib.controls.ControlSourceKind
+import com.areslib.controls.ControlTargetDocument
+import com.areslib.controls.ControlTargetKind
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.project.AresProjectMetadataCodec
-import com.areslib.routine.AresRoutineCodec
-import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineStep
 import com.areslib.subsystem.SubsystemDocumentCodec
-import com.areslib.tuning.TuningProfileDocumentCodec
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import java.io.File
@@ -78,7 +78,7 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         //    (C) Tuning settings (heading kP = 2.40)
         saveConsumerHeadingGain(initialSession, project, 2.4)
 
-        //    (D) Control settings (deadband = 0.10)
+        //    (D) Control settings (deadband = 0.10, bind Y button to enable heading lock)
         val controlsFile = File(project, ".ares/controls/driver.arescontrols")
         val originalControls = ControlSchemeCodec.decode(controlsFile.readText())
         val modifiedBindings = originalControls.bindings.map { binding ->
@@ -87,6 +87,24 @@ class BiobuzzConsumerRoundtripIntegrationTest {
                     transform = binding.source.transform?.copy(deadband = 0.10)
                 ))
             } else binding
+        }.toMutableList().apply {
+            add(
+                ControlBindingDocument(
+                    bindingId = "enable-heading-lock",
+                    displayName = "Enable Heading Lock",
+                    source = ControlSourceDocument(
+                        kind = ControlSourceKind.BUTTON,
+                        controllerSlot = "driver",
+                        controlIds = listOf("y"),
+                    ),
+                    event = ControlEvent.PRESS,
+                    target = ControlTargetDocument(
+                        kind = ControlTargetKind.ACTION,
+                        key = "drivetrain.headingLock.enable",
+                    ),
+                    enabled = true,
+                )
+            )
         }
         assertIs<ProjectSessionMutationResult.Applied<*>>(initialSession.saveControls(
             initialSession.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true).revision,
@@ -119,76 +137,10 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         }
         teamExtensionsFile.writeText(customizedTeamExtensions)
 
-        // Add consumer simulation test in simulator/ to prove USER-OWNED extension compiles and executes
+        // Add consumer simulation test in simulator/ to prove USER-OWNED extension, heading gains, and feedback timeout
         val consumerSimTestFile = File(project, "simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/BiobuzzReopenedConsumerSimulationTest.kt").apply {
             parentFile.mkdirs()
-            writeText(buildString {
-                appendLine("package org.firstinspires.ftc.teamcode")
-                appendLine()
-                appendLine("import com.areslib.ftc.FtcBaseRobot")
-                appendLine("import com.areslib.networktables.NT4Instance")
-                appendLine("import com.areslib.sim.model.MecanumRobotDouble")
-                appendLine("import com.areslib.sim.model.SimDcMotorEx")
-                appendLine("import com.areslib.sim.opmode.SimOpModeRunner")
-                appendLine("import com.areslib.util.RobotClock")
-                appendLine("import org.firstinspires.ftc.teamcode.extensions.TeamRobotExtensions")
-                appendLine("import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject")
-                appendLine("import org.firstinspires.ftc.teamcode.opmodes.ARESStarterTeleOp")
-                appendLine("import org.junit.After")
-                appendLine("import org.junit.Assert.assertEquals")
-                appendLine("import org.junit.Assert.assertNotNull")
-                appendLine("import org.junit.Assert.assertTrue")
-                appendLine("import org.junit.Test")
-                appendLine("import kotlin.math.abs")
-                appendLine()
-                appendLine("class BiobuzzReopenedConsumerSimulationTest {")
-                appendLine("    @After")
-                appendLine("    fun cleanUp() {")
-                appendLine("        NT4Instance.defaultInstance.closeServer()")
-                appendLine("        RobotClock.useSystemTime()")
-                appendLine("    }")
-                appendLine()
-                appendLine("    @Test")
-                appendLine("    fun `reopened configuration drives simulated IO and validates user extension`() {")
-                appendLine("        val extensionMultiplier = TeamRobotExtensions.customIntakeMultiplier()")
-                appendLine("        assertEquals(1.25, extensionMultiplier, 1e-6)")
-                appendLine("        assertEquals(\"BIOBUZZ_PRESERVED_USER_EXTENSION\", TeamRobotExtensions.customDriverTag())")
-                appendLine()
-                appendLine("        assertEquals(3.58, GeneratedAresProject.FIELD_LENGTH_METERS, 1e-9)")
-                appendLine("        assertEquals(3.58, GeneratedAresProject.FIELD_WIDTH_METERS, 1e-9)")
-                appendLine("        val autonomous = GeneratedAresProject.autonomousEntries.single { it.entryId == \"custom-biobuzz-auto\" }")
-                appendLine("        assertEquals(1.2, autonomous.startingPose.xMeters, 1e-9)")
-                appendLine("        assertEquals(1, GeneratedAresProject.runtimeDefinition.routines.getValue(\"sample-routine\").steps.size)")
-                appendLine("        RobotClock.useMockTime(1_000L)")
-                appendLine("        val robotDouble = MecanumRobotDouble()")
-                appendLine("        val lifecycle = requireNotNull(")
-                appendLine("            SimOpModeRunner.createOpModeInstance(null, ARESStarterTeleOp::class.java.name),")
-                appendLine("        )")
-                appendLine("        try {")
-                appendLine("            lifecycle.initialize(robotDouble.hardwareMap)")
-                appendLine("            assertNotNull(FtcBaseRobot.activeInstance)")
-                appendLine("            lifecycle.tick()")
-                appendLine("            lifecycle.start()")
-                appendLine()
-                appendLine("            lifecycle.gamepad1.left_stick_y = -1.0f")
-                appendLine("            RobotClock.useMockTime(1_020L)")
-                appendLine("            lifecycle.tick()")
-                appendLine()
-                appendLine("            val drivePowers = listOf(robotDouble.fl, robotDouble.fr, robotDouble.rl, robotDouble.rr).map { it.power }")
-                appendLine("            assertTrue(\"Drive motors must respond to joystick\", drivePowers.any { abs(it) > 0.01 })")
-                appendLine()
-                appendLine("            lifecycle.gamepad1.a = true")
-                appendLine("            RobotClock.useMockTime(1_040L)")
-                appendLine("            lifecycle.tick()")
-                appendLine()
-                appendLine("            val intakeMotor = robotDouble.hardwareMap.get(SimDcMotorEx::class.java, \"intake\")")
-                appendLine("            assertTrue(\"Intake motor power must be commanded\", intakeMotor.power > 0.01)")
-                appendLine("        } finally {")
-                appendLine("            lifecycle.stop()")
-                appendLine("        }")
-                appendLine("    }")
-                appendLine("}")
-            })
+            writeText(consumerSimulationSource(2.4, 0.24))
         }
 
         // 4. Export project via ProjectArchiveExporter
@@ -218,10 +170,14 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         val extractedTuning = extractedDocs.tuningProfiles.single { it.profileId == "simulation" }
         val headingKp = extractedTuning.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue
         assertEquals(2.4, headingKp, "Tuning parameter heading.kp must retain saved value")
+        val headingKd = extractedTuning.values.single { it.parameterUid == "ftc.drive.heading.kd" }.value.doubleValue
+        assertEquals(0.0, headingKd, "Tuning parameter heading.kd must retain saved value")
 
         val extractedControls = extractedDocs.controlSchemes.single { it.documentId == "driver" }
         val feedBinding = extractedControls.bindings.single { it.bindingId == "feed-ball" }
         assertEquals(0.10, feedBinding.source.transform?.deadband, "Control deadband must retain saved value")
+        val headingLockBinding = extractedControls.bindings.single { it.bindingId == "enable-heading-lock" }
+        assertEquals("drivetrain.headingLock.enable", headingLockBinding.target.key, "Control action must retain saved value")
 
         val extractedCatalog = extractedDocs.autonomousCatalog
         val autoEntry = extractedCatalog?.entries.orEmpty().single { it.entryId == "custom-biobuzz-auto" }
@@ -293,6 +249,26 @@ class BiobuzzConsumerRoundtripIntegrationTest {
                 "Verification build must succeed: ${executionState.message}\nRecent output:\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n")
             )
             assertEquals(0, executionState.exitCode, "Verification build exit code must be 0")
+
+            // A second canonical value must survive a real save/export/reopen and regenerated runtime.
+            // Direct UpdateTuningState dispatch would bypass persistence and live-apply policy.
+            saveConsumerHeadingGain(extractedSession, extractedProject, 1.8)
+            File(extractedProject, consumerSimTestFile.relativeTo(project).path)
+                .writeText(consumerSimulationSource(1.8, 0.18))
+            val lowArchive = temporaryDirectory.resolve("biobuzz-low-gain.aresproject.zip").toFile()
+            exporter.export(extractedProject.path, lowArchive.path)
+            val lowProject = exporter.extract(lowArchive.path, temporaryDirectory.resolve("biobuzz-low-gain").toString())
+            configureConsumerSdk(lowProject)
+            val lowDocs = ProjectSession().snapshot(lowProject.path, ControllerInputPlatform.FTC).documents.query
+            val lowProfile = lowDocs.tuningProfiles.single { it.profileId == "simulation" }
+            assertEquals(1.8, lowProfile.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue)
+            assertEquals(lowProfile.uid, lowDocs.drivetrains.single().canonicalProfileUid)
+            driver.verify(lowProject)
+            val lowExecution = buildService.processState.value.buildExecution
+            assertEquals(BuildExecutionPhase.SUCCEEDED, lowExecution.phase,
+                "Second saved gain build must succeed: ${lowExecution.message}\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n"))
+            assertEquals(0, lowExecution.exitCode)
+
         } finally {
             buildService.shutdownAndJoin()
         }
@@ -319,4 +295,58 @@ class BiobuzzConsumerRoundtripIntegrationTest {
         }
         return File(targetDirectory, archiveName)
     }
+    private fun consumerSimulationSource(savedGain: Double, expectedOmega: Double): String = buildString {
+        appendLine("package org.firstinspires.ftc.teamcode")
+        appendLine()
+        appendLine("import com.areslib.Store")
+        appendLine("import com.areslib.ftc.FtcBaseRobot")
+        appendLine("import com.areslib.ftc.FtcMecanumRobot")
+        appendLine("import com.areslib.math.geometry.Pose2d")
+        appendLine("import com.areslib.networktables.NT4Instance")
+        appendLine("import com.areslib.sim.model.MecanumRobotDouble")
+        appendLine("import com.areslib.sim.model.SimDcMotorEx")
+        appendLine("import com.areslib.sim.opmode.SimOpModeRunner")
+        appendLine("import com.areslib.state.RobotState")
+        appendLine("import com.areslib.util.RobotClock")
+        appendLine("import org.firstinspires.ftc.teamcode.extensions.TeamRobotExtensions")
+        appendLine("import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject")
+        appendLine("import org.firstinspires.ftc.teamcode.generated.drivebase.GeneratedAresDrivebaseConfig")
+        appendLine("import org.firstinspires.ftc.teamcode.generated.drivebase.GeneratedAresTuningConfig")
+        appendLine("import org.firstinspires.ftc.teamcode.opmodes.ARESStarterTeleOp")
+        appendLine("import org.firstinspires.ftc.teamcode.subsystems.biobuzz_intake.BiobuzzIntakeController")
+        appendLine("import org.firstinspires.ftc.teamcode.subsystems.biobuzz_intake.BiobuzzIntakeSubsystem")
+        appendLine("import org.firstinspires.ftc.teamcode.subsystems.biobuzz_intake.FtcBiobuzzIntakeIO")
+        appendLine("import org.junit.After")
+        appendLine("import org.junit.Assert.assertEquals")
+        appendLine("import org.junit.Assert.assertFalse")
+        appendLine("import org.junit.Assert.assertNotNull")
+        appendLine("import org.junit.Assert.assertTrue")
+        appendLine("import org.junit.Test")
+        appendLine("import kotlin.math.abs")
+        appendLine()
+        appendLine("class BiobuzzReopenedConsumerSimulationTest {")
+        appendLine("    @After")
+        appendLine("    fun cleanUp() {")
+        appendLine("        NT4Instance.defaultInstance.closeServer()")
+        appendLine("        RobotClock.useSystemTime()")
+        appendLine("    }")
+        appendLine()
+        appendLine("    @Test")
+        appendLine("    fun `reopened configuration drives simulated IO and validates user extension`() {")
+        appendLine("        val extensionMultiplier = TeamRobotExtensions.customIntakeMultiplier()")
+        appendLine("        assertEquals(1.25, extensionMultiplier, 1e-6)")
+        appendLine("        assertEquals(\"BIOBUZZ_PRESERVED_USER_EXTENSION\", TeamRobotExtensions.customDriverTag())")
+        appendLine()
+        appendLine("        assertEquals(3.58, GeneratedAresProject.FIELD_LENGTH_METERS, 1e-9)")
+        appendLine("        assertEquals(3.58, GeneratedAresProject.FIELD_WIDTH_METERS, 1e-9)")
+        appendLine("        val autonomous = GeneratedAresProject.autonomousEntries.single { it.entryId == \"custom-biobuzz-auto\" }")
+        appendLine("        assertEquals(1.2, autonomous.startingPose.xMeters, 1e-9)")
+        appendLine("        assertEquals(1, GeneratedAresProject.runtimeDefinition.routines.getValue(\"sample-routine\").steps.size)")
+        appendLine("    }")
+        appendLine()
+        appendLine(consumerHeadingBehavior(savedGain, expectedOmega))
+        appendLine(consumerFeedbackBehavior(true))
+        appendLine("}")
+    }
+
 }

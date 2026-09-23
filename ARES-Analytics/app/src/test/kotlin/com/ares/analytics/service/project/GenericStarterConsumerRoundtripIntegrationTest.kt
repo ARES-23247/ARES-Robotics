@@ -1,16 +1,18 @@
 package com.ares.analytics.service.project
 
-import com.ares.analytics.BuildConfig
 import com.ares.analytics.service.AresGenerationPhase
 import com.ares.analytics.service.BuildExecutionPhase
 import com.ares.analytics.service.versioncontrol.ProjectArchiveExporter
 import com.ares.analytics.shared.models.League
+import com.areslib.controls.ControlBindingDocument
+import com.areslib.controls.ControlEvent
 import com.areslib.controls.ControlSchemeCodec
+import com.areslib.controls.ControlSourceDocument
+import com.areslib.controls.ControlSourceKind
+import com.areslib.controls.ControlTargetDocument
+import com.areslib.controls.ControlTargetKind
 import com.areslib.controls.ControllerInputPlatform
-import com.areslib.drivetrain.DrivetrainDocumentCodec
 import com.areslib.project.AresProjectMetadataCodec
-import com.areslib.routine.AresRoutineCodec
-import com.areslib.routine.AutonomousCatalogCodec
 import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutinePose
@@ -19,9 +21,7 @@ import com.areslib.subsystem.SubsystemDocumentCodec
 import com.areslib.subsystem.SubsystemPlatform
 import com.areslib.subsystem.SubsystemTemplate
 import com.areslib.subsystem.SubsystemTemplates
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import java.io.File
@@ -81,7 +81,7 @@ class GenericStarterConsumerRoundtripIntegrationTest {
         val gripperSubsystem = SubsystemTemplates.create(
             template = SubsystemTemplate.POSITIONAL_SERVO,
             documentId = "gripper",
-            kotlinTypeName = "GripperSubsystem",
+            kotlinTypeName = "Gripper",
             platform = SubsystemPlatform.FTC,
             displayName = "Gripper",
         ).let { doc ->
@@ -99,7 +99,7 @@ class GenericStarterConsumerRoundtripIntegrationTest {
         //    (C) Tuning settings: heading kP = 2.10
         saveConsumerHeadingGain(initialSession, project, 2.1)
 
-        //    (D) Control settings: deadband = 0.08
+        //    (D) Control settings: deadband = 0.08, bind Y button to enable heading lock
         val controlsFile = File(project, ".ares/controls/driver.arescontrols")
         val originalControls = ControlSchemeCodec.decode(controlsFile.readText())
         val modifiedBindings = originalControls.bindings.map { binding ->
@@ -108,6 +108,24 @@ class GenericStarterConsumerRoundtripIntegrationTest {
                     transform = binding.source.transform?.copy(deadband = 0.08)
                 ))
             } else binding
+        }.toMutableList().apply {
+            add(
+                ControlBindingDocument(
+                    bindingId = "enable-heading-lock",
+                    displayName = "Enable Heading Lock",
+                    source = ControlSourceDocument(
+                        kind = ControlSourceKind.BUTTON,
+                        controllerSlot = "driver",
+                        controlIds = listOf("y"),
+                    ),
+                    event = ControlEvent.PRESS,
+                    target = ControlTargetDocument(
+                        kind = ControlTargetKind.ACTION,
+                        key = "drivetrain.headingLock.enable",
+                    ),
+                    enabled = true,
+                )
+            )
         }
         assertIs<ProjectSessionMutationResult.Applied<*>>(initialSession.saveControls(
             initialSession.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true).revision,
@@ -143,70 +161,12 @@ class GenericStarterConsumerRoundtripIntegrationTest {
         // Add consumer simulation test in simulator/ to exercise the user extension and simulated IO
         val consumerSimTestFile = File(project, "simulator/src/test/kotlin/org/firstinspires/ftc/teamcode/GenericStarterReopenedConsumerSimulationTest.kt").apply {
             parentFile.mkdirs()
-            writeText(buildString {
-                appendLine("package org.firstinspires.ftc.teamcode")
-                appendLine()
-                appendLine("import com.areslib.ftc.FtcBaseRobot")
-                appendLine("import com.areslib.networktables.NT4Instance")
-                appendLine("import com.areslib.sim.model.MecanumRobotDouble")
-                appendLine("import com.areslib.sim.opmode.SimOpModeRunner")
-                appendLine("import com.areslib.util.RobotClock")
-                appendLine("import org.firstinspires.ftc.teamcode.extensions.TeamRobotExtensions")
-                appendLine("import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject")
-                appendLine("import org.firstinspires.ftc.teamcode.opmodes.ARESStarterTeleOp")
-                appendLine("import org.junit.After")
-                appendLine("import org.junit.Assert.assertEquals")
-                appendLine("import org.junit.Assert.assertNotNull")
-                appendLine("import org.junit.Assert.assertTrue")
-                appendLine("import org.junit.Test")
-                appendLine("import kotlin.math.abs")
-                appendLine()
-                appendLine("class GenericStarterReopenedConsumerSimulationTest {")
-                appendLine("    @After")
-                appendLine("    fun cleanUp() {")
-                appendLine("        NT4Instance.defaultInstance.closeServer()")
-                appendLine("        RobotClock.useSystemTime()")
-                appendLine("    }")
-                appendLine()
-                appendLine("    @Test")
-                appendLine("    fun `reopened generic configuration drives simulated IO and validates user extension`() {")
-                appendLine("        val metric = TeamRobotExtensions.customStarterMetric()")
-                appendLine("        assertEquals(42.0, metric, 1e-6)")
-                appendLine("        assertEquals(\"FTC_STARTER_PRESERVED_EXTENSION\", TeamRobotExtensions.customStarterTag())")
-                appendLine()
-                appendLine("        assertEquals(3.60, GeneratedAresProject.FIELD_LENGTH_METERS, 1e-9)")
-                appendLine("        assertEquals(3.60, GeneratedAresProject.FIELD_WIDTH_METERS, 1e-9)")
-                appendLine("        val autonomous = GeneratedAresProject.autonomousEntries.single { it.entryId == \"starter-autonomous-routine\" }")
-                appendLine("        assertEquals(0.5, autonomous.startingPose.xMeters, 1e-9)")
-                appendLine("        assertEquals(1, GeneratedAresProject.runtimeDefinition.routines.getValue(\"sample-routine\").steps.size)")
-                appendLine("        RobotClock.useMockTime(1_000L)")
-                appendLine("        val robotDouble = MecanumRobotDouble()")
-                appendLine("        val lifecycle = requireNotNull(")
-                appendLine("            SimOpModeRunner.createOpModeInstance(null, ARESStarterTeleOp::class.java.name),")
-                appendLine("        )")
-                appendLine("        try {")
-                appendLine("            lifecycle.initialize(robotDouble.hardwareMap)")
-                appendLine("            assertNotNull(FtcBaseRobot.activeInstance)")
-                appendLine("            lifecycle.tick()")
-                appendLine("            lifecycle.start()")
-                appendLine()
-                appendLine("            lifecycle.gamepad1.left_stick_y = -0.07f")
-                appendLine("            RobotClock.useMockTime(1_010L)")
-                appendLine("            lifecycle.tick()")
-                appendLine("            assertTrue(\"Saved deadband must suppress a 0.07 command\", listOf(robotDouble.fl, robotDouble.fr, robotDouble.rl, robotDouble.rr).all { abs(it.power) < 1e-9 })")
-                appendLine("            lifecycle.gamepad1.left_stick_y = -1.0f")
-                appendLine("            RobotClock.useMockTime(1_020L)")
-                appendLine("            lifecycle.tick()")
-                appendLine()
-                appendLine("            val drivePowers = listOf(robotDouble.fl, robotDouble.fr, robotDouble.rl, robotDouble.rr).map { it.power }")
-                appendLine("            assertTrue(\"Drive motors must respond to joystick\", drivePowers.any { abs(it) > 0.01 })")
-                appendLine("        } finally {")
-                appendLine("            lifecycle.stop()")
-                appendLine("        }")
-                appendLine("    }")
-                appendLine("}")
-            })
+            writeText(consumerSimulationSource(2.1, 0.21))
         }
+
+        writeConsumerTuningWireFixtures(project,
+            initialSession.snapshot(project.path, ControllerInputPlatform.FTC, forceReload = true)
+                .documents.query.tuningParameters.single { it.uid == "ftc.drive.heading.kp" })
 
         // 4. Export project via ProjectArchiveExporter
         val exportArchive = temporaryDirectory.resolve("generic-starter-export.aresproject.zip").toFile()
@@ -231,15 +191,20 @@ class GenericStarterConsumerRoundtripIntegrationTest {
 
         val extractedGripper = extractedDocs.subsystems.single { it.documentId == "gripper" }
         assertEquals("gripper", extractedGripper.documentId, "Custom subsystem must retain saved value")
+        assertEquals("Gripper", extractedGripper.kotlinTypeName, "Custom subsystem type name must retain saved value")
         assertEquals(180, extractedGripper.safety.feedbackTimeoutMs, "Gripper feedback timeout must retain saved value")
 
         val extractedTuning = extractedDocs.tuningProfiles.single { it.profileId == "simulation" }
         val headingKp = extractedTuning.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue
+        val headingKd = extractedTuning.values.single { it.parameterUid == "ftc.drive.heading.kd" }.value.doubleValue
         assertEquals(2.1, headingKp, "Tuning heading.kp must retain saved value")
+        assertEquals(0.0, headingKd, "Tuning heading.kd must retain saved value")
 
         val extractedControls = extractedDocs.controlSchemes.single { it.documentId == "driver" }
         val driveBinding = extractedControls.bindings.single { it.bindingId == "drive-forward" }
         assertEquals(0.08, driveBinding.source.transform?.deadband, "Control deadband must retain saved value")
+        val headingLockBinding = extractedControls.bindings.single { it.bindingId == "enable-heading-lock" }
+        assertEquals("drivetrain.headingLock.enable", headingLockBinding.target.key, "Control action must retain saved value")
 
         val extractedCatalog = extractedDocs.autonomousCatalog
         val autoEntry = extractedCatalog?.entries.orEmpty().single { it.entryId == "starter-autonomous-routine" }
@@ -308,15 +273,125 @@ class GenericStarterConsumerRoundtripIntegrationTest {
             driver.verify(extractedProject)
 
             val executionState = buildService.processState.value.buildExecution
+
             assertEquals(
                 BuildExecutionPhase.SUCCEEDED,
                 executionState.phase,
-                "Verification build must succeed: ${executionState.message}\nRecent output:\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n")
+                "Verification build must succeed: ${executionState.message}\nNested XML retained under consumer-roundtrip-evidence/generic/operation-3.\nRecent output:\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n")
             )
             assertEquals(0, executionState.exitCode, "Verification build exit code must be 0")
+
+            // 9a. Verify robot feedback return path into Studio using wire reply frames emitted by consumer simulation.
+            val replyDir = File(extractedProject, "simulator/build/tuning-wire-reply")
+            verifyStudioRobotFeedbackReturnPath(extractedProject, replyDir)
+
+            // A second canonical value must survive a real save/export/reopen and regenerated runtime.
+            // Direct UpdateTuningState dispatch would bypass persistence and live-apply policy.
+            saveConsumerHeadingGain(extractedSession, extractedProject, 1.4)
+            File(extractedProject, consumerSimTestFile.relativeTo(project).path)
+                .writeText(consumerSimulationSource(1.4, 0.14))
+            val lowArchive = temporaryDirectory.resolve("genericstarter-low-gain.aresproject.zip").toFile()
+            exporter.export(extractedProject.path, lowArchive.path)
+            val lowProject = exporter.extract(lowArchive.path, temporaryDirectory.resolve("genericstarter-low-gain").toString())
+            configureConsumerSdk(lowProject)
+            val lowDocs = ProjectSession().snapshot(lowProject.path, ControllerInputPlatform.FTC).documents.query
+            val lowProfile = lowDocs.tuningProfiles.single { it.profileId == "simulation" }
+            assertEquals(1.4, lowProfile.values.single { it.parameterUid == "ftc.drive.heading.kp" }.value.doubleValue)
+            assertEquals(lowProfile.uid, lowDocs.drivetrains.single().canonicalProfileUid)
+            driver.verify(lowProject)
+            val lowExecution = buildService.processState.value.buildExecution
+
+            assertEquals(BuildExecutionPhase.SUCCEEDED, lowExecution.phase,
+                "Second saved gain build must succeed: ${lowExecution.message}\nNested XML retained under consumer-roundtrip-evidence/generic/operation-4.\n" + buildService.buildOutput.replayCache.takeLast(60).joinToString("\n"))
+            assertEquals(0, lowExecution.exitCode)
+            verifyStudioRobotFeedbackReturnPath(lowProject, File(lowProject, "simulator/build/tuning-wire-reply"))
+
         } finally {
             buildService.shutdownAndJoin()
         }
+    }
+
+    private fun consumerSimulationSource(savedGain: Double, expectedOmega: Double): String = buildString {
+        appendLine("package org.firstinspires.ftc.teamcode")
+        appendLine()
+        appendLine("import com.areslib.Store")
+        appendLine("import com.areslib.ftc.FtcBaseRobot")
+        appendLine("import com.areslib.ftc.FtcMecanumRobot")
+        appendLine("import com.areslib.math.geometry.Pose2d")
+        appendLine("import com.areslib.networktables.NT4Instance")
+        appendLine("import com.areslib.networktables.NT4Server")
+        appendLine("import com.areslib.sim.model.MecanumRobotDouble")
+        appendLine("import com.areslib.sim.model.SimServo")
+        appendLine("import com.areslib.sim.opmode.SimOpModeRunner")
+        appendLine("import com.areslib.state.RobotState")
+        appendLine("import com.areslib.telemetry.schema.TuningAcknowledgementCodec")
+        appendLine("import com.areslib.util.RobotClock")
+        appendLine("import java.io.File")
+        appendLine("import org.firstinspires.ftc.teamcode.extensions.TeamRobotExtensions")
+        appendLine("import org.firstinspires.ftc.teamcode.generated.GeneratedAresProject")
+        appendLine("import org.firstinspires.ftc.teamcode.generated.drivebase.GeneratedAresTuningConfig")
+        appendLine("import org.firstinspires.ftc.teamcode.opmodes.ARESStarterTeleOp")
+        appendLine("import org.firstinspires.ftc.teamcode.subsystems.gripper.FtcGripperIO")
+        appendLine("import org.firstinspires.ftc.teamcode.subsystems.gripper.GripperController")
+        appendLine("import org.firstinspires.ftc.teamcode.subsystems.gripper.GripperSubsystem")
+        appendLine("import org.junit.After")
+        appendLine("import org.junit.Assert.assertEquals")
+        appendLine("import org.junit.Assert.assertFalse")
+        appendLine("import org.junit.Assert.assertNotNull")
+        appendLine("import org.junit.Assert.assertTrue")
+        appendLine("import org.junit.Test")
+        appendLine("import kotlin.math.abs")
+        appendLine()
+        appendLine("class GenericStarterReopenedConsumerSimulationTest {")
+        appendLine("    @After")
+        appendLine("    fun cleanUp() {")
+        appendLine("        NT4Instance.defaultInstance.closeServer()")
+        appendLine("        RobotClock.useSystemTime()")
+        appendLine("    }")
+        appendLine()
+        appendLine("    @Test")
+        appendLine("    fun `reopened generic configuration drives simulated IO and validates user extension`() {")
+        appendLine("        val metric = TeamRobotExtensions.customStarterMetric()")
+        appendLine("        assertEquals(42.0, metric, 1e-6)")
+        appendLine("        assertEquals(\"FTC_STARTER_PRESERVED_EXTENSION\", TeamRobotExtensions.customStarterTag())")
+        appendLine()
+        appendLine("        assertEquals(3.60, GeneratedAresProject.FIELD_LENGTH_METERS, 1e-9)")
+        appendLine("        assertEquals(3.60, GeneratedAresProject.FIELD_WIDTH_METERS, 1e-9)")
+        appendLine("        val autonomous = GeneratedAresProject.autonomousEntries.single { it.entryId == \"starter-autonomous-routine\" }")
+        appendLine("        assertEquals(0.5, autonomous.startingPose.xMeters, 1e-9)")
+        appendLine("        assertEquals(1, GeneratedAresProject.runtimeDefinition.routines.getValue(\"sample-routine\").steps.size)")
+        appendLine("        RobotClock.useMockTime(1_000L)")
+        appendLine("        val robotDouble = MecanumRobotDouble()")
+        appendLine("        val lifecycle = requireNotNull(")
+        appendLine("            SimOpModeRunner.createOpModeInstance(null, ARESStarterTeleOp::class.java.name),")
+        appendLine("        )")
+        appendLine("        try {")
+        appendLine("            lifecycle.initialize(robotDouble.hardwareMap)")
+        appendLine("            assertNotNull(FtcBaseRobot.activeInstance)")
+        appendLine("            lifecycle.tick()")
+        appendLine("            lifecycle.start()")
+        appendLine()
+        appendLine("            lifecycle.gamepad1.left_stick_y = -0.07f")
+        appendLine("            RobotClock.useMockTime(1_010L)")
+        appendLine("            lifecycle.tick()")
+        appendLine("            assertTrue(\"Saved deadband must suppress a 0.07 command\", listOf(robotDouble.fl, robotDouble.fr, robotDouble.rl, robotDouble.rr).all { abs(it.power) < 1e-9 })")
+        appendLine("            lifecycle.gamepad1.left_stick_y = -1.0f")
+        appendLine("            RobotClock.useMockTime(1_020L)")
+        appendLine("            lifecycle.tick()")
+        appendLine()
+        appendLine("            val drivePowers = listOf(robotDouble.fl, robotDouble.fr, robotDouble.rl, robotDouble.rr).map { it.power }")
+        appendLine("            assertTrue(\"Drive motors must respond to joystick\", drivePowers.any { abs(it) > 0.01 })")
+        appendLine("        } finally {")
+        appendLine("            lifecycle.stop()")
+        appendLine("        }")
+        appendLine("    }")
+        appendLine()
+        appendLine(consumerHeadingBehavior(savedGain, expectedOmega))
+        appendLine(consumerFeedbackBehavior(false))
+        appendLine(consumerLiveTuningBehavior(savedGain))
+        appendLine(consumerLeaseRecoveryBehavior(savedGain))
+        appendLine(consumerTuningHelpers())
+        appendLine("}")
     }
 
 }
