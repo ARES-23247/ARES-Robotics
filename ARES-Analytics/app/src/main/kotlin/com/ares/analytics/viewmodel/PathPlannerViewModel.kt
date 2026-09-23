@@ -13,6 +13,7 @@ import com.ares.analytics.ui.components.pathplanner.Waypoint
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.routine.RoutinePersistenceService
 import com.ares.analytics.viewmodel.routine.RoutinePlaybackController
+import com.ares.analytics.viewmodel.routine.routineProjectRefreshProjection
 import com.ares.analytics.viewmodel.routine.toAnalyticsLeague
 import com.ares.analytics.viewmodel.routine.toRoutinePose
 import com.ares.analytics.viewmodel.routine.clampRoutinePose
@@ -29,7 +30,6 @@ import com.ares.analytics.viewmodel.routine.updateStepById
 import com.ares.analytics.viewmodel.routine.validateGuidedFirstRoutinePlan
 import com.ares.analytics.viewmodel.routine.withRoutineRouteWaypoints
 import com.areslib.catalog.CapabilityCatalogDocument
-import com.areslib.catalog.CapabilityContext
 import com.areslib.routine.AutonomousCatalogDocument
 import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineAlliance
@@ -440,66 +440,19 @@ class PathPlannerViewModel(
             }
         }.onSuccess { refresh ->
             if (!isCurrentProjectRequest(projectPath, generation)) return@onSuccess
-            val beforeRefresh = _state.value
-            val keepCurrentRoutine = routineProjectPath == projectPath &&
-                (beforeRefresh.routineDirty || refresh.routines.any { it.documentId == beforeRefresh.routine.documentId })
-            val activeRoutine = if (keepCurrentRoutine) {
-                beforeRefresh.routine
-            } else {
-                refresh.routines.firstOrNull() ?: newRoutine()
-            }
-            val persistedEntry = refresh.autonomous?.entries?.firstOrNull {
-                it.routineId == activeRoutine.documentId
-            }
-            val currentEntry = if (keepCurrentRoutine && beforeRefresh.routineDirty) {
-                beforeRefresh.autonomousEntry
-            } else {
-                persistedEntry
-            }
-            val catalog = refresh.catalog
-            val effectiveLeague = refresh.metadata?.league?.toAnalyticsLeague() ?: league
-            val effectiveDimensions = refresh.metadata?.let {
-                RobotDimensions(it.robotLengthMeters, it.robotWidthMeters)
-            } ?: _state.value.robotDimensions
+            val projection = routineProjectRefreshProjection(
+                beforeRefresh = _state.value,
+                refresh = refresh,
+                isBoundRoutineProject = routineProjectPath == projectPath,
+                fallbackLeague = league,
+                currentDimensions = { _state.value.robotDimensions },
+            )
             // Publish "loading complete" only after save/load operations are bound to this exact
             // canonical project. Otherwise a fast click can observe an enabled editor while the
             // private ownership path still points at no project.
             loadedProjectPath = projectPath
             routineProjectPath = projectPath
-            _state.update { current ->
-                current.copy(
-                    routine = activeRoutine,
-                    routineDirty = if (keepCurrentRoutine) current.routineDirty else false,
-                    routineRevisions = if (keepCurrentRoutine) current.routineRevisions else emptyList(),
-                    availableRoutines = refresh.routines,
-                    capabilityCatalog = catalog,
-                    routineActions = catalog?.actions
-                        ?.filter { CapabilityContext.AUTONOMOUS in it.allowedContexts }
-                        .orEmpty(),
-                    routineConditions = catalog?.conditions.orEmpty(),
-                    autonomousEntry = currentEntry,
-                    availableInAutonomousSelector = currentEntry != null,
-                    projectMetadata = refresh.metadata,
-                    projectRevision = refresh.projectRevision,
-                    projectLoading = false,
-                    activeLeague = effectiveLeague,
-                    robotDimensions = effectiveDimensions,
-                    capabilityStatus = when {
-                        refresh.diagnostics.isNotEmpty() -> refresh.diagnostics.first()
-                        catalog == null -> "No generated action catalog yet. Save and generate Robot Studio changes before adding mechanism actions; drive, wait, call, and group steps remain available."
-                        catalog.actions.isEmpty() -> "No mechanism actions yet. Add a subsystem in Robot Studio, then Save & generate; drive-only routines work now."
-                        else -> "${catalog.actions.size} actions and ${catalog.conditions.size} conditions loaded from the project"
-                    },
-                    routineValidation = routineEditorValidation(
-                        activeRoutine,
-                        catalog,
-                        refresh.routines,
-                        effectiveLeague,
-                        effectiveDimensions,
-                        currentEntry
-                    )
-                )
-            }
+            _state.update(projection)
             recalculateRoutinePreview()
         }.onFailure { error ->
             if (error is CancellationException) throw error

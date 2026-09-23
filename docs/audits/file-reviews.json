@@ -5168,7 +5168,7 @@
       "sha256": "b1da90ac0208d483e124088762f755050773fab7f0d3c6364b2c6e784846bb88",
       "review": "pending",
       "validation": "pending",
-      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0\u00b0, 90\u00b0, 180\u00b0, -90\u00b0), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
+      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0°, 90°, 180°, -90°), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md",
         "docs/audits/DEEP_AUDIT_GOAL.md",
@@ -5266,7 +5266,7 @@
       "sha256": "a51b2491d5c3dea95e368d8623a11475c74cdff6401dba3742ee2b24b02023b4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2\u03c0 rad / spool travel), and cached measurement scale/offset/freshness bounds.",
+      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2π rad / spool travel), and cached measurement scale/offset/freshness bounds.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -6652,13 +6652,15 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt": {
-      "sha256": "82d14e07cc4c9a83a0dcf40168e9c2898e4ee8d48a28af4629c3b456be3094a5",
+      "sha256": "44d53feb9c10aac34a54f73ef67b2d3488f6f4f5a081d82af7f40742721f7852",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed refresh caller generation/path ownership and cancellation propagation through persistence. Two real-session baseline failures reproduced; actual footprint saves pass. No complete-file or path-math claim.",
+      "scope": "Bounded project-refresh extraction, ownership/cancellation guards and publication call site; selection/copy expressions independently matched to 3033daf0a. Existing surrounding editor behavior is not a fresh full-file review.",
       "evidence": [
-        "docs/audits/AGY_PROJECT_OWNERS_CHECKPOINT.md",
-        ".codex-validation/agy-audit-coordination/build/agy-project-owners/"
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
       ],
       "agyProjectOwnersPriorRecord": {
         "sha256": "2d7fedfa2f5ccb18366268dc00d4fb38d2b7e2424b328eec5bf054e5d6c255a8",
@@ -6688,6 +6690,16 @@
           "validation": "passed"
         },
         "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      },
+      "studioMaintenancePriorRecord": {
+        "sha256": "82d14e07cc4c9a83a0dcf40168e9c2898e4ee8d48a28af4629c3b456be3094a5",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed refresh caller generation/path ownership and cancellation propagation through persistence. Two real-session baseline failures reproduced; actual footprint saves pass. No complete-file or path-math claim.",
+        "evidence": [
+          "docs/audits/AGY_PROJECT_OWNERS_CHECKPOINT.md",
+          ".codex-validation/agy-audit-coordination/build/agy-project-owners/"
+        ]
       }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/ProfileViewModel.kt": {
@@ -7550,13 +7562,25 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemProjectPersistence.kt": {
-      "sha256": "58897086d392efe3c95973522b2777a82527be80d3df4e225de0064ae040258f",
+      "sha256": "90608e3b73de1ab343571e676c543b6d243de208749b80a82f7028f67cf82799",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified SubsystemProjectPersistence boundary coordinating subsystem save, removalPlan, remove (with expected content hash verification), and restoreRemovedSubsystem operations with optimistic ProjectSession revision checks.",
+      "scope": "Full persistence helper and caller reference check for removal of unused refresh/imports; save/removal/restore checks retained, existing subsystem regressions executed.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+      ],
+      "studioMaintenancePriorRecord": {
+        "sha256": "58897086d392efe3c95973522b2777a82527be80d3df4e225de0064ae040258f",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified SubsystemProjectPersistence boundary coordinating subsystem save, removalPlan, remove (with expected content hash verification), and restoreRemovedSubsystem operations with optimistic ProjectSession revision checks.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemRemovalCoordinator.kt": {
       "review": "pending",
@@ -8110,7 +8134,7 @@
       "sha256": "24d3a070ba007922b36888404a0852a1c25fa90188004e4491a8380c80714935",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design \u2022 Simulate \u2022 Operate \u2022 Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
+      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design • Simulate • Operate • Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
       "evidence": [
         "docs/audits/pass292-pending-elevation-audit.md"
       ]
@@ -12216,13 +12240,15 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "bde34268dd3d5c76550fcffa4a185092d8d0219bfef98bf5b511ac6b6103d252",
-      "review": "partial",
+      "sha256": "f31336c2564d0a146e8f73b044987e930911ddf7ee06661d0293089ec6bc34ed",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed regenerated delta: ViewModel699 to687, new save helper229, total1113 production files and unchanged limits. Size accounting does not imply file-review coverage.",
+      "scope": "Reviewed deterministic size-inventory delta for two changed production files and one new helper; 1114 files, zero violations, no relaxed limits. Inventory is not a review or test-coverage metric.",
       "evidence": [
-        "docs/audits/AGY_DRIVEBASE_SAVE_CHECKPOINT.md",
-        ".codex-validation/agy-audit-coordination/build/agy-save-ownership/"
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
       ],
       "agyDrivebaseSavePriorRecord": {
         "sha256": "6f2416031561edda08bce33e367f86f32a5fbd48749dcc13099fd2da60159d46",
@@ -12338,6 +12364,16 @@
             }
           }
         }
+      },
+      "studioMaintenancePriorRecord": {
+        "sha256": "bde34268dd3d5c76550fcffa4a185092d8d0219bfef98bf5b511ac6b6103d252",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed regenerated delta: ViewModel699 to687, new save helper229, total1113 production files and unchanged limits. Size accounting does not imply file-review coverage.",
+        "evidence": [
+          "docs/audits/AGY_DRIVEBASE_SAVE_CHECKPOINT.md",
+          ".codex-validation/agy-audit-coordination/build/agy-save-ownership/"
+        ]
       }
     },
     "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
@@ -12370,7 +12406,7 @@
       "sha256": "e5a9dd382f3540216b3acd3cda81ebd197335bfadadb1242c19eb3243732b14b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design \u2022 Simulate \u2022 Operate \u2022 Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
+      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design • Simulate • Operate • Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -12532,7 +12568,7 @@
       "sha256": "25eeb691d95c9c9a456a23925e8888e70fb4a6a1e14d4d46418381d84268fe61",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation \u2014 cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
+      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation — cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -12541,7 +12577,7 @@
       "sha256": "65efe035f6d197e24121378abb4ccef5f892ec495b9d81d08af34acf528e30b6",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED \u2014 DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
+      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED — DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -14293,7 +14329,7 @@
       "sha256": "becf5449b6dbfa838313319f2e844150cbb379db41e325e7520e852e58657a2e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (\u00b10.276225 m, \u00b10.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
+      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (±0.276225 m, ±0.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
@@ -15231,7 +15267,7 @@
       "sha256": "dd73c69aa80eef41532415e39cb7163f751f9bafa6451a787a3b83d7e1d90dfb",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s\u00b2), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
+      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s²), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
@@ -15405,7 +15441,7 @@
       "sha256": "2c721a57857805e10066ecb6e89657241e0bd2772ee7e2add7ea68f3ea46a5ea",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0\u00b0..108\u00b0); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
+      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0°..108°); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json",
@@ -15545,7 +15581,7 @@
       "sha256": "6cb05881ec858138fdd1d741793a641160e8aec6fc343a663e4f7d8cf589c2bc",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
+      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad ±5 cm, bumpers ±5°), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -18675,7 +18711,7 @@
       "sha256": "29e4e2bd1743ea9d4644a6cb44396f954832afa6f8263dfc12ef7765e1f85f11",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (\u00b10.225 m, \u00b10.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
+      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (±0.225 m, ±0.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
@@ -19845,7 +19881,7 @@
       "sha256": "224f2c95ea53ef4de443464c2a7190c7ed5d2803530c3eb2766c4cb272fe2d04",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
+      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad ±5 cm, bumpers ±5°), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -21519,7 +21555,7 @@
       "sha256": "980daff7a61c869a69321a8617206ae900e415dd9dd2bdae5084e61a4f48405e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8\u00b0 and freeze above 15\u00b0), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
+      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8° and freeze above 15°), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -27972,7 +28008,7 @@
       "sha256": "a03770e6a0e2bf28587c50ff62844ce151aa41c645fe82c00a743a1d3a674bb3",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-\u03c0, \u03c0) boundary.",
+      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-π, π) boundary.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
@@ -29438,7 +29474,7 @@
       "sha256": "986d38ebecf3d806e39d0e212c7a1a3313a5a121c5ed4c07ea2f1ba72f7c1bc7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0\u00b0) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
+      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0°) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
@@ -32512,7 +32548,7 @@
       "sha256": "d84ece215e96f92705e6407c6e33c29f92fa73d33d12d89d990fbe11a156a024",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2\u03c0 radian span enforcement, and trapezoidal motion profile limit verification.",
+      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2π radian span enforcement, and trapezoidal motion profile limit verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
@@ -32522,7 +32558,7 @@
       "sha256": "44e98a2467a4451c6041d3cede4bf76c046888a5b7c230e3c51482493e67c162",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s\u00b2, A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
+      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s², A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
@@ -34353,13 +34389,15 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "7709d94bdb4a92cc78e739fc8800b0ebf26dd636d5c3157b1c2097cfe2675b39",
-      "review": "partial",
+      "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
+      "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed only completion documentation records. Complete changed prior records preserved under agyCompletionPriorRecord; every unrelated semantic record unchanged. Closure concerns selected practical-priority campaign, not a full repository audit.",
+      "scope": "Scoped maintenance record update: prior record fields retained, unrelated semantic records unchanged, new source hashes and bounded review depth checked. Self fingerprint refreshed after validation; no all-files audit resumed.",
       "evidence": [
-        "docs/audits/AGY_CAMPAIGN_COMPLETION.md",
-        ".codex-validation/agy-audit-coordination/build/agy-completion-assessment/"
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
       ],
       "agyCompletionPriorRecord": {
         "sha256": "6f09760481fca16426d613bf59adf52b13b8836931cb98a83ffbc8ecf9ba9271",
@@ -34762,6 +34800,16 @@
             }
           }
         }
+      },
+      "studioMaintenancePriorRecord": {
+        "sha256": "7709d94bdb4a92cc78e739fc8800b0ebf26dd636d5c3157b1c2097cfe2675b39",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only completion documentation records. Complete changed prior records preserved under agyCompletionPriorRecord; every unrelated semantic record unchanged. Closure concerns selected practical-priority campaign, not a full repository audit.",
+        "evidence": [
+          "docs/audits/AGY_CAMPAIGN_COMPLETION.md",
+          ".codex-validation/agy-audit-coordination/build/agy-completion-assessment/"
+        ]
       }
     },
     "docs/audits/pass288-pending-elevation-audit.md": {
@@ -34852,7 +34900,7 @@
       "sha256": "f50dacc896f21769ff7005de214beee4c2786f82b6bb31698e794303ff4e040d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across \u00b1\u03c0, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
+      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across ±π, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -36706,13 +36754,15 @@
       }
     },
     "docs/audits/AGY_IMPROVEMENT_STATE.md": {
-      "sha256": "85c6f5d21e225389daad21b6c3f0f2d584fa1a7911d2ce63a06d63f86660d029",
-      "review": "partial",
-      "validation": "not-applicable",
-      "scope": "Reviewed completed campaign summary, terminal reviewer state, explicit remaining physical/native boundaries and restart/publication constraints; prior current section and all historical evidence preserved.",
+      "sha256": "22b8214a0e5709b99028402d5a7c8267d1d1bfff29808c5d4b15fc9e47ed637b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Maintenance report or historical-evidence pointer reviewed against observed test results, independent patch correction and byte-verified worktree archives; original closed goal/history preserved.",
       "evidence": [
-        "docs/audits/AGY_CAMPAIGN_COMPLETION.md",
-        ".codex-validation/agy-audit-coordination/build/agy-completion-assessment/"
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
       ],
       "agyCompletionPriorRecord": {
         "sha256": "e0ab7b559d13574359d4e5fe6ae4c9cb6c093b01702256dd9b204475180e61dd",
@@ -36814,6 +36864,16 @@
             }
           }
         }
+      },
+      "studioMaintenancePriorRecord": {
+        "sha256": "85c6f5d21e225389daad21b6c3f0f2d584fa1a7911d2ce63a06d63f86660d029",
+        "review": "partial",
+        "validation": "not-applicable",
+        "scope": "Reviewed completed campaign summary, terminal reviewer state, explicit remaining physical/native boundaries and restart/publication constraints; prior current section and all historical evidence preserved.",
+        "evidence": [
+          "docs/audits/AGY_CAMPAIGN_COMPLETION.md",
+          ".codex-validation/agy-audit-coordination/build/agy-completion-assessment/"
+        ]
       }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4TuningRequestTransport.kt": {
@@ -36957,14 +37017,26 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseSessionOwnershipAuditTest.kt": {
-      "sha256": "f538bbf91f2da990d93d2012a1efe524f20979c523f037b019d81670ba0f71d9",
-      "review": "reviewed",
+      "sha256": "779b507f23098add6cce9b66032c147616cd809377d20d8bb87ddb0f8aa977fd",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed all three real-session drivebase regressions/positive controls, barrier discrimination, discard flow and cleanup. Two intended baseline assertions fail; fixed suite and reviewed disk save pass.",
+      "scope": "Fixture refactor and unchanged scenario assertions/barriers reviewed against 3033daf0a; existing scenario execution verified in combined 232-test suite. No new whole-file audit claim.",
       "evidence": [
-        "docs/audits/AGY_SESSION_CALLERS_CHECKPOINT.md",
-        ".codex-validation/agy-audit-coordination/build/agy-session-callers/"
-      ]
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+      ],
+      "studioMaintenancePriorRecord": {
+        "sha256": "f538bbf91f2da990d93d2012a1efe524f20979c523f037b019d81670ba0f71d9",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed all three real-session drivebase regressions/positive controls, barrier discrimination, discard flow and cleanup. Two intended baseline assertions fail; fixed suite and reviewed disk save pass.",
+        "evidence": [
+          "docs/audits/AGY_SESSION_CALLERS_CHECKPOINT.md",
+          ".codex-validation/agy-audit-coordination/build/agy-session-callers/"
+        ]
+      }
     },
     "docs/audits/AGY_SESSION_CALLERS_CHECKPOINT.md": {
       "sha256": "42f21c56c1f51df2ac36066784bd759a046f3c775ede939bf536cb86ef704b5b",
@@ -37080,14 +37152,26 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseDiscardRecoveryAuditTest.kt": {
-      "sha256": "e3f42fa3a237c7618e5e0bc4c4080e25edd7d6331be1a4a9d5cc642c0b08a65a",
-      "review": "reviewed",
+      "sha256": "1b7288a559a8e823741641582f7bfcd864b958a35a243a08edfe504944e89eff",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed all five failure/retry/late-read/kind-switch scenarios, real repository/session persistence, corrected canonical tuning fixture and owned scope cleanup. Baseline and corrected variants documented separately; direct model intents during loading are not native UI reachability evidence.",
+      "scope": "Fixture refactor and unchanged scenario assertions/barriers reviewed against 3033daf0a; existing scenario execution verified in combined 232-test suite. No new whole-file audit claim.",
       "evidence": [
-        "docs/audits/AGY_FAILURE_RECOVERY_CHECKPOINT.md",
-        ".codex-validation/agy-audit-coordination/build/agy-failure-recovery/"
-      ]
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+      ],
+      "studioMaintenancePriorRecord": {
+        "sha256": "e3f42fa3a237c7618e5e0bc4c4080e25edd7d6331be1a4a9d5cc642c0b08a65a",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed all five failure/retry/late-read/kind-switch scenarios, real repository/session persistence, corrected canonical tuning fixture and owned scope cleanup. Baseline and corrected variants documented separately; direct model intents during loading are not native UI reachability evidence.",
+        "evidence": [
+          "docs/audits/AGY_FAILURE_RECOVERY_CHECKPOINT.md",
+          ".codex-validation/agy-audit-coordination/build/agy-failure-recovery/"
+        ]
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureDiscardRecoveryAuditTest.kt": {
       "sha256": "ba20f3c13ff9bd3416af815221fb11955768e0e535516c9de0c61c4865eefd42",
@@ -37120,14 +37204,26 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseSaveOwnershipAuditTest.kt": {
-      "sha256": "d42d743757d07fb444dbb7a55d4dde9cf426d3b19bf5d57e647601dec2f8ba03",
-      "review": "reviewed",
+      "sha256": "ec949d085d88e9a542289553fd75db9fd381c00d19972c524a3d990941f0b511",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed all eight scenarios, canonical FTC/profile fixture, immediate intent dispatch, controlled IO/result barriers, state/session/disk assertions, duplicate dispatch count and scope/fixture cleanup. Baseline variants and corrected final source are recorded distinctly.",
+      "scope": "Fixture refactor and unchanged scenario assertions/barriers reviewed against 3033daf0a; existing scenario execution verified in combined 232-test suite. No new whole-file audit claim.",
       "evidence": [
-        "docs/audits/AGY_DRIVEBASE_SAVE_CHECKPOINT.md",
-        ".codex-validation/agy-audit-coordination/build/agy-save-ownership/"
-      ]
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+      ],
+      "studioMaintenancePriorRecord": {
+        "sha256": "d42d743757d07fb444dbb7a55d4dde9cf426d3b19bf5d57e647601dec2f8ba03",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed all eight scenarios, canonical FTC/profile fixture, immediate intent dispatch, controlled IO/result barriers, state/session/disk assertions, duplicate dispatch count and scope/fixture cleanup. Baseline variants and corrected final source are recorded distinctly.",
+        "evidence": [
+          "docs/audits/AGY_DRIVEBASE_SAVE_CHECKPOINT.md",
+          ".codex-validation/agy-audit-coordination/build/agy-save-ownership/"
+        ]
+      }
     },
     "docs/audits/AGY_DRIVEBASE_SAVE_CHECKPOINT.md": {
       "sha256": "223c9fb8747d901954a3f5e1b5ec73f89db6977de9850815eceaa3afb6d35add",
@@ -37140,13 +37236,73 @@
       ]
     },
     "docs/audits/AGY_CAMPAIGN_COMPLETION.md": {
-      "sha256": "9a98a680513dc7888535c23c36f70d912081b682480e329cd3eb92fbdb359f5a",
+      "sha256": "07d2a60eb92d1b29998d1a10bc503530518f358242985adb2bbfe01b32304f7a",
       "review": "reviewed",
-      "validation": "not-applicable",
-      "scope": "Requirement-by-requirement completion assessment against current source identities, actual retained JUnit/native/wire artifacts and named lead dispositions. Explicit hardware/GUI/performance limits; no all-files correctness claim.",
+      "validation": "passed",
+      "scope": "Maintenance report or historical-evidence pointer reviewed against observed test results, independent patch correction and byte-verified worktree archives; original closed goal/history preserved.",
       "evidence": [
-        "docs/audits/AGY_CAMPAIGN_COMPLETION.md",
-        ".codex-validation/agy-audit-coordination/build/agy-completion-assessment/"
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+      ],
+      "studioMaintenancePriorRecord": {
+        "sha256": "9a98a680513dc7888535c23c36f70d912081b682480e329cd3eb92fbdb359f5a",
+        "review": "reviewed",
+        "validation": "not-applicable",
+        "scope": "Requirement-by-requirement completion assessment against current source identities, actual retained JUnit/native/wire artifacts and named lead dispositions. Explicit hardware/GUI/performance limits; no all-files correctness claim.",
+        "evidence": [
+          "docs/audits/AGY_CAMPAIGN_COMPLETION.md",
+          ".codex-validation/agy-audit-coordination/build/agy-completion-assessment/"
+        ]
+      }
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutineProjectRefreshProjection.kt": {
+      "sha256": "cd1571871d387d3b61b399a61ff53d2f22c4ce4772727ad81425c950849a9be9",
+      "validation": "passed",
+      "review": "reviewed",
+      "scope": "Full extracted refresh selection and publication policy; preserves latest dirty/revision fields, defaults, metadata/dimensions, diagnostics and validation inside state update. Source expressions and existing PathPlanner/routine behavior verified.",
+      "evidence": [
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseAuditFixtureLifecycleTest.kt": {
+      "sha256": "7e6ee02b60225843819830442df990d60ba41009b4be84ac7f6bde9bb14a6f4a",
+      "validation": "passed",
+      "review": "reviewed",
+      "scope": "Full new lifecycle tests verify pending child join and cancellation cleanup/return, with controlled coroutine entry and bounded cleanup; both executed.",
+      "evidence": [
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseAuditFixtures.kt": {
+      "sha256": "68f5e12a589e4c8c76ca6d2e038f13bc85a14b8c892833d0126aeb2a278a25af",
+      "validation": "passed",
+      "review": "reviewed",
+      "scope": "Full new shared fixture: canonical metadata/template/tuning setup, explicit dispatcher differences, bounded joins tied to owned Job, setup failure cleanup and all three consumer suites; rejected worker DTO and coroutine receiver mistakes corrected.",
+      "evidence": [
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+      ]
+    },
+    "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md": {
+      "sha256": "a9428205bd1b24dab086f3703ace2a488ab72315869ba900cbd3e649aca97440",
+      "validation": "passed",
+      "review": "reviewed",
+      "scope": "Maintenance report or historical-evidence pointer reviewed against observed test results, independent patch correction and byte-verified worktree archives; original closed goal/history preserved.",
+      "evidence": [
+        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
       ]
     }
   }

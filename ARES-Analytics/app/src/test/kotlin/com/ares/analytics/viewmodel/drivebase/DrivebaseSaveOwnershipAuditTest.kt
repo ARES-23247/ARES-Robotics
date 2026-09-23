@@ -2,31 +2,15 @@ package com.ares.analytics.viewmodel.drivebase
 
 import com.ares.analytics.service.drivebase.DriveGeometry
 import com.ares.analytics.service.drivebase.DrivebaseDocument
-import com.ares.analytics.service.drivebase.DrivebaseKind
-import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
-import com.ares.analytics.service.drivebase.canonicalTemplate
 import com.ares.analytics.service.drivebase.toCanonicalDrivebase
-import com.ares.analytics.service.drivebase.toUiDrivebase
-import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
-import com.ares.analytics.service.versioncontrol.ProjectBackupPlan
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
-import com.ares.analytics.shared.models.League
 import com.areslib.drivetrain.DrivetrainDocumentCodec
-import com.areslib.project.AresCoordinateConvention
-import com.areslib.project.AresFtcRuntimeOptionsDocument
-import com.areslib.project.AresLeague
-import com.areslib.project.AresProjectIdentityDocument
-import com.areslib.project.AresProjectMetadataCodec
-import com.areslib.project.AresProjectMetadataDocument
-import com.areslib.project.AresRuntimeOptionsDocument
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import org.mockito.ArgumentMatchers.*
 import org.mockito.Mockito.*
-import java.io.File
-import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -34,78 +18,9 @@ import kotlin.test.*
 
 class DrivebaseSaveOwnershipAuditTest {
 
-    private class Fixture(
-        val root: File,
-        val projectDir: File,
-        val projectId: String,
-        val repository: DrivebaseProjectRepository,
-        val session: ProjectSession,
-        var checkpointRecorder: ProjectCheckpointRecorder = ProjectCheckpointRecorder.NONE,
-    ) {
-        // Enter intents immediately; IO barriers control result delivery without timing sleeps.
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-
-        fun createViewModel(): DrivebaseBuilderViewModel = DrivebaseBuilderViewModel(
-            projectPath = projectDir.path,
-            projectId = projectId,
-            league = League.FTC,
-            scope = scope,
-            repository = repository,
-            checkpointRecorder = checkpointRecorder,
-            projectSession = session,
-        )
-
-        suspend fun joinScopeChildren() {
-            withTimeout(10_000) {
-                do {
-                    val active = scope.coroutineContext[Job]!!.children.toList()
-                    if (active.isEmpty()) break
-                    active.joinAll()
-                } while (scope.coroutineContext[Job]!!.children.any())
-            }
-        }
-
-        suspend fun close() {
-            scope.cancel()
-            withTimeout(10_000) { scope.coroutineContext[Job]!!.join() }
-            assertTrue(root.deleteRecursively(), "Fixture cleanup failed")
-        }
-    }
-
-    private fun createFixture(
-        projectId: String = "test-project",
-        checkpointRecorder: ProjectCheckpointRecorder = ProjectCheckpointRecorder.NONE,
-    ): Fixture {
-        val root = Files.createTempDirectory("drivebase-save-ownership-audit").toFile()
-        val projectDir = File(root, projectId)
-        File(projectDir, ".ares/project.json").apply {
-            parentFile.mkdirs()
-            writeText(AresProjectMetadataCodec.encode(metadataDocument(projectId)))
-        }
-        val rawTemplate = canonicalTemplate(projectId, DrivebaseKind.FTC_MECANUM, League.FTC).let { template ->
-            template.copy(geometry = template.geometry.copy(trackWidthMeters = 0.40, wheelBaseMeters = 0.40))
-        }
-        File(projectDir, ".ares/drivetrains/primary.aresdrivetrain").apply {
-            parentFile.mkdirs()
-            writeText(DrivetrainDocumentCodec.encode(rawTemplate))
-        }
-        val realRepo = DrivebaseProjectRepository()
-        // Setup clean canonical tuning profiles via repository.saveReviewed.
-        // Missing profile legitimately leaves dirty=true.
-        realRepo.saveReviewed(
-            projectDir.path,
-            DrivetrainDocumentCodec.contentHash(rawTemplate),
-            rawTemplate.toUiDrivebase(),
-        )
-
-        val repository = spy(realRepo)
-        val session = spy(ProjectSession(drivebaseRepository = repository))
-        return Fixture(root, projectDir, projectId, repository, session, checkpointRecorder)
-    }
-
     @Test
     fun `later edit survives a successful reviewed save with true saved revision and second reviewed save works`() = runBlocking {
-        val fixture = createFixture()
+        val fixture = createSaveOwnershipAuditFixture()
         val saveEntered = CompletableDeferred<Unit>()
         val saveRelease = CountDownLatch(1)
         try {
@@ -199,7 +114,7 @@ class DrivebaseSaveOwnershipAuditTest {
 
     @Test
     fun `deterministic duplicate confirmation keeps disk and session accurate with no false error`() = runBlocking {
-        val fixture = createFixture()
+        val fixture = createSaveOwnershipAuditFixture()
         val saveEntered = CompletableDeferred<Unit>()
         val saveRelease = CountDownLatch(1)
         try {
@@ -254,7 +169,7 @@ class DrivebaseSaveOwnershipAuditTest {
 
     @Test
     fun `later invalid edit or review save retains validation message while prior save is pending`() = runBlocking {
-        val fixture = createFixture()
+        val fixture = createSaveOwnershipAuditFixture()
         val saveEntered = CompletableDeferred<Unit>()
         val saveRelease = CountDownLatch(1)
         try {
@@ -306,7 +221,7 @@ class DrivebaseSaveOwnershipAuditTest {
 
     @Test
     fun `reload with late save result preserves reload outcome and distinct later draft`() = runBlocking {
-        val fixture = createFixture()
+        val fixture = createSaveOwnershipAuditFixture()
         val saveEntered = CompletableDeferred<Unit>()
         val saveRelease = CountDownLatch(1)
         try {
@@ -368,7 +283,7 @@ class DrivebaseSaveOwnershipAuditTest {
 
     @Test
     fun `reload with late save failure does not clobber completed reload`() = runBlocking {
-        val fixture = createFixture()
+        val fixture = createSaveOwnershipAuditFixture()
         val saveEntered = CompletableDeferred<Unit>()
         val saveRelease = CountDownLatch(1)
         try {
@@ -429,7 +344,7 @@ class DrivebaseSaveOwnershipAuditTest {
             check(checkpointRelease.await(10, TimeUnit.SECONDS)) { "Checkpoint release barrier was not released" }
             throw IllegalStateException("Simulated git checkpoint failure")
         }
-        val fixture = createFixture(checkpointRecorder = checkpointRecorder)
+        val fixture = createSaveOwnershipAuditFixture(checkpointRecorder = checkpointRecorder)
         try {
             val vm = fixture.createViewModel()
             withTimeout(10_000) { vm.state.first { !it.loading && it.saved != null } }
@@ -465,7 +380,7 @@ class DrivebaseSaveOwnershipAuditTest {
         val checkpointRecorder = ProjectCheckpointRecorder { _, _, _ ->
             throw IllegalStateException("Git lock busy")
         }
-        val fixture = createFixture(checkpointRecorder = checkpointRecorder)
+        val fixture = createSaveOwnershipAuditFixture(checkpointRecorder = checkpointRecorder)
         try {
             val vm = fixture.createViewModel()
             withTimeout(10_000) { vm.state.first { !it.loading && it.saved != null } }
@@ -490,7 +405,7 @@ class DrivebaseSaveOwnershipAuditTest {
 
     @Test
     fun `cancelled save does not report stale cancellation error`() = runBlocking {
-        val fixture = createFixture()
+        val fixture = createSaveOwnershipAuditFixture()
         val saveEntered = CompletableDeferred<Unit>()
         val saveRelease = CountDownLatch(1)
         try {
@@ -529,18 +444,4 @@ class DrivebaseSaveOwnershipAuditTest {
             fixture.close()
         }
     }
-
-    private fun metadataDocument(projectId: String) = AresProjectMetadataDocument(
-        projectId = projectId,
-        identity = AresProjectIdentityDocument("23247", "2026", projectId, projectId),
-        league = AresLeague.FTC,
-        coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
-        robotLengthMeters = 0.46,
-        robotWidthMeters = 0.46,
-        fieldLengthMeters = 3.6576,
-        fieldWidthMeters = 3.6576,
-        runtimeOptions = AresRuntimeOptionsDocument(
-            ftc = AresFtcRuntimeOptionsDocument(),
-        ),
-    )
 }

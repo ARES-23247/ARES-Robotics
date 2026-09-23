@@ -2,6 +2,10 @@
 
 Updated 2026-09-23. Goal: [autonomous local improvement](AGY_IMPROVEMENT_GOAL.md), complete.
 
+Subsequent user-requested [Studio maintenance](STUDIO_MAINTENANCE_CHECKPOINT.md) preserves this
+closed campaign and records the current cleanup evidence and retired review-worktree archives.
+That maintenance uses coordinator branch `codex/studio-maintenance-cleanup` and does not resume the goal.
+
 ## Current checkpoint — read this first
 
 The [completion assessment](AGY_CAMPAIGN_COMPLETION.md) closes the identified practical-priority

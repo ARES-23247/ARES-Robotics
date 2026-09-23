@@ -1,6 +1,5 @@
 package com.ares.analytics.viewmodel.subsystem
 
-import com.ares.analytics.service.project.AresProjectDocuments
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
@@ -8,8 +7,6 @@ import com.ares.analytics.service.project.RemovableProjectDocumentKind
 import com.ares.analytics.service.project.persistence.ProjectDocumentRemovalPlan
 import com.ares.analytics.service.project.persistence.RemovedProjectDocument
 import com.ares.analytics.service.project.persistence.SavedProjectRevision
-import com.ares.analytics.shared.models.League
-import com.areslib.controls.ControllerInputPlatform
 import com.areslib.subsystem.SubsystemDocument
 
 /**
@@ -94,15 +91,6 @@ internal class SubsystemProjectPersistence(
             ),
             staleMessage = "The project changed after this recovery was offered. Reload before restoring.",
         )
-    }
-
-    fun refresh(projectPath: String, league: League) {
-        val target = when (league) {
-            League.FTC -> ControllerInputPlatform.FTC
-            League.FRC -> ControllerInputPlatform.FRC
-            League.XRP -> ControllerInputPlatform.XRP
-        }
-        projectSession?.snapshot(projectPath, target, forceReload = true)
     }
 
     fun currentRevision(fallback: ProjectSessionRevision?): ProjectSessionRevision? =

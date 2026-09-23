@@ -71,7 +71,8 @@ The two final external AGY reviewers ran independently from the assessment sourc
 | Tuning/operator/workspace | `0863f0ec-b7f3-44a9-9610-949ee3f97177` | Report only; 9 reads of 9 distinct paths; terminal |
 | Editor/readiness follow-ups | `0a7727b6-32a9-4f11-ab7b-558b5f6b8328` | Report only; 11 reads of 9 distinct paths; terminal |
 
-Their reports remain in `gemini-completion-tuning` and `gemini-completion-editors` worktrees. Codex
+Their reports were retained in `gemini-completion-tuning` and `gemini-completion-editors` worktrees;
+subsequent [maintenance](STUDIO_MAINTENANCE_CHECKPOINT.md) archived them with verified restore metadata. Codex
 checked their conclusions against raw evidence. Some worker rows attribute combined-suite counts to
 individual components; those are not accepted as component coverage claims. This report and the raw
 JUnit index control the counts. Lower repeated-read counts in this smaller review do not establish

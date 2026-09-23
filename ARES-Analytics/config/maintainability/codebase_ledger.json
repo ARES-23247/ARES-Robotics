@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1113,
+    "totalProductionKotlinFiles": 1114,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 19,
@@ -5072,7 +5072,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 750,
+      "lines": 703,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5570,6 +5570,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutineProjectRefreshProjection.kt",
+      "product": "ARES-Analytics",
+      "lines": 76,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutineTrajectoryPreviewCompiler.kt",
       "product": "ARES-Analytics",
       "lines": 191,
@@ -5632,7 +5642,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemProjectPersistence.kt",
       "product": "ARES-Analytics",
-      "lines": 120,
+      "lines": 108,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

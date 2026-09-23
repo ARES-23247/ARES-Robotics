@@ -1,20 +1,11 @@
 package com.ares.analytics.viewmodel.drivebase
 
 import com.ares.analytics.service.drivebase.DriveGeometry
-import com.ares.analytics.service.drivebase.DrivebaseKind
 import com.ares.analytics.service.drivebase.DrivebaseProjectRepository
-import com.ares.analytics.service.drivebase.canonicalTemplate
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.shared.models.League
 import com.areslib.controls.ControllerInputPlatform
 import com.areslib.drivetrain.DrivetrainDocumentCodec
-import com.areslib.project.AresCoordinateConvention
-import com.areslib.project.AresFtcRuntimeOptionsDocument
-import com.areslib.project.AresLeague
-import com.areslib.project.AresProjectIdentityDocument
-import com.areslib.project.AresProjectMetadataCodec
-import com.areslib.project.AresProjectMetadataDocument
-import com.areslib.project.AresRuntimeOptionsDocument
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import org.mockito.ArgumentMatchers.*
@@ -35,15 +26,7 @@ class DrivebaseSessionOwnershipAuditTest {
             val original = File(root, "original")
             val other = File(root, "other")
             for (project in listOf("original", "other")) {
-                File(root, "$project/.ares/project.json").apply {
-                    parentFile.mkdirs()
-                    writeText(AresProjectMetadataCodec.encode(metadataDocument(project)))
-                }
-                val template = canonicalTemplate(project, DrivebaseKind.FTC_MECANUM, League.FTC)
-                File(root, "$project/.ares/drivetrains/primary.aresdrivetrain").apply {
-                    parentFile.mkdirs()
-                    writeText(DrivetrainDocumentCodec.encode(template))
-                }
+                writeCanonicalProjectFiles(File(root, project), project, canonicalFtcMecanumTemplate(project))
             }
             val repository = spy(DrivebaseProjectRepository())
             val session = spy(ProjectSession(drivebaseRepository = repository))
@@ -98,181 +81,105 @@ class DrivebaseSessionOwnershipAuditTest {
                 assertNull(vmA.state.value.error)
             } finally {
                 aRelease.countDown()
-                scopeA.cancel()
-                withTimeout(10_000) { scopeA.coroutineContext[Job]!!.join() }
-                scopeB.cancel()
-                withTimeout(10_000) { scopeB.coroutineContext[Job]!!.join() }
+                scopeA.cancelAndJoinScope()
+                scopeB.cancelAndJoinScope()
             }
         } finally {
-            assertTrue(root.deleteRecursively(), "Fixture cleanup failed")
+            root.deleteRecursivelyAssertively()
         }
     }
 
     @Test
     fun `superseded repeated reload does not overwrite newer session revision or draft`() = runBlocking {
-        val root = Files.createTempDirectory("drivebase-session-audit").toFile()
+        val fixture = createSessionAuditFixture(projectId = "original")
+        val reloadRelease = CountDownLatch(1)
         try {
-            val original = File(root, "original")
-            File(root, "original/.ares/project.json").apply {
-                parentFile.mkdirs()
-                writeText(AresProjectMetadataCodec.encode(metadataDocument("original")))
+            val vm = fixture.createViewModel()
+            withTimeout(10_000) { vm.state.first { !it.loading && it.saved != null } }
+
+            val firstReloadBarrier = AtomicBoolean(true)
+            val reloadEntered = CompletableDeferred<Unit>()
+
+            doAnswer { invocation ->
+                val snapshot = invocation.callRealMethod()
+                if (invocation.getArgument<String>(0) == fixture.projectDir.path && firstReloadBarrier.compareAndSet(true, false)) {
+                    // Hold delivery of the old document after its real read. A newer reload
+                    // can now observe changed disk contents before the old result returns.
+                    reloadEntered.complete(Unit)
+                    check(reloadRelease.await(10, TimeUnit.SECONDS)) { "First reload read was not released" }
+                }
+                snapshot
+            }.`when`(fixture.session).snapshot(
+                anyString(),
+                eq(ControllerInputPlatform.FTC) ?: ControllerInputPlatform.FTC,
+                anyBoolean(),
+                any<() -> Unit>() ?: {},
+            )
+
+            vm.onIntent(DrivebaseBuilderIntent.Reload)
+            if (vm.state.value.pendingDiscardAction != null) {
+                vm.onIntent(DrivebaseBuilderIntent.ConfirmDiscard)
             }
-            val initialTemplate = canonicalTemplate("original", DrivebaseKind.FTC_MECANUM, League.FTC)
-            val drivetrainFile = File(root, "original/.ares/drivetrains/primary.aresdrivetrain").apply {
-                parentFile.mkdirs()
-                writeText(DrivetrainDocumentCodec.encode(initialTemplate))
+            withTimeout(10_000) { reloadEntered.await() }
+
+            val updatedTemplate = fixture.initialTemplate.copy(
+                geometry = fixture.initialTemplate.geometry.copy(trackWidthMeters = 0.42)
+            )
+            fixture.drivetrainFile.writeText(DrivetrainDocumentCodec.encode(updatedTemplate))
+
+            vm.onIntent(DrivebaseBuilderIntent.Reload)
+            if (vm.state.value.pendingDiscardAction != null) {
+                vm.onIntent(DrivebaseBuilderIntent.ConfirmDiscard)
             }
-
-            val repository = spy(DrivebaseProjectRepository())
-            val session = spy(ProjectSession(drivebaseRepository = repository))
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-            val reloadRelease = CountDownLatch(1)
-            try {
-                val vm = DrivebaseBuilderViewModel(
-                    projectPath = original.path,
-                    projectId = "original",
-                    league = League.FTC,
-                    scope = scope,
-                    repository = repository,
-                    projectSession = session,
-                )
-                withTimeout(10_000) { vm.state.first { !it.loading && it.saved != null } }
-
-                val firstReloadBarrier = AtomicBoolean(true)
-                val reloadEntered = CompletableDeferred<Unit>()
-
-                doAnswer { invocation ->
-                    val snapshot = invocation.callRealMethod()
-                    if (invocation.getArgument<String>(0) == original.path && firstReloadBarrier.compareAndSet(true, false)) {
-                        // Hold delivery of the old document after its real read. A newer reload
-                        // can now observe changed disk contents before the old result returns.
-                        reloadEntered.complete(Unit)
-                        check(reloadRelease.await(10, TimeUnit.SECONDS)) { "First reload read was not released" }
-                    }
-                    snapshot
-                }.`when`(session).snapshot(
-                    anyString(),
-                    eq(ControllerInputPlatform.FTC) ?: ControllerInputPlatform.FTC,
-                    anyBoolean(),
-                    any<() -> Unit>() ?: {},
-                )
-
-                vm.onIntent(DrivebaseBuilderIntent.Reload)
-                if (vm.state.value.pendingDiscardAction != null) {
-                    vm.onIntent(DrivebaseBuilderIntent.ConfirmDiscard)
-                }
-                withTimeout(10_000) { reloadEntered.await() }
-
-                val updatedTemplate = initialTemplate.copy(
-                    geometry = initialTemplate.geometry.copy(trackWidthMeters = 0.42)
-                )
-                drivetrainFile.writeText(DrivetrainDocumentCodec.encode(updatedTemplate))
-
-                vm.onIntent(DrivebaseBuilderIntent.Reload)
-                if (vm.state.value.pendingDiscardAction != null) {
-                    vm.onIntent(DrivebaseBuilderIntent.ConfirmDiscard)
-                }
-                withTimeout(10_000) {
-                    vm.state.first { !it.loading && it.draft.geometry.trackWidthMeters == 0.42 }
-                }
-                val newerRevision = session.state.value.revision
-                assertNotNull(newerRevision)
-                assertEquals(newerRevision, vm.state.value.projectRevision)
-
-                reloadRelease.countDown()
-                withTimeout(10_000) {
-                    do {
-                        val active = scope.coroutineContext[Job]!!.children.toList()
-                        if (active.isEmpty()) break
-                        active.joinAll()
-                    } while (scope.coroutineContext[Job]!!.children.any())
-                }
-
-                assertEquals(newerRevision, session.state.value.revision)
-                assertEquals(newerRevision, vm.state.value.projectRevision)
-                assertEquals(0.42, vm.state.value.draft.geometry.trackWidthMeters)
-                assertNull(vm.state.value.error)
-            } finally {
-                reloadRelease.countDown()
-                scope.cancel()
-                withTimeout(10_000) { scope.coroutineContext[Job]!!.join() }
+            withTimeout(10_000) {
+                vm.state.first { !it.loading && it.draft.geometry.trackWidthMeters == 0.42 }
             }
+            val newerRevision = fixture.session.state.value.revision
+            assertNotNull(newerRevision)
+            assertEquals(newerRevision, vm.state.value.projectRevision)
+
+            reloadRelease.countDown()
+            fixture.joinScopeChildren()
+
+            assertEquals(newerRevision, fixture.session.state.value.revision)
+            assertEquals(newerRevision, vm.state.value.projectRevision)
+            assertEquals(0.42, vm.state.value.draft.geometry.trackWidthMeters)
+            assertNull(vm.state.value.error)
         } finally {
-            assertTrue(root.deleteRecursively(), "Fixture cleanup failed")
+            reloadRelease.countDown()
+            fixture.close()
         }
     }
 
     @Test
     fun `normal load edit review and save with project session succeeds end to end`() = runBlocking {
-        val root = Files.createTempDirectory("drivebase-session-audit").toFile()
+        val fixture = createSessionAuditFixture(projectId = "original")
         try {
-            val original = File(root, "original")
-            File(root, "original/.ares/project.json").apply {
-                parentFile.mkdirs()
-                writeText(AresProjectMetadataCodec.encode(metadataDocument("original")))
-            }
-            val template = canonicalTemplate("original", DrivebaseKind.FTC_MECANUM, League.FTC)
-            File(root, "original/.ares/drivetrains/primary.aresdrivetrain").apply {
-                parentFile.mkdirs()
-                writeText(DrivetrainDocumentCodec.encode(template))
-            }
+            val vm = fixture.createViewModel()
+            withTimeout(10_000) { vm.state.first { !it.loading && it.saved != null } }
+            assertEquals(fixture.projectDir.path, fixture.session.state.value.snapshot?.selection?.projectRoot)
+            val initialRevision = vm.state.value.projectRevision
+            assertNotNull(initialRevision)
 
-            val repository = spy(DrivebaseProjectRepository())
-            val session = spy(ProjectSession(drivebaseRepository = repository))
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            val updatedGeometry = DriveGeometry(trackWidthMeters = 0.42, wheelBaseMeters = 0.42)
+            vm.onIntent(DrivebaseBuilderIntent.UpdateGeometry(updatedGeometry))
+            assertTrue(vm.state.value.dirty)
 
-            try {
-                val vm = DrivebaseBuilderViewModel(
-                    projectPath = original.path,
-                    projectId = "original",
-                    league = League.FTC,
-                    scope = scope,
-                    repository = repository,
-                    projectSession = session,
-                )
-                withTimeout(10_000) { vm.state.first { !it.loading && it.saved != null } }
-                assertEquals(original.path, session.state.value.snapshot?.selection?.projectRoot)
-                val initialRevision = vm.state.value.projectRevision
-                assertNotNull(initialRevision)
+            vm.onIntent(DrivebaseBuilderIntent.ReviewSave)
+            val token = withTimeout(10_000) { vm.state.first { it.saveReview != null } }.saveReview!!.confirmationToken
+            vm.onIntent(DrivebaseBuilderIntent.ConfirmSave(token))
 
-                val updatedGeometry = DriveGeometry(trackWidthMeters = 0.42, wheelBaseMeters = 0.42)
-                vm.onIntent(DrivebaseBuilderIntent.UpdateGeometry(updatedGeometry))
-                assertTrue(vm.state.value.dirty)
+            withTimeout(10_000) { vm.state.first { !it.dirty && it.saveReview == null } }
 
-                vm.onIntent(DrivebaseBuilderIntent.ReviewSave)
-                val token = withTimeout(10_000) { vm.state.first { it.saveReview != null } }.saveReview!!.confirmationToken
-                vm.onIntent(DrivebaseBuilderIntent.ConfirmSave(token))
-
-                withTimeout(10_000) { vm.state.first { !it.dirty && it.saveReview == null } }
-
-                assertNull(vm.state.value.error)
-                assertFalse(vm.state.value.dirty)
-                val diskDoc = repository.load(original.path).getOrThrow()!!
-                assertEquals(0.42, diskDoc.geometry.trackWidthMeters)
-                assertEquals(0.42, diskDoc.geometry.wheelBaseMeters)
-                assertEquals(session.state.value.revision, vm.state.value.projectRevision)
-                assertNotEquals(initialRevision, vm.state.value.projectRevision)
-            } finally {
-                scope.cancel()
-                withTimeout(10_000) { scope.coroutineContext[Job]!!.join() }
-            }
+            assertNull(vm.state.value.error)
+            assertFalse(vm.state.value.dirty)
+            val diskDoc = fixture.repository.load(fixture.projectDir.path).getOrThrow()!!
+            assertEquals(0.42, diskDoc.geometry.trackWidthMeters)
+            assertEquals(0.42, diskDoc.geometry.wheelBaseMeters)
+            assertEquals(fixture.session.state.value.revision, vm.state.value.projectRevision)
+            assertNotEquals(initialRevision, vm.state.value.projectRevision)
         } finally {
-            assertTrue(root.deleteRecursively(), "Fixture cleanup failed")
+            fixture.close()
         }
     }
-
-    private fun metadataDocument(projectId: String) = AresProjectMetadataDocument(
-        projectId = projectId,
-        identity = AresProjectIdentityDocument("23247", "2026", projectId, projectId),
-        league = AresLeague.FTC,
-        coordinateConvention = AresCoordinateConvention.CENTER_ORIGIN_CCW,
-        robotLengthMeters = 0.46,
-        robotWidthMeters = 0.46,
-        fieldLengthMeters = 3.6576,
-        fieldWidthMeters = 3.6576,
-        runtimeOptions = AresRuntimeOptionsDocument(
-            ftc = AresFtcRuntimeOptionsDocument(),
-        ),
-    )
 }
