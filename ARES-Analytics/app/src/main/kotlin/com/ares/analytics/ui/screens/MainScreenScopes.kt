@@ -23,11 +23,29 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
+ * Canonical runtime identity for one workspace's project context.
+ *
+ * Workspace settings like theme or API keys update in-place without invalidating
+ * coroutine lifetimes or view model graphs. Changing either workspace ID or the
+ * underlying project directory constitutes a project boundary transition.
+ */
+internal data class WorkspaceProjectKey(
+    val workspaceId: String,
+    val projectPath: String,
+)
+
+internal fun WorkspaceConfig.projectKey(): WorkspaceProjectKey =
+    WorkspaceProjectKey(workspaceId = id, projectPath = projectPath)
+
+/**
  * Returns a Compose-owned scope whose job is cancelled when the active workspace identity changes.
  * Workspace view models must never borrow the application shell scope.
  */
 @Composable
-internal fun rememberWorkspaceCoroutineScope(workspaceId: String): CoroutineScope = key(workspaceId) {
+internal fun rememberWorkspaceCoroutineScope(
+    workspaceId: String,
+    projectPath: String,
+): CoroutineScope = key(workspaceId, projectPath) {
     rememberCoroutineScope()
 }
 

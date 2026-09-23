@@ -111,7 +111,16 @@ class ProjectSession(
         projectPath: String,
         targetPlatform: ControllerInputPlatform,
         forceReload: Boolean = false,
+    ): ProjectSessionSnapshot = snapshot(projectPath, targetPlatform, forceReload) { }
+
+    /** Recheck asynchronous request ownership after acquiring the shared selection lock. */
+    internal fun snapshot(
+        projectPath: String,
+        targetPlatform: ControllerInputPlatform,
+        forceReload: Boolean,
+        checkRequest: () -> Unit,
     ): ProjectSessionSnapshot = lock.withLock {
+        checkRequest()
         val selection = selection(projectPath, targetPlatform)
         val current = _state.value.snapshot
         if (!forceReload && current?.selection == selection) return current

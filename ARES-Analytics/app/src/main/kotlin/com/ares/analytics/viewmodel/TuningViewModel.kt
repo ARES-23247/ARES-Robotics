@@ -15,6 +15,8 @@ import com.areslib.tuning.TuningValue
 import com.areslib.telemetry.schema.TuningAcknowledgementCodec
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.Job
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +49,7 @@ class TuningViewModel(
     private val workDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val loadGeneration = AtomicLong()
+    private var loadJob: Job? = null
     private val reviewGeneration = AtomicLong()
     private val promotionInFlight = AtomicBoolean()
     private var requestNonce = 0L
@@ -166,24 +169,34 @@ class TuningViewModel(
     private fun load(projectPath: String) {
         // Invalidate readiness at the call site, before a scope can reorder launches.
         val generation = loadGeneration.incrementAndGet()
+        loadJob?.cancel()
         _state.update {
             if (generation != loadGeneration.get()) it
             else if (projectPath.isBlank()) TuningState(loadRevision = generation)
             else TuningState(isLoading = true, projectPath = projectPath, selectedProfileId = it.selectedProfileId, loadRevision = generation)
         }
         if (projectPath.isBlank()) return
-        scope.launch {
+        loadJob = scope.launch {
             if (generation != loadGeneration.get()) return@launch
-            val loaded = withContext(loadDispatcher) {
-                runCatching {
-                    val snapshot = targetPlatform?.let { projectSession?.snapshot(projectPath, it, forceReload = true) }
+            val loaded = runCatching {
+                withContext(loadDispatcher) {
+                    if (generation != loadGeneration.get()) return@withContext null
+                    val snapshot = targetPlatform?.let { platform ->
+                        projectSession?.snapshot(projectPath, platform, forceReload = true) {
+                            coroutineContext.ensureActive()
+                            if (generation != loadGeneration.get()) {
+                                throw CancellationException("Superseded tuning project load")
+                            }
+                        }
+                    }
+                    if (generation != loadGeneration.get()) return@withContext null
                     repository.load(projectPath).getOrThrow() to snapshot?.revision
                 }
             }
             if (generation != loadGeneration.get()) return@launch
-            val result = loaded.map { it.first }
-            val projectRevision = loaded.getOrNull()?.second
-            result.fold(onSuccess = { docs ->
+            loaded.fold(onSuccess = { pair ->
+                if (pair == null || generation != loadGeneration.get()) return@fold
+                val (docs, projectRevision) = pair
                 val selected = docs.profiles.firstOrNull { it.profileId == _state.value.selectedProfileId } ?: docs.profiles.firstOrNull()
                 _state.update { if (generation != loadGeneration.get()) it else it.copy(
                     catalog = docs.catalog,
@@ -193,10 +206,13 @@ class TuningViewModel(
                     proposals = emptyMap(), proposalProvenance = emptyMap(), review = null,
                     isLoading = false, saveStatus = if (selected == null) "Loaded ${docs.catalog.size} declarations; no canonical profile exists yet." else "Loaded ${docs.catalog.size} declared values from ${selected.displayName}.", errorMessage = null
                 ) }
-            }, onFailure = { failure -> _state.update {
-                if (generation != loadGeneration.get()) it else it.copy(isLoading = false,
-                    errorMessage = failure.message ?: "Could not load tuning profiles.")
-            } })
+            }, onFailure = { failure ->
+                if (failure is CancellationException) throw failure
+                _state.update {
+                    if (generation != loadGeneration.get()) it else it.copy(isLoading = false,
+                        errorMessage = failure.message ?: "Could not load tuning profiles.")
+                }
+            })
         }
     }
 
