@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1112,
+    "totalProductionKotlinFiles": 1113,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 19,
@@ -5282,7 +5282,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 699,
+      "lines": 687,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseSavePublication.kt",
+      "product": "ARES-Analytics",
+      "lines": 229,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

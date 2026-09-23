@@ -4,6 +4,36 @@ Updated 2026-09-23. Goal: [autonomous local improvement](AGY_IMPROVEMENT_GOAL.md
 
 ## Current checkpoint — read this first
 
+The commit containing this state closes the [Drivebase save ownership checkpoint](AGY_DRIVEBASE_SAVE_CHECKPOINT.md),
+based on `786074a44159de102c5339cee5ecce7fbbf061a4`. Later drafts/validation survive an earlier save;
+late callbacks respect newer reloads; duplicate in-flight confirmations dispatch one save attempt;
+cancellation is not an application error; history warnings belong to their operation. All 116 focused
+checks pass, including eight new scenarios and prior editor/session guards. No new native UI,
+hardware or loop-performance claim. Root and coordinator are integrated by local fast-forward only.
+
+Coordinator: `.codex-validation/agy-audit-coordination`; root branch `codex/studio-robot-feedback`.
+Evidence: coordinator `build/agy-save-ownership/`. All workers/builds are terminal. No owned application
+was launched; no live handles or cleanup remain. Publication is still unauthorized. Preserve unrelated
+work/processes and previous checkpoints; do not overwrite corrected coordinator code with worker copies.
+
+Latest external AGY workers (Flash High/high): `gemini-drivebase-save-ownership`
+(`0afdfef1-da9e-4342-97a3-2087a7db1417`, two turns), `gemini-drivebase-save-ui`
+(`0fbab10f-ade9-4043-bf55-64687f686ef4`, one turn), `gemini-drivebase-save-storage`
+(`3e4baa07-1fbd-4ed2-9844-b32645894c5f`, one turn). Successful reads / distinct paths:
+26/8, 17/9, 26/10. Advisory read limits were exceeded; speculative claims and incomplete fixes were
+corrected independently. These diagnostics do not prove faster execution or quota savings.
+
+Next action: assess completion of the accepted practical-priority batches against the saved goal
+and concrete unresolved findings. The pending-save lead is now addressed. Reuse valid recorded
+source/test/native evidence; do not reopen a broad all-files audit or launch workers to fill slots.
+If a specific actionable defect remains, select that bounded task; otherwise perform the goal's
+requirement-by-requirement completion audit before changing status. Hardware is unavailable and native
+unhandled-inspection-exception presentation remains unverified. The autonomous goal stays active.
+
+## Closed-batch history (preserved)
+
+### Previous checkpoint 786074a44 (superseded next action)
+
 The commit containing this state closes the [editor failure recovery checkpoint](AGY_FAILURE_RECOVERY_CHECKPOINT.md),
 based on `85194cedfb1e1512be67d4ad65ee6227b928e4f0`. Superstructure and Drivebase preserve dirty drafts
 on failed discard reload; Drivebase rejects late read publication over newer state. All 108 focused
@@ -29,8 +59,6 @@ reproduce later-edit/operation loss before changing it. This batch covers old re
 not old save after newer edits. Native unhandled inspection-exception presentation is still unverified;
 expected invalid-metadata diagnostics now have native evidence. Hardware remains unavailable.
 Keep the autonomous goal active; use bounded practical-impact work, not an all-files campaign.
-
-## Closed-batch history (preserved)
 
 ### Previous checkpoint 85194cedf (superseded next action)
 

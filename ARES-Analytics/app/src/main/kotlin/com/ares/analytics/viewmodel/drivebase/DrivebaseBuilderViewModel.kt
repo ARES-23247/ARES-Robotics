@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
@@ -44,6 +45,9 @@ class DrivebaseBuilderViewModel(
     val state: StateFlow<DrivebaseBuilderState> = _state.asStateFlow()
     private val loadGeneration = AtomicLong()
     private var loadJob: Job? = null
+    private val saveMutex = Mutex()
+    private var activeSaveToken: String? = null
+    private val saveRequestId = AtomicLong()
 
     init { onIntent(DrivebaseBuilderIntent.Reload) }
 
@@ -509,45 +513,29 @@ class DrivebaseBuilderViewModel(
     }
 
     private fun confirmSave(token: String) = scope.launch {
-        val state = _state.value
-        val review = state.saveReview
-        val currentHash = state.saved?.canonical?.let(com.areslib.drivetrain.DrivetrainDocumentCodec::contentHash)
-        if (review == null || review.confirmationToken != token || review.baseContentHash != currentHash) {
-            _state.update { it.copy(error = "The reviewed drivebase changed. Review a fresh diff before saving.") }
-            return@launch
-        }
-        runCatching {
-            withContext(Dispatchers.IO) {
-                val session = projectSession
-                val revision = state.projectRevision
-                if (session != null && revision != null) {
-                    when (val result = session.saveDrivebase(revision, currentHash, state.draft)) {
-                        is ProjectSessionMutationResult.Applied -> result.value to result.snapshot.revision
-                        is ProjectSessionMutationResult.Stale -> error("The project changed after this drivebase loaded. Reload before saving.")
-                        is ProjectSessionMutationResult.Conflict -> error(result.message)
-                        is ProjectSessionMutationResult.Failed -> error(result.message)
-                    }
-                } else {
-                    repository.saveReviewed(state.projectPath, currentHash, state.draft) to null
-                }
+        if (!saveMutex.tryLock()) {
+            if (activeSaveToken == token) {
+                // Duplicate confirmation for the exact same in-flight review token: coalesce.
+                return@launch
             }
-        }.fold(
-            onSuccess = { (saved, revision) ->
-                _state.update { it.copy(saved = saved, draft = saved, projectRevision = revision ?: it.projectRevision, saveReview = null, tuningProfileRepairIssues = emptyList(), status = "Saved reviewed drivebase ${saved.canonical?.let(com.areslib.drivetrain.DrivetrainDocumentCodec::contentHash)?.take(12)}. No robot or vendor source was written.", error = null, dirty = false) }
-                scope.launch {
-                    runCatching {
-                        checkpointRecorder.checkpoint(
-                            state.projectPath,
-                            "Saved ${saved.displayName} drivebase",
-                            setOf(".ares/drivetrains", ".ares/history/drivetrains", ".ares/tuning"),
-                        )
-                    }.onFailure { failure ->
-                        _state.update { it.copy(status = "Drivebase saved, but automatic Project History checkpoint failed: ${failure.message}") }
-                    }
-                }
-            },
-            onFailure = { failure -> _state.update { it.copy(error = failure.message ?: "Could not save the drivebase." ) } }
-        )
+            saveMutex.lock()
+        }
+        try {
+            activeSaveToken = token
+            DrivebaseSavePublication.coordinateSave(
+                scope = scope,
+                stateFlow = _state,
+                session = projectSession,
+                repository = repository,
+                checkpointRecorder = checkpointRecorder,
+                loadGeneration = loadGeneration,
+                saveRequestId = saveRequestId,
+                token = token,
+            )
+        } finally {
+            activeSaveToken = null
+            saveMutex.unlock()
+        }
     }
 
 }
