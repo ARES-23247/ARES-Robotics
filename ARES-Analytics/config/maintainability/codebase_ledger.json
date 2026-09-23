@@ -5752,7 +5752,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/tuning/GuidedTuningExperimentViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 569,
+      "lines": 628,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

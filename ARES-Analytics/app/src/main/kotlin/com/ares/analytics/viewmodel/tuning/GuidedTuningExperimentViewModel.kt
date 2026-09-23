@@ -27,6 +27,7 @@ import com.ares.analytics.shared.models.WorkspaceConfig
 import com.ares.analytics.viewmodel.TuningState
 import com.areslib.tuning.TuningParameterType
 import com.areslib.tuning.TuningValue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -118,6 +119,7 @@ class GuidedTuningExperimentViewModel(
     private val _state = MutableStateFlow(GuidedTuningExperimentState())
     val state: StateFlow<GuidedTuningExperimentState> = _state.asStateFlow()
     private var workJob: Job? = null
+    private var generation = 0L
 
     init {
         reloadExperiments()
@@ -141,11 +143,16 @@ class GuidedTuningExperimentViewModel(
             GuidedTuningExperimentIntent.CreateAndStage -> createAndStage()
             GuidedTuningExperimentIntent.RefreshTuningContext -> refreshTuningContext()
             GuidedTuningExperimentIntent.RefreshCandidateRuns -> refreshCandidateRuns()
-            is GuidedTuningExperimentIntent.SelectCandidateRun -> _state.value = _state.value.copy(
-                selectedCandidateSessionId = intent.sessionId,
-                comparisonReport = null,
-                errorMessage = null,
-            )
+            is GuidedTuningExperimentIntent.SelectCandidateRun -> {
+                generation++
+                workJob?.cancel()
+                _state.value = _state.value.copy(
+                    selectedCandidateSessionId = intent.sessionId,
+                    comparisonReport = null,
+                    isWorking = false,
+                    errorMessage = null,
+                )
+            }
             GuidedTuningExperimentIntent.EvaluateCandidate -> evaluateCandidate()
             is GuidedTuningExperimentIntent.Decide -> decide(intent.decision, intent.note, intent.nextTest)
             GuidedTuningExperimentIntent.StartRevision -> startRevision()
@@ -156,6 +163,8 @@ class GuidedTuningExperimentViewModel(
     }
 
     private fun begin(seed: GuidedTuningExperimentSeed) {
+        generation++
+        workJob?.cancel()
         val firstParameter = editableRows().firstOrNull()?.declaration?.uid
         _state.value = _state.value.copy(
             seed = seed,
@@ -172,6 +181,7 @@ class GuidedTuningExperimentViewModel(
             candidateRuns = emptyList(),
             selectedCandidateSessionId = null,
             comparisonReport = null,
+            isWorking = false,
             statusMessage = "Choose one typed parameter and write a testable prediction. The finding is evidence, not a proven cause.",
             errorMessage = if (firstParameter == null) "This project has no editable numeric tuning declarations." else null,
         )
@@ -225,11 +235,12 @@ class GuidedTuningExperimentViewModel(
             ?: return fail("Enter a numeric success threshold percent.")
         if (threshold !in 0.1..100.0) return fail("Choose a success threshold from 0.1% through 100%.")
         if (current.safetyNotes.isBlank()) return fail("Record the Local Sim safety boundary for this experiment.")
+        val request = ++generation
         workJob?.cancel()
         _state.value = current.copy(isWorking = true, errorMessage = null)
         workJob = scope.launch {
-            runCatching {
-                withContext(Dispatchers.IO) {
+            try {
+                val experiment = withContext(Dispatchers.IO) {
                     repository.create(
                         workspace,
                         profile,
@@ -248,7 +259,7 @@ class GuidedTuningExperimentViewModel(
                         ),
                     )
                 }
-            }.onSuccess { experiment ->
+                if (request != generation) return@launch
                 val path = repository.relativePath(experiment)
                 val hash = repository.sha256(workspace.projectPath, experiment)
                 stageProposal(
@@ -271,62 +282,83 @@ class GuidedTuningExperimentViewModel(
                     errorMessage = null,
                 )
                 refreshCandidateRuns()
-            }.onFailure { fail(it.message ?: "The experiment could not be created.") }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (failure: Throwable) {
+                if (request == generation) {
+                    fail(failure.message ?: "The experiment could not be created.")
+                }
+            }
         }
     }
 
     private fun refreshCandidateRuns() {
         val experiment = _state.value.experiment ?: return
+        val request = ++generation
         workJob?.cancel()
         _state.value = _state.value.copy(isWorking = true, errorMessage = null)
         workJob = scope.launch {
-            runCatching { runRepository.listWorkspaceSessions(workspace).let(experiment::candidateRuns) }
-                .onSuccess { sessions ->
-                    val selected = _state.value.selectedCandidateSessionId?.takeIf { id -> sessions.any { it.sessionId == id } }
-                        ?: sessions.firstOrNull()?.sessionId
-                    _state.value = _state.value.copy(
-                        candidateRuns = sessions,
-                        selectedCandidateSessionId = selected,
-                        isWorking = false,
-                        statusMessage = if (sessions.isEmpty()) {
-                            "No new simulation run is recorded yet. Run the same test, stop recording, then refresh."
-                        } else {
-                            "Found ${sessions.size} candidate run(s) recorded after the experiment snapshot."
-                        },
-                    )
+            try {
+                val runs = runRepository.listWorkspaceSessions(workspace).let(experiment::candidateRuns)
+                if (request != generation) return@launch
+                val selected = _state.value.selectedCandidateSessionId?.takeIf { id -> runs.any { it.sessionId == id } }
+                    ?: runs.firstOrNull()?.sessionId
+                _state.value = _state.value.copy(
+                    candidateRuns = runs,
+                    selectedCandidateSessionId = selected,
+                    isWorking = false,
+                    statusMessage = if (runs.isEmpty()) {
+                        "No new simulation run is recorded yet. Run the same test, stop recording, then refresh."
+                    } else {
+                        "Found ${runs.size} candidate run(s) recorded after the experiment snapshot."
+                    },
+                )
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (failure: Throwable) {
+                if (request == generation) {
+                    fail(failure.message ?: "Candidate runs could not be loaded.")
                 }
-                .onFailure { fail(it.message ?: "Candidate runs could not be loaded.") }
+            }
         }
     }
 
     private fun evaluateCandidate() {
         val experiment = _state.value.experiment ?: return fail("Create the experiment snapshot first.")
         val candidateId = _state.value.selectedCandidateSessionId ?: return fail("Record and select a new simulation run first.")
+        val request = ++generation
         workJob?.cancel()
         _state.value = _state.value.copy(isWorking = true, errorMessage = null)
         workJob = scope.launch {
-            runCatching { evaluator.evaluate(workspace, experiment, candidateId) }
-                .onSuccess { (evaluated, report) ->
-                    val saved = withContext(Dispatchers.IO) { repository.update(workspace.projectPath, evaluated) }
-                    val path = repository.relativePath(saved)
-                    val hash = repository.sha256(workspace.projectPath, saved)
-                    stageProposal(
-                        GuidedExperimentProposal(
-                            saved.change.key,
-                            saved.change.proposed.toTuningValue(),
-                            TuningValueProvenance("Guided simulation experiment", saved.evaluation?.summary.orEmpty(), path, hash),
-                        )
+            try {
+                val (evaluated, report) = evaluator.evaluate(workspace, experiment, candidateId)
+                if (request != generation) return@launch
+                val saved = withContext(Dispatchers.IO) { repository.update(workspace.projectPath, evaluated) }
+                if (request != generation) return@launch
+                val path = repository.relativePath(saved)
+                val hash = repository.sha256(workspace.projectPath, saved)
+                stageProposal(
+                    GuidedExperimentProposal(
+                        saved.change.key,
+                        saved.change.proposed.toTuningValue(),
+                        TuningValueProvenance("Guided simulation experiment", saved.evaluation?.summary.orEmpty(), path, hash),
                     )
-                    _state.value = _state.value.copy(
-                        experiment = saved,
-                        experiments = repository.list(workspace.projectPath),
-                        comparisonReport = report,
-                        isWorking = false,
-                        statusMessage = saved.evaluation?.summary,
-                        errorMessage = null,
-                    )
+                )
+                _state.value = _state.value.copy(
+                    experiment = saved,
+                    experiments = repository.list(workspace.projectPath),
+                    comparisonReport = report,
+                    isWorking = false,
+                    statusMessage = saved.evaluation?.summary,
+                    errorMessage = null,
+                )
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (failure: Throwable) {
+                if (request == generation) {
+                    fail(failure.message ?: "The baseline and candidate runs could not be compared.")
                 }
-                .onFailure { fail(it.message ?: "The baseline and candidate runs could not be compared.") }
+            }
         }
     }
 
@@ -347,18 +379,19 @@ class GuidedTuningExperimentViewModel(
             ExperimentDecision.ROLL_BACK -> ExperimentPhase.ROLLED_BACK
             ExperimentDecision.UNDECIDED -> ExperimentPhase.EVALUATED
         }
+        val request = ++generation
         workJob?.cancel()
         _state.value = _state.value.copy(isWorking = true, errorMessage = null)
         workJob = scope.launch {
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    val saved = repository.update(
+            try {
+                val (saved, experiments) = withContext(Dispatchers.IO) {
+                    val updated = repository.update(
                         workspace.projectPath,
                         experiment.copy(decision = decision, decisionNote = note.trim(), nextTest = nextTest.trim(), phase = phase),
                     )
-                    saved to repository.list(workspace.projectPath)
+                    updated to repository.list(workspace.projectPath)
                 }
-            }.onSuccess { (saved, experiments) ->
+                if (request != generation) return@launch
                 if (decision == ExperimentDecision.REJECT || decision == ExperimentDecision.ROLL_BACK) removeProposal(saved.change.key)
                 _state.value = _state.value.copy(
                     experiment = saved,
@@ -373,7 +406,13 @@ class GuidedTuningExperimentViewModel(
                     },
                     errorMessage = null,
                 )
-            }.onFailure { fail(it.message ?: "The experiment decision could not be saved.") }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (failure: Throwable) {
+                if (request == generation) {
+                    fail(failure.message ?: "The experiment decision could not be saved.")
+                }
+            }
         }
     }
 
@@ -382,6 +421,8 @@ class GuidedTuningExperimentViewModel(
         if (experiment.phase != ExperimentPhase.REVISION_REQUESTED) {
             return fail("Record a Revise decision before starting a new candidate.")
         }
+        generation++
+        workJob?.cancel()
         removeProposal(experiment.change.key)
         _state.value = _state.value.copy(
             experiment = null,
@@ -394,6 +435,7 @@ class GuidedTuningExperimentViewModel(
             successThresholdText = DEFAULT_SUCCESS_THRESHOLD,
             safetyNotes = DEFAULT_SAFETY_NOTES,
             requestPeerReview = false,
+            isWorking = false,
             statusMessage = "The previous experiment remains saved. Choose one bounded value and write a new prediction.",
             errorMessage = null,
         )
@@ -401,6 +443,8 @@ class GuidedTuningExperimentViewModel(
     }
 
     private fun loadExperiment(uid: String) {
+        generation++
+        workJob?.cancel()
         runCatching { repository.load(workspace.projectPath, uid) }
             .onSuccess { experiment ->
                 val proposalRow = editableRows().firstOrNull {
@@ -436,6 +480,7 @@ class GuidedTuningExperimentViewModel(
                     candidateRuns = emptyList(),
                     selectedCandidateSessionId = experiment.candidateSessionId,
                     comparisonReport = null,
+                    isWorking = false,
                     statusMessage = "Loaded ${experiment.title}.",
                     errorMessage = if (proposal == null) {
                         "The saved experiment's parameter is no longer declared by this project. Evidence remains readable, but the candidate cannot be applied."
@@ -448,12 +493,21 @@ class GuidedTuningExperimentViewModel(
 
     private fun export(destination: File) {
         val experiment = _state.value.experiment ?: return fail("Choose an experiment to export.")
+        val request = ++generation
         workJob?.cancel()
         _state.value = _state.value.copy(isWorking = true, errorMessage = null)
         workJob = scope.launch {
-            runCatching { withContext(Dispatchers.IO) { exportExperimentReport(experiment, destination) } }
-                .onSuccess { _state.value = _state.value.copy(isWorking = false, statusMessage = "Saved ${destination.name}") }
-                .onFailure { fail(it.message ?: "The mentor/student report could not be saved.") }
+            try {
+                withContext(Dispatchers.IO) { exportExperimentReport(experiment, destination) }
+                if (request != generation) return@launch
+                _state.value = _state.value.copy(isWorking = false, statusMessage = "Saved ${destination.name}")
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (failure: Throwable) {
+                if (request == generation) {
+                    fail(failure.message ?: "The mentor/student report could not be saved.")
+                }
+            }
         }
     }
 
@@ -482,9 +536,14 @@ class GuidedTuningExperimentViewModel(
 
     private fun reloadExperiments() {
         scope.launch {
-            runCatching { withContext(Dispatchers.IO) { repository.list(workspace.projectPath) } }
-                .onSuccess { experiments -> _state.value = _state.value.copy(experiments = experiments) }
-                .onFailure { fail(it.message ?: "Saved tuning experiments could not be loaded.") }
+            try {
+                val experiments = withContext(Dispatchers.IO) { repository.list(workspace.projectPath) }
+                _state.value = _state.value.copy(experiments = experiments)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (failure: Throwable) {
+                fail(failure.message ?: "Saved tuning experiments could not be loaded.")
+            }
         }
     }
 

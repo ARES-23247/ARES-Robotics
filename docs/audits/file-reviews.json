@@ -3289,14 +3289,24 @@
       "sha256": "256092d39aebb7e3e2dab45f44c5e0c8a3c3346b40189eca0223dc0fe0b74f54"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningProfileRepository.kt": {
-      "review": "reviewed",
+      "sha256": "a1ebc0c9932f05c4dc755995c9d6a91941c44f5dd6ef51fa6a80a2810d42249d",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated lines 1-281: evidenceErrors, load, loadForDrivebaseEdit, promote, promoteLocked, reviewToken, profileFile, validateEvidence, and writeHistory. Verified multi-document tuning declaration validation across drivetrains, subsystems, and global components, strict UID and key uniqueness, promotion verification ensuring parameters are not read-only vendor parameters, cryptographic evidence verification (SHA-256 match, regular project file existence, path containment), atomic multi-file promotion commit via ProjectMutationTransaction.run, and path normalization blocking symlink redirection.",
+      "scope": "Bounded load/promote review of preflight context/revision validation and transaction use. No practical defect found; reused 40 passing authoring/persistence/value-resolution tests. Did not accept redundant/incomplete worker tests or infer all filesystem failures are handled.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+        "docs/audits/AGY_OPERATOR_GUIDED_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-ui-check/"
       ],
-      "sha256": "a1ebc0c9932f05c4dc755995c9d6a91941c44f5dd6ef51fa6a80a2810d42249d"
+      "agyOperatorGuidedPriorRecord": {
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated lines 1-281: evidenceErrors, load, loadForDrivebaseEdit, promote, promoteLocked, reviewToken, profileFile, validateEvidence, and writeHistory. Verified multi-document tuning declaration validation across drivetrains, subsystems, and global components, strict UID and key uniqueness, promotion verification ensuring parameters are not read-only vendor parameters, cryptographic evidence verification (SHA-256 match, regular project file existence, path containment), atomic multi-file promotion commit via ProjectMutationTransaction.run, and path normalization blocking symlink redirection.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json"
+        ],
+        "sha256": "a1ebc0c9932f05c4dc755995c9d6a91941c44f5dd6ef51fa6a80a2810d42249d"
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/tuning/TuningProposalInbox.kt": {
       "sha256": "da22aa6cf8c0130866c1c6383831aaf17eedc51b45de1f28895d73271b965c7b",
@@ -7578,13 +7588,23 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/tuning/GuidedTuningExperimentViewModel.kt": {
-      "sha256": "2ae008bb659b67931970cb0e2c532a05760afc5d83226f9721df875bfbb13f8a",
-      "review": "reviewed",
+      "sha256": "8ffd1c1fe4bfc8f46f46daac84c877b0b95d5562b183098d466a3abd9c124dfa",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified GuidedTuningExperimentViewModel student/mentor scientific tuning experiment workflow. Validated single-parameter bounded proposal creation via GuidedTuningProposalPolicy, staging to TuningState with provenance, candidate simulation evaluation against baseline findings, decision states (ACCEPT allowed only on demonstrated metric improvement), and atomic Markdown report export.",
+      "scope": "Reviewed asynchronous context replacement, cancellation propagation, generation guards and proposal/report publication in accepted diff. Three baseline regressions fail at intended assertions; corrected four lifecycle tests and 53 existing guided/profile tests pass. Other workflow behavior is not newly fully audited.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/AGY_OPERATOR_GUIDED_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-ui-check/"
+      ],
+      "agyOperatorGuidedPriorRecord": {
+        "sha256": "2ae008bb659b67931970cb0e2c532a05760afc5d83226f9721df875bfbb13f8a",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified GuidedTuningExperimentViewModel student/mentor scientific tuning experiment workflow. Validated single-parameter bounded proposal creation via GuidedTuningProposalPolicy, staging to TuningState with provenance, candidate simulation evaluation against baseline findings, decision states (ACCEPT allowed only on demonstrated metric improvement), and atomic Markdown report export.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/resources/academy/catalog.json": {
       "sha256": "7a33c18231340b7e72b62f494fe41c39fd22bdb9ddc5b8c82fb9581b68902aee",
@@ -11984,47 +12004,57 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "53440b84f087b62dd3414082237aeda280e2343e2f5664742c5a24f4ea95c43c",
+      "sha256": "bb1cde830c0a152c959ddf92ad168cb8577dde408f1659c242e8d3279b42ce0a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed regenerated size-inventory delta for the seven production files in this checkpoint, including the new transport helper; verified 1112 production files and zero size violations. This is a size inventory, not whole-codebase review.",
+      "scope": "Reviewed generated source-size change for the guided viewmodel; regenerated inventory without weakening limits. Inventory is size accounting, not behavioral review.",
       "evidence": [
-        "docs/audits/AGY_TUNING_CHECKPOINT.md",
-        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+        "docs/audits/AGY_OPERATOR_GUIDED_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-ui-check/"
       ],
-      "roundtripIntegrationPriorReview": {
-        "sha256": "6b64f7ac3bddb3f107577f6f81f913f535a7643c64e1bfe181b1ca532e815959",
+      "agyOperatorGuidedPriorRecord": {
+        "sha256": "53440b84f087b62dd3414082237aeda280e2343e2f5664742c5a24f4ea95c43c",
         "review": "partial",
         "validation": "passed",
-        "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
+        "scope": "Reviewed regenerated size-inventory delta for the seven production files in this checkpoint, including the new transport helper; verified 1112 production files and zero size violations. This is a size inventory, not whole-codebase review.",
         "evidence": [
-          "docs/audits/RELEASE_7_0_62_REVIEW.md",
-          "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+          "docs/audits/AGY_TUNING_CHECKPOINT.md",
+          ".codex-validation/agy-audit-coordination/build/agy-audit/"
         ],
-        "submission": {
-          "commit": "f73d4ceed",
-          "review": "reviewed",
-          "validation": "passed"
-        },
-        "runtimeAuditSubmission": {
+        "roundtripIntegrationPriorReview": {
+          "sha256": "6b64f7ac3bddb3f107577f6f81f913f535a7643c64e1bfe181b1ca532e815959",
+          "review": "partial",
+          "validation": "passed",
+          "scope": "Bounded project-roundtrip submission review and local integration. See linked report for reviewed contracts, exact checks, baseline failures, source identity and limits; no full-file code-review claim.",
           "evidence": [
-            "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+            "docs/audits/RELEASE_7_0_62_REVIEW.md",
+            "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
           ],
-          "review": "reviewed",
-          "scope": "Machine-readable maintainability ledger tracking line counts, file size compliance, and ratchet state across monorepo.",
-          "sha256": "b1139f4988361c9f6a5e73d2917e12400173aa8cd449bcaf30456e151551057e",
-          "validation": "passed"
+          "submission": {
+            "commit": "f73d4ceed",
+            "review": "reviewed",
+            "validation": "passed"
+          },
+          "runtimeAuditSubmission": {
+            "evidence": [
+              "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+            ],
+            "review": "reviewed",
+            "scope": "Machine-readable maintainability ledger tracking line counts, file size compliance, and ratchet state across monorepo.",
+            "sha256": "b1139f4988361c9f6a5e73d2917e12400173aa8cd449bcaf30456e151551057e",
+            "validation": "passed"
+          },
+          "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         },
-        "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
-      },
-      "agyTuningCheckpointPriorRecord": {
-        "sha256": "8af1f3ac4fab93f42239f15777098715f7a86439869228599d26cc8279a844b2",
-        "review": "partial",
-        "validation": "passed",
-        "scope": "Reviewed and regenerated this batch production line-count delta; policy verified. Size accounting is not file-review coverage.",
-        "evidence": [
-          "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
-        ]
+        "agyTuningCheckpointPriorRecord": {
+          "sha256": "8af1f3ac4fab93f42239f15777098715f7a86439869228599d26cc8279a844b2",
+          "review": "partial",
+          "validation": "passed",
+          "scope": "Reviewed and regenerated this batch production line-count delta; policy verified. Size accounting is not file-review coverage.",
+          "evidence": [
+            "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+          ]
+        }
       }
     },
     "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
@@ -34040,179 +34070,29 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "6e5205405d4f135b1a310ed2e971e42fefeea9822cc2058937b989b863470cd3",
+      "sha256": "24b58f67ed642ee98f54ef437f56802d8091b864411c86c38f8c40ed4207c38c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only these five AGY setup records; preserves complete previous records and all unrelated semantic entries. Runtime file review and worker acceptance remain pending.",
+      "scope": "Reviewed only this operator/guided batch ledger delta. Preserved full prior records and every unrelated semantic entry; refreshed semantic self-fingerprint. Test counts do not imply full source review.",
       "evidence": [
-        "docs/audits/AGY_IMPROVEMENT_GOAL.md",
-        "docs/audits/AGY_IMPROVEMENT_STATE.md",
-        "docs/audits/AGY_TUNING_CHECKPOINT.md"
+        "docs/audits/AGY_OPERATOR_GUIDED_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-ui-check/"
       ],
-      "agySetupPriorRecord": {
-        "sha256": "8ebf087ef8b7e58b20ebb89a72a4462cf45c9f16b3a6834a9054308a6d6b47fb",
+      "agyOperatorGuidedPriorRecord": {
+        "sha256": "6e5205405d4f135b1a310ed2e971e42fefeea9822cc2058937b989b863470cd3",
         "review": "partial",
         "validation": "passed",
-        "scope": "Review only these ten scoped peer-review records. Preserve complete previous records, retire three deleted cached reply fixture records as historical metadata, verify unchanged unrelated semantic entries, and bind final scoped hashes. No repository-wide completion claim. Release preparation updates only the two EOF-normalized fixture hashes and this self-record, preserving complete previous records.",
+        "scope": "Reviewed only these five AGY setup records; preserves complete previous records and all unrelated semantic entries. Runtime file review and worker acceptance remain pending.",
         "evidence": [
-          "docs/audits/STUDIO_ROBOT_FEEDBACK_PEER_REVIEW.md"
+          "docs/audits/AGY_IMPROVEMENT_GOAL.md",
+          "docs/audits/AGY_IMPROVEMENT_STATE.md",
+          "docs/audits/AGY_TUNING_CHECKPOINT.md"
         ],
-        "robotFeedbackPeerReviewPriorRecord": {
-          "sha256": "8b0d52c45a24bcd8d98e7239498f02e83c7c383172628564835413f05b25821b",
+        "agySetupPriorRecord": {
+          "sha256": "8ebf087ef8b7e58b20ebb89a72a4462cf45c9f16b3a6834a9054308a6d6b47fb",
           "review": "partial",
           "validation": "passed",
-          "scope": "Reviewed only these seven calibration-wire peer-review records; preserved complete prior records and every unrelated semantic entry. Scoped content fingerprints and evidence refreshed after validation, without broader coverage claims.",
-          "evidence": [
-            "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
-          ],
-          "calibrationWirePeerReviewPriorRecord": {
-            "sha256": "fb842aa33d4a6ce8082d0fc05d82f088c03ca9f1a32e11dc376968582f686852",
-            "review": "partial",
-            "validation": "passed",
-            "scope": "Reviewed only these four calibration-wire ledger records; preserves complete prior records and every unrelated semantic entry. Updated evidence and fingerprints for the changed tests, fixtures, and verification report. No broader coverage inferred.",
-            "evidence": [
-              "docs/audits/STUDIO_CALIBRATION_WIRE_REVIEW.md"
-            ],
-            "studioCalibrationWirePriorRecord": {
-              "sha256": "9d3e0e885e9aea0e3a5bc67fc37b9778c9efb939d1809f0517075cb62b605ac9",
-              "review": "partial",
-              "validation": "passed",
-              "scope": "Reviewed only these seven lease-peer-review ledger records; preserves complete prior records and every unrelated semantic entry. Updated evidence and fingerprints for the changed tests/docs and inspected generic integration. No broader coverage inferred.",
-              "evidence": [
-                "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
-              ],
-              "tuningLeasePeerReviewPriorRecord": {
-                "sha256": "81ad88512483f63de0a8f61a5eb1c85abd23e3270d41a252ccc239159d0e8214",
-                "review": "partial",
-                "validation": "passed",
-                "scope": "Reviewed only this calibration lease expiry and recovery ledger delta, preserving complete prior records and submitted claims. Updated scoped identities/evidence for consumer simulation fixtures, wire capture, test integration, and the local review report. Unrelated historical entries remain outside scope.",
-                "evidence": [
-                  "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
-                ],
-                "tuningLeaseRecoveryPriorRecord": {
-                  "sha256": "9060648cecc6f232ed1cefdf8ac1dc252af5bfa0e7bd6386202e8a0d91501f72",
-                  "review": "partial",
-                  "validation": "passed",
-                  "scope": "Reviewed only this live-tuning peer-review ledger delta, preserving complete prior records and submitted claims. Updated scoped identities/evidence for the demonstrated request ownership defect and corrected consumer checks. Unrelated stale/missing historical entries remain outside scope; no repository-wide completion claim.",
-                  "evidence": [
-                    "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
-                  ],
-                  "liveTuningPeerReviewPriorRecord": {
-                    "sha256": "ef5c7102d7a08898f6d288ca2e3e14d8d971d502954ec8282bd7e2a2abddebd9",
-                    "review": "partial",
-                    "validation": "passed",
-                    "scope": "Reviewed only the generated safety peer-review ledger delta. Preserve historical identities and evidence; bind scoped test corrections and observed results. No repository-wide review claim. Existing unrelated stale identities and missing historical paths remain outside scope; source policy and scoped fingerprint validation are recorded in the report.",
-                    "evidence": [
-                      "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
-                    ],
-                    "generatedSafetyPriorReview": {
-                      "sha256": "4b394596a7ca725a3b83afe6ef610f6fa98015b03685b30613a4ad4b634c11f8",
-                      "review": "partial",
-                      "validation": "passed",
-                      "scope": "Reviewed only the consumer roundtrip peer-review ledger delta. Preserve submitted identities and claims as history; bind new bounded review and actual validation evidence. Seven unrelated stale records and five missing historical paths remain outside this review. No repository-wide coverage claim.",
-                      "evidence": [
-                        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
-                      ],
-                      "consumerRoundtripPriorReview": {
-                        "sha256": "dea42f47002fcee962e657be4daf911e54e58a5f0fb8c915e99da1ba6bab3d79",
-                        "review": "partial",
-                        "validation": "passed",
-                        "scope": "Reviewed only the roundtrip integration peer-review ledger delta. Prior identities and evidence are retained separately; new claims bind scoped fixes and actual validation. No repository-wide coverage claim.",
-                        "evidence": [
-                          "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
-                        ],
-                        "roundtripIntegrationPriorReview": {
-                          "sha256": "2df54c04446ab754d729ffb1d23fc7d7ab2bcbd9c139a21cb0229aa2eb5acbc0",
-                          "review": "partial",
-                          "validation": "passed",
-                          "scope": "Reviewed this batch ledger delta: restored historical records, retained eight submitted claims separately, recorded current partial review and actual validation, and replaced five retired archive paths. No repository-wide coverage claim.",
-                          "evidence": [
-                            "docs/audits/RELEASE_7_0_62_REVIEW.md",
-                            "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
-                          ],
-                          "submission": {
-                            "commit": "f73d4ceed",
-                            "review": "reviewed",
-                            "validation": "not-applicable"
-                          },
-                          "runtimeAuditSubmission": {
-                            "evidence": [
-                              "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
-                            ],
-                            "review": "reviewed",
-                            "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
-                            "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
-                            "validation": "passed"
-                          },
-                          "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
-                          "projectRoundtripSubmission": {
-                            "sha256": "40b81af787a0adf273406926732b2c9653623b1d16bfbc3cf08566c2628c97d3",
-                            "review": "partial",
-                            "validation": "passed",
-                            "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
-                            "evidence": [
-                              "docs/audits/RELEASE_7_0_62_REVIEW.md"
-                            ],
-                            "submission": {
-                              "commit": "f73d4ceed",
-                              "review": "reviewed",
-                              "validation": "not-applicable"
-                            },
-                            "runtimeAuditSubmission": {
-                              "evidence": [
-                                "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
-                              ],
-                              "review": "reviewed",
-                              "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
-                              "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
-                              "validation": "passed"
-                            },
-                            "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
-                          },
-                          "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "retiredRobotFeedbackFixtureRecords": {
-          "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-arm-reply.frames": {
-            "sha256": "508e736e1b5b5d1844df90958584d1c84e8a9a211a2352fbabaa1d7524c72c71",
-            "review": "reviewed",
-            "validation": "passed",
-            "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for arm step, containing complete topic announcements and binary SysId/Armed=true frame.",
-            "evidence": [
-              "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
-            ]
-          },
-          "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-disarm-reply.frames": {
-            "sha256": "a61f35e2f6adaf1e2a519e1f20929f4a866e005371f5f2bbba4a4df0e2f3e769",
-            "review": "reviewed",
-            "validation": "passed",
-            "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for disarm step, containing complete topic announcements and binary SysId/Armed=false frame.",
-            "evidence": [
-              "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
-            ]
-          },
-          "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-rearm-apply-reply.frames": {
-            "sha256": "5a7048e727525ff1b6be2861daffefc17ac9bb0c64a2a77c02748a2a0ee07d42",
-            "review": "reviewed",
-            "validation": "passed",
-            "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for rearm-apply step, containing complete topic announcements and binary updates with nonce 5L, result APPLIED, and Current 2.6.",
-            "evidence": [
-              "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
-            ]
-          }
-        },
-        "releaseWhitespacePriorRecord": {
-          "sha256": "211de8e78a6ab049a1c49228462e3c3f3bbaa5e5d623470d2e7aac08499c0829",
-          "review": "partial",
-          "validation": "passed",
-          "scope": "Review only these ten scoped peer-review records. Preserve complete previous records, retire three deleted cached reply fixture records as historical metadata, verify unchanged unrelated semantic entries, and bind final scoped hashes. No repository-wide completion claim.",
+          "scope": "Review only these ten scoped peer-review records. Preserve complete previous records, retire three deleted cached reply fixture records as historical metadata, verify unchanged unrelated semantic entries, and bind final scoped hashes. No repository-wide completion claim. Release preparation updates only the two EOF-normalized fixture hashes and this self-record, preserving complete previous records.",
           "evidence": [
             "docs/audits/STUDIO_ROBOT_FEEDBACK_PEER_REVIEW.md"
           ],
@@ -34365,6 +34245,166 @@
               "evidence": [
                 "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
               ]
+            }
+          },
+          "releaseWhitespacePriorRecord": {
+            "sha256": "211de8e78a6ab049a1c49228462e3c3f3bbaa5e5d623470d2e7aac08499c0829",
+            "review": "partial",
+            "validation": "passed",
+            "scope": "Review only these ten scoped peer-review records. Preserve complete previous records, retire three deleted cached reply fixture records as historical metadata, verify unchanged unrelated semantic entries, and bind final scoped hashes. No repository-wide completion claim.",
+            "evidence": [
+              "docs/audits/STUDIO_ROBOT_FEEDBACK_PEER_REVIEW.md"
+            ],
+            "robotFeedbackPeerReviewPriorRecord": {
+              "sha256": "8b0d52c45a24bcd8d98e7239498f02e83c7c383172628564835413f05b25821b",
+              "review": "partial",
+              "validation": "passed",
+              "scope": "Reviewed only these seven calibration-wire peer-review records; preserved complete prior records and every unrelated semantic entry. Scoped content fingerprints and evidence refreshed after validation, without broader coverage claims.",
+              "evidence": [
+                "docs/audits/STUDIO_CALIBRATION_WIRE_PEER_REVIEW.md"
+              ],
+              "calibrationWirePeerReviewPriorRecord": {
+                "sha256": "fb842aa33d4a6ce8082d0fc05d82f088c03ca9f1a32e11dc376968582f686852",
+                "review": "partial",
+                "validation": "passed",
+                "scope": "Reviewed only these four calibration-wire ledger records; preserves complete prior records and every unrelated semantic entry. Updated evidence and fingerprints for the changed tests, fixtures, and verification report. No broader coverage inferred.",
+                "evidence": [
+                  "docs/audits/STUDIO_CALIBRATION_WIRE_REVIEW.md"
+                ],
+                "studioCalibrationWirePriorRecord": {
+                  "sha256": "9d3e0e885e9aea0e3a5bc67fc37b9778c9efb939d1809f0517075cb62b605ac9",
+                  "review": "partial",
+                  "validation": "passed",
+                  "scope": "Reviewed only these seven lease-peer-review ledger records; preserves complete prior records and every unrelated semantic entry. Updated evidence and fingerprints for the changed tests/docs and inspected generic integration. No broader coverage inferred.",
+                  "evidence": [
+                    "docs/audits/TUNING_LEASE_RECOVERY_PEER_REVIEW.md"
+                  ],
+                  "tuningLeasePeerReviewPriorRecord": {
+                    "sha256": "81ad88512483f63de0a8f61a5eb1c85abd23e3270d41a252ccc239159d0e8214",
+                    "review": "partial",
+                    "validation": "passed",
+                    "scope": "Reviewed only this calibration lease expiry and recovery ledger delta, preserving complete prior records and submitted claims. Updated scoped identities/evidence for consumer simulation fixtures, wire capture, test integration, and the local review report. Unrelated historical entries remain outside scope.",
+                    "evidence": [
+                      "docs/audits/TUNING_LEASE_RECOVERY_REVIEW.md"
+                    ],
+                    "tuningLeaseRecoveryPriorRecord": {
+                      "sha256": "9060648cecc6f232ed1cefdf8ac1dc252af5bfa0e7bd6386202e8a0d91501f72",
+                      "review": "partial",
+                      "validation": "passed",
+                      "scope": "Reviewed only this live-tuning peer-review ledger delta, preserving complete prior records and submitted claims. Updated scoped identities/evidence for the demonstrated request ownership defect and corrected consumer checks. Unrelated stale/missing historical entries remain outside scope; no repository-wide completion claim.",
+                      "evidence": [
+                        "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+                      ],
+                      "liveTuningPeerReviewPriorRecord": {
+                        "sha256": "ef5c7102d7a08898f6d288ca2e3e14d8d971d502954ec8282bd7e2a2abddebd9",
+                        "review": "partial",
+                        "validation": "passed",
+                        "scope": "Reviewed only the generated safety peer-review ledger delta. Preserve historical identities and evidence; bind scoped test corrections and observed results. No repository-wide review claim. Existing unrelated stale identities and missing historical paths remain outside scope; source policy and scoped fingerprint validation are recorded in the report.",
+                        "evidence": [
+                          "docs/audits/GENERATED_SAFETY_BEHAVIOR_PEER_REVIEW.md"
+                        ],
+                        "generatedSafetyPriorReview": {
+                          "sha256": "4b394596a7ca725a3b83afe6ef610f6fa98015b03685b30613a4ad4b634c11f8",
+                          "review": "partial",
+                          "validation": "passed",
+                          "scope": "Reviewed only the consumer roundtrip peer-review ledger delta. Preserve submitted identities and claims as history; bind new bounded review and actual validation evidence. Seven unrelated stale records and five missing historical paths remain outside this review. No repository-wide coverage claim.",
+                          "evidence": [
+                            "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+                          ],
+                          "consumerRoundtripPriorReview": {
+                            "sha256": "dea42f47002fcee962e657be4daf911e54e58a5f0fb8c915e99da1ba6bab3d79",
+                            "review": "partial",
+                            "validation": "passed",
+                            "scope": "Reviewed only the roundtrip integration peer-review ledger delta. Prior identities and evidence are retained separately; new claims bind scoped fixes and actual validation. No repository-wide coverage claim.",
+                            "evidence": [
+                              "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+                            ],
+                            "roundtripIntegrationPriorReview": {
+                              "sha256": "2df54c04446ab754d729ffb1d23fc7d7ab2bcbd9c139a21cb0229aa2eb5acbc0",
+                              "review": "partial",
+                              "validation": "passed",
+                              "scope": "Reviewed this batch ledger delta: restored historical records, retained eight submitted claims separately, recorded current partial review and actual validation, and replaced five retired archive paths. No repository-wide coverage claim.",
+                              "evidence": [
+                                "docs/audits/RELEASE_7_0_62_REVIEW.md",
+                                "docs/audits/PROJECT_ROUNDTRIP_REVIEW.md"
+                              ],
+                              "submission": {
+                                "commit": "f73d4ceed",
+                                "review": "reviewed",
+                                "validation": "not-applicable"
+                              },
+                              "runtimeAuditSubmission": {
+                                "evidence": [
+                                  "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+                                ],
+                                "review": "reviewed",
+                                "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
+                                "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
+                                "validation": "passed"
+                              },
+                              "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+                              "projectRoundtripSubmission": {
+                                "sha256": "40b81af787a0adf273406926732b2c9653623b1d16bfbc3cf08566c2628c97d3",
+                                "review": "partial",
+                                "validation": "passed",
+                                "scope": "Reviewed 291 changed submissions, preserved original claims separately and prior authoritative status, and recorded this bounded release diff review. No global coverage closure.",
+                                "evidence": [
+                                  "docs/audits/RELEASE_7_0_62_REVIEW.md"
+                                ],
+                                "submission": {
+                                  "commit": "f73d4ceed",
+                                  "review": "reviewed",
+                                  "validation": "not-applicable"
+                                },
+                                "runtimeAuditSubmission": {
+                                  "evidence": [
+                                    "ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopPresentationPolicyTest.xml"
+                                  ],
+                                  "review": "reviewed",
+                                  "scope": "Cryptographically bound audit ledger recording file reviews, SHA-256 digests, scopes, and verification evidence.",
+                                  "sha256": "24a992fea9ccbc98ed6aae41135382223647071b578ae7343fbd4024fb5e5c5c",
+                                  "validation": "passed"
+                                },
+                                "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+                              },
+                              "projectRoundtripDisposition": "Submitted evidence retained; see docs/audits/PROJECT_ROUNDTRIP_REVIEW.md for bounded independent review and limitations."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "retiredRobotFeedbackFixtureRecords": {
+              "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-arm-reply.frames": {
+                "sha256": "508e736e1b5b5d1844df90958584d1c84e8a9a211a2352fbabaa1d7524c72c71",
+                "review": "reviewed",
+                "validation": "passed",
+                "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for arm step, containing complete topic announcements and binary SysId/Armed=true frame.",
+                "evidence": [
+                  "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
+                ]
+              },
+              "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-disarm-reply.frames": {
+                "sha256": "a61f35e2f6adaf1e2a519e1f20929f4a866e005371f5f2bbba4a4df0e2f3e769",
+                "review": "reviewed",
+                "validation": "passed",
+                "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for disarm step, containing complete topic announcements and binary SysId/Armed=false frame.",
+                "evidence": [
+                  "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
+                ]
+              },
+              "ARES-Analytics/app/src/test/resources/tuning-wire-reply/wire-rearm-apply-reply.frames": {
+                "sha256": "5a7048e727525ff1b6be2861daffefc17ac9bb0c64a2a77c02748a2a0ee07d42",
+                "review": "reviewed",
+                "validation": "passed",
+                "scope": "Self-contained wire reply frames emitted by generated FTC consumer simulation for rearm-apply step, containing complete topic announcements and binary updates with nonce 5L, result APPLIED, and Current 2.6.",
+                "evidence": [
+                  "docs/audits/STUDIO_ROBOT_FEEDBACK_REVIEW.md"
+                ]
+              }
             }
           }
         }
@@ -36291,23 +36331,33 @@
       }
     },
     "docs/audits/AGY_IMPROVEMENT_STATE.md": {
-      "sha256": "2d49f864af3d37101116295507243c0db07e659e9ded95d1dc61b1de4b58f312",
+      "sha256": "3fc88e4047ceb1af5ae414f336760eeaf9a81c9d7338e1d67002451ea6bbf4c7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed current local AGY campaign guidance/evidence: three high-effort isolated workers, bounded verified paths, independent acceptance, scoped validation, preserved history and no publication authority. Policy links and guidance tests pass; no measured quota or robot performance claim.",
+      "scope": "Reviewed local-only active-goal resume state against completed rendered journey, worker acceptance/rejection, baseline/fixed checks and owned-process cleanup. Retains previous batch evidence and hardware limitations.",
       "evidence": [
-        "docs/audits/AGY_TUNING_CHECKPOINT.md",
-        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+        "docs/audits/AGY_OPERATOR_GUIDED_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-ui-check/"
       ],
-      "agyTuningCheckpointPriorRecord": {
-        "sha256": "0b7fb50f24c2be0e7f0c782a2774b4cf2b795d8dae9e9f4134b9dc7e4152e413",
+      "agyOperatorGuidedPriorRecord": {
+        "sha256": "2d49f864af3d37101116295507243c0db07e659e9ded95d1dc61b1de4b58f312",
         "review": "reviewed",
         "validation": "passed",
-        "scope": "Records baseline, distinct worker/coordinator ownership, actual denied and successful file-tool observations, retained local evidence, completed guidance checks and pending implementation/runtime verification.",
+        "scope": "Reviewed current local AGY campaign guidance/evidence: three high-effort isolated workers, bounded verified paths, independent acceptance, scoped validation, preserved history and no publication authority. Policy links and guidance tests pass; no measured quota or robot performance claim.",
         "evidence": [
-          "docs/audits/AGY_IMPROVEMENT_GOAL.md",
-          "docs/audits/AGY_IMPROVEMENT_STATE.md"
-        ]
+          "docs/audits/AGY_TUNING_CHECKPOINT.md",
+          ".codex-validation/agy-audit-coordination/build/agy-audit/"
+        ],
+        "agyTuningCheckpointPriorRecord": {
+          "sha256": "0b7fb50f24c2be0e7f0c782a2774b4cf2b795d8dae9e9f4134b9dc7e4152e413",
+          "review": "reviewed",
+          "validation": "passed",
+          "scope": "Records baseline, distinct worker/coordinator ownership, actual denied and successful file-tool observations, retained local evidence, completed guidance checks and pending implementation/runtime verification.",
+          "evidence": [
+            "docs/audits/AGY_IMPROVEMENT_GOAL.md",
+            "docs/audits/AGY_IMPROVEMENT_STATE.md"
+          ]
+        }
       }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4TuningRequestTransport.kt": {
@@ -36378,6 +36428,26 @@
       "evidence": [
         "docs/audits/AGY_TUNING_CHECKPOINT.md",
         ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/tuning/GuidedExperimentLifecycleAuditTest.kt": {
+      "sha256": "f1abdc3e658d38c00ff37190cd6132607f82582fb55fb6aab5ac382d274c8315",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed four public-intent regressions with real evaluator/repository, controlled comparison barrier, owned joined/cancelled scope, bounded waits, explicit candidate selection and positive control. Three intended baseline failures and one pass; all four pass on fixed source.",
+      "evidence": [
+        "docs/audits/AGY_OPERATOR_GUIDED_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-ui-check/"
+      ]
+    },
+    "docs/audits/AGY_OPERATOR_GUIDED_CHECKPOINT.md": {
+      "sha256": "c820cccf22a7e62a591754dd99706a4d322d3b0042e07cf7a92ac4a29f960485",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed independent checkpoint report against exact-window captures, subscription-only NT4 observations, canonical-file hashes, graceful process cleanup, baseline/fixed JUnit and AGY diagnostics. Explicit desktop/hardware and released-example boundaries.",
+      "evidence": [
+        "docs/audits/AGY_OPERATOR_GUIDED_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-ui-check/"
       ]
     }
   }
