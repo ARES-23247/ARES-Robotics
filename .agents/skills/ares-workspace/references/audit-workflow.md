@@ -20,6 +20,10 @@ historical reports describe their recorded source, not necessarily the current c
 
 ## Coordinate authorized workers
 
+For explicitly requested AGY/Gemini delegation, use the
+[parallel AGY workflow](parallel-agy-audit.md). It records the local-only orchestration setup;
+it does not independently authorize workers or publication.
+
 - If the user authorized parallel agent work, assign bounded tasks and exact, disjoint writable
   paths before starting workers. Tell each worker that others share the repository and that they
   must preserve their changes. Workers may read dependencies outside their ownership; they report

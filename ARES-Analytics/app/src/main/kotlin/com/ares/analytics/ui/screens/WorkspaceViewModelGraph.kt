@@ -73,7 +73,8 @@ internal fun rememberWorkspaceViewModelGraph(
     mainViewModel: MainViewModel,
     activeNavigation: NavigationTarget,
 ): WorkspaceViewModelGraph {
-    val dashboard = remember(config.id) {
+    val projectKey = config.projectKey()
+    val dashboard = remember(projectKey) {
         DashboardViewModel(
             services.databaseService,
             services.nt4ClientService,
@@ -86,7 +87,7 @@ internal fun rememberWorkspaceViewModelGraph(
             workspaceScope,
         )
     }
-    val pathPlanner = remember(config.id) {
+    val pathPlanner = remember(projectKey) {
         PathPlannerViewModel(
             scope = workspaceScope,
             nt4ClientService = services.nt4ClientService,
@@ -95,7 +96,7 @@ internal fun rememberWorkspaceViewModelGraph(
             projectSession = services.projectSession,
         )
     }
-    val fieldEditor = remember(config.id) {
+    val fieldEditor = remember(projectKey) {
         val xrpLink = services.xrpLinkService
         FieldEditorViewModel(
             scope = workspaceScope,
@@ -158,7 +159,7 @@ internal fun rememberWorkspaceViewModelGraph(
             projectSession = services.projectSession,
         )
     }
-    val sysId = remember(config.id) {
+    val sysId = remember(projectKey) {
         SysIdViewModel(
             services.autoTunerService,
             services.nt4ClientService,
@@ -171,7 +172,7 @@ internal fun rememberWorkspaceViewModelGraph(
         League.FRC -> ControllerInputPlatform.FRC
         League.XRP -> ControllerInputPlatform.XRP
     }
-    val tuning = remember(config.id) {
+    val tuning = remember(projectKey) {
         TuningViewModel(
             nt4ClientService = services.nt4ClientService,
             scope = workspaceScope,
@@ -182,7 +183,7 @@ internal fun rememberWorkspaceViewModelGraph(
             targetPlatform = platform,
         )
     }
-    val profile = remember(config.id) {
+    val profile = remember(projectKey) {
         ProfileViewModel(
             services.oauthService,
             services.googleDriveService,
@@ -190,7 +191,7 @@ internal fun rememberWorkspaceViewModelGraph(
             workspaceScope,
         )
     }
-    val cloud = remember(config.id) {
+    val cloud = remember(projectKey) {
         CloudViewModel(
             services.databaseService,
             services.syncEngineService,
@@ -201,7 +202,7 @@ internal fun rememberWorkspaceViewModelGraph(
             workspaceScope,
         )
     }
-    val importCenter = remember(config.id, config.projectPath) {
+    val importCenter = remember(projectKey) {
         ImportCenterViewModel(
             services.importArchiveService,
             services.manualLogImportService,
@@ -209,7 +210,7 @@ internal fun rememberWorkspaceViewModelGraph(
             workspaceScope,
         ) { mainViewModel.onIntent(MainIntent.TriggerRunsIndexReload) }
     }
-    val controlsEditor = remember(config.id, config.projectPath, config.league) {
+    val controlsEditor = remember(projectKey, config.league) {
         ControlsEditorViewModel(
             projectPath = config.projectPath,
             league = config.league,
@@ -221,7 +222,7 @@ internal fun rememberWorkspaceViewModelGraph(
             projectSession = services.projectSession,
         )
     }
-    val subsystemGenerator = remember(config.id, config.projectPath, config.league) {
+    val subsystemGenerator = remember(projectKey, config.league) {
         SubsystemGeneratorViewModel(
             projectPath = config.projectPath,
             loadOnStart = false,
@@ -235,7 +236,7 @@ internal fun rememberWorkspaceViewModelGraph(
         )
     }
     LaunchedEffect(subsystemGenerator) { subsystemGenerator.reloadAsync().join() }
-    val drivebaseBuilder = remember(config.id, config.projectPath, config.robotId, config.league) {
+    val drivebaseBuilder = remember(projectKey, config.robotId, config.league) {
         DrivebaseBuilderViewModel(
             projectPath = config.projectPath,
             projectId = config.robotId,
@@ -249,7 +250,7 @@ internal fun rememberWorkspaceViewModelGraph(
             },
         )
     }
-    val superstructureStudio = remember(config.id, config.projectPath, config.league) {
+    val superstructureStudio = remember(projectKey, config.league) {
         SuperstructureStudioViewModel(
             projectPath = config.projectPath,
             scope = workspaceScope,
@@ -258,7 +259,7 @@ internal fun rememberWorkspaceViewModelGraph(
             projectSession = services.projectSession,
         )
     }
-    val projectBackup = remember(config.id, config.projectPath) {
+    val projectBackup = remember(projectKey) {
         ProjectBackupViewModel(
             services.projectVersionControlService,
             services.projectRemoteBackupService,
@@ -269,26 +270,26 @@ internal fun rememberWorkspaceViewModelGraph(
             workspaceScope,
         )
     }
-    val integrationCenter = remember(config.id) {
+    val integrationCenter = remember(projectKey) {
         IntegrationCenterViewModel(services.integrationCenterService, workspaceScope)
     }
-    val hardwareSetup = remember(config.id, config.projectPath, config.league) {
+    val hardwareSetup = remember(projectKey, config.league) {
         HardwareSetupViewModel(config.projectPath, config.league, services.hardwareSetupService, workspaceScope)
     }
-    val robotStudio = remember(config.id) {
+    val robotStudio = remember(projectKey) {
         RobotStudioViewModel(services.robotProjectReadinessService, workspaceScope)
     }
-    val projectIdentity = remember(config.id) {
+    val projectIdentity = remember(projectKey) {
         ProjectIdentityViewModel(scope = workspaceScope, projectSession = services.projectSession)
     }
-    val guidedRunAnalysis = remember(config.id) {
+    val guidedRunAnalysis = remember(projectKey) {
         GuidedRunAnalysisViewModel(
             service = services.guidedRunAnalysisService,
             comparisonService = services.runComparisonService,
             scope = workspaceScope,
         )
     }
-    val guidedTuningExperiment = remember(config.id) {
+    val guidedTuningExperiment = remember(projectKey) {
         GuidedTuningExperimentViewModel(
             config,
             workspaceScope,
@@ -315,15 +316,15 @@ internal fun rememberWorkspaceViewModelGraph(
         )
     }
 
-    LaunchedEffect(config.league) {
+    LaunchedEffect(sysId, config.league) {
         sysId.onIntent(SysIdIntent.ConfigurePlatform(config.league == League.FTC))
     }
-    LaunchedEffect(activeNavigation) {
+    LaunchedEffect(sysId, activeNavigation) {
         if (activeNavigation != NavigationTarget.TUNING) {
             sysId.onIntent(SysIdIntent.DisarmCalibration("Left the Tuning screen"))
         }
     }
-    LaunchedEffect(config.projectPath) {
+    LaunchedEffect(tuning, config.projectPath) {
         tuning.onIntent(TuningIntent.LoadConstants(config.projectPath))
     }
     LaunchedEffect(services.autoImportService, importCenter) {

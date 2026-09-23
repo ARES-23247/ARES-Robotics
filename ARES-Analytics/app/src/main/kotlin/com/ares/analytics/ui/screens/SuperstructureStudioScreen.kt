@@ -214,6 +214,33 @@ fun SuperstructureStudioScreen(
             )
         }
 
+        if (state.pendingSelectionId != null) {
+            AlertDialog(
+                onDismissRequest = viewModel::cancelDiscard,
+                title = { Text("Discard Unsaved Changes?", color = AresTextPrimary, fontWeight = FontWeight.Bold) },
+                text = {
+                    Text(
+                        "You have unsaved changes in the current coordinator. Discarding will revert to the last saved configuration or cancel new draft creation.",
+                        color = AresTextSecondary,
+                        fontSize = 12.sp,
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = viewModel::confirmDiscard,
+                        colors = ButtonDefaults.buttonColors(containerColor = AresError, contentColor = AresOnAccent),
+                    ) {
+                        Text("Discard", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::cancelDiscard) {
+                        Text("Cancel")
+                    }
+                },
+            )
+        }
+
         val currentDraft = state.draft
         if (currentDraft != null) {
             AresSpecSummaryModal(

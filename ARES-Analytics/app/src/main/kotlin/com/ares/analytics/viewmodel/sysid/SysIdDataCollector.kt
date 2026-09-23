@@ -124,9 +124,13 @@ class SysIdDataCollector(
                 }
                 return@synchronized null
             }
-            val kind = runKind ?: if (_state.value.isRoutineRunning || _state.value.isLoading) {
-                if (isGeometricCalibration(_state.value.activeCalibration)) _state.value.activeCalibration else "SYSID"
-            } else return@synchronized null
+            // A late NONE after disarm must not fit samples from an aborted routine.
+            if (!_state.value.isRoutineRunning && !_state.value.isLoading) {
+                runKind = null; runSession = null; runMechanism = null
+                rows.clear(); assembler.clear(); lastPreviewMs = null
+                return@synchronized null
+            }
+            val kind = runKind ?: if (isGeometricCalibration(_state.value.activeCalibration)) _state.value.activeCalibration else "SYSID"
             val snapshot = rows.values.toList() // Transfer ownership; publication below copies mutable arrays.
             val samples = if (isGeometricCalibration(kind)) emptyList() else snapshot.map(::motorSample)
             val result = Completed(generation, kind, snapshot, samples, runMechanism ?: _state.value.selectedMechanism)

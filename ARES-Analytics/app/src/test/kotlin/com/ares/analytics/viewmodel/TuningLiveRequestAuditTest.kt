@@ -1,5 +1,6 @@
 package com.ares.analytics.viewmodel
 
+import com.ares.analytics.service.TelemetryStore
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.Nt4ConnectionMetrics
 import com.ares.analytics.service.tuning.TuningTransport
@@ -217,11 +218,115 @@ class TuningLiveRequestAuditTest {
         assertTrue(f.vm.state.value.saveStatus.contains("Waiting"))
     }
 
+    @Test fun `push live request rejected when replay active`() = fixture { f ->
+        f.isReplayActive.value = true; runCurrent()
+        f.stage(gain); f.push(gain)
+        assertTrue(f.published.isEmpty())
+        assertTrue(f.vm.state.value.saveStatus.contains("not sent"))
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("replay mode is active"))
+    }
+
+    @Test fun `push all rejected when replay active`() = fixture { f ->
+        f.isReplayActive.value = true; runCurrent()
+        f.stage(gain)
+        f.vm.onIntent(TuningIntent.PushAllToRobot); runCurrent()
+        assertTrue(f.published.isEmpty())
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("replay mode is active"))
+    }
+
+    @Test fun `replay mode activated during await aborts live request as unknown`() = fixture { f ->
+        f.stage(gain); f.push(gain)
+        assertTrue(f.published.isNotEmpty())
+        f.isReplayActive.value = true
+        advanceTimeBy(100); runCurrent()
+        assertTrue(f.vm.state.value.saveStatus.contains("unknown"))
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("Replay mode was activated"))
+    }
+
+    @Test fun `target epoch change during await aborts live request as unknown`() = fixture { f ->
+        f.stage(gain); f.push(gain)
+        assertTrue(f.published.isNotEmpty())
+        f.telemetryStore.clear()
+        advanceTimeBy(100); runCurrent()
+        assertTrue(f.vm.state.value.saveStatus.contains("unknown"))
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("target session changed"))
+    }
+
+    @Test fun `target switch before queued coroutine executes prevents sending request`() = fixture { f ->
+        f.stage(gain)
+        f.vm.onIntent(TuningIntent.PushToRobot(gain.key))
+        f.telemetryStore.clear()
+        f.clock.runCurrent()
+        assertTrue(f.published.isEmpty(), "Request must not be published after target switch")
+        assertTrue(f.vm.state.value.saveStatus.contains("not sent"))
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("target session changed"))
+    }
+
+    @Test fun `target switch while waiting behind active request mutex prevents second request from publishing`() = fixture { f ->
+        f.queueTwo()
+        assertEquals(1, f.requests().size)
+
+        f.telemetryStore.clear()
+        f.clock.runCurrent()
+
+        f.clock.advanceTimeBy(100); f.clock.runCurrent()
+        assertEquals(1, f.requests().size, "Second request must never be published after target switch")
+        assertTrue(f.vm.state.value.saveStatus.contains("not sent"))
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("target session changed"))
+    }
+
+    @Test fun `target clear during publication callback followed by matching acknowledgement is rejected as unknown`() = fixture { f ->
+        f.onPublishRequest = { f.telemetryStore.clear() }
+        f.stage(gain); f.push(gain)
+        f.acknowledgeLast()
+        advanceTimeBy(100); runCurrent()
+        assertFalse(f.vm.state.value.saveStatus.contains("as applied"))
+        assertTrue(f.vm.state.value.saveStatus.contains("unknown"))
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("target session changed"))
+    }
+
+    @Test fun `disconnect or replay clears live observations and consumer support`() = fixture { f ->
+        val currentKey = TuningTransport.current(gain)
+        val supportKey = TuningTransport.consumerSupported(gain)
+        f.latest[currentKey] = f.frame(currentKey, 4.5)
+        f.latest[supportKey] = f.frame(supportKey, 1.0)
+        advanceTimeBy(200); runCurrent()
+        assertEquals(TuningValue(doubleValue = 4.5), f.vm.state.value.liveTypedValues[gain.key])
+        assertEquals(true, f.vm.state.value.consumerSupportByUid[gain.uid])
+
+        // Enter replay
+        f.isReplayActive.value = true; advanceTimeBy(200); runCurrent()
+        assertTrue(f.vm.state.value.liveTypedValues.isEmpty())
+        assertTrue(f.vm.state.value.consumerSupportByUid.isEmpty())
+
+        // Exit replay and re-observe
+        f.isReplayActive.value = false; advanceTimeBy(200); runCurrent()
+        assertEquals(TuningValue(doubleValue = 4.5), f.vm.state.value.liveTypedValues[gain.key])
+
+        // Disconnect
+        f.connected.value = false; advanceTimeBy(200); runCurrent()
+        assertTrue(f.vm.state.value.liveTypedValues.isEmpty())
+        assertTrue(f.vm.state.value.consumerSupportByUid.isEmpty())
+    }
+
+    @Test fun `pulling constants when disconnected or in replay fails with descriptive error`() = fixture { f ->
+        f.connected.value = false; runCurrent()
+        f.vm.onIntent(TuningIntent.PullFromRobot(gain.key)); runCurrent()
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("Cannot pull live values while the robot is disconnected"))
+
+        f.connected.value = true
+        f.isReplayActive.value = true; runCurrent()
+        f.vm.onIntent(TuningIntent.PullAllFromRobot); runCurrent()
+        assertTrue(f.vm.state.value.errorMessage.orEmpty().contains("Cannot pull live values while replay mode is active"))
+    }
+
     private inner class Fixture(val root: File, val clock: TestScope, val client: Nt4ClientService,
         val vm: TuningViewModel, val connected: MutableStateFlow<Boolean>,
-        val latest: ConcurrentHashMap<String, TelemetryFrame>, val published: MutableList<Pair<String, Any>>, val vmScope: CoroutineScope) {
+        val latest: ConcurrentHashMap<String, TelemetryFrame>, val published: MutableList<Pair<String, Any>>,
+        val vmScope: CoroutineScope, val isReplayActive: MutableStateFlow<Boolean>, val telemetryStore: TelemetryStore) {
         var epoch = 1L
         var acceptSend = true
+        var onPublishRequest: () -> Unit = {}
         val permanentJobs = vmScope.coroutineContext[Job]!!.children.toSet()
         fun frame(key: String, value: Double = 0.0, text: String? = null) =
             TelemetryFrame(clock.testScheduler.currentTime, "live", key, value, stringValue = text)
@@ -260,12 +365,16 @@ class TuningLiveRequestAuditTest {
             }
             val client = mock(Nt4ClientService::class.java)
             val connected = MutableStateFlow(true)
+            val isReplayActive = MutableStateFlow(false)
+            val telemetryStore = TelemetryStore()
             val latest = ConcurrentHashMap<String, TelemetryFrame>()
             val published = mutableListOf<Pair<String, Any>>()
             doReturn(connected).`when`(client).isConnected
             doReturn(latest).`when`(client).latestValues
+            doReturn(isReplayActive).`when`(client).isReplayActive
+            doReturn(telemetryStore).`when`(client).telemetryStore
             val vm = TuningViewModel(client, scope, loadDispatcher = dispatcher, workDispatcher = dispatcher)
-            val f = Fixture(root, this, client, vm, connected, latest, published, scope)
+            val f = Fixture(root, this, client, vm, connected, latest, published, scope, isReplayActive, telemetryStore)
             doAnswer { Nt4ConnectionMetrics(f.epoch, f.epoch, f.epoch - 1, connected.value) }.`when`(client).connectionMetrics()
             doAnswer { if (connected.value) f.epoch else null }.`when`(client).tuningConnectionId
             doAnswer {
@@ -273,6 +382,7 @@ class TuningLiveRequestAuditTest {
                 val value = it.getArgument<TuningValue>(1)
                 val nonce = it.getArgument<Long>(2)
                 val connection = it.getArgument<Long>(3)
+                f.onPublishRequest()
                 if (!f.acceptSend || !connected.value || connection != f.epoch) false else {
                     val wire: Any = value.doubleValue ?: value.intValue?.toDouble() ?: value.booleanValue ?: requireNotNull(value.textValue)
                     published += TuningTransport.requested(d) to wire

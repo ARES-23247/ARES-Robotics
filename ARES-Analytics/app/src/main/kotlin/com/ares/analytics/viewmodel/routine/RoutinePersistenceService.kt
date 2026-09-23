@@ -22,6 +22,7 @@ import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutinePose
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -65,14 +66,31 @@ internal class RoutinePersistenceService(
         autonomous = autonomousRepository,
     )
 
-    suspend fun refreshProject(projectPath: String, league: League): RoutineRefresh = withContext(Dispatchers.IO) {
+    suspend fun refreshProject(
+        projectPath: String,
+        league: League,
+        checkRequest: () -> Unit = {},
+    ): RoutineRefresh = withContext(Dispatchers.IO) {
         val target = when (league) {
             League.FTC -> ControllerInputPlatform.FTC
             League.FRC -> ControllerInputPlatform.FRC
             League.XRP -> ControllerInputPlatform.XRP
         }
-        val sessionSnapshot = projectSession?.snapshot(projectPath, target, forceReload = true)
-        val snapshot = sessionSnapshot?.documents ?: projectDocuments.load(projectPath, target)
+        val requestContext = coroutineContext
+        val sessionSnapshot = projectSession?.snapshot(
+            projectPath = projectPath,
+            targetPlatform = target,
+            forceReload = true,
+            checkRequest = {
+                requestContext.ensureActive()
+                checkRequest()
+            },
+        )
+        val snapshot = sessionSnapshot?.documents ?: run {
+            requestContext.ensureActive()
+            checkRequest()
+            projectDocuments.load(projectPath, target)
+        }
         val project = snapshot.query
         RoutineRefresh(
             project.routines,

@@ -27,18 +27,23 @@ import com.areslib.superstructure.SuperstructureInterlockRule
 import com.areslib.superstructure.SuperstructureIssueSeverity
 import com.areslib.superstructure.SuperstructureStatePreset
 import com.areslib.superstructure.SuperstructureSubsystemTarget
+import com.ares.analytics.service.project.persistence.SavedSuperstructureDocument
 import com.areslib.superstructure.SuperstructureTargetMode
 import com.areslib.superstructure.TransitionTriggerKind
 import com.areslib.superstructure.validateSuperstructureProject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.coroutineContext
 
 
 class SuperstructureStudioViewModel(
@@ -53,45 +58,77 @@ class SuperstructureStudioViewModel(
     private val _state = MutableStateFlow(SuperstructureStudioState(projectPath = projectPath))
     val state: StateFlow<SuperstructureStudioState> = _state.asStateFlow()
     private var previewSession: SuperstructurePreviewSession? = null
+    private val reloadGeneration = AtomicLong()
 
     init {
         reload()
     }
 
     fun reload(force: Boolean = false) {
-        if (_state.value.dirty && !force) {
-            _state.update { it.copy(pendingSelectionId = it.selectedId, error = "Choose Reload again after discarding or save the current draft first.") }
+        val starting = _state.value
+        if (starting.dirty && !force) {
+            _state.update { it.copy(pendingSelectionId = it.selectedId) }
             return
         }
+        val generation = reloadGeneration.incrementAndGet()
         scope.launch {
+            if (!scope.isActive || generation != reloadGeneration.get()) return@launch
             previewSession = null
             _state.update { it.copy(loading = true, error = null, status = "") }
-            val result = withContext(Dispatchers.IO) { runCatching { loadProjectDocuments(forceReload = true) } }
-            result.onSuccess { snapshot ->
+            val checkActive = {
+                if (!scope.isActive || generation != reloadGeneration.get()) {
+                    throw kotlinx.coroutines.CancellationException("Superstructure reload superseded or scope cancelled.")
+                }
+            }
+            val result = withContext(Dispatchers.IO) {
+                try {
+                    checkActive()
+                    val loaded = loadProjectData(_state.value.projectPath, forceReload = true, checkRequest = checkActive)
+                    checkActive()
+                    Result.success(loaded)
+                } catch (cancellation: kotlinx.coroutines.CancellationException) {
+                    throw cancellation
+                } catch (t: Exception) {
+                    Result.failure(t)
+                }
+            }
+            result.onSuccess { loaded ->
+                if (!scope.isActive || generation != reloadGeneration.get()) return@onSuccess
+                val snapshot = loaded.snapshot
+                val revision = loaded.revision
                 val project = snapshot.query
-                val selected = project.superstructures.firstOrNull { it.superstructureId == _state.value.selectedId }
-                    ?: project.superstructures.firstOrNull()
-                _state.value = validate(
-                    _state.value.copy(
-                        documents = project.superstructures,
-                        selectedId = selected?.superstructureId,
-                        saved = selected,
-                        savedContentHash = selected?.let(SuperstructureDocumentCodec::contentHash),
-                        projectRevision = projectSession?.state?.value?.revision,
-                        draft = selected,
-                        subsystems = project.subsystems,
-                        actions = project.actions,
-                        diagnostics = snapshot.diagnostics,
-                        selectedStateId = selected?.initialStateId,
-                        loading = false,
-                        dirty = false,
-                        review = null,
-                        pendingSelectionId = null,
-                        editorErrors = emptyMap(),
-                        preview = null,
+                _state.update { current ->
+                    if (!scope.isActive || generation != reloadGeneration.get()) return@update current
+                    if (current.projectRevision != null && revision != null && revision.sequence < current.projectRevision.sequence) {
+                        return@update current.copy(loading = false)
+                    }
+                    val selected = project.superstructures.firstOrNull { it.superstructureId == current.selectedId }
+                        ?: project.superstructures.firstOrNull()
+                    if (current.draft != starting.draft || current.selectedId != starting.selectedId ||
+                        current.editorErrors != starting.editorErrors || current.review != starting.review) {
+                        return@update current.copy(loading = false)
+                    }
+                    validate(
+                        current.copy(
+                            documents = project.superstructures,
+                            selectedId = selected?.superstructureId,
+                            saved = selected,
+                            savedContentHash = selected?.let(SuperstructureDocumentCodec::contentHash),
+                            projectRevision = revision ?: current.projectRevision,
+                            draft = selected,
+                            subsystems = project.subsystems,
+                            actions = project.actions,
+                            diagnostics = snapshot.diagnostics,
+                            selectedStateId = selected?.initialStateId,
+                            loading = false, dirty = false,
+                            review = null,
+                            pendingSelectionId = null, editorErrors = emptyMap(), preview = null,
+                        )
                     )
-                )
+                }
             }.onFailure { error ->
+                if (error is kotlinx.coroutines.CancellationException) return@onFailure
+                if (!scope.isActive || generation != reloadGeneration.get()) return@onFailure
                 _state.update { it.copy(loading = false, error = error.message ?: "Project documents could not be loaded") }
             }
         }
@@ -167,7 +204,7 @@ class SuperstructureStudioViewModel(
 
     fun confirmDiscard() {
         val target = _state.value.pendingSelectionId
-        _state.update { it.copy(dirty = false, pendingSelectionId = null, error = null) }
+        _state.update { it.copy(review = null, pendingSelectionId = null, error = null) }
         if (target != null && target != _state.value.selectedId) select(target, force = true) else reload(force = true)
     }
 
@@ -504,7 +541,11 @@ class SuperstructureStudioViewModel(
             "Fault destination: ${draft.faultStateId}",
             "Disabled destination: ${draft.disabledStateId} (${draft.disabledPolicy.name.lowercase().replace('_', ' ')})",
         )
-        _state.value = state.copy(review = SuperstructureSaveReview(state.savedContentHash, candidateHash, token, summary), error = null)
+        _state.value = state.copy(
+            step = SuperstructureStudioStep.REVIEW,
+            review = SuperstructureSaveReview(state.savedContentHash, candidateHash, token, summary),
+            error = null,
+        )
     }
 
     fun dismissReview() = _state.update { it.copy(review = null) }
@@ -517,22 +558,23 @@ class SuperstructureStudioViewModel(
             _state.update { it.copy(review = null, error = "The draft changed after review. Review it again before saving.") }
             return
         }
+        val saveGeneration = reloadGeneration.incrementAndGet()
         scope.launch {
             _state.update { it.copy(loading = true, error = null) }
             val result = withContext(Dispatchers.IO) {
-                runCatching {
+                try {
                     val session = projectSession
                     val revision = state.projectRevision
                     if (session != null && revision != null) {
-                        when (val result = session.saveSuperstructure(revision, draft, review.expectedContentHash)) {
-                            is ProjectSessionMutationResult.Applied -> result.value
-                            is ProjectSessionMutationResult.Stale -> error("The project changed after this coordinator loaded. Reload before saving.")
-                            is ProjectSessionMutationResult.Conflict -> error(result.message)
-                            is ProjectSessionMutationResult.Failed -> error(result.message)
+                        when (val mutation = session.saveSuperstructure(revision, draft, review.expectedContentHash)) {
+                            is ProjectSessionMutationResult.Applied -> Result.success(SaveOutcome(mutation.value, mutation.snapshot.revision))
+                            is ProjectSessionMutationResult.Stale -> Result.failure(IllegalStateException("The project changed after this coordinator loaded. Reload before saving."))
+                            is ProjectSessionMutationResult.Conflict -> Result.failure(IllegalStateException(mutation.message))
+                            is ProjectSessionMutationResult.Failed -> Result.failure(IllegalStateException(mutation.message))
                         }
                     } else {
-                        val project = loadProjectDocuments(forceReload = true).query
-                        repository.save(
+                        val project = loadProjectData(state.projectPath, forceReload = true).snapshot.query
+                        val savedDoc = repository.save(
                             state.projectPath,
                             draft,
                             review.expectedContentHash,
@@ -540,27 +582,42 @@ class SuperstructureStudioViewModel(
                             project.actions.mapTo(linkedSetOf()) { it.key },
                             project.actions.asSequence().filter { it.parameters.isEmpty() }.mapTo(linkedSetOf()) { it.key },
                         )
+                        Result.success(SaveOutcome(savedDoc, null))
                     }
+                } catch (cancellation: kotlinx.coroutines.CancellationException) {
+                    throw cancellation
+                } catch (t: Exception) {
+                    Result.failure(t)
                 }
             }
-            result.onSuccess { saved ->
-                val documents = (state.documents.filterNot { it.superstructureId == saved.document.superstructureId } + saved.document)
-                    .sortedBy { it.displayName.lowercase() }
-                _state.value = validate(
-                    state.copy(
-                        documents = documents,
-                        selectedId = saved.document.superstructureId,
-                        saved = saved.document,
-                        savedContentHash = saved.contentHash,
-                        projectRevision = projectSession?.state?.value?.revision ?: state.projectRevision,
-                        draft = saved.document,
-                        loading = false,
-                        dirty = false,
-                        review = null,
-                        status = "Saved ${saved.currentFile.path} and retained immutable history ${saved.historyFile.name}.",
-                        error = null,
+            result.onSuccess { outcome ->
+                val saved = outcome.saved
+                val savedRevision = outcome.revision
+                _state.update { current ->
+                    if (saveGeneration != reloadGeneration.get()) return@update current
+                    val documents = (current.documents.filterNot { it.superstructureId == saved.document.superstructureId } + saved.document)
+                        .sortedBy { it.displayName.lowercase() }
+                    val savingSelected = current.selectedId == saved.document.superstructureId
+                    val savedDoc = if (savingSelected) saved.document else current.saved
+                    val savedHash = if (savingSelected) saved.contentHash else current.savedContentHash
+                    val isDirty = if (savingSelected) current.draft != saved.document else current.dirty
+                    val selectedState = if (savingSelected && current.selectedStateId != null) {
+                        if (current.draft?.states?.any { it.stateId == current.selectedStateId } == true) current.selectedStateId else saved.document.initialStateId
+                    } else {
+                        current.selectedStateId
+                    }
+                    validate(
+                        current.copy(
+                            documents = documents, selectedId = current.selectedId,
+                            saved = savedDoc, savedContentHash = savedHash,
+                            projectRevision = savedRevision ?: current.projectRevision, draft = current.draft,
+                            selectedStateId = selectedState, loading = false, dirty = isDirty,
+                            review = if (savingSelected && current.draft == saved.document) null else current.review,
+                            status = "Saved ${saved.currentFile.path} and retained immutable history ${saved.historyFile.name}.",
+                            error = null,
+                        )
                     )
-                )
+                }
                 scope.launch {
                     runCatching {
                         val root = File(state.projectPath).canonicalFile
@@ -573,21 +630,34 @@ class SuperstructureStudioViewModel(
                             ),
                         )
                     }.onFailure { failure ->
-                        _state.update { it.copy(status = "Superstructure saved, but automatic Project History checkpoint failed: ${failure.message}") }
+                        if (saveGeneration == reloadGeneration.get())
+                            _state.update { it.copy(status = "Superstructure saved, but automatic Project History checkpoint failed: ${failure.message}") }
                     }
                 }
             }.onFailure { error ->
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                if (saveGeneration != reloadGeneration.get()) return@onFailure
                 _state.update { it.copy(loading = false, review = null, error = error.message ?: "Superstructure could not be saved") }
             }
         }
     }
 
-    private fun loadProjectDocuments(forceReload: Boolean): AresProjectDocumentSnapshot {
+    private suspend fun loadProjectData(projectPath: String, forceReload: Boolean, checkRequest: (() -> Unit)? = null): ProjectLoadResult {
+        val coroutineJob = coroutineContext[Job]
+        val checkLiveness: () -> Unit = {
+            if (!scope.isActive || coroutineJob?.isActive == false) throw kotlinx.coroutines.CancellationException("Superstructure document load cancelled.")
+            checkRequest?.invoke()
+        }
         val target = targetPlatform
         return if (projectSession != null && target != null) {
-            projectSession.snapshot(_state.value.projectPath, target, forceReload).documents
+            val sessionSnapshot = projectSession.snapshot(projectPath, target, forceReload, checkLiveness)
+            checkLiveness()
+            ProjectLoadResult(sessionSnapshot.documents, sessionSnapshot.revision)
         } else {
-            projectDocuments.load(_state.value.projectPath, target)
+            checkLiveness()
+            val loaded = projectDocuments.load(projectPath, target)
+            checkLiveness()
+            ProjectLoadResult(loaded, null)
         }
     }
 
@@ -665,5 +735,8 @@ class SuperstructureStudioViewModel(
         while ("$normalized-$suffix" in used) suffix++
         return "$normalized-$suffix"
     }
+
+    private data class ProjectLoadResult(val snapshot: AresProjectDocumentSnapshot, val revision: ProjectSessionRevision?)
+    private data class SaveOutcome(val saved: SavedSuperstructureDocument, val revision: ProjectSessionRevision?)
 }
 

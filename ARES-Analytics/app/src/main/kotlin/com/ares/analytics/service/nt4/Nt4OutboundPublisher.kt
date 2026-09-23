@@ -143,6 +143,7 @@ internal class Nt4OutboundPublisher(
         value: TuningValue,
         nonce: Long,
         expectedConnection: Long,
+        isLiveValid: () -> Boolean = { true },
     ): Boolean {
         require(nonce in 0..DesktopDriveProtocol.MAX_SAFE_INTEGER_LONG) { "Invalid tuning request nonce" }
         require(requestedKey.startsWith("${TuningTopics.ROOT}/Parameters/") && requestedKey.endsWith("/Requested") &&
@@ -164,12 +165,15 @@ internal class Nt4OutboundPublisher(
         }
         val connectedSession = session ?: return false
         if (tuningConnectionId != expectedConnection) return false
+        if (!isLiveValid()) return false
         val requestedUid = ensurePublisher(requestedKey, type)
+        if (!isLiveValid()) return false
         val nonceUid = ensurePublisher(nonceKey, "double")
-        if (session !== connectedSession || tuningConnectionId != expectedConnection) return false
+        if (session !== connectedSession || tuningConnectionId != expectedConnection || !isLiveValid()) return false
         // Receipt timestamps preserve one-shot tuning requests across paused simulator clocks.
         val requested = NT4WireProtocol.encodeValueMessage(requestedUid.toLong(), 0L, typeId, wireValue)
         val commit = NT4WireProtocol.encodeValueMessage(nonceUid.toLong(), 0L, 1, nonce.toDouble())
+        if (!isLiveValid()) return false
         return connectedSession.outgoing.trySend(Frame.Binary(true, requested + commit)).isSuccess
     }
 

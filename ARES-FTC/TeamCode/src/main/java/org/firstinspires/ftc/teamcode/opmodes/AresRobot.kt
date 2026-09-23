@@ -128,10 +128,11 @@ class AresRobot(
                 contextProvider = {
                     com.areslib.tuning.TuningApplyContext(
                         sessionArmed = base.isCalibrationModeArmed,
-                        // FTC tuning is armed after START; disabled-only edits fail closed until the
-                        // lifecycle exposes a trustworthy Driver Station disabled signal.
+                        // FTC tuning is armed after START; disabled-only edits require an active STOP lease
+                        // holding neutral outputs because an active OpMode has no WPILib-style Disabled lifecycle.
                         robotDisabled = false,
                         calibrationParameterUids = FTC_CALIBRATION_PARAMETER_UIDS,
+                        outputsNeutralAndInhibited = base.isCalibrationNeutralOutputHoldActive,
                     )
                 },
                 onApplied = { parameterUid, _ ->

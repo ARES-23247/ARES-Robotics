@@ -132,8 +132,8 @@ fun MainScreen(services: ServiceRegistry) {
 
     val isNt4Connected by services.nt4ClientService.isConnected.collectAsState()
     val isXrpConnected by services.xrpLinkService.isConnected.collectAsState()
-    var stableProjectContentHash by remember(currentConfig?.id) { mutableStateOf<String?>(null) }
-    LaunchedEffect(currentConfig?.id) {
+    var stableProjectContentHash by remember(currentConfig?.id, currentConfig?.projectPath) { mutableStateOf<String?>(null) }
+    LaunchedEffect(currentConfig?.id, currentConfig?.projectPath) {
         services.projectSession.state
             .mapNotNull { it.revision?.canonicalContentSha256 }
             .distinctUntilChanged()
@@ -178,7 +178,7 @@ fun MainScreen(services: ServiceRegistry) {
         return
     }
 
-    val workspaceScope = rememberWorkspaceCoroutineScope(currentConfig.id)
+    val workspaceScope = rememberWorkspaceCoroutineScope(currentConfig.id, currentConfig.projectPath)
     val workspaceModels = rememberWorkspaceViewModelGraph(
         services = services,
         config = currentConfig,
@@ -208,11 +208,11 @@ fun MainScreen(services: ServiceRegistry) {
     // These view models share the keyed workspace scope and are cancelled together before a new
     // workspace can observe or mutate the prior project's state.
     val dashboardShellState by dashboardViewModel.shellState.collectAsState()
-    var dashboardMissionSnapshot by remember(currentConfig.id) {
+    var dashboardMissionSnapshot by remember(currentConfig.id, currentConfig.projectPath) {
         mutableStateOf<DashboardMissionSnapshot?>(null)
     }
     val robotStudioShellState by robotStudioViewModel.shellState.collectAsState()
-    LaunchedEffect(currentConfig.id, stableProjectContentHash) {
+    LaunchedEffect(currentConfig.id, currentConfig.projectPath, stableProjectContentHash) {
         if (stableProjectContentHash != null) robotStudioViewModel.refresh()
     }
     val primarySessionId = dashboardShellState.primarySessionId
@@ -280,7 +280,7 @@ fun MainScreen(services: ServiceRegistry) {
     val unmanagedSimulatorOnline = compatibleLocalSimOnline && !isSimRunning
     val simulationProduct = robotStudioShellState.simulationProduct
     val simulatorLaunchEnabled = robotStudioShellState.canRunSimulation && simulationProduct != null && !unmanagedSimulatorOnline
-    var pendingSimulatorLaunch by remember(currentConfig.id) { mutableStateOf(false) }
+    var pendingSimulatorLaunch by remember(currentConfig.id, currentConfig.projectPath) { mutableStateOf(false) }
     val simulatorLaunchRequest = localSimulatorLaunchRequest(
         canRunSimulation = simulatorLaunchEnabled,
         canRunBuild = robotStudioShellState.canRunBuild,
@@ -337,6 +337,7 @@ fun MainScreen(services: ServiceRegistry) {
         guidedRunAnalysisViewModel.load(currentConfig)
     }
     LaunchedEffect(
+        robotStudioViewModel,
         buildExecutionState,
         deployExecutionState,
         isSimRunning,

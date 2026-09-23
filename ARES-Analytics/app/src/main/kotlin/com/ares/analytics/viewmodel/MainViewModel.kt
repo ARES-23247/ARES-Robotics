@@ -118,7 +118,9 @@ class MainViewModel(
                     val app = environmentService.loadWorkspaces()
                     val newList = app.workspaces.filter { it.id != configWithId.id } + configWithId
                     val newApp = com.ares.analytics.shared.models.AppWorkspaces(activeWorkspaceId = configWithId.id, workspaces = newList)
-                    if (_state.value.config?.id != configWithId.id) beforeWorkspaceChange()
+                    if (_state.value.config?.id != configWithId.id || _state.value.config?.projectPath != configWithId.projectPath) {
+                        beforeWorkspaceChange()
+                    }
                     environmentService.saveWorkspaces(newApp)
 
                     _state.update { it.copy(config = configWithId, workspaces = newList) }
