@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -149,7 +150,14 @@ class SubsystemGeneratorViewModel(
     fun reloadAsync(): kotlinx.coroutines.Job {
         val current = _state.value
         val generation = reloadGeneration.incrementAndGet()
-        return scope.launch(Dispatchers.IO) { reload(current, generation) }
+        return scope.launch(Dispatchers.IO) {
+            val job = coroutineContext[kotlinx.coroutines.Job]
+            reload(current, generation) {
+                if (job?.isActive == false) {
+                    throw kotlinx.coroutines.CancellationException("Subsystem reload job was cancelled.")
+                }
+            }
+        }
     }
 
     private fun blockDraftReplacement(): Boolean {
@@ -164,7 +172,12 @@ class SubsystemGeneratorViewModel(
 
     fun reload() = reload(_state.value, reloadGeneration.incrementAndGet())
 
-    private fun reload(current: SubsystemGeneratorState, generation: Long) {
+    private fun reload(
+        current: SubsystemGeneratorState,
+        generation: Long,
+        checkActive: (() -> Unit)? = null,
+    ) {
+        if (!scope.isActive || generation != reloadGeneration.get()) return
         aiProposalGeneration.incrementAndGet()
         if (current.projectPath.isBlank()) {
             commitReload(generation, current, current.copy(loadError = "Choose a robot project directory to edit subsystems."))
@@ -176,16 +189,26 @@ class SubsystemGeneratorViewModel(
             League.XRP -> com.areslib.controls.ControllerInputPlatform.XRP
         }
         runCatching {
-            val sessionSnapshot = projectSession?.snapshot(current.projectPath, target, forceReload = true)
+            val sessionSnapshot = projectSession?.snapshot(current.projectPath, target, forceReload = true) {
+                if (!scope.isActive || generation != reloadGeneration.get()) {
+                    throw kotlinx.coroutines.CancellationException("Subsystem reload superseded or scope cancelled.")
+                }
+                checkActive?.invoke()
+            }
+            if (!scope.isActive || generation != reloadGeneration.get()) {
+                throw kotlinx.coroutines.CancellationException("Subsystem reload superseded or scope cancelled.")
+            }
+            checkActive?.invoke()
             (sessionSnapshot?.documents ?: documents.load(current.projectPath, target)) to sessionSnapshot?.revision
         }
             .onSuccess { (snapshot, revision) ->
+                if (!scope.isActive || generation != reloadGeneration.get()) return@onSuccess
                 val matching = snapshot.query.subsystems.filter { it.platform == platform }
                 val first = matching.firstOrNull()
                 val projectProblems = snapshot.diagnostics.filter {
                     it.kind == ProjectDocumentKind.SUBSYSTEM || it.kind == ProjectDocumentKind.PROJECT_METADATA
                 }.map { SubsystemProblem(SubsystemProblemSeverity.WARNING, "project:${it.file.name}", it.message) }
-                if (generation != reloadGeneration.get()) return@onSuccess
+                if (!scope.isActive || generation != reloadGeneration.get()) return@onSuccess
                 commitReload(generation, current, current.copy(
                     xrpControllerModel = snapshot.query.metadata
                         ?.takeIf { it.league == AresLeague.XRP }
@@ -210,17 +233,20 @@ class SubsystemGeneratorViewModel(
                 ).revalidated(projectProblems))
             }
             .onFailure { error ->
-                if (generation == reloadGeneration.get())
+                if (error is kotlinx.coroutines.CancellationException) return@onFailure
+                if (scope.isActive && generation == reloadGeneration.get())
                     commitReload(generation, current, current.copy(loadError = error.message ?: "Subsystem documents could not be loaded."))
             }
     }
 
     private fun commitReload(generation: Long, expected: SubsystemGeneratorState, loaded: SubsystemGeneratorState) {
+        if (!scope.isActive || generation != reloadGeneration.get()) return
         _state.update { latest ->
+            if (!scope.isActive || generation != reloadGeneration.get()) return@update latest
             val comparable = latest.copy(generationPhase = expected.generationPhase,
                 generationMessage = expected.generationMessage, generatedContentHash = expected.generatedContentHash)
             val initialLoad = !latest.projectLoaded && latest.draft == null
-            if (generation != reloadGeneration.get() || (!initialLoad && comparable != expected)) latest else loaded.copy(generationPhase = latest.generationPhase,
+            if (!initialLoad && comparable != expected) latest else loaded.copy(generationPhase = latest.generationPhase,
                 generationMessage = latest.generationMessage, generatedContentHash = latest.generatedContentHash)
         }
     }

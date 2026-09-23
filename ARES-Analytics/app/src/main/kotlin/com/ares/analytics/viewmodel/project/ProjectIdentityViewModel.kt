@@ -38,8 +38,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 
 enum class ProjectIdentityField {
     PROJECT_ID, TEAM_ID, SEASON_ID, ROBOT_ID, DISPLAY_NAME,
@@ -120,14 +123,15 @@ class ProjectIdentityViewModel(
     private val _state = MutableStateFlow(ProjectIdentityEditorState())
     val state: StateFlow<ProjectIdentityEditorState> = _state.asStateFlow()
 
+    @Volatile
     private var workspace: WorkspaceConfig? = null
     private var loadJob: Job? = null
-    private var generation = 0L
+    private val generation = AtomicLong(0L)
 
     fun load(config: WorkspaceConfig) {
         if (!scope.isActive) return
         workspace = config
-        val selectedGeneration = ++generation
+        val selectedGeneration = generation.incrementAndGet()
         loadJob?.cancel()
         _state.value = ProjectIdentityEditorState(
             loading = true,
@@ -136,11 +140,11 @@ class ProjectIdentityViewModel(
         )
         loadJob = scope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                val loaded = withContext(ioDispatcher) { inspect(config) }
-                if (selectedGeneration != generation || workspace != config) return@launch
+                val loaded = withContext(ioDispatcher) { inspect(config, selectedGeneration) }
+                if (selectedGeneration != generation.get() || workspace != config) return@launch
                 _state.value = loaded
             } catch (cancelled: CancellationException) {
-                if (selectedGeneration == generation && workspace == config) {
+                if (selectedGeneration == generation.get() && workspace == config) {
                     _state.value = _state.value.copy(
                         loading = false,
                         protectedError = "Project inspection was cancelled. Reload before reviewing an identity.",
@@ -148,7 +152,7 @@ class ProjectIdentityViewModel(
                 }
                 throw cancelled
             } catch (failure: Exception) {
-                if (selectedGeneration != generation || workspace != config) return@launch
+                if (selectedGeneration != generation.get() || workspace != config) return@launch
                 _state.value = ProjectIdentityEditorState(
                     loading = false,
                     projectPath = config.projectPath,
@@ -336,12 +340,12 @@ class ProjectIdentityViewModel(
             message = "Saving reviewed project identity…",
             messageIsError = false,
         )
-        val applyGeneration = generation
+        val applyGeneration = generation.get()
         // Establish cancellation handling before dispatch, including cancellation of queued I/O.
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
-                val outcome = withContext(ioDispatcher) { persistReviewed(config, current, proposal) }
-                if (applyGeneration != generation || workspace != config) return@launch
+                val outcome = withContext(ioDispatcher) { persistReviewed(config, current, proposal, applyGeneration) }
+                if (applyGeneration != generation.get() || workspace != config) return@launch
                 val saved = outcome.metadata
                 val latest = _state.value
                 val editedWhileSaving = latest.draft != current.draft
@@ -367,7 +371,7 @@ class ProjectIdentityViewModel(
                     messageIsError = false,
                 )
             } catch (cancelled: CancellationException) {
-                if (applyGeneration == generation && workspace == config) {
+                if (applyGeneration == generation.get() && workspace == config) {
                     _state.value = _state.value.copy(
                         saving = false,
                         proposal = null,
@@ -379,7 +383,7 @@ class ProjectIdentityViewModel(
                 }
                 throw cancelled
             } catch (failure: Exception) {
-                if (applyGeneration != generation || workspace != config) return@launch
+                if (applyGeneration != generation.get() || workspace != config) return@launch
                 _state.value = _state.value.copy(
                     saving = false,
                     proposal = null,
@@ -401,11 +405,13 @@ class ProjectIdentityViewModel(
         return IdentitySaveOutcome(saved, snapshot?.revision)
     }
 
-    private fun persistReviewed(
+    private suspend fun persistReviewed(
         config: WorkspaceConfig,
         current: ProjectIdentityEditorState,
         proposal: ProjectIdentityProposal,
+        applyGeneration: Long,
     ): IdentitySaveOutcome {
+        val requestContext = coroutineContext
         ProjectLayout.validationError(config.projectPath, config.league)?.let { sourceError ->
             error("The selected folder stopped being a valid robot project: $sourceError")
         }
@@ -431,7 +437,12 @@ class ProjectIdentityViewModel(
         }
         val snapshot = projectSession?.let { session ->
             try {
-                session.snapshot(config.projectPath, config.league.targetPlatform(), forceReload = true)
+                session.snapshot(config.projectPath, config.league.targetPlatform(), forceReload = true) {
+                    requestContext.ensureActive()
+                    if (!scope.isActive || applyGeneration != generation.get() || workspace != config) {
+                        throw CancellationException("Superseded project identity save refresh")
+                    }
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
@@ -441,12 +452,26 @@ class ProjectIdentityViewModel(
         return savedIdentity(saved, snapshot)
     }
 
-    private fun inspect(config: WorkspaceConfig): ProjectIdentityEditorState {
+    private suspend fun inspect(config: WorkspaceConfig, selectedGeneration: Long): ProjectIdentityEditorState {
+        val requestContext = coroutineContext
+        requestContext.ensureActive()
+        if (!scope.isActive || selectedGeneration != generation.get() || workspace != config) {
+            throw CancellationException("Superseded project identity load")
+        }
         val inspected = repository.inspect(config.projectPath)
         val currentResult = inspected.result
         val initiallyLoaded = currentResult.getOrNull()
         val sessionSnapshot = initiallyLoaded?.let {
-            projectSession?.snapshot(config.projectPath, config.league.targetPlatform(), forceReload = true)
+            projectSession?.snapshot(config.projectPath, config.league.targetPlatform(), forceReload = true) {
+                requestContext.ensureActive()
+                if (!scope.isActive || selectedGeneration != generation.get() || workspace != config) {
+                    throw CancellationException("Superseded project identity load")
+                }
+            }
+        }
+        requestContext.ensureActive()
+        if (!scope.isActive || selectedGeneration != generation.get() || workspace != config) {
+            throw CancellationException("Superseded project identity load")
         }
         val current = if (sessionSnapshot != null) {
             checkNotNull(sessionSnapshot.documents.query.metadata) {

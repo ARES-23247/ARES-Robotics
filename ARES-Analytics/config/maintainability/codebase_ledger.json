@@ -5072,7 +5072,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 745,
+      "lines": 750,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5142,7 +5142,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 670,
+      "lines": 696,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5482,7 +5482,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/project/ProjectIdentityViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 504,
+      "lines": 529,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5532,7 +5532,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePersistenceService.kt",
       "product": "ARES-Analytics",
-      "lines": 205,
+      "lines": 223,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

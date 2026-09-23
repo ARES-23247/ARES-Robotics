@@ -6,7 +6,8 @@ ARESLib 19.1.4); saved-workflow commit `674901bb3393d49c9b4ce6fb95c4999f82def77f
 New work is local only. Tuning checkpoint: `56c53cc60568855e00ca1c39c2f74c06996899e6`.
 Operator/guided checkpoint: `e5331cc7c5c3094160ae47c17180365a501fbd62`.
 Workspace context checkpoint: `e93d927e84438e6c6c1171aec1b4913ee9ed74a9`.
-The commit containing this state adds field/drivebase session ownership and closes the native folder-switch check.
+Editor session checkpoint: `484f29b295327134519b68800ba9abac0a0bae7b`.
+The commit containing this state adds identity, planner and subsystem session ownership guards.
 
 | Role | Local branch/worktree | Ownership |
 | --- | --- | --- |
@@ -21,9 +22,12 @@ The commit containing this state adds field/drivebase session ownership and clos
 | Drivebase-session worker | `codex/gemini-drivebase-session-audit`, `.codex-validation/gemini-drivebase-session-audit` | Drivebase load/reload ownership and reviewed-save regressions |
 | Caller-review worker | `codex/gemini-session-caller-review`, `.codex-validation/gemini-session-caller-review` | Read-only remaining session caller analysis; report only |
 | Promotion-context worker | `codex/gemini-promotion-context-audit`, `.codex-validation/gemini-promotion-context-audit` | Tuning load/review/promotion context |
+| Identity-session worker | `codex/gemini-identity-session-audit`, `.codex-validation/gemini-identity-session-audit` | Identity inspection and post-save refresh ownership |
+| Planner-session worker | `codex/gemini-planner-session-audit`, `.codex-validation/gemini-planner-session-audit` | Planner/routine persistence refresh ownership |
+| Subsystem-session worker | `codex/gemini-subsystem-session-audit`, `.codex-validation/gemini-subsystem-session-audit` | Subsystem reload scope/job ownership and draft controls |
 
 All workers used `gemini-3.8-flash-high`, effort `high`, and returned substantive final
-responses. The three latest workers ran in parallel with coordinator native UI and baseline validation. No worker is
+responses. The three latest workers ran in parallel with coordinator baseline validation and caller review. No worker is
 running or awaiting a correction. The user authorized up to three parallel
 AGY workers. The reusable workflow records verified manifests, bounded exploration and disjoint
 ownership; Codex owns tests and acceptance. Do not copy worker files back over the coordinator:
@@ -41,6 +45,9 @@ Final main conversations (retain these identifiers with the local evidence):
 - Field session: `f3517140-ce0b-466e-ab58-e1c1390c8d4d`, two turns.
 - Drivebase session: `03f9bff5-dec0-4dd9-aa99-8fa233d2902b`, two turns.
 - Caller review: `709d49cf-cf6b-4cf6-9333-61dc4bfe7bcd`, two turns.
+- Identity session: `5c96bb92-f250-4d52-be28-84c9a91c63ce`, one turn.
+- Planner session: `35c1a1d8-624b-49b3-ad40-b473e8d662cd`, one turn.
+- Subsystem session: `946c29c5-7dcb-43fc-9a77-e93203ae94af`, two turns.
 
 Exact assignments, corrections and CLI streams remain in each worker's ignored
 `build/gemini-audit/`. Earlier shell escalation and unrelated path reads remained denied. The
@@ -135,24 +142,41 @@ All 24 canonical fixture files remained unchanged. Studio PID 42608, wrapper 463
 All three AGY workers finished, including their requested corrections. Evidence lives in
 coordinator `build/agy-session-callers/` and each worker's `build/gemini-audit/`.
 
+The [project-owner checkpoint](AGY_PROJECT_OWNERS_CHECKPOINT.md) closes the identity, planner and
+subsystem investigations against unchanged `484f29b29`. Eleven new tests produce seven intended
+baseline assertion failures and four control passes. The corrected combined suite passes 141 tests,
+and all 11 new checks pass after the final invocation cleanup. Identity initial-creation disk writes
+survive a later selection change, planner footprint saves still persist, and a saved subsystem draft
+survives delivery of an obsolete read. The guards reject obsolete selection changes inside the
+session lock, including cancellation of just an individual subsystem reload job. No wrong-file write
+was demonstrated. Codex corrected worker coroutine usage, metadata fixtures, APIs and cleanup;
+original and corrected reports remain in the worker evidence directories.
+
+Coordinator `build/agy-project-owners/` retains baseline/fixed/final JUnit and logs, worker metrics,
+source-policy/CI results and scoped ledger verification. No native window was launched this batch.
+The generic FTC consumer evidence from `484f29b29` is reused because generator/library/runtime
+contracts did not change; affected editor and authoring/save callers were checked in the 141 tests.
+All three workers and test sessions ended. No unrelated process was terminated.
+
 Keep the goal active. Before another assignment, verify branch/dirty state and process ownership.
-Next bounded investigations: ProjectIdentity inspect/post-save snapshot ownership, and
-PathPlanner/RoutinePersistence refresh. Static review also found unguarded async snapshot paths
-in SubsystemGenerator and Superstructure; these are unproven leads, not accepted findings.
-The read-only worker's original protected classifications were rejected. Fixed model paths and
-local generation checks alone cannot prove protection for the shared session. Preserve both
-worker report revisions in the retained logs. Do not copy worker tests over coordinator corrections.
+Next bounded reproductions: RobotProjectReadinessService inspection through RobotStudioViewModel,
+and SuperstructureStudioViewModel asynchronous reload/post-save revision ownership. These remain
+unproven leads. ControlsEditor is synchronous in inspected paths; the unused persistence helper
+has no production callsites found. Intentional generation/execution authorization snapshots need
+actual caller evidence before a change. Preserve prior read-only report revisions; fixed model
+paths and UI-only generation checks do not prove shared-session protection.
 
 Use up to three disjoint high-effort AGY workers with verified path manifests. Require tests that
 compile on unchanged baseline interfaces, actual DTO fixtures, discriminating old/new data and
-latch/scope cleanup on every failure. The latest 23/24/30 successful reads exceeded advisory
-budgets and each worker needed a correction; independent review remains necessary. Do not infer
+latch/scope cleanup on every failure. The latest 18/19/16 successful reads still exceeded advisory
+budgets; the subsystem worker needed a correction round and all patches needed coordinator review.
+These tasks differ from the previous 23/24/30-read batch, so no controlled speedup is claimed. Do not infer
 Codex quota savings from AGY counters or launch redundant workers merely to fill slots. Preserve
 old evidence/worktrees and do not restart the audit-every-file campaign.
 
 Physical neutralization, target-controller timing and unselected GUI paths remain unverified.
 The right-hand calibration selector's narrow labels are a deferred usability issue. The read
-budget was exceeded by one worker; use tighter follow-up briefs and inspect completed patches.
+budgets remain advisory; use tighter follow-up briefs and inspect completed patches.
 Tests here are desktop JVM/mock/simulated IO checks, not robot timing measurements. A queued packet
 cannot be recalled by a later replay/target change; robot authorization and leases remain required.
 

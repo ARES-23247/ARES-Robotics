@@ -39,6 +39,7 @@ import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineStep
 import com.areslib.routine.RoutineStepKind
 import com.areslib.routine.RoutineValidationSeverity
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.isActive
@@ -433,7 +434,10 @@ class PathPlannerViewModel(
 
     private suspend fun refreshRoutineProject(projectPath: String, league: League, generation: Long) {
         runCatching {
-            persistence.refreshProject(projectPath, league)
+            persistence.refreshProject(projectPath, league) {
+                if (!isCurrentProjectRequest(projectPath, generation))
+                    throw CancellationException("Stale project refresh request generation $generation for $projectPath")
+            }
         }.onSuccess { refresh ->
             if (!isCurrentProjectRequest(projectPath, generation)) return@onSuccess
             val beforeRefresh = _state.value
@@ -498,6 +502,7 @@ class PathPlannerViewModel(
             }
             recalculateRoutinePreview()
         }.onFailure { error ->
+            if (error is CancellationException) throw error
             if (isCurrentProjectRequest(projectPath, generation)) {
                 _state.update {
                     it.copy(
