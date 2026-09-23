@@ -10,9 +10,7 @@ import com.ares.analytics.service.nt4.Nt4InboundRouter
 import com.ares.analytics.service.nt4.Nt4OutboundPublisher
 import com.ares.analytics.service.nt4.Nt4TargetIdentity
 import com.ares.analytics.service.nt4.Nt4Topic
-import com.ares.analytics.service.tuning.TuningTransport
 import com.areslib.tuning.TuningParameterDeclaration
-import com.areslib.tuning.TuningParameterType
 import com.areslib.tuning.TuningValue
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -174,29 +172,17 @@ open class Nt4ClientService(
     val tuningConnectionId: Long? get() = outboundPublisher.tuningConnectionId
     internal val controlConnectionEpoch: Long get() = outboundPublisher.connectionGeneration
 
-    /** A successful enqueue is still experimental until the robot acknowledges this nonce. */
+    /** True means enqueued only; a matching robot acknowledgement is still required. */
     suspend fun publishTuningRequest(
         declaration: TuningParameterDeclaration,
         value: TuningValue,
         nonce: Long,
         expectedConnection: Long,
-    ): Boolean {
-        require(when (declaration.type) {
-            TuningParameterType.DOUBLE -> value.doubleValue != null
-            TuningParameterType.INT -> value.intValue != null
-            TuningParameterType.BOOLEAN -> value.booleanValue != null
-            TuningParameterType.TEXT, TuningParameterType.ENUM -> value.textValue != null
-        }) { "Tuning value does not match its declared type" }
-        val requested = TuningTransport.requested(declaration)
-        val commit = TuningTransport.requestNonce(declaration)
-        if (!outboundPublisher.publishTuningRequest(requested, commit, value, nonce, expectedConnection)) return false
-        val now = System.currentTimeMillis()
-        val sessionId = _currentSession.value?.sessionId ?: "live-telemetry"
-        val numeric = value.doubleValue ?: value.intValue?.toDouble() ?: if (value.booleanValue == true) 1.0 else 0.0
-        telemetryStore.accept(TelemetryFrame(now, sessionId, requested, numeric, stringValue = value.textValue))
-        telemetryStore.accept(TelemetryFrame(now, sessionId, commit, nonce.toDouble()))
-        return true
-    }
+    ): Boolean = com.ares.analytics.service.nt4.publishLiveTuningRequest(
+        outboundPublisher, telemetryStore, isReplayActive,
+        { _currentSession.value?.sessionId ?: "live-telemetry" },
+        declaration, value, nonce, expectedConnection,
+    )
 
     internal val topicMap: ConcurrentHashMap<Int, Nt4Topic>
         get() = inboundRouter.topicMap

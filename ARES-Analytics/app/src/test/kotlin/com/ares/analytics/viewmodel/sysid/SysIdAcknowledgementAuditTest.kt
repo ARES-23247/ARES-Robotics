@@ -321,4 +321,138 @@ class SysIdAcknowledgementAuditTest {
         frame("Drive/Velocity", 1.0)
         Mockito.verify(client, Mockito.never()).controlConnectionEpoch
     }
+
+    @Test fun `false feedback while ARMING followed by fresh true can arm and prevents START before true`() = checkState {
+        arm()
+        assertEquals(CalibrationArmPhase.ARMING, vm.state.value.armPhase)
+        assertFalse(vm.state.value.robotCalibrationArmed)
+        // Motion must NOT be authorized while in ARMING
+        vm.onIntent(SysIdIntent.StartRoutine(SysIdRoutine.DYNAMIC)); scope.runCurrent()
+        assertFalse(vm.state.value.isRoutineRunning)
+        assertTrue(transport.strings.none { it.second.startsWith("START_") })
+
+        // False feedback while ARMING (e.g. routine loop publish before receiving STOP/lease handshake)
+        frame("SysId/Armed", 0.0)
+        assertEquals(CalibrationArmPhase.ARMING, vm.state.value.armPhase)
+        assertFalse(vm.state.value.robotCalibrationArmed)
+        vm.onIntent(SysIdIntent.StartRoutine(SysIdRoutine.DYNAMIC)); scope.runCurrent()
+        assertFalse(vm.state.value.isRoutineRunning)
+        assertTrue(transport.strings.none { it.second.startsWith("START_") })
+
+        // Fresh true arrives once robot has processed the arm handshake
+        frame("SysId/Armed", 1.0)
+        assertEquals(CalibrationArmPhase.ARMED, vm.state.value.armPhase)
+        assertTrue(vm.state.value.robotCalibrationArmed)
+
+        // Now motion is authorized
+        vm.onIntent(SysIdIntent.StartRoutine(SysIdRoutine.DYNAMIC)); scope.runCurrent()
+        assertTrue(vm.state.value.isRoutineRunning)
+        assertEquals(1, transport.strings.count { it.second == "START_LINEAR_DYNAMIC" })
+    }
+
+    @Test fun `delayed old START completion after connection switch cannot revive motion and sends no new commands to successor`() = checkState {
+        acknowledge()
+        val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+        transport.beforeString = { _, value ->
+            if (value.startsWith("START_")) {
+                entered.complete(Unit)
+                release.await()
+            }
+        }
+        vm.onIntent(SysIdIntent.StartRoutine(SysIdRoutine.DYNAMIC))
+        scope.runCurrent()
+        assertTrue(entered.isCompleted)
+
+        // Connection epoch switches while START was in flight
+        connectionEpoch++
+        val stringCountBefore = transport.strings.size
+        val doubleCountBefore = transport.doubles.size
+
+        release.complete(Unit)
+        scope.runCurrent()
+
+        // finishMotion detected epoch switch: called connectionLost() and did NOT revive motion
+        assertFalse(vm.state.value.isRoutineRunning)
+        assertEquals(CalibrationArmPhase.DISARMED, vm.state.value.armPhase)
+        assertFalse(vm.state.value.robotCalibrationArmed)
+
+        // finishMotion did NOT send new STOP/token revocation commands to the successor session
+        assertEquals(stringCountBefore, transport.strings.size)
+        assertEquals(doubleCountBefore, transport.doubles.size)
+    }
+
+    @Test fun `late status NONE after routine stopped clears buffer without analyzing`() = checkState {
+        acknowledge()
+        vm.onIntent(SysIdIntent.StartRoutine(SysIdRoutine.DYNAMIC)); scope.runCurrent()
+        assertTrue(vm.state.value.isRoutineRunning)
+
+        // Feed real SysId/Data packed frame: timestampMs|voltage|position|velocity|acceleration
+        frame("SysId/Data", text = "1000|6.0|1.0|2.0|0.5")
+        assertTrue(vm.state.value.liveSamples.isNotEmpty(), "Sample buffer must be populated")
+
+        // Stop routine
+        vm.onIntent(SysIdIntent.StopRoutine); scope.runCurrent()
+        assertFalse(vm.state.value.isRoutineRunning)
+
+        // Late status NONE arrives from robot
+        frame("SysId/Status", text = "NONE")
+
+        // Must NOT compute analysis or recommend gains for aborted run
+        assertTrue(Mockito.mockingDetails(tuner).invocations.none { it.method.name == "computeSampleAnalysis" })
+        assertNull(vm.state.value.summary)
+        assertNull(vm.state.value.tuningRecommendation)
+        assertTrue(vm.state.value.liveSamples.isEmpty(), "Buffer must be cleared")
+    }
+
+    @Test fun `disarm calibration intent clears data collector buffer and revokes arm`() = checkState {
+        acknowledge()
+        vm.onIntent(SysIdIntent.StartRoutine(SysIdRoutine.DYNAMIC)); scope.runCurrent()
+        assertTrue(vm.state.value.isRoutineRunning)
+
+        // Feed real SysId/Data packed frame: timestampMs|voltage|position|velocity|acceleration
+        frame("SysId/Data", text = "1000|6.0|1.0|2.0|0.5")
+        assertTrue(vm.state.value.liveSamples.isNotEmpty(), "Sample buffer must be populated")
+
+        vm.onIntent(SysIdIntent.DisarmCalibration()); scope.runCurrent()
+        assertEquals(CalibrationArmPhase.DISARMED, vm.state.value.armPhase)
+        assertFalse(vm.state.value.robotCalibrationArmed)
+        assertFalse(vm.state.value.isRoutineRunning)
+        assertTrue(vm.state.value.liveSamples.isEmpty(), "Buffer must be cleared")
+
+        frame("SysId/Status", text = "NONE")
+        assertTrue(Mockito.mockingDetails(tuner).invocations.none { it.method.name == "computeSampleAnalysis" })
+        assertNull(vm.state.value.summary)
+        assertNull(vm.state.value.tuningRecommendation)
+    }
+
+    @Test fun `mode loss while routine running clears collector buffer and revokes arm`() = checkState {
+        acknowledge()
+        vm.onIntent(SysIdIntent.StartRoutine(SysIdRoutine.DYNAMIC)); scope.runCurrent()
+        assertTrue(vm.state.value.isRoutineRunning)
+
+        // Feed real SysId/Data packed frame: timestampMs|voltage|position|velocity|acceleration
+        frame("SysId/Data", text = "1000|6.0|1.0|2.0|0.5")
+        assertTrue(vm.state.value.liveSamples.isNotEmpty(), "Sample buffer must be populated")
+
+        frame("SysId/ModeEnabled", 0.0)
+        assertFalse(vm.state.value.calibrationModeEnabled)
+        assertFalse(vm.state.value.isRoutineRunning)
+        assertEquals(CalibrationArmPhase.DISARMED, vm.state.value.armPhase)
+        assertTrue(vm.state.value.liveSamples.isEmpty(), "Buffer must be cleared")
+
+        frame("SysId/Status", text = "NONE")
+        assertTrue(Mockito.mockingDetails(tuner).invocations.none { it.method.name == "computeSampleAnalysis" })
+        assertNull(vm.state.value.summary)
+        assertNull(vm.state.value.tuningRecommendation)
+    }
+
+    @Test fun `disarm calibration intent captures transport failure in error message`() = checkState {
+        acknowledge()
+        transport.beforeString = { _, value ->
+            if (value == "STOP") throw java.io.IOException("injected disarm failure")
+        }
+        vm.onIntent(SysIdIntent.DisarmCalibration()); scope.runCurrent()
+        assertEquals(CalibrationArmPhase.DISARMED, vm.state.value.armPhase)
+        assertTrue(vm.state.value.errorMessage.orEmpty().contains("injected disarm failure"))
+    }
 }

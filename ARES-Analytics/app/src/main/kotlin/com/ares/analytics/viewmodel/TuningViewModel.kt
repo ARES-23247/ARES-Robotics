@@ -88,6 +88,7 @@ class TuningViewModel(
             var topics = emptyList<ObservedTuningTopics>()
             while (isActive) {
                 val snapshot = _state.value
+                val isLive = nt4ClientService.isConnected.value && !nt4ClientService.isReplayActive.value
                 if (catalog !== snapshot.catalog) {
                     catalog = snapshot.catalog
                     topics = snapshot.catalog.map(::ObservedTuningTopics)
@@ -95,16 +96,18 @@ class TuningViewModel(
                 val typed = mutableMapOf<String, TuningValue>()
                 val numeric = mutableMapOf<String, Double>()
                 val consumerSupport = mutableMapOf<String, Boolean>()
-                for (topic in topics) {
-                    val declaration = topic.declaration
-                    val value = nt4ClientService.latestValues[topic.current]?.toTuningValue(declaration)
-                    if (value != null) {
-                        typed[declaration.key] = value
-                        value.numericValue()?.let { numeric[declaration.key] = it }
-                    }
-                    nt4ClientService.latestValues[topic.consumerSupported]?.let {
-                        // An explicitly malformed support flag cannot authorize live testing.
-                        consumerSupport[declaration.uid] = it.tuningBoolean() == true
+                if (isLive) {
+                    for (topic in topics) {
+                        val declaration = topic.declaration
+                        val value = nt4ClientService.latestValues[topic.current]?.toTuningValue(declaration)
+                        if (value != null) {
+                            typed[declaration.key] = value
+                            value.numericValue()?.let { numeric[declaration.key] = it }
+                        }
+                        nt4ClientService.latestValues[topic.consumerSupported]?.let {
+                            // An explicitly malformed support flag cannot authorize live testing.
+                            consumerSupport[declaration.uid] = it.tuningBoolean() == true
+                        }
                     }
                 }
                 _state.update {
@@ -250,12 +253,28 @@ class TuningViewModel(
     }
 
     private fun pullOne(key: String) {
+        if (nt4ClientService.isReplayActive.value) {
+            _state.update { it.copy(errorMessage = "Cannot pull live values while replay mode is active.") }
+            return
+        }
+        if (!nt4ClientService.isConnected.value) {
+            _state.update { it.copy(errorMessage = "Cannot pull live values while the robot is disconnected.") }
+            return
+        }
         val live = _state.value.liveTypedValues[key]
         if (live == null) _state.update { it.copy(errorMessage = "No live value is available for $key.") }
         else stageTyped(key, live, "Live robot observation", "Copied into the proposal by the student; connection alone never changes profiles.")
     }
 
     private fun pullAll() {
+        if (nt4ClientService.isReplayActive.value) {
+            _state.update { it.copy(errorMessage = "Cannot pull live values while replay mode is active.") }
+            return
+        }
+        if (!nt4ClientService.isConnected.value) {
+            _state.update { it.copy(errorMessage = "Cannot pull live values while the robot is disconnected.") }
+            return
+        }
         val state = _state.value
         state.liveTypedValues.forEach { (key, value) ->
             val declaration = state.catalog.firstOrNull { it.key == key }
@@ -274,18 +293,23 @@ class TuningViewModel(
 
     private fun pushOne(key: String, snapshot: TuningState = _state.value) {
         val connection = nt4ClientService.tuningConnectionId
-        scope.launch { sendLiveRequest(key, snapshot, connection) }
+        val targetEpoch = nt4ClientService.telemetryStore.currentTargetEpoch()
+        scope.launch { sendLiveRequest(key, snapshot, connection, targetEpoch) }
     }
 
-    private suspend fun sendLiveRequest(key: String, snapshot: TuningState, connection: Long?) {
+    private suspend fun sendLiveRequest(key: String, snapshot: TuningState, connection: Long?, expectedEpoch: Long) {
         requestMutex.withLock {
             val current = _state.value
             if (!current.sameLiveInputsAs(snapshot, key)) return@withLock
             val declaration = snapshot.catalog.firstOrNull { it.key == key }
             val value = snapshot.proposals[key]
+            val isReplay = nt4ClientService.isReplayActive.value
+            val currentEpoch = nt4ClientService.telemetryStore.currentTargetEpoch()
             val validation = when {
                 declaration == null -> "$key is undeclared and cannot be pushed."
+                isReplay -> "Live tuning requests cannot be sent while replay mode is active."
                 connection == null || nt4ClientService.tuningConnectionId != connection -> "The robot connection changed or is not ready. Review the live target and request a new test."
+                currentEpoch != expectedEpoch -> "The target session changed before sending this request. Review the live target and request a new test."
                 current.consumerSupportByUid[declaration.uid] == false -> "${declaration.displayName} has no valid runtime consumer support in the connected robot. Regenerate or update the robot project before live testing."
                 declaration.applyPolicy != TuningApplyPolicy.LIVE_SAFE -> "${declaration.displayName} is ${declaration.applyPolicy.name.lowercase().replace('_', ' ')} and cannot be live-pushed."
                 value == null -> "Stage and review a proposed value before live testing."
@@ -317,7 +341,7 @@ class TuningViewModel(
                     return@withLock
                 }
                 updateLiveStatus(snapshot, key, "Waiting for ${target.displayName} acknowledgement…")
-                val result = awaitTuningResult(target, nonce, connection)
+                val result = awaitTuningResult(target, nonce, connection, expectedEpoch)
                 if (result == "APPLIED") {
                     updateLiveStatus(snapshot, key, "Robot acknowledged ${target.displayName} as applied experimentally. The profile was not changed.")
                 } else {
@@ -332,10 +356,17 @@ class TuningViewModel(
         }
     }
 
-    private suspend fun awaitTuningResult(declaration: TuningParameterDeclaration, nonce: Long, connection: Long): String {
+    private suspend fun awaitTuningResult(
+        declaration: TuningParameterDeclaration,
+        nonce: Long,
+        connection: Long,
+        expectedEpoch: Long
+    ): String {
         val acknowledgementTopic = TuningTransport.acknowledgement(declaration)
         repeat(30) {
             check(nt4ClientService.tuningConnectionId == connection) { "The robot connection changed before acknowledging this request. Treat the result as unknown." }
+            check(nt4ClientService.telemetryStore.currentTargetEpoch() == expectedEpoch) { "The target session changed before acknowledging this request. Treat the result as unknown." }
+            check(!nt4ClientService.isReplayActive.value) { "Replay mode was activated before acknowledging this request. Treat the result as unknown." }
             val acknowledgement = TuningAcknowledgementCodec.decode(nt4ClientService.latestValues[acknowledgementTopic]?.stringValue)
             if (acknowledgement?.nonce == nonce) return acknowledgement.result
             delay(100)
@@ -344,6 +375,16 @@ class TuningViewModel(
     }
 
     private fun pushAllExperimental() {
+        if (nt4ClientService.isReplayActive.value) {
+            _state.update { it.copy(errorMessage = "Live tuning requests cannot be sent while replay mode is active.") }
+            return
+        }
+        val connection = nt4ClientService.tuningConnectionId
+        if (connection == null) {
+            _state.update { it.copy(errorMessage = "The robot is not connected or ready for live testing.") }
+            return
+        }
+        val targetEpoch = nt4ClientService.telemetryStore.currentTargetEpoch()
         val snapshot = _state.value
         val declarations = snapshot.catalog.associateBy { it.key }
         val eligible = snapshot.proposals.keys.filter { key ->
@@ -351,8 +392,7 @@ class TuningViewModel(
         }
         if (eligible.isEmpty()) _state.update { it.copy(errorMessage = "No reviewed experimental-live proposals are available.") }
         else {
-            val connection = nt4ClientService.tuningConnectionId
-            scope.launch { for (key in eligible) sendLiveRequest(key, snapshot, connection) }
+            scope.launch { for (key in eligible) sendLiveRequest(key, snapshot, connection, targetEpoch) }
         }
     }
 

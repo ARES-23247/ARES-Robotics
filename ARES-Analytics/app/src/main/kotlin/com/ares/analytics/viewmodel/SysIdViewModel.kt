@@ -149,9 +149,12 @@ class SysIdViewModel(
             controlIdentity = current
             signalGenerator.connectionLost()
             dataCollector.clearBuffer()
-            _state.update { it.copy(isRobotConnected = current.connected,
-                armStatus = if (current.connected) "Live control context changed; fresh capabilities and calibration mode required"
-                    else "Disconnected; calibration lease revoked") }
+            _state.update { it.copy(isRobotConnected = current.connected && !current.replay,
+                armStatus = when {
+                    !current.connected -> "Disconnected; calibration lease revoked"
+                    current.replay -> "Log replay active; live calibration unavailable"
+                    else -> "Live control context changed; fresh capabilities and calibration mode required"
+                }) }
         }
         connected && !replay
     }
@@ -176,6 +179,7 @@ class SysIdViewModel(
                         val enabled = frame.stringValue == null && frame.value == 1.0
                         _state.update { it.copy(calibrationModeEnabled = enabled) }
                         if (!enabled && _state.value.requiresNetworkArm) {
+                            dataCollector.clearBuffer()
                             signalGenerator.disarm("FTC calibration mode is not enabled", sendStop = false)
                         }
                     }
@@ -224,7 +228,16 @@ class SysIdViewModel(
                     signalGenerator.configurePlatform(intent.requiresNetworkArm)
                 }
                 is SysIdIntent.ArmCalibration -> signalGenerator.arm()
-                is SysIdIntent.DisarmCalibration -> signalGenerator.disarm(intent.reason)
+                is SysIdIntent.DisarmCalibration -> {
+                    dataCollector.clearBuffer()
+                    try {
+                        signalGenerator.disarm(intent.reason)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        _state.update { it.copy(errorMessage = "Could not disarm calibration: ${failure.message ?: "robot did not accept disarm"}") }
+                    }
+                }
                 is SysIdIntent.StartRoutine -> {
                     if (!motionCommandsAllowed()) {
                         _state.update { it.copy(errorMessage = liveMotionBlockReason(it)) }

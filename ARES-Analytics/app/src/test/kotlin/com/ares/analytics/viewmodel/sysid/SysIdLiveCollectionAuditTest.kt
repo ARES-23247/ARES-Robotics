@@ -83,6 +83,23 @@ class SysIdLiveCollectionAuditTest {
         assertEquals(recommendation, tuner.currentRecommendation.value)
     }
 
+    @Test fun `completed samples cannot be fitted after remote disarm`() = test {
+        repeat(30) { i ->
+            val velocity = 1.0 + i * 0.03
+            val acceleration = kotlin.math.sin(i * 0.7)
+            doubleArrayOf(i * 20.0, 0.4 + 1.6 * velocity + 0.32 * acceleration, 0.0, velocity, acceleration)
+                .forEachIndexed { column, value -> send(column, value, (i + 1) * 1000L) }
+        }
+        assertTrue(state.value.liveSamples.isNotEmpty())
+        // Robot safety feedback revokes the local routine before its final NONE arrives.
+        state.value = state.value.copy(isRoutineRunning = false, isLoading = false, activeCalibration = "NONE")
+        finish()
+        assertEquals(0, completions, "An aborted dataset must not enter the successful-completion path")
+        assertNull(state.value.summary)
+        assertNull(state.value.tuningRecommendation)
+        assertNull(tuner.currentRecommendation.value)
+    }
+
     @Test fun `starting a new run discards queued old analysis`() = test {
         deferAnalysis = true
         row(); finish()
@@ -227,7 +244,8 @@ class SysIdLiveCollectionAuditTest {
         client.frames.emit(TelemetryFrame(2,"run","SysId/Status",0.0,"DYNAMIC"));scope.runCurrent()
         assertFalse(state.value.isRoutineRunning)
         finish();finish()
-        assertEquals(1,completions)
+        assertEquals(0,completions)
+        assertNull(state.value.summary)
     }
     @Test fun `published calibration arrays cannot mutate the analysis snapshot`() = test("LINEAR_DRIVE") {
         for(i in 0..19) {

@@ -5,9 +5,10 @@ restart of the historical audit-every-file objective. The user explicitly reques
 AGY/Gemini workers, high effort, independent Codex review, and local-only changes.
 
 Use `agy` with model `gemini-3.8-flash-high` and effort `high`, verifying availability first.
-Codex coordinates normally two workers in isolated worktrees with disjoint ownership, audits their
+Codex coordinates up to three explicitly authorized workers in isolated worktrees with disjoint ownership, audits their
 patches, runs appropriate validation, maintains shared contracts and the review ledger, and
-integrates only verified changes into local checkpoints. Preserve unrelated work and processes.
+integrates only verified changes into local checkpoints. Preserve unrelated work and processes. Use verified path manifests, bounded source exploration,
+and batch review; assess delegation overhead without claiming unmeasured Codex quota savings.
 
 Prioritize demonstrated realistic behavior, safety, freshness/enable, lost-command and lifecycle
 defects. Optimize performance only with measurements against explicit budgets. Defer speculative

@@ -1655,12 +1655,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt": {
-      "sha256": "30448643c95e93e338e2d126fc45173aef3fa995af936f9b1c12b3f246786df0",
+      "sha256": "7d587bd06f4eddd63cb8682683d18ba1572d8977662fcdff8ed014e5f153648b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Scoped public tuning publication and delegation review: live identity across suspension, enqueue-versus-ack semantics, stale local echoes and retained private publisher. Other service paths are outside this batch.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -1682,7 +1683,16 @@
         },
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "30448643c95e93e338e2d126fc45173aef3fa995af936f9b1c12b3f246786df0",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+        "evidence": [
+          "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ConnectionMetrics.kt": {
       "sha256": "6d8dd5466e5b351a821d5661df69e32b29c5c1c7fd3f33afedf425c260ed23de",
@@ -2990,12 +3000,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4OutboundPublisher.kt": {
-      "sha256": "32ce5fc610a71e324eadf8b105f3fae6d433452e1b93a85c18a9879d6c0c60b0",
+      "sha256": "59ea0d30be30c2241fe0fda6204aa5e2abe9a7c78c959467f9b4d6e011962174",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Scoped typed tuning publication review: live-validity checks around publisher registration and binary enqueue, preserved socket generation and atomic value/nonce wire frame. Other publishers are outside this batch.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -3018,7 +3029,16 @@
         },
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "32ce5fc610a71e324eadf8b105f3fae6d433452e1b93a85c18a9879d6c0c60b0",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+        "evidence": [
+          "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4Topic.kt": {
       "sha256": "4a4cf131c28662fb0c0379d426ef34ed747ae76c91897d1685a8ab27adb69e9a",
@@ -6677,12 +6697,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SysIdViewModel.kt": {
-      "sha256": "0af1c1885e2a6d2bd9de1f3c63c2ba61075bc4f9227c3cf58563f1132547a961",
+      "sha256": "8019cda9d68efd0ce2febf07c501033a97ea708d20732abc28fc941a5cea038c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Restore the signal generator to private visibility; public arm state and lease publication observations replace the test-only access. Production bytes match the preceding reviewed checkpoint. Focused SysId tests passed; no full-file review claim.",
+      "scope": "Scoped live-context/replay, calibration mode loss and explicit disarm review; buffer clearing and operator-visible publication failure preserve cancellation and existing lease control.",
       "evidence": [
-        "docs/audits/STUDIO_ROBOT_FEEDBACK_PEER_REVIEW.md"
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
       ],
       "robotFeedbackPeerReviewPriorRecord": {
         "sha256": "b8ec98953dacf3b7cd7dddbb95e7b82b226843951aec9a5142c2808c6f06e7c7",
@@ -6705,6 +6726,15 @@
             "ARESLib-Kotlin/build/audit-pass17-studio.log"
           ]
         }
+      },
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "0af1c1885e2a6d2bd9de1f3c63c2ba61075bc4f9227c3cf58563f1132547a961",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Restore the signal generator to private visibility; public arm state and lease publication observations replace the test-only access. Production bytes match the preceding reviewed checkpoint. Focused SysId tests passed; no full-file review claim.",
+        "evidence": [
+          "docs/audits/STUDIO_ROBOT_FEEDBACK_PEER_REVIEW.md"
+        ]
       }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningProtocolHelpers.kt": {
@@ -6717,19 +6747,29 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningViewModel.kt": {
-      "sha256": "70c74d73571ad3ef5f04ff57a58ff86cdd517c58eb8857b0076df3fba0c16988",
-      "review": "reviewed",
+      "sha256": "2c961de645897980ab7055686e9c7d17e54ceae26d20cec6fc89fa970bec4c59",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated gain and feedforward tuning ViewModel. Verified proposal staging inbox, sequential nonce generation for live test requests, atomic profile promotion with historical backup, and automatic rollback on unvalidated test runs.",
+      "scope": "Scoped replay/disconnect observations and push/pull guards; capture target epoch before queued request, validate under request mutex and while waiting for acknowledgement. Does not establish whole-viewmodel coverage.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
-        "ARESLib-Kotlin/build/audit-pass20-policy-final.log",
-        "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
-      ]
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ],
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "70c74d73571ad3ef5f04ff57a58ff86cdd517c58eb8857b0076df3fba0c16988",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated gain and feedforward tuning ViewModel. Verified proposal staging inbox, sequential nonce generation for live test requests, atomic profile promotion with historical backup, and automatic rollback on unvalidated test runs.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass20-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass20-studio-verified.log",
+          "ARESLib-Kotlin/build/audit-pass20-policy-final.log",
+          "ARESLib-Kotlin/build/audit-pass235-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass237-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/TuningViewState.kt": {
       "sha256": "d4dc8c0ffb8e31b85fd325fe0290688bc3caa0fc2180080aa7bbaf121fdd5251",
@@ -7472,16 +7512,26 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdDataCollector.kt": {
-      "sha256": "f6ba7a922e12a831d68df18e835f71a69e9e4657b9508fc3f25e96a6eadc6d30",
-      "review": "reviewed",
+      "sha256": "2c561ea86d0c690a70d1135f33d77d41edd8d1315d7475fec7462de28c888744",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated thread-safe SysId telemetry sample accumulator. Verified sample limits (maxSamples = 20_000, previewLimit = 1_000), bounded 10 Hz preview throttles, session and mechanism consistency checks, monotonic generation tracking to prevent race conditions during stop/reset, and safe offloading of regression solver tasks to analysisDispatcher.",
+      "scope": "Scoped aborted-run NONE handling and independent regression: baseline fits aborted data; correction discards it while preserving known-plant normal completion.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
-      ]
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ],
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "f6ba7a922e12a831d68df18e835f71a69e9e4657b9508fc3f25e96a6eadc6d30",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated thread-safe SysId telemetry sample accumulator. Verified sample limits (maxSamples = 20_000, previewLimit = 1_000), bounded 10 Hz preview throttles, session and mechanism consistency checks, monotonic generation tracking to prevent race conditions during stop/reset, and safe offloading of regression solver tasks to analysisDispatcher.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass18-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass18-studio-verified.log"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/sysid/SysIdRegressionSolver.kt": {
       "sha256": "30abe6f9f28a79bef2377a5b0bdb3e9455d1aa3d697cf33cf40ff50bec6ba3aa",
@@ -11189,14 +11239,24 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/TuningLiveRequestAuditTest.kt": {
-      "review": "reviewed",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass 238: Complete new 19-method virtual-scheduler suite reviewed/executed: ten preserved failing baselines, queued project/draft/reconnect, nonce floor/exhaustion, scalar reorder/legacy-only unknown, atomic precedence, all-five-type single-coroutine batch, enqueue/cancel/timeout retry, strict support/Boolean samples and unchanged canonical profiles. Fixtures own jobs, clients, databases and project files.",
+      "scope": "Scoped independent review of this batch regression changes: realistic tuning/replay/target/abort or facade lifecycle assertions, timing and cleanup. Corrected worker API/matcher issues and verified appropriate selected suite. Existing unrelated tests, real network and hardware are outside this claim.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
       ],
-      "sha256": "c9b1840cc764efc0a272422e9ed2c9b4dddfbb244b0ea87316e1491f67a6e0dd"
+      "sha256": "b6ac2a30a3a92fafb47107fbea4a2c728c9add900357985a97a718cfa14d8637",
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "c9b1840cc764efc0a272422e9ed2c9b4dddfbb244b0ea87316e1491f67a6e0dd",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass 238: Complete new 19-method virtual-scheduler suite reviewed/executed: ten preserved failing baselines, queued project/draft/reconnect, nonce floor/exhaustion, scalar reorder/legacy-only unknown, atomic precedence, all-five-type single-coroutine batch, enqueue/cancel/timeout retry, strict support/Boolean samples and unchanged canonical profiles. Fixtures own jobs, clients, databases and project files.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass238-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/TuningPromotionLifecycleAuditTest.kt": {
       "review": "reviewed",
@@ -11693,15 +11753,25 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdAcknowledgementAuditTest.kt": {
-      "sha256": "7c77d446a4a6186c9b41be6c1ba80a34c512598215063a6a801a4fd166380014",
-      "review": "reviewed",
+      "sha256": "597a05d1910cda664ee8015536edfd02a8fe79afcf16178f0d88556ebc7e45d9",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass 250: Preserves all 31 previously reviewed authority/lease/motion regression methods, updating only construction after removal of three unused SysId dependencies. All methods pass; no control assertions removed.",
+      "scope": "Scoped independent review of this batch regression changes: realistic tuning/replay/target/abort or facade lifecycle assertions, timing and cleanup. Corrected worker API/matcher issues and verified appropriate selected suite. Existing unrelated tests, real network and hardware are outside this claim.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json"
-      ]
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ],
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "7c77d446a4a6186c9b41be6c1ba80a34c512598215063a6a801a4fd166380014",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass 250: Preserves all 31 previously reviewed authority/lease/motion regression methods, updating only construction after removal of three unused SysId dependencies. All methods pass; no control assertions removed.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass250-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass249-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdCalibrationAuditTest.kt": {
       "sha256": "6c23ccba5eac8a89a5b4444fce93971ee4dc83a8320c2e45590ceda72eb00964",
@@ -11714,15 +11784,25 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLiveCollectionAuditTest.kt": {
-      "sha256": "b32e087748ea6589077cfa1c5ca47f4ab5b1acf9ace92041ddd5577463d7b604",
-      "review": "reviewed",
+      "sha256": "48e1ed35f5fa439cb54d52521b3e286107ac058d4e2182a7940172ffe748c38f",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Full 30-method collector test review and focused execution. Four additional controlled-queue cases cover deferred publication, queued cancellation, completed-but-unpublished cancellation and mechanism changes. Prior bounded/live ownership scenarios remain passing. Uses one coroutine scheduler with an explicit dispatcher queue, no timing sleeps.",
+      "scope": "Scoped independent review of this batch regression changes: realistic tuning/replay/target/abort or facade lifecycle assertions, timing and cleanup. Corrected worker API/matcher issues and verified appropriate selected suite. Existing unrelated tests, real network and hardware are outside this claim.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass17-studio.log"
-      ]
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ],
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "b32e087748ea6589077cfa1c5ca47f4ab5b1acf9ace92041ddd5577463d7b604",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Full 30-method collector test review and focused execution. Four additional controlled-queue cases cover deferred publication, queued cancellation, completed-but-unpublished cancellation and mechanism changes. Prior bounded/live ownership scenarios remain passing. Uses one coroutine scheduler with an explicit dispatcher queue, no timing sleeps.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass17-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass17-studio.log"
+        ]
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/sysid/SysIdLogImportAuditTest.kt": {
       "sha256": "262ae0f5a635bce709e1fb42f0b4823cb9d50db389d6c1e426646e715994ba31",
@@ -11904,12 +11984,13 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "8af1f3ac4fab93f42239f15777098715f7a86439869228599d26cc8279a844b2",
+      "sha256": "53440b84f087b62dd3414082237aeda280e2343e2f5664742c5a24f4ea95c43c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed and regenerated this batch production line-count delta; policy verified. Size accounting is not file-review coverage.",
+      "scope": "Reviewed regenerated size-inventory delta for the seven production files in this checkpoint, including the new transport helper; verified 1112 production files and zero size violations. This is a size inventory, not whole-codebase review.",
       "evidence": [
-        "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
       ],
       "roundtripIntegrationPriorReview": {
         "sha256": "6b64f7ac3bddb3f107577f6f81f913f535a7643c64e1bfe181b1ca532e815959",
@@ -11935,6 +12016,15 @@
           "validation": "passed"
         },
         "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      },
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "8af1f3ac4fab93f42239f15777098715f7a86439869228599d26cc8279a844b2",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed and regenerated this batch production line-count delta; policy verified. Size accounting is not file-review coverage.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_INTEGRATION_PEER_REVIEW.md"
+        ]
       }
     },
     "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
@@ -19493,14 +19583,24 @@
       ]
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/AresRobot.kt": {
-      "sha256": "42840e94c2a8f8c9676d1f3313bf5173eb70c02b1575de8eb17d61d7c22a4da0",
-      "review": "reviewed",
+      "sha256": "fd3f4108db1716337ce4f5720d76cd5a79c67367d8641a6ff580655e2f0552f9",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass 257: Complete season composition, tuning support/rollback, canonical FTC field projection and fallback, generated ownership transfer/rollback, cached frame ordering/power scale, terminal latches and command guards, calibration rollback, telemetry delegation, exception/interrupt preservation and shutdown ownership. 24 lifecycle regressions/positive cases, existing field/controller tests and full FTC/simulator validation. Physical timing and shared-library internals retain separate limits.",
+      "scope": "Scoped actual FTC facade TuningApplyContext callback: wire existing base neutral-output hold without weakening disabled-only policy or calibration lease. Constructor regression fails on baseline and passes with change; hardware not exercised.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json"
-      ]
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ],
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "42840e94c2a8f8c9676d1f3313bf5173eb70c02b1575de8eb17d61d7c22a4da0",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass 257: Complete season composition, tuning support/rollback, canonical FTC field projection and fallback, generated ownership transfer/rollback, cached frame ordering/power scale, terminal latches and command guards, calibration rollback, telemetry delegation, exception/interrupt preservation and shutdown ownership. 24 lifecycle regressions/positive cases, existing field/controller tests and full FTC/simulator validation. Physical timing and shared-library internals retain separate limits.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass257-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-FTC/TeamCode/src/main/java/org/firstinspires/ftc/teamcode/opmodes/NullOpMode.kt": {
       "sha256": "76b250eeb289a0a30a532df08d4da1bf744e65119451cd64c8887794c971eed7",
@@ -33940,13 +34040,14 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "sha256": "3dbcd8c6f4958d7e1ff79f25c66c99de06459f284a1c02e340bd4155e879127f",
+      "sha256": "6e5205405d4f135b1a310ed2e971e42fefeea9822cc2058937b989b863470cd3",
       "review": "partial",
       "validation": "passed",
       "scope": "Reviewed only these five AGY setup records; preserves complete previous records and all unrelated semantic entries. Runtime file review and worker acceptance remain pending.",
       "evidence": [
         "docs/audits/AGY_IMPROVEMENT_GOAL.md",
-        "docs/audits/AGY_IMPROVEMENT_STATE.md"
+        "docs/audits/AGY_IMPROVEMENT_STATE.md",
+        "docs/audits/AGY_TUNING_CHECKPOINT.md"
       ],
       "agySetupPriorRecord": {
         "sha256": "8ebf087ef8b7e58b20ebb89a72a4462cf45c9f16b3a6834a9054308a6d6b47fb",
@@ -36150,33 +36251,133 @@
       ]
     },
     ".agents/skills/ares-workspace/references/parallel-agy-audit.md": {
-      "sha256": "ab6f6f75dfc6605393bce3e967f86c08df7fc92ea11c1b8ded7ff0b8e65458dd",
+      "sha256": "e3ee5034559db29e42f31d8c00aee07644686158b2f54eb1d5bce72d00e00618",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Reviewed the reusable AGY High orchestration workflow, exact-root/model discovery, disjoint ownership, local-only integration, CLI terminal-result/permission handling, and independent validation. CLI flags checked through current help/models; authorized source reads observed after root correction. No blanket permission bypass.",
+      "scope": "Reviewed current local AGY campaign guidance/evidence: three high-effort isolated workers, bounded verified paths, independent acceptance, scoped validation, preserved history and no publication authority. Policy links and guidance tests pass; no measured quota or robot performance claim.",
       "evidence": [
-        "docs/audits/AGY_IMPROVEMENT_GOAL.md",
-        "docs/audits/AGY_IMPROVEMENT_STATE.md"
-      ]
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ],
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "ab6f6f75dfc6605393bce3e967f86c08df7fc92ea11c1b8ded7ff0b8e65458dd",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed the reusable AGY High orchestration workflow, exact-root/model discovery, disjoint ownership, local-only integration, CLI terminal-result/permission handling, and independent validation. CLI flags checked through current help/models; authorized source reads observed after root correction. No blanket permission bypass.",
+        "evidence": [
+          "docs/audits/AGY_IMPROVEMENT_GOAL.md",
+          "docs/audits/AGY_IMPROVEMENT_STATE.md"
+        ]
+      }
     },
     "docs/audits/AGY_IMPROVEMENT_GOAL.md": {
-      "sha256": "e823b989f468ea07b6fad43f513354f0dcaadcdef3a49e59fff4bf70aaebecfd",
+      "sha256": "764a9e920a4f848653976e85b2e13f5851cbe4a23d15ddf026f0dae24a1fa5c1",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Records the explicit autonomous goal, high-effort parallel AGY workers, local-only authority, meaningful batch criteria and honest completion/blocked conditions; distinguishes prior completed release.",
+      "scope": "Reviewed current local AGY campaign guidance/evidence: three high-effort isolated workers, bounded verified paths, independent acceptance, scoped validation, preserved history and no publication authority. Policy links and guidance tests pass; no measured quota or robot performance claim.",
       "evidence": [
-        "docs/audits/AGY_IMPROVEMENT_GOAL.md",
-        "docs/audits/AGY_IMPROVEMENT_STATE.md"
-      ]
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ],
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "e823b989f468ea07b6fad43f513354f0dcaadcdef3a49e59fff4bf70aaebecfd",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Records the explicit autonomous goal, high-effort parallel AGY workers, local-only authority, meaningful batch criteria and honest completion/blocked conditions; distinguishes prior completed release.",
+        "evidence": [
+          "docs/audits/AGY_IMPROVEMENT_GOAL.md",
+          "docs/audits/AGY_IMPROVEMENT_STATE.md"
+        ]
+      }
     },
     "docs/audits/AGY_IMPROVEMENT_STATE.md": {
-      "sha256": "0b7fb50f24c2be0e7f0c782a2774b4cf2b795d8dae9e9f4134b9dc7e4152e413",
+      "sha256": "2d49f864af3d37101116295507243c0db07e659e9ded95d1dc61b1de4b58f312",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Records baseline, distinct worker/coordinator ownership, actual denied and successful file-tool observations, retained local evidence, completed guidance checks and pending implementation/runtime verification.",
+      "scope": "Reviewed current local AGY campaign guidance/evidence: three high-effort isolated workers, bounded verified paths, independent acceptance, scoped validation, preserved history and no publication authority. Policy links and guidance tests pass; no measured quota or robot performance claim.",
       "evidence": [
-        "docs/audits/AGY_IMPROVEMENT_GOAL.md",
-        "docs/audits/AGY_IMPROVEMENT_STATE.md"
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ],
+      "agyTuningCheckpointPriorRecord": {
+        "sha256": "0b7fb50f24c2be0e7f0c782a2774b4cf2b795d8dae9e9f4134b9dc7e4152e413",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Records baseline, distinct worker/coordinator ownership, actual denied and successful file-tool observations, retained local evidence, completed guidance checks and pending implementation/runtime verification.",
+        "evidence": [
+          "docs/audits/AGY_IMPROVEMENT_GOAL.md",
+          "docs/audits/AGY_IMPROVEMENT_STATE.md"
+        ]
+      }
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/nt4/Nt4TuningRequestTransport.kt": {
+      "sha256": "2fdb3af754ab9b56caa80cb4569bd6e860d9df42debaced1f46ef7c65c71e62a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed new extracted live tuning operation and service delegation: typed value validation, replay and target epoch checks, true meaning enqueued only, and suppression of stale local echoes. Cross-thread atomic transitions and real network/hardware are not established.",
+      "evidence": [
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/Nt4TuningReplayBoundaryAuditTest.kt": {
+      "sha256": "9942712db09b95cd13a7fe974205e95ceb391e09f30a83a312059f4723140515",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped independent review of this batch regression changes: realistic tuning/replay/target/abort or facade lifecycle assertions, timing and cleanup. Corrected worker API/matcher issues and verified appropriate selected suite. Existing unrelated tests, real network and hardware are outside this claim.",
+      "evidence": [
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/opmodes/AresTuningOperatorAuditTest.kt": {
+      "sha256": "147e7d1228c8ee86e89699bb17735208c6378b0db815ed55aec7b0d7c4831dcc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Scoped independent review of this batch regression changes: realistic tuning/replay/target/abort or facade lifecycle assertions, timing and cleanup. Corrected worker API/matcher issues and verified appropriate selected suite. Existing unrelated tests, real network and hardware are outside this claim.",
+      "evidence": [
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ]
+    },
+    "docs/audits/AGY_TUNING_CHECKPOINT.md": {
+      "sha256": "65731ad05289836f9d22977a6aeba6e4261ee139a49fdd5f33909d53cb7783cb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed current local AGY campaign guidance/evidence: three high-effort isolated workers, bounded verified paths, independent acceptance, scoped validation, preserved history and no publication authority. Policy links and guidance tests pass; no measured quota or robot performance claim.",
+      "evidence": [
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ]
+    },
+    "docs/audits/GEMINI_OPERATOR_PATH_AUDIT.md": {
+      "sha256": "88a05191e94823b9994ab7c36b1b22f2f1ad4a8ae0e18161c2ef135739f04739",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed worker submission as provenance, with coordinator acceptance notice. The independent tuning checkpoint supersedes test expectations and source-only claims; submission is not proof of whole-file review.",
+      "evidence": [
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ]
+    },
+    "docs/audits/GEMINI_TUNING_LIFECYCLE_AUDIT.md": {
+      "sha256": "40a0192bd632d9878b141f7cadc747f29bc25acb2bdbfdfa78d9426ff5079d2a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed worker submission as provenance, with coordinator acceptance notice. The independent tuning checkpoint supersedes test expectations and source-only claims; submission is not proof of whole-file review.",
+      "evidence": [
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
+      ]
+    },
+    "docs/audits/GEMINI_TUNING_TRANSPORT_AUDIT.md": {
+      "sha256": "63c9eeed22e18ce331aaeb702c02675c231093bde3abc4d00dd163c09204b0de",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed worker submission as provenance, with coordinator acceptance notice. The independent tuning checkpoint supersedes test expectations and source-only claims; submission is not proof of whole-file review.",
+      "evidence": [
+        "docs/audits/AGY_TUNING_CHECKPOINT.md",
+        ".codex-validation/agy-audit-coordination/build/agy-audit/"
       ]
     }
   }
