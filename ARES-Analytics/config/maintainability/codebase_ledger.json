@@ -1212,7 +1212,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryHealthAggregator.kt",
       "product": "ARES-Analytics",
-      "lines": 105,
+      "lines": 112,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1232,7 +1232,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SummaryMetricAggregator.kt",
       "product": "ARES-Analytics",
-      "lines": 185,
+      "lines": 192,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -8162,7 +8162,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/networktables/NT4Entry.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 95,
+      "lines": 98,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8202,7 +8202,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/networktables/NT4Server.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 938,
+      "lines": 947,
       "lineLimit": 500,
       "effectiveLimit": 1056,
       "grandfathered": true,

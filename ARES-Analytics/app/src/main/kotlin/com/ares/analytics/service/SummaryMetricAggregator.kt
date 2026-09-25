@@ -67,21 +67,28 @@ internal class SummaryMetricAggregator(private val query: suspend (String, List<
                 ('^drive/motorcurrent_([^/]+)$', 5),
                 ('^drive/(motor[^/]+)/(currentamps|current|amps)$', 10)
             ),
-            source AS (
+            source AS MATERIALIZED (
                 SELECT timestamp_us, sample_order, key, ltrim(key, '/') AS original_topic,
                        lower(ltrim(key, '/')) AS topic, value, string_value
                 FROM telemetry_frames WHERE session_id = ?
             ),
-            classified AS (
-                SELECT s.*, regexp_extract(original_topic, m.pattern, 1, 'i') AS device,
+            topics AS MATERIALIZED (
+                SELECT DISTINCT original_topic, topic FROM source
+            ),
+            classified_topics AS MATERIALIZED (
+                SELECT t.original_topic, regexp_extract(original_topic, m.pattern, 1, 'i') AS device,
                        coalesce(d.metric, 'motor:' || lower(device)) AS metric,
                        coalesce(d.priority, m.priority + CASE
-                           WHEN ends_with(s.topic, '/current') THEN 1
-                           WHEN ends_with(s.topic, '/amps') THEN 2 ELSE 0 END) AS priority
-                FROM source s
-                LEFT JOIN definitions d ON s.topic = d.topic
-                LEFT JOIN motor_rules m ON regexp_full_match(s.topic, m.pattern)
+                           WHEN ends_with(t.topic, '/current') THEN 1
+                           WHEN ends_with(t.topic, '/amps') THEN 2 ELSE 0 END) AS priority
+                FROM topics t
+                LEFT JOIN definitions d ON t.topic = d.topic
+                LEFT JOIN motor_rules m ON regexp_full_match(t.topic, m.pattern)
                 WHERE d.metric IS NOT NULL OR m.pattern IS NOT NULL
+            ),
+            classified AS (
+                SELECT s.*, t.device, t.metric, t.priority
+                FROM source s JOIN classified_topics t ON s.original_topic = t.original_topic
             ),
             ranked AS (
                 SELECT *, min(priority) OVER (PARTITION BY metric) AS preferred,

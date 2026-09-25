@@ -57,11 +57,18 @@ internal class SummaryHealthAggregator(private val query: suspend (String, List<
                 SELECT timestamp_us, sample_order, key, ltrim(key, '/') AS topic, value, string_value
                 FROM telemetry_frames WHERE session_id = ?
             ),
+            device_topics AS MATERIALIZED (
+                SELECT DISTINCT topic FROM source WHERE starts_with(topic, 'Diagnostics/')
+            ),
+            classified_devices AS MATERIALIZED (
+                SELECT t.topic, d.metric, regexp_extract(t.topic, d.pattern, 1) AS device, d.priority
+                FROM device_topics t JOIN device_rules d ON regexp_full_match(t.topic, d.pattern)
+            ),
             classified AS (
                 SELECT s.*, d.metric, '' AS device, d.priority FROM source s JOIN definitions d ON s.topic = d.topic
                 UNION ALL
-                SELECT s.*, d.metric, regexp_extract(s.topic, d.pattern, 1) AS device, d.priority
-                FROM source s JOIN device_rules d ON regexp_full_match(s.topic, d.pattern)
+                SELECT s.*, d.metric, d.device, d.priority
+                FROM source s JOIN classified_devices d ON s.topic = d.topic
             ),
             ranked AS (
                 SELECT *, min(priority) OVER (PARTITION BY metric, device) AS preferred,

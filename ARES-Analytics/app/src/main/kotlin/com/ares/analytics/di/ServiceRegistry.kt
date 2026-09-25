@@ -15,11 +15,13 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-/** Enforces that import cancellation cleanup joins before any dependent resource is closed. */
+/** Stop owned robot processes first; import cleanup must still join before storage closes. */
 internal suspend fun awaitAutoImportBeforeClosingDependencies(
+    stopOwnedProcesses: suspend () -> Unit = {},
     stopAutoImport: suspend () -> Unit,
     closeDependencies: suspend () -> Unit
 ) {
+    stopOwnedProcesses()
     stopAutoImport()
     closeDependencies()
 }
@@ -290,9 +292,16 @@ class ServiceRegistry {
         if (lazyFieldInitialized(::targetScannerService)) {
             targetScannerService.stopScanning()
         }
-        // AutoImport can be inside a database transaction or filesystem staging move. Its scanner
-        // must finish cancellation cleanup before NT4/process dependencies and DuckDB are closed.
+        // Native summary queries can delay import cancellation beyond the desktop watchdog.
+        // Stop owned processes first so that delay cannot orphan a running simulator. Imports
+        // retain their ADB and storage dependencies until cancellation cleanup has joined.
         awaitAutoImportBeforeClosingDependencies(
+            stopOwnedProcesses = {
+                if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
+                if (lazyFieldInitialized(::simulatorProcessService)) simulatorProcessService.shutdownAndJoin()
+                if (lazyFieldInitialized(::projectBuildService)) projectBuildService.shutdownAndJoin()
+                if (lazyFieldInitialized(::robotDeploymentService)) robotDeploymentService.shutdownAndJoin()
+            },
             stopAutoImport = {
                 autoImportTransitionMutex.withLock {
                     disposed.set(true)
@@ -306,15 +315,6 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::nt4ClientService)) {
                     if (lazyFieldInitialized(::xrpLinkService)) xrpLinkService.disposeAndJoin()
                     telemetryPersisted = nt4ClientService.disposeAndJoin()
-                }
-                if (lazyFieldInitialized(::projectBuildService)) {
-                    projectBuildService.shutdown()
-                }
-                if (lazyFieldInitialized(::robotDeploymentService)) {
-                    robotDeploymentService.shutdown()
-                }
-                if (lazyFieldInitialized(::simulatorProcessService)) {
-                    simulatorProcessService.shutdownAndJoin()
                 }
                 if (lazyFieldInitialized(::adbService)) {
                     adbService.shutdownAndJoin()
