@@ -8,6 +8,14 @@ That maintenance uses coordinator branch `codex/studio-maintenance-cleanup` and 
 
 ## Current checkpoint — read this first
 
+2026-09-25 follow-up: [published Studio 7.0.65 acceptance](PUBLISHED_7_0_65_ACCEPTANCE.md)
+records the installed MSI/BioBuzz/Lightbot checks, desktop soak and measured local fixes on
+`codex/published-app-acceptance`. It closes the native injected-inspection-failure presentation gap.
+Telemetry freshness, repeated summary classification and simulator shutdown ordering were fixed
+locally; bulk-import responsiveness and one early-close database-read event remain documented
+follow-ups. This does not reopen the completed AGY goal or authorize another release. The older
+campaign checkpoint and historical publication restrictions below remain preserved as history.
+
 The [completion assessment](AGY_CAMPAIGN_COMPLETION.md) closes the identified practical-priority
 campaign at source `8292ddea97473c9b9a1a70f2bb1c99dbaffe00a2`. The commit containing this state adds
 only completion documentation and scoped ledger updates. The original objective and all earlier
