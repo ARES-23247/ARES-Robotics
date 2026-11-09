@@ -210,14 +210,24 @@
       ]
     },
     ".agents/skills/compose-desktop-tester/references/startup-recovery.md": {
-      "sha256": "34ac1f10b1a6c71a4391514fa18e02bd798535d58ee657769c185c15e029133b",
-      "review": "reviewed",
+      "sha256": "a078cde2b0364e5b45cafa3f915af0e309204ded14a9434695ec7ee63b25426d",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Full guidance review against startup/build declarations and helper parameters. Corrected broad killExisting ownership and title-helper ambiguity; scoped exit checks to owned PID, documented skipKill+isolated home and consistent compile/run dependency mode. Link/policy verification passed. No GUI/helper runtime or process-termination test claim.",
+      "scope": "Reviewed added cold/partial-startup checks against reproduced registry defect and existing native-test requirements. Guide/link validation and three native cycles passed; full early-close race remains open.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
-      ]
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+      ],
+      "priorLifecycle20261109": {
+        "sha256": "34ac1f10b1a6c71a4391514fa18e02bd798535d58ee657769c185c15e029133b",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Full guidance review against startup/build declarations and helper parameters. Corrected broad killExisting ownership and title-helper ambiguity; scoped exit checks to owned PID, documented skipKill+isolated home and consistent compile/run dependency mode. Link/policy verification passed. No GUI/helper runtime or process-termination test claim.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+        ]
+      }
     },
     ".agents/skills/compose-desktop-tester/scripts/capture_app.ps1": {
       "sha256": "a555123d15dd5227f587a764783aef8cb17fd538157cbbbc513b9fd8fc31ae1f",
@@ -658,16 +668,26 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt": {
-      "sha256": "b721ab7bb6581f3de6c394507c5b29ba0f69a1ab020613ea86fda429c1c557df",
-      "review": "reviewed",
+      "sha256": "87f952cebd90043fd569865fb23683a831bcba12bfc843fbb5b8f1c0f38a7d3c",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated dependency injection container managing lazy initialization of Tier 0, Tier 1, and Tier 2 services. Verified thread-safe lifecycle transitions using AtomicReference, Mutex (autoImportTransitionMutex), and AtomicBoolean (disposed). Verified disposeAndJoin enforces teardown in reverse dependency order (auto-import scanner cancellation before NT4/process teardown, persistence verification before closing DuckDB), safe reflection fallback in lazyFieldInitialized, and safe actuator disarm in KeyboardDriveState.",
+      "scope": "Inspected registry creation and disposal, lazy delegate access and keyboard neutralization. Reproduced unused initialization on baseline; corrected private delegate access. Historical safe-fallback claim is superseded by this reproduction. Bootstrap/UI work lifetime during early close remains unresolved.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass33-studio.log",
-        "ARESLib-Kotlin/build/audit-pass33-policy.log"
-      ]
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+      ],
+      "priorLifecycle20261109": {
+        "sha256": "b721ab7bb6581f3de6c394507c5b29ba0f69a1ab020613ea86fda429c1c557df",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated dependency injection container managing lazy initialization of Tier 0, Tier 1, and Tier 2 services. Verified thread-safe lifecycle transitions using AtomicReference, Mutex (autoImportTransitionMutex), and AtomicBoolean (disposed). Verified disposeAndJoin enforces teardown in reverse dependency order (auto-import scanner cancellation before NT4/process teardown, persistence verification before closing DuckDB), safe reflection fallback in lazyFieldInitialized, and safe actuator disarm in KeyboardDriveState.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass33-studio.log",
+          "ARESLib-Kotlin/build/audit-pass33-policy.log"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/domain/learning/AcademyCatalogDocument.kt": {
       "sha256": "af6457572f6ea0e2738f848a3953982c7e54e019d0d026bd747fdd6ca1aa007b",
@@ -5179,7 +5199,7 @@
       "sha256": "b1da90ac0208d483e124088762f755050773fab7f0d3c6364b2c6e784846bb88",
       "review": "pending",
       "validation": "pending",
-      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0°, 90°, 180°, -90°), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
+      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0\u00b0, 90\u00b0, 180\u00b0, -90\u00b0), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md",
         "docs/audits/DEEP_AUDIT_GOAL.md",
@@ -5277,7 +5297,7 @@
       "sha256": "a51b2491d5c3dea95e368d8623a11475c74cdff6401dba3742ee2b24b02023b4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2π rad / spool travel), and cached measurement scale/offset/freshness bounds.",
+      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2\u03c0 rad / spool travel), and cached measurement scale/offset/freshness bounds.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -8145,7 +8165,7 @@
       "sha256": "24d3a070ba007922b36888404a0852a1c25fa90188004e4491a8380c80714935",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design • Simulate • Operate • Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
+      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design \u2022 Simulate \u2022 Operate \u2022 Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
       "evidence": [
         "docs/audits/pass292-pending-elevation-audit.md"
       ]
@@ -12251,15 +12271,13 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "f31336c2564d0a146e8f73b044987e930911ddf7ee06661d0293089ec6bc34ed",
-      "review": "reviewed",
+      "sha256": "e8381a6cc97a1af3431378a2340f130054e0f27de9f3c6276cc723319ed9375c",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed deterministic size-inventory delta for two changed production files and one new helper; 1114 files, zero violations, no relaxed limits. Inventory is not a review or test-coverage metric.",
+      "scope": "Generated inventory delta only: registry source grows from 443 to 447 lines, all other semantic entries unchanged; ratchet and source policy pass with zero violations.",
       "evidence": [
-        "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
-        ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
-        ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
-        ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
       ],
       "agyDrivebaseSavePriorRecord": {
         "sha256": "6f2416031561edda08bce33e367f86f32a5fbd48749dcc13099fd2da60159d46",
@@ -12385,6 +12403,18 @@
           "docs/audits/AGY_DRIVEBASE_SAVE_CHECKPOINT.md",
           ".codex-validation/agy-audit-coordination/build/agy-save-ownership/"
         ]
+      },
+      "priorLifecycle20261109": {
+        "sha256": "f31336c2564d0a146e8f73b044987e930911ddf7ee06661d0293089ec6bc34ed",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed deterministic size-inventory delta for two changed production files and one new helper; 1114 files, zero violations, no relaxed limits. Inventory is not a review or test-coverage metric.",
+        "evidence": [
+          "docs/audits/STUDIO_MAINTENANCE_CHECKPOINT.md",
+          ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
+          ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
+          ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+        ]
       }
     },
     "ARES-Analytics/config/maintainability/large-production-kotlin-baseline.txt": {
@@ -12417,7 +12447,7 @@
       "sha256": "e5a9dd382f3540216b3acd3cda81ebd197335bfadadb1242c19eb3243732b14b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design • Simulate • Operate • Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
+      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design \u2022 Simulate \u2022 Operate \u2022 Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -12579,7 +12609,7 @@
       "sha256": "25eeb691d95c9c9a456a23925e8888e70fb4a6a1e14d4d46418381d84268fe61",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation — cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
+      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation \u2014 cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -12588,7 +12618,7 @@
       "sha256": "65efe035f6d197e24121378abb4ccef5f892ec495b9d81d08af34acf528e30b6",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED — DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
+      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED \u2014 DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -14340,7 +14370,7 @@
       "sha256": "becf5449b6dbfa838313319f2e844150cbb379db41e325e7520e852e58657a2e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (±0.276225 m, ±0.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
+      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (\u00b10.276225 m, \u00b10.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
@@ -15278,7 +15308,7 @@
       "sha256": "dd73c69aa80eef41532415e39cb7163f751f9bafa6451a787a3b83d7e1d90dfb",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s²), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
+      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s\u00b2), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
@@ -15452,7 +15482,7 @@
       "sha256": "2c721a57857805e10066ecb6e89657241e0bd2772ee7e2add7ea68f3ea46a5ea",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0°..108°); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
+      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0\u00b0..108\u00b0); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json",
@@ -15592,7 +15622,7 @@
       "sha256": "6cb05881ec858138fdd1d741793a641160e8aec6fc343a663e4f7d8cf589c2bc",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad ±5 cm, bumpers ±5°), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
+      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -18722,7 +18752,7 @@
       "sha256": "29e4e2bd1743ea9d4644a6cb44396f954832afa6f8263dfc12ef7765e1f85f11",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (±0.225 m, ±0.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
+      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (\u00b10.225 m, \u00b10.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
@@ -19892,7 +19922,7 @@
       "sha256": "224f2c95ea53ef4de443464c2a7190c7ed5d2803530c3eb2766c4cb272fe2d04",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad ±5 cm, bumpers ±5°), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
+      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -21566,7 +21596,7 @@
       "sha256": "980daff7a61c869a69321a8617206ae900e415dd9dd2bdae5084e61a4f48405e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8° and freeze above 15°), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
+      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8\u00b0 and freeze above 15\u00b0), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -28019,7 +28049,7 @@
       "sha256": "a03770e6a0e2bf28587c50ff62844ce151aa41c645fe82c00a743a1d3a674bb3",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-π, π) boundary.",
+      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-\u03c0, \u03c0) boundary.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
@@ -29485,7 +29515,7 @@
       "sha256": "986d38ebecf3d806e39d0e212c7a1a3313a5a121c5ed4c07ea2f1ba72f7c1bc7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0°) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
+      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0\u00b0) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
@@ -32559,7 +32589,7 @@
       "sha256": "d84ece215e96f92705e6407c6e33c29f92fa73d33d12d89d990fbe11a156a024",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2π radian span enforcement, and trapezoidal motion profile limit verification.",
+      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2\u03c0 radian span enforcement, and trapezoidal motion profile limit verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
@@ -32569,7 +32599,7 @@
       "sha256": "44e98a2467a4451c6041d3cede4bf76c046888a5b7c230e3c51482493e67c162",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s², A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
+      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s\u00b2, A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
@@ -34400,13 +34430,12 @@
       ]
     },
     "docs/audits/file-reviews.json": {
-      "review": "reviewed",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Scoped release record update. Existing records retained under preRelease7065 for replaced identities; all unrelated semantic records unchanged. Only release metadata, new archive, this report and ledger self record updated. Prior audit depth and deferred work preserved.",
+      "scope": "Reviewed only this scoped checkpoint update. Previous review fields are preserved under priorLifecycle20261109; earlier nested history remains in place and unrelated semantic records are unchanged. Self-fingerprint binds the complete ledger; no full-ledger review inferred.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_65_CHECKPOINT.md",
-        "build/release-7-0-65/local-test-summary.json",
-        "build/release-7-0-65/source-policy.log"
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -34832,7 +34861,18 @@
           ]
         }
       },
-      "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9"
+      "sha256": "dbbaf039fb65b319fa98d8caffde177df9c58260b1634086d613b81a39544ccc",
+      "priorLifecycle20261109": {
+        "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Scoped release record update. Existing records retained under preRelease7065 for replaced identities; all unrelated semantic records unchanged. Only release metadata, new archive, this report and ledger self record updated. Prior audit depth and deferred work preserved.",
+        "evidence": [
+          "docs/audits/RELEASE_7_0_65_CHECKPOINT.md",
+          "build/release-7-0-65/local-test-summary.json",
+          "build/release-7-0-65/source-policy.log"
+        ]
+      }
     },
     "docs/audits/pass288-pending-elevation-audit.md": {
       "sha256": "630d690dd95c6145d34f6aa0eab06d86b756725f3dee5b411dd4e45583efcba9",
@@ -34922,7 +34962,7 @@
       "sha256": "f50dacc896f21769ff7005de214beee4c2786f82b6bb31698e794303ff4e040d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across ±π, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
+      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across \u00b1\u03c0, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -35751,13 +35791,13 @@
       ]
     },
     ".agents/skills/ares-workspace/references/audit-workflow.md": {
-      "sha256": "57b984f39d9b9c3ac03c44beb513d3ecd41d33a39d27bd128f29969efc9750d9",
+      "sha256": "96afab4cd0c493e361f903116a6d550a79ae1269984c007bdf7a118e6f4fbcdc",
       "review": "partial",
       "validation": "passed",
-      "scope": "Added scoped routing to the explicitly authorized AGY workflow; preserves existing independent-review and permission boundaries.",
+      "scope": "Reviewed continuation checkpoint guidance and its added source/authorization distinctions; schema and local-link validation passed. No claim of re-auditing every skill reference.",
       "evidence": [
-        "docs/audits/AGY_IMPROVEMENT_GOAL.md",
-        "docs/audits/AGY_IMPROVEMENT_STATE.md"
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
       ],
       "agySetupPriorRecord": {
         "evidence": [
@@ -35777,6 +35817,16 @@
           "validation": "passed"
         },
         "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      },
+      "priorLifecycle20261109": {
+        "sha256": "57b984f39d9b9c3ac03c44beb513d3ecd41d33a39d27bd128f29969efc9750d9",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Added scoped routing to the explicitly authorized AGY workflow; preserves existing independent-review and permission boundaries.",
+        "evidence": [
+          "docs/audits/AGY_IMPROVEMENT_GOAL.md",
+          "docs/audits/AGY_IMPROVEMENT_STATE.md"
+        ]
       }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopInstanceLockTest.kt": {
@@ -37370,6 +37420,36 @@
         "build/release-7-0-65/source-policy.log"
       ],
       "sha256": "cab105336b37459e8a832fc2a02a40450fc29f44fc065eebae1ef93ed6919dac"
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ServiceRegistryShutdownAuditTest.kt": {
+      "sha256": "4eeb98bb316b68cc62c8a0c80431543b20e7a1fce2e2669c3383a5e5fe51c8b1",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Two real disposal regressions with trapped cold constructors and actual keyboard disarm. Both fail on unchanged baseline and pass after correction; repeated cold disposal covered.",
+      "evidence": [
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md": {
+      "sha256": "35b9ca2f3ee97e5cbc87334dd3b1bd2d2278fd95db35c30c89b76c43436a324a",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed bounded findings, actual commands/counts, native cleanup, skills dispositions, and unresolved acceptance follow-ups against retained evidence; no broad or physical validation claim.",
+      "evidence": [
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json": {
+      "sha256": "afb3499e60a999e659170c67982a8fc6c1ea86837b6a0cd7b9f2931e641f0865",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Checked normalized source fingerprints, baseline/fixed JUnit counts and owned native cleanup. Summary excludes machine-specific runtime snapshot paths; original pending tree is outside scope.",
+      "evidence": [
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+      ]
     }
   }
 }

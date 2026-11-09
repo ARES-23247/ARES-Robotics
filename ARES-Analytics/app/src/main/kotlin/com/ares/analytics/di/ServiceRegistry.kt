@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.reflect.jvm.isAccessible
 
 /** Stop owned robot processes first; import cleanup must still join before storage closes. */
 internal suspend fun awaitAutoImportBeforeClosingDependencies(
@@ -377,6 +378,9 @@ class ServiceRegistry {
 
     private fun lazyFieldInitialized(prop: kotlin.reflect.KProperty0<*>): Boolean {
         return try {
+            // Public service properties still have private delegate fields. Without access,
+            // getDelegate throws and the conservative fallback starts every cold service.
+            prop.isAccessible = true
             (prop.getDelegate() as? Lazy<*>)?.isInitialized() == true
         } catch (t: Throwable) {
             true // Fallback to true so we dispose the service rather than leaking resources/jobs

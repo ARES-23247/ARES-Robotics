@@ -149,6 +149,12 @@ They are service-state messages. Do not suppress them as a window fix, and do no
 
 ## Required verification sequence
 
+For shutdown or close-during-startup changes, also exercise a cold and partially initialized
+service registry. Disposal must leave unused lazy services uninitialized. Trace bootstrap and
+window-owned coroutine work through cancellation and dependency closure; two settled-window
+cycles alone do not establish that an early close is safe. Preserve the original crash and
+reproduction evidence when the cause remains unresolved.
+
 ```powershell
 Set-Location <monorepo-root>\ARES-Analytics
 git status --short --branch

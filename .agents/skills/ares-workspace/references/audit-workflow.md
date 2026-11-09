@@ -10,6 +10,10 @@ historical reports describe their recorded source, not necessarily the current c
 - Record the base commit, branch, dirty changes, selected products/files, and completion criteria.
   Inspect current protected main when choosing a new baseline; preserve any user-specified base.
   Isolate unrelated work and preserve running processes. Review pending changes before expanding scope.
+- For continuation requests, read the latest relevant checkpoint's unresolved findings and verify
+  them against the selected source. Keep an isolated committed baseline distinct from pending
+  changes in the user's checkout; tests of one do not validate the other. Historical delegation,
+  goal status, and release permissions do not carry forward as new authorization.
 - For a file-by-file campaign, freeze a tracked-file inventory with explicit dispositions for
   owned source, tests, configuration, documentation, generated files, upstream code, and resources.
   Account for additions, deletions, and changed dependencies during the campaign. Do not rewrite

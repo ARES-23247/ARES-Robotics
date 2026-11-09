@@ -122,7 +122,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt",
       "product": "ARES-Analytics",
-      "lines": 443,
+      "lines": 447,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

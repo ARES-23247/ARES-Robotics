@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-09",
+  "baseCommit": "ba7402263bd46f29c4204e0194d75efcfe7d43cc",
+  "branch": "codex/framework-lifecycle-audit-20261109",
+  "protectedMainObserved": "8294bd6de9663e4f9cecc86dbd6a64acc3ae36ee",
+  "scope": "Committed baseline and this isolated patch; excludes the original checkout's pending changes",
+  "dependency": {
+    "mode": "existing isolated binary candidate",
+    "aresVersion": "19.1.5-rc.acceptance.20260925.1",
+    "releasePin": "19.1.5",
+    "studioVersion": "7.0.65"
+  },
+  "files": {
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt": "87f952cebd90043fd569865fb23683a831bcba12bfc843fbb5b8f1c0f38a7d3c",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ServiceRegistryShutdownAuditTest.kt": "4eeb98bb316b68cc62c8a0c80431543b20e7a1fce2e2669c3383a5e5fe51c8b1",
+    ".agents/skills/ares-workspace/references/audit-workflow.md": "96afab4cd0c493e361f903116a6d550a79ae1269984c007bdf7a118e6f4fbcdc",
+    ".agents/skills/compose-desktop-tester/references/startup-recovery.md": "a078cde2b0364e5b45cafa3f915af0e309204ded14a9434695ec7ee63b25426d",
+    "ARES-Analytics/config/maintainability/codebase_ledger.json": "e8381a6cc97a1af3431378a2340f130054e0f27de9f3c6276cc723319ed9375c",
+    "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md": "35b9ca2f3ee97e5cbc87334dd3b1bd2d2278fd95db35c30c89b76c43436a324a"
+  },
+  "baselineBehaviorRegression": {
+    "suites": 1,
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "fixedFocusedSuites": {
+    "suites": 11,
+    "tests": 59,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "native": {
+    "ownedPid": 50064,
+    "ownedPidExited": true,
+    "controlPort": 49339,
+    "controlPortReleased": true
+  },
+  "nativeRuns": [
+    {
+      "log": "build-native-cycle-1.log",
+      "snapshotRemoved": true,
+      "successful": true,
+      "forcedExit": false,
+      "settled": true
+    },
+    {
+      "log": "build-native-cycle-2.log",
+      "snapshotRemoved": true,
+      "successful": true,
+      "forcedExit": false,
+      "settled": true
+    },
+    {
+      "log": "build-native-owned.log",
+      "snapshotRemoved": true,
+      "successful": true,
+      "forcedExit": false,
+      "settled": true
+    }
+  ],
+  "nativeCaptureSha256": {
+    "build/audit-lifecycle/native-cycle-1.png": "304111a69681d8a976dfc6dc1367ba752bc54d4675e7a5dd0286a0ffbc4dd5d0",
+    "build/audit-lifecycle/native-cycle-2.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/audit-lifecycle/native-owned/capture-001.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e"
+  },
+  "guidanceTests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0
+  },
+  "skillValidation": {
+    "ares-workspace": "passed",
+    "ares-build-release": "passed",
+    "ares-subsystem-authoring": "passed",
+    "compose-desktop-tester": "passed"
+  },
+  "sourcePolicy": "passed after regenerating the source-size inventory; initial stale-inventory failure retained",
+  "sourceSize": {
+    "productionKotlinFiles": 1114,
+    "violations": 0,
+    "limitsChanged": false
+  },
+  "limitations": [
+    "No physical hardware validation",
+    "Large-profile bulk import responsiveness remains open",
+    "Earlier late workspace read during startup shutdown remains unproven and unresolved",
+    "No validation of the original checkout's pending changes"
+  ]
+}
