@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "baseline": "00f911441c6043f99def5cb2545398b4ae060fdf",
+  "sourceCheckpoint": "0c2a849387f9b9290aa610ec8c81574e709fd1bc",
+  "integratedPullRequests": [
+    89,
+    96,
+    99,
+    100,
+    101
+  ],
+  "kotlin": "2.4.21",
+  "binaryCompatibilityValidator": "0.18.2",
+  "slf4jSimple": "2.0.19",
+  "librarySourceTree": "a74925ce35d58170eb870e68ec5d6efea8cdb9e7",
+  "candidate": "20.0.3-rc.compiler.20261110.2",
+  "candidateRepository": "ARESLib-Kotlin/build/release-repository/",
+  "compilerPolicy": {
+    "alignedPins": 23,
+    "proposalStalePins": 18,
+    "unitTests": 9,
+    "monorepoPolicyTests": 15,
+    "guidanceTests": 6
+  },
+  "library": {
+    "total": {
+      "tests": 3122,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "modules": {
+      "codegen": {
+        "tests": 119,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "core": {
+        "tests": 2103,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "frc-hardware": {
+        "tests": 168,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "frc-runtime": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "ftc-hardware": {
+        "tests": 468,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "project-compiler": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "project-model": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "project-schema": {
+        "tests": 77,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "simulation-foundation": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "simulator": {
+        "tests": 93,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "telemetry-schema": {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xrp-hardware": {
+        "tests": 48,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "abi": {
+    "reviewedAdditions": [
+      "Pose2d public zero-argument constructor",
+      "SwerveModuleState public zero-argument constructor"
+    ],
+    "removedPublicOrProtectedMembersInTheseTypes": 0,
+    "permanentReflectionRegressionTests": 2,
+    "oldCompilerClientVersion": "2.4.10",
+    "probe": "Old compiled client ran with both dependency pairs; Java constructor client passed."
+  },
+  "completedConsumers": {
+    "FTC": "Unit tests, simulator tests and assembleDebug passed.",
+    "FTCStarter": "Unit tests, simulator tests and assembleDebug passed.",
+    "MicroPython": {
+      "tests": 132,
+      "failures": 0
+    }
+  },
+  "archives": {
+    "reproduction": "All five archives reproduced identical SHA-256 bytes.",
+    "hashManifest": "release/starter-artifacts.properties"
+  },
+  "pendingAtCheckpoint": [
+    "Full Studio verification",
+    "FRC season and starter tests",
+    "Native rendered-window and shutdown cycles",
+    "Protected GitHub PR checks and merge"
+  ],
+  "retainedDiagnostics": [
+    "First candidate core apiCheck failure",
+    "Disposable Java ABI probe source/target configuration failure"
+  ],
+  "limits": [
+    "Bounded dependency review, not full repository audit",
+    "No physical robot or controller qualification",
+    "No live cloud backup",
+    "No public artifact publication"
+  ],
+  "rawEvidenceDirectory": "build/compiler-upgrade-20261110/"
+}

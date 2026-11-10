@@ -82,12 +82,13 @@
       }
     },
     ".agents/skills/ares-build-release/references/failure-modes.md": {
-      "sha256": "49672e81f537d951692f21aa04da3584698d4d21d8c4f33d7392eb4454be4bbb",
+      "sha256": "8cf9729200e55f9c96ac2ddba28a59685e9fcbd618a278b29f0d6f71ecb384ac",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed added distinction between successful analysis/upload and separate PR scanning annotations; sample consistency and immutable archive guidance. Guidance and source policy checks passed.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "runtimeAuditSubmission": {
         "evidence": [
@@ -125,6 +126,15 @@
         "review": "partial",
         "validation": "passed",
         "scope": "Reviewed added TLS, display, test-artifact, and real-wire receipt-clock guidance. Six guidance regression tests and source policy passed.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "49672e81f537d951692f21aa04da3584698d4d21d8c4f33d7392eb4454be4bbb",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed added distinction between successful analysis/upload and separate PR scanning annotations; sample consistency and immutable archive guidance. Guidance and source policy checks passed.",
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
@@ -383,11 +393,11 @@
     },
     ".github/workflows/build-distributions.yml": {
       "review": "partial",
-      "validation": "passed",
-      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "63167db764e1cd28b8d3e2cdb433d07c32d4f56a3465776ff2cc5c3484887c5a",
@@ -423,7 +433,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "82a28179974ee43f8a33fe2789378f3f0605adda49235886aae728f02bd91209",
+      "sha256": "8d12b164ad3edb45ed43aff9e75dc15a8fbc9479ede52fc5a99d61559ba8c705",
       "priorSdk12Migration20261109": {
         "sha256": "a0755d3a76feb465fe9fd5c5e6f356ea70dd8862e9d196c2221be658a4ffda38",
         "review": "partial",
@@ -490,6 +500,16 @@
         "scope": "Reviewed only Studio 7.0.70 asset-tag/version alignment. Local source policy and release alignment passed; final protected-main package validation remains required.",
         "evidence": [
           "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "82a28179974ee43f8a33fe2789378f3f0605adda49235886aae728f02bd91209",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
+        "evidence": [
+          "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -5560,7 +5580,7 @@
       "sha256": "b1da90ac0208d483e124088762f755050773fab7f0d3c6364b2c6e784846bb88",
       "review": "pending",
       "validation": "pending",
-      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0°, 90°, 180°, -90°), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
+      "scope": "Unverified campaign submission: Validated RoutinePoseEditors, ParameterEditors, EnumParameterPicker, and DriveMechanismActionsEditor; verified angle wrapping math (((it + 180) % 360 + 360) % 360 - 180), preset heading chips (0\u00b0, 90\u00b0, 180\u00b0, -90\u00b0), drive progress marker percentage coercion (0.0..1.0), and capability parameter type checks (BOOLEAN, ENUM, NUMBER, TEXT).",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md",
         "docs/audits/DEEP_AUDIT_GOAL.md",
@@ -5658,7 +5678,7 @@
       "sha256": "a51b2491d5c3dea95e368d8623a11475c74cdff6401dba3742ee2b24b02023b4",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2π rad / spool travel), and cached measurement scale/offset/freshness bounds.",
+      "scope": "Validated SubsystemHardwareSection, HardwareInspectorBody, and CachedMeasurementEditor; verified follower actuator pairing with direction transform (same, inverted, mirrored), FTC Control Hub IMU 3D mounting non-collision check, FRC CAN/DIO channel configuration, motor mechanism unit conversion assistant (2\u03c0 rad / spool travel), and cached measurement scale/offset/freshness bounds.",
       "evidence": [
         "docs/audits/pass294-pending-elevation-audit.md"
       ]
@@ -8636,7 +8656,7 @@
       "sha256": "24d3a070ba007922b36888404a0852a1c25fa90188004e4491a8380c80714935",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design • Simulate • Operate • Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
+      "scope": "Verified public brand identity constants (BuildConfig.PRODUCT_NAME = 'ARES Robotics Studio', BuildConfig.PRODUCT_TAGLINE = 'Design \u2022 Simulate \u2022 Operate \u2022 Analyze', BuildConfig.LEGACY_PRODUCT_NAME = 'ARES Analytics') and runtime application icon resource (256x256 square dimensions, alpha channel present, transparent corner pixels).",
       "evidence": [
         "docs/audits/pass292-pending-elevation-audit.md"
       ]
@@ -12783,13 +12803,23 @@
       ]
     },
     "ARES-Analytics/build.gradle.kts": {
-      "sha256": "7882a4baabe971a186b875748f1a5bcd8d120256c8cfcec755cc39c7279a1197",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Root Gradle build script: verified release preflight verification (verifyReleaseVersionAlignment) enforcing alignment across release manifest, starter artifacts, app build, and CI workflows; verified Kover code coverage floors (app 38%, shared/gateway 54%); verified production Kotlin file size ratchet (verifyProductionKotlinFileSizes enforcing 500-line ceiling for new files); verified studioReleaseVerification composite verification gate; verified killExisting task terminating stale orphaned ARES JVMs by matching main class name via JPS; and verified root run task coordinating gateway and desktop app processes.",
+      "sha256": "184871b76badae51bd4ea0fe79f2a615878e9b2fdae842f12ca6f37cae06b622",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/pass291-pending-elevation-audit.md"
-      ]
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ],
+      "priorCompilerLibrary20261110": {
+        "sha256": "7882a4baabe971a186b875748f1a5bcd8d120256c8cfcec755cc39c7279a1197",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Root Gradle build script: verified release preflight verification (verifyReleaseVersionAlignment) enforcing alignment across release manifest, starter artifacts, app build, and CI workflows; verified Kover code coverage floors (app 38%, shared/gateway 54%); verified production Kotlin file size ratchet (verifyProductionKotlinFileSizes enforcing 500-line ceiling for new files); verified studioReleaseVerification composite verification gate; verified killExisting task terminating stale orphaned ARES JVMs by matching main class name via JPS; and verified root run task coordinating gateway and desktop app processes.",
+        "evidence": [
+          "docs/audits/pass291-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/config/dashboard-performance-baseline.json": {
       "sha256": "867d88b1c699f18b9310322e47c60839b1618dcb8fc0d06b10396cb7596f2920",
@@ -13048,7 +13078,7 @@
       "sha256": "e5a9dd382f3540216b3acd3cda81ebd197335bfadadb1242c19eb3243732b14b",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design • Simulate • Operate • Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
+      "scope": "Validated product branding, upgrade, and repair documentation. Verified product rename to ARES Robotics Studio (\"Design \u2022 Simulate \u2022 Operate \u2022 Analyze\") with preserved technical compatibility (com.ares.analytics package names, NT4 client identity, .ares schema, ~/.ares-analytics local storage, Windows MSI upgrade UUID). Verified in-place MSI upgrade policy, immutable version publishing, Authenticode and SHA-256 checksum verification policies, administrator repair command (msiexec.exe /fa), and clean uninstallation boundaries.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -13210,7 +13240,7 @@
       "sha256": "25eeb691d95c9c9a456a23925e8888e70fb4a6a1e14d4d46418381d84268fe61",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation — cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
+      "scope": "Validated run comparison and guided diagnosis documentation. Verified read-only multi-run comparison (2 to 6 runs) within matching workspace, deterministic time alignment (aligned time = original - anchor), physical unit consistency (never plotting disparate units on same Y-axis), max 1,500 uniform samples per topic, finding classifications (Observed difference, Correlation \u2014 cause not proven, Evidence limitation), exact replay timestamp deep links, and simulator acknowledgement idle handling.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -13219,7 +13249,7 @@
       "sha256": "65efe035f6d197e24121378abb4ccef5f892ec495b9d81d08af34acf528e30b6",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED — DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
+      "scope": "Validated subsystem authoring documentation. Verified ownership labels (USER-OWNED, GENERATED STARTER, GENERATED \u2014 DO NOT EDIT), pure Redux runtime contract (Input -> Action/Reducer -> Immutable State -> Controller -> IO -> Adapter), capability templates, hardware device adapters, cached input snapshot architecture reading each sensor once per loop, motor-to-mechanism scaling, control strategies (direct, PID, profiled PID, velocity PID, bang-bang, servo), 4-stage builder flow, homing methods, feedforward models, cross-mechanism interlocks, jam recovery state machine, typed tuning parameters, follower actuator transforms, proposal-only AI design assistant, and hand-authored subsystem registration.",
       "evidence": [
         "docs/audits/pass291-pending-elevation-audit.md"
       ]
@@ -14404,14 +14434,24 @@
       ]
     },
     "ARES-FRC-Starter/build.gradle": {
-      "sha256": "89a991124bdc1d10de8c01b140afa0deb703239bcf2d2c2b813db4fdd75749b4",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated Gradle build configuration: Java 17 toolchain compatibility, GradleRIO 2026.2.1, Kotlin 2.4.10, ARES BOM/core/runtime dependency alignment, generated deterministic code directory segregation (${buildDir}/generated/ares), RoboRIO deployment targets with native third-party library bindings, desktop simulation JNI loader compatibility, JUnit 5 test platform configuration with WPILib JDK executable resolution, and deterministic ARES code generation / verification CLI tasks (generateAresProject, verifyAresProject, replaceSubsystemStarters with required confirmation token).",
+      "sha256": "24b4094bfe2a552e8fc4707891aabf99d3d473f91e26f3f15d31b38db5dc858d",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass263-verified-evidence/summary.json"
-      ]
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ],
+      "priorCompilerLibrary20261110": {
+        "sha256": "89a991124bdc1d10de8c01b140afa0deb703239bcf2d2c2b813db4fdd75749b4",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated Gradle build configuration: Java 17 toolchain compatibility, GradleRIO 2026.2.1, Kotlin 2.4.10, ARES BOM/core/runtime dependency alignment, generated deterministic code directory segregation (${buildDir}/generated/ares), RoboRIO deployment targets with native third-party library bindings, desktop simulation JNI loader compatibility, JUnit 5 test platform configuration with WPILib JDK executable resolution, and deterministic ARES code generation / verification CLI tasks (generateAresProject, verifyAresProject, replaceSubsystemStarters with required confirmation token).",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass263-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-FRC-Starter/docs/APRILTAG_FIELDS.md": {
       "sha256": "854da01ccd3c339adde0db173a4c31adc4310c2c7d4b468038fbcdcb3dfa4da9",
@@ -15010,7 +15050,7 @@
       "sha256": "becf5449b6dbfa838313319f2e844150cbb379db41e325e7520e852e58657a2e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (±0.276225 m, ±0.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
+      "scope": "Validated JSON drivetrain specification for Marvin XIX CTRE swerve drivebase: symmetric module layout at (\u00b10.276225 m, \u00b10.276225 m), gear ratios (drive 5.273, steer 26.091), max speeds (5.85 m/s, 14.98 rad/s); CCW-positive heading convention (headingCcwPositive: true); Kraken X60 TalonFX current limits (70A drive, 40A/60A steer); Pigeon 2 IMU on CAN2; dual Limelight camera references; strict safety policy contracts (safe neutral required, brake mode, disabled force-neutral, stale feedback timeout 100ms, zero-allocation periodic required); Dyn4j simulation parity; and measured absolute encoder calibration provenance with SHA-256 integrity verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass125-verified-evidence/summary.json"
@@ -15127,15 +15167,25 @@
       ]
     },
     "ARES-FRC/build.gradle": {
-      "sha256": "31f4df1f1f47c94d3173d252ba7d966944a094d6bc93dc0485d13fdbd5ad5bb2",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated Marvin XIX FRC build configuration: Java 17 toolchain, Kotlin 2.4.10, GradleRIO 2026.2.1, Kover 0.9.9, and ARES BOM dependencies; generated directory separation under build/generated; native desktop JNI sync (extractTestNatives) with OS-specific library path configuration; atomic and schema-validated runtime swerve offset fetching via SCP (fetchOffsets) with [-1, 1] rotation verification; code generation tasks with explicit confirmation token for starter replacement; package verification task (verifyNamespaceOwnership) barring package com.areslib in team code; and compileKotlin dependencies on verification gates.",
+      "sha256": "9713ec4fa1313a5b1b17e6cb66865b10c928d014628c7e747835ce75d9e32b7e",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass130-verified-evidence/summary.json"
-      ]
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ],
+      "priorCompilerLibrary20261110": {
+        "sha256": "31f4df1f1f47c94d3173d252ba7d966944a094d6bc93dc0485d13fdbd5ad5bb2",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated Marvin XIX FRC build configuration: Java 17 toolchain, Kotlin 2.4.10, GradleRIO 2026.2.1, Kover 0.9.9, and ARES BOM dependencies; generated directory separation under build/generated; native desktop JNI sync (extractTestNatives) with OS-specific library path configuration; atomic and schema-validated runtime swerve offset fetching via SCP (fetchOffsets) with [-1, 1] rotation verification; code generation tasks with explicit confirmation token for starter replacement; package verification task (verifyNamespaceOwnership) barring package com.areslib in team code; and compileKotlin dependencies on verification gates.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass130-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-FRC/docs/ARCHITECTURE.md": {
       "sha256": "8bb01168ea11ec7b79cf34af829be62ed3de50a5a6c71a3fcc24e0320ddc02ff",
@@ -15168,14 +15218,24 @@
       ]
     },
     "ARES-FRC/docs/OPERATIONS.md": {
-      "sha256": "0400c2722db8fa5954c78ac169e03edfeb6f557fb0b04e3b0f2a5bd2b0397e80",
-      "review": "reviewed",
+      "sha256": "835be946fe1f46b58925bd464388f9352b1cd5f1aa7e81628c1515edb99ea210",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Fullprerequisites/commands/deploy/offset/troubleshootingreview. CorrectedKotlinversion,optionalsiblingmode,candidatebase,testJNIpath,HALoptin. Movedhomingafterdeploymentrestartandaddedprofile/evidencecalibrationpromotion. No actualdeploy/SCP/candidatepublication.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
-      ]
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ],
+      "priorCompilerLibrary20261110": {
+        "sha256": "0400c2722db8fa5954c78ac169e03edfeb6f557fb0b04e3b0f2a5bd2b0397e80",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Fullprerequisites/commands/deploy/offset/troubleshootingreview. CorrectedKotlinversion,optionalsiblingmode,candidatebase,testJNIpath,HALoptin. Movedhomingafterdeploymentrestartandaddedprofile/evidencecalibrationpromotion. No actualdeploy/SCP/candidatepublication.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-FRC/docs/SUBSYSTEM_AUTHORING.md": {
       "sha256": "ef3eb9e80581230eaf063bf3590ff56f9062822eaa82f99d07f2cdef48ac9849",
@@ -15948,7 +16008,7 @@
       "sha256": "dd73c69aa80eef41532415e39cb7163f751f9bafa6451a787a3b83d7e1d90dfb",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s²), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
+      "scope": "Validated desktop physics simulation engine: bounded timestep execution (dt in 0.0..50.0 s, clamped to 0.05 s in loop); zero-GC step method utilizing preallocated scratch actions; blue-origin field coordinates with CCW-positive radians; 2.5D FlyingBall projectile model with gravitational acceleration (9.80665 m/s\u00b2), hood angle trajectory resolution, and rearward shooter offset adjustments; alliance-specific speaker target scoring with height (1.6..2.8 m) and radius (<0.6 m) bounds; field boundary containment on bounce/land; geometric intake aperture checking (isInsideIntakeCaptureZone); and safe close() closing NT4 field subscriptions.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass110-verified-evidence/summary.json",
@@ -16122,7 +16182,7 @@
       "sha256": "2c721a57857805e10066ecb6e89657241e0bd2772ee7e2add7ea68f3ea46a5ea",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0°..108°); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
+      "scope": "Validated TalonFX intake hardware IO: pivot motor (CAN ID 14) with 4:1 gear ratio, Brake mode, Clockwise_Positive inversion, supply current 40A, stator current 80A, and soft limits 0.0..0.30 mechanism rotations (0\u00b0..108\u00b0); roller motor (CAN ID 15) with 1:1 ratio, Coast mode, supply current 30A, stator current 40A; degree-to-rotation command conversion; zero-allocation refresh for position and current signals; reset detection invalidating homing; safe homing routine (homeAtKnownZero); output voltage clamped to [-12.0, 12.0] V; and 0.0V neutral output on unhomed or misconfigured state.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass120-verified-evidence/summary.json",
@@ -16262,7 +16322,7 @@
       "sha256": "6cb05881ec858138fdd1d741793a641160e8aec6fc343a663e4f7d8cf589c2bc",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad ±5 cm, bumpers ±5°), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
+      "scope": "Validated FRC localization calibration controller: driver station button edge detection utilizing preallocated BooleanArray(12) with zero runtime allocation; control mappings for test type cycling, route start/end checkpoint marking, surveyed truth pose nudging (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, and pose seeding; suppression of calibration zeroing/seeding while the dual-operator homing combo is held; automatic disabling of vision fusion during pure odometry translation and rotation test types; driver neutral deadband check (<= 0.03); and telemetry reporting.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -19386,13 +19446,13 @@
       }
     },
     "ARES-FTC-Starter/build.gradle": {
-      "sha256": "a1c8fadfb83d30ad56065d4cad3d7010ed6071806041bfbe30c5e08706593fb6",
+      "sha256": "41e69891f44ab3f386f8c4338ee3197917d3d8fa0b63bec9dd8a65ae704db39b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "priorSdk12Migration20261109": {
         "sha256": "83892bd4cebb7d10b3bb04ddb5e91482540978d3ee8f91c16ef68ecdf0991656",
@@ -19401,6 +19461,16 @@
         "scope": "Evaluated top-level build script for FTC application. Verified Android Gradle Plugin 8.7.0, Kotlin 2.4.10, Kover 0.9.9, ARES version policy resolution, repository cascades, resolution strategies forcing consistent Kotlin stdlib artifacts, and isolated repository declarations.",
         "evidence": [
           "docs/audits/pass290-pending-elevation-audit.md"
+        ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "a1c8fadfb83d30ad56065d4cad3d7010ed6071806041bfbe30c5e08706593fb6",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -19661,7 +19731,7 @@
       "sha256": "29e4e2bd1743ea9d4644a6cb44396f954832afa6f8263dfc12ef7765e1f85f11",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (±0.225 m, ±0.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
+      "scope": "Validated JSON drivetrain specification for goBILDA FTC Mecanum drivebase: four-motor geometry with wheel diameter 0.096 m, track width/wheelbase 0.45 m, motor coordinates at (\u00b10.225 m, \u00b10.225 m), and inverted right motors; primary localization via goBILDA Pinpoint odometry computer with Limelight 3A vision fusion; CCW-positive heading convention (headingCcwPositive: true); fail-closed safety parameters (safe neutral required, brake mode, 250 ms stale feedback timeout, zero-allocation periodic required); simulation model parity with MecanumRobotDouble; and comprehensively defined PID, feedforward, heading lock, anti-push, and Pinpoint calibration parameters.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass259-verified-evidence/summary.json"
@@ -20960,7 +21030,7 @@
       "sha256": "224f2c95ea53ef4de443464c2a7190c7ed5d2803530c3eb2766c4cb272fe2d04",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad ±5 cm, bumpers ±5°), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
+      "scope": "Validated FTC localization calibration OpMode: built on AresTeleOpBase with live tuning disabled in setup and LocalizationCalibrationRecorder registered for clean teardown; gamepad button controls for cycling test types, adjusting surveyed truth pose (D-pad \u00b15 cm, bumpers \u00b15\u00b0), truth zeroing, pose seeding, and route start/end checkpoint logging; StationaryCalibrationGate dwell validation enforcing driver neutral, velocity <= 0.03 m/s, angular velocity <= 0.05 rad/s, and valid motion measurements; fresh vision timestamp filtering (age in 0..250 ms); and rate-limited telemetry (100 ms period).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass77-verified-evidence/summary.json",
@@ -21750,13 +21820,13 @@
       }
     },
     "ARES-FTC/build.gradle": {
-      "sha256": "a1c8fadfb83d30ad56065d4cad3d7010ed6071806041bfbe30c5e08706593fb6",
+      "sha256": "41e69891f44ab3f386f8c4338ee3197917d3d8fa0b63bec9dd8a65ae704db39b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "priorInitialization20261109": {
         "sha256": "83892bd4cebb7d10b3bb04ddb5e91482540978d3ee8f91c16ef68ecdf0991656",
@@ -21775,6 +21845,16 @@
         "evidence": [
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "a1c8fadfb83d30ad56065d4cad3d7010ed6071806041bfbe30c5e08706593fb6",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -22734,7 +22814,7 @@
       "sha256": "980daff7a61c869a69321a8617206ae900e415dd9dd2bdae5084e61a4f48405e",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8° and freeze above 15°), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
+      "scope": "Audited archived v2.5 requirements (lines 1-26). Verified HARDEN-01 (3D spatial field boundaries), HARDEN-02 (motion blur lockout >2.0 rad/s), HARDEN-03 (collision shock lockout >2.5 G), HARDEN-04 (tilt protection scaling Q by 100x above 8\u00b0 and freeze above 15\u00b0), and HARDEN-05..06 (quadratic distance noise scaling and multi-tag confidence divisor).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -23154,14 +23234,24 @@
       ]
     },
     "ARESLib-Kotlin/build.gradle.kts": {
-      "sha256": "748b20555a15feeea09d92e80cf7ecc4cc0553f97511c328d2a40f5ffc23c6d5",
-      "review": "reviewed",
+      "sha256": "77e38c07a76ba5b2ad05e861a19d9e7f9fb88cdf55afe4b0fd2bdb330f150d4a",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Multi-project build configuration, Kotlin 2.4.10 dependencies, binary compatibility validator ordering, source maintainability ratchet (verifyAresLibSourceFileSizes enforcing 500-line ceiling on new production files), semantic version validation, and staged Maven/GitHub publishing gates.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
-      ]
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ],
+      "priorCompilerLibrary20261110": {
+        "sha256": "748b20555a15feeea09d92e80cf7ecc4cc0553f97511c328d2a40f5ffc23c6d5",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Multi-project build configuration, Kotlin 2.4.10 dependencies, binary compatibility validator ordering, source maintainability ratchet (verifyAresLibSourceFileSizes enforcing 500-line ceiling on new production files), semantic version validation, and staged Maven/GitHub publishing gates.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARESLib-Kotlin/codegen/api/codegen.api": {
       "sha256": "93d4e4d982fffd8fdd28333751825be9f39703961724955401c2ec56d5f9ef53",
@@ -23175,13 +23265,23 @@
       ]
     },
     "ARESLib-Kotlin/codegen/build.gradle.kts": {
-      "sha256": "4a07a618156fe2e7f95f1b3401d88a42262e5c71e0a55019ae60778c37abb6e0",
-      "review": "reviewed",
+      "sha256": "74b24070237dd5eec664c900a41c92c30d2ee6defaf339761118369761c5434d",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Gradle Kotlin DSL build configuration for codegen module. Validated dependencies on :core, :project-model, :project-compiler, kotlin-compiler-embeddable 2.4.10, JUnit 5.14.4, JavadocJar/SourcesJar publication, and Java 17 toolchain setup.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
-      ]
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ],
+      "priorCompilerLibrary20261110": {
+        "sha256": "4a07a618156fe2e7f95f1b3401d88a42262e5c71e0a55019ae60778c37abb6e0",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Gradle Kotlin DSL build configuration for codegen module. Validated dependencies on :core, :project-model, :project-compiler, kotlin-compiler-embeddable 2.4.10, JUnit 5.14.4, JavadocJar/SourcesJar publication, and Java 17 toolchain setup.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      }
     },
     "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/AresKotlinProjectGenerator.kt": {
       "sha256": "b189dccd0821986d1d0a110fb4e86620023d43aaff7d1341cddc6a8d27d9f65f",
@@ -23824,14 +23924,13 @@
       ]
     },
     "ARESLib-Kotlin/core/api/core.api": {
-      "sha256": "0efdc29a076788337762274e6c5f1fcb8a12778f51196bd9fa39093ed01b7872",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Kotlin binary compatibility validator public API dump for ARESLib-Kotlin core module at release 19.1.1.",
+      "sha256": "c3896108b0954e9e622afd4a3abc5333148ba6acd5b68ae56877cc063e5d0890",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "ARESLib-Kotlin/core/api/core.api",
-        "ARESLib-Kotlin/build.gradle.kts",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -23847,7 +23946,18 @@
         "sha256": "0efdc29a076788337762274e6c5f1fcb8a12778f51196bd9fa39093ed01b7872",
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "priorCompilerLibrary20261110": {
+        "sha256": "0efdc29a076788337762274e6c5f1fcb8a12778f51196bd9fa39093ed01b7872",
+        "review": "pending",
+        "validation": "pending",
+        "scope": "Unverified campaign submission: Kotlin binary compatibility validator public API dump for ARESLib-Kotlin core module at release 19.1.1.",
+        "evidence": [
+          "ARESLib-Kotlin/core/api/core.api",
+          "ARESLib-Kotlin/build.gradle.kts",
+          "docs/audits/DEEP_AUDIT_REPORT.md"
+        ]
+      }
     },
     "ARESLib-Kotlin/core/build.gradle.kts": {
       "sha256": "46cf9915407fbe5181d53ebea4b15aba11882743fc3aceed065cfcb9d504f160",
@@ -29227,7 +29337,7 @@
       "sha256": "a03770e6a0e2bf28587c50ff62844ce151aa41c645fe82c00a743a1d3a674bb3",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-π, π) boundary.",
+      "scope": "Audited robot-local delta coordinate transformation tests in the Redux store. Verified robot-local displacement rotation into the raw odometry field frame (+X forward, +Y left, CCW-positive radians) and constant-curvature SE(2) twist arc integration with proper heading angle wrapping across the [-\u03c0, \u03c0) boundary.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
@@ -30693,7 +30803,7 @@
       "sha256": "986d38ebecf3d806e39d0e212c7a1a3313a5a121c5ed4c07ea2f1ba72f7c1bc7",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0°) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
+      "scope": "Validated CTRE Phoenix 6 swerve drivetrain IO integration and sensor dispatch in updateHardwareInputs() (lines 153-230). Validated zero-GC beached-chassis traction loss detection in evaluateBeachedState() (lines 265-301) checking IMU pitch/roll tilt (> 8.0\u00b0) and per-module wheel slip (> 1.5 m/s speed with < 8.0 A current on >= 2 modules) with preallocated scratch buffers. Validated odometry freeze during beached state and seedPose() re-seeding upon recovery. Validated field-frame measured velocity transformation (lines 194-201) for shoot-on-the-move prediction, thread-safe tuning manager lifecycle, and synchronized close() neutralizing hardware prior to draining tuning.",
       "evidence": [
         "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
@@ -34107,7 +34217,7 @@
       "sha256": "d84ece215e96f92705e6407c6e33c29f92fa73d33d12d89d990fbe11a156a024",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2π radian span enforcement, and trapezoidal motion profile limit verification.",
+      "scope": "Audited SubsystemControlValidation rules. Verified loop actuator validation ensuring actuator eligibility, follower loop-ownership prohibitions, numeric target/measurement role verification, engineering unit compatibility checks, positional servo strategy alignment, finite gain checks, continuous input 2\u03c0 radian span enforcement, and trapezoidal motion profile limit verification.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
@@ -34117,7 +34227,7 @@
       "sha256": "44e98a2467a4451c6041d3cede4bf76c046888a5b7c230e3c51482493e67c162",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s², A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
+      "scope": "Audited SubsystemDocument schema (version 11) data definitions. Verified platform support mappings for hardware kinds across FTC, FRC, and XRP, measurement sources and canonical unit mappings (rad, rad/s, m, m/s\u00b2, A, V, normalized), follower transforms, visual placement structures, feedforward models, and trapezoidal motion profile declarations.",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
         "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json",
@@ -34561,13 +34671,23 @@
       }
     },
     "ARESLib-Kotlin/simulator/build.gradle.kts": {
-      "sha256": "ca4504ac92194683594c7ad6ef713f26772e1713f351374a0c650a9723f230b5",
-      "review": "reviewed",
+      "sha256": "42ecc08c29622ac71f5e39187e6b658782ba7b533745a1cb88269ad6678b4db2",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Build script for the FTC desktop simulator. Verified integration of dyn4j 4.2.2 physics engine, gson 2.14.0, WPILib 2024.3.2 stack (wpilibj, cameraserver, wpinet, ntcore, wpiutil, wpimath, hal), and LWJGL 3.4.3 (core and glfw). Verified hostRuntime configuration dynamically selecting platform-specific native binaries (windowsx86-64, osxuniversal, linuxx86-64) for local runs and tests without publishing native jars. Verified application entry points: DesktopSimLauncher, runFakeController, runVerification, and fatJar. Configured on JVM toolchain 17.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
-      ]
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ],
+      "priorCompilerLibrary20261110": {
+        "sha256": "ca4504ac92194683594c7ad6ef713f26772e1713f351374a0c650a9723f230b5",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Build script for the FTC desktop simulator. Verified integration of dyn4j 4.2.2 physics engine, gson 2.14.0, WPILib 2024.3.2 stack (wpilibj, cameraserver, wpinet, ntcore, wpiutil, wpimath, hal), and LWJGL 3.4.3 (core and glfw). Verified hostRuntime configuration dynamically selecting platform-specific native binaries (windowsx86-64, osxuniversal, linuxx86-64) for local runs and tests without publishing native jars. Verified application entry points: DesktopSimLauncher, runFakeController, runVerification, and fatJar. Configured on JVM toolchain 17.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      }
     },
     "ARESLib-Kotlin/simulator/networktables.json": {
       "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
@@ -35539,13 +35659,13 @@
       ]
     },
     "docs/agents/WORKSPACE_GUIDE.md": {
-      "sha256": "ff8310f0760db3ffed2d56bb1bb359062e9eb348f706cc2d01c0b3bcaa7f2e26",
+      "sha256": "7ba62da47a3f4504373ec2feb639f46974e85e16cb9481deebb4ca4f6da47a0f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "priorSdk12Migration20261109": {
         "sha256": "641c892f747661090811429b41da33ebf1200d95ae0ffed9c9e52cc37d0a780f",
@@ -35556,6 +35676,16 @@
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json",
           "ARESLib-Kotlin/build/audit-pass260-verified-evidence/summary.json"
+        ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "ff8310f0760db3ffed2d56bb1bb359062e9eb348f706cc2d01c0b3bcaa7f2e26",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -35675,13 +35805,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/README.md": {
-      "sha256": "88ffb30df1dc3124b9e5631579a9935d6903ec3c6b8ef2636bff0a280bb7250a",
+      "sha256": "4169d18d348bf2b03365c390cbf7c2a31f09189e457ebfe0219c748a8511d8ba",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this setup-selection/history delta, relevant ownership and failure paths; focused software/native and policy evidence. No unrelated full-file coverage claimed.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10.md",
-        "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10_EVIDENCE.json"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "priorDatabase20261109": {
         "sha256": "6e2174c04cea10aa280be67085dd7b9042f0bdd17b5140b91d3110c74b08e899",
@@ -35846,6 +35976,16 @@
         "evidence": [
           "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
           "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+        ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "88ffb30df1dc3124b9e5631579a9935d6903ec3c6b8ef2636bff0a280bb7250a",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this setup-selection/history delta, relevant ownership and failure paths; focused software/native and policy evidence. No unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10.md",
+          "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -36050,10 +36190,10 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only final integration/cleanup evidence and ledger closeout. Actual check/source/count identities verified; prior nested records and unrelated semantic entries retained. Documentation-only policy checks apply; runtime code/dependencies/archives unchanged.",
+      "scope": "Reviewed only compiler checkpoint ledger delta. Prior canonical fields and nested history preserved; unrelated semantic records unchanged. Self-fingerprint binds final JSON.",
       "evidence": [
-        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -36479,7 +36619,7 @@
           ]
         }
       },
-      "sha256": "a6041b68d79848f3aea898b4301f1034599ff78f7e29c29a11112b72e0a5ad73",
+      "sha256": "3ba13b6a5220a2aeee11a1f8d73d734e3d3088816920c7c87af79b89b986392d",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -36607,6 +36747,16 @@
         "evidence": [
           "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
         ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "a6041b68d79848f3aea898b4301f1034599ff78f7e29c29a11112b72e0a5ad73",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only final integration/cleanup evidence and ledger closeout. Actual check/source/count identities verified; prior nested records and unrelated semantic entries retained. Documentation-only policy checks apply; runtime code/dependencies/archives unchanged.",
+        "evidence": [
+          "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
       }
     },
     "docs/audits/pass288-pending-elevation-audit.md": {
@@ -36697,7 +36847,7 @@
       "sha256": "f50dacc896f21769ff7005de214beee4c2786f82b6bb31698e794303ff4e040d",
       "review": "reviewed",
       "validation": "passed",
-      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across ±π, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
+      "scope": "Audited lines 1-113. Mathematical calculations audit and computational correctness record across estimation, drive kinematics, geometry, feedback control, trajectory profiling, and XRP runtime. Validated 17 confirmed mathematical defect corrections including continuous PID phase unwrapping across \u00b1\u03c0, scale-invariant Kalman filter denominator and Joseph updates, relative singularity guards in matrix inversion, Cholesky-factor vision NIS solve, SE(2) arc-to-chord odometry correction, circular mean vision calibration, zero-GC in-place matrix operations, and reduced vision correction allocations (816 bytes / 1,000 corrections).",
       "evidence": [
         "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
       ]
@@ -36924,13 +37074,13 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "10554b0ca97875264963d5332a23d383525f87d3e0df46bc5ed1db7c148de16b",
+      "sha256": "b5f07d57659671cf31ca4b68486628785e355a3beb304a74f47db48f10b79ebf",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "liveTuningPeerReviewPriorRecord": {
         "sha256": "ec14b29d98d961f96b28b4040d417346a8d62941b91d59c9d32300f63355b9c6",
@@ -37020,15 +37170,25 @@
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "10554b0ca97875264963d5332a23d383525f87d3e0df46bc5ed1db7c148de16b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "release/ares-versions.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "b6fd04706aae8ee46f6480be81270055b177420d8ed07db8f0120d18a32823ba",
@@ -37064,7 +37224,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "1fc222901e295cbf579c4ce6bfd5bfcb9a2bdce7d928dd85ff76ba6695e4f309",
+      "sha256": "7ff22f3c3df60a57a05be9ba2f73666398c4627d854e6eed93047f9fb217da3b",
       "priorSdk12Migration20261109": {
         "sha256": "eaf66a1ab74f8ec98966f3d7160ce0c7e8c24bcfddecd4f88d3deff87310a804",
         "review": "reviewed",
@@ -37123,15 +37283,25 @@
         "evidence": [
           "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
         ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "1fc222901e295cbf579c4ce6bfd5bfcb9a2bdce7d928dd85ff76ba6695e4f309",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
+        "evidence": [
+          "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
       }
     },
     "release/starter-artifacts.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "7947daf3f941fe53cfc8f68a940089562e509b6769efe903831be3d971da6cb4",
@@ -37167,7 +37337,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "d715f26eeea05ca2b41fba753bc28f5a3e65c15aff65bcbc448b95c19cd2320b",
+      "sha256": "7fef1b8a9043830754d7c608ea40c49be02a6f82ba808823b4935cdffb774270",
       "priorSdk12Migration20261109": {
         "sha256": "4f9324ffcef3ced185ac9f22c64448003297b30006982a23e4216e02d7cbbdbf",
         "review": "reviewed",
@@ -37215,6 +37385,16 @@
         "validation": "passed",
         "scope": "Verified updated SHA256 values against new immutable archives. FRC and XRP regenerated archive hashes unchanged.",
         "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorCompilerLibrary20261110": {
+        "sha256": "d715f26eeea05ca2b41fba753bc28f5a3e65c15aff65bcbc448b95c19cd2320b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
+        "evidence": [
+          "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
@@ -37518,13 +37698,13 @@
       ]
     },
     "scripts/tests/test_monorepo_policy.py": {
-      "sha256": "c12ebab64a99dda1e232201dbf744775b3d8fc823a1b0da4c79396a35393e40e",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Unit test suite for monorepo policy verifier: guidance, doc links, version manifest, and source tree hash checks.",
+      "sha256": "99ebd5a4156fe4d48e2b0887b24baec14b0d40064c59c343be5bc6971f7d18f8",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "scripts/tests/test_monorepo_policy.py",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -37540,7 +37720,17 @@
         "sha256": "c12ebab64a99dda1e232201dbf744775b3d8fc823a1b0da4c79396a35393e40e",
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "priorCompilerLibrary20261110": {
+        "sha256": "c12ebab64a99dda1e232201dbf744775b3d8fc823a1b0da4c79396a35393e40e",
+        "review": "pending",
+        "validation": "pending",
+        "scope": "Unverified campaign submission: Unit test suite for monorepo policy verifier: guidance, doc links, version manifest, and source tree hash checks.",
+        "evidence": [
+          "scripts/tests/test_monorepo_policy.py",
+          "docs/audits/DEEP_AUDIT_REPORT.md"
+        ]
+      }
     },
     "scripts/tests/test_release_candidate.py": {
       "sha256": "f83de81b2ced83e0612e41c5117fe9b1500baee2ff3557d4ed1b23fb23cf7446",
@@ -37592,12 +37782,13 @@
       ]
     },
     "scripts/verify-monorepo-policy.ps1": {
-      "sha256": "26921af6bcd5d459874c6abf693b9f2cbb1d578d15c9b5bb2784dd0019b6de42",
+      "sha256": "e72d9d1f1fcec22fcf00aaa0724668e358b110c75868b522b65baf974f3ce0ec",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -37613,7 +37804,16 @@
         "sha256": "26921af6bcd5d459874c6abf693b9f2cbb1d578d15c9b5bb2784dd0019b6de42",
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "priorCompilerLibrary20261110": {
+        "sha256": "26921af6bcd5d459874c6abf693b9f2cbb1d578d15c9b5bb2784dd0019b6de42",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+        "evidence": [
+          "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        ]
+      }
     },
     "scripts/verify_agent_guidance.py": {
       "sha256": "7a3a557096b31a1badaca786b22ec1717aacc50a93f5f5fd0b7fc3cfa5c90dcd",
@@ -40113,6 +40313,106 @@
       "evidence": [
         "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.11.zip": {
+      "sha256": "b06df2ad1f06c5214e21a7289dbfc803ad57c3407d2e24a413893ba2d64a8c24",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.4.zip": {
+      "sha256": "d3bf6c42aea9202d57846abef012541e4cacdce99a16e8032d934ef3834b229c",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.4.zip": {
+      "sha256": "11d297cb63ff8a1767ab91b00766d0f8d66ab3329f2f059e672d42911d909036",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.73.zip": {
+      "sha256": "0e9075b90af42a1d1e585cc420295469bb0840889daa12337899ce86c981a01b",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.68.zip": {
+      "sha256": "67d4b7686ed7d2f144d1649dd0faaffe88f3451d72c0006595c66cdd6e742aa9",
+      "review": "partial",
+      "validation": "pending",
+      "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/JavaDefaultConstructorCompatibilityTest.kt": {
+      "sha256": "7d0b89c882d803a0206f91d0d0905fce85cb560ff5aca883a4459105561c1cbb",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md": {
+      "sha256": "996b6149db838e4e353957379ac81857fa7f065576be0bc1bf6cded517ec815b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json": {
+      "sha256": "09e0d5d66095112522ad7f96810d8e66edf0a220c1f13808cc517980f7461969",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "scripts/tests/test_kotlin_toolchain.py": {
+      "sha256": "e1a7b322abf12228419f5123cf07608c42be204a94cef5478ab3e26636aed12c",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "scripts/verify_kotlin_toolchain.py": {
+      "sha256": "29301ecd88c980fe802010482573c8878fdf1af670c06bbcfcb456c5b86405d2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+      "evidence": [
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+        "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
       ]
     }
   }

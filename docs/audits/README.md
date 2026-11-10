@@ -1,5 +1,9 @@
 # Monorepo audit coverage
 
+The [compiler/library dependency checkpoint](COMPILER_LIBRARY_UPGRADES_2026_11_10.md) records
+the coordinated Kotlin compiler/runtime upgrade, reviewed constructor ABI additions, new
+compiler-alignment policy, and dependency-ordered candidate validation.
+
 The [setup-selection and Project History follow-up](STUDIO_SELECTION_HISTORY_2026_11_10.md)
 records the next asynchronous reliability fixes, setup validation, and history UI improvements.
 
