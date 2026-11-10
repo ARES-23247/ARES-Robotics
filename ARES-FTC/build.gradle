@@ -12,7 +12,7 @@ buildscript {
     dependencies {
         // Note for FTC Teams: Do not modify this yourself.
         classpath 'com.android.tools.build:gradle:8.13.2'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21'
         classpath 'org.jetbrains.kotlinx:kover-gradle-plugin:0.9.9'
     }
 }
@@ -45,10 +45,10 @@ allprojects {
         resolutionStrategy {
             cacheChangingModulesFor 0, 'seconds'
             cacheDynamicVersionsFor 0, 'seconds'
-            force 'org.jetbrains.kotlin:kotlin-stdlib:2.4.10'
-            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.10'
-            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.4.10'
-            force 'org.jetbrains.kotlin:kotlin-stdlib-common:2.4.10'
+            force 'org.jetbrains.kotlin:kotlin-stdlib:2.4.21'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.21'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.4.21'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-common:2.4.21'
         }
     }
 }

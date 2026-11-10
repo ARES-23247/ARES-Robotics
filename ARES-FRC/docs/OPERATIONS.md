@@ -9,7 +9,7 @@
 - Vendor dependencies installed/resolvable for CTRE Phoenix 6 and WPILib.
 - An `scp` client and RoboRIO network access when running `fetchOffsets`.
 
-The project uses Kotlin 2.4.10 and targets Java 17. Do not run robot builds with an arbitrary newer JVM when diagnosing native test or simulation issues; prefer the WPILib-provided Java runtime.
+The project uses Kotlin 2.4.21 and targets Java 17. Do not run robot builds with an arbitrary newer JVM when diagnosing native test or simulation issues; prefer the WPILib-provided Java runtime.
 
 ## Common commands
 

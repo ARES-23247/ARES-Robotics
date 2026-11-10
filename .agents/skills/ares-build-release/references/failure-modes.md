@@ -6,6 +6,12 @@
 - **Generated source missing**: ensure compile depends only on generated-plumbing preparation; creating editable starters must remain an explicit confirmed action.
 - **Stale Gradle outputs**: inspect active commands and wait for the owner of the affected module outputs. Rerun the affected tasks only after that build finishes; follow the desktop recovery guide for missing-class failures. Never stop another agent's build or delete its outputs underneath it.
 - **Concurrent Kotlin/Gradle corruption**: serialize builds that write the same module outputs or local publication repository.
+- **Partial Kotlin upgrade**: keep the JVM/Android/serialization/Compose compiler plugins,
+  forced standard-library modules, and embedded generated-code test compiler in one cohort across
+  the six isolated products. Run `python scripts/verify_kotlin_toolchain.py`; updating only the
+  dependency-bot plugin declaration can leave an older runtime or test compiler in place. Rebuild
+  the library candidate before consumers, and review API-check differences rather than rewriting
+  committed API baselines to make the check pass.
 - **Maven Central delay**: a staged deployment is not public until reviewed and published; allow propagation time after publication.
 - **Repository TLS failure**: preserve the failing URL, JDK vendor/version, and certificate-chain error.
   Reproduce with that JDK's truststore; OS/browser trust and warm Gradle caches do not establish
