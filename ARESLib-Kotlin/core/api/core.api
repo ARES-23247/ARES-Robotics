@@ -2448,6 +2448,7 @@ public final class com/areslib/kinematics/SwerveKinematics {
 }
 
 public final class com/areslib/kinematics/SwerveModuleState {
+	public fun <init> ()V
 	public synthetic fun <init> (DDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (DDLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()D
@@ -3296,6 +3297,7 @@ public final class com/areslib/math/geometry/Matrix3x3$Companion {
 }
 
 public final class com/areslib/math/geometry/Pose2d {
+	public fun <init> ()V
 	public synthetic fun <init> (DDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (DDDLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()D

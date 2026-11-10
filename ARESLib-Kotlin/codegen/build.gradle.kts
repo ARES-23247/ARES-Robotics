@@ -18,7 +18,7 @@ dependencies {
     api(project(":project-compiler"))
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.14.4")
-    testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.10")
+    testImplementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.21")
 }
 
 kotlin {

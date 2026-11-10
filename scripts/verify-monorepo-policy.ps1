@@ -7,6 +7,8 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $root = Split-Path -Parent $PSScriptRoot
 & python (Join-Path $PSScriptRoot 'verify_agent_guidance.py')
 if ($LASTEXITCODE -ne 0) { throw 'Shared agent guidance verification failed.' }
+& python (Join-Path $PSScriptRoot 'verify_kotlin_toolchain.py')
+if ($LASTEXITCODE -ne 0) { throw 'Kotlin compiler cohort verification failed.' }
 & (Join-Path $PSScriptRoot 'verify-doc-links.ps1')
 if ($LASTEXITCODE -ne 0) { throw 'Markdown link verification failed.' }
 & python (Join-Path $PSScriptRoot 'generate_codebase_ledger.py') --verify
