@@ -72,6 +72,10 @@ class MonorepoPolicyTest(unittest.TestCase):
     def test_healthy_fixture_passes(self):
         self.verify(True)
 
+    def test_compiler_cohort_failure_blocks_policy(self):
+        self.write('scripts/verify_kotlin_toolchain.py', 'raise SystemExit("compiler drift")\n')
+        self.verify(False, 'Kotlin compiler cohort verification failed')
+
     def test_biobuzz_archive_must_match_its_pin(self):
         self.write('ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.0.0.zip', 'changed archive')
         self.verify(False, 'Bundled BIOBUZZ example archive hash')
