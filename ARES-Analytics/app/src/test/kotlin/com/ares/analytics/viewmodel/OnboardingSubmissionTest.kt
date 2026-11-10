@@ -14,6 +14,24 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.*
 
 class OnboardingSubmissionTest {
+    @Test fun `creation trims the same identity values accepted by validation`() = runBlocking {
+        withFixture { fixture ->
+            val vm = fixture.viewModel(NewProjectHistoryInitializer.NONE)
+            fixture.prepare(vm)
+            vm.handleIntent(OnboardingIntent.UpdateTeamId(" 23247 "))
+            vm.handleIntent(OnboardingIntent.UpdateSeasonId(" 2026 "))
+            vm.handleIntent(OnboardingIntent.UpdateRobotId(" test-robot "))
+            fixture.drainIntents()
+            vm.handleIntent(OnboardingIntent.SubmitConfig)
+            withTimeout(15_000) { vm.state.first { it.saveSuccess || it.errorMessage != null } }
+            assertTrue(vm.state.value.saveSuccess, vm.state.value.errorMessage)
+            val identity = AresProjectMetadataCodec.decode(fixture.directory.resolve("robot/.ares/project.json").readText()).identity
+            assertEquals("23247", identity.teamId)
+            assertEquals("2026", identity.seasonId)
+            assertEquals("test-robot", identity.robotId)
+        }
+    }
+
     @Test
     fun `switching from an example back to create restores the generic starter identity`() = runBlocking {
         withFixture { fixture ->

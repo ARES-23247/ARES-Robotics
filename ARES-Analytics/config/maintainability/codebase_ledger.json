@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1116,
+    "totalProductionKotlinFiles": 1117,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 20,
@@ -4452,7 +4452,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/OnboardingScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 347,
+      "lines": 355,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4512,7 +4512,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectBackupScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 695,
+      "lines": 716,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5040,9 +5040,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingProjectDetection.kt",
+      "product": "ARES-Analytics",
+      "lines": 92,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingValidation.kt",
       "product": "ARES-Analytics",
-      "lines": 106,
+      "lines": 115,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5052,7 +5062,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 540,
+      "lines": 515,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5092,7 +5102,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/ProjectBackupViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 385,
+      "lines": 403,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

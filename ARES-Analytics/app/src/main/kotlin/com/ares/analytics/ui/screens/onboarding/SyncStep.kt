@@ -329,7 +329,7 @@ private fun ProjectSelection(
 
         } else {
             Text(
-                "Choose the repository root—the folder containing settings.gradle or settings.gradle.kts.",
+                "Choose the robot repository root, usually the folder containing .ares/project.json.",
                 color = AresTextSecondary,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -514,7 +514,7 @@ private fun RobotDetails(
                 onValueChange = onRobotNameChange,
                 label = "Friendly name (optional)",
                 placeholder = "Competition robot",
-                error = null,
+                error = fieldErrors.robotName,
                 modifier = Modifier.weight(1f),
             )
         }

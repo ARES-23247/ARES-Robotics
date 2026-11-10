@@ -7,6 +7,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class OnboardingPresentationTest {
+    @Test fun `Java readiness cannot be displayed as Python readiness after changing leagues`() {
+        val state = OnboardingState(league = com.ares.analytics.shared.models.League.XRP,
+            javaEnvLeague = com.ares.analytics.shared.models.League.FTC, javaEnvValid = true, javaEnvMsg = "JDK 21 is ready")
+        assertEquals("Python host tools have not been checked yet.", onboardingBuildToolsMessage(state))
+        kotlin.test.assertFalse(state.areBuildToolsCurrent)
+    }
+
     @Test fun `saving status has a fallback and hides stale progress after completion or failure`() {
         assertEquals("Saving your workspace…", onboardingProgressMessage(OnboardingState(isSaving = true)))
         assertEquals("Extracting verified starter…", onboardingProgressMessage(OnboardingState(isSaving = true, projectCreationMessage = "Extracting verified starter…")))

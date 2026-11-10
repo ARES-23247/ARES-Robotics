@@ -1,6 +1,10 @@
 package com.ares.analytics.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -73,14 +77,16 @@ fun ProjectBackupScreen(
     projectPath: String,
 ) {
     val state by viewModel.state.collectAsState()
-    var authorName by remember { mutableStateOf("") }
-    var authorEmail by remember { mutableStateOf("") }
-    var versionMessage by remember { mutableStateOf("Save robot design") }
+    var authorName by remember(projectPath) { mutableStateOf("") }
+    var authorEmail by remember(projectPath) { mutableStateOf("") }
+    var versionMessage by remember(projectPath) { mutableStateOf("Save robot design") }
+
+    val scroll = rememberScrollState()
 
     LaunchedEffect(projectPath) { viewModel.onIntent(ProjectBackupIntent.Load(projectPath)) }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        modifier = Modifier.fillMaxSize().padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -112,41 +118,51 @@ fun ProjectBackupScreen(
         if (state.isBusy) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 CircularProgressIndicator(modifier = Modifier.width(22.dp), strokeWidth = 2.dp)
-                Text("Working…", color = AresTextSecondary)
+                Text(state.activity ?: "Working…", color = AresTextSecondary)
             }
         }
 
-        val plan = state.plan
-        if (plan != null) {
-            ProjectStatusSummary(plan, state.restorePlan, state.githubState)
-            IdentityFields(authorName, { authorName = it }, authorEmail, { authorEmail = it })
-        }
-        if (plan != null && !plan.initialized) {
-            StepCard("1", "Start local version history", Icons.Default.History) {
-                Text(
-                    "ARES will track this project inside its current folder. Nothing is uploaded, and you do not need to install Git.",
-                    color = AresTextSecondary,
-                )
-                Button(
-                    onClick = {
-                        viewModel.onIntent(ProjectBackupIntent.StartLocalHistory(authorName, authorEmail))
-                    },
-                    enabled = !state.isBusy,
-                ) { Text("Start local history") }
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(scroll).padding(end = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                val plan = state.plan
+                if (plan != null) {
+                    ProjectStatusSummary(plan, state.restorePlan, state.githubState)
+                    if (!plan.initialized || plan.changes.isNotEmpty()) {
+                        IdentityFields(authorName, { authorName = it }, authorEmail, { authorEmail = it })
+                    }
+                }
+                if (plan != null && !plan.initialized) {
+                    StepCard("1", "Start local version history", Icons.Default.History) {
+                        Text(
+                            "ARES will track this project inside its current folder. Nothing is uploaded, and you do not need to install Git.",
+                            color = AresTextSecondary,
+                        )
+                        Button(
+                            onClick = {
+                                viewModel.onIntent(ProjectBackupIntent.StartLocalHistory(authorName, authorEmail))
+                            },
+                            enabled = !state.isBusy,
+                        ) { Text("Start local history") }
+                    }
+                } else if (plan != null) {
+                    LocalVersionStep(plan, versionMessage, { versionMessage = it }, authorName, authorEmail, state.isBusy, viewModel)
+                    RecentVersionsStep(plan, state.recoveryPlan, state.isBusy, viewModel)
+                    GitHubBackupStep(
+                        plan = plan,
+                        restorePlan = state.restorePlan,
+                        connection = state.githubState,
+                        catalog = state.githubCatalog,
+                        selectedInstallationId = state.selectedInstallationId,
+                        autoSync = state.autoSync,
+                        busy = state.isBusy,
+                        viewModel = viewModel,
+                    )
+                }
             }
-        } else if (plan != null) {
-            LocalVersionStep(plan, versionMessage, { versionMessage = it }, authorName, authorEmail, state.isBusy, viewModel)
-            RecentVersionsStep(plan, state.recoveryPlan, state.isBusy, viewModel)
-            GitHubBackupStep(
-                plan = plan,
-                restorePlan = state.restorePlan,
-                connection = state.githubState,
-                catalog = state.githubCatalog,
-                selectedInstallationId = state.selectedInstallationId,
-                autoSync = state.autoSync,
-                busy = state.isBusy,
-                viewModel = viewModel,
-            )
+            VerticalScrollbar(rememberScrollbarAdapter(scroll), Modifier.align(Alignment.CenterEnd).fillMaxHeight())
         }
     }
 }
@@ -236,17 +252,20 @@ private fun RecentVersionsStep(
     }
 }
 
+internal fun projectLocalHistoryStatus(plan: ProjectBackupPlan): String = when {
+    !plan.initialized -> "LOCAL • Version history has not been started"
+    plan.lastCommit == null -> "LOCAL • Save your first local version"
+    plan.changes.isNotEmpty() -> "LOCAL • ${plan.changes.size} unsaved file change${if (plan.changes.size == 1) "" else "s"}"
+    else -> "LOCAL • Saved — working files match version ${plan.lastCommit.take(8)}"
+}
+
 @Composable
 private fun ProjectStatusSummary(
     plan: ProjectBackupPlan,
     restorePlan: ProjectRestorePlan?,
     connection: GitHubConnectionState,
 ) {
-    val localStatus = if (plan.changes.isEmpty()) {
-        "LOCAL • Saved — working files match version ${plan.lastCommit?.take(8) ?: "none"}"
-    } else {
-        "LOCAL • ${plan.changes.size} unsaved file change${if (plan.changes.size == 1) "" else "s"}"
-    }
+    val localStatus = projectLocalHistoryStatus(plan)
     val onlineStatus = when {
         plan.destination == null -> "ONLINE BACKUP • Not connected"
         connection !is GitHubConnectionState.Connected -> "ONLINE BACKUP • Sign in required"
@@ -261,7 +280,7 @@ private fun ProjectStatusSummary(
         border = BorderStroke(1.dp, AresBorder),
     ) {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(localStatus, color = if (plan.changes.isEmpty()) AresGreen else AresTextPrimary, fontWeight = FontWeight.Bold)
+            Text(localStatus, color = if (plan.initialized && plan.lastCommit != null && plan.changes.isEmpty()) AresGreen else AresTextPrimary, fontWeight = FontWeight.Bold)
             Text(onlineStatus, color = AresTextSecondary)
         }
     }
@@ -312,27 +331,29 @@ private fun LocalVersionStep(
             Text("${change.kind.name.lowercase().replaceFirstChar(Char::uppercase)}  •  ${change.path}")
         }
         if (plan.changes.size > 30) Text("…and ${plan.changes.size - 30} more files", color = AresTextSecondary)
-        AresTextField(
-            value = message,
-            onValueChange = onMessageChanged,
-            label = "What changed?",
-            supportingText = { Text("Example: Add intake motor and safe current limit") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Button(
-            onClick = {
-                viewModel.onIntent(
-                    ProjectBackupIntent.SaveVersion(
-                        confirmationToken = requireNotNull(plan.confirmationToken),
-                        message = message,
-                        authorName = authorName,
-                        authorEmail = authorEmail,
-                    ),
-                )
-            },
-            enabled = !busy && plan.canCommit,
-        ) { Text("Save this version") }
+        if (plan.changes.isNotEmpty()) {
+            AresTextField(
+                value = message,
+                onValueChange = onMessageChanged,
+                label = "What changed?",
+                supportingText = { Text("Example: Add intake motor and safe current limit") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(
+                onClick = {
+                    viewModel.onIntent(
+                        ProjectBackupIntent.SaveVersion(
+                            confirmationToken = requireNotNull(plan.confirmationToken),
+                            message = message,
+                            authorName = authorName,
+                            authorEmail = authorEmail,
+                        ),
+                    )
+                },
+                enabled = !busy && plan.canCommit,
+            ) { Text("Save this version") }
+        }
         OutlinedButton(
             onClick = {
                 chooseProjectArchive(plan.projectPath)?.let { target ->

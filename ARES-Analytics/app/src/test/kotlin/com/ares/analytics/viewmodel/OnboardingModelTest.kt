@@ -10,6 +10,19 @@ import kotlin.test.assertTrue
 import com.areslib.project.AresProjectAuthoringModel
 
 class OnboardingModelTest {
+    @Test fun `creation identity errors are shown before archive extraction`() {
+        val state = OnboardingState(teamId = " 23247 ", seasonId = "2026 / 2027", robotId = "1 invalid robot", robotName = "x".repeat(81))
+        val errors = validateOnboardingFields(state, OnboardingStep.ROBOT)
+        assertNull(errors.teamId)
+        assertTrue(errors.seasonId != null)
+        assertTrue(errors.robotId != null)
+        assertTrue(errors.robotName != null)
+        val valid = validateOnboardingFields(state.copy(seasonId = "2026-2027", robotId = " AresIII ", robotName = ""), OnboardingStep.ROBOT)
+        assertNull(valid.seasonId)
+        assertNull(valid.robotId)
+        assertNull(valid.robotName)
+    }
+
     @Test
     fun `JDK 17 output is accepted with concise readiness message`() {
         val result = evaluateJavaBuildTools(

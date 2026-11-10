@@ -1,5 +1,8 @@
 # Monorepo audit coverage
 
+The [setup-selection and Project History follow-up](STUDIO_SELECTION_HISTORY_2026_11_10.md)
+records the next asynchronous reliability fixes, setup validation, and history UI improvements.
+
 The [Studio setup/project-creation follow-up](STUDIO_SETUP_CREATION_2026_11_10.md) records
 the requested UI improvements and creation reliability checks after OTOS validation.
 

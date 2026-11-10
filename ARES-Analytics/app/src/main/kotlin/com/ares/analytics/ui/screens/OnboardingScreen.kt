@@ -232,9 +232,9 @@ fun OnboardingScreen(
                         if (state.currentStep == OnboardingStep.REVIEW) {
                             JavaVerificationStep(
                                 league = state.league,
-                        isValid = state.javaEnvValid,
-                        isVerifying = state.isVerifyingJava,
-                        message = state.javaEnvMsg,
+                        isValid = state.javaEnvValid.takeIf { state.areBuildToolsCurrent },
+                        isVerifying = state.isVerifyingJava && state.areBuildToolsCurrent,
+                        message = onboardingBuildToolsMessage(state),
                         installState = state.toolchainInstallState,
                         onVerifyClick = { viewModel.handleIntent(OnboardingIntent.VerifyJava) },
                         onInstallClick = { viewModel.handleIntent(OnboardingIntent.InstallManagedJdk) },
@@ -265,6 +265,7 @@ fun OnboardingScreen(
                 NavigationButtons(
                     step = state.currentStep,
                     isSaving = state.isSaving,
+                    isDetectingProject = state.isDetectingProject,
                     finishLabel = onboardingFinishLabel(state.projectSetupMode),
                     onCancel = onCancel,
                     onBack = { viewModel.handleIntent(OnboardingIntent.PreviousStep) },
@@ -277,6 +278,7 @@ fun OnboardingScreen(
 }
 
 internal fun onboardingReadinessHint(state: com.ares.analytics.viewmodel.OnboardingState): String? = when {
+    state.currentStep == OnboardingStep.PROJECT && state.isDetectingProject -> "Checking the selected project…"
     state.currentStep == OnboardingStep.PROJECT && !state.isProjectReady && state.projectSetupMode.createsProject ->
         "Required next: choose a parent folder and enter a new project folder name."
     state.currentStep == OnboardingStep.PROJECT && !state.isProjectReady ->
@@ -289,10 +291,16 @@ internal fun onboardingReadinessHint(state: com.ares.analytics.viewmodel.Onboard
 internal fun onboardingProgressMessage(state: com.ares.analytics.viewmodel.OnboardingState): String? =
     if (state.isSaving) state.projectCreationMessage?.takeIf { it.isNotBlank() } ?: "Saving your workspace…" else null
 
+internal fun onboardingBuildToolsMessage(state: com.ares.analytics.viewmodel.OnboardingState): String =
+    if (state.areBuildToolsCurrent) state.javaEnvMsg else if (state.league == com.ares.analytics.shared.models.League.XRP) {
+        "Python host tools have not been checked yet."
+    } else "Robot build tools have not been checked yet."
+
 @Composable
 private fun NavigationButtons(
     step: OnboardingStep,
     isSaving: Boolean,
+    isDetectingProject: Boolean,
     finishLabel: String,
     onCancel: (() -> Unit)?,
     onBack: () -> Unit,
@@ -317,7 +325,7 @@ private fun NavigationButtons(
 
         Button(
             onClick = if (step == OnboardingStep.REVIEW) onFinish else onNext,
-            enabled = !isSaving,
+            enabled = !isSaving && !isDetectingProject,
             modifier = Modifier.weight(2f),
             colors = ButtonDefaults.buttonColors(
                     containerColor = AresCyan,
@@ -328,7 +336,7 @@ private fun NavigationButtons(
                 Text("  Saving…", color = AresOnAccent, fontWeight = FontWeight.Bold)
             } else {
                 val label = when (step) {
-                    OnboardingStep.PROJECT -> "Continue"
+                    OnboardingStep.PROJECT -> if (isDetectingProject) "Checking project…" else "Continue"
                     OnboardingStep.ROBOT -> "Continue"
                     OnboardingStep.OPTIONAL -> "Review setup"
                     OnboardingStep.REVIEW -> finishLabel

@@ -59,3 +59,14 @@ authoring model, local version history, and preserved hardware-review gate after
 a dashboard alone does not prove these artifacts. Use controlled software tests for duplicate
 submit and failed-staging retry schedules that cannot be reliably timed through clicks. Record
 which project modes and window sizes were observed, and close the owned instance gracefully.
+
+For asynchronous selection, use controlled delayed inspections and change the path or mode before
+completion. Verify older work cannot publish into the new selection or clear its busy state.
+Settle constructor-triggered work before re-stubbing shared mocks, and join delayed jobs before
+asserting their final effects; a passing assertion before completion does not verify the race.
+
+For Project History, inspect clean and changed projects, status while scrolled, and project switches
+during an admitted save. Writes must retain their original project while successor selection hides
+old review plans. Verify local load works without GitHub discovery and that failed optional discovery
+does not hide valid local history. Keep token/review and hardware-review gates intact. Exercise live
+backup connections only when that external workflow is in the user's authorized scope.

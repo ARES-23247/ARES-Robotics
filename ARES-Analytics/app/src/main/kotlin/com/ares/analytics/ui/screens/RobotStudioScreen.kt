@@ -301,8 +301,8 @@ internal fun RobotStudioWorkspace(
                     Text(
                         when (state.authoringModel) {
                             AresProjectAuthoringModel.GUI_OWNED -> "GUI-owned standalone repository"
-                            AresProjectAuthoringModel.CODE_FIRST -> "Code-first Kotlin repository"
-                            AresProjectAuthoringModel.HYBRID -> "Hybrid Studio + Kotlin repository"
+                            AresProjectAuthoringModel.CODE_FIRST -> "Code-first standalone repository"
+                            AresProjectAuthoringModel.HYBRID -> "Hybrid Studio + team code repository"
                         },
                         color = AresTextPrimary,
                         fontSize = 12.sp,
