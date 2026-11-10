@@ -384,9 +384,9 @@
     ".github/workflows/build-distributions.yml": {
       "review": "partial",
       "validation": "pending",
-      "scope": "Reviewed new Studio/starter/example URL and SHA pins. CI at 65915631e passed fresh Windows acceptance and full Studio verification after JDK/display correction. Final new-archive package/scanning checks remain pending.",
+      "scope": "Reviewed only Studio 7.0.70 asset-tag/version alignment. Local source policy and release alignment passed; final protected-main package validation remains required.",
       "evidence": [
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
         "sha256": "63167db764e1cd28b8d3e2cdb433d07c32d4f56a3465776ff2cc5c3484887c5a",
@@ -422,7 +422,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "1de7f3a2295ce0e4ba803a35e74286719979f91822d23b9a3bc36d109da0febb",
+      "sha256": "82a28179974ee43f8a33fe2789378f3f0605adda49235886aae728f02bd91209",
       "priorSdk12Migration20261109": {
         "sha256": "a0755d3a76feb465fe9fd5c5e6f356ea70dd8862e9d196c2221be658a4ffda38",
         "review": "partial",
@@ -469,6 +469,15 @@
         "review": "partial",
         "validation": "pending",
         "scope": "Reviewed only JDK distribution, Linux virtual display, and failure-artifact changes. Local truststore probe reproduced PKIX failure with CI Zulu and HTTP 200 with CI Temurin. Full fresh-CI confirmation remains the PR gate.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorDependencyIntegration20261110": {
+        "sha256": "1de7f3a2295ce0e4ba803a35e74286719979f91822d23b9a3bc36d109da0febb",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed new Studio/starter/example URL and SHA pins. CI at 65915631e passed fresh Windows acceptance and full Studio verification after JDK/display correction. Final new-archive package/scanning checks remain pending.",
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
@@ -710,12 +719,12 @@
       ]
     },
     "ARES-Analytics/app/build.gradle.kts": {
-      "sha256": "45a43d90495b32fdfc345763ce9d068b5530c9df6b19a585997810d818770136",
+      "sha256": "85f054ee2e8c4daff4b970e305cafd1747ee0656b283d631516d066bee0bda34",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only full test-exception logging addition. Focused app tests compile and pass; custom consumer task configuration preserved.",
+      "scope": "Reviewed only JGit dependency upgrade from PR 97. Production/test compilation and 43 actual local Git-history/archive/review-token cases passed. No unrelated full-file or UI/hardware claim.",
       "evidence": [
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
       ],
       "consumerRoundtripPriorReview": {
         "sha256": "a69665818b7721a0f2eb5f81f51ccdb300ac7746dd9db51cacb8821ea6d2386c",
@@ -743,6 +752,15 @@
         "evidence": [
           "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
           "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorDependencyIntegration20261110": {
+        "sha256": "45a43d90495b32fdfc345763ce9d068b5530c9df6b19a585997810d818770136",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only full test-exception logging addition. Focused app tests compile and pass; custom consumer task configuration preserved.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -13745,13 +13763,22 @@
       ]
     },
     "ARES-Analytics/gateway/build.gradle.kts": {
-      "sha256": "29e77b003e2dd31c8eed409722fb703018f4b91bc915e2ba0cff4646601ead60",
-      "review": "reviewed",
+      "sha256": "7926247b270a12812434f3900a62fceb2cd091a686b42be373a78a901f09224e",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Gateway build configuration: verified Ktor 3.5.2 server setup with Netty engine, content negotiation, authentication, CORS, rate limiting, request validation, 1 MiB body limit, Google GenAI SDK (Vertex AI), Google OIDC token verification, and test task DEV_MODE configuration.",
+      "scope": "Reviewed only Google API client and GenAI dependency upgrades from PRs 86/87. Affected production/test compilation and all 18 gateway tests passed. No live-cloud requests validated.",
       "evidence": [
-        "docs/audits/pass291-pending-elevation-audit.md"
-      ]
+        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+      ],
+      "priorDependencyIntegration20261110": {
+        "sha256": "29e77b003e2dd31c8eed409722fb703018f4b91bc915e2ba0cff4646601ead60",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Gateway build configuration: verified Ktor 3.5.2 server setup with Netty engine, content negotiation, authentication, CORS, rate limiting, request validation, 1 MiB body limit, Google GenAI SDK (Vertex AI), Google OIDC token verification, and test task DEV_MODE configuration.",
+        "evidence": [
+          "docs/audits/pass291-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/gateway/cloudbuild.yaml": {
       "sha256": "2d8923f72bd291f825e756f57eb388791d9c9fbf8c33fd57bf1d71cd5a7927b9",
@@ -35963,9 +35990,9 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only sample/archive checkpoint records and validation refresh. Prior canonical fields/nested history retained; unrelated semantic records unchanged.",
+      "scope": "Reviewed only dependency integration checkpoint delta. Prior canonical fields/nested history retained, unrelated semantic records unchanged; self fingerprint bound to final JSON.",
       "evidence": [
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -36391,7 +36418,7 @@
           ]
         }
       },
-      "sha256": "c2e08365428dfcd922730052a367517985285232400b237c42e72a410db4c2c7",
+      "sha256": "4676641dac23f18df167a67aa9a98e1b5cc38f4df0d90dc1f0d748f136bf3bad",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -36498,6 +36525,15 @@
         "review": "partial",
         "validation": "passed",
         "scope": "Reviewed only this consolidation ledger delta. Prior canonical fields and nested history preserved; unrelated semantic records unchanged. Workflow validation remains pending fresh CI.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorDependencyIntegration20261110": {
+        "sha256": "c2e08365428dfcd922730052a367517985285232400b237c42e72a410db4c2c7",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only sample/archive checkpoint records and validation refresh. Prior canonical fields/nested history retained; unrelated semantic records unchanged.",
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
@@ -36919,9 +36955,9 @@
     "release/ares-versions.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only Studio 7.0.69, FTC starter 20.0.3, Lightbot 3.0.72 and BioBuzz 1.1.10 archive identities. ARESLib identity and dependency version unchanged.",
+      "scope": "Reviewed Studio 7.0.70 reservation for updated desktop dependencies. Other versions, library tree/candidate, and all archive hashes unchanged. Release alignment/provenance and source policy passed.",
       "evidence": [
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
         "sha256": "b6fd04706aae8ee46f6480be81270055b177420d8ed07db8f0120d18a32823ba",
@@ -36957,7 +36993,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "d12228f8567b00600be3a99414ac15a067ef44e09b2e977aced6ef31b1067fb8",
+      "sha256": "1fc222901e295cbf579c4ce6bfd5bfcb9a2bdce7d928dd85ff76ba6695e4f309",
       "priorSdk12Migration20261109": {
         "sha256": "eaf66a1ab74f8ec98966f3d7160ce0c7e8c24bcfddecd4f88d3deff87310a804",
         "review": "reviewed",
@@ -36997,6 +37033,15 @@
         "evidence": [
           "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
+      },
+      "priorDependencyIntegration20261110": {
+        "sha256": "d12228f8567b00600be3a99414ac15a067ef44e09b2e977aced6ef31b1067fb8",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only Studio 7.0.69, FTC starter 20.0.3, Lightbot 3.0.72 and BioBuzz 1.1.10 archive identities. ARESLib identity and dependency version unchanged.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -39858,18 +39903,27 @@
       ]
     },
     "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md": {
-      "sha256": "2e9e8b4e62ca568995fb172efa9524ff8f46a49e30f23c1883911a9db370c595",
+      "sha256": "e53f538d9942701ad545175ef39a34253e21b5b7c22e378eb550b5b9e6bff381",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed observed local complete-suite result, actual worker JVM provenance, fresh CI XML, sample warning, actual SDK compilation, exact archive content delta and new version bindings. Final new-archive CI remains separately required.",
+      "scope": "Reviewed added observed result of 19 passing template/authoring tests against new sample archives. Previous checkpoint findings, CI limits and identities retained.",
       "evidence": [
-        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
       ],
       "priorSampleFloat20261110": {
         "sha256": "582c8feacca39a97b7930badad99757fccde73028fdf50539e0e569d10dd553f",
         "review": "partial",
         "validation": "passed",
         "scope": "Reviewed checkpoint against observed local/CI failures, exact truststore probes, three passing focused tests, ancestry/patch-duplicate cleanup, and preserved limits. Full PR check result remains separately linked.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorDependencyIntegration20261110": {
+        "sha256": "2e9e8b4e62ca568995fb172efa9524ff8f46a49e30f23c1883911a9db370c595",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed observed local complete-suite result, actual worker JVM provenance, fresh CI XML, sample warning, actual SDK compilation, exact archive content delta and new version bindings. Final new-archive CI remains separately required.",
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
@@ -39900,6 +39954,15 @@
       "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
       "evidence": [
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+      ]
+    },
+    "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md": {
+      "sha256": "728aa2345e6662689b99609922a5e2a8ccc6f94f73471a174db0ea5623754c2e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed three original dependency heads, exact three-line functional delta, observed 61-test result, version/policy evidence and patch-equivalent branch cleanup. Final protected-main CI remains required.",
+      "evidence": [
+        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
       ]
     }
   }

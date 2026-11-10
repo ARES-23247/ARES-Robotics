@@ -69,7 +69,8 @@ Freshly regenerated FRC `20.0.3` and XRP `3.0.67` archives retain their exact pr
 canonical manifest, bundled resources, and workflow URLs/checksums are updated together. Library
 version/tree/candidate remain unchanged. After removing the top-level archive-name prefix, each
 new FTC/example archive differs from its predecessor in exactly the sample file; no file is added
-or removed. Source/archive/guidance policy and the 1,117-file,
+or removed. All 19 template-service/BioBuzz authoring tests passed against these new bundles,
+with zero failures/errors/skips. Source/archive/guidance policy and the 1,117-file,
 zero-violation maintainability ratchet pass. Final archive/sample integration remains subject to
 the subsequent PR-head CI checks, rather than inheriting the earlier archive acceptance result.
 
