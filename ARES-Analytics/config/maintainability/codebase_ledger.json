@@ -9672,7 +9672,7 @@
     {
       "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/CachedHardware.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 119,
+      "lines": 131,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,

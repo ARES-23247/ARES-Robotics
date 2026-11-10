@@ -346,10 +346,10 @@
     ".github/workflows/build-distributions.yml": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "63167db764e1cd28b8d3e2cdb433d07c32d4f56a3465776ff2cc5c3484887c5a",
@@ -385,7 +385,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "59f49af68d7a215cb0fd91cd433620b3d5ad6030613b25bb902da639408e76b2",
+      "sha256": "0100c40f04778a71da30aabc19ec54cb0f9453f7235cd50a09eb9435f0ac4f44",
       "priorSdk12Migration20261109": {
         "sha256": "a0755d3a76feb465fe9fd5c5e6f356ea70dd8862e9d196c2221be658a4ffda38",
         "review": "partial",
@@ -395,6 +395,16 @@
           "docs/audits/RELEASE_7_0_65_CHECKPOINT.md",
           "build/release-7-0-65/local-test-summary.json",
           "build/release-7-0-65/source-policy.log"
+        ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "59f49af68d7a215cb0fd91cd433620b3d5ad6030613b25bb902da639408e76b2",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -12511,13 +12521,13 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "6789692530cb9f68481ac220bd981841b50d0d740659bd141c9954bc6f3fef82",
+      "sha256": "e53f83654cade1e704077a9e5b261d6d0702ef4e546aafa293b494fa1d812485",
       "review": "partial",
       "validation": "passed",
-      "scope": "Regenerated production-file size inventory for SDK migration and generated-test changes; 1116 files, zero violations, unchanged ratchet limits. No behavioral review of unrelated entries implied.",
+      "scope": "Regenerated size ledger for CachedHardware source change: 1116 files, zero violations, unchanged limits; no unrelated behavior review implied.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "agyDrivebaseSavePriorRecord": {
         "sha256": "6f2416031561edda08bce33e367f86f32a5fbd48749dcc13099fd2da60159d46",
@@ -12684,6 +12694,16 @@
         "evidence": [
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "6789692530cb9f68481ac220bd981841b50d0d740659bd141c9954bc6f3fef82",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Regenerated production-file size inventory for SDK migration and generated-test changes; 1116 files, zero violations, unchanged ratchet limits. No behavioral review of unrelated entries implied.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -31225,13 +31245,13 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/CachedHardware.kt": {
-      "sha256": "9304485ead3a224f8027e0179c20f0b2a7586a3540f5c4df63a899d8be11d415",
+      "sha256": "6260d9ea9d270a2b74cd790af6d6ff61dfc1612b8aaf3476f3e3b9580ecc88fb",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
+      "scope": "Reviewed CachedServo direction/range invalidation before delegation, authoritative post-configuration getter and next explicit command, unchanged clipping/epsilon/reset/uncertain-write behavior and neighboring motor cache. Failure-first actual SDK/unit and allocation regressions pass; no physical timing claim.",
       "evidence": [
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "priorSdk12Migration20261109": {
         "sha256": "f3bea3f9e4cee9f723fad1eb15f9d5dc976eec1519eafd5602df0a1d8f30bb5c",
@@ -31253,6 +31273,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "9304485ead3a224f8027e0179c20f0b2a7586a3540f5c4df63a899d8be11d415",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -31644,10 +31674,10 @@
       "sha256": "7101e73c68da0c1d83a8078aa8366e6ab61714d91c0f25924396edec087eef5c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
+      "scope": "Read-only adjacent SDK vision inspection of freshness, explicit localization/mount and cluster-targeting guards. No additional defect confirmed; library and selected consumer checks pass. No new full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -31693,6 +31723,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "7101e73c68da0c1d83a8078aa8366e6ab61714d91c0f25924396edec087eef5c",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -32118,16 +32158,26 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/CachedHardwareContractTest.kt": {
-      "sha256": "b795ea220dd4d339841d26759fd78ddfcd4ae978a8643aa972b04331fe09318f",
-      "review": "reviewed",
+      "sha256": "0078c5477b0230beb11b8b480cd3cc12fcdaca3d9317ff105b1aa4e8ab36dc05",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass85: Entire10-test class and counting fixtures reviewed and executed. Two new independently failing lost-acknowledgement cases verify corrective hardware writes and no getter reads. Existing clipping, invalid values, thresholds, repeated commands and reset cases retained.",
+      "scope": "Reviewed added command/getter invalidation and partial-configuration-failure regressions and counting-device mutations; unchanged earlier tests retained and full suite passes.",
       "evidence": [
-        "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
-      ]
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ],
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "b795ea220dd4d339841d26759fd78ddfcd4ae978a8643aa972b04331fe09318f",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Changed sections from audit passes 1-3; remaining file behavior still needs full review. Latest full library/consumer suites passed against 17.0.3-rc.343862ce3c59; this is not line/branch coverage. Pass85: Entire10-test class and counting fixtures reviewed and executed. Two new independently failing lost-acknowledgement cases verify corrective hardware writes and no getter reads. Existing clipping, invalid values, thresholds, repeated commands and reset cases retained.",
+        "evidence": [
+          "docs/robot-loop-audit.md: passes 1-3; local source e6640f5a",
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
+        ]
+      }
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/FloodgateIntegrationAuditTest.kt": {
       "sha256": "be6589b2d6888dcd1e14e54d216134490c46f2ad57d67d3bd398311029e36d54",
@@ -35247,13 +35297,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/README.md": {
-      "sha256": "14c6d6bd81a4a2c442c0339e2b2e0ed7d0ef80175c3503074c42acd00d428686",
+      "sha256": "9e53ac36c7c99f5b0712a6733404b2fd2979bc99fb501731af7c11dbda99be1b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
+      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "priorDatabase20261109": {
         "sha256": "6e2174c04cea10aa280be67085dd7b9042f0bdd17b5140b91d3110c74b08e899",
@@ -35378,6 +35428,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "14c6d6bd81a4a2c442c0339e2b2e0ed7d0ef80175c3503074c42acd00d428686",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -35582,10 +35642,10 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only this SDK software follow-up ledger delta; prior canonical fields and nested history retained, unrelated semantic records unchanged.",
+      "scope": "Reviewed only this SDK cache reliability ledger delta; prior canonical fields and nested history retained, unrelated semantic records unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -36011,7 +36071,7 @@
           ]
         }
       },
-      "sha256": "827e45a88b9cd8ff12865396872d59442fcfa005b38aac65e0984b8c77c11f63",
+      "sha256": "4b7bdffa0853ce93ae63a685687ee182bacaf1ac5bbab3bf131e745f89ea8e15",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -36061,6 +36121,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "827e45a88b9cd8ff12865396872d59442fcfa005b38aac65e0984b8c77c11f63",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only this SDK software follow-up ledger delta; prior canonical fields and nested history retained, unrelated semantic records unchanged.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -36379,13 +36449,13 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "ddea94c83bf8f71ad77da604ce879b7c68ba58b1478c809d98390e08deee5e3f",
+      "sha256": "a23611eacc5c8b03c1ad330339d1491612ccb5b61fdd764861e67a0910864f21",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
+      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "liveTuningPeerReviewPriorRecord": {
         "sha256": "ec14b29d98d961f96b28b4040d417346a8d62941b91d59c9d32300f63355b9c6",
@@ -36455,15 +36525,25 @@
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "ddea94c83bf8f71ad77da604ce879b7c68ba58b1478c809d98390e08deee5e3f",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        ]
       }
     },
     "release/ares-versions.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "b6fd04706aae8ee46f6480be81270055b177420d8ed07db8f0120d18a32823ba",
@@ -36499,7 +36579,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "8c6a1ddb8d69f6dd6947dee57f769b3bebaddd57211de78e6499d44f5f361e97",
+      "sha256": "e085876dcf7caef14b977b38d5eefe567008a7450cbd8d5160010b4bbe826450",
       "priorSdk12Migration20261109": {
         "sha256": "eaf66a1ab74f8ec98966f3d7160ce0c7e8c24bcfddecd4f88d3deff87310a804",
         "review": "reviewed",
@@ -36510,15 +36590,25 @@
           "build/release-7-0-65/local-test-summary.json",
           "build/release-7-0-65/source-policy.log"
         ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "8c6a1ddb8d69f6dd6947dee57f769b3bebaddd57211de78e6499d44f5f361e97",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
       }
     },
     "release/starter-artifacts.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "7947daf3f941fe53cfc8f68a940089562e509b6769efe903831be3d971da6cb4",
@@ -36554,7 +36644,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "fd61ff1b4bd5aa8faeaba2a618fc2f069cc25efca961268294c16e2adfba7c57",
+      "sha256": "5cd406fd2fb9328b472d3d2da996c40a3d9b17b684510bb1d06b807e67632a46",
       "priorSdk12Migration20261109": {
         "sha256": "4f9324ffcef3ced185ac9f22c64448003297b30006982a23e4216e02d7cbbdbf",
         "review": "reviewed",
@@ -36564,6 +36654,16 @@
           "docs/audits/RELEASE_7_0_65_CHECKPOINT.md",
           "build/release-7-0-65/local-test-summary.json",
           "build/release-7-0-65/source-policy.log"
+        ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "fd61ff1b4bd5aa8faeaba2a618fc2f069cc25efca961268294c16e2adfba7c57",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -38762,13 +38862,13 @@
       ]
     },
     ".agents/skills/ares-build-release/references/ftc-sdk-compatibility.md": {
-      "sha256": "086fe4e08ca23fb66d360e995b096fc6c54da80674ff50c62d65bc83a9dbd1c0",
+      "sha256": "2c63e06d880c7e165bdd75af9cc06bc9dc4da581f8a2c567ced79cebabc3138d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
+      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "priorSdk12SoftwareFollowup20261109": {
         "sha256": "19791e437b5b3a3693ed62f1005cff2d9d4c57bfa2a60441f2922cb2ffdd4261",
@@ -38778,6 +38878,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12CacheReliability20261110": {
+        "sha256": "086fe4e08ca23fb66d360e995b096fc6c54da80674ff50c62d65bc83a9dbd1c0",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -39009,6 +39119,96 @@
       "evidence": [
         "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
         "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.8.zip": {
+      "sha256": "3808e00d80789f3b782f3c21bb42080de0371dcb4c1d536f7c89c2c2886d1583",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed deterministic new-version bundle integrity and dependency manifest/hash alignment, production Studio archive/authoring and applicable fresh-project/round-trip build acceptance. Prior archive bytes retained in Git; no physical deployment.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.2.zip": {
+      "sha256": "8f02bef0e28697bee283b2c2df860677635883407c5171ccfdf06812f9b8fee3",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed deterministic new-version bundle integrity and dependency manifest/hash alignment, production Studio archive/authoring and applicable fresh-project/round-trip build acceptance. Prior archive bytes retained in Git; no physical deployment.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.1.zip": {
+      "sha256": "54938e5436bc5345f55b002c776d6517927422758e1769ec90f488d79385d7a3",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed deterministic new-version bundle integrity and dependency manifest/hash alignment, production Studio archive/authoring and applicable fresh-project/round-trip build acceptance. Prior archive bytes retained in Git; no physical deployment.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.70.zip": {
+      "sha256": "7ccac131542977b5ba2ccce687d3b4e4c63a78c3f1d4fe5b08fb4b71956b6652",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed deterministic new-version bundle integrity and dependency manifest/hash alignment, production Studio archive/authoring and applicable fresh-project/round-trip build acceptance. Prior archive bytes retained in Git; no physical deployment.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.66.zip": {
+      "sha256": "c401e4fd2943c714410ad9b6a3ff704e12163566925ea0aabab16603eee29a2a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed deterministic new-version bundle integrity and dependency manifest/hash alignment, production Studio archive/authoring and applicable fresh-project/round-trip build acceptance. Prior archive bytes retained in Git; no physical deployment.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/sdk/FtcSdk12ServoCacheIntegrationTest.kt": {
+      "sha256": "2da4a25a34c4e304c684ec97bcee4c99ef03fd2006783d733af379ac01cb7c77",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new regression fixture: independent actual SDK controller-output assertions or warmed primitive allocation/write-count workload, plus scope limits. Observed failing baseline where applicable and passing final checks.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/CachedServoAllocationTest.kt": {
+      "sha256": "0d386b7d06644d17e2da18016b05e885061930152fb686c572fcc41fe35d3b17",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new regression fixture: independent actual SDK controller-output assertions or warmed primitive allocation/write-count workload, plus scope limits. Observed failing baseline where applicable and passing final checks.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md": {
+      "sha256": "b2f06d01af1f02b42309e28d38438365b91eafee52d53dd699f06f213a783b79",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed baseline/fixed SDK cache behavior, source/candidate/version and artifact identities, actual test counts, allocation/write-count context, native cleanup, expected recovery oracles and physical/deployment limits.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json": {
+      "sha256": "ad93d78f9e8d30d686f7b2d8a8c5ef19e30d7ee6ff3d5a197db2442e632401a9",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed baseline/fixed SDK cache behavior, source/candidate/version and artifact identities, actual test counts, allocation/write-count context, native cleanup, expected recovery oracles and physical/deployment limits.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
       ]
     }
   }

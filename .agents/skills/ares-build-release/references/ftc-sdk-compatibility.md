@@ -16,6 +16,11 @@ mocks. Keep SDK fields as fields and preserve JVM descriptors, static members, a
 shape. Do not restore mock-only production compilation to bypass errors. Run module and simulator
 regressions after mock changes, then validate Android consumers against the new library candidate.
 
+Review SDK mutations that invalidate a decorator's command cache. Servo direction and range changes
+alter the logical-to-controller mapping; invalidate before delegating, including partial failures.
+Exercise actual SDK implementations as well as mock call counters. Measure steady-state allocations
+and accepted/suppressed writes separately from configuration; desktop measurements are not bus timing.
+
 For vision changes, check singleton/cluster subtypes, null poses, distance and angle units,
 capture-time conversion, frame identity, camera mounting, coordinate bases, and stale/disconnect
 clearing. Exercise the actual Redux consumer as well as adapter output. Absolute localization
