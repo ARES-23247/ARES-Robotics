@@ -18,14 +18,15 @@ import java.security.MessageDigest
 class SubsystemGeneratorCharacterizationTest {
     // Lifecycle bridges now enforce timestamp ordering, close every owner after failures, and
     // reject post-close work. GeneratedSubsystemLifecycleAuditTest executes those behaviors.
+    // Homing dwell tests now refresh feedback on the mock clock before every controller step.
     @Test
     fun `all supported FTC templates retain their deterministic artifact manifest`() {
-        assertEquals("f636b8b2092b24b82a63e7b5564f3a2b6891b417dd62cfdb1ebdeae865d3bd84", manifestDigest(SubsystemPlatform.FTC))
+        assertEquals("b270f733b3a8e2b7db6bc7528e9c09d797f6f6537089bea85e24c278303b4ee3", manifestDigest(SubsystemPlatform.FTC))
     }
 
     @Test
     fun `all supported FRC templates retain their deterministic artifact manifest`() {
-        assertEquals("0f9546f95352df6a05758ee296ca59aebffe71dcbfa45ac6a3343223edd5606e", manifestDigest(SubsystemPlatform.FRC))
+        assertEquals("40843950c1c7acea62dca7d9f6103f853fdb7426023660aabc144f66aa7b7919", manifestDigest(SubsystemPlatform.FRC))
     }
 
     private fun manifestDigest(platform: SubsystemPlatform): String {
