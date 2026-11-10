@@ -33,6 +33,9 @@ class NT4Entry(
 ) {
     private val listeners = CopyOnWriteArrayList<NT4EventListener>()
 
+    /** Server-owned publication pacing; guarded by NT4Server's topic mutation lock. */
+    internal var lastQueuedServerPublicationUs: Long = timestampUs
+
     /**
      * Applies [newValue] when [timestampUs] is not older than the retained value.
      *

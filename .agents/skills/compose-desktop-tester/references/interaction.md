@@ -45,3 +45,28 @@ Interact only through a verified ARES window owned by this task. The title-based
    Use a dedicated isolated home, an explicit test workspace, and the app's graceful close path.
 
 Finish with [shutdown.md](shutdown.md).
+
+## Setup and project creation
+
+For onboarding changes, inspect the first step before scrolling: the selected project mode and
+required location fields must be discoverable at the tested window size. Exercise an empty
+Continue, a native folder selection, and recovery from invalid input. Check that validation
+brings the affected field into view and that progress/errors stay visible independently of
+scroll position. Verify mode changes display the template identity actually requested.
+
+Create only a disposable project under an explicit test parent. Verify its identity, selected
+authoring model, local version history, and preserved hardware-review gate after creation;
+a dashboard alone does not prove these artifacts. Use controlled software tests for duplicate
+submit and failed-staging retry schedules that cannot be reliably timed through clicks. Record
+which project modes and window sizes were observed, and close the owned instance gracefully.
+
+For asynchronous selection, use controlled delayed inspections and change the path or mode before
+completion. Verify older work cannot publish into the new selection or clear its busy state.
+Settle constructor-triggered work before re-stubbing shared mocks, and join delayed jobs before
+asserting their final effects; a passing assertion before completion does not verify the race.
+
+For Project History, inspect clean and changed projects, status while scrolled, and project switches
+during an admitted save. Writes must retain their original project while successor selection hides
+old review plans. Verify local load works without GitHub discovery and that failed optional discovery
+does not hide valid local history. Keep token/review and hardware-review gates intact. Exercise live
+backup connections only when that external workflow is in the user's authorized scope.

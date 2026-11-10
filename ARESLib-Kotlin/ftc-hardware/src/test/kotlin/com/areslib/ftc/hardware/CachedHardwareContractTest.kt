@@ -164,6 +164,43 @@ class CachedHardwareContractTest {
         assertEquals(3, delegate.writeCount)
     }
 
+    @Test
+    fun `servo direction and range changes invalidate commands and cached reads`() {
+        val delegate = CountingServo(0.4)
+        val cached = CachedServo(delegate)
+        cached.position = 0.4
+        cached.setDirection(Servo.Direction.REVERSE)
+        assertEquals(Servo.Direction.REVERSE, cached.getDirection())
+        assertEquals(0.4, cached.position)
+        assertEquals(1, delegate.readCount)
+        cached.position = 0.4
+        cached.position = 0.4
+        assertEquals(2, delegate.writeCount)
+        cached.scaleRange(0.2, 0.8)
+        assertEquals(0.4, cached.position)
+        assertEquals(2, delegate.readCount)
+        cached.position = 0.4
+        cached.position = 0.4
+        assertEquals(3, delegate.writeCount)
+    }
+
+    @Test
+    fun `partial servo configuration failure cannot retain a valid command cache`() {
+        for (change in listOf<(CachedServo) -> Unit>(
+            { it.setDirection(Servo.Direction.REVERSE) }, { it.scaleRange(0.2, 0.8) },
+        )) {
+            val delegate = CountingServo(0.4)
+            val cached = CachedServo(delegate)
+            cached.position = 0.4
+            delegate.failConfigurationAfterApply = true
+            assertFailsWith<IllegalStateException> { change(cached) }
+            delegate.failConfigurationAfterApply = false
+            cached.position = 0.4
+            cached.position = 0.4
+            assertEquals(2, delegate.writeCount, "Explicit retry must reach the device after uncertain configuration")
+        }
+    }
+
     private class CountingMotor(initialPower: Double) : DcMotorEx {
         var readCount = 0
         var writeCount = 0
@@ -199,6 +236,19 @@ class CachedHardwareContractTest {
         var writeCount = 0
         var failAfterWrite = false
         var rawPosition = initialPosition
+        var failConfigurationAfterApply = false
+        private var configuredDirection = Servo.Direction.FORWARD
+        private var configuredRange = 0.0 to 1.0
+
+        override fun getDirection() = configuredDirection
+        override fun setDirection(value: Servo.Direction) {
+            configuredDirection = value
+            check(!failConfigurationAfterApply) { "direction acknowledgement lost" }
+        }
+        override fun scaleRange(min: Double, max: Double) {
+            configuredRange = min to max
+            check(!failConfigurationAfterApply) { "range acknowledgement lost" }
+        }
 
         override var position: Double
             get() {

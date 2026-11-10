@@ -1,3 +1,16 @@
+// Kotlin 2.4 requires R8/D8 9.1.29+. Override AGP's bundled compiler through the
+// documented parent classloader hook; keep the official FTC AGP 8.13.2 baseline.
+pluginManagement {
+    buildscript {
+        repositories {
+            maven { url = uri('https://storage.googleapis.com/r8-releases/raw') }
+            google()
+            mavenCentral()
+        }
+        dependencies { classpath 'com.android.tools:r8:9.1.29' }
+    }
+}
+
 // Configuration must not mutate user-wide Gradle settings. The launcher or IDE owns JDK choice.
 if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
     throw new GradleException(

@@ -13,7 +13,7 @@ ARESLib-Kotlin is the shared Kotlin foundation for the ARES FTC, FRC, simulator,
 | `core` | State, reducers, geometry, EKF localization, controllers, safety, pathing, sequencer, NT4, telemetry, and logging | Kotlin/JVM libraries only |
 | `codegen` | Project, controls, autonomous, and subsystem Kotlin generation CLI | `core` |
 | `ftc-mocks` | Desktop implementations of the FTC and Android APIs used by library code | `core` |
-| `ftc-hardware` | FTC SDK adapters, mecanum robot base classes, Pinpoint, Limelight, cached hardware, and power management | `core`; mocks for compilation/tests |
+| `ftc-hardware` | FTC SDK adapters, mecanum robot base classes, Pinpoint, Limelight, cached hardware, and power management | `core`; real SDK for compilation, mocks for desktop tests |
 | `frc-runtime` | Vendor-neutral FRC lifecycle and generated-project host adapters | `core` |
 | `frc-hardware` | WPILib and vendor adapters, swerve robot base classes, Limelight, telemetry, and power management | `core`, `frc-runtime` |
 | `simulator` | FTC Dyn4j physics, virtual Driver Station, OpMode runner, FTC device doubles, and NT4 bridge | `core`, `ftc-hardware`, `ftc-mocks` |
@@ -34,6 +34,7 @@ The important dependency rule is that platform and season code depend inward on 
 ```
 
 See [Architecture](docs/architecture.md) for package ownership, the robot loop, and extension points.
+See [FTC SDK 12 migration](docs/ftc-sdk12.md) for real-SDK compilation, native clusters, and explicit stationary localization setup.
 See [Drive facades](docs/drive-facades.md) for command limits, hold control, measured velocities,
 and binding path requests to the existing task lifecycle.
 

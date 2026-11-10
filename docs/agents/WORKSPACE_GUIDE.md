@@ -17,7 +17,7 @@ published library have different toolchains and release boundaries.
 | Project | Role | Tech | Key entry points |
 |---|---|---|---|
 | **ARESLib-Kotlin/** | Published foundation, schema/model/compiler, codegen, hardware modules, and simulation foundations | Kotlin 2.4.10, JDK 17, Gradle 8.14.5 | `project-schema/`, `project-model/`, `project-compiler/`, `telemetry-schema/`, `core/`, `codegen/`, hardware/runtime/simulator modules, `ares-bom/` |
-| **ARES-FTC/** | GUI-authored Lightbot reference robot and FTC season/simulator product | Kotlin 2.4.10, FTC SDK 11.1.0, AGP 8.7.0, Gradle 8.14.5 | `TeamCode/`, `simulator/`, `.ares/` |
+| **ARES-FTC/** | GUI-authored Lightbot reference robot and FTC season/simulator product | Kotlin 2.4.10, FTC SDK 12.0.0, AGP 8.13.2, Gradle 9.1.0 | `TeamCode/`, `simulator/`, `.ares/` |
 | **ARES-FRC/** | FRC season, roboRIO/vendor adapters, and WPILib/HAL simulator product | Kotlin 2.4.10, WPILib 2026.2.1, Phoenix 26.1.1, Gradle 8.14.5 | `src/main/kotlin/org/aresfirst/marvin/`, `.ares/` |
 | **ARES-Analytics/** | ARES Robotics Studio desktop app, analytics database, cloud-optional services, and gateway | Kotlin 2.4.10, Compose 1.12.0, Ktor 3.5.2, DuckDB 1.5.5.1, Gradle 8.14.5 | `app/`, `gateway/`, `shared/` |
 | **ARES-FTC-Starter/** | Canonical standalone FTC starter source exported into deterministic release archives | Same FTC toolchain | project root |

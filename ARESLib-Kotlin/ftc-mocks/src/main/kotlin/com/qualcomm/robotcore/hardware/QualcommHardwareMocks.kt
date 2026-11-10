@@ -90,7 +90,7 @@ open class HardwareMap {
     open fun <T> getAll(classOrType: Class<out T>): List<T> {
         throw NotImplementedError("Mock HardwareMap.getAll() not overridden")
     }
-    open fun <T> getNamesOf(device: T): Set<String> {
+    open fun getNamesOf(device: HardwareDevice): Set<String> {
         return emptySet()
     }
     /** Compatibility stub that reports success without mutating a backing serial-number registry. */

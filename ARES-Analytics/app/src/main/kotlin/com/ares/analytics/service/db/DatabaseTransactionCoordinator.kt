@@ -22,9 +22,13 @@ internal class DatabaseTransactionCoordinator(
     private val writeMutex: Mutex,
     private val readMutex: Mutex,
     private val metrics: DatabaseMetrics,
+    val metadataReadConnection: Connection = readConnection,
+    private val metadataReadMutex: Mutex = readMutex,
+    private val liveReadMutex: Mutex = readMutex,
+    private val liveWriteMutex: Mutex = writeMutex,
 ) {
     val readOnlyQueries = ReadOnlyQueryRepository(readConnection, readMutex, metrics)
-    private val ephemeralQueries = ReadOnlyQueryRepository(ephemeralReadConnection, readMutex, metrics)
+    private val ephemeralQueries = ReadOnlyQueryRepository(ephemeralReadConnection, liveReadMutex, metrics)
 
     fun telemetryQueriesFor(sessionId: String): ReadOnlyQueryRepository =
         if (sessionId == LIVE_TELEMETRY_SESSION_ID) ephemeralQueries else readOnlyQueries
@@ -36,18 +40,30 @@ internal class DatabaseTransactionCoordinator(
         if (sessionId == LIVE_TELEMETRY_SESSION_ID) ephemeralWriteConnection else writeConnection
 
     // Counts attempts that enter this IO context, including failures/cancellation while waiting.
-    suspend fun <T> write(block: suspend () -> T): T = withContext(Dispatchers.IO) {
+    suspend fun <T> write(block: suspend () -> T): T = writeWith(writeMutex, block)
+
+    suspend fun <T> writeTelemetry(sessionId: String, block: suspend () -> T): T =
+        writeWith(if (sessionId == LIVE_TELEMETRY_SESSION_ID) liveWriteMutex else writeMutex, block)
+
+    private suspend fun <T> writeWith(mutex: Mutex, block: suspend () -> T): T = withContext(Dispatchers.IO) {
         try {
-            writeMutex.withLock { block() }
+            mutex.withLock { block() }
         } finally {
             metrics.recordWrite(0L)
         }
     }
 
-    suspend fun <T> read(block: suspend () -> T): T = withContext(Dispatchers.IO) {
+    suspend fun <T> read(block: suspend () -> T): T = readWith(readMutex, block)
+
+    suspend fun <T> readMetadata(block: suspend () -> T): T = readWith(metadataReadMutex, block)
+
+    suspend fun <T> readTelemetry(sessionId: String, block: suspend () -> T): T =
+        readWith(if (sessionId == LIVE_TELEMETRY_SESSION_ID) liveReadMutex else readMutex, block)
+
+    private suspend fun <T> readWith(mutex: Mutex, block: suspend () -> T): T = withContext(Dispatchers.IO) {
         val started = metrics.nowNanos()
         try {
-            readMutex.withLock { block() }
+            mutex.withLock { block() }
         } finally {
             metrics.recordRead(metrics.nowNanos() - started)
         }

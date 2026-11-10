@@ -28,7 +28,7 @@ class AresPhotonLynxModule(
     }
 
     /** Delegates message-number allocation to [LynxModule]. */
-    override fun getNewMessageNumber(): Byte {
+    public override fun getNewMessageNumber(): Byte {
         return super.getNewMessageNumber()
     }
 

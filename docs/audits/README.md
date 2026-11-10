@@ -1,5 +1,22 @@
 # Monorepo audit coverage
 
+The [setup-selection and Project History follow-up](STUDIO_SELECTION_HISTORY_2026_11_10.md)
+records the next asynchronous reliability fixes, setup validation, and history UI improvements.
+
+The [Studio setup/project-creation follow-up](STUDIO_SETUP_CREATION_2026_11_10.md) records
+the requested UI improvements and creation reliability checks after OTOS validation.
+
+The latest SDK continuation is the [OTOS lifecycle/input-refresh checkpoint](FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md),
+covering reset/close freshness, delayed reads, allocation and framework/starter validation.
+The preceding [servo cache reliability checkpoint](FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md)
+covers reproduced mapping-change cache failures, allocation/write-count verification, and updated
+consumer/bundle validation. The [remaining software verification](FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md)
+covers software opt-ins and dedicated consumer recovery tests. The [migration checkpoint](FTC_SDK12_MIGRATION_2026_11_09.md)
+records the FTC product/bundle update and real-SDK/mock and vision/localization corrections.
+The [initialization cleanup and SDK comparison](INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md)
+retains failed-constructor recovery evidence; the [shutdown/import checkpoint](DATABASE_LIFECYCLE_IMPORT_2026_11_09.md)
+retains the earlier responsiveness workload and native evidence.
+
 **The open-ended file audit has been superseded by a bounded
 [robot-readiness checkpoint](ROBOT_READINESS_GOAL.md).** Follow that saved objective and its scenario,
 performance, and safety exit criteria. The [paused checkpoint](RESUME.md),

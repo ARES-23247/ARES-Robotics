@@ -3,6 +3,9 @@ package com.ares.analytics.ui.screens.onboarding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +32,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.shared.models.League
@@ -181,44 +187,86 @@ private fun ProjectSelection(
     onProjectFolderNameChange: (String) -> Unit,
     onBrowseProjectParent: () -> Unit,
 ) {
+    val locationRequester = remember { BringIntoViewRequester() }
+    LaunchedEffect(error) {
+        if (error != null) locationRequester.bringIntoView()
+    }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("How would you like to begin?", color = AresTextPrimary, fontWeight = FontWeight.Bold)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ProjectModeCard(
-                title = "Create standalone robot project",
-                description = "Export a complete FTC, FRC, or XRP repository that works in Studio, an IDE, or the terminal.",
+                title = "Create a robot project",
+                description = "A standalone FTC, FRC, or XRP repository.",
                 selected = mode == ProjectSetupMode.CREATE_NEW,
                 onClick = { onModeChange(ProjectSetupMode.CREATE_NEW) },
                 modifier = Modifier.weight(1f),
             )
             ProjectModeCard(
                 title = "Open an existing project",
-                description = "Use an ARES FTC, FRC, or XRP repository already on this computer.",
+                description = "Use an ARES repository on this computer.",
                 selected = mode == ProjectSetupMode.OPEN_EXISTING,
                 onClick = { onModeChange(ProjectSetupMode.OPEN_EXISTING) },
                 modifier = Modifier.weight(1f),
             )
         }
-        ProjectModeCard(
-            title = "Explore Lightbot",
-            description = "Create your own editable copy of the official simulation-first FTC mecanum and lighting example.",
-            selected = mode == ProjectSetupMode.EXPLORE_LIGHTBOT,
-            onClick = { onModeChange(ProjectSetupMode.EXPLORE_LIGHTBOT) },
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        ProjectModeCard(
-            title = "Explore BIOBUZZ",
-            description = "Create a separate robot with a four-ball intake, shooter, and dynamic field in Dashboard Local Sim.",
-            selected = mode == ProjectSetupMode.EXPLORE_BIOBUZZ,
-            onClick = { onModeChange(ProjectSetupMode.EXPLORE_BIOBUZZ) },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ProjectModeCard(
+                title = "Explore Lightbot",
+                description = "FTC driving and lighting example.",
+                selected = mode == ProjectSetupMode.EXPLORE_LIGHTBOT,
+                onClick = { onModeChange(ProjectSetupMode.EXPLORE_LIGHTBOT) },
+                modifier = Modifier.weight(1f),
+            )
+            ProjectModeCard(
+                title = "Explore BIOBUZZ",
+                description = "FTC intake and shooter example.",
+                selected = mode == ProjectSetupMode.EXPLORE_BIOBUZZ,
+                onClick = { onModeChange(ProjectSetupMode.EXPLORE_BIOBUZZ) },
+                modifier = Modifier.weight(1f),
+            )
+        }
         if (mode.createsProject) {
+            Column(Modifier.bringIntoViewRequester(locationRequester), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                PathChooser(
+                    value = projectParentPath,
+                    onValueChange = onProjectParentPathChange,
+                    label = "Create inside this folder",
+                    placeholder = platformPathPlaceholder("Robots"),
+                    buttonLabel = "Choose parent folder",
+                    onBrowse = onBrowseProjectParent,
+                )
+                AresTextField(
+                    value = projectFolderName,
+                    onValueChange = onProjectFolderNameChange,
+                    label = "New project folder name",
+                    placeholder = "team-23247-robot",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                FieldMessage(error)
+            }
+            if (projectPath.isNotBlank() && error == null) {
+                Text("New project: $projectPath", color = AresGreen, style = MaterialTheme.typography.bodySmall)
+            }
+            creationMessage?.let { Text(it, color = AresGreen, style = MaterialTheme.typography.bodySmall) }
+
             if (mode == ProjectSetupMode.CREATE_NEW) LeagueSelector(league, onLeagueChange)
             if (mode == ProjectSetupMode.CREATE_NEW) {
-                Text("Who owns robot behavior?", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                var showAuthoringModels by remember { mutableStateOf(false) }
+                Text("Robot behavior", color = AresTextPrimary, fontWeight = FontWeight.Bold)
+                Text(
+                    when (authoringModel) {
+                        AresProjectAuthoringModel.GUI_OWNED -> "GUI-owned: Studio generates robot code from your .ares documents."
+                        AresProjectAuthoringModel.CODE_FIRST -> "Code-first: your team code is authoritative and registered with Studio."
+                        AresProjectAuthoringModel.HYBRID -> "Hybrid: Studio owns routines and drivetrain; team code owns selected mechanisms."
+                    },
+                    color = AresTextSecondary,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                TextButton(onClick = { showAuthoringModels = !showAuthoringModels }) {
+                    Text(if (showAuthoringModels) "Hide ownership choices" else "Change ownership model", color = AresCyan)
+                    Icon(if (showAuthoringModels) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = AresCyan)
+                }
+                if (showAuthoringModels) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     AuthoringModelCard(
                         title = "GUI-owned robot",
                         description = "Robot Studio owns canonical .ares documents and generates runtime code and tests.",
@@ -279,43 +327,38 @@ private fun ProjectSelection(
                 }
             }
 
-            PathChooser(
-                value = projectParentPath,
-                onValueChange = onProjectParentPathChange,
-                label = "Create inside this folder",
-                placeholder = platformPathPlaceholder("Robots"),
-                buttonLabel = "Choose parent folder",
-                onBrowse = onBrowseProjectParent,
-            )
-            AresTextField(
-                value = projectFolderName,
-                onValueChange = onProjectFolderNameChange,
-                label = "New project folder name",
-                placeholder = "team-23247-robot",
-                modifier = Modifier.fillMaxWidth(),
-            )
-            FieldMessage(error)
-            if (projectPath.isNotBlank() && error == null) {
-                Text("New project: $projectPath", color = AresGreen, style = MaterialTheme.typography.bodySmall)
-            }
-            creationMessage?.let { Text(it, color = AresGreen, style = MaterialTheme.typography.bodySmall) }
         } else {
             Text(
-                "Choose the repository root—the folder containing settings.gradle or settings.gradle.kts.",
+                "Choose the robot repository root, usually the folder containing .ares/project.json.",
                 color = AresTextSecondary,
                 style = MaterialTheme.typography.bodySmall,
             )
-            PathChooser(
-                value = projectPath,
-                onValueChange = onProjectPathChange,
-                label = "Robot project folder",
-                placeholder = platformPathPlaceholder("my-robot-project"),
-                buttonLabel = "Choose project",
-                onBrowse = onBrowseProject,
-            ) {
-                FieldMessage(error)
+            Column(Modifier.bringIntoViewRequester(locationRequester)) {
+                PathChooser(
+                    value = projectPath,
+                    onValueChange = onProjectPathChange,
+                    label = "Robot project folder",
+                    placeholder = platformPathPlaceholder("my-robot-project"),
+                    buttonLabel = "Choose project",
+                    onBrowse = onBrowseProject,
+                ) {
+                    FieldMessage(error)
+                }
             }
         }
+        var showIntroduction by remember { mutableStateOf(false) }
+        TextButton(onClick = { showIntroduction = !showIntroduction }) {
+            Text("How does ARES work?", color = AresCyan)
+            Icon(if (showIntroduction) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = AresCyan)
+        }
+        if (showIntroduction) {
+            Text(
+                "Describe routines, subsystems, and controller bindings as .ares documents. Studio generates runtime code for review and simulation. Team code can add unusual hardware or new capabilities. The Academy (Help & Learn) explains why documents are used instead of programs.",
+                color = AresTextSecondary,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
         if (detectionMessage != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = AresGreen)
@@ -356,14 +399,16 @@ private fun ProjectModeCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = if (selected) AresCyanGlow else AresSurfaceElevated),
         border = androidx.compose.foundation.BorderStroke(1.dp, if (selected) AresCyan else AresBorder),
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, color = if (selected) AresCyan else AresTextPrimary, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(title, modifier = Modifier.weight(1f), color = if (selected) AresCyan else AresTextPrimary, fontWeight = FontWeight.Bold)
+                if (selected) Icon(Icons.Default.CheckCircle, contentDescription = null, tint = AresCyan)
+            }
             Text(description, color = AresTextSecondary, style = MaterialTheme.typography.bodySmall)
-            Text(if (selected) "Selected" else "Select", color = if (selected) AresGreen else AresTextSecondary, fontSize = 10.sp)
         }
     }
 }
@@ -469,7 +514,7 @@ private fun RobotDetails(
                 onValueChange = onRobotNameChange,
                 label = "Friendly name (optional)",
                 placeholder = "Competition robot",
-                error = null,
+                error = fieldErrors.robotName,
                 modifier = Modifier.weight(1f),
             )
         }

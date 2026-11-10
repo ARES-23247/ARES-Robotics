@@ -15,12 +15,14 @@ import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.RobotProfile
 import com.ares.analytics.shared.models.WorkspaceConfig
 import com.areslib.project.AresProjectAuthoringModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import java.io.File
 import java.awt.Desktop
 import java.net.URI
@@ -42,9 +44,10 @@ data class OnboardingFieldErrors(
     val teamId: String? = null,
     val seasonId: String? = null,
     val robotId: String? = null,
+    val robotName: String? = null,
 ) {
     val hasRequiredFieldErrors: Boolean
-        get() = projectPath != null || teamId != null || seasonId != null || robotId != null
+        get() = projectPath != null || teamId != null || seasonId != null || robotId != null || robotName != null
 }
 
 data class OnboardingState(
@@ -54,6 +57,7 @@ data class OnboardingState(
     val projectParentPath: String = "",
     val projectFolderName: String = "",
     val projectDetectionMessage: String? = null,
+    val isDetectingProject: Boolean = false,
     val projectTemplateName: String = "ARES FTC",
     val projectTemplateVersion: String = "",
     val projectCreationMessage: String? = null,
@@ -66,6 +70,7 @@ data class OnboardingState(
     val nt4Host: String = "192.168.43.1",
     val isVerifyingJava: Boolean = false,
     val javaEnvValid: Boolean? = null,
+    val javaEnvLeague: League? = null,
     val javaEnvMsg: String = "Robot build tools have not been checked yet.",
     val javaMajorVersion: Int? = null,
     val toolchainInstallState: ManagedToolchainInstallState = ManagedToolchainInstallState.Idle,
@@ -83,12 +88,14 @@ data class OnboardingState(
     val isDriveDestinationBusy: Boolean = false,
     val driveDestinationError: String? = null,
 ) {
+    val areBuildToolsCurrent: Boolean get() = javaEnvLeague == league
+
     val isProjectReady: Boolean
-        get() = projectPath.isNotBlank() && fieldErrors.projectPath == null
+        get() = !isDetectingProject && projectPath.isNotBlank() && fieldErrors.projectPath == null
 
     val isRobotReady: Boolean
         get() = teamId.isNotBlank() && seasonId.isNotBlank() && robotId.isNotBlank() &&
-            fieldErrors.teamId == null && fieldErrors.seasonId == null && fieldErrors.robotId == null
+            fieldErrors.teamId == null && fieldErrors.seasonId == null && fieldErrors.robotId == null && fieldErrors.robotName == null
 }
 
 sealed class OnboardingIntent {
@@ -150,6 +157,9 @@ class OnboardingViewModel(
         ),
     )
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
+    private val submissionMutex = Mutex()
+    private var javaVerificationGeneration = 0L
+    private val projectDetection = OnboardingProjectDetection(environmentService, scope, _state)
 
     init {
         scope.launch {
@@ -162,8 +172,10 @@ class OnboardingViewModel(
 
     fun handleIntent(intent: OnboardingIntent) {
         scope.launch {
+            if (_state.value.isSaving || _state.value.saveSuccess) return@launch
             when (intent) {
                 is OnboardingIntent.SetProjectSetupMode -> {
+                    projectDetection.invalidate()
                     _state.update { current ->
                         val selected = current.copy(
                             projectSetupMode = intent.mode,
@@ -173,7 +185,15 @@ class OnboardingViewModel(
                             fieldErrors = current.fieldErrors.copy(projectPath = null),
                         )
                         when (intent.mode) {
-                            ProjectSetupMode.CREATE_NEW -> selected.copy(projectPath = plannedProjectPath(selected))
+                            ProjectSetupMode.CREATE_NEW -> {
+                                val template = projectTemplateService.templateForOrNull(selected.league)
+                                selected.copy(
+                                    projectPath = plannedProjectPath(selected),
+                                    projectTemplateName = template?.displayName.orEmpty(),
+                                    projectTemplateVersion = template?.artifactVersion.orEmpty(),
+                                    errorMessage = if (template == null) "No reviewed ${selected.league.name} starter is bundled with this Studio build." else null,
+                                )
+                            }
                             ProjectSetupMode.EXPLORE_LIGHTBOT, ProjectSetupMode.EXPLORE_BIOBUZZ -> {
                                 val biobuzz = intent.mode == ProjectSetupMode.EXPLORE_BIOBUZZ
                                 val template = projectTemplateService.templateFor(League.FTC, if (biobuzz) RobotProjectTemplateKind.BIOBUZZ_EXAMPLE else RobotProjectTemplateKind.EXAMPLE)
@@ -204,7 +224,7 @@ class OnboardingViewModel(
                             errorMessage = null,
                         )
                     }
-                    if (File(intent.projectPath).isDirectory) detectProject()
+                    projectDetection.request()
                 }
                 is OnboardingIntent.UpdateProjectParentPath -> _state.update { current ->
                     val next = current.copy(
@@ -255,18 +275,21 @@ class OnboardingViewModel(
                 is OnboardingIntent.SetAdvancedSetupExpanded -> _state.update { it.copy(advancedSetupExpanded = intent.expanded) }
                 is OnboardingIntent.ConfigureDriveDestination -> configureDriveDestination(intent)
                 is OnboardingIntent.FetchCloudRobots -> fetchCloudRobots()
-                OnboardingIntent.DetectLeague -> detectProject()
+                OnboardingIntent.DetectLeague -> projectDetection.request(immediate = true)
                 OnboardingIntent.NextStep -> moveNext()
-                OnboardingIntent.PreviousStep -> _state.update {
-                    val previous = if (
-                        it.projectSetupMode.isExample &&
-                        it.currentStep == OnboardingStep.REVIEW
-                    ) {
-                        OnboardingStep.PROJECT
-                    } else {
-                        OnboardingStep.entries[(it.currentStep.ordinal - 1).coerceAtLeast(0)]
+                OnboardingIntent.PreviousStep -> {
+                    projectDetection.invalidate()
+                    _state.update {
+                        val previous = if (
+                            it.projectSetupMode.isExample &&
+                            it.currentStep == OnboardingStep.REVIEW
+                        ) {
+                            OnboardingStep.PROJECT
+                        } else {
+                            OnboardingStep.entries[(it.currentStep.ordinal - 1).coerceAtLeast(0)]
+                        }
+                        it.copy(currentStep = previous, errorMessage = null)
                     }
-                    it.copy(currentStep = previous, errorMessage = null)
                 }
                 OnboardingIntent.VerifyJava -> verifyJavaBuildTools()
                 OnboardingIntent.InstallManagedJdk -> installManagedJdk()
@@ -293,60 +316,15 @@ class OnboardingViewModel(
         }
     }
 
-    private suspend fun detectProject() {
-        val path = _state.value.projectPath.trim()
-        val directory = File(path)
-        if (path.isEmpty() || !directory.isDirectory) {
-            _state.update {
-                it.copy(
-                    projectDetectionMessage = null,
-                    fieldErrors = it.fieldErrors.copy(projectPath = "Choose a folder that contains your robot project."),
-                )
-            }
-            return
-        }
-
-        val robotConfig = environmentService.readProjectIdentity(path)
-        if (robotConfig != null) {
-            val detectedLeague = League.valueOf(robotConfig.league.uppercase())
-            _state.update {
-                it.copy(
-                    teamId = robotConfig.teamId,
-                    seasonId = robotConfig.seasonId,
-                    robotId = robotConfig.robotId,
-                    robotName = robotConfig.name,
-                    league = detectedLeague,
-                    nt4Host = environmentService.getDefaultNt4Host(detectedLeague, robotConfig.teamId),
-                    projectDetectionMessage =
-                        "Project found. We filled in the ${detectedLeague.name} robot details from canonical .ares/project.json.",
-                    fieldErrors = OnboardingFieldErrors(),
-                    currentStep = advanceAfterDetection(it.currentStep, recognizedProject = true),
-                )
-            }
-        } else {
-            val detectedLeague = environmentService.detectLeague(path)
-            // Only an identified ARES project advances the wizard. A directory that merely exists
-            // may be an intermediate path while the student is still typing.
-            val recognizedProject = detectedLeague == League.FRC || File(path, ".ares").isDirectory
-            _state.update {
-                it.copy(
-                    league = detectedLeague,
-                    nt4Host = environmentService.getDefaultNt4Host(detectedLeague, it.teamId),
-                    projectDetectionMessage = "Project found. We detected ${detectedLeague.name}; add the robot details on the next step.",
-                    fieldErrors = it.fieldErrors.copy(projectPath = null),
-                    currentStep = advanceAfterDetection(it.currentStep, recognizedProject),
-                )
-            }
-        }
-    }
-
     private fun moveNext() {
+        if (_state.value.isDetectingProject) return
         val current = _state.value
         val errors = validateOnboardingFields(current, current.currentStep)
         if (errors.hasRequiredFieldErrors) {
             _state.update { it.copy(fieldErrors = errors, errorMessage = "Check the highlighted field before continuing.") }
             return
         }
+        projectDetection.invalidate()
         val next = if (
             current.projectSetupMode.isExample &&
             current.currentStep == OnboardingStep.PROJECT
@@ -359,22 +337,29 @@ class OnboardingViewModel(
     }
 
     private suspend fun verifyJavaBuildTools() {
-        _state.update { it.copy(isVerifyingJava = true) }
-        if (_state.value.league == League.XRP) {
-            val result = managedToolchainService.refresh(League.XRP)
-            _state.update { it.copy(isVerifyingJava = false, javaEnvValid = result.buildReady,
-                javaEnvMsg = result.components.joinToString("\n") { component -> component.detail }, javaMajorVersion = null) }
-            return
-        }
-        val result = environmentService.verifyJavaEnvironment()
-        val javaReadiness = evaluateJavaBuildTools(result.isValid, result.message)
-        _state.update {
-            it.copy(
-                isVerifyingJava = false,
-                javaEnvValid = javaReadiness.isValid,
-                javaEnvMsg = javaReadiness.message,
-                javaMajorVersion = javaReadiness.majorVersion,
-            )
+        val generation = ++javaVerificationGeneration
+        val league = _state.value.league
+        _state.update { it.copy(isVerifyingJava = true, javaEnvLeague = league, javaEnvValid = null) }
+        try {
+            val readiness = if (league == League.XRP) {
+                val result = managedToolchainService.refresh(league)
+                JavaBuildToolsReadiness(result.buildReady, null, result.components.joinToString("\n") { it.detail })
+            } else {
+                val result = environmentService.verifyJavaEnvironment()
+                evaluateJavaBuildTools(result.isValid, result.message)
+            }
+            if (generation == javaVerificationGeneration) _state.update {
+                it.copy(isVerifyingJava = false, javaEnvLeague = league, javaEnvValid = readiness.isValid,
+                    javaEnvMsg = readiness.message, javaMajorVersion = readiness.majorVersion)
+            }
+        } catch (cancelled: CancellationException) {
+            if (generation == javaVerificationGeneration) _state.update { it.copy(isVerifyingJava = false) }
+            throw cancelled
+        } catch (failure: Exception) {
+            if (generation == javaVerificationGeneration) _state.update {
+                it.copy(isVerifyingJava = false, javaEnvLeague = league, javaEnvValid = false,
+                    javaEnvMsg = "Build tools could not be checked. Recheck to try again.", javaMajorVersion = null)
+            }
         }
     }
 
@@ -393,7 +378,19 @@ class OnboardingViewModel(
     }
 
     private suspend fun submitConfig() {
+        // UI disabling alone cannot reject already queued or concurrent submit intents.
+        if (!submissionMutex.tryLock()) return
+        try {
+            if (_state.value.saveSuccess) return
+            saveWorkspace()
+        } finally {
+            submissionMutex.unlock()
+        }
+    }
+
+    private suspend fun saveWorkspace() {
         var current = _state.value
+        if (current.isDetectingProject) return
         val errors = validateOnboardingCompletion(current)
         if (errors.hasRequiredFieldErrors) {
             _state.update {
@@ -410,7 +407,7 @@ class OnboardingViewModel(
             return
         }
 
-        _state.update { it.copy(isSaving = true, errorMessage = null) }
+        _state.update { it.copy(isSaving = true, errorMessage = null, projectCreationMessage = null) }
         try {
             if (current.projectSetupMode.createsProject) {
                 val result = projectTemplateService.create(
@@ -418,10 +415,10 @@ class OnboardingViewModel(
                         parentDirectory = File(current.projectParentPath.trim()),
                         folderName = current.projectFolderName.trim(),
                         league = current.league,
-                        teamId = current.teamId,
-                        seasonId = current.seasonId,
-                        robotId = current.robotId,
-                        robotName = current.robotName,
+                        teamId = current.teamId.trim(),
+                        seasonId = current.seasonId.trim(),
+                        robotId = current.robotId.trim(),
+                        robotName = current.robotName.trim().ifBlank { current.robotId.trim() },
                         templateKind = if (current.projectSetupMode == ProjectSetupMode.EXPLORE_BIOBUZZ) {
                             RobotProjectTemplateKind.BIOBUZZ_EXAMPLE
                         } else if (current.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {

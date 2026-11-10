@@ -10,16 +10,16 @@ permissions:
   contents: read
 
 env:
-  ARES_VERSION: 19.1.4
-  STUDIO_VERSION: 7.0.65
-  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.65/ARES-FTC-Starter-19.1.5.zip
-  FTC_STARTER_SHA256: e61f2fe5b4995c1e87f4519939f30691659e957b9917b669c3cc82aca16ecc12
-  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.65/ARES-FRC-Starter-19.1.5.zip
-  FRC_STARTER_SHA256: 930cc7b0c9671d0f7c84469b346a18ed3fc2ee3fc48701e69505e48439731244
-  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.65/ARES-XRP-Starter-3.0.64.zip
-  XRP_STARTER_SHA256: 4d34eef6107226f21fea7c16382f05df73a2622d4b70b2d9b188f7afed976973
-  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.65/ARES-Lightbot-Example-3.0.67.zip
-  LIGHTBOT_EXAMPLE_SHA256: 3b30bb1e7151b55a59d188c8f5ddac32b720ae691bb551dba952b4df3b234350
+  ARES_VERSION: 20.0.2
+  STUDIO_VERSION: 7.0.70
+  FTC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.70/ARES-FTC-Starter-20.0.3.zip
+  FTC_STARTER_SHA256: 069dd8ed0a8f219be29307b8434eaec3dc3ca3c1e2f7b6019ef14b5b5d02467b
+  FRC_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.70/ARES-FRC-Starter-20.0.3.zip
+  FRC_STARTER_SHA256: eb0b367581e7e516a1b8fa36383ce41ad8b9ba0064b6b7bd861c845a7e56e324
+  XRP_STARTER_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.70/ARES-XRP-Starter-3.0.67.zip
+  XRP_STARTER_SHA256: 2bb902a642750783b3c7f6996b50ec26e0f9ab56ca423993d3162f7b3213961a
+  LIGHTBOT_EXAMPLE_URL: https://github.com/ARES-23247/ARES-Robotics/releases/download/v7.0.70/ARES-Lightbot-Example-3.0.72.zip
+  LIGHTBOT_EXAMPLE_SHA256: cdcd4cc436b5e2e429ea7aeee47a49253dcdeaf06cd7dca9fdbb1525b1f0c205
 
 concurrency:
   group: desktop-packaging-${{ github.event.pull_request.number || github.ref }}
@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 1
       - uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
 
@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
@@ -186,7 +186,7 @@ jobs:
       - name: Run the complete released Studio verification contract
         working-directory: ARES-Analytics
         run: >-
-          ./gradlew studioReleaseVerification
+          xvfb-run -a ./gradlew studioReleaseVerification
           -ParesVersion=${{ needs.candidate.outputs.ares-candidate-version }}
           -ParesRepository=${{ steps.repository.outputs.uri }}
           --no-parallel --no-daemon --console=plain
@@ -199,7 +199,9 @@ jobs:
           retention-days: 90
           if-no-files-found: warn
           path: |
-            ARES-Analytics/app/build/reports/tests/test/**
+            ARES-Analytics/app/build/reports/tests/**
+            ARES-Analytics/app/build/test-results/**
+            ARES-Analytics/app/build/consumer-roundtrip-evidence/**
             ARES-Analytics/shared/build/reports/tests/test/**
             ARES-Analytics/gateway/build/reports/tests/test/**
             ARES-Analytics/app/build/reports/kover/**
@@ -215,7 +217,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
@@ -278,7 +280,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8

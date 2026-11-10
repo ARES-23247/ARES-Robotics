@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-09",
+  "baseCommit": "7dd12c892ec171c1c8c4f92592c329d06e104fea",
+  "branch": "codex/framework-lifecycle-audit-20261109",
+  "scope": "Isolated committed baseline plus this patch; original checkout pending changes excluded",
+  "dependency": {
+    "aresVersion": "19.1.5-rc.acceptance.20260925.1",
+    "canonicalPin": "19.1.5",
+    "sourceTree": "534a2778c52356641621ceaea71532a63219b8e2",
+    "studioVersion": "7.0.65"
+  },
+  "files": {
+    ".agents/skills/ares-build-release/references/commands.md": "9cdc88918189d35c9816e43838ccc97affbe7aee39be68f98a1d313741c9b8be",
+    "ARES-Analytics/ARCHITECTURE.md": "864fa86ed8a4ae92114ce7ec69bf3dd7ef671a118a6c0c61426204e3699a930c",
+    "ARES-Analytics/app/build.gradle.kts": "d5c044edcb1d5d36b3f241310bf3afd99b667467895837a57f2ad2cb6d792ccb",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/Main.kt": "5f77c539dddf7d28c80af2ba6b45059de12c03594b90559c153a21a1ebe78db2",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/DesktopShutdownCoordinator.kt": "502dc49649b62c170e0bb15e0a5826add05e1af51cec409115a6bfc1ac5bfa37",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt": "3857ff389e8213d8ebcdc4aa6573faf0b6029b492c2d2e6c2c2f23497fe6d63f",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt": "234f2d8eaf688bf211dfc6c0bb37bc7eeca665153f4ded06daf1a3f63c7f86a2",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/AnalysisTelemetryRepository.kt": "c8162d5942ef4ba0ca1a3bbb7e28a4b162692b3482c0ebbbb89547366219a7be",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DatabaseTransactionCoordinator.kt": "a1abef19c83a8e89449431f5a26794af0d7bdbc95f47615f686ebe68c5ded5a7",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/ReplayPoseRepository.kt": "27756c985c0fe2f99b15151254a618ecfcff4fd5d31eb9a465aa0f3188a7b539",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/RunEvidenceRepository.kt": "d200467651d5c8058d7d2944b93225f1a1b02e5a2707a5924a39611f7abebcfb",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/SessionMetadataRepository.kt": "ff0604aa8a3a4357215bfc3a697ec2dfa6f24218604318531521d09fe7f097f8",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryRepository.kt": "76cbecbef94e022c95729b3db7dbb08a0928692cab233d854baaeaf8332db858",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/OfficialRobotProjectTemplates.kt": "5cf8d04a8692f8657f7f0f72b02028d85203906024ff7c959e411290bb2f7b44",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ServiceRegistryShutdownAuditTest.kt": "3bc9313fb85d06ca230a0a0f56ebc5acafda1b01da63a2ca7d48408e11ffaa1a",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopDatabaseShutdownRaceTest.kt": "894f851145a297bff506a4a00d549ddbab86d7952104939518c0f3cfe9a8d25e",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopShutdownCoordinatorTest.kt": "0ed5d08829ce1d539f7c1e2fb8878e51ec2a2d23f71c06cd7c3bc768ed281da0",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseImportResponsivenessTest.kt": "52004d5641711377e43cc36b910789f07637e7617740f7eb480f7cb837af90bc",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/RobotProjectTemplateServiceTest.kt": "aa31b0816ed56e38b11aa27ab7a4e286ee939bec1ee9de3758f3fc6fc1daad0d",
+    "ARES-Analytics/config/maintainability/codebase_ledger.json": "8ee883e878fa60490cf0740ee36199a99512a0fa2a6a1bfed01a9115179d1775",
+    "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md": "8edf486563f2e55a27ed5006b7aff9072eac5f0d721735889f60a68024e85633",
+    "docs/audits/README.md": "ad4601bf411acdfc49a39899ac36af3e86b61dd09a6ef003b24c5eb4db5696d2"
+  },
+  "baselineRegressions": {
+    "suites": 2,
+    "tests": 4,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 0
+  },
+  "finalAppSuite": {
+    "suites": 391,
+    "tests": 2784,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 6
+  },
+  "skippedTests": [
+    "com.ares.analytics.service.project.GenericStarterTemplateIntegrationTest :: generic starter candidates create and build fresh FTC FRC and XRP projects",
+    "com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest :: official pinned archives create source-valid FTC FRC and XRP projects",
+    "com.ares.analytics.service.project.RepresentativeZeroCodeStarterIntegrationTest :: representative FTC and FRC starter projects generate verify and simulate",
+    "com.ares.analytics.ui.AresFileChooserNativeTest :: nativeDialogRendersSelectsAndCancels",
+    "com.ares.analytics.validation.DashboardPerformanceBaselineTest :: smoke report stays within checked in performance baseline",
+    "com.ares.analytics.validation.HardwareDashboardValidationTest :: physical target streams usable dashboard telemetry"
+  ],
+  "responsiveness": {
+    "baseline": {
+      "metadata": {
+        "samples": 25,
+        "p50Ms": 3.719,
+        "p95Ms": 866.929,
+        "maxMs": 1183.896
+      },
+      "liveAppendAndRead": {
+        "samples": 25,
+        "p50Ms": 5.805,
+        "p95Ms": 869.036,
+        "maxMs": 1183.49
+      },
+      "importMs": 841.014,
+      "sixHistoricalQueriesMs": 5542.61,
+      "importedRows": 1000000,
+      "resultChecks": "passed"
+    },
+    "corrected": {
+      "metadata": {
+        "samples": 25,
+        "p50Ms": 4.118,
+        "p95Ms": 7.047,
+        "maxMs": 7.683
+      },
+      "liveAppendAndRead": {
+        "samples": 25,
+        "p50Ms": 6.83,
+        "p95Ms": 12.529,
+        "maxMs": 33.317
+      },
+      "importMs": 1107.224,
+      "sixHistoricalQueriesMs": 5983.374,
+      "importedRows": 1000000,
+      "resultChecks": "passed"
+    },
+    "jvm": "JDK 17, -Xmx2g",
+    "duckDbMemory": "512MB",
+    "duckDbWorkers": 4,
+    "csvRows": 1000000,
+    "csvBytes": 29587518,
+    "sourceDatabaseBytes": 298594304,
+    "warmupHistoricalQueries": 1,
+    "timedHistoricalQueries": 6,
+    "probesPerForegroundPath": 25,
+    "p95TargetMs": 250,
+    "maximumTargetMs": 1000,
+    "harnessSha256": "adec774fd5aefccc64175461f9e21e295b5e21a73c11516ef165f9ced22d4592",
+    "limitation": "One fresh JVM per variant; backend workload observations, not rendering or controller timing"
+  },
+  "native": {
+    "runs": [
+      {
+        "cycle": 1,
+        "ownedPid": 46440,
+        "ownedPidExited": true,
+        "successful": true,
+        "settled": true,
+        "snapshotRemoved": true,
+        "databaseClosedError": false,
+        "criticalFault": false,
+        "watchdogHalt": false
+      },
+      {
+        "cycle": 2,
+        "ownedPid": 7452,
+        "ownedPidExited": true,
+        "successful": true,
+        "settled": true,
+        "snapshotRemoved": true,
+        "databaseClosedError": false,
+        "criticalFault": false,
+        "watchdogHalt": false
+      }
+    ],
+    "crashFiles": 0,
+    "portConnectionProbes": [
+      {
+        "port": 49340,
+        "acceptingConnections": false
+      },
+      {
+        "port": 49341,
+        "acceptingConnections": false
+      }
+    ],
+    "note": "An earlier CIM query briefly reported an owner-zero socket remnant; both ports reject connections"
+  },
+  "nativeCaptures": {
+    "build/database-followup/native-large-1/capture-001.png": "98f5f7de27100d94ef4dd82f42f06c2dc15868dfbcd068af0f74bdef88440756",
+    "build/database-followup/native-large-1/capture-002.png": "b6ef413d46772cff3d79cf0996dd0b99e2d0638e2e8ecce937446bb06b8443dc",
+    "build/database-followup/native-large-2/capture-001.png": "af7177e5a6b27d5b0348735b2d3fac6c17a1d57f0537105860bc6b0993a2c910",
+    "build/database-followup/native-large-2/capture-002.png": "6bcf46c593991ed009dbeed006332d626fa8deaafeff3b68b58c6d777c1dd5ea"
+  },
+  "templateProbe": {
+    "baselineMismatches": 5,
+    "correctedMismatches": 0,
+    "archivesChanged": false
+  },
+  "archiveSha256": {
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.6.zip": "e27905cb345732bff8c892f30ac5a16c7e552b3b963d6a0948d9ae803d37571d",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-19.1.5.zip": "930cc7b0c9671d0f7c84469b346a18ed3fc2ee3fc48701e69505e48439731244",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-19.1.5.zip": "e61f2fe5b4995c1e87f4519939f30691659e957b9917b669c3cc82aca16ecc12",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.67.zip": "3b30bb1e7151b55a59d188c8f5ddac32b720ae691bb551dba952b4df3b234350",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.64.zip": "4d34eef6107226f21fea7c16382f05df73a2622d4b70b2d9b188f7afed976973"
+  },
+  "guidanceTests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0
+  },
+  "sourcePolicy": {
+    "result": "passed",
+    "productionKotlinFiles": 1114,
+    "sizeViolations": 0,
+    "limitsChanged": false
+  },
+  "skillValidation": "ares-build-release passed quick_validate; tracked guidance/link checks passed",
+  "limits": [
+    "No physical hardware verification",
+    "No protected release or publication",
+    "Original installed close-event trigger was not established; database lifetime violation was reproduced and corrected",
+    "No certification of the original checkout's pending changes"
+  ]
+}

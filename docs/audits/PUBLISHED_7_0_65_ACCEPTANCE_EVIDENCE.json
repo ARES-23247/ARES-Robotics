@@ -1,0 +1,4308 @@
+{
+  "date": "2026-09-25",
+  "base": "8294bd6de9663e4f9cecc86dbd6a64acc3ae36ee",
+  "fix_commit": "db52fd2e2bbe32f4dfb587d1c27d042b1d648168",
+  "evidence_directory": "build/published-app-acceptance-2026-09-25",
+  "installed_studio": "7.0.65",
+  "baseline_ares": "19.1.4",
+  "local_candidate": "19.1.5-rc.acceptance.20260925.1",
+  "source_tree": "534a2778c52356641621ceaea71532a63219b8e2",
+  "performance": {
+    "source": "published Studio 7.0.65 + bundled BioBuzz 1.1.6 using ARESLib 19.1.4",
+    "wire_pose": [
+      {
+        "connection": 1,
+        "samples": 5175,
+        "duration_s": 103.47797010000795,
+        "arrival_interval_ms": {
+          "n": 5174,
+          "min": 0.14999999257270247,
+          "mean": 19.999607672981824,
+          "p50": 15.975700007402338,
+          "p95": 46.05960000480991,
+          "p99": 47.04900000069756,
+          "max": 49.20310000306927
+        },
+        "sequence_gaps": 0,
+        "unobserved_sequence_numbers": 0,
+        "sequence_regressions": 0,
+        "duplicates": 0,
+        "max_truth_to_ekf_distance_m": 1.1999999999999997,
+        "truth_x_range_m": [
+          -0.009595693124864248,
+          0.0009004663713481587
+        ],
+        "truth_y_range_m": [
+          -1.2,
+          -0.8031125
+        ]
+      },
+      {
+        "connection": 2,
+        "samples": 81897,
+        "duration_s": 1638.9367843000073,
+        "arrival_interval_ms": {
+          "n": 81896,
+          "min": 0.10269999620504677,
+          "mean": 20.012415555094357,
+          "p50": 15.855200006626546,
+          "p95": 46.08469999220688,
+          "p99": 47.05759999342263,
+          "max": 311.75269999948796
+        },
+        "sequence_gaps": 1,
+        "unobserved_sequence_numbers": 1.0,
+        "sequence_regressions": 0,
+        "duplicates": 0,
+        "max_truth_to_ekf_distance_m": 1.1999999999999997,
+        "truth_x_range_m": [
+          -0.29412020241465503,
+          0.36126767532695375
+        ],
+        "truth_y_range_m": [
+          -1.6397739497456731,
+          -0.8031124999999999
+        ]
+      }
+    ],
+    "health_publications": {
+      "/Robot/LoopTimeMs": [
+        {
+          "connection": 1,
+          "t": 0.5231982999976026,
+          "value": 20.0
+        },
+        {
+          "connection": 2,
+          "t": 553.2310695000051,
+          "value": 20.0
+        }
+      ],
+      "/Robot/BatteryVoltage": [
+        {
+          "connection": 1,
+          "t": 0.5430084999970859,
+          "value": 12.8
+        },
+        {
+          "connection": 2,
+          "t": 553.2131148000044,
+          "value": 12.8
+        }
+      ]
+    },
+    "resources": [
+      {
+        "pid": 23024,
+        "name": "ARES Robotics Studio",
+        "samples": 20,
+        "start_utc": "2026-09-25T13:42:01.0014283Z",
+        "end_utc": "2026-09-25T13:43:41.2425580Z",
+        "private_mib": {
+          "n": 20,
+          "min": 1.359375,
+          "mean": 1.378125,
+          "p50": 1.359375,
+          "p95": 1.421875,
+          "p99": 1.421875,
+          "max": 1.421875
+        },
+        "first_private_mib": 1.421875,
+        "last_private_mib": 1.359375,
+        "working_set_mib": {
+          "n": 20,
+          "min": 7.92578125,
+          "mean": 7.9328125,
+          "p50": 7.92578125,
+          "p95": 7.94921875,
+          "p99": 7.94921875,
+          "max": 7.94921875
+        },
+        "cpu_core_equivalents": 0.0,
+        "handles_first_last": [
+          138,
+          138
+        ],
+        "threads_first_last": [
+          4,
+          2
+        ]
+      },
+      {
+        "pid": 20592,
+        "name": "java",
+        "samples": 20,
+        "start_utc": "2026-09-25T13:42:01.0014283Z",
+        "end_utc": "2026-09-25T13:43:41.2425580Z",
+        "private_mib": {
+          "n": 20,
+          "min": 176.6484375,
+          "mean": 176.678515625,
+          "p50": 176.703125,
+          "p95": 176.703125,
+          "p99": 176.703125,
+          "max": 176.703125
+        },
+        "first_private_mib": 176.703125,
+        "last_private_mib": 176.6484375,
+        "working_set_mib": {
+          "n": 20,
+          "min": 106.59375,
+          "mean": 106.6408203125,
+          "p50": 106.65625,
+          "p95": 106.68359375,
+          "p99": 106.68359375,
+          "max": 106.68359375
+        },
+        "cpu_core_equivalents": 0.0012469931254765385,
+        "handles_first_last": [
+          577,
+          573
+        ],
+        "threads_first_last": [
+          30,
+          28
+        ]
+      },
+      {
+        "pid": 10136,
+        "name": "java",
+        "samples": 20,
+        "start_utc": "2026-09-25T13:42:01.0014283Z",
+        "end_utc": "2026-09-25T13:43:41.2425580Z",
+        "private_mib": {
+          "n": 20,
+          "min": 245.41796875,
+          "mean": 259.266796875,
+          "p50": 258.9375,
+          "p95": 270.5078125,
+          "p99": 274.73828125,
+          "max": 274.73828125
+        },
+        "first_private_mib": 263.35546875,
+        "last_private_mib": 258.9375,
+        "working_set_mib": {
+          "n": 20,
+          "min": 194.50390625,
+          "mean": 207.3619140625,
+          "p50": 207.29296875,
+          "p95": 218.44921875,
+          "p99": 222.70703125,
+          "max": 222.70703125
+        },
+        "cpu_core_equivalents": 0.1660059598290642,
+        "handles_first_last": [
+          444,
+          431
+        ],
+        "threads_first_last": [
+          66,
+          57
+        ]
+      },
+      {
+        "pid": 7420,
+        "name": "ARES Robotics Studio",
+        "samples": 366,
+        "start_utc": "2026-09-25T13:45:48.6083252Z",
+        "end_utc": "2026-09-25T14:18:36.8700229Z",
+        "private_mib": {
+          "n": 366,
+          "min": 1.328125,
+          "mean": 1.3367379610655739,
+          "p50": 1.328125,
+          "p95": 1.421875,
+          "p99": 1.421875,
+          "max": 1.421875
+        },
+        "first_private_mib": 1.4140625,
+        "last_private_mib": 1.328125,
+        "working_set_mib": {
+          "n": 366,
+          "min": 7.78515625,
+          "mean": 7.869396772540983,
+          "p50": 7.87890625,
+          "p95": 7.93359375,
+          "p99": 7.93359375,
+          "max": 7.93359375
+        },
+        "cpu_core_equivalents": 0.0,
+        "handles_first_last": [
+          138,
+          138
+        ],
+        "threads_first_last": [
+          5,
+          2
+        ]
+      },
+      {
+        "pid": 1424,
+        "name": "java",
+        "samples": 10,
+        "start_utc": "2026-09-25T13:49:02.6210996Z",
+        "end_utc": "2026-09-25T13:49:50.1148363Z",
+        "private_mib": {
+          "n": 10,
+          "min": 176.51953125,
+          "mean": 179.8375,
+          "p50": 178.7109375,
+          "p95": 192.5390625,
+          "p99": 192.5390625,
+          "max": 192.5390625
+        },
+        "first_private_mib": 192.5390625,
+        "last_private_mib": 178.92578125,
+        "working_set_mib": {
+          "n": 10,
+          "min": 106.6484375,
+          "mean": 109.537890625,
+          "p50": 108.37109375,
+          "p95": 121.40234375,
+          "p99": 121.40234375,
+          "max": 121.40234375
+        },
+        "cpu_core_equivalents": 0.007566787174485764,
+        "handles_first_last": [
+          572,
+          581
+        ],
+        "threads_first_last": [
+          34,
+          33
+        ]
+      },
+      {
+        "pid": 22740,
+        "name": "java",
+        "samples": 1,
+        "start_utc": "2026-09-25T13:49:18.3651454Z",
+        "end_utc": "2026-09-25T13:49:18.3651454Z",
+        "private_mib": {
+          "n": 1,
+          "min": 0.359375,
+          "mean": 0.359375,
+          "p50": 0.359375,
+          "p95": 0.359375,
+          "p99": 0.359375,
+          "max": 0.359375
+        },
+        "first_private_mib": 0.359375,
+        "last_private_mib": 0.359375,
+        "working_set_mib": {
+          "n": 1,
+          "min": 1.9140625,
+          "mean": 1.9140625,
+          "p50": 1.9140625,
+          "p95": 1.9140625,
+          "p99": 1.9140625,
+          "max": 1.9140625
+        },
+        "cpu_core_equivalents": null,
+        "handles_first_last": [
+          35,
+          35
+        ],
+        "threads_first_last": [
+          1,
+          1
+        ]
+      },
+      {
+        "pid": 31552,
+        "name": "java",
+        "samples": 1,
+        "start_utc": "2026-09-25T13:49:50.1148363Z",
+        "end_utc": "2026-09-25T13:49:50.1148363Z",
+        "private_mib": {
+          "n": 1,
+          "min": 0.359375,
+          "mean": 0.359375,
+          "p50": 0.359375,
+          "p95": 0.359375,
+          "p99": 0.359375,
+          "max": 0.359375
+        },
+        "first_private_mib": 0.359375,
+        "last_private_mib": 0.359375,
+        "working_set_mib": {
+          "n": 1,
+          "min": 1.9140625,
+          "mean": 1.9140625,
+          "p50": 1.9140625,
+          "p95": 1.9140625,
+          "p99": 1.9140625,
+          "max": 1.9140625
+        },
+        "cpu_core_equivalents": null,
+        "handles_first_last": [
+          35,
+          35
+        ],
+        "threads_first_last": [
+          1,
+          1
+        ]
+      },
+      {
+        "pid": 7032,
+        "name": "java",
+        "samples": 319,
+        "start_utc": "2026-09-25T13:49:55.3751244Z",
+        "end_utc": "2026-09-25T14:18:36.8700229Z",
+        "private_mib": {
+          "n": 319,
+          "min": 0.35546875,
+          "mean": 176.09108052507838,
+          "p50": 176.4609375,
+          "p95": 177.08984375,
+          "p99": 179.8203125,
+          "max": 189.4609375
+        },
+        "first_private_mib": 0.35546875,
+        "last_private_mib": 177.08984375,
+        "working_set_mib": {
+          "n": 319,
+          "min": 1.90625,
+          "mean": 106.1811936716301,
+          "p50": 106.296875,
+          "p95": 106.74609375,
+          "p99": 108.51171875,
+          "max": 119.1953125
+        },
+        "cpu_core_equivalents": 0.002577701511143253,
+        "handles_first_last": [
+          35,
+          572
+        ],
+        "threads_first_last": [
+          1,
+          27
+        ]
+      },
+      {
+        "pid": 40564,
+        "name": "java",
+        "samples": 315,
+        "start_utc": "2026-09-25T13:50:16.4241812Z",
+        "end_utc": "2026-09-25T14:18:36.8700229Z",
+        "private_mib": {
+          "n": 315,
+          "min": 280.78125,
+          "mean": 327.13738839285713,
+          "p50": 318.390625,
+          "p95": 346.4453125,
+          "p99": 346.4453125,
+          "max": 1154.09765625
+        },
+        "first_private_mib": 1154.09765625,
+        "last_private_mib": 318.80859375,
+        "working_set_mib": {
+          "n": 315,
+          "min": 126.8203125,
+          "mean": 273.5366443452381,
+          "p50": 269.53125,
+          "p95": 296.7421875,
+          "p99": 296.921875,
+          "max": 297.171875
+        },
+        "cpu_core_equivalents": 0.07663431369467533,
+        "handles_first_last": [
+          418,
+          430
+        ],
+        "threads_first_last": [
+          58,
+          57
+        ]
+      },
+      {
+        "pid": 22700,
+        "name": "ARES Robotics Studio",
+        "samples": 304,
+        "start_utc": "2026-09-25T13:51:12.8294534Z",
+        "end_utc": "2026-09-25T14:18:36.8700229Z",
+        "private_mib": {
+          "n": 304,
+          "min": 780.0078125,
+          "mean": 1015.3255550986842,
+          "p50": 986.92578125,
+          "p95": 1305.59375,
+          "p99": 1444.734375,
+          "max": 1645.79296875
+        },
+        "first_private_mib": 798.6484375,
+        "last_private_mib": 1058.265625,
+        "working_set_mib": {
+          "n": 304,
+          "min": 652.453125,
+          "mean": 872.302824321546,
+          "p50": 849.08203125,
+          "p95": 1099.37890625,
+          "p99": 1199.4140625,
+          "max": 1250.5859375
+        },
+        "cpu_core_equivalents": 0.8509902531486739,
+        "handles_first_last": [
+          1397,
+          1508
+        ],
+        "threads_first_last": [
+          88,
+          92
+        ]
+      },
+      {
+        "pid": 36056,
+        "name": "cmd",
+        "samples": 304,
+        "start_utc": "2026-09-25T13:51:12.8294534Z",
+        "end_utc": "2026-09-25T14:18:36.8700229Z",
+        "private_mib": {
+          "n": 304,
+          "min": 4.49609375,
+          "mean": 4.707853618421052,
+          "p50": 4.49609375,
+          "p95": 6.5078125,
+          "p99": 6.5078125,
+          "max": 6.5078125
+        },
+        "first_private_mib": 4.49609375,
+        "last_private_mib": 4.49609375,
+        "working_set_mib": {
+          "n": 304,
+          "min": 8.59765625,
+          "mean": 8.677888569078947,
+          "p50": 8.6875,
+          "p95": 8.7109375,
+          "p99": 8.71875,
+          "max": 8.71875
+        },
+        "cpu_core_equivalents": 0.0,
+        "handles_first_last": [
+          122,
+          122
+        ],
+        "threads_first_last": [
+          1,
+          1
+        ]
+      },
+      {
+        "pid": 42076,
+        "name": "conhost",
+        "samples": 304,
+        "start_utc": "2026-09-25T13:51:12.8294534Z",
+        "end_utc": "2026-09-25T14:18:36.8700229Z",
+        "private_mib": {
+          "n": 304,
+          "min": 1.1796875,
+          "mean": 1.1930124383223684,
+          "p50": 1.19140625,
+          "p95": 1.2265625,
+          "p99": 1.2265625,
+          "max": 1.2265625
+        },
+        "first_private_mib": 1.1796875,
+        "last_private_mib": 1.19140625,
+        "working_set_mib": {
+          "n": 304,
+          "min": 7.04296875,
+          "mean": 7.118613795230263,
+          "p50": 7.12890625,
+          "p95": 7.1484375,
+          "p99": 7.1484375,
+          "max": 7.1484375
+        },
+        "cpu_core_equivalents": 0.0,
+        "handles_first_last": [
+          97,
+          97
+        ],
+        "threads_first_last": [
+          2,
+          2
+        ]
+      },
+      {
+        "pid": 3712,
+        "name": "java",
+        "samples": 304,
+        "start_utc": "2026-09-25T13:51:12.8294534Z",
+        "end_utc": "2026-09-25T14:18:36.8700229Z",
+        "private_mib": {
+          "n": 304,
+          "min": 592.34765625,
+          "mean": 592.6549650493421,
+          "p50": 592.42578125,
+          "p95": 593.30859375,
+          "p99": 593.515625,
+          "max": 593.61328125
+        },
+        "first_private_mib": 593.46875,
+        "last_private_mib": 592.34765625,
+        "working_set_mib": {
+          "n": 304,
+          "min": 515.19921875,
+          "mean": 515.398835834704,
+          "p50": 515.40234375,
+          "p95": 515.64453125,
+          "p99": 515.64453125,
+          "max": 515.66796875
+        },
+        "cpu_core_equivalents": 0.0050941565299049505,
+        "handles_first_last": [
+          1864,
+          1805
+        ],
+        "threads_first_last": [
+          219,
+          203
+        ]
+      },
+      {
+        "pid": 41112,
+        "name": "conhost",
+        "samples": 304,
+        "start_utc": "2026-09-25T13:51:12.8294534Z",
+        "end_utc": "2026-09-25T14:18:36.8700229Z",
+        "private_mib": {
+          "n": 304,
+          "min": 1.19140625,
+          "mean": 1.2019813939144737,
+          "p50": 1.19921875,
+          "p95": 1.23828125,
+          "p99": 1.23828125,
+          "max": 1.23828125
+        },
+        "first_private_mib": 1.19140625,
+        "last_private_mib": 1.19921875,
+        "working_set_mib": {
+          "n": 304,
+          "min": 7.05078125,
+          "mean": 7.122699938322368,
+          "p50": 7.1328125,
+          "p95": 7.15625,
+          "p99": 7.15625,
+          "max": 7.15625
+        },
+        "cpu_core_equivalents": 0.0,
+        "handles_first_last": [
+          96,
+          96
+        ],
+        "threads_first_last": [
+          2,
+          2
+        ]
+      },
+      {
+        "pid": 36764,
+        "name": "adb",
+        "samples": 1,
+        "start_utc": "2026-09-25T14:12:41.6711158Z",
+        "end_utc": "2026-09-25T14:12:41.6711158Z",
+        "private_mib": {
+          "n": 1,
+          "min": 1.02734375,
+          "mean": 1.02734375,
+          "p50": 1.02734375,
+          "p95": 1.02734375,
+          "p99": 1.02734375,
+          "max": 1.02734375
+        },
+        "first_private_mib": 1.02734375,
+        "last_private_mib": 1.02734375,
+        "working_set_mib": {
+          "n": 1,
+          "min": 5.6171875,
+          "mean": 5.6171875,
+          "p50": 5.6171875,
+          "p95": 5.6171875,
+          "p99": 5.6171875,
+          "max": 5.6171875
+        },
+        "cpu_core_equivalents": null,
+        "handles_first_last": [
+          76,
+          76
+        ],
+        "threads_first_last": [
+          1,
+          1
+        ]
+      },
+      {
+        "pid": 37748,
+        "name": "conhost",
+        "samples": 1,
+        "start_utc": "2026-09-25T14:12:41.6711158Z",
+        "end_utc": "2026-09-25T14:12:41.6711158Z",
+        "private_mib": {
+          "n": 1,
+          "min": 0.4375,
+          "mean": 0.4375,
+          "p50": 0.4375,
+          "p95": 0.4375,
+          "p99": 0.4375,
+          "max": 0.4375
+        },
+        "first_private_mib": 0.4375,
+        "last_private_mib": 0.4375,
+        "working_set_mib": {
+          "n": 1,
+          "min": 2.38671875,
+          "mean": 2.38671875,
+          "p50": 2.38671875,
+          "p95": 2.38671875,
+          "p99": 2.38671875,
+          "max": 2.38671875
+        },
+        "cpu_core_equivalents": null,
+        "handles_first_last": [
+          0,
+          0
+        ],
+        "threads_first_last": [
+          1,
+          1
+        ]
+      },
+      {
+        "pid": 47268,
+        "name": "adb",
+        "samples": 1,
+        "start_utc": "2026-09-25T14:13:09.3412127Z",
+        "end_utc": "2026-09-25T14:13:09.3412127Z",
+        "private_mib": {
+          "n": 1,
+          "min": 0.81640625,
+          "mean": 0.81640625,
+          "p50": 0.81640625,
+          "p95": 0.81640625,
+          "p99": 0.81640625,
+          "max": 0.81640625
+        },
+        "first_private_mib": 0.81640625,
+        "last_private_mib": 0.81640625,
+        "working_set_mib": {
+          "n": 1,
+          "min": 4.5,
+          "mean": 4.5,
+          "p50": 4.5,
+          "p95": 4.5,
+          "p99": 4.5,
+          "max": 4.5
+        },
+        "cpu_core_equivalents": null,
+        "handles_first_last": [
+          34,
+          34
+        ],
+        "threads_first_last": [
+          1,
+          1
+        ]
+      }
+    ],
+    "control_ping_ms": {
+      "n": 386,
+      "min": 0.8982,
+      "mean": 2.9796966321243525,
+      "p50": 1.2949,
+      "p95": 2.0047,
+      "p99": 16.1247,
+      "max": 556.8856
+    },
+    "control_ping_errors": [
+      {
+        "utc": "2026-09-25T13:43:46.5151975Z",
+        "error": "Exception calling \"Connect\" with \"2\" argument(s): \"No connection could be made because the target machine actively refused it. [::ffff:127.0.0.1]:49329\""
+      },
+      {
+        "utc": "2026-09-25T13:43:53.7939549Z",
+        "error": "Exception calling \"Connect\" with \"2\" argument(s): \"No connection could be made because the target machine actively refused it. [::ffff:127.0.0.1]:49329\""
+      },
+      {
+        "utc": "2026-09-25T13:44:01.0338724Z",
+        "error": "Exception calling \"Connect\" with \"2\" argument(s): \"No connection could be made because the target machine actively refused it. [::ffff:127.0.0.1]:49329\""
+      },
+      {
+        "utc": "2026-09-25T13:44:08.2552571Z",
+        "error": "Exception calling \"Connect\" with \"2\" argument(s): \"No connection could be made because the target machine actively refused it. [::ffff:127.0.0.1]:49329\""
+      },
+      {
+        "utc": "2026-09-25T13:44:15.5010663Z",
+        "error": "Exception calling \"Connect\" with \"2\" argument(s): \"No connection could be made because the target machine actively refused it. [::ffff:127.0.0.1]:49329\""
+      },
+      {
+        "utc": "2026-09-25T13:44:22.7318586Z",
+        "error": "Exception calling \"Connect\" with \"2\" argument(s): \"No connection could be made because the target machine actively refused it. [::ffff:127.0.0.1]:49329\""
+      },
+      {
+        "utc": "2026-09-25T13:44:29.9713374Z",
+        "error": "Exception calling \"Connect\" with \"2\" argument(s): \"No connection could be made because the target machine actively refused it. [::ffff:127.0.0.1]:49329\""
+      },
+      {
+        "utc": "2026-09-25T13:44:37.1994827Z",
+        "error": "Exception calling \"Connect\" with \"2\" argument(s): \"No connection could be made because the target machine actively refused it. [::ffff:127.0.0.1]:49329\""
+      }
+    ],
+    "app_jvm_gc": {
+      "samples": 431,
+      "heap_used_mib": {
+        "n": 431,
+        "min": 61.71669921875,
+        "mean": 116.83103202943735,
+        "p50": 112.88408203125,
+        "p95": 173.28623046874998,
+        "p99": 209.1318359375,
+        "max": 224.940234375
+      },
+      "old_generation_used_mib": {
+        "n": 431,
+        "min": 58.21083984375,
+        "mean": 64.51378516531322,
+        "p50": 64.88037109375,
+        "p95": 65.147265625,
+        "p99": 68.4986328125,
+        "max": 68.4986328125
+      },
+      "old_generation_first_last_mib": [
+        58.21083984375,
+        64.96015625
+      ],
+      "full_gc_count_delta": 72.0,
+      "gc_time_s_delta": 5.257,
+      "duration_s": 2154.7
+    },
+    "sim_host_timing": [
+      {
+        "file": "sim-host-timing.csv",
+        "total_frames": 100000,
+        "duration_s": 2001.1347804,
+        "selected_active_frames_after_30s_warmup": 97197,
+        "work_ms": {
+          "n": 97197,
+          "min": 0.2304,
+          "mean": 0.9256872526929844,
+          "p50": 0.8227,
+          "p95": 1.6725,
+          "p99": 2.3132,
+          "max": 53.0229
+        },
+        "period_ms": {
+          "n": 97196,
+          "min": 1.3305,
+          "mean": 20.010172715955388,
+          "p50": 15.7883,
+          "p95": 31.4286,
+          "p99": 31.9888,
+          "max": 75.4173
+        },
+        "work_over_20ms": 5,
+        "period_over_40ms": 21,
+        "wait_ms": {
+          "n": 97197,
+          "min": 0.0018,
+          "mean": 19.078738581437698,
+          "p50": 14.9345,
+          "p95": 30.6358,
+          "p99": 31.23,
+          "max": 69.4257
+        },
+        "wake_lateness_ms": {
+          "n": 97197,
+          "min": 0.0002,
+          "mean": 7.713067456814511,
+          "p50": 7.7183,
+          "p95": 14.6289,
+          "p99": 15.4812,
+          "max": 56.6683
+        },
+        "rebased_wall_periods": 45,
+        "runner_allocated_bytes": {
+          "n": 97197,
+          "min": 90864,
+          "mean": 136300.4853236211,
+          "p50": 122936,
+          "p95": 204552,
+          "p99": 220848,
+          "max": 555536
+        }
+      }
+    ],
+    "limitations": [
+      "Desktop measurements, not target hardware.",
+      "PING is a test-control response, not render latency.",
+      "NT4 sequence gaps measure observer-visible coalescing/loss, not an internal drop counter.",
+      "Private bytes include reserved/native memory and are not retained JVM heap.",
+      "Host instrumentation covers simulator runner work; other threads and physical sensor-to-output latency are excluded.",
+      "Local regression builds also ran during this representative-load soak."
+    ]
+  },
+  "junit_snapshots": {
+    "library": {
+      "files": 483,
+      "tests": 3095,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ftc_teamcode": {
+      "files": 5,
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ftc_simulator": {
+      "files": 1,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frc": {
+      "files": 25,
+      "tests": 206,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "studio_latest_summary_lifecycle_scope": {
+      "files": 8,
+      "tests": 144,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "notes": [
+    "Raw evidence is local and ignored; hashes identify the retained files.",
+    "JUnit snapshots are scoped/cached Gradle reports, not whole-monorepo coverage.",
+    "See the report for failed attempts, retries, native limitations and final disposition."
+  ],
+  "files": [
+    {
+      "path": "analyze_soak.py",
+      "bytes": 6851,
+      "sha256": "44d22c7eb0e3ef5d15b0f7dec694820028a40af9561f2fdb92a274dfe559f698"
+    },
+    {
+      "path": "app-1-process.json",
+      "bytes": 269,
+      "sha256": "5ef5c65791e26509eddf768ea35fb8d218c3a654d5746ca7bbc40c8538a3e8cf"
+    },
+    {
+      "path": "app-1.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "app-1.stdout.log",
+      "bytes": 12171,
+      "sha256": "3cae81480c80c3e7ed66a21597507da9ca12aef600a3829dfe9b68285dd8563d"
+    },
+    {
+      "path": "app-2-process.json",
+      "bytes": 185,
+      "sha256": "614d8424f6551ae6baea474efcf0edd16df0824607246738f83103932c35e3e3"
+    },
+    {
+      "path": "app-2.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "app-2.stdout.log",
+      "bytes": 3961,
+      "sha256": "473c4b05dad2594e82c81e7aa4c26920dc6a724af22fe53b79cfa0306d84bd0e"
+    },
+    {
+      "path": "app-3-process.json",
+      "bytes": 185,
+      "sha256": "dad2758966e488a53268d2d7752c237209f7c0d7cbb26a2e0b5faaa33fefdd0d"
+    },
+    {
+      "path": "app-3.stderr.log",
+      "bytes": 343,
+      "sha256": "15cadaaf16dd1a5490f3a297ccfaf33ada4e834e6f79fbdd31b6d705c51d2f7e"
+    },
+    {
+      "path": "app-3.stdout.log",
+      "bytes": 37103,
+      "sha256": "3a9413c4b8cba3bdc1a9bce4f2f5de23c02113b38867b11c876c1572bc46d8db"
+    },
+    {
+      "path": "biobuzz-documents-before-save.json",
+      "bytes": 2969,
+      "sha256": "4be5cd89e8ad43e46c59756cc9f63fc5c6254fb67c3dc00e3f754375eb8af14f"
+    },
+    {
+      "path": "biobuzz-project-before-save.json",
+      "bytes": 539,
+      "sha256": "c5fb02eda55a4fc99033f528d6981aa181b0dae14ac9e9b360fddf429726697e"
+    },
+    {
+      "path": "captures/app-2/capture-001.png",
+      "bytes": 112993,
+      "sha256": "3f351e2de9f0606f2a44cf1abaa08a832d2cfbe98c01d1bf416bc7e9edff5b2c"
+    },
+    {
+      "path": "captures/app-3/capture-001.png",
+      "bytes": 101103,
+      "sha256": "f184b3a52d328a57fc99a6d83528cb70ad91da57ccf84c3d997d993e48de9867"
+    },
+    {
+      "path": "captures/app-3/capture-002.png",
+      "bytes": 110371,
+      "sha256": "b87b43e56a16ce405dc6783851fabd066f340e7ae2727c59eb9f81d3fc31b223"
+    },
+    {
+      "path": "captures/app-3/capture-003.png",
+      "bytes": 123360,
+      "sha256": "08d193748b6c3a710830876109e158826f2ef76e8a2cd4608fb6c7822d181f63"
+    },
+    {
+      "path": "captures/app-3/capture-004.png",
+      "bytes": 119729,
+      "sha256": "5b7c3b82d93572387a63841d24df7754c287f824fa7febf83c257d63cc5e7de4"
+    },
+    {
+      "path": "captures/app-3/capture-005.png",
+      "bytes": 129060,
+      "sha256": "791afda41bc960d81a8f923952e1dba03c4f937a10c2e54993d2b93aac672eb6"
+    },
+    {
+      "path": "captures/app-3/capture-006.png",
+      "bytes": 104111,
+      "sha256": "0b567f965f70abfb686da1543314156f017180965b78696ef78eae7691064fbd"
+    },
+    {
+      "path": "captures/app-3/capture-007.png",
+      "bytes": 105311,
+      "sha256": "498564998615f1271210b8bd43d61961074bc0454be08ea1b62faf8867230517"
+    },
+    {
+      "path": "captures/app-3/capture-008.png",
+      "bytes": 105354,
+      "sha256": "e39d227bad8986600add2012b4443079496ff825403ecd226fb4895e9997ce1d"
+    },
+    {
+      "path": "captures/app-3/capture-009.png",
+      "bytes": 115716,
+      "sha256": "0c8fb7eb1c4d103da94cef2d9719b74747dda22f1ecc4386f882e6fb446c7dc1"
+    },
+    {
+      "path": "captures/app-3/capture-010.png",
+      "bytes": 117346,
+      "sha256": "c6db314805d09c455838a985289b35dca14432edd073c5eecbda5dbe96538c75"
+    },
+    {
+      "path": "captures/app-3/capture-011.png",
+      "bytes": 126644,
+      "sha256": "c589c4f2ce50a39ffc687b90baaa045055d0435a5267d8033c11f997b3bba3e9"
+    },
+    {
+      "path": "captures/app-3/capture-012.png",
+      "bytes": 114447,
+      "sha256": "754b6500ddffb08c69063b7d1831e55f1657bf946b1905722d51e3e7de71685d"
+    },
+    {
+      "path": "captures/app-3/capture-013.png",
+      "bytes": 114659,
+      "sha256": "12dc08d52133a825233e07b292b7b7cc085845d5860d1651856912d18904b427"
+    },
+    {
+      "path": "captures/app-3/capture-014.png",
+      "bytes": 121516,
+      "sha256": "6241d2ec177c8b7a3da046654f499d55f5d9ff6b2bc62665d4d090066b4f1a31"
+    },
+    {
+      "path": "captures/app-3/capture-015.png",
+      "bytes": 120008,
+      "sha256": "0ecc1c32e06af5a54157f926503a59b955d9b461d43b8b433dbec00963b29ba3"
+    },
+    {
+      "path": "captures/app-3/capture-016.png",
+      "bytes": 122132,
+      "sha256": "88e53faf6576b705c68543de27076ca4879d025cbe28bdc89365e5438525df02"
+    },
+    {
+      "path": "captures/app-3/capture-017.png",
+      "bytes": 122478,
+      "sha256": "c19d812393ef7f529804e80cb66b75b9dd289db533117f2c537e26c1281b0c8d"
+    },
+    {
+      "path": "captures/app-3/capture-018.png",
+      "bytes": 115622,
+      "sha256": "a416da3af5fb2e6a8d316b46c364cf512a8024e183e925a3aba031a72b7572ee"
+    },
+    {
+      "path": "captures/app-3/capture-019.png",
+      "bytes": 115814,
+      "sha256": "fc1f4dc451105d2001b3b2b8ac342d25dc96f1799fd0dfd5a813141c0b173dd1"
+    },
+    {
+      "path": "captures/app-3/capture-020.png",
+      "bytes": 115922,
+      "sha256": "48de0518c528722d737863240e2777693dba74b0cd92447c192f3f558bade58c"
+    },
+    {
+      "path": "captures/app-3/capture-021.png",
+      "bytes": 116873,
+      "sha256": "a932388ea2add59f55352f139d2270427751a55180d8c847322e8121578037de"
+    },
+    {
+      "path": "captures/app-3/capture-022.png",
+      "bytes": 115320,
+      "sha256": "65e624c3d147f5c926c3ef1a3d425fefebfad70a963e4e8f29e6b4f195b11164"
+    },
+    {
+      "path": "captures/app-3/capture-023.png",
+      "bytes": 116718,
+      "sha256": "1a956329ef141e8f0635f1a6079c1a54b5443ccea811c062f3dda0294adb3a15"
+    },
+    {
+      "path": "captures/capture-001.png",
+      "bytes": 112547,
+      "sha256": "304111a69681d8a976dfc6dc1367ba752bc54d4675e7a5dd0286a0ffbc4dd5d0"
+    },
+    {
+      "path": "captures/capture-002.png",
+      "bytes": 116141,
+      "sha256": "c3b69ac9bd5d0359f2eb0403cccdf3083720f727a9a998fbd69df78b66db3bf3"
+    },
+    {
+      "path": "captures/capture-003.png",
+      "bytes": 119741,
+      "sha256": "b0a0065129c0806d0503921e5e1fc88527e973679791f2212ded221eab6b2a80"
+    },
+    {
+      "path": "captures/capture-004.png",
+      "bytes": 98925,
+      "sha256": "d0bf55d33683244c083b9e0272ff1369973d4e101cd3dea80706f4bc27a8ac8e"
+    },
+    {
+      "path": "captures/capture-005.png",
+      "bytes": 90770,
+      "sha256": "ace8b100ac2a9a0c94ad6a9773aeecd4a15d1fb1488cb054399b529dc3060e5e"
+    },
+    {
+      "path": "captures/capture-006.png",
+      "bytes": 134593,
+      "sha256": "b2be3f1eb985c079e661769312065b17644f7cbd60e56ea84b112e8016b2948f"
+    },
+    {
+      "path": "captures/capture-007.png",
+      "bytes": 138559,
+      "sha256": "fb8579bde217ed0e2e79ab3bc46acefb5b3725dbbd6ab2b08b6dde0065ef97ec"
+    },
+    {
+      "path": "captures/capture-008.png",
+      "bytes": 135157,
+      "sha256": "bf7b97f543d7a197068ece5dfa869047185b22163b12e9edeff161fc8f429e15"
+    },
+    {
+      "path": "captures/capture-009.png",
+      "bytes": 98355,
+      "sha256": "c1554a350d17c7006a54b21fa0580410b2f8b46cfd8d3ce2db91f271b789fad9"
+    },
+    {
+      "path": "captures/capture-010.png",
+      "bytes": 92183,
+      "sha256": "2bec42de32c3d7bdcdb225684b16f347d7ad1bc533670331916d6914c0b6d5aa"
+    },
+    {
+      "path": "captures/capture-011.png",
+      "bytes": 117231,
+      "sha256": "82d691908c45f4ae6321dd0f135212b10a513ba7c5f50990580960eb3dafa4a7"
+    },
+    {
+      "path": "captures/capture-012.png",
+      "bytes": 118863,
+      "sha256": "3f1fed660c5c7db58baa2f864b421be418e68ee06e166c81a383b81ab1effcc1"
+    },
+    {
+      "path": "captures/capture-013.png",
+      "bytes": 95053,
+      "sha256": "170e1d0f9e22ad9fc67999d5973f72e7a87269ea64b65ef97e97310aad44a236"
+    },
+    {
+      "path": "captures/capture-014.png",
+      "bytes": 113985,
+      "sha256": "38ba466a30d32ebdb73f0e9996c4991b415ef9942044c76750c4f0c5e5054fd7"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-001.png",
+      "bytes": 112361,
+      "sha256": "65ad127eba63cf53bab790bf2a104ec30259da668167cc726791424392047a7f"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-002.png",
+      "bytes": 98064,
+      "sha256": "78e12f457108f781226c0bbfb4e7f6ba888b11c8f251a2b3d44a6fd5e399ea1c"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-003.png",
+      "bytes": 105570,
+      "sha256": "78bf523d65e1b6c8669736fb9b4889c5d60b1c186f3ab545aba2d179e1d46972"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-004.png",
+      "bytes": 95851,
+      "sha256": "06ff800e195e7cf81c1c9314b1b717e216d88f0c1cd4b4824f1ecd98cac48e02"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-005.png",
+      "bytes": 99538,
+      "sha256": "23e091ba722410d1e511f8fe19d42347514a3089ea5baba17fb34f9d0c10492e"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-006.png",
+      "bytes": 117090,
+      "sha256": "531ed3af3aff70db54ccc1b96311eab4066318a8bc08f748729fdf2ea7386206"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-007.png",
+      "bytes": 118754,
+      "sha256": "9599de4b6c567fe0a9880ec5cdfa6a799e7117b35ed0eeebb0320fce564b3258"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-008.png",
+      "bytes": 118882,
+      "sha256": "4913132045f21a8e77e1f52bd2aa917e1069072d24f393d187801ac5ba11a1ee"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-009.png",
+      "bytes": 116019,
+      "sha256": "fafc9b66232a72f3cab32f92b8c0f00e4ad63a55d0febf115716c5da20b0a326"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-010.png",
+      "bytes": 118639,
+      "sha256": "1300e6d846ef6d8a634689d54a32f4b980121b2d9b0f907b58a742773a190c23"
+    },
+    {
+      "path": "captures/fixed-biobuzz/capture-011.png",
+      "bytes": 120929,
+      "sha256": "65d36b3695a1280750a64d5b0dcdc61a8022f03a7c381933527f55de6a8cd4f0"
+    },
+    {
+      "path": "captures/fixed-lightbot/capture-001.png",
+      "bytes": 112266,
+      "sha256": "13700f0d8a09092bf69cf546c3fb30b42afc873f4a8fd6300650580673fde05d"
+    },
+    {
+      "path": "captures/lightbot/capture-001.png",
+      "bytes": 112544,
+      "sha256": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e"
+    },
+    {
+      "path": "captures/lightbot/capture-002.png",
+      "bytes": 115716,
+      "sha256": "31e6d05b72702eaea70d5089938940ae24c30ed1af588583568efe359f20dc9b"
+    },
+    {
+      "path": "captures/lightbot/capture-003.png",
+      "bytes": 113775,
+      "sha256": "5be0d446bd1d58c18a205f597f9d90e0d2b63de09f5200f3e26509506fe0becd"
+    },
+    {
+      "path": "captures/lightbot/capture-004.png",
+      "bytes": 98350,
+      "sha256": "ebb9db5f34b70105564abff6f2062edafee40716c5cd70f220cc6430bd33fd82"
+    },
+    {
+      "path": "captures/lightbot/capture-005.png",
+      "bytes": 99664,
+      "sha256": "09d5ea59f3972b375a315bf3d1bb12dd5ce1ec6d4ff03722180b4b76347e2222"
+    },
+    {
+      "path": "captures/lightbot/capture-006.png",
+      "bytes": 111368,
+      "sha256": "472c084489848d30343edf578968aa7b18766a905d02b87c7c6ea090ce5d94fb"
+    },
+    {
+      "path": "captures/lightbot/capture-007.png",
+      "bytes": 104157,
+      "sha256": "68c41c8b7271d60abd9afb48e53e8cc611a94a506ad41698fdf201aa32e7f9ff"
+    },
+    {
+      "path": "captures/lightbot/capture-008.png",
+      "bytes": 126858,
+      "sha256": "fa5ec9fa885d9946b95da08a6d6cbce062064b14f606ce761fdb7ccdda28b307"
+    },
+    {
+      "path": "captures/lightbot/capture-009.png",
+      "bytes": 123375,
+      "sha256": "7e08916ee40ce996885fb619c487364cecc502d5a5c5f3cb640dba3881962140"
+    },
+    {
+      "path": "captures/lightbot/capture-010.png",
+      "bytes": 134253,
+      "sha256": "0d2d875dcbe065f1a2fe6f7b78f3ce739b7e2224e5c0a03efaeb5c50eca2c2ec"
+    },
+    {
+      "path": "captures/lightbot/capture-011.png",
+      "bytes": 135035,
+      "sha256": "882bccf25a018954a62a6e581c85b643ef05a1f57f95b18d9f651522c16c1bd3"
+    },
+    {
+      "path": "captures/lightbot/capture-012.png",
+      "bytes": 130069,
+      "sha256": "4c050fa164961c7554716533a00ad26d1ec0344d1ded7d3bd87d00423fda1527"
+    },
+    {
+      "path": "captures/lightbot/capture-013.png",
+      "bytes": 121885,
+      "sha256": "76850b37d9f7d1f201ee78be430390c728057b58f3d3627a9efbfb59ef800ce1"
+    },
+    {
+      "path": "captures/lightbot/capture-014.png",
+      "bytes": 91484,
+      "sha256": "1dcd29fa8ef53a9abaee62aad16d4dc9cf8a5a1024d966aff0bd7fd4d2df3654"
+    },
+    {
+      "path": "captures/lightbot/capture-015.png",
+      "bytes": 105623,
+      "sha256": "58d4e1d73a178514a297b38adea016530e72d5517d40d393dfa5eb0d32c39b72"
+    },
+    {
+      "path": "captures/lightbot/capture-016.png",
+      "bytes": 127044,
+      "sha256": "cf16f7b26d287c2d4edb564a6e01011c598abadad75a69b510a7ea50d1e1566e"
+    },
+    {
+      "path": "captures/lightbot/capture-017.png",
+      "bytes": 133405,
+      "sha256": "1658dc63f553297f661a3d2f5c6359f3e43ad90cfbfbed2d61c224fa748ea425"
+    },
+    {
+      "path": "captures/lightbot/capture-018.png",
+      "bytes": 141782,
+      "sha256": "59b74a8c39d808ac87b33c461eb6e245d62fb9b25016979f054d883d5cc94e5d"
+    },
+    {
+      "path": "captures/lightbot/capture-019.png",
+      "bytes": 134316,
+      "sha256": "13d0b32a1c1cb744ea42c1f0cc0a6702b4cb9477c07e46c4b2dac4ec0e39fabd"
+    },
+    {
+      "path": "captures/lightbot/capture-020.png",
+      "bytes": 134444,
+      "sha256": "5e0aeec1604e043e2f24c9c82eda5c9276f773aeaf7384c2b236a8e7429118de"
+    },
+    {
+      "path": "captures/lightbot-reopen-2/capture-001.png",
+      "bytes": 123441,
+      "sha256": "57cbc09a5d6c527dc4172e2508ae08e2a468d61ce33f4dcf373090cd5bc5a373"
+    },
+    {
+      "path": "captures/lightbot-reopen-2/capture-002.png",
+      "bytes": 112266,
+      "sha256": "13700f0d8a09092bf69cf546c3fb30b42afc873f4a8fd6300650580673fde05d"
+    },
+    {
+      "path": "ci-scopes.txt",
+      "bytes": 216,
+      "sha256": "7b893ff333fb237a37fe8d586085023b48b9eb6759d6ad89f017dbaed08b9f21"
+    },
+    {
+      "path": "collect_evidence.py",
+      "bytes": 2862,
+      "sha256": "9ef7ef3bc05642a0a85067bb2048435afbe884717483d28eefc65eec1d4608ff"
+    },
+    {
+      "path": "drive.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "drive.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "drive_soak.py",
+      "bytes": 1284,
+      "sha256": "499d86ea918a709a50a47d3ddbed21542f89ce128203ed9667593fb37f4e3e90"
+    },
+    {
+      "path": "elevated-installer.json",
+      "bytes": 69,
+      "sha256": "19fd8866039f43dd67fc1b68011f4aa2ab99244ad03a332fba9dcc8b9b148061"
+    },
+    {
+      "path": "fault-injection.log",
+      "bytes": 1227,
+      "sha256": "e3e99a7eeb61a902f1e0bcf1a9878bfd6c74d6e62848d2924120c0805b642446"
+    },
+    {
+      "path": "fault-repair.log",
+      "bytes": 1113,
+      "sha256": "02bc71ec329868dd84755809864186fb366eb16b11e5018bb2eae0a7a2e308e4"
+    },
+    {
+      "path": "final-runtime-cleanup.json",
+      "bytes": 1041,
+      "sha256": "26ce9fbcf3144986d317f10417a8d733d975d3b45ea96199139e9a42166baf0d"
+    },
+    {
+      "path": "fixed-biobuzz-process.json",
+      "bytes": 57,
+      "sha256": "f7dce95ffcfc4d14460925c149d545c74407dda18a9651161622af787d407bc7"
+    },
+    {
+      "path": "fixed-biobuzz-sim-processes.json",
+      "bytes": 137,
+      "sha256": "22ee546eaf43b214522d0dfe6c83ad100ee18e6efa771be5e813b453e28b9486"
+    },
+    {
+      "path": "fixed-biobuzz.log",
+      "bytes": 15709,
+      "sha256": "211a1be734bf96ba45018470e00ed8f12034292ef329f572d7420a3fdc14aefa"
+    },
+    {
+      "path": "fixed-lightbot-process.json",
+      "bytes": 57,
+      "sha256": "b0f21bbd098e0bf713d72fef2c6820c3ac92d9966d0e34f0e9673f4a15a01986"
+    },
+    {
+      "path": "fixed-lightbot.log",
+      "bytes": 6410,
+      "sha256": "5e9ff684f761bae010ced22aefbd1928207ae97b290e5db77358c24a9dc5baed"
+    },
+    {
+      "path": "fixed-owned-before-close.json",
+      "bytes": 460,
+      "sha256": "192922b49250ece10238656cae6ef72f0020efd62ce144a8691877601e53a06d"
+    },
+    {
+      "path": "fixed-shutdown-1.json",
+      "bytes": 118,
+      "sha256": "71cd9764c3e18c69e829b8a976962ee9d84054401f8ff3bf4ca32529ec089f85"
+    },
+    {
+      "path": "fixed-shutdown-2.json",
+      "bytes": 57,
+      "sha256": "c5c5191bcbea7a99039026a067220377509ded3d290909b3aba57c2832ddee02"
+    },
+    {
+      "path": "fixed-wire/nt4-soak.jsonl",
+      "bytes": 1506189,
+      "sha256": "0b0ae2626f2f64dca4a18184ecd5acf6e5a9eefa1f1432a8b7edea8060535aaf"
+    },
+    {
+      "path": "fixed-wire/soak-complete.json",
+      "bytes": 103543,
+      "sha256": "e207f90fcc6112ae06e8d8549f2efc82d0211629766bf24eaa90fdce04625a6b"
+    },
+    {
+      "path": "fixed-wire/soak-progress.json",
+      "bytes": 103543,
+      "sha256": "e207f90fcc6112ae06e8d8549f2efc82d0211629766bf24eaa90fdce04625a6b"
+    },
+    {
+      "path": "frc-consumer.log",
+      "bytes": 29497,
+      "sha256": "5c98e08362161b036331394b4a17256f23069e154ffdaabd77da13bd01ad5eb1"
+    },
+    {
+      "path": "freshness-after.log",
+      "bytes": 2081,
+      "sha256": "491521eee2d1028f8a0ee2c7b02ea35ad758d96d671a645b270d8fc4fd67bee1"
+    },
+    {
+      "path": "freshness-before.log",
+      "bytes": 2863,
+      "sha256": "ac259d5143f88f400d731395b456528b66722273bb3b34d84b5c03bd35734491"
+    },
+    {
+      "path": "ftc-consumer.log",
+      "bytes": 20685108,
+      "sha256": "7097ac904d6de1b11aa050e6bd2717c76edc01e8392b2bd749248de05be8f75f"
+    },
+    {
+      "path": "host-cpu.json",
+      "bytes": 121,
+      "sha256": "3b9111f006f9664ad499b52f0f83607d906f085f1f91cc071c2dcb0ec80cd5ca"
+    },
+    {
+      "path": "host-os.json",
+      "bytes": 115,
+      "sha256": "7c447c7bfe74fe9bf8cda4602da62c415a090048b3ffa746ffb1d3114830dcd6"
+    },
+    {
+      "path": "installation-result.json",
+      "bytes": 300,
+      "sha256": "3408ddb799a8426b422d92ac342181b02a68e5e894b1c45cb257f9dc5eed75a6"
+    },
+    {
+      "path": "installed-version.json",
+      "bytes": 205,
+      "sha256": "5cec0ff760be72b9321ee0886b00aa316cd6c8545daa99de6e080e330fc6a9e6"
+    },
+    {
+      "path": "junit/ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.desktop.DesktopShutdownCoordinatorTest.xml",
+      "bytes": 734,
+      "sha256": "0e4c534e12b78854bfbd0d8e5bafc6a6abccf210f0f367d0a88f4038bcdd6b77"
+    },
+    {
+      "path": "junit/ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.AutoImportServiceTest.xml",
+      "bytes": 2436,
+      "sha256": "d0d6df5d3e6e1154e63588d279a5780461f5081ca19da94101e2442a9b8859c5"
+    },
+    {
+      "path": "junit/ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SimulatorProcessServiceTest.xml",
+      "bytes": 666,
+      "sha256": "d2ea92850f5d842d2ae1887cda131bf6d0870142709fc8411fe9659b5d5e3cdf"
+    },
+    {
+      "path": "junit/ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SummaryAggregationAuditTest.xml",
+      "bytes": 4565,
+      "sha256": "92d9cf4788f53bc2b33975c6450dd7c09ac1ffc2ed7c94c7c2ec86de1f6c1e8d"
+    },
+    {
+      "path": "junit/ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SummaryEngineServiceTest.xml",
+      "bytes": 1069,
+      "sha256": "d65c08c36df411088db5709ac38ba535dcb8229b2f2b5ef8c5fba12704883632"
+    },
+    {
+      "path": "junit/ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SummaryHealthAuditTest.xml",
+      "bytes": 4988,
+      "sha256": "0d407d9d39ccaba1171eb45c08b840d789f4c0053cdc21086eafa68eeecb465c"
+    },
+    {
+      "path": "junit/ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SummaryLocalizationAuditTest.xml",
+      "bytes": 5383,
+      "sha256": "8feb8f87d00784205ba33afb2519bc8a1ce1373eb2d60dd332b04abe90de1ef3"
+    },
+    {
+      "path": "junit/ARES-Analytics/app/build/test-results/test/TEST-com.ares.analytics.service.SummarySysIdInputAuditTest.xml",
+      "bytes": 7025,
+      "sha256": "4a8fd6abfce7ce4a6c16e2717e5c73de03af27861b8adcd19ffea404658164ba"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.FrcStudioSimulationBridgeTest.xml",
+      "bytes": 1505,
+      "sha256": "45540c073a72210996acdb1ef466ea391b74c8901d1c76fa1bf116351cea33ab"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.generated.GeneratedAresProjectContractTest.xml",
+      "bytes": 1194,
+      "sha256": "e4a25f841f0e7144f2c591d3cf088ff90e15f89062ba2a94b00dd2482b9a5c70"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterAutonomousSelectionAuditTest.xml",
+      "bytes": 1110,
+      "sha256": "dc7eb5dc64c53c09bb6b804a8f482ecd0f54e66c0564faa9f3c664bc2b486f2e"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterBridgeLeaseAuditTest.xml",
+      "bytes": 1411,
+      "sha256": "7167ba9eabf00f09eb7fcb8d07318369defd66fa9071a5877a96086b2881adee"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterCapabilityConstructionAuditTest.xml",
+      "bytes": 4497,
+      "sha256": "3ab036c1d44a9429901aa2967d273d1266120edc5c03da57a9db24c4a9e71298"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterDriveLeaseAuditTest.xml",
+      "bytes": 2914,
+      "sha256": "78c1deed1c1ed4ee96f2a92b6cb6c166b02c42653219b39b40325dba6db93d73"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterDriveLoopAllocationTest.xml",
+      "bytes": 606,
+      "sha256": "1311ef5953fdb4821187ae51e74c405dfde97e17465caa4bb17b25a6001d494f"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterDriveNumericsAuditTest.xml",
+      "bytes": 2506,
+      "sha256": "3029fc33f4099b9e4f04f330db5c48e672c519160c40c7e879011eb406372abf"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterDriveSimulationTest.xml",
+      "bytes": 1196,
+      "sha256": "9e504bd2cc1d8de6f8cb39b5f372ab412cf03031e0d2e6a038ff6bc784407c8d"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterDriveSweepAuditTest.xml",
+      "bytes": 1869,
+      "sha256": "b728d6522651d44104f779197e11ac7196780586fa928636356b0ba2346625ce"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterFieldApplyAuditTest.xml",
+      "bytes": 1836,
+      "sha256": "01a188e7c132bb6cc2b459b16c64407857561a6f6cca16e3498ec432d59623d7"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterFieldContractTest.xml",
+      "bytes": 971,
+      "sha256": "92778fba137ec065fc070b6f8499f189ad36ec74978005af0b26e9f1475db902"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterFrcAutonomousRuntimeTest.xml",
+      "bytes": 1737,
+      "sha256": "a795ce090d68db2d421e0beece59a42c000509b82996967180bf147d740c9af9"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterFrcGuidedTuningTest.xml",
+      "bytes": 1041,
+      "sha256": "ac6025c4206e7c5b4f54a33545f32b2822fca0d95e4b211a036888cd79b68dab"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterFrcTelemetryTest.xml",
+      "bytes": 495,
+      "sha256": "31281c44876f93773ab83d0284c2a29c097a203c837760344bcc867171c8e395"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterMarkerLifecycleAuditTest.xml",
+      "bytes": 3776,
+      "sha256": "9bb6dc89a0413ebfa1cf83c3948e2cea92effebbe0c1600da9303aff8a38cf9d"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterMarkerTransitionFailureAuditTest.xml",
+      "bytes": 718,
+      "sha256": "0a3cad2196890130c64c4ac0c0ffbfa7949e1d5cc8cb4f278083077f37657aca"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterNestedActionOwnershipAuditTest.xml",
+      "bytes": 733,
+      "sha256": "756ff317ab39b355c6127882d6c5e894f461e6d9b756cd813d3e98254d74a0e1"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterPoseControllerAuditTest.xml",
+      "bytes": 3797,
+      "sha256": "a7383ab7ccdc07b3233082513f2429330ec6fa91740a14a586c221a311c24225"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterRegistrationTuningAuditTest.xml",
+      "bytes": 2015,
+      "sha256": "d20722530af715fd7ae16a191ea3433fbe703dc27e11e0ae1b91f0b539f33c5e"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterRepositoryArchitectureTest.xml",
+      "bytes": 718,
+      "sha256": "bc7c5b319b87e83f803006041332fefaec9b0bc8cad6c015408046bab888ac1c"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterResourceCleanupAuditTest.xml",
+      "bytes": 553,
+      "sha256": "b6f10df122fa91bda4273b7b2b4505d6abf652c16bdf953ec54628f69d635636"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterRobotLifecycleAuditTest.xml",
+      "bytes": 3031,
+      "sha256": "857d23ab919a9c7ef27f3ee661381c62e5d2de3ecc5195b7b0cddbf082da9db1"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterRuntimeLifecycleAuditTest.xml",
+      "bytes": 3862,
+      "sha256": "bc691edb5608a685b82d06d2c23a6fbeffe8a986e1651bfe0f2d9cc4d5b09c36"
+    },
+    {
+      "path": "junit/ARES-FRC-Starter/build/test-results/test/TEST-org.aresfirst.starter.frc.StarterTelemetryLifecycleAuditTest.xml",
+      "bytes": 1464,
+      "sha256": "4141d9bbe68049cefddf6ef87f1f3909b2766f06037aaf38e6fad5b7461e688a"
+    },
+    {
+      "path": "junit/ARES-FTC-Starter/simulator/build/test-results/test/TEST-org.firstinspires.ftc.teamcode.StarterSimulatorE2ETest.xml",
+      "bytes": 1779,
+      "sha256": "5705b88128fb379d0e0b1b4791837de7d7040ede01a5989bf9decbb72cce0f40"
+    },
+    {
+      "path": "junit/ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.FtcDriveAssistModesTest.xml",
+      "bytes": 661,
+      "sha256": "73c8da41e083eba59140535a145f9c952dc31a23d576f42cd9c9eaa5280bd950"
+    },
+    {
+      "path": "junit/ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.FtcStarterFeedforwardUnitsTest.xml",
+      "bytes": 709,
+      "sha256": "b7311c16954672c4af6957332bc74f307cb9a9c458a143cb12e221bb23fad5db"
+    },
+    {
+      "path": "junit/ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.generated.GeneratedAresProjectContractTest.xml",
+      "bytes": 1214,
+      "sha256": "3297dc4a065e25a36328b5b47eb5b6542b539ce830456d7dd95c88471a5f0846"
+    },
+    {
+      "path": "junit/ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.opmodes.StarterFtcFieldContractLoaderTest.xml",
+      "bytes": 909,
+      "sha256": "e14a106b19a80b88680b951762d8e12f78373cfe27a342047166883b556f9b89"
+    },
+    {
+      "path": "junit/ARES-FTC-Starter/TeamCode/build/test-results/testDebugUnitTest/TEST-org.firstinspires.ftc.teamcode.StarterProjectContractTest.xml",
+      "bytes": 1018,
+      "sha256": "f7b6c1c310b57b67f53bc2204905efe669ec542f0faf0b39f6fab05c6ff40fef"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresKotlinProjectGeneratorTest.xml",
+      "bytes": 3661,
+      "sha256": "1576ca24a6316d5161ed673caef4df67e6942eff4d2d03f0b286d4f0ed3ebcda"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.AresProjectCodegenCliTest.xml",
+      "bytes": 254634,
+      "sha256": "1afd25e109037427d4c17339ed90db016886041a5aff8807d5a8d1989ffb0908"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.CodegenFileOwnershipAuditTest.xml",
+      "bytes": 34223,
+      "sha256": "74075bfcfcb0afa7b83cfd2668539c9996db8873fadbda0a33d8a9a8fad540b7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.CodegenSourceOwnershipTest.xml",
+      "bytes": 649,
+      "sha256": "35376fe9da2376d69d12d56ef86d6fc552784deb18ebc81dbf9c42b147e850b9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.DrivetrainKotlinGeneratorTest.xml",
+      "bytes": 1742,
+      "sha256": "794bc25ffad01a9f59bf608f7b3bf84b572f853bc04d60b88217f38629bcfa8f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.GeneratedFileWriterTest.xml",
+      "bytes": 504,
+      "sha256": "137567b450a15bb572f88da23c2bd64efad250066623c49f4b63e1c8b010aef6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.GeneratedRobotReadinessTest.xml",
+      "bytes": 3375,
+      "sha256": "127a551a3d4c495f667354f2e006a7156f176b1f3e8291543ff0eec732680f87"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.GeneratedRuntimeIsolationAuditTest.xml",
+      "bytes": 916,
+      "sha256": "1e7ffb4e4ac9870c3a53ff503422c4ca15cd491de0f6438c6261b07e34ce52ff"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.GeneratedSubsystemLifecycleAuditTest.xml",
+      "bytes": 875,
+      "sha256": "e7c28c2e7a7d2974dca2d588d7ec737403716b01b27744b244d787e67889cc26"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.KotlinCodegenNameAuditTest.xml",
+      "bytes": 1518,
+      "sha256": "1b802bfce4f897a3dbcd48857e7a27bc940ed44b8ca1131eb317e5c489ed89df"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.KotlinProjectArtifactRenderersTest.xml",
+      "bytes": 520,
+      "sha256": "f3f2ed0fac5960eefa23e86de6396c7ba0bb1b3ae6f5e7a214aa6da36f4731c4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.KotlinSourceRenderingTest.xml",
+      "bytes": 804,
+      "sha256": "2334d0cd3bbdd42b5c40afd9800480a1b81262ad294f918f450415398640e156"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.LinkageMockFailureAuditTest.xml",
+      "bytes": 528,
+      "sha256": "5ba37f559d9e51d5ff5b95d71d7276a4b49d579bf871779217351a0a38b33e4b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.ProjectVerificationKotlinGeneratorTest.xml",
+      "bytes": 665,
+      "sha256": "93bc9dde6b023c2126a2970bcc7c2791fbe4ff8c781747230b3f49c387315623"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.RepresentativeZeroCodeRobotTest.xml",
+      "bytes": 540,
+      "sha256": "59c291f8b35be98a5a1cc3dc8b792d33fecbea64cd4d58481777d7d2a841d08e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.SubsystemGeneratorCharacterizationTest.xml",
+      "bytes": 713,
+      "sha256": "e554c8351c39ef3e5b8fc273b9813aca11044c0d6466653cd4bba30de7174085"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.SubsystemKotlinGeneratorTest.xml",
+      "bytes": 4777,
+      "sha256": "6decaae4d4fae3639daa237fa2946756a52d821d203bfca150c079cc4c8de361"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.SubsystemStarterReconcilerTest.xml",
+      "bytes": 1337,
+      "sha256": "d11aaca12147a791417b9235826fb9c623253c4c06f4279f0d2313ca428be11b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.SubsystemVerificationBindingAuditTest.xml",
+      "bytes": 716,
+      "sha256": "8ca1d737891f64fcc037b59f8712b518d10bff634458f15e39168d09422922f5"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/codegen/build/test-results/test/TEST-com.areslib.codegen.SuperstructureKotlinGeneratorTest.xml",
+      "bytes": 1344,
+      "sha256": "fcb1ad6fef3dc3bbd2eb9e20216d1daa008144e043bea5f3c19342275c06edac"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.action.ActionLoggerFailureAuditTest.xml",
+      "bytes": 2257,
+      "sha256": "dcba7110c50ab6bd64a4359cfaadf3479233c00394f8a80bec53332064877c76"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.action.ActionLoggerTest.xml",
+      "bytes": 960,
+      "sha256": "2245305e2ebf887f55982161e57696abbe53cd02d7ce442b88d885f1ef0cfd2d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.action.ActionReplayTest.xml",
+      "bytes": 767,
+      "sha256": "c5bbfb094b2cfb10b59e5a0f38f9e29c8e119253391f175e6f0f86654a91117f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.action.ReplayCodecBoundaryAuditTest.xml",
+      "bytes": 2045,
+      "sha256": "40b3d7e0bd6356efea878ce4bc0fa9ac9381d5e6371d0851b99d4187ea6714fc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.action.ReplayEstimatorAuditTest.xml",
+      "bytes": 805,
+      "sha256": "9d6185c3b6810e9879c003e7f47a981c9f4bac3edbbdab7b73deaabd82eb816c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.action.ReplayRegistrationAuditTest.xml",
+      "bytes": 2416,
+      "sha256": "feaf9faf325d569d39cca60ca7fecbca43be1cd30cb211487260f08ac072d2aa"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.assist.ControlChampionshipTest.xml",
+      "bytes": 466,
+      "sha256": "236cb83ca651d8f07837788b1187c382a687b1dd1c281500c9bfab003a498413"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.assist.FlywheelSysIdAdapterTest.xml",
+      "bytes": 846,
+      "sha256": "6d4abf589b1bc4c91d66b753c2db6a70a0f3d156ce33204e7bfc95f6ec06c75b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.assist.SafetyFaultToleranceTest.xml",
+      "bytes": 1421,
+      "sha256": "7d49b479e65a486f328a08b92708493244821120fdfa031a23b5885ef29a16fe"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.assist.ShotSetupMathAuditTest.xml",
+      "bytes": 2855,
+      "sha256": "399f77590bae0844b5aa85a9afc70f1d6c8b42230dc82a5cc5a2439dfc2cba66"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.assist.ShotSetupTest.xml",
+      "bytes": 1218,
+      "sha256": "9470f2ab370243c197855d31654f845b5623161a94375f36316ea2ddd706103d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.assist.SysIdBoundaryAuditTest.xml",
+      "bytes": 2004,
+      "sha256": "74fce6919302379ac7f235b6ab80a55b3f47ef48ce69681be148d665bcbe20ca"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.assist.SysIdManagerTest.xml",
+      "bytes": 1863,
+      "sha256": "1ad90c063244dd1fdd9c29d27fdeb74ace42d0f9d0126ade75ff1ed188259999"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.drivetrain.HolonomicControlBoundaryTest.xml",
+      "bytes": 1992,
+      "sha256": "4ba5e6648dc0d66f37d00197b52607a1c0a68ebef8a076380f9cf9ba9d21ccf3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.drivetrain.HolonomicControlNumericsTest.xml",
+      "bytes": 1240,
+      "sha256": "19c9a9ab06620789cece63e45bd07f1026c7296d16f5d6bf01af0fa1e80ec72c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.drivetrain.HolonomicDriveControllerTest.xml",
+      "bytes": 1133,
+      "sha256": "6570beacd38c56165e9482edc1e829767876b7f1cb81d7443ab7b43653c2be1f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.drivetrain.RobotLoopMathTest.xml",
+      "bytes": 1131,
+      "sha256": "068acba2a7c50e7dae3575c73a708d73c198592ef00c63e64fbf0e01e0d03b73"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.drivetrain.VisionAlignBoundaryAuditTest.xml",
+      "bytes": 3373,
+      "sha256": "1d84cf249d0243d201aac4033ea601dd76ddd59dfbc103992ecf4b85bb38fa35"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.drivetrain.VisionAlignControllerTest.xml",
+      "bytes": 1021,
+      "sha256": "fca48be64c8c714c034ca2b3d2b693948aa274d8053315784e4af7d0a3b3d933"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.feedback.FeedbackCompositionStatusTest.xml",
+      "bytes": 1069,
+      "sha256": "cf3c1627d0b924b372c472b9fda056b9b31f7f9957ee0ae76c0227eb9fc86c4a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.feedback.LinearADRCTest.xml",
+      "bytes": 1287,
+      "sha256": "ab2c7dfca7920d506708173d1241b61090c44f5eea34c5ee18b76cda45ef47c8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.feedback.PIDControllerAllocationTest.xml",
+      "bytes": 516,
+      "sha256": "e6ce4cba7c1da0fa2119766577649b4298e2421b79e00ffa5b291694666f66dd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.feedback.PIDControllerBoundaryTest.xml",
+      "bytes": 3433,
+      "sha256": "d1571863c4d2d5a159cfb0804d770880d04e44cb807d152df860e749bc932df7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.feedback.PIDControllerTest.xml",
+      "bytes": 667,
+      "sha256": "5de13ce93dbe41b0bc559c8efdfb550524002805ca7746169a52a8e8de493c40"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.FilterRecoveryAuditTest.xml",
+      "bytes": 1128,
+      "sha256": "1c8bd47d982b7e56a569608244f1b4f9a11da6978bff518f3dd1662f98fd31f3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.FiltersTest.xml",
+      "bytes": 514,
+      "sha256": "62ab501dccf49890638d40fc68002e6875cf62a25c7ac71561e6400d89701be6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.PIDControllerTest.xml",
+      "bytes": 1760,
+      "sha256": "ef2f7c31a3ca6f4353cad61e7bb879a33099d13c4f2bda8c18a6aaa645c72539"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.profile.TrapezoidProfileAllocationTest.xml",
+      "bytes": 529,
+      "sha256": "fa0c0092c537788f0e956374aac52b7281cb3f44768ddb6feeb63baa65473267"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.profile.TrapezoidProfileBoundaryTest.xml",
+      "bytes": 1706,
+      "sha256": "b066b80c1e51976fd14f5864c7e8e9de4610d280563fddc78e063b72ec203eac"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.profile.TrapezoidProfileTest.xml",
+      "bytes": 2426,
+      "sha256": "2ced2df6fba6b298d1102c9181a562ae02a7fa2a968dc64b70764e768e84e7c8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.safety.BrownoutGuardTest.xml",
+      "bytes": 2503,
+      "sha256": "1f9f2c00d2f500c69cbb60c370721550c70d5edb787d24da10d8ab8d23d3b5d0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.safety.CurrentBudgetManagerTest.xml",
+      "bytes": 2574,
+      "sha256": "e3ee95ba94fedd71ba59ecdf7dcff31f424f5c36bd76b6bc9fdaf9fb1de53c76"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.safety.CurrentBudgetObservationAuditTest.xml",
+      "bytes": 2541,
+      "sha256": "10257b962b0d5b5187e53834d7220962ae42d05b863cfc1708d3155d3f00391f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.safety.CurrentBudgetReconciliationTest.xml",
+      "bytes": 1516,
+      "sha256": "a85036752f22d0b178fe304baa604859e1b50087c61d9099c543e89fa27f44fa"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.safety.GuardFilterBoundaryAuditTest.xml",
+      "bytes": 1374,
+      "sha256": "77bda077603a0c3004edfee813898feaefb9bf56cbbb30a3aa7e2ba15282eaaa"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.safety.HomingInterlockTest.xml",
+      "bytes": 920,
+      "sha256": "91382c75142314a39ad10f9c182a75561a438d3fa414ace93ae68b05eb76d286"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.control.safety.PowerSafetyAuditTest.xml",
+      "bytes": 1559,
+      "sha256": "ab5d108162263e0dc10d544071906ecbd9862cc1a44d3c3f5e8195b6ab7ddba6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.controls.ControlSchemeDslTest.xml",
+      "bytes": 657,
+      "sha256": "855d04af45ced14edff16a3bbf1cf0d6d464bdf6afdac4dc4310b31208268977"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.CoroutineExtensionsAuditTest.xml",
+      "bytes": 1249,
+      "sha256": "aabe0b6fbc372a063e3e575b3bfe466e45b31d2d2ca762b38e4706c153f48a48"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.drivetrain.SwervePersistenceAuditTest.xml",
+      "bytes": 5571,
+      "sha256": "7e1af31dbba1bbc0d174c9f552914ecd1de2a46697a97dbda5ad2cd198ef4e37"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.e2e.tier1.control.PidClampingTier1Test.xml",
+      "bytes": 1025,
+      "sha256": "b4eedd3756de25a03483fe2c9d7092bc3de8442593d74275a336a8393c1a7367"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.e2e.tier1.math.GcAvoidanceTier1Test.xml",
+      "bytes": 789,
+      "sha256": "da3063e6617328e85a59fb53c4363a8c7ead600b88eefcfcdbdd90ce88dfeb33"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.e2e.tier1.math.MathBoundsTier1Test.xml",
+      "bytes": 761,
+      "sha256": "71516374c96b7bc703f0ce52bd92c20b58d14d8c2ff8e48b5ee841a3b127c56b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.e2e.tier1.state.ReducerSafetyTier1Test.xml",
+      "bytes": 666,
+      "sha256": "6608daa0210e6aaaa7afcc8d6625ca76fe43802027160628db8f65adc4cc6a04"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.e2e.tier1.state.StateImmutabilityTier1Test.xml",
+      "bytes": 789,
+      "sha256": "c670e22163f9983dfce5b0daed280d34116c046104cc7efc2d1310f898ac00dc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.e2e.tier2.math.MathBoundsTier2Test.xml",
+      "bytes": 727,
+      "sha256": "3222aef415a5da7650aa0db7c915cbb36ec542e3b6e5c95ff0faaa2031332018"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.CoreIoDefaultBoundaryAuditTest.xml",
+      "bytes": 2320,
+      "sha256": "e40ea6a35f01df494244d959ce0657c16df068c8eb67563eff4ceda83b57b5d7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.CurrentSourceOwnershipAuditTest.xml",
+      "bytes": 1301,
+      "sha256": "37be099f38d4b8e2530f21c7b77bba122c0d960a16a78efe48fc4ef932ce7d59"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.HardwareIOSimTest.xml",
+      "bytes": 1029,
+      "sha256": "8f8f447176d5766bc3c1ae030644ed9faaf24b99d38bbdb1a347407e1d104e9c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.HardwareRegistryLifecycleAuditTest.xml",
+      "bytes": 1626,
+      "sha256": "c935cad94d7a849f8522c92647cbdc41e1e267a355bfc5ac044cbab33a9edf1a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.HardwareRegistryPublicationPollingAuditTest.xml",
+      "bytes": 2874,
+      "sha256": "658b28bd339fcc581ab98f0cfcb671973f95db8811597b7aaa5f799b23ab1316"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.HardwareRegistryShutdownAuditTest.xml",
+      "bytes": 541,
+      "sha256": "d5eae5b77ee1bdd686c37245456282b95fb7076e4ca34fd160136079aef2fa5b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.HardwareRegistryTest.xml",
+      "bytes": 2373,
+      "sha256": "8360fae1fd72f7ef2305b7ad074803b699b9568bb6b7ba5812ed322ef28afd5b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.HardwareRegistryTopologyAuditTest.xml",
+      "bytes": 1867,
+      "sha256": "aeea6f89d7736cabfd99a709d6266a1e97cceeb1a990d2f5a6160c5ace0345d3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.sensor.ImuTelemetryPublisherTest.xml",
+      "bytes": 1457,
+      "sha256": "6108b65796ccefe21ee33d7ccb153bc43042aa8b67d4de697895270c8362817c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.SwerveHardwareIOTest.xml",
+      "bytes": 499,
+      "sha256": "16c78c5dd8c6dc60eb773b7d2a7c547d13beb37f1680b8d5ffdf9479c21d8db7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.SwerveIoContractAuditTest.xml",
+      "bytes": 2370,
+      "sha256": "a2b3b4115937f2fa9d466345b54f5a6f383b3ab7eb1ac07052f50579a114c403"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.SwerveModuleConfigAuditTest.xml",
+      "bytes": 992,
+      "sha256": "85208c45e80ed54a2e01bc0fb9857eb4a5d89f9a8783445079859fcf6344f678"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.AprilTagClusterTest.xml",
+      "bytes": 1363,
+      "sha256": "6b048fe465e0d061c59daab92cd80d8be1c7319f51b071e7f8f5b943b35ce56a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.CompositeVisionBoundaryAuditTest.xml",
+      "bytes": 3259,
+      "sha256": "e3b07b1e1432a68d4f5bcaf9c2728191b9a6d122ab4b4c1a9a329e9cc70cbb73"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.VisionFilterBoundaryAuditTest.xml",
+      "bytes": 2575,
+      "sha256": "03555d00f8925805d4fafbbee4dede696dc96ecb99e2bfc8684f3ad89ca8e2b4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.VisionFrameGateAuditTest.xml",
+      "bytes": 2070,
+      "sha256": "5fb4950e33a50519e60c85c6b49040722758e04052153d3695ef6522185db06f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.VisionLoopAllocationAuditTest.xml",
+      "bytes": 618,
+      "sha256": "7a08d4478a9e365a12959e755183dfe062f6ab886bb90dba4f28e9cbe6420cb3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.VisionNoiseRejectionTest.xml",
+      "bytes": 738,
+      "sha256": "518d504d6eb5f96eb2c3753ac1a8c992d308fed2cb1b65b038f9f19ea9a1e737"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.VisionOutlierFilterMetadataTest.xml",
+      "bytes": 840,
+      "sha256": "b146dc51c1fbfb8039ada327f3b55d25d5ff11dbd4206aed065ab430313adf4c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.VisionOutlierFilterTest.xml",
+      "bytes": 1978,
+      "sha256": "d663e4cf6710d78b71515cbad2ababfb59ed3b305f42fb60be9a7d42c8b904fe"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.VisionRecoveryConsensusAuditTest.xml",
+      "bytes": 2414,
+      "sha256": "e9b26e40db257f0aba26f30958a94eae6e180d2df9b83f0ac29408d9b6c72495"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.hardware.vision.VisionRecoveryPhysicalAuditTest.xml",
+      "bytes": 1946,
+      "sha256": "3e130d1df98317bff0f231e94d049be74bc626ec0fcfeff6f9c777906ff9566b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.AnalogBindingTest.xml",
+      "bytes": 612,
+      "sha256": "ac788b6de6a324565ef08bf6aeb5d76b0374b3c5701bcd3ae6be7ab803a8c3e7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.AxisTransformTest.xml",
+      "bytes": 708,
+      "sha256": "380034066494eee2676495b5283039cbc752bf1e26ac459b488ee9ec24b05f83"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.ButtonSuppressionTest.xml",
+      "bytes": 499,
+      "sha256": "4f32c45cda261d6f3a3ebad9b0bcf2b431a7256bf631175bb2d3c2a1dddf28da"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.ChordSourceTest.xml",
+      "bytes": 584,
+      "sha256": "1018d7269ece22942bfa0ae9ca9a49a91e816dba0c93dba1029136676f3630af"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.DigitalBindingTest.xml",
+      "bytes": 1170,
+      "sha256": "2cb10ca707fe0d9f50a28dc9d65288c1958642dcda93617de272c935fbfd7d7e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.InputFrameTest.xml",
+      "bytes": 883,
+      "sha256": "bf5d699f59c314dc380de611629139117b3aa2bd5ef4ff7f1f93a4d885a1e791"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.InputLifecycleAuditTest.xml",
+      "bytes": 2357,
+      "sha256": "db542db333d4a2cd305247d40d0c65c9b01b3182e3249bd03ab6dd1a8e5d7f5c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.InputLoopAllocationAuditTest.xml",
+      "bytes": 587,
+      "sha256": "96ab553c554f7d6cceb10bb88409c3531bb71bc591b737104b4caac087e72286"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.InputNumericBoundaryAuditTest.xml",
+      "bytes": 3278,
+      "sha256": "e4659ce8a0126bab3da75643c2d10e627b428c215d04dcd05ac115649832fdfb"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.input.RumblePacerTest.xml",
+      "bytes": 1065,
+      "sha256": "5ab5ca1bc677e90ede3c42b51d1a4fa56af0e8599a8a86b15c896105ca386880"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.DifferentialDriveKinematicsTest.xml",
+      "bytes": 1821,
+      "sha256": "aefec0e135eda59813fcba30978207d60369d62c1a10165e6e536c34f868ff0e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.MecanumKinematicsTest.xml",
+      "bytes": 1530,
+      "sha256": "75442c49bcd22574031ca55289901f0058d2d8a5a504ec8b24796ac3542d5660"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.SwerveAllocationAuditTest.xml",
+      "bytes": 517,
+      "sha256": "a036ac003b307f79922a3a602d67d5f8dcff13da96a65ac228a10c2cade33cae"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.SwerveBoundaryAuditTest.xml",
+      "bytes": 1896,
+      "sha256": "d2a32dac6cfb3b3e21c2e4b5dbe8ff93f38792967d3b1b78acb8615258f74b03"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.SwerveDynamicsAuditTest.xml",
+      "bytes": 1324,
+      "sha256": "72f9d0a2724f402539d34f3d67d2c43b6010ce4746932753f4502aa5222ea34a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.SwerveKinematicsTest.xml",
+      "bytes": 961,
+      "sha256": "fde6137fc1db24f52954e8147d4aef8f7316ae7b8cadbd1a698fa686f3e17223"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.SwerveNumericalAuditTest.xml",
+      "bytes": 658,
+      "sha256": "05fe92e9d8129b009c9a8721a2c9269380487d256de08fe6daca9593c2946e0c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.WheelMathAllocationAuditTest.xml",
+      "bytes": 525,
+      "sha256": "d42c03ead1dc5197f55c3269270df84ea12038ffa47296ee2580831d46e7eb6d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.WheelMathBoundaryAuditTest.xml",
+      "bytes": 2292,
+      "sha256": "8bcc76aa10cc116f373ba4b9a3ce153d0a193bb4bed9055840443e14f3467069"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.kinematics.WheelMathOracleAuditTest.xml",
+      "bytes": 682,
+      "sha256": "8508c950defc18e8cdbd23c8cb0934745fcd3a561aa30bb85a4a5eee1356c035"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.ARESDataLoggerIntegrityContractTest.xml",
+      "bytes": 691,
+      "sha256": "78ec2ccfa82175e1594d6921abb08d9624c579e679dba8142c90d5b6b5dc827e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.ARESDataLoggerTest.xml",
+      "bytes": 1515,
+      "sha256": "4cccd1668edaf4876c5d790ea8911d99fe3d958d7e574e274e54c7404dcc3745"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.DsEventCleaningAuditTest.xml",
+      "bytes": 1198,
+      "sha256": "b504c5d6e88615a14ef0ac05eb099eec91d1566179a8fc84f3f0fb0cdd36fbe8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LogFinalizationAuditTest.xml",
+      "bytes": 1000,
+      "sha256": "619e35ef2452e9660b9481a61a81c55093bd525f55828328183603e87531ca0c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LoggingEnvironmentAuditTest.xml",
+      "bytes": 1031,
+      "sha256": "0a3811b2079dfa5280e5ccf9a68da5816c7db92a14242d6d2defc07738210a8c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LoggingPolicyTest.xml",
+      "bytes": 950,
+      "sha256": "e70c4e7e8cefc42eff522ce087439c335beec9950c6d69bdc73733cdfab931c2"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LogManagerServerTest.xml",
+      "bytes": 1200,
+      "sha256": "8b5a56c5b94ec8c18581b25c4ed4750a07f8f1396d5427e0dfadec6bfb172f0e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LogRecoveryBoundaryAuditTest.xml",
+      "bytes": 1147,
+      "sha256": "5a6918c0ee1af871815f0cc79916deeb3188e194b74bf17c03b1ae43cc783a39"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LogRequestLimiterAuditTest.xml",
+      "bytes": 924,
+      "sha256": "cbbd865c231eea7e9491517053c9d89f8f2fabe1f6fcf8b94ed19ba7baf56afa"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LogRetentionAccountingAuditTest.xml",
+      "bytes": 1431,
+      "sha256": "15598de0b1e52c278c129a09cec5b88b4e2f380f2ed74a8774ece62e891c2226"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LogServerRequestAuditTest.xml",
+      "bytes": 3136,
+      "sha256": "c8d046aebd7db4bc6a483a729fb93c8dbb5e7ced28c159ff5bac6bac6ef1581d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.LogServerWorkersAuditTest.xml",
+      "bytes": 2560,
+      "sha256": "2a1d90ceb93c340b07e01cafeddb3d27b1bde620d976911f72ac074be3859e9e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.logging.TelemetryLifecycleAuditTest.xml",
+      "bytes": 1640,
+      "sha256": "04675d33fe0e479c839563ff40b17d8881091c89ece3ccd82e33bf3ca476f7dd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.AnglePrecisionAuditTest.xml",
+      "bytes": 785,
+      "sha256": "3a03d7d10cb6da2fc226e1d87138ed391c05fc8496a11b97884e2971fa306b87"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.coordinate.AllianceMirroringTest.xml",
+      "bytes": 992,
+      "sha256": "5defe090336c9bd706b19e17589c354759e1356f4c29837a5f57a37daa2b65c8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.coordinate.CoordinateAllocationTest.xml",
+      "bytes": 622,
+      "sha256": "7049082639a3d2b64b2c86799f4b7aa63644af0066134199ad3e8403f0b75824"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.coordinate.CoordinateBoundaryTest.xml",
+      "bytes": 2096,
+      "sha256": "43f610a627ce04a67800da2418c2c426a77de8d35b04e84306813358d31c86a4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.coordinate.CoordinateTransformersTest.xml",
+      "bytes": 1477,
+      "sha256": "13436a6a16a5baac0a0ccb6892052a6d29b7d92ecd2ce88230ae2925993abd92"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.CalibrationNisAttributionAuditTest.xml",
+      "bytes": 1668,
+      "sha256": "615d0a4b1c87d37c706aeff236ce5b59f0d23b7fcb66e5dbc1a10104744bc714"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.CalibrationNumericsAuditTest.xml",
+      "bytes": 4203,
+      "sha256": "491b13f69511ffe59ceeaef2891df0f31d3a3ed0b89462436e1806a64f4f2206"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.CalibrationStationaryGateAuditTest.xml",
+      "bytes": 1072,
+      "sha256": "20cda86c55b28e2f9817757d43cefb66b5dad868a335db3a8f767df1406549b7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.EstimatorMathRegressionTest.xml",
+      "bytes": 1344,
+      "sha256": "89818c5f94afe608dcc618c3d21f5a8fad7a47b3e61dd74b449e1ee7830e0f0d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.EstimatorNumericsAuditTest.xml",
+      "bytes": 2821,
+      "sha256": "2c1a07c74135acf5eac965262730fed368e65a3bbfa5232b926464ecd1ce2033"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.EstimatorPropertyContractTest.xml",
+      "bytes": 697,
+      "sha256": "80f227a5ae27a139c0ec8095abf6173e4205a4a9748fd29be2f2699061ce2605"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.EstimatorTimingOwnershipAuditTest.xml",
+      "bytes": 2495,
+      "sha256": "40539f0b00674ad254875624e193d311a91c975c6c1496a33ce0556032b76c22"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.FractionalTimestampReplayTest.xml",
+      "bytes": 877,
+      "sha256": "9f104a78dae02a660c39a5bb6b5e2c2efd7851447720609412910f104c480389"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.GyroSourceSeparationTest.xml",
+      "bytes": 651,
+      "sha256": "b72967f8620bfe32392aa687a8d1aabf44bbe26b40d6afcb12e4e991fef017a3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.KalmanFilterTest.xml",
+      "bytes": 1065,
+      "sha256": "b5d2af2f445006d4c1fa31e51592b759686625eea81d28b9c4814aef10b2a026"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.LocalizationCalibrationTest.xml",
+      "bytes": 680,
+      "sha256": "4225bcc9d9aec7a60a9f3113b36973f3840d97bd46f8c7718b89ddb77765129f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.LocalizationConsistencyEvaluatorTest.xml",
+      "bytes": 695,
+      "sha256": "a27f59723923ae19fb83a44199171b9dff42f99a94f4eef0d1f71bda9495bcbc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.PoseEstimatorHardeningTest.xml",
+      "bytes": 511,
+      "sha256": "1e0efbbd23bcf6a8d17b84f4132dd1a9a2d4ebf440c77955a29ce02915b7e592"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.PoseEstimatorNoiseValidationTest.xml",
+      "bytes": 529,
+      "sha256": "c10328045c5823842d7095bc70727157b5f020aeea1b52de09f4880ecae4a113"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.PoseEstimatorReplayComparisonTest.xml",
+      "bytes": 539,
+      "sha256": "d653ce97814a0912a2609ebd97a478daa114d3bf933afe09e3ff5e7ae96029f3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.PoseEstimatorTest.xml",
+      "bytes": 1445,
+      "sha256": "241fb8fd088fd787329223b38e2d9d3f277da907c155b7d74cc670f59db603a3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.PoseEstimatorVisionHardeningTest.xml",
+      "bytes": 821,
+      "sha256": "cdb8ebe89dd4c4e82447e82cb40b0622e93b88939ee0d093750756a4a25f329e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.RobotReadinessMathTest.xml",
+      "bytes": 1416,
+      "sha256": "a655bf02fa79610b281ed42c4866f2daa0a09b489e938a0bb03065805b12c0c8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.VisionMahalanobisFilterTest.xml",
+      "bytes": 966,
+      "sha256": "b95bca90e6674198ed2909c0fb0e25455bced3d96b75e4fa0fb2057211a442e4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.VisionNoiseNumericsAuditTest.xml",
+      "bytes": 2450,
+      "sha256": "6592e842ade9726031b0874d7791a84d7ce679a06097b09ca1b482d100ae4996"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.estimation.VisionObservationNoiseAuditTest.xml",
+      "bytes": 1113,
+      "sha256": "d2a32018592490827b703750fbb127aa6fbd8c1ac34476ecd16598ee38731b70"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.filter.FilterTest.xml",
+      "bytes": 1130,
+      "sha256": "a52022b6c743bbfb9d7d9eafc4b949cb7f2725a7d730068a4f4c50ebbeeb7a49"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.filter.MedianFilterTest.xml",
+      "bytes": 1185,
+      "sha256": "a85c506596380dd9381ed50c8a29ba7e966efc8b101ecb1921d561d9ed678ff3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.filter.PrimitiveFilterAllocationTest.xml",
+      "bytes": 526,
+      "sha256": "610caeea869f503b12f5e0b6a91528a5304452446e408c0584efe2517c61823b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.filter.PrimitiveFilterAuditTest.xml",
+      "bytes": 2899,
+      "sha256": "ea81fa514d9011620d5406e5f32e7d3ef46ff73b54408a5184a05ce9c9935295"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.filter.PrimitiveFilterOracleTest.xml",
+      "bytes": 872,
+      "sha256": "4f3a9303422f02ee3247ae3c2cb38d534d7df502de39bac17ea479d1a27de71e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.filter.SlewRateLimiterTest.xml",
+      "bytes": 1224,
+      "sha256": "d0858479b46c85a37389843bab1abed271db2e860829258473da5169f8d73f47"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.geometry.ChassisSpeedsTest.xml",
+      "bytes": 1851,
+      "sha256": "aa7b4b89b72b02e90d4934791597cca64720e9142eb3f98abe0da8b094527ec5"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.geometry.Geometry3dAllocationTest.xml",
+      "bytes": 626,
+      "sha256": "5169f28ee9a928c8d87d25ef4809b09097f49d05c47368df783134769e6ae0e3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.geometry.Geometry3dBoundaryTest.xml",
+      "bytes": 2469,
+      "sha256": "d4ca31131f82878fd249a0a778976dd0fe7d827d448a9710206bc75a757f0224"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.geometry.Geometry3dTest.xml",
+      "bytes": 768,
+      "sha256": "27dd7b5b7b4e0b9bfb5459e2ab98a42cfe8a443b9b71f4f2d9fbb65905e53a90"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.geometry.GeometryTest.xml",
+      "bytes": 1298,
+      "sha256": "c9c4a7acdadfd664745254bda2b7a479d76518e8932632fc56ead159e1f55870"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.geometry.Pose2dRelativeToTest.xml",
+      "bytes": 858,
+      "sha256": "6f9db370458e97c8aa9ae21b0580ea17b02bb9c2e26a2069af80c76b4bb5147a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.InputConditioningAllocationTest.xml",
+      "bytes": 498,
+      "sha256": "32289fc08528166a9128fd41cf4e2af2fd449dc0aeef1a1eb72f4abc6cb54891"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.InputConditioningAuditTest.xml",
+      "bytes": 1867,
+      "sha256": "2d2a81ee0236ca0984dee6099661f47b2ad35005d24a415f3211b4fa5e9d3dcc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.InputMathTest.xml",
+      "bytes": 676,
+      "sha256": "1a4d4ed2bff6b65881b5072450a0589695b6547952967c3bb2960146d374985b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.InterpolatingTableAllocationTest.xml",
+      "bytes": 503,
+      "sha256": "74b51e5db5602d4d1e10d4f6c1a1e88e16ad3bf2178c35ec573bfda0924fb614"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.InterpolatingTableAuditTest.xml",
+      "bytes": 2315,
+      "sha256": "62eda2c6ed43c48585ad00bf44b1e35ee03f922d399c4b309c401055030913ef"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.InterpolatingTableOracleTest.xml",
+      "bytes": 821,
+      "sha256": "28826eba2af1e65250a1bdaf224a91f151a3025f655e84a31a618252bedd57ca"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.InterpolatingTableTest.xml",
+      "bytes": 574,
+      "sha256": "48ed8046afc16f8a9d8388ae0c62b8dec7281dea82a5534ef32a97cbb463099c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.LinkageCoefficientAuditTest.xml",
+      "bytes": 1216,
+      "sha256": "cc97050ea3ac82724c7a6f4548141e264cc4758c1fd4f43be8d16bc31d236996"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.OdometryMathTest.xml",
+      "bytes": 1259,
+      "sha256": "528afdb86ccaeac9a769265820062cc892ff035bf7ed1150e9cb4d382c4992ed"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.TwoDofLinkageAllocationAuditTest.xml",
+      "bytes": 524,
+      "sha256": "0a4b3e335827b0f6cc89423a7614593346565075f53937ab51411d1bcc2c6197"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.TwoDofLinkageBoundaryAuditTest.xml",
+      "bytes": 2068,
+      "sha256": "31141349a31b237545915d79a930c371946ecd3c666f6d691a2bb18266a953af"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.TwoDofLinkageKinematicsTest.xml",
+      "bytes": 1536,
+      "sha256": "55e65212e402d5a8f2177e72bb60d08d24a34ebbd86ea4bb63c45ec679426f07"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.TwoDofLinkageOracleAuditTest.xml",
+      "bytes": 1037,
+      "sha256": "e546252302fbdbb37f046a83c65e54cd25fd294f21818f66fcf15e52cd5b0d1e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.TwoDofLinkagePlantBoundaryAuditTest.xml",
+      "bytes": 1802,
+      "sha256": "5e2ef99e3489f42bcbfd62b290cd5e35d81edd87fff81790e885b0b2ac5d648f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.TwoDofLinkagePlantTest.xml",
+      "bytes": 798,
+      "sha256": "10fdaf060fb447b0381b0dbb500f7f0637959cda70b03cd2ca34d7def8ab74cd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.kinematics.TwoDofLinkageRangeAuditTest.xml",
+      "bytes": 1191,
+      "sha256": "e75cb634045a59dd9055aaaf90d46b27a17ba498b0fa2871ee4e7eb212dcf414"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.MathematicalAuditTest.xml",
+      "bytes": 1828,
+      "sha256": "0de8aabd37339a8b57331a693036070927f282f033c83831a344b8589fb0124c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.MathUtilsTest.xml",
+      "bytes": 1286,
+      "sha256": "d11f570776cafaf29882e796af691c07b278ce4d8df9e5fc7dcdbf9eef32c301"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.Matrix3x3EdgeCaseTest.xml",
+      "bytes": 995,
+      "sha256": "c1d87bcfc0635e4fcc7c3252ee26dc32567963e46a909fa3c18ba18bb9ac0e24"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.Matrix3x3Test.xml",
+      "bytes": 940,
+      "sha256": "bd63a0756518a77a28bc48663d0ffd03fa813ec7f65b9eaeaac15269a3d55f13"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.ScalarMotionAllocationTest.xml",
+      "bytes": 787,
+      "sha256": "3d4ff3d3f0295cc9e4fb4fca5df48a2ebd3ea307556f12aefc29eba81b45f516"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.math.ScalarMotionBoundaryTest.xml",
+      "bytes": 2234,
+      "sha256": "5d5c765539e2d7bfa5df98f3f6f95077489464a1344a881b56604b84864eb567"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.networktables.NT4EntryValueAuditTest.xml",
+      "bytes": 11508,
+      "sha256": "ab9a83c76c0ecbfa551aa6cd6983891923dd22e85453ff15e62f50dd17ac9ef7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.networktables.NT4JsonStructureAuditTest.xml",
+      "bytes": 2185,
+      "sha256": "ec0e290882339feebb5f4360cf6e04697c9600b72bcf69063dba0494873adc2e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.networktables.NT4NetworkingHardeningTest.xml",
+      "bytes": 3912,
+      "sha256": "c657aabfe6658bb926b170c3d02a017e0f0d2b417c1619a635410eb608dd4b3a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.networktables.NT4PublicationFreshnessTest.xml",
+      "bytes": 881,
+      "sha256": "4edea6164927213af729e541a62a96a8915ba27f182e179593b676ab1809aab4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.networktables.NT4PublisherLifecycleTest.xml",
+      "bytes": 882,
+      "sha256": "7b0079be2d4333cf507fcace82543fbc8550bd2efce84edd7fbf4bc54f2ebb0a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.networktables.NT4ValueOwnershipTest.xml",
+      "bytes": 628,
+      "sha256": "bf3f41501dc9fe8d425f3e3e221b66c53b46cc5d88b8eeeeeea7b15ed60c136e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.networktables.NT4WireValueAuditTest.xml",
+      "bytes": 1787,
+      "sha256": "1e1fb5caf776186eca7253176ce92cc810e726ea3a912967d016871eae6046f9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.AutoAssemblyAuditTest.xml",
+      "bytes": 1711,
+      "sha256": "ed00fba96e1114aee98f2075d420ba5b8374e0a718b7af9f3c6f27a6ead43899"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.BezierSplineTest.xml",
+      "bytes": 658,
+      "sha256": "7d92c51f620fe809b9434e4158c097c932f98bc6d43e607e9320d0ea73b2c93d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.CostmapFootprintInflationTest.xml",
+      "bytes": 980,
+      "sha256": "f7ecc894a5ad1c09af53fe9882aa9bb1fbb5f520133e0ad826db1eda51cf06f8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.CostmapRasterBoundaryTest.xml",
+      "bytes": 1474,
+      "sha256": "8d6726b244e6be818ab3e853dacc20eb05a6213d5d89aaf0a5d7ed027806cf7e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.CostmapTest.xml",
+      "bytes": 844,
+      "sha256": "104be983a3d83e941467455014c592f0e360c657feede941ba8fc4c1b17efebe"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.DynamicAssetLoadingAuditTest.xml",
+      "bytes": 984,
+      "sha256": "876477d00ce14db64990505d1f8fc96fc5913b2efabb055ce32ba11d5b38db6b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.FieldWaypointLoaderAuditTest.xml",
+      "bytes": 2795,
+      "sha256": "e260c62b6fafc7a0fd985bd507277ffd80201361166e07bc63954f7837348863"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.FindClosestDistanceTest.xml",
+      "bytes": 1819,
+      "sha256": "461cd7371913172f76a91615855aaa5d162d1cb811a572b535e20575b969f4bd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.HolonomicFollowerAllocationTest.xml",
+      "bytes": 809,
+      "sha256": "05333edd282fa4eb4d8a3394ece66d9462c64382a074fccdd89de0816d171852"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.HolonomicFollowerBoundaryTest.xml",
+      "bytes": 2014,
+      "sha256": "43caf991d7afa5438570c67e29de8122b8979a89a47da5f2ab4f8382e99e2d47"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.HolonomicFollowerEventsTest.xml",
+      "bytes": 1695,
+      "sha256": "121549456a8d6c1edbe000c28ff47b0431970b362053844c7a3ec1df95529829"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.LineOfSightCheckerTest.xml",
+      "bytes": 786,
+      "sha256": "8b190fbd4d62f4aa346c12cf84f3e915dd24f70d72625700043461e410160ae7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.LongHeapBoundaryTest.xml",
+      "bytes": 762,
+      "sha256": "a54715ce2a096f1df3565c6a7e2bb7da9ffecf3d0a5cea3b18554ba9841bc371"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.NamedCommandLifecycleAuditTest.xml",
+      "bytes": 2372,
+      "sha256": "8eecfed8b072cb3edb44ec8433fc1f8ef87a82adfdc59298094babb3efc63980"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.NaturalCubicSplineControlsTest.xml",
+      "bytes": 685,
+      "sha256": "a269436ddac5e950b3fe696388a4f995bf739c7db5e4770117990eb71c05596a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathingChampionshipTest.xml",
+      "bytes": 691,
+      "sha256": "23eafa0f342a1b2409d0caee629dee0d0677dd69ea12bbe22326a2d76b298b48"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathingCorrectnessRegressionTest.xml",
+      "bytes": 784,
+      "sha256": "45389967a573be7caecc32fb85a4c00af4abcf6daf634b71ede7b1902224c4bc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathNumericalOracleTest.xml",
+      "bytes": 1172,
+      "sha256": "540af3c00f61ac9fd3c8ebcdf34c69b3ed8d14c9369dd2543f1742e029164184"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathPlannerAutoParserTest.xml",
+      "bytes": 1065,
+      "sha256": "c3e7bba31734c85b4e56b32e8a8c62bcc61855aedfb80cbfdcd65cc2e642a9d2"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathPlannerParserParityTest.xml",
+      "bytes": 825,
+      "sha256": "1069a40afad7302d3d3606dd46c04931f1935c13c0ca528ff11a26765eedfdbd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathPlannerParserTest.xml",
+      "bytes": 1125,
+      "sha256": "dfc72355a6506d2a91123cb27a8a4d68cb710434e5e40e2c2581fdd3797f0c5a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathProjectionBoundaryTest.xml",
+      "bytes": 1302,
+      "sha256": "e0cdc60174a3fc2c0ffb4553a01e9ab3a1184d41adac016669a5304ca65b1730"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathQueryAllocationTest.xml",
+      "bytes": 811,
+      "sha256": "48092b356154cfe1b11d11ba2fda4c32a400818213aa022c09e9e9ce685097d1"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathSamplingAuditTest.xml",
+      "bytes": 800,
+      "sha256": "1a0dd2c089d5a82aafbfdcc8e98826d804464d734b73abdc94149660c879cdd0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathSamplingBoundaryTest.xml",
+      "bytes": 1341,
+      "sha256": "93b1650396ffb3c04bbd1bbddbaa93d1c6b391907aa13030a424401a2714780e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PathStorageContractTest.xml",
+      "bytes": 1301,
+      "sha256": "87083d7d6a486f9fd79b81bca374f4b1d64fa8fed1d926c4b28b150c3f0a9843"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.PlannerStateBoundaryTest.xml",
+      "bytes": 989,
+      "sha256": "adf6eb7f773af24f8597aaf36d0af9653a42e496c4d4dce3694b034f88c71b0f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SCurveTrajectoryParameterizerTest.xml",
+      "bytes": 3405,
+      "sha256": "658ed842f48851cdae9ae51b662213c538eff69ffc1df9bf0008237a92b493b9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SplineBoundaryAuditTest.xml",
+      "bytes": 2257,
+      "sha256": "473e00f4c0f4e28c43206b936e9bb603156251dd2a78b79328e541e39534087b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SplineConstraintAuditTest.xml",
+      "bytes": 2302,
+      "sha256": "f8ec01896a6e9844b3ef3b1442edded96bef67c4a1b49cbff9d7f7d499413454"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SplineCurvatureAuditTest.xml",
+      "bytes": 2446,
+      "sha256": "12650a6066f3d7d38f85818e50d5b865587b8436775dfeaa06d0f9ac204c0f33"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SplineHeadingScaleAuditTest.xml",
+      "bytes": 1503,
+      "sha256": "4279a8d4c8fceaf1ad766bd278f7a324aaec5519331dd9f0bf4d71d2b2e1b0ba"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SplineIntervalCurvatureAuditTest.xml",
+      "bytes": 1878,
+      "sha256": "6bf2e0e0850810c4d53a17a40db35526541250d558a74256c19f9c015c69a5a9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SplinePolynomialAuditTest.xml",
+      "bytes": 1322,
+      "sha256": "e2628e741bfc67a51acb6272ad10ec0773c0fbee83fd8d100d1724822070ee5f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SplineProfileAuditTest.xml",
+      "bytes": 1495,
+      "sha256": "73f4412caf80a4a71eaea9d87987bcaa4e3faca679fb7802b879939cdf5361f8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.SplineStationaryAuditTest.xml",
+      "bytes": 2372,
+      "sha256": "499de22c74fcdc73e8df00f042c12ff2ffdf5416a7ed9c958ba24aa108ba0d9c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.StaticCostmapGeometryTest.xml",
+      "bytes": 2083,
+      "sha256": "c04b25a1c781c85f031e72e94807b2361ad4052ab571feeba299f53176a80024"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.ThetaStarEndpointGeometryTest.xml",
+      "bytes": 963,
+      "sha256": "b168c7331f62a4519ed75cf9562d251c4dbd99d6db274f176f5d5a7f0719f050"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.ThetaStarPlannerTest.xml",
+      "bytes": 1335,
+      "sha256": "eed530f23f524da691d82ac999234d30ea3deaba7be2ac593a9ac6e269ea26dc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.TimedTrajectoryBoundaryTest.xml",
+      "bytes": 1302,
+      "sha256": "4559b1b8917db3059975d24113529bb1e56c0de6fb8d6d74f3d0f7da11ebbb50"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.TimedTrajectoryContractTest.xml",
+      "bytes": 1324,
+      "sha256": "8571c9e79d3260c7a88de919d16d7b6b811824e841d44a249388c04074c57e32"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.TrajectoryFollowerTest.xml",
+      "bytes": 728,
+      "sha256": "08110ce2926b2f13cc83785d5fdd1a23bef6869ed085aeac241f39b7a333c9a4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.TrajectoryGenerationContractTest.xml",
+      "bytes": 1226,
+      "sha256": "aa924a12083f06830254f9de943f9048b89a3ad379c417941f9884d0210e4dd2"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.TrajectoryMathAuditTest.xml",
+      "bytes": 665,
+      "sha256": "0da38a73e9652b91da33289bcdc372d6515e0869a54134854685255c4f28f193"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.TrajectoryNumericalProfileTest.xml",
+      "bytes": 1380,
+      "sha256": "2912e7b63dc9c07dfae51a481bde1dad5ecb088c907a13503139115859273f6d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.TrajectoryPlanningTest.xml",
+      "bytes": 1102,
+      "sha256": "245709f4724c124c373a5dc48a83c22f89741a799b7898202d04555ae9e0d4de"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.pathing.TrajectoryProviderBoundaryTest.xml",
+      "bytes": 1177,
+      "sha256": "7633f3d2cb71b7903d076ecff2f53f1121e6fe86df9821b5f69bd3e84e9d79cd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.DriveDeltaFrameAuditTest.xml",
+      "bytes": 642,
+      "sha256": "931ac5ee18f22c26e00f2fab35daea52964e2d43f9d8d6d7c9ee7f225abf36ad"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.DriveReducerTest.xml",
+      "bytes": 2212,
+      "sha256": "74ca72b47d79c88d31b78afeb989f1d9b822d3658d4b010f3c20470d5e10cbbf"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.ExternalEstimatorRoutingTest.xml",
+      "bytes": 508,
+      "sha256": "bec861ff9f96be0042207c418637b692bc17ddfb6c9ffedbc8e61f716c184a4d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.JoystickDriveReducerTest.xml",
+      "bytes": 631,
+      "sha256": "3740af1469f954326506575127a2aa74e1293ab1627f2d269101cf46ae889182"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.LocalizationTimingTest.xml",
+      "bytes": 909,
+      "sha256": "c9bf357b6f09e5cde142791da8fd692c72b98dcf208b9a474e32db4e4f5340d5"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.NamedSubsystemStateTest.xml",
+      "bytes": 503,
+      "sha256": "d3f0389835d22bfeb468df702a06cb40bc1467d13fc436cc6a71c6cee9ed5d8f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.ReducerReuseAuditTest.xml",
+      "bytes": 1072,
+      "sha256": "010288f44f4b537f64b7c014f381411b7d0544dab929ba516e26c5b468949cd2"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.RootReducerTest.xml",
+      "bytes": 1074,
+      "sha256": "292c4d8c627802cfe5ea4e6d14122acba75fe84bd156102f4aa6eca234c22ebd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.RoutineReducerAuditTest.xml",
+      "bytes": 938,
+      "sha256": "fd9107120f33e45dd1f20b9f59750f0514d92236f8b230eebd9b38c57f9c230b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.VisionDecisionAttributionAuditTest.xml",
+      "bytes": 3173,
+      "sha256": "cf5a5f46e905a7f7ca701d85aa5a16083d749dd535c59c3db2bf41907ca04cc8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.reducer.VisionOwnershipRegressionTest.xml",
+      "bytes": 681,
+      "sha256": "ae09b826bbea8bff6f35fc2a9f1ad35f8d2daedf8397ff6c39dcbe940d511723"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.routine.CapabilityArgumentReaderTest.xml",
+      "bytes": 630,
+      "sha256": "70329c630f88997ef7bc0a0f8172b6f537f090d24c00bef9c580cfd65f989416"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.routine.RoutineCompilationOwnershipAuditTest.xml",
+      "bytes": 4062,
+      "sha256": "dcb22e9f2be757556e5ebebea54b25f9452f29c4af390195ab79d4cd5c3c7aff"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.routine.RoutineCompilerStructureAuditTest.xml",
+      "bytes": 1711,
+      "sha256": "1afab48c30726620cc7d365ced48c0a0403ed3621e25a6cd9d51ca73bdefbaec"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.routine.RoutineDslTest.xml",
+      "bytes": 623,
+      "sha256": "672f6c0a7c92d489655043c3f3aaec6882e77a26ff47a3a6d214a30afa0640d7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.routine.RoutineFactoryTreeAuditTest.xml",
+      "bytes": 1965,
+      "sha256": "cd83e9359c71e6e34a18fcf32a44c26127c88909e95f1b602f7e13b94b7138be"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.routine.RoutineManagerTest.xml",
+      "bytes": 1600,
+      "sha256": "4392eae0873f54ba3daefa0f4de9596fbb9b81e0b043b615ec61378362486d21"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.runtime.GeneratedProjectRuntimeTest.xml",
+      "bytes": 1003,
+      "sha256": "d3fea4c5617741fcf6939687235b4a9c680c569682e70d79075d582832be4e5f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.FollowPathFailureTest.xml",
+      "bytes": 1137,
+      "sha256": "be8401bd37c9648d1b0fd21dd80ad9abe161ebd7f5caccc6088a879c1611da17"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.FollowPathLoopBoundaryTest.xml",
+      "bytes": 3025,
+      "sha256": "3648f3e0844d9c2d28ec4f4eedce2b9ef663ec6f99804eed30c8a0ad2dafa924"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.IndicatorTaskTimingTest.xml",
+      "bytes": 2480,
+      "sha256": "d913206a48dd594aeb2c8fe6fece1f74f6a1bb6e8476530713bf4fc9d8983e0b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.ParallelRaceGroupOrderingTest.xml",
+      "bytes": 832,
+      "sha256": "07316898f9bd8f64d0c1c6d17b5507d1cca0a8df472765266b546b458e8e0664"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.PathfindAllianceSymmetryTest.xml",
+      "bytes": 650,
+      "sha256": "b533cd4fbc38119025ab2ddf0832fe3d0b5f7673ab01952d26d8fa5d1f983741"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.PathfindInitializationAuditTest.xml",
+      "bytes": 2219,
+      "sha256": "cec155218bf0f1df7cdb74dee1ba5d735f21d38522ae03369ee293bb4a11df06"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.PathfindToPoseTaskLifecycleTest.xml",
+      "bytes": 1626,
+      "sha256": "538f3b4f04cf3d28c1b2cd0d57a6e4e31d95dadcdfdf3c2793f9425ea520b88c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.RegistryClockAllocationTest.xml",
+      "bytes": 1184,
+      "sha256": "d3b3695ffcd76d88259c177d5b465a416cf816eddd4743a695290b141a9bea0a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.RobotSequenceDslTest.xml",
+      "bytes": 1379,
+      "sha256": "b1a8c58924c0ff3e765dd777a7260340bd9b59e3f94bfef76b30765a5abc845f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.RobotSequenceDurationTest.xml",
+      "bytes": 1343,
+      "sha256": "c2f275d919effad49c71ba7941444cf9923ec67ff6a1020c10cfd5d44ae0630a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.RobotSequenceIntegrationTest.xml",
+      "bytes": 1041,
+      "sha256": "b76a5f1aa85f4613e7b778cbd97e9964e18801baeadb6ebf327ad6a0da8c9a4a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskCompletionBoundaryTest.xml",
+      "bytes": 3382,
+      "sha256": "016c4661535c85809a0d7ca36b4d2bad73eeb808d802f7266e01c12c06adb7c0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskCompletionPathTest.xml",
+      "bytes": 1007,
+      "sha256": "d31515c56797c6aa1c96418ea946628bee1419df5157cd9669ce11ebc11f55e2"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskCompletionZeroGcTest.xml",
+      "bytes": 554,
+      "sha256": "e1c6ff68dad9a5d9076039fa150faa579ac651c3bcd6110c4097e0f84524793a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskExecutorAdmissionAuditTest.xml",
+      "bytes": 3979,
+      "sha256": "d16bdde67f8f067071b5291005b36faff3710cbcbba2d7ff575ae300917581d1"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskExecutorSuspensionTest.xml",
+      "bytes": 1170,
+      "sha256": "83dfb2bf31cce99e2e04ffcfcc2622b0cb83ae54e0e90fb732a63b95ac556f13"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskExecutorTimingAuditTest.xml",
+      "bytes": 5175,
+      "sha256": "423638cfa05d76fbd63e0e4f24daa8eb727f434dc922f014539fbaf7294ffafc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskGroupOwnershipTest.xml",
+      "bytes": 2904,
+      "sha256": "537e8ea5d5f1a81a3114283ea2739a30788d7fc6ed904dcfe6c572ab2389e400"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskGroupTest.xml",
+      "bytes": 1009,
+      "sha256": "bc1a6287fc020cb8e3b3f058b6a0fa86f684b4dc323937a548a642fa5e2fb9a3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskLifecycleAtomicityTest.xml",
+      "bytes": 1314,
+      "sha256": "66594669affc69f945c0f31dab16a310a034dd145df341d562db43aaa36d1b98"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskLifecycleRegressionTest.xml",
+      "bytes": 2302,
+      "sha256": "32aa8cd429df2b9455893ba0f120cc4104ee2f1a5ed288d7bc1b4419161afa26"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskPreemptionCleanupAuditTest.xml",
+      "bytes": 5059,
+      "sha256": "5c43dd0a6e8c774e71af4d3fc6b31c19008ff0c783df9a570b8e275048ba8bdf"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskResourceMaskTest.xml",
+      "bytes": 951,
+      "sha256": "3de6b8e7b3bff24b1da1f5129337c95675111ab425d0abd7f339fbd795add653"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskStatusRegistryTest.xml",
+      "bytes": 827,
+      "sha256": "987ec94758cb384c93e101e96c124f86139af578b6f1220744b7d102f5b41135"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskTimeoutBoundaryTest.xml",
+      "bytes": 2789,
+      "sha256": "20aa63f95e76d579aa6ed9b27bd8f04b79f7deebec462151d702a00fd38fda4c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.TaskTimeoutZeroGcTest.xml",
+      "bytes": 760,
+      "sha256": "06d8bc99819322b128118648d2dd43c2595915bd35870ffd6656e7366e6a1b24"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.sequencer.WeakIdentityMapTest.xml",
+      "bytes": 1532,
+      "sha256": "a26f9fe7788a90ee4a23261ded62048baa2995566eb6cad06e0a82bfee80fd14"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.simulation.SimAppliedOutputRegistryAuditTest.xml",
+      "bytes": 1743,
+      "sha256": "95ef393ec604194e59f76a5c7f11db89416410da144e36814ba9b9196c909a46"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.AprilTagMapBoundaryTest.xml",
+      "bytes": 3293,
+      "sha256": "43a95916f81417a5e749b0c114e42e011bb53113b3d30a379e9dfb42662d2d05"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.AprilTagMapCodecTest.xml",
+      "bytes": 1047,
+      "sha256": "b35756d5b157a95ef265cae43f141da9a0906d790068e43a1fe26ef1bcedada4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.AprilTagMapFrameTest.xml",
+      "bytes": 1426,
+      "sha256": "eddb949b056a24f73b037ff963c256c083e5430971a3c76d08cde4c235ac33fd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.ImmutableVisionSnapshotsAuditTest.xml",
+      "bytes": 1133,
+      "sha256": "9ee331b27c828a4fd85e43a24a40640300b4dd14134647d5a243dfff84211a77"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.reducer.PathReducerTest.xml",
+      "bytes": 704,
+      "sha256": "aeb6368898561883669d695e175b1a9f51adef0c2b7d70b96eeca5f6c02fe91b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.reducer.SuperstructureReducerTest.xml",
+      "bytes": 759,
+      "sha256": "20f57e5ea40211931bed42ad3a09a8950118aebccb12b79541c7d9445b721cff"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.reducer.VisionReducerTest.xml",
+      "bytes": 805,
+      "sha256": "5cc9a6f56531cb1966a042ecd2433dc070689d6b55ed5114f0b7adc9fc42fbfc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.RobotFieldBoundaryAuditTest.xml",
+      "bytes": 1534,
+      "sha256": "dcf1586602149af7d59e2e981ff5c368675f306ff763f1667751c95b0325d4ce"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.RobotFieldConfigTest.xml",
+      "bytes": 1217,
+      "sha256": "e3a0ce51078c4daf40426b7661acdf5de2eb61525148258b73ecf017e74e742e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.RobotFieldDocumentTest.xml",
+      "bytes": 747,
+      "sha256": "8d9f34a92c5b84be5b6e6f1990f8dcba2913cb6f13cd8224994c46e56f078ede"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.RobotFieldPolygonValidationTest.xml",
+      "bytes": 2693,
+      "sha256": "050f04525b46d7f77001d8e73d3ad6d6532799686c3b4b3f349e3fb3bebced15"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.RobotFieldValidationTest.xml",
+      "bytes": 962,
+      "sha256": "717a71e632c87b5dd5d942a7607c8d35f789288fe1ada977d894db32b92ab770"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.StoreFailureAuditTest.xml",
+      "bytes": 1329,
+      "sha256": "03664abedd16e0bcdc6ee1adbe2e0b4828cf25ec085daa9396dfe0e18cc119be"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.StoreSnapshotImmutabilityTest.xml",
+      "bytes": 981,
+      "sha256": "f087929bfeb8fa2223136cd9fa5dc0cfe5ca630a8aa44ea598d46908c0fa324b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.state.StoreSubscriberLifecycleTest.xml",
+      "bytes": 829,
+      "sha256": "9cf14f19b17b3290d856f0a85b1722b8486f84529908da0580543a6487da0c98"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.student.StudentOnboardingTest.xml",
+      "bytes": 452,
+      "sha256": "5995a5ed14fc5e8080516551ba794f6afa3bfe2ade8c23d8f81d956570188787"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.AresRobotLifecycleAuditTest.xml",
+      "bytes": 2364,
+      "sha256": "1400337debfe477f53e004758326c3197181f0869c957c65984f6084e8fe304c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.DriveFacadeBoundaryAuditTest.xml",
+      "bytes": 1865,
+      "sha256": "765a761ecc78811d7d1dae74dd91fe47279eb9cdea94b442ac3cec47c578246b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.DriveFacadeControlAuditTest.xml",
+      "bytes": 3147,
+      "sha256": "41e12021054f6c31089603f202d0cbc864c31c65267483607a10730934175e77"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.FieldCentricRotationE2ETest.xml",
+      "bytes": 611,
+      "sha256": "2c7bc3cfe7840713fc70572df4aebdce476aa4b28452077d90b0304d01241d37"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.GeneratedSubsystemRegistrySupportTest.xml",
+      "bytes": 784,
+      "sha256": "17307ac909c61939103fed4db24b75d7f8c70c82fd0c8898c93e32c690fd1ac9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.GeneratedSubsystemStartupBoundaryAuditTest.xml",
+      "bytes": 2256,
+      "sha256": "56ed0474a60b0825dce0b296caa87fb0898581b1b8aa99c9019fb4a25cb7dd20"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.HolonomicDriveFacadeTest.xml",
+      "bytes": 1079,
+      "sha256": "623a388e0b51202307a3a841b16d5a2ba2c3245b18f2980c62a8e05560f73a47"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.SubsystemCapabilitiesTest.xml",
+      "bytes": 1178,
+      "sha256": "c87305ab775a7da9e7bd58ebe160f1ed193bc7b96f9230fc83461c1f750ff723"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.SubsystemCapabilityBoundaryAuditTest.xml",
+      "bytes": 1948,
+      "sha256": "9207e4a60552b5f759e952cd5203d3cb161286fd0cb103457898b4de606bb0c1"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.SubsystemDocumentTest.xml",
+      "bytes": 4053,
+      "sha256": "d4b9fd7a0cd0c12510ba2998d3bf12875c6ce8bdbee8c7e6d8b1a75336c0a096"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.SubsystemHardwareScaffoldingTest.xml",
+      "bytes": 1153,
+      "sha256": "60aefe3a037697f36b003579093cb296023b41e69d7c5a6644149fc01a92d170"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.SubsystemScaffoldContractAuditTest.xml",
+      "bytes": 888,
+      "sha256": "8c04fad833bc91da8fefaa378a10ae2f22cddac8b4364e85cd874a7c78cd9387"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.SubsystemTemplateOwnershipAuditTest.xml",
+      "bytes": 695,
+      "sha256": "48cc3914ad5c2a435610c7d1ed0ac041c2935a8d8bda7a76cc46cf8267fb88c8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.subsystem.SubsystemVerificationContractTest.xml",
+      "bytes": 882,
+      "sha256": "631b484cfddf6ecf4547bc0e253afbe6567606adbe9b2fb17f70c243f28ecbd7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.superstructure.SuperstructureDocumentTest.xml",
+      "bytes": 2254,
+      "sha256": "40a69fa85abd0b83bbb4c3b167202279339461e12f33d55b9d979d72bb476a40"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.superstructure.SuperstructureRuntimeTest.xml",
+      "bytes": 4489,
+      "sha256": "1c8cf51c342c608e1dad4eb64cba147d710a26f00a601d0b41bbe8fb49f1e9dd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.AresGamepadDslTest.xml",
+      "bytes": 2015,
+      "sha256": "93a0fd3d058c60fe13472d427d50e524ef3808753338dd3e245f536840dc3f4f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.ARESNetworkStatePublisherTest.xml",
+      "bytes": 822,
+      "sha256": "62bed5fd1bbf2e8b86e06355646c4717b7cb82ed7d0ef3af29b7384b851f8c72"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.DriveFrameDiagnosticBoundaryAuditTest.xml",
+      "bytes": 693,
+      "sha256": "021ffa4e46059cfd42e921574c7aece72e18ae02a68db8ce5c67a61ff3dc4411"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.DriveFrameReceiverAuditTest.xml",
+      "bytes": 1177,
+      "sha256": "bbbccb8a022f662cee4a9d4c19c7c868137004c39005f62a166e785399a183d3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.DriveReceiverTimeAuditTest.xml",
+      "bytes": 649,
+      "sha256": "c10a5de0e52752855207ba68f7b70942d3abc1f0443b304f4dc3836cdd07d7fe"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.GamepadSamplingAuditTest.xml",
+      "bytes": 2344,
+      "sha256": "344c3b9b592f8703cd0f31e2b61f2a1ad3459d41a153f175ce1749a856627b6c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.GamepadTelemetryAuditTest.xml",
+      "bytes": 1273,
+      "sha256": "83f5bba699d126aea209571179516b5ac7d5dd5a4a94fa4a8167a6f4ae60a1fc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.NT4ServerTest.xml",
+      "bytes": 855,
+      "sha256": "874e9d88e6ca55197dfc88043b07ba13c6238cb16e538e9a81a7f6c501bc6570"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.NT4TelemetryAccessorAuditTest.xml",
+      "bytes": 1203,
+      "sha256": "2179c25ff6067ecba9adeb757c4327ad2bc29eaa23625bf554506df05f9bd752"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.SimInputBridgeTest.xml",
+      "bytes": 1516,
+      "sha256": "2026a9a2d17c4ac3e7127a847ccc05e3d7603ebe7bf9cd9dc47af4f70c980565"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.TelemetryFrameAuditTest.xml",
+      "bytes": 2135,
+      "sha256": "121c8f4b4c6b610ca31a5cb1a836ccc8212d39d16334aa13796dc12ae114af93"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.telemetry.TelemetryTopicNormalizerTest.xml",
+      "bytes": 938,
+      "sha256": "2c4bbad9dd6174b4230be35286fbccf2c4f299de5316e7b09c9e4d0d04ebd090"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.test.HardwareFaultInjectionTest.xml",
+      "bytes": 542,
+      "sha256": "111bacc254e1a37009fca9671b678946fd3b416c64fdd29d6ae2b735da7d0ae7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.test.ZeroGcRegressionTest.xml",
+      "bytes": 1379,
+      "sha256": "b6cbfb99d7946a7ce68cdcd0af539444764af91f79bb01a78b1e09e70f88148c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.tuning.TuningManagerTest.xml",
+      "bytes": 1607,
+      "sha256": "a6bf73319a0dddc3571df9832969cf86c7346b811223d5ee53315e12d6a628a3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.tuning.TuningPersistenceAuditTest.xml",
+      "bytes": 2528,
+      "sha256": "e19e56e8780307be69f5d2a85548d47fba51c4829583ed1cac5dc49defc3538a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.tuning.TuningPollingAuditTest.xml",
+      "bytes": 3360,
+      "sha256": "ede95238f54e29d688e0e1b861e155f836cd815023a06cc2cf7d6dc11f991610"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.tuning.TypedTuningRuntimeTest.xml",
+      "bytes": 651,
+      "sha256": "45c84b099c5b3f2e9862f752319931029e062498abb9a1a8354a2a1006c9b94c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.util.PoseStorageAuditTest.xml",
+      "bytes": 1293,
+      "sha256": "78dc6c844449551f12c1f16a3485dadc2668904f23028184b72d4f6d733911b6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/core/build/test-results/test/TEST-com.areslib.util.RobotClockContractTest.xml",
+      "bytes": 1931,
+      "sha256": "a9a692e37a9122b5f9cafdd358ce8bbcf12f5e4485383057af409586bab57a5f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.FrcSwerveBridgeBoundaryTest.xml",
+      "bytes": 1528,
+      "sha256": "515775c548de4d042d7eb5a56e827f35e34bee9bb2fc5fb8da64d5928d449990"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.FrcSwerveBridgeLifecycleTest.xml",
+      "bytes": 2275,
+      "sha256": "dde149be5e9a0b1143cb2ab8033b0f233622a24f882b488d26eafb5e0bf44de4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.FrcSwerveBridgeSnapshotTest.xml",
+      "bytes": 1093,
+      "sha256": "3b8bd151ae819e6d60243b6f035cb820e970f181ec4da5ff5505b0ff8e2b9ba0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.FrcSwerveBridgeVisionTest.xml",
+      "bytes": 1213,
+      "sha256": "d13677684d212b6ee4836cb0c008fe91e28d0446f8f93a801f8eb56a0e07b04f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.PhoenixSwerveReaderSourceTest.xml",
+      "bytes": 1608,
+      "sha256": "0409fafb8951efcd46c4c23c653d6dcce0420163ba8505b49d13713bc5579073"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SteadyStateAllocationProbeTest.xml",
+      "bytes": 784,
+      "sha256": "a1628a5002ee4c4420c6157d8161718fe0d8e65ce12f0c4a72424fdfc4851afc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SwerveCtreReaderAuditTest.xml",
+      "bytes": 867,
+      "sha256": "5edf02c87e6a2256969e89273bdad645a8a1923a1e2e6d058b350fa9c5f959a8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SwerveCtreReaderFreshnessTest.xml",
+      "bytes": 1751,
+      "sha256": "b6321f6b9ed59ae6df67d1e9dbec1224cb399066ba413af60cab564c9b1452d8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SwerveCtreReaderSnapshotTest.xml",
+      "bytes": 1239,
+      "sha256": "ec051c31475beea0a409ae463a230b086c99f503b5abe6d996b8443ac676cf8e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SwerveCtreSafetyRequestTest.xml",
+      "bytes": 710,
+      "sha256": "85277ad994e4abff8f39802d12df941fb7808e2f46c3bfe487e0069eefb9f15e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SwerveCtreWriterBoundaryTest.xml",
+      "bytes": 1789,
+      "sha256": "26ac2db39b7e7d14acb854b2d3c41b1997da739764826f1f912bdfeb83ca4e06"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SwerveCtreWriterNumericalTest.xml",
+      "bytes": 1318,
+      "sha256": "56366da551a83b308d67d716a0b2f14dcbfa5650c9baeb9b1fc8d78ada2ec5dc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SwerveCtreZeroGcTest.xml",
+      "bytes": 535,
+      "sha256": "413f49b74cb31b66239948c46d778ee24b261e8d601d8f4b3fd7c12f021c9a41"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.drivetrain.SwerveOffsetManagerTest.xml",
+      "bytes": 2289,
+      "sha256": "12e2e6a1b25ddd3dc052eda63495a5fcf71962fbaf1ee046c5239bd2c7481bb7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.FrcBaseRobotLifecycleTest.xml",
+      "bytes": 1469,
+      "sha256": "7f1afd0cb3dc1d2ed9225ac33800a1f422b0b5790183130567283681347c698e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.FrcLimelightIOTest.xml",
+      "bytes": 479,
+      "sha256": "3dfa9380e0fbd03ff1aa0d5ee627e05f88f7a303b32bd2ae3a4fcb38cbb42fc4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.FrcSwerveRobotTest.xml",
+      "bytes": 1077,
+      "sha256": "9a7930f56b5c0498d436b774021a41dee08f48d0286250d97632711c75289d83"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.FRCTelemetryTest.xml",
+      "bytes": 467,
+      "sha256": "c61c4dfec9788be013d8642d051dfc4bf15ef65e8941548448e1291ef97e3a36"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.FrcTerminalLifecycleAuditTest.xml",
+      "bytes": 22008,
+      "sha256": "0b30947ccb0fb42855d12ec6137b865d98acc52f34c557ad72d0cc787a9e55dd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.power.FrcPowerBoundaryAuditTest.xml",
+      "bytes": 1434,
+      "sha256": "1a6dde823b16961282cf20e03315e3d31a7d6253241d95937112ce324389d8c3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.power.FrcPowerManagerTest.xml",
+      "bytes": 1068,
+      "sha256": "baef6a1a53d875fe9f3cadc69f5c1492e800678b2860674ef5ad4c65bc19161d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.power.FrcPowerManagerZeroGcTest.xml",
+      "bytes": 603,
+      "sha256": "a607cb91e828988bfe31f04fee890afd79475afd8928ec4c70c03a043118fc0d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.vision.FrcAprilTagFieldLayoutFactoryTest.xml",
+      "bytes": 679,
+      "sha256": "16bd3801afc53a82659a13b15e0f1b7c3a39a4c5ff9d4906c9bfdd6365d65ae6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.vision.FrcLocalizationCalibrationSessionTest.xml",
+      "bytes": 1424,
+      "sha256": "a740c4338787627bd08200fb6270d201dbe41098c09cf4b681573417ce66b1e3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.vision.FrcVisionConsensusAuditTest.xml",
+      "bytes": 1630,
+      "sha256": "206df319e7a947c6d1f531066f7d52109b1aa3d9a7de4bbfdcb8a1d9b8364caf"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.vision.FrcVisionFreshnessAuditTest.xml",
+      "bytes": 2677,
+      "sha256": "b37c65574d0a684094fb7404c7f2610ce185f9396f6d77335ab2ed5106f427f0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.vision.FrcVisionRecoveryQualityAuditTest.xml",
+      "bytes": 1870,
+      "sha256": "d0b08a95b03f6d2857cce20c7a1bc5f5997d093b48cc7b9e4c8318094c14a491"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.vision.FrcVisionTimeHistoryAuditTest.xml",
+      "bytes": 3238,
+      "sha256": "722d9011e5be152b86d5a97a5d20a9bc51f464426ac8510562125fc5b7682ebc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-hardware/build/test-results/test/TEST-com.areslib.frc.vision.FrcVisionTrackerTest.xml",
+      "bytes": 1271,
+      "sha256": "df761f8f53eb2350a304f0ff4e528ba7be85becbe51c2bbd5480c8b6796cc293"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/frc-runtime/build/test-results/test/TEST-com.areslib.frc.input.FrcInputFrameAdapterTest.xml",
+      "bytes": 1308,
+      "sha256": "47f3012bdaa35fd134c5890d91f498cc3a820a1287a22e6e4cd33e3224729a66"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.e2e.tier1.app.AppFailsafeTier1Test.xml",
+      "bytes": 1428,
+      "sha256": "7af089974f57323645df64d51e55cc9c4f50395916a1038b832701521a8c4ba2"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.e2e.tier1.hardware.HardwareFaultToleranceTier1Test.xml",
+      "bytes": 1139,
+      "sha256": "6d2ac6d67d40eb68efc35137642eab76b53fdee42798cb6430cfe7115c28fed9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.e2e.tier2.hardware.HardwareBoundsTier2Test.xml",
+      "bytes": 841,
+      "sha256": "2cac706299ad0063cc82bb4d3b2e1a9d0b4f4ac3012ed6db6d9ddf99eb9d19bf"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.calibration.FtcMecanumCalibrationControllerTest.xml",
+      "bytes": 15125,
+      "sha256": "b5badf2c616eb831bf2acc487321e80020b6df45065b130043b2a9efa333a6f7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.CompositeMotorLifecycleTest.xml",
+      "bytes": 654,
+      "sha256": "1a1054a00af419bbd8ea75e72cd575e1b8dfe029e08c2f554a743914cf5480bd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.CompositeVisionIOTest.xml",
+      "bytes": 710,
+      "sha256": "e224b0fd11ec2636ceb54d40ca428b1ce8da0a4d820f6dd641303b3e9827db08"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.DriveConfigurationAuditTest.xml",
+      "bytes": 4724,
+      "sha256": "778d3aca70060da7e4725ed181498bdb1717b459cfe1ef1486b56d47960a5f4b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.EncoderFeedbackAuditTest.xml",
+      "bytes": 2605,
+      "sha256": "5d8c9b1ef8c4091a1ad213c26b0a1e5ca594fb1c3523990e565533c37e5a33d0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.EstimateMotorTimingTest.xml",
+      "bytes": 1355,
+      "sha256": "1c4f6e2a869341c31aaa77263759b3516b2d1bbb3f8087acda700d7e63f5883a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.FtcOdometryArbiterBoundaryAuditTest.xml",
+      "bytes": 769,
+      "sha256": "fa647ae7783b051f7a2b597925da5c23e2c41f7b91aae5b09c0242290a3707fc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.FtcOdometrySourceArbiterTest.xml",
+      "bytes": 673,
+      "sha256": "28295d3ee5211117119c5b72ea4d5258fb8dbc4260c4de11684a8f26d0095530"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.MecanumFallbackBoundaryAuditTest.xml",
+      "bytes": 4098,
+      "sha256": "acec3962c11fc0bc9fecf65cc97d1f86a850e335abfe191367c18987ad64374c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.MecanumFallbackOdometryTest.xml",
+      "bytes": 677,
+      "sha256": "c95fda27224c7588303754d2489734381c151c8f3a63692db0ec3535aecdac73"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.MecanumShutdownAuditTest.xml",
+      "bytes": 1348,
+      "sha256": "6abbc2b21842b9291021b679012bd9e8d3620e7bf05fec6f69967a918a4ef94e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.MecanumTrajectoryFollowerTest.xml",
+      "bytes": 677,
+      "sha256": "5776e36c58b0ea4b1ebf8527dbd7a35cc387550a5a1a951a867c29f3ff296eb9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.MecanumTrajectoryLifecycleAuditTest.xml",
+      "bytes": 1538,
+      "sha256": "5a7ba6c94d78d458d56c4657ff667071fc5490379813b6d5a37659abb02e2e13"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.MecanumTuningTransactionAuditTest.xml",
+      "bytes": 3683,
+      "sha256": "cc49a34d508609a0a8d22917ba1df6349b1d8b3646cf271b4d891f1bb761be95"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.MecanumWaypointAllocationAuditTest.xml",
+      "bytes": 526,
+      "sha256": "274305d1962c0b2b361f042673b60cd71a07bc2f8b7c6ae29e33d98573b3136d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.drivetrain.NativeMecanumTuningAuditTest.xml",
+      "bytes": 3490,
+      "sha256": "682152b53bc276930a04b53b1672d93d3cdc5a3a22e6fc95995ac080bd1bb880"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.dsl.FtcTeleOpDslTest.xml",
+      "bytes": 1104,
+      "sha256": "0525200557875071b7b4cd345ac271aa3628484d931e2075b11b96bff7b18cc7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcFrameLifecycleAuditTest.xml",
+      "bytes": 34976,
+      "sha256": "16e45c5f81f9610c6f64a4e5625d6303305187b9252a788b6fbb50dc4932c88c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcHeadingFeedbackTest.xml",
+      "bytes": 1978,
+      "sha256": "842a49ec1f731787ed416eda0270e1da78b305fc482620c8e270571b30b5104b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcLimelightIOTest.xml",
+      "bytes": 1128,
+      "sha256": "aec636bd3863c24f90e19b0066e7d92889ecc476ff38365c97eebde1cfdb38e6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcLoopTimingTest.xml",
+      "bytes": 1125,
+      "sha256": "2050b772b0884216f0db0cbabc6c0f16a977d01cabb5e35c331c91f4156e89d7"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcMecanumRobotBuilderTest.xml",
+      "bytes": 729,
+      "sha256": "7735ca0fe58261d34be57aa487c3e682cb2b89b056cd988d34dfbe734daddfec"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcMotorLifecycleAuditTest.xml",
+      "bytes": 2602,
+      "sha256": "ec6bbde1add2ba3985c478d690dbae87510283115ced45b76f1e58d90c40962b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcRegisteredSubsystemLifecycleAuditTest.xml",
+      "bytes": 1186,
+      "sha256": "8428299b4d4c1f5eb456a7f0e7ab4796b5bdbb8fb80b715dffc034bddf09414f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcSafetyFailureAuditTest.xml",
+      "bytes": 44811,
+      "sha256": "d2b072c90a1290dc656dfb2c98fdd9d0a87da6911399a7e0707efa8a2f0c7ab8"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcTelemetryLifecycleAuditTest.xml",
+      "bytes": 1585,
+      "sha256": "14210ca4a85d45848b975c2be25f1a461390e6dd6690371f6ed7c2e19519fa53"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.FtcTuningOwnershipTest.xml",
+      "bytes": 1147,
+      "sha256": "a0d454cec12b09c0da1d30bca32b6cc0ebd03ad3f6abefa2994170e6d0e3dd39"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.hardware.CachedHardwareContractTest.xml",
+      "bytes": 1971,
+      "sha256": "52df3d55cbd7ab3c81050722dbaf4ab9941b738c4d74c8608b7cabb905046bca"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.hardware.FloodgateIntegrationAuditTest.xml",
+      "bytes": 2815,
+      "sha256": "7ba005a8b9b34044e5a23b3f0b73a65a910ed6eead65d04b2d3e305ab09f6548"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.hardware.FtcGamepadAdapterAllocationTest.xml",
+      "bytes": 569,
+      "sha256": "f0f55224d1d0b06ae110e004086c9c5c94661e5532f39fb2ff45f6c6d3f1d4cf"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.hardware.FtcGamepadAdapterAuditTest.xml",
+      "bytes": 1214,
+      "sha256": "447b959c25bccb9a353bd86a54930eaecda0adb1f55fa50701f71e59bdecabf0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.hardware.FtcImuTelemetryAllocationAuditTest.xml",
+      "bytes": 846,
+      "sha256": "81f1ef2d8f53651c5e0aa770ab7079540227d737817b879b33f587171c16b996"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.hardware.OctoQuadLocalizerFrameTransformTest.xml",
+      "bytes": 523,
+      "sha256": "34579714143f173efaa131e3f766bdc693fa4f886b14e434436d495cda21cd69"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.hardware.SrsHubPinpointFrameTransformTest.xml",
+      "bytes": 651,
+      "sha256": "be38dfcdfb60240bf093958455405eb8a39d3f245ceaed7b3f369372fa786a3c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.input.FtcInputFrameAdapterTest.xml",
+      "bytes": 948,
+      "sha256": "251c8e8e1c0be36dcd09b03d024538b517c05282f2ba835090e8d6eae665ae39"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.MecanumHardwareIOTest.xml",
+      "bytes": 1958,
+      "sha256": "365ccd6cbbe9ebd86d36b4d3c6fc23093ece9e270e4b66c4e871b6a2e895e2ef"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.photon.AresFtcRuntimeOptionsTest.xml",
+      "bytes": 634,
+      "sha256": "990cb253604c003d82ae929c1794e60fe78ddbad8b4c45752ffd4cf93a1e9540"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.PinpointIOTest.xml",
+      "bytes": 1650,
+      "sha256": "4385f6420c134a263fc14ebae8294139274c687890db8b0a5d3c6d8ae6b57d08"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.power.FtcPowerManagerTest.xml",
+      "bytes": 1738,
+      "sha256": "5fecb964f4fd63282d60c8743ef03c960139a1d8376b890f8184e5a94309e08d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.power.FtcPowerManagerZeroGcTest.xml",
+      "bytes": 607,
+      "sha256": "8b23233f6757af2340dcc741f5259007b9d98c73543be2eedec9b7cd037cc415"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.power.FtcPowerReconciliationAuditTest.xml",
+      "bytes": 2302,
+      "sha256": "ac4043373fcf0fa3bf8a7f3aae51a6476e1fe6dae268b6b0b476427765a8b976"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.runtime.FtcDriveAssistModesTest.xml",
+      "bytes": 508,
+      "sha256": "331b9fb908ab13b699c6fee4f8334159ca09f852d40e90a8b8403a7e28b4689a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.runtime.FtcGeneratedAutonomousContractTest.xml",
+      "bytes": 1002,
+      "sha256": "99ffa11bb85e548b3b6971a157edc5ce20ffa994792941ea2cca27208e6db68c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.SparkFunOtosIOTest.xml",
+      "bytes": 561,
+      "sha256": "2938f632f75b1be05b41afb38443033b06fbda6784ed087c8a22c24d9488b4cd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.SwerveFtcAllocationAuditTest.xml",
+      "bytes": 504,
+      "sha256": "719dea7f681bc01fe5e6775562cbf096c599b2331b51181e20db0f5296d0b3b4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.SwerveFtcBoundaryAuditTest.xml",
+      "bytes": 1254,
+      "sha256": "ac2a1efe919ffaabde29a823400b8953288d845d3587f3bf6034e72b55256007"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.SwerveFtcLifecycleAuditTest.xml",
+      "bytes": 2394,
+      "sha256": "18d61e04996e5b493077ed303bbeff4b22638f7e64507cbbdd4ef828f886f1ee"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.SwerveFtcSamplingAuditTest.xml",
+      "bytes": 814,
+      "sha256": "eea51d5dc59d0912f53d264d32002f43658b6b075fbf1d17a5409029290d9558"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.SwerveModuleIOFtcTest.xml",
+      "bytes": 486,
+      "sha256": "35fa47ad083fa1d0a6072092306660d5ec46bf4059060fb372ba7b819aefd28c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.telemetry.LimelightProxyTest.xml",
+      "bytes": 2126,
+      "sha256": "f08a367a1b499f3597816653851aa24dcc5f326e2bffc8d53c34e8630887586d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcAprilTagLibraryFactoryTest.xml",
+      "bytes": 661,
+      "sha256": "295e3d2bc41dfbc2d9440f22968788699ef5ae0ae6f3fa26663a4dcfc521ad54"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcLimelightClusterTest.xml",
+      "bytes": 1171,
+      "sha256": "4b46f3d89036192c3ff76ca1ba592ba7e8d30fadf4eff144edee9463028bb9c1"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcLimelightFactoryTest.xml",
+      "bytes": 668,
+      "sha256": "24ffc712697dba95d855879f6dc9bd6635b99a892c7f16917c64b50cc89f0ebd"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionConsensusAuditTest.xml",
+      "bytes": 1508,
+      "sha256": "a909d1aaa1c96cf84b583df00c6ba555b3b65dbfdfc7f112ee748c2837d68ab6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionFreshnessAuditTest.xml",
+      "bytes": 2367,
+      "sha256": "8370abfa36e3945df1798267ba895396c360f2dc3939fa3dadde161fb2ba4fe0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionRecoveryQualityAuditTest.xml",
+      "bytes": 2897,
+      "sha256": "e0b20580f6b2d52933f46abcf142e30471124fb87d5d07d3e633b54f06be08e3"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionSelectionAuditTest.xml",
+      "bytes": 2749,
+      "sha256": "06b1bf31dc5853443bafc213cb64a448ad1e027e41fc8b5ad77e389b67d86d2d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/ftc-hardware/build/test-results/test/TEST-com.areslib.ftc.vision.FtcVisionTrackerTest.xml",
+      "bytes": 2892,
+      "sha256": "0a1743dcc4da9dd6a055e05e75c4931665288fb0a9c37b41e634ec71c71880c5"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-compiler/build/test-results/test/TEST-com.areslib.project.compiler.RobotProjectCompilerTest.xml",
+      "bytes": 859,
+      "sha256": "4844eddd10a02c3302aaef21e66e60ac5eaa578f12adbd45f6c62af195ff3b4d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-model/build/test-results/test/TEST-com.areslib.project.model.RobotProjectAssemblerTest.xml",
+      "bytes": 1325,
+      "sha256": "03fa2fa95c42a60821db642d147523b9388c5af0897f8bbd7c71e6b5fecf07d9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.catalog.CapabilityCatalogTest.xml",
+      "bytes": 940,
+      "sha256": "08ce90e03dcd3e64919458b344c0eeed8a42745d64b198cba2e1652b84a6ae21"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.controls.ControllerProfileDocumentTest.xml",
+      "bytes": 663,
+      "sha256": "eb9f93a05a1583a61694662908ae1e06fbfcc1d142af517b8419fba82b2573dc"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.controls.ControlSchemeValidationTest.xml",
+      "bytes": 1254,
+      "sha256": "91cf74bd90c53652e0facab67bdf00021418f937af25dc5a4735dcd64263f2df"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.drivetrain.DrivetrainDocumentTest.xml",
+      "bytes": 1134,
+      "sha256": "a5a5f7e5e8acda7fabc0c7317cc7d73cc153de5bcdd2388fda78a9e70718f85d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.project.AresProjectMetadataTest.xml",
+      "bytes": 1363,
+      "sha256": "7cf75232a7984c6b25fb615fd83ebaef63ddec1ea2b17540180d4ce67f542c90"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.project.schema.ProjectIdentityTest.xml",
+      "bytes": 504,
+      "sha256": "897bbe4afa64f638b2356c3d4f941fd1f08fc031d032ab8835a465149b3d0543"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.project.schema.ProjectSchemaOwnershipTest.xml",
+      "bytes": 508,
+      "sha256": "6a01ce70e0a24bfacecedc18ff95036063293f50a83e06408b55c43a42ff1418"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.project.schema.ProjectSchemaVersionsTest.xml",
+      "bytes": 659,
+      "sha256": "6098786107029391b8824daea24304952d2e42f13f3ff15fc26f7cac53c8b7b9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.routine.AutonomousCatalogTest.xml",
+      "bytes": 615,
+      "sha256": "1794af601a9234e35a09999d3730aea206f69e610fb7a64ae672231cdb4874e6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.routine.RoutineCodecStrictTest.xml",
+      "bytes": 1112,
+      "sha256": "6bbc3d3642d960d525cd0a084329bac22bebd217088a9d06c59daaa8dc1f50b6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.routine.RoutineDocumentTest.xml",
+      "bytes": 955,
+      "sha256": "d4ca38f1ae1cc22fbe2bc903d1a134bf4d16f8889d3ee091111694b8ce06e332"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.subsystem.SubsystemCodecBoundaryAuditTest.xml",
+      "bytes": 2830,
+      "sha256": "7ba834c2a2b54cd9a5b2f874f0e1d699efe04742d580de8019c09a964d32876f"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.subsystem.SubsystemCodecCharacterizationTest.xml",
+      "bytes": 871,
+      "sha256": "0475192026ce8399b8a5568beefed2b1e89408aec6b3e171a497bd2a70ae2f65"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.subsystem.SubsystemIdentityBoundaryAuditTest.xml",
+      "bytes": 1225,
+      "sha256": "b8f6baaba22d73fc449d2ff1098827f488a84b5a140c029d34c21d4f3c800982"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.subsystem.SubsystemNumericalBoundaryAuditTest.xml",
+      "bytes": 1588,
+      "sha256": "2353e812caeadde71ddb62f713007c7cc016c6d0937a2a286a02507d5f25ecee"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.subsystem.SubsystemPolicyTest.xml",
+      "bytes": 1126,
+      "sha256": "5291c0221be752495f1031895d6ca360bb551ebbc962ca48c9660a531f6d66d1"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/project-schema/build/test-results/test/TEST-com.areslib.tuning.TuningProfileDocumentTest.xml",
+      "bytes": 1006,
+      "sha256": "f96cd4a568e293237e248f83ef855c32ab8ee7e859ffdedc5873eb92b70c0e7c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulation-foundation/build/test-results/test/TEST-com.areslib.simulation.SimulationFaultTimelineTest.xml",
+      "bytes": 828,
+      "sha256": "54478baf50bf5b0c676472c508ea45b1b1068bc76bc1c2f7327ada0d63125648"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulation-foundation/build/test-results/test/TEST-com.areslib.simulation.SimulationProjectPlanTest.xml",
+      "bytes": 754,
+      "sha256": "e9c47df0fd26dd74bcb3b87b79b1b5b930127b26a03e248102423a6e8c5463d1"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.field.CanonicalFieldPhysicsTest.xml",
+      "bytes": 1438,
+      "sha256": "087509d46f86f210b3aa5d4cd2299e91d4127bf6a6973b59fedb221a251a9a51"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.field.ConfigurableGamePieceInteractionModelTest.xml",
+      "bytes": 1192,
+      "sha256": "a11dc1acf8d1860615eb9c8fe18f803bcc53b4c06cec4dbad677c2eb5b3ccd71"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.field.MecanumInteractionModelTest.xml",
+      "bytes": 814,
+      "sha256": "13b0a08a1cbdc1dc3db1323eed8644b25c9fd70fec2492874a88d7874d2ea382"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.GamePieceTelemetryTest.xml",
+      "bytes": 617,
+      "sha256": "8b857174c15f8a3dcee342f3d2e457671c6b8d9004bf0c1214a68136458a0503"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.infra.FakeControllerClientTest.xml",
+      "bytes": 488,
+      "sha256": "c0e88fc834adde21c75cedb9e8be9442d037ed2157384189e199da406a1b04d5"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.infra.SimGamepadManagerTest.xml",
+      "bytes": 2112,
+      "sha256": "5878b53a8b5befbf24531dc9f9a9f3922e159608630ab9be1a101b1c475d2b12"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.MecanumRobotDoubleImuTest.xml",
+      "bytes": 503,
+      "sha256": "9f85319d8207d3a2ac0b281a90ece5e17fed6a9fc698006078653e2d59b31a10"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.model.MechanismIntegrationAuditTest.xml",
+      "bytes": 2332,
+      "sha256": "a45e3fe0e4dab2353bcfcf002e1b36aa7ed3a822475680cec2ac714f44492196"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.model.SimulatedFtcFaultAdapterTest.xml",
+      "bytes": 880,
+      "sha256": "8da714ab11e8d1168172652c76508211d16efc8a7e26f05e617232d195bfbd25"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.opmode.SimOpModeLifecycleTest.xml",
+      "bytes": 1823,
+      "sha256": "92dec5a030514514374252ec737129d47b0c84d504ccd25a897bc3d83e6b8faf"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.opmode.SimOpModeRunnerTest.xml",
+      "bytes": 775,
+      "sha256": "43d374c931e631b3e36e87d15f919be2912d9210abe6a9069cd2796de2215fb2"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.physics.FieldWallOriginAuditTest.xml",
+      "bytes": 498,
+      "sha256": "f871da22480182503be1c6ef08af5939d0e52f51d9aa24412befa19fe532220d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.SimFramePacerTest.xml",
+      "bytes": 905,
+      "sha256": "1f4929fb39ef1b7caec8c9f16a3c23715aca827bdf7db536521cd7cdb368e0c0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.SimPhysicsWorldContractTest.xml",
+      "bytes": 1060,
+      "sha256": "bd29cc9d8ab941e68165c2cce458d022504926b493c551d929b3796bd6dd9d6d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.SimulatorPoseOwnershipTest.xml",
+      "bytes": 638,
+      "sha256": "7afa82a1d36b72ae499f5c9e4e06746dde53bee8ead66c37855b7a5dcb185749"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.SimulatorTimingTest.xml",
+      "bytes": 619,
+      "sha256": "a828eff7e92e738504e4b653632e91487609e129f6d40c2530960665ce07a220"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.SimVisionFovTest.xml",
+      "bytes": 568,
+      "sha256": "3100018a3143749b16f3b571ac29707b285b1f1a285c88e5e68722dc277adc4a"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.TelemetryUpdateE2ETest.xml",
+      "bytes": 3558,
+      "sha256": "f3a505fcb97f898431af9d54c1b2649d1929ecb9e4f16c18eca60e5aee07a3e4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.VerificationRotationControlTest.xml",
+      "bytes": 799,
+      "sha256": "46b7ce4af19c0ec760be3bea6e71375edc0ceb8fc08ff4f378bc7400ce6149af"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.xrp.XrpDriveLeaseAuditTest.xml",
+      "bytes": 1875,
+      "sha256": "a4f83ae9fbc94e159a251ee72fc6364c362ebc3a3012a9587f6b98f27acd71af"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.xrp.XrpFieldCoordinateContractTest.xml",
+      "bytes": 1110,
+      "sha256": "dd9563af4ded34c96a66380a8cfd659bcc113d2c0e4330c08f428997f58e61b1"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.xrp.XrpSimulationBoundaryAuditTest.xml",
+      "bytes": 969,
+      "sha256": "6d9e919f2a3198c7b831441104104d3f387e6d27be23a9e89d6dd9c352dc4412"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.xrp.XrpSimulationE2ETest.xml",
+      "bytes": 869,
+      "sha256": "87932f5b7317070f788dfee776bc71e0fed14d4cc3c0055434428857effc23f4"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/simulator/build/test-results/test/TEST-com.areslib.sim.xrp.XrpSimulationEngineTest.xml",
+      "bytes": 689,
+      "sha256": "cbb7f635c7847e9b20533ac64f18e74bc2ed628579118f3298c784ae6a40ac8c"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/telemetry-schema/build/test-results/test/TEST-com.areslib.telemetry.schema.DesktopDriveBoundaryAuditTest.xml",
+      "bytes": 2709,
+      "sha256": "4859f303d8cd339f975375a6a4e7a7df5f34f043339c9b12ac032c07053b7363"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/telemetry-schema/build/test-results/test/TEST-com.areslib.telemetry.schema.DesktopDriveFrameGateTest.xml",
+      "bytes": 678,
+      "sha256": "09923ba3d4e2d4060ddc30ab80d1ba44b6e6069e45ab2936c4228bf4cdd55a88"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/telemetry-schema/build/test-results/test/TEST-com.areslib.telemetry.schema.HardwareTopologyBoundaryAuditTest.xml",
+      "bytes": 918,
+      "sha256": "024eefe50f00d9bcb0c994862a26a29c8ef55acdc3733ef0c1cc2e3edc27cc9e"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/telemetry-schema/build/test-results/test/TEST-com.areslib.telemetry.schema.HardwareTopologyCodecTest.xml",
+      "bytes": 814,
+      "sha256": "f77e021c58450512a78967c4d39f4a7b12b7e65b62d02a81b6145e9f299394e6"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/telemetry-schema/build/test-results/test/TEST-com.areslib.telemetry.schema.TuningAcknowledgementTest.xml",
+      "bytes": 1002,
+      "sha256": "fd3a6f62cc71bdd12a4537f76047205b73e1e402b5fbbe3727d54fd4062959e1"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.hardware.XrpDifferentialAllocationAuditTest.xml",
+      "bytes": 538,
+      "sha256": "e4081dd837ba44420a95f49635c78488186daa0709b356b24c520abcaa60803d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.hardware.XrpDifferentialOutputAuditTest.xml",
+      "bytes": 1628,
+      "sha256": "ae9a0e5db9b842c0ab95570056daac887b3de1e21ef377d6d72111b2e63c7b14"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.hardware.XrpDoublesAuditTest.xml",
+      "bytes": 1617,
+      "sha256": "5c02cd5b823a96ddf03416f6480dc3a4d7df6356f8a64fc578f9b905f709c685"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.hardware.XrpMecanumAllocationAuditTest.xml",
+      "bytes": 524,
+      "sha256": "36f7d766c0bf4299d03b9ac458fdbb452b34d4a9274eef36b7870adf8d2f3ae0"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.hardware.XrpMecanumNumericalAuditTest.xml",
+      "bytes": 524,
+      "sha256": "1f39072779a9569779476133dd707bc1d6f3a6aa1397f2495e7fddc1fdd0ddba"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.hardware.XrpMecanumOutputAuditTest.xml",
+      "bytes": 2651,
+      "sha256": "57c7a2875e2422faead4084728465cd48bbf68587456a0ff9395459c37d25b2b"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.robot.XrpLifecycleAllocationAuditTest.xml",
+      "bytes": 522,
+      "sha256": "11155c185f596a81be1c9e30303b11c2fe153b2064b9f92e2d45f3ceb7b5780d"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.robot.XrpLifecycleAuditTest.xml",
+      "bytes": 2041,
+      "sha256": "83defedfbc3371227de4364c06bf7aaad971d43c02ca6d5ac87e76bc765f83e9"
+    },
+    {
+      "path": "junit/ARESLib-Kotlin/xrp-hardware/build/test-results/test/TEST-com.areslib.xrp.XrpHardwareTest.xml",
+      "bytes": 642,
+      "sha256": "fe3cfd412467f39fa32dfd03c4998e43e7e7230b254012cfeca883abacabea04"
+    },
+    {
+      "path": "library-candidate.log",
+      "bytes": 63759,
+      "sha256": "9d9d017d971651939d80d9e6352e620079a5cdf7e32c756a59754df0f317e861"
+    },
+    {
+      "path": "library-validation-retry.log",
+      "bytes": 11078,
+      "sha256": "0b5211a8a36c01bb0c6ea160926ab35bec0fc8ff0541b8f68c1fb216d0568a65"
+    },
+    {
+      "path": "lightbot-owned-tree.json",
+      "bytes": 475,
+      "sha256": "374e176bcb51d714487eacc7b00ca5828e6f35a7461e3e18cb6da79f59cb2cea"
+    },
+    {
+      "path": "lightbot-process.json",
+      "bytes": 195,
+      "sha256": "d8f9bb1dc3b426f14e52cefb5262c2d165dc2eae483d47143839eac72df22f5d"
+    },
+    {
+      "path": "lightbot-project-before-save.json",
+      "bytes": 535,
+      "sha256": "5116486ed2ecdcbde228388443cb3c17f0a093ef890809ea3717ffac7cd1363e"
+    },
+    {
+      "path": "lightbot-reopen-2.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lightbot-reopen-2.stdout.log",
+      "bytes": 4193,
+      "sha256": "d9dafa846a8864ef221e4a97dfc120ca7e1bbb303872750e56a4a36e337e32e7"
+    },
+    {
+      "path": "lightbot-reopen.stderr.log",
+      "bytes": 337,
+      "sha256": "ab09a7ca095d5ff3e75f764717dbaee2c3b876c94e6ea3aa5e0d671fd9fe03a9"
+    },
+    {
+      "path": "lightbot-reopen.stdout.log",
+      "bytes": 936,
+      "sha256": "b9610c45acbdc3e73e44743a7558640551e9bfc48c64f4f05f5a2d19c5e7dfdb"
+    },
+    {
+      "path": "lightbot-wire/nt4-soak.jsonl",
+      "bytes": 4396327,
+      "sha256": "e01c33056c7daf46917d3cbf75137dd7df0430da720bc0b2b1f0e24e6b38cd71"
+    },
+    {
+      "path": "lightbot-wire/soak-complete.json",
+      "bytes": 116953,
+      "sha256": "73b15c8e9ab844669350e8f589544286913a878715e0aaa4e5f1a7e7185f2d57"
+    },
+    {
+      "path": "lightbot-wire/soak-progress.json",
+      "bytes": 116953,
+      "sha256": "73b15c8e9ab844669350e8f589544286913a878715e0aaa4e5f1a7e7185f2d57"
+    },
+    {
+      "path": "lightbot.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lightbot.stdout.log",
+      "bytes": 18412,
+      "sha256": "807f202ec439bbdd850e9e3c82eb107062d69c029ad7483e292d1143d53ff2f1"
+    },
+    {
+      "path": "live-fix-evidence.json",
+      "bytes": 787,
+      "sha256": "48a07c2401d5584333649069322a8d842ebd8ae56de9c705b7c0f073c0542816"
+    },
+    {
+      "path": "monitor-3.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "monitor-3.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "monitor-tree.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "monitor-tree.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "monitor.ps1",
+      "bytes": 1927,
+      "sha256": "a7b40d67ec909dad3661eb6d7b958b6c6db49e981f6d9f6613eb5e34ca872d6c"
+    },
+    {
+      "path": "monitor.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "monitor.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "msi-properties.json",
+      "bytes": 218,
+      "sha256": "5ab0a2ec577446f011f8e8b9798d3cc4cc0b0fe822149413c43909e721d0e7b6"
+    },
+    {
+      "path": "normal-data-after.json",
+      "bytes": 11681,
+      "sha256": "13244700fb898f9103f590727cf260b37d1947454fb05775d47ed4ba54452e02"
+    },
+    {
+      "path": "normal-data-before.json",
+      "bytes": 11681,
+      "sha256": "69d09d1bc15f5bfe90ac56d18189eb106fd7df88bccf2c9a330b39577926a6fb"
+    },
+    {
+      "path": "normal-data-preservation.json",
+      "bytes": 170,
+      "sha256": "35f9d66ebb0ea049113f875373cebce14409ddccd771848996ff9cb355bf95ae"
+    },
+    {
+      "path": "nt4-soak.jsonl",
+      "bytes": 40315399,
+      "sha256": "8ec0beb8aa24949d841d8897c4697fee3821800f34faa10d633495a1f22a85dd"
+    },
+    {
+      "path": "observe_soak.py",
+      "bytes": 5174,
+      "sha256": "1ba8d33e937db3b2ca5babc7ea157184bfb2c788279b1589fa87456a646aaead"
+    },
+    {
+      "path": "observer.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "observer.stdout.log",
+      "bytes": 11782,
+      "sha256": "66b4006b7425650c2dafdc5de9f1d4838785e597f8f335adc5756ab9ef90254f"
+    },
+    {
+      "path": "orphan-cleanup.json",
+      "bytes": 9003,
+      "sha256": "32f747a24d4e068a841fd67c92e8999447f31c28c33e87d4100bf066b1609de8"
+    },
+    {
+      "path": "QueryProbe.java",
+      "bytes": 2179,
+      "sha256": "50e0de3ce49934c3193a1857ebc7205eb911be3dc21fe17f59e3ebd82dc4bbf6"
+    },
+    {
+      "path": "ReadinessFaultFixture.java",
+      "bytes": 1653,
+      "sha256": "670445140ad330b39355d19e67f706de4290aa868899237210fc8df9b9668502"
+    },
+    {
+      "path": "release.json",
+      "bytes": 27950,
+      "sha256": "320260b6bcfaa388f6c5ec6e1491b9f24be2276e24704e56c820d8771fea09e5"
+    },
+    {
+      "path": "run-fixed.ps1",
+      "bytes": 962,
+      "sha256": "a1352dba802a66a3e5eab4596a7d5c500c1a68e2dcb6db20ca31c59e50e961eb"
+    },
+    {
+      "path": "save-verification.json",
+      "bytes": 1440,
+      "sha256": "430748931f89a91328cfd963ec928baa3a1ae3416772fd809e6ea60e874edd92"
+    },
+    {
+      "path": "sim-host-timing.csv",
+      "bytes": 6002172,
+      "sha256": "c381d17e99633d9a80b1b7919425fec893bcd0076add6250b4d48c1299af4421"
+    },
+    {
+      "path": "soak-analysis.json",
+      "bytes": 21920,
+      "sha256": "88b73524e3e9fb3b6e38e52f04628384bfb1bb1349a83f98078ad026a7ffec54"
+    },
+    {
+      "path": "soak-complete.json",
+      "bytes": 125801,
+      "sha256": "93e6c7e9d251570da37b06f18f4900ab93908a5e7eb2ab77c3ef4762745c30fc"
+    },
+    {
+      "path": "soak-processes.json",
+      "bytes": 101,
+      "sha256": "6a156c701e5a68d644f6c639cf04f3370625a3fa1fd915eb57c296637a57d787"
+    },
+    {
+      "path": "soak-progress.json",
+      "bytes": 125801,
+      "sha256": "93e6c7e9d251570da37b06f18f4900ab93908a5e7eb2ab77c3ef4762745c30fc"
+    },
+    {
+      "path": "source-policy.log",
+      "bytes": 301,
+      "sha256": "98d7c767dfb8c8f849b9ebbd7a82c653eb595aedd082f213e91a9dfe4e41a672"
+    },
+    {
+      "path": "studio-consumer-aligned.log",
+      "bytes": 3595,
+      "sha256": "0744447ede667f3db5f97caf92b089954c0435cb4fd3896fef5cf12c16636511"
+    },
+    {
+      "path": "studio-consumer-final.log",
+      "bytes": 3653,
+      "sha256": "eb3cf7a7ca876389827c434b2a478d4afca980d9f2f543e2af2637e4334b04ca"
+    },
+    {
+      "path": "studio-consumer-runtime-flush.log",
+      "bytes": 2991,
+      "sha256": "a6f5f5a19082b356f4b6fa818e325bb16dae8c298f12543a3769bf07a86d7466"
+    },
+    {
+      "path": "studio-consumer.log",
+      "bytes": 2367,
+      "sha256": "23b68526c18f196e19dab7c4e49a35efd865f50651c30946acfc26c1eff9e1ea"
+    },
+    {
+      "path": "studio-lifecycle-summary.log",
+      "bytes": 2968,
+      "sha256": "c10ff6bb37cd6953eb02eb549ad99debcbc9afe46d24a3feebbe0f43eed3ca62"
+    },
+    {
+      "path": "summary-query-after.log",
+      "bytes": 1236,
+      "sha256": "b82b37019518e59992a8fdf30c89613c96d08b9cffcaf972967b5d7fc8c2c0a2"
+    },
+    {
+      "path": "summary-query-baseline-recheck.log",
+      "bytes": 1127,
+      "sha256": "3b705aed214c37f9641ab85e1c46ba729e0e925f871c96c61926dc7f504507d3"
+    },
+    {
+      "path": "summary-query-before.log",
+      "bytes": 1127,
+      "sha256": "e55e3b0770b6320b5e019d09fc7d957816faa21061c6abfdc1d2433a517a18a5"
+    }
+  ]
+}

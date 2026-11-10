@@ -19,7 +19,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -68,8 +67,8 @@ internal fun resolveDuckDbResourceSettings(
  * - Native Extensions Loaded: `parquet` (for high-speed binary trace ingestion)
  *
  * ### Thread Safety & Performance Guarantees:
- * Multi-thread safe. All write and query transactions are synchronized through an asynchronous coroutine [dbMutex] lock.
- * Domain repositories share one [DatabaseTransactionCoordinator].
+ * Domain repositories share one [DatabaseTransactionCoordinator]. Historical writes/analysis,
+ * metadata reads, and ephemeral live telemetry use separate connections and coroutine mutexes.
  *
  * @param dbPath Absolute filesystem path to the DuckDB database file.
  *
@@ -94,10 +93,14 @@ class DatabaseService(
 
     private val conn: Connection
     private val readConn: Connection
+    private val metadataReadConn: Connection
     private val ephemeralConn: Connection
     private val ephemeralReadConn: Connection
     private val dbMutex = Mutex()
     private val readMutex = Mutex()
+    private val metadataReadMutex = Mutex()
+    private val liveReadMutex = Mutex()
+    private val liveWriteMutex = Mutex()
     val metrics = DatabaseMetrics()
 
     private val schemaInitializer: DatabaseSchemaInitializer
@@ -120,69 +123,89 @@ class DatabaseService(
     private var checkpointJob: Job
 
     init {
-        Class.forName("org.duckdb.DuckDBDriver")
-        val dbFile = File(dbPath)
-        dbFile.parentFile?.mkdirs()
+        val acquiredConnections = ArrayList<Connection>(5)
+        try {
+            Class.forName("org.duckdb.DuckDBDriver")
+            val dbFile = File(dbPath)
+            dbFile.parentFile?.mkdirs()
 
-        if (dbFile.exists() && dbFile.length() == 0L) {
-            dbFile.delete()
-        }
-
-        val appDataDir = dbFile.parentFile?.absolutePath ?: AppDataPaths.rootDirectory().absolutePath
-        conn = DriverManager.getConnection("jdbc:duckdb:${dbFile.absolutePath}")
-        readConn = conn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate()
-
-        // Ensure parquet extension is loaded for export and configure DuckDB settings
-        val tmpDirFile = File(appDataDir, "duckdb_tmp")
-        tmpDirFile.mkdirs()
-        conn.createStatement().use { st ->
-            st.execute("SET memory_limit='${duckDbResourceSettings.memoryLimit}'")
-            st.execute("SET threads=${duckDbResourceSettings.workerThreads}")
-            st.execute("SET preserve_insertion_order=false")
-            val safeTmpDir = tmpDirFile.absolutePath.replace("\\", "/").replace("'", "''")
-            st.execute("SET temp_directory='$safeTmpDir'")
-            st.execute("INSTALL parquet;")
-            st.execute("LOAD parquet;")
-        }
-
-        ephemeralConn = DriverManager.getConnection("jdbc:duckdb:")
-        ephemeralConn.createStatement().use { st ->
-            st.execute("SET memory_limit='${duckDbResourceSettings.memoryLimit}'")
-            st.execute("SET threads=${duckDbResourceSettings.workerThreads}")
-            st.execute("SET preserve_insertion_order=false")
-        }
-        ephemeralReadConn = ephemeralConn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate()
-
-        schemaInitializer = DatabaseSchemaInitializer(conn, ephemeralConn)
-        transactionCoordinator = DatabaseTransactionCoordinator(
-            conn,
-            readConn,
-            ephemeralConn,
-            ephemeralReadConn,
-            dbMutex,
-            readMutex,
-            metrics,
-        )
-        sessionMetadataRepo = SessionMetadataRepository(transactionCoordinator)
-        telemetryRepo = TelemetryRepository(transactionCoordinator)
-        analysisTelemetryRepo = AnalysisTelemetryRepository(transactionCoordinator)
-        replayPoseRepo = ReplayPoseRepository(transactionCoordinator)
-        robotActionRepo = RobotActionRepository(transactionCoordinator)
-        runEvidenceRepo = RunEvidenceRepository(transactionCoordinator, sessionMetadataRepo)
-        backupExporter = DatabaseBackupExporter(conn, dbMutex)
-        integrationRepository = IntegrationRepository(conn, dbMutex)
-        integrationEvents = IntegrationEventRecorder(integrationRepository, integrationRouting)
-
-        schemaInitializer.initialize()
-
-        // Periodic WAL checkpoint — replaces the per-appender-batch CHECKPOINT that dominated
-        // import time with fsyncs on every frame batch. A 60s cadence bounds WAL growth for
-        // live streaming and bulk import alike; connection close still flushes on shutdown.
-        checkpointJob = checkpointScope.launch {
-            while (isActive) {
-                delay(CHECKPOINT_INTERVAL_MS)
-                runCatching { transactionCoordinator.checkpoint() }
+            if (dbFile.exists() && dbFile.length() == 0L) {
+                dbFile.delete()
             }
+
+            val appDataDir = dbFile.parentFile?.absolutePath ?: AppDataPaths.rootDirectory().absolutePath
+            conn = DriverManager.getConnection("jdbc:duckdb:${dbFile.absolutePath}").also { acquiredConnections.add(it) }
+            readConn = conn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate().also { acquiredConnections.add(it) }
+            metadataReadConn = conn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate().also { acquiredConnections.add(it) }
+
+            // Ensure parquet extension is loaded for export and configure DuckDB settings
+            val tmpDirFile = File(appDataDir, "duckdb_tmp")
+            tmpDirFile.mkdirs()
+            conn.createStatement().use { st ->
+                st.execute("SET memory_limit='${duckDbResourceSettings.memoryLimit}'")
+                st.execute("SET threads=${duckDbResourceSettings.workerThreads}")
+                st.execute("SET preserve_insertion_order=false")
+                val safeTmpDir = tmpDirFile.absolutePath.replace("\\", "/").replace("'", "''")
+                st.execute("SET temp_directory='$safeTmpDir'")
+                st.execute("INSTALL parquet;")
+                st.execute("LOAD parquet;")
+            }
+
+            ephemeralConn = DriverManager.getConnection("jdbc:duckdb:").also { acquiredConnections.add(it) }
+            ephemeralConn.createStatement().use { st ->
+                st.execute("SET memory_limit='${duckDbResourceSettings.memoryLimit}'")
+                st.execute("SET threads=${duckDbResourceSettings.workerThreads}")
+                st.execute("SET preserve_insertion_order=false")
+            }
+            ephemeralReadConn = ephemeralConn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate().also { acquiredConnections.add(it) }
+
+            schemaInitializer = DatabaseSchemaInitializer(conn, ephemeralConn)
+            transactionCoordinator = DatabaseTransactionCoordinator(
+                conn,
+                readConn,
+                ephemeralConn,
+                ephemeralReadConn,
+                dbMutex,
+                readMutex,
+                metrics,
+                metadataReadConn,
+                metadataReadMutex,
+                liveReadMutex,
+                liveWriteMutex,
+            )
+            sessionMetadataRepo = SessionMetadataRepository(transactionCoordinator)
+            telemetryRepo = TelemetryRepository(transactionCoordinator)
+            analysisTelemetryRepo = AnalysisTelemetryRepository(transactionCoordinator)
+            replayPoseRepo = ReplayPoseRepository(transactionCoordinator)
+            robotActionRepo = RobotActionRepository(transactionCoordinator)
+            runEvidenceRepo = RunEvidenceRepository(transactionCoordinator, sessionMetadataRepo)
+            backupExporter = DatabaseBackupExporter(conn, dbMutex)
+            integrationRepository = IntegrationRepository(conn, dbMutex)
+            integrationEvents = IntegrationEventRecorder(integrationRepository, integrationRouting)
+
+            schemaInitializer.initialize()
+
+            // Periodic WAL checkpoint — replaces the per-appender-batch CHECKPOINT that dominated
+            // import time with fsyncs on every frame batch. A 60s cadence bounds WAL growth for
+            // live streaming and bulk import alike; connection close still flushes on shutdown.
+            checkpointJob = checkpointScope.launch {
+                while (isActive) {
+                    delay(CHECKPOINT_INTERVAL_MS)
+                    runCatching { transactionCoordinator.checkpoint() }
+                }
+            }
+        } catch (failure: Throwable) {
+            // A throwing constructor never reaches the registry lazy value or normal close().
+            // Release only successfully acquired resources, retaining the original failure.
+            checkpointScope.cancel()
+            for (connection in acquiredConnections.asReversed()) {
+                try {
+                    connection.close()
+                } catch (closeFailure: Throwable) {
+                    if (closeFailure !== failure) failure.addSuppressed(closeFailure)
+                }
+            }
+            throw failure
         }
     }
 
@@ -420,25 +443,35 @@ class DatabaseService(
         checkpointScope.cancel()
         checkpointJob.cancelAndJoin()
         withContext(Dispatchers.IO) {
-            // readMutex drains in-flight queries (bounded by their statement timeouts) so a
-            // reader cannot have its connection closed mid-result; dbMutex orders against
-            // writers. Lock order here matches the repository's established write->read order.
-            dbMutex.withLock {
-                readMutex.withLock {
-                    if (!readConn.isClosed) { readConn.close() }
-                    if (!conn.isClosed) {
-                        runCatching { conn.createStatement().use { it.execute("CHECKPOINT") } }
-                            .onFailure { failure ->
-                                System.err.println(
-                                    "[ARES-Analytics] Final DuckDB checkpoint failed; the WAL was preserved for recovery: " +
-                                        (failure.message ?: failure::class.java.simpleName)
-                                )
-                            }
-                        conn.close()
-                    }
-                    if (!ephemeralReadConn.isClosed) { ephemeralReadConn.close() }
-                    if (!ephemeralConn.isClosed) { ephemeralConn.close() }
+            // Drain every independent connection before closing it. Repository operations take
+            // one lane at a time; teardown consistently acquires writers before readers.
+            val locks = listOf(dbMutex, liveWriteMutex, readMutex, metadataReadMutex, liveReadMutex)
+            var acquired = 0
+            try {
+                for (lock in locks) {
+                    lock.lock()
+                    acquired++
                 }
+                if (!conn.isClosed) {
+                    runCatching { conn.createStatement().use { it.execute("CHECKPOINT") } }
+                        .onFailure { failure ->
+                            System.err.println(
+                                "[ARES-Analytics] Final DuckDB checkpoint failed; the WAL was preserved for recovery: " +
+                                    (failure.message ?: failure::class.java.simpleName)
+                            )
+                        }
+                }
+                var failure: Throwable? = null
+                for (connection in listOf(readConn, metadataReadConn, ephemeralReadConn, ephemeralConn, conn)) {
+                    try {
+                        if (!connection.isClosed) connection.close()
+                    } catch (closeFailure: Throwable) {
+                        if (failure == null) failure = closeFailure else failure.addSuppressed(closeFailure)
+                    }
+                }
+                failure?.let { throw it }
+            } finally {
+                for (index in acquired - 1 downTo 0) locks[index].unlock()
             }
         }
     }

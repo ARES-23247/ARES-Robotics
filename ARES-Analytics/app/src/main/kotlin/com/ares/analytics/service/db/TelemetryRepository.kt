@@ -6,6 +6,8 @@ import org.duckdb.DuckDBConnection
 import java.sql.Connection
 import java.sql.ResultSet
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class TelemetryExportPreflight(
     /** Exact count when within the caller's cap, otherwise cap + 1. */
@@ -52,7 +54,6 @@ internal class TelemetryRepository(
     private val transactions: DatabaseTransactionCoordinator,
 ) {
     private val conn: Connection get() = transactions.writeConnection
-    private val readConn: Connection get() = transactions.readConnection
     private val ephemeralConn: Connection get() = transactions.ephemeralWriteConnection
     private val nextSampleOrder = AtomicLong()
 
@@ -69,7 +70,8 @@ internal class TelemetryRepository(
      */
     private suspend fun <T> withDbLock(block: suspend () -> T): T = transactions.write(block)
 
-    private suspend fun <T> withReadLock(block: suspend () -> T): T = transactions.read(block)
+    private suspend fun <T> withReadLock(sessionId: String, block: suspend () -> T): T =
+        transactions.readTelemetry(sessionId, block)
 
     suspend fun executeNativeCsvImport(sql: String) = withDbLock {
         if (!sql.trim().uppercase().startsWith("INSERT INTO TELEMETRY_FRAMES")) {
@@ -78,15 +80,19 @@ internal class TelemetryRepository(
         conn.createStatement().use { it.execute(sql) }
     }
 
-    suspend fun insertTelemetryFrames(frames: List<TelemetryFrame>) = withDbLock {
-        if (frames.isEmpty()) return@withDbLock
+    suspend fun insertTelemetryFrames(frames: List<TelemetryFrame>) = withContext(Dispatchers.IO) {
+        if (frames.isEmpty()) return@withContext
 
         // A single channel flush can straddle the moment a recording starts or stops.
         // Route every row by its own session identity instead of trusting frame[0].
         val liveFrames = frames.filter { it.sessionId == "live-telemetry" }
         val persistentFrames = frames.filter { it.sessionId != "live-telemetry" }
-        if (persistentFrames.isNotEmpty()) insertTelemetryFrames(conn, persistentFrames)
-        if (liveFrames.isNotEmpty()) insertTelemetryFrames(ephemeralConn, liveFrames)
+        // Flush live rows first, including a mixed batch crossing a recording boundary.
+        // A long persistent CSV import must not hold up the ephemeral control/telemetry buffer.
+        if (liveFrames.isNotEmpty()) transactions.writeTelemetry("live-telemetry") {
+            insertTelemetryFrames(ephemeralConn, liveFrames)
+        }
+        if (persistentFrames.isNotEmpty()) withDbLock { insertTelemetryFrames(conn, persistentFrames) }
     }
 
     private fun insertTelemetryFrames(targetConn: Connection, frames: List<TelemetryFrame>) {
@@ -101,7 +107,7 @@ internal class TelemetryRepository(
      * ~10-100x faster than JDBC PreparedStatement batch for bulk imports.
      *
      * IMPORTANT: Must be called under withDbLock or from a single-writer context.
-     * Does not support INSERT OR REPLACE — assumes no duplicate keys (safe for imports).
+     * Does not support INSERT OR REPLACE â€” assumes no duplicate keys (safe for imports).
      */
     private fun insertTelemetryFramesAppender(targetConn: Connection, frames: List<TelemetryFrame>) {
         val duckConn = targetConn.unwrap(DuckDBConnection::class.java)
@@ -120,7 +126,7 @@ internal class TelemetryRepository(
                 appender.endRow()
             }
             appender.flush()
-            // CHECKPOINT intentionally NOT run per batch — a per-batch WAL fsync dominated
+            // CHECKPOINT intentionally NOT run per batch â€” a per-batch WAL fsync dominated
             // import time. Checkpointing is now caller/timer-controlled by
             // [DatabaseTransactionCoordinator.checkpoint]
             // (DatabaseService runs it on a periodic timer; connection close still flushes).
@@ -132,7 +138,7 @@ internal class TelemetryRepository(
      * or null if no frames exist. Used after DuckDB native CSV import to compute
      * session duration without holding frames in application memory.
      */
-    suspend fun getSessionTimestampRange(sessionId: String): Pair<Long, Long>? = withReadLock {
+    suspend fun getSessionTimestampRange(sessionId: String): Pair<Long, Long>? = withReadLock(sessionId) {
         readConnectionFor(sessionId).prepareStatement("SELECT MIN(timestamp_ms), MAX(timestamp_ms) FROM telemetry_frames WHERE session_id = ?").use { ps ->
             ps.setString(1, sessionId)
             ps.executeQuery().use { rs ->
@@ -145,7 +151,7 @@ internal class TelemetryRepository(
         }
     }
 
-    suspend fun getTelemetryRange(sessionId: String, startMs: Long, endMs: Long): List<TelemetryFrame> = withReadLock {
+    suspend fun getTelemetryRange(sessionId: String, startMs: Long, endMs: Long): List<TelemetryFrame> = withReadLock(sessionId) {
         val targetConn = readConnectionFor(sessionId)
         val list = mutableListOf<TelemetryFrame>()
         targetConn.prepareStatement("SELECT * FROM telemetry_frames WHERE session_id = ? AND timestamp_ms BETWEEN ? AND ? ORDER BY timestamp_us ASC, sample_order ASC").use { ps ->
@@ -163,7 +169,7 @@ internal class TelemetryRepository(
      * Returns the most recent value for every topic strictly before [timestampMs].
      * Replay uses this as the latched-state baseline when it loads a bounded window.
      */
-    suspend fun getLatestTelemetryBefore(sessionId: String, timestampMs: Long): List<TelemetryFrame> = withReadLock {
+    suspend fun getLatestTelemetryBefore(sessionId: String, timestampMs: Long): List<TelemetryFrame> = withReadLock(sessionId) {
         val targetConn = readConnectionFor(sessionId)
         val list = mutableListOf<TelemetryFrame>()
         targetConn.prepareStatement(
@@ -184,7 +190,7 @@ internal class TelemetryRepository(
         list
     }
 
-    suspend fun getTelemetryRangeBatched(sessionId: String, startMs: Long, endMs: Long, limit: Long, offset: Long): List<TelemetryFrame> = withReadLock {
+    suspend fun getTelemetryRangeBatched(sessionId: String, startMs: Long, endMs: Long, limit: Long, offset: Long): List<TelemetryFrame> = withReadLock(sessionId) {
         val targetConn = readConnectionFor(sessionId)
         val list = mutableListOf<TelemetryFrame>()
         targetConn.prepareStatement("SELECT * FROM telemetry_frames WHERE session_id = ? AND timestamp_ms BETWEEN ? AND ? ORDER BY timestamp_us ASC, sample_order ASC LIMIT ? OFFSET ?").use { ps ->
@@ -200,7 +206,7 @@ internal class TelemetryRepository(
         list
     }
 
-    suspend fun countTelemetryFrames(sessionId: String): Long = withReadLock {
+    suspend fun countTelemetryFrames(sessionId: String): Long = withReadLock(sessionId) {
         readConnectionFor(sessionId).prepareStatement("SELECT COUNT(*) FROM telemetry_frames WHERE session_id = ?").use { ps ->
             ps.setString(1, sessionId)
             ps.executeQuery().use { rs ->
@@ -209,7 +215,7 @@ internal class TelemetryRepository(
         }
     }
 
-    suspend fun getTelemetryForKey(sessionId: String, key: String): List<TelemetryFrame> = withReadLock {
+    suspend fun getTelemetryForKey(sessionId: String, key: String): List<TelemetryFrame> = withReadLock(sessionId) {
         val list = mutableListOf<TelemetryFrame>()
         readConnectionFor(sessionId).prepareStatement("SELECT * FROM telemetry_frames WHERE session_id = ? AND key = ? ORDER BY timestamp_us ASC, sample_order ASC").use { ps ->
             ps.setString(1, sessionId)
@@ -232,7 +238,7 @@ internal class TelemetryRepository(
         startMs: Long,
         endMs: Long,
         maxPoints: Int
-    ): List<TelemetryFrame> = withReadLock {
+    ): List<TelemetryFrame> = withReadLock(sessionId) {
         require(endMs >= startMs) { "endMs must be greater than or equal to startMs" }
         require(maxPoints >= 2) { "maxPoints must be at least 2" }
         val bucketCount = (maxPoints / 2).coerceAtLeast(1)
@@ -305,7 +311,7 @@ internal class TelemetryRepository(
         endMs: Long,
         limit: Int,
         offset: Long
-    ): List<TelemetryFrame> = withReadLock {
+    ): List<TelemetryFrame> = withReadLock(sessionId) {
         require(endMs >= startMs) { "endMs must be greater than or equal to startMs" }
         require(limit in 1..50_000) { "limit must be between 1 and 50000" }
         require(offset >= 0) { "offset must not be negative" }
@@ -345,7 +351,7 @@ internal class TelemetryRepository(
         sessionId: String,
         keys: List<String>,
         maximumFrames: Int,
-    ): TelemetryExportPreflight = withReadLock {
+    ): TelemetryExportPreflight = withReadLock(sessionId) {
         require(maximumFrames in 1 until Int.MAX_VALUE) { "maximumFrames must be positive" }
         if (keys.isEmpty()) {
             return@withReadLock TelemetryExportPreflight(0L, null, null)
@@ -382,7 +388,7 @@ internal class TelemetryRepository(
     suspend fun getTelemetryExportValueTypes(
         sessionId: String,
         keys: List<String>,
-    ): Map<String, TelemetryExportValueType> = withReadLock {
+    ): Map<String, TelemetryExportValueType> = withReadLock(sessionId) {
         if (keys.isEmpty()) return@withReadLock emptyMap()
         val normalizedKeys = keys.map(TelemetryMetricCatalog::normalizeTopic).distinct()
         val placeholders = normalizedKeys.joinToString(",") { "?" }
@@ -423,7 +429,7 @@ internal class TelemetryRepository(
         keys: List<String>,
         after: TelemetryExportCursor?,
         limit: Int,
-    ): List<TelemetryFrame> = withReadLock {
+    ): List<TelemetryFrame> = withReadLock(sessionId) {
         require(limit in 1..50_000) { "limit must be between 1 and 50000" }
         if (keys.isEmpty()) return@withReadLock emptyList()
         val normalizedKeys = keys.map(TelemetryMetricCatalog::normalizeTopic).distinct()
@@ -474,7 +480,7 @@ internal class TelemetryRepository(
         prefixes: List<String>,
         maxFrames: Int,
         maxFramesPerTopic: Int,
-    ): List<TelemetryFrame> = withReadLock {
+    ): List<TelemetryFrame> = withReadLock(sessionId) {
         require(maxFrames > 0) { "Maximum diagnostic frame count must be positive" }
         require(maxFramesPerTopic > 0) { "Maximum diagnostic frames per topic must be positive" }
         val list = mutableListOf<TelemetryFrame>()
@@ -535,7 +541,7 @@ internal class TelemetryRepository(
         list
     }
 
-    suspend fun getDistinctTelemetryKeys(sessionId: String): List<String> = withReadLock {
+    suspend fun getDistinctTelemetryKeys(sessionId: String): List<String> = withReadLock(sessionId) {
         val keys = mutableListOf<String>()
         readConnectionFor(sessionId).prepareStatement(
             "SELECT DISTINCT key FROM telemetry_frames WHERE session_id = ? ORDER BY key"
@@ -551,7 +557,7 @@ internal class TelemetryRepository(
     suspend fun getTelemetryForKeyPatterns(sessionId: String, patterns: List<String>): List<TelemetryFrame> =
         getTelemetryForFilters(sessionId, emptyList(), patterns, 100_000, 2_048)
 
-    suspend fun getDistinctTimestamps(sessionId: String): List<Long> = withReadLock {
+    suspend fun getDistinctTimestamps(sessionId: String): List<Long> = withReadLock(sessionId) {
         val list = mutableListOf<Long>()
         readConnectionFor(sessionId).prepareStatement("SELECT DISTINCT timestamp_ms FROM telemetry_frames WHERE session_id = ? ORDER BY timestamp_ms ASC").use { ps ->
             ps.setString(1, sessionId)
@@ -562,7 +568,7 @@ internal class TelemetryRepository(
         list
     }
 
-    suspend fun countTimestampGaps(sessionId: String, minimumGapMs: Long): Long = withReadLock {
+    suspend fun countTimestampGaps(sessionId: String, minimumGapMs: Long): Long = withReadLock(sessionId) {
         require(minimumGapMs >= 0L) { "Minimum timestamp gap must not be negative" }
         readConnectionFor(sessionId).prepareStatement(
             """
@@ -586,7 +592,7 @@ internal class TelemetryRepository(
         }
     }
 
-    suspend fun deleteTelemetryFrames(sessionId: String) = withDbLock {
+    suspend fun deleteTelemetryFrames(sessionId: String) = transactions.writeTelemetry(sessionId) {
         // Route by sessionId to the correct connection: "live-telemetry" frames live in
         // ephemeralConn (see insertTelemetryFrames routing). Deleting on `conn` would be a
         // silent no-op and let the ephemeral buffer grow unbounded.
@@ -597,7 +603,7 @@ internal class TelemetryRepository(
         }
     }
 
-    suspend fun pruneTelemetryFrames(sessionId: String, cutoffMs: Long) = withDbLock {
+    suspend fun pruneTelemetryFrames(sessionId: String, cutoffMs: Long) = transactions.writeTelemetry(sessionId) {
         // Same routing as deleteTelemetryFrames / getTelemetryRange: live frames are in
         // ephemeralConn, so the 5-min live prune must target that connection.
         val targetConn = if (sessionId == "live-telemetry") ephemeralConn else conn
@@ -622,7 +628,7 @@ internal class TelemetryRepository(
         )
     }
 
-    suspend fun getTelemetryDensity(sessionId: String, buckets: Int = 100): List<Float> = withReadLock {
+    suspend fun getTelemetryDensity(sessionId: String, buckets: Int = 100): List<Float> = withReadLock(sessionId) {
         loadTelemetryDensity(readConnectionFor(sessionId), sessionId, buckets)
     }
 

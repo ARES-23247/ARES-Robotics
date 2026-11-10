@@ -203,7 +203,7 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
 
     /** Returns hardware manufacturer tag ([Manufacturer.Other]). */
-    override fun getManufacturer(): Manufacturer = Manufacturer.Other
+    override fun getManufacturer(): com.qualcomm.robotcore.hardware.HardwareDevice.Manufacturer = com.qualcomm.robotcore.hardware.HardwareDevice.Manufacturer.Other
 
     /** Returns human-readable device identifier string. */
     override fun getDeviceName(): String = "OctoQuad FWv3"

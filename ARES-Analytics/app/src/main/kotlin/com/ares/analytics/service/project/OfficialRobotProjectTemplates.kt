@@ -10,7 +10,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         displayName = "ARES FTC Starter",
         league = League.FTC,
         artifactVersion = BuildConfig.FTC_STARTER_VERSION,
-        aresVersion = BuildConfig.ARES_VERSION,
+        aresVersion = BuildConfig.FTC_STARTER_ARES_VERSION,
         revision = "schema5-standalone-v1",
         archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
             "ARES-FTC-Starter-${BuildConfig.FTC_STARTER_VERSION}.zip",
@@ -24,7 +24,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         displayName = "ARES FRC Starter",
         league = League.FRC,
         artifactVersion = BuildConfig.FRC_STARTER_VERSION,
-        aresVersion = BuildConfig.ARES_VERSION,
+        aresVersion = BuildConfig.FRC_STARTER_ARES_VERSION,
         revision = "schema5-standalone-v1",
         archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
             "ARES-FRC-Starter-${BuildConfig.FRC_STARTER_VERSION}.zip",
@@ -38,7 +38,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         displayName = "ARES XRP Starter",
         league = League.XRP,
         artifactVersion = BuildConfig.XRP_STARTER_VERSION,
-        aresVersion = BuildConfig.ARES_VERSION,
+        aresVersion = BuildConfig.XRP_STARTER_ARES_VERSION,
         revision = "schema5-micropython-v1",
         archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
             "ARES-XRP-Starter-${BuildConfig.XRP_STARTER_VERSION}.zip",
@@ -52,7 +52,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
         displayName = "Lightbot",
         league = League.FTC,
         artifactVersion = BuildConfig.LIGHTBOT_EXAMPLE_VERSION,
-        aresVersion = BuildConfig.ARES_VERSION,
+        aresVersion = BuildConfig.LIGHTBOT_EXAMPLE_ARES_VERSION,
         revision = "schema5-lightbot-v1",
         archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/" +
             "ARES-Lightbot-Example-${BuildConfig.LIGHTBOT_EXAMPLE_VERSION}.zip",
@@ -64,7 +64,7 @@ internal fun officialRobotProjectTemplates(): List<RobotProjectTemplate> = listO
     RobotProjectTemplate(
         id = "ares-biobuzz-example-${BuildConfig.BIOBUZZ_EXAMPLE_VERSION}",
         displayName = "BIOBUZZ Bot", league = League.FTC,
-        artifactVersion = BuildConfig.BIOBUZZ_EXAMPLE_VERSION, aresVersion = BuildConfig.ARES_VERSION,
+        artifactVersion = BuildConfig.BIOBUZZ_EXAMPLE_VERSION, aresVersion = BuildConfig.BIOBUZZ_EXAMPLE_ARES_VERSION,
         revision = "schema5-biobuzz-v1", archiveUrl = "https://github.com/ARES-23247/ARES-Robotics/releases/download/v${BuildConfig.VERSION}/ARES-BIOBUZZ-Example-${BuildConfig.BIOBUZZ_EXAMPLE_VERSION}.zip",
         archiveSha256 = BuildConfig.BIOBUZZ_EXAMPLE_SHA256, kind = RobotProjectTemplateKind.BIOBUZZ_EXAMPLE,
         bundledResourcePath = "/project-templates/ARES-BIOBUZZ-Example-${BuildConfig.BIOBUZZ_EXAMPLE_VERSION}.zip",

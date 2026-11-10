@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "baseCommit": "59a5e4109929a3aee87e60168eba2f76d1ae8bdf",
+  "branch": "codex/ftc-sdk12-20261109",
+  "scope": "Studio setup/project-creation follow-up only; original dirty checkout excluded",
+  "candidate": "20.0.2-rc.sdk12.otos.20261110.1",
+  "libraryTree": "dc60c8818d75ff351d909535befa9bf8c4096ca9",
+  "tests": {
+    "com.ares.analytics.service.project.RobotProjectTemplateServiceTest": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.ui.screens.OnboardingPresentationTest": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.viewmodel.OnboardingModelTest": {
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.viewmodel.OnboardingSubmissionTest": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "native": {
+    "snapshotRemoved": true,
+    "settled": true,
+    "watchdogHalt": false,
+    "ownedPidExited": true,
+    "port": 49376,
+    "criticalFault": false,
+    "disposed": true,
+    "successful": true,
+    "crashFiles": 0,
+    "controlPortClosed": true,
+    "databaseClosedError": false,
+    "pid": 61120
+  },
+  "captureSha256": {
+    "build/studio-setup-20261110/captures/capture-001.png": "86b40661488c7bc1ee2e28b8e005d2423d25bfd0f1f5a908a239344a088e1229",
+    "build/studio-setup-20261110/captures/capture-002.png": "5e758be244c051002511a4aab88520f5cc9821c184bc8d8ff828db7602fd3069",
+    "build/studio-setup-20261110/captures/capture-003.png": "5b7dcfc2bcd85225003a2da5f124d2eec8f1024f74141e749cd5d3ea51fa4024",
+    "build/studio-setup-20261110/captures/capture-004.png": "8235ab51c2616c7aca46465db3a620b03e80934c6746c3bd7d183c5be9df47ca",
+    "build/studio-setup-20261110/captures/capture-005.png": "25bed23ed373c86890f7d8d1e0ce97d0b2453a157b25c09bbecb12a2c6057d59",
+    "build/studio-setup-20261110/captures/capture-006.png": "acc6995fdd30de410a8442a2e14052e8792fb54d01c780e0d73f371211cc2809",
+    "build/studio-setup-20261110/captures/capture-007.png": "26c504e398e644e3a5bca158e4fc9ddcdcfdf8e26acf2fff85e1ad90daaa9723",
+    "build/studio-setup-20261110/captures/capture-008.png": "0ae8f16c1887bc386787e04eca2362a0bfea82f8a4d848676eca916b97051783"
+  },
+  "createdProject": {
+    "metadata": {
+      "schemaVersion": 5,
+      "projectId": "team23247-setupaudit",
+      "identity": {
+        "teamId": "23247",
+        "seasonId": "2026",
+        "robotId": "SetupAudit",
+        "displayName": "SetupAudit"
+      },
+      "league": "FTC",
+      "coordinateConvention": "CENTER_ORIGIN_CCW",
+      "robotLengthMeters": 0.45,
+      "robotWidthMeters": 0.45,
+      "fieldLengthMeters": 3.6576,
+      "fieldWidthMeters": 3.6576,
+      "authoringModel": "GUI_OWNED",
+      "runtimeOptions": {
+        "ftc": {
+          "hubCommandTransport": "STANDARD_SDK",
+          "limelightProxyEnabled": false
+        }
+      }
+    },
+    "provenance": {
+      "schemaVersion": 1,
+      "templateId": "ares-ftc-starter-20.0.2",
+      "templateRevision": "schema5-standalone-v1",
+      "templateArchiveSha256": "ff330a1a07aac19dd80f84991abd6f521831db7264b41fd2c1c2462dcf66486c",
+      "aresVersion": "20.0.2",
+      "deploymentPolicy": "HARDWARE_REVIEW_REQUIRED"
+    },
+    "initialLocalCommit": "92e90842fe687d2c88c69606ad2383727def7faf Create robot project with ARES Robotics Studio",
+    "cleanNativeGitStatusWithLongPaths": true
+  },
+  "commands": {
+    "tests": ":app:test --tests com.ares.analytics.viewmodel.Onboarding* --tests com.ares.analytics.ui.screens.OnboardingPresentationTest --tests com.ares.analytics.service.project.RobotProjectTemplateServiceTest --offline --no-parallel with the OTOS candidate and absolute local repository URI",
+    "native": ":app:run --offline --no-parallel -PskipKill -ParesIsolatedDesktopHome=build/studio-setup-native-home with identical dependency overrides; owned loopback 49376 actions and graceful WM_CLOSE",
+    "guidance": "verify_agent_guidance.py; six test_agent_guidance.py cases; skill-creator quick_validate.py compose-desktop-tester",
+    "policy": "scripts/verify-monorepo-policy.ps1 and generate_codebase_ledger.py --verify"
+  },
+  "limits": [
+    "One native window size and generic FTC creation journey only",
+    "No full Studio suite or physical hardware test",
+    "No public release, deployment, push, protected-main merge, or integration of original dirty checkout"
+  ],
+  "contentSha256": {
+    ".agents/skills/compose-desktop-tester/references/interaction.md": "d91fd466f59bfd21d19142137020bea29873c63d540276046f3aa4a997e274a1",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/OnboardingScreen.kt": "807669171fc442759b96e0ef862dbaefbf56dd868f87b8dd56fcf0f390d3008e",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/SyncStep.kt": "e2de8427938dfb0154d5571d514d59ca87dd28390971c2be6159be5b2ba57610",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/WelcomeStep.kt": "cf1a9e281a0930342ffb28dba2428159b622ff65269f58ab5120d918332dd4f8",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt": "253db8453d860ed04065d2448c406a0ac4f4f4e3430b228bc0d37271f37174fa",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/OnboardingPresentationTest.kt": "00c0f9d354c1805abb276578952afe6597b2c3ce1454f5916fdbbfefe5d12edd",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/OnboardingSubmissionTest.kt": "a52449de20c7afb650f8ed71d7e33f0079b23f2337bcc792d9e01664f298bf98",
+    "ARES-Analytics/config/maintainability/codebase_ledger.json": "5c7f4bff4a4fc7c9ed65d4981cf51cc9b714b1a0fadc4b8adcc1d7cb583c5673",
+    "docs/audits/README.md": "3c5abafad6f18bad93e78296662745665ad3326652b95dd1d1a0bc4204ec187a",
+    "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md": "b016fc19eb03a0bdee9d5cefeecd109360bb83358e74fe291150a6dd03c436a8"
+  }
+}

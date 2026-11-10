@@ -1,0 +1,385 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "baseCommit": "cb51688d88bf8133a6319b6019de386f5eb211ab",
+  "branch": "codex/ftc-sdk12-20261109",
+  "librarySourceCommit": "0cd05d83a59eefdf495f3100b90b3c0129c723e6",
+  "sourceTree": "d56236e7b4faebbcb559f343b165a3ef62bc32b6",
+  "candidate": "20.0.1-rc.sdk12.reliability.20261110.1",
+  "scope": "Isolated SDK 12 cache reliability/performance follow-up; original checkout excluded",
+  "versions": {
+    "ares": "20.0.1",
+    "studio": "7.0.67",
+    "ftcStarter": "20.0.1",
+    "frcStarter": "20.0.2",
+    "xrpStarter": "3.0.66",
+    "lightbot": "3.0.70",
+    "biobuzz": "1.1.8",
+    "ftcSdk": "12.0.0",
+    "loadedR8": "9.1.29"
+  },
+  "finding": {
+    "status": "fixed",
+    "presentAtBaseline": true,
+    "earliestOrigin": "not established",
+    "impact": "CachedServo can retain obsolete logical position and suppress explicit output after direction/range mutation, including uncertain configuration failure",
+    "fix": "Invalidate accepted-command cache before delegating mapping changes; preserve normal write suppression and upstream safety gates"
+  },
+  "baselineRegressions": {
+    "realSdkGetter": {
+      "suites": 1,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    "realSdkControllerOutput": {
+      "suites": 1,
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    "libraryContracts": {
+      "suites": 1,
+      "tests": 12,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "tests": {
+    "library": {
+      "suites": 487,
+      "tests": 3112,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ftcUnit": {
+      "suites": 35,
+      "tests": 182,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ftcStarterUnit": {
+      "suites": 5,
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ftcSimulator": {
+      "suites": 6,
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ftcStarterSimulator": {
+      "suites": 1,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frc": {
+      "suites": 51,
+      "tests": 306,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frcStarter": {
+      "suites": 25,
+      "tests": 206,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "studioShared": {
+      "suites": 7,
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "studioGateway": {
+      "suites": 5,
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "studioFocused": {
+      "suites": 7,
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "studioRoundtrip": {
+      "suites": 3,
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "dashboardSmoke": {
+      "suites": 11,
+      "tests": 59,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "dashboardBaseline": {
+      "suites": 1,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "allocation": {
+    "platform": "Windows desktop JVM, JDK 17",
+    "instrument": "ThreadMXBean per-thread allocated bytes",
+    "fixture": "primitive counting servo",
+    "warmupPatterns": 50000,
+    "setterCallsPerPattern": 3,
+    "measuredPatternsPerWindow": 20000,
+    "setterCallsPerWindow": 60000,
+    "acceptedWritesPerWindow": 40000,
+    "suppressedWritesPerWindow": 20000,
+    "consecutiveZeroAllocationWindows": 2,
+    "bytesEachMeasuredWindow": 0,
+    "postWarmupOverheadBytes": 0,
+    "busTimingOrControllerLatencyMeasured": false
+  },
+  "performanceSmoke": {
+    "generatedAt": "2026-11-10T12:06:51.033154100Z",
+    "profile": "smoke",
+    "status": "PASS",
+    "configuration": {
+      "simulated_seconds": 10.0,
+      "sample_rate_hz": 100.0,
+      "topic_count": 12.0,
+      "batch_size": 5000.0,
+      "query_iterations": 3.0,
+      "min_ingestion_frames_per_second": 1000.0,
+      "max_query_p95_ms": 1000.0,
+      "max_replay_load_ms": 5000.0,
+      "max_replay_scrub_p95_ms": 2000.0,
+      "max_parquet_operation_ms": 15000.0,
+      "max_heap_growth_mb": 256.0,
+      "max_drop_rate": 0.0
+    },
+    "metrics": {
+      "frames_expected": 12000.0,
+      "frames_persisted": 12000.0,
+      "drop_rate": 0.0,
+      "ingestion_frames_per_second": 157814.99873748,
+      "insert_batch_p95_ms": 31.0599,
+      "query_p95_ms": 19.1043,
+      "csv_export_ms": 29.0131,
+      "parquet_export_ms": 11.5176,
+      "parquet_import_ms": 69.2216,
+      "frames_restored": 12000.0,
+      "round_trip_drop_rate": 0.0,
+      "replay_load_ms": 31.893,
+      "replay_scrub_p95_ms": 20.8332,
+      "replay_rapid_seek_burst_ms": 8.8667,
+      "heap_growth_mb": 6.191459655761719
+    },
+    "violations": []
+  },
+  "performanceBudgetsChanged": false,
+  "native": {
+    "runs": [
+      {
+        "pid": 55184,
+        "watchdogHalt": false,
+        "databaseClosedError": false,
+        "snapshotRemoved": true,
+        "cycle": 1,
+        "acceptingConnections": false,
+        "criticalFault": false,
+        "port": 49364,
+        "settled": true,
+        "disposed": true,
+        "disposalEvidence": "Main exits zero only after finishShutdown succeeds; Gradle run returned success",
+        "ownedPidExited": true,
+        "successful": true
+      },
+      {
+        "pid": 63012,
+        "watchdogHalt": false,
+        "databaseClosedError": false,
+        "snapshotRemoved": true,
+        "cycle": 2,
+        "acceptingConnections": false,
+        "criticalFault": false,
+        "port": 49365,
+        "settled": true,
+        "disposed": true,
+        "disposalEvidence": "Main exits zero only after finishShutdown succeeds; Gradle run returned success",
+        "ownedPidExited": true,
+        "successful": true
+      }
+    ],
+    "crashFiles": 0
+  },
+  "sdkMockMemberInstructions": 740,
+  "realSdkEvidence": {
+    "artifact": "org.firstinspires.ftc:RobotCore:12.0.0@aar",
+    "classesJarSha256": "fc328577f5f4683091b5ca3a52a1f279b02fac65d62928fcc8b0175ee4b97de4",
+    "servoBytecodeSha256": "2403742b1ee2d840afdb77517c9d38428b934506a8a456221cc34a4204b5214c",
+    "physicalDeviceUsed": false
+  },
+  "commands": {
+    "baselineSdk": ":TeamCode:testDebugUnitTest --tests org.firstinspires.ftc.teamcode.sdk.FtcSdk12ServoCacheIntegrationTest against 20.0.0-rc.sdk12.20261109.4",
+    "baselineUnit": ":ftc-hardware:test --tests com.areslib.ftc.hardware.CachedHardwareContractTest before runtime fix",
+    "library": "test apiDump apiCheck; then apiCheck publishReleaseValidation; --offline --no-parallel -ParesVersion=20.0.1-rc.sdk12.reliability.20261110.1",
+    "ftcConsumers": "generateAresProject :TeamCode:verifyAresProject :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug; loaded R8 init probe",
+    "frcConsumers": "generateAresProject verifyAresProject test",
+    "studio": ":shared:test :gateway:test :app:test --tests com.ares.analytics.service.project.*Template* --tests RepresentativeZeroCodeStarterIntegrationTest --tests ProjectRoundtripIntegrationTest --tests ConsumerRoundtripSupportTest :app:consumerRoundtripTest :app:dashboardPerformanceBaseline; official/generic/representative opt-ins enabled with final candidate",
+    "native": ":app:run --offline --no-parallel -PskipKill -ParesIsolatedDesktopHome=build/sdk12-reliability-native-home; final candidate; two owned launch/capture/WM_CLOSE cycles",
+    "policy": "verify-monorepo-policy.ps1; six test_agent_guidance.py tests; quick_validate.py ares-build-release"
+  },
+  "files": {
+    ".agents/skills/ares-build-release/references/ftc-sdk-compatibility.md": "2c63e06d880c7e165bdd75af9cc06bc9dc4da581f8a2c567ced79cebabc3138d",
+    ".github/workflows/build-distributions.yml": "0100c40f04778a71da30aabc19ec54cb0f9453f7235cd50a09eb9435f0ac4f44",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.8.zip": "3808e00d80789f3b782f3c21bb42080de0371dcb4c1d536f7c89c2c2886d1583",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.2.zip": "8f02bef0e28697bee283b2c2df860677635883407c5171ccfdf06812f9b8fee3",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.1.zip": "54938e5436bc5345f55b002c776d6517927422758e1769ec90f488d79385d7a3",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.70.zip": "7ccac131542977b5ba2ccce687d3b4e4c63a78c3f1d4fe5b08fb4b71956b6652",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.66.zip": "c401e4fd2943c714410ad9b6a3ff704e12163566925ea0aabab16603eee29a2a",
+    "ARES-Analytics/config/maintainability/codebase_ledger.json": "e53f83654cade1e704077a9e5b261d6d0702ef4e546aafa293b494fa1d812485",
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/sdk/FtcSdk12ServoCacheIntegrationTest.kt": "2da4a25a34c4e304c684ec97bcee4c99ef03fd2006783d733af379ac01cb7c77",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/CachedHardware.kt": "6260d9ea9d270a2b74cd790af6d6ff61dfc1612b8aaf3476f3e3b9580ecc88fb",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionPortalIO.kt": "7101e73c68da0c1d83a8078aa8366e6ab61714d91c0f25924396edec087eef5c",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/CachedHardwareContractTest.kt": "0078c5477b0230beb11b8b480cd3cc12fcdaca3d9317ff105b1aa4e8ab36dc05",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/hardware/CachedServoAllocationTest.kt": "0d386b7d06644d17e2da18016b05e885061930152fb686c572fcc41fe35d3b17",
+    "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md": "b2f06d01af1f02b42309e28d38438365b91eafee52d53dd699f06f213a783b79",
+    "docs/audits/README.md": "9e53ac36c7c99f5b0712a6733404b2fd2979bc99fb501731af7c11dbda99be1b",
+    "release/ares-source-tree.txt": "a23611eacc5c8b03c1ad330339d1491612ccb5b61fdd764861e67a0910864f21",
+    "release/ares-versions.properties": "e085876dcf7caef14b977b38d5eefe567008a7450cbd8d5160010b4bbe826450",
+    "release/starter-artifacts.properties": "5cd406fd2fb9328b472d3d2da996c40a3d9b17b684510bb1d06b807e67632a46"
+  },
+  "bundleHashes": {
+    "final": {
+      "biobuzzExampleSha256": "3808e00d80789f3b782f3c21bb42080de0371dcb4c1d536f7c89c2c2886d1583",
+      "frcStarterSha256": "8f02bef0e28697bee283b2c2df860677635883407c5171ccfdf06812f9b8fee3",
+      "ftcStarterSha256": "54938e5436bc5345f55b002c776d6517927422758e1769ec90f488d79385d7a3",
+      "lightbotExampleSha256": "7ccac131542977b5ba2ccce687d3b4e4c63a78c3f1d4fe5b08fb4b71956b6652",
+      "xrpStarterSha256": "c401e4fd2943c714410ad9b6a3ff704e12163566925ea0aabab16603eee29a2a"
+    },
+    "retired": {
+      "ARES-FTC-Starter-20.0.0.zip": "3619c61a50de3a3082c140921543f18a41f30c4cd37d59c8ab153ad89c54b6ab",
+      "ARES-FRC-Starter-20.0.1.zip": "8507245835a4df85c8281122bf1c9d16297e0d64f3625d894ca0460e1132c10b",
+      "ARES-XRP-Starter-3.0.65.zip": "b3cdc30ff8a96cd402bfd641827e16ed5a98897393ea5d4f2786b941af86a666",
+      "ARES-Lightbot-Example-3.0.69.zip": "a124b72207fa14234b29a5e76d58d7c6b2909c4a4d88c9e27e4f8937826e7db1",
+      "ARES-BIOBUZZ-Example-1.1.7.zip": "8fd23ef2b2a3cb1ffba82f6574771d543fe8e50a3c05aa09dd010325c28fe3bb"
+    }
+  },
+  "retiredArtifactSha256": {
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.7.zip": "8fd23ef2b2a3cb1ffba82f6574771d543fe8e50a3c05aa09dd010325c28fe3bb",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.1.zip": "8507245835a4df85c8281122bf1c9d16297e0d64f3625d894ca0460e1132c10b",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.0.zip": "3619c61a50de3a3082c140921543f18a41f30c4cd37d59c8ab153ad89c54b6ab",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.69.zip": "a124b72207fa14234b29a5e76d58d7c6b2909c4a4d88c9e27e4f8937826e7db1",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.65.zip": "b3cdc30ff8a96cd402bfd641827e16ed5a98897393ea5d4f2786b941af86a666"
+  },
+  "apks": [
+    {
+      "sha256": "6f7060655954aed6852f1d4a858d8520abbc0a5eed8f468364e63baa311ceafc",
+      "manifest": "package: name='com.qualcomm.ftcrobotcontroller' versionCode='63' versionName='12.0' platformBuildVersionName='11' platformBuildVersionCode='30' compileSdkVersion='30' compileSdkVersionCodename='11'",
+      "bytes": 60323216,
+      "product": "ARES-FTC"
+    },
+    {
+      "sha256": "4f641a66b1ac5f51824cd8b7fd5b8ec5941e36e1eadfb78c444b926b31bd3952",
+      "manifest": "package: name='com.qualcomm.ftcrobotcontroller' versionCode='63' versionName='12.0' platformBuildVersionName='11' platformBuildVersionCode='30' compileSdkVersion='30' compileSdkVersionCodename='11'",
+      "bytes": 60053004,
+      "product": "ARES-FTC-Starter"
+    }
+  ],
+  "logs": {
+    "build/sdk12-reliability-20261110/archives.log": "4da1245c9394526104f360bb54894b278e42d31a42f5704eb6f9ca1892fe88e0",
+    "build/sdk12-reliability-20261110/frc-final.log": "debd7a5334a294110fabfc88c08c0cb07f2068a99f7473c931bcc8eb7531306d",
+    "build/sdk12-reliability-20261110/frc-starter-final.log": "badb0da36cacfe24ad2f69639461e761f2854744035f51bdcdf1eed6236f7bb4",
+    "build/sdk12-reliability-20261110/ftc-final.log": "5542cc69dce95a4413c28c0f69c2476ba965082bc9a373ad19ce9ea7383475d6",
+    "build/sdk12-reliability-20261110/ftc-starter-final.log": "167276627972f620510ecb1862a3fca9f0e783a2d2c2522d2283f55ec6330cf3",
+    "build/sdk12-reliability-20261110/guidance-tests.log": "7d9d555c1ca75654b7af9ee26eee0ec8217a0ee6899bb34d133890ccfd156c0a",
+    "build/sdk12-reliability-20261110/library-candidate.log": "d20ad684489b9bdcb0ffe51dacf6e7fae218c652248e2fc9da65c7de29e16795",
+    "build/sdk12-reliability-20261110/library-final.log": "7036d57e5c82c6b2a30edbb6810a0f5007757e78e04b5d46205ab3b4dfec86cd",
+    "build/sdk12-reliability-20261110/native-1.log": "df9bf9ad0ee3a28604492e8193e73ebb3e2edd670cf53c49555c34e1cdc635a8",
+    "build/sdk12-reliability-20261110/native-2.log": "4833b8be0f4bbf44f77a897bee1fd2346d931efd12e839e56ee6dcebc26ec8c8",
+    "build/sdk12-reliability-20261110/servo-fixed.log": "7b942321bf87649798ced3db48001a4882d1bc3e5128ba799ef0a72af8fab623",
+    "build/sdk12-reliability-20261110/servo-real-sdk-baseline.log": "2144a09c608876a43e3d26d1fda4f312b16b5b770870dc3a4465d3f4facf1a1e",
+    "build/sdk12-reliability-20261110/servo-real-sdk-output-baseline.log": "76f5437cc38c2352d6be68adba179029d5b4cbfff691afa1c91331597392d608",
+    "build/sdk12-reliability-20261110/servo-unit-baseline.log": "d74b92e8f3c1d10a159b3d106f08b8696b37108349d666f52eb98786a3cf4f8e",
+    "build/sdk12-reliability-20261110/source-policy-final.log": "6705a4a250b433a65cbd9cab6b670bfbd93eaa23b2628cf4691a32b7a860f538",
+    "build/sdk12-reliability-20261110/source-policy.log": "462ba431a8c2f20f0dbfc9f4b759a34ce3d2bb7d366c558d7d141596f51df285",
+    "build/sdk12-reliability-20261110/studio-final.log": "ba995d5fc690d9367dbbe9c129c41f07c7a68a4b01ea896fd72b796ba5565010",
+    "build/sdk12-reliability-20261110/version-guard.log": "a55e271d40ffc8255138247b812fd584bbbee0e8fd4db4221b36d56187dd003a"
+  },
+  "nativeCaptures": {
+    "build/sdk12-reliability-20261110/native-1/capture-001.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/sdk12-reliability-20261110/native-1.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/sdk12-reliability-20261110/native-2/capture-001.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/sdk12-reliability-20261110/native-2.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e"
+  },
+  "selectedJunitSnapshots": {
+    "build/sdk12-reliability-20261110/results-final/app/consumerRoundtripTest/TEST-com.ares.analytics.service.project.BiobuzzConsumerRoundtripIntegrationTest.xml": "c041d03fdc1ca3d1d5bae0285dde2ea2b1f392b5cee2b7a8c060ac83402e46c6",
+    "build/sdk12-reliability-20261110/results-final/app/consumerRoundtripTest/TEST-com.ares.analytics.service.project.GenericStarterConsumerRoundtripIntegrationTest.xml": "6b828f52fa779018721d15d7c17899b1763065b492c8fca861d15b015eaceda5",
+    "build/sdk12-reliability-20261110/results-final/app/consumerRoundtripTest/TEST-com.ares.analytics.service.project.ProjectGenerationRecoveryIntegrationTest.xml": "092a9e6b63437cc4a4703ab8f07f574bc7d1453e9fb2ac779fe9a763aeee3670",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardPerformanceBaseline/TEST-com.ares.analytics.validation.DashboardPerformanceBaselineTest.xml": "7ba14494392b52f39094004cd05d00eac9d9c2106955e16fd097e0f3de5ff332",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.service.AlertEngineCompositeTest.xml": "9d9439229f6ef1e3b99bf7efeb4bef508c9e68f344c67f34c1c29fb2c03662ba",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.service.AlertEngineServiceTest.xml": "9586c29f2458e17cd908e32229663bc2cabbe817e51c20ba5f75cc4c73705649",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.service.AppSimE2EPipelineTest.xml": "af48599915370bab751e76d69ece2b0eefcdb37fce8c3fe3218cead373272b52",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.service.DatabaseServiceIntegrationTest.xml": "4e4c95ae6b01b7c556325bcd137b6d83e4f14d20a82a40b465abc2e96bd15372",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.service.ExportServiceTest.xml": "9c3ee5cc980c094be5b028e9731427a4ce9e82f619fd4d8d3676424c6fa9f49c",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.service.ReplayCacheAndClockTest.xml": "75eb0a690295136ea719ab58c6fc51441254ed31f4b8ce6f9d05eeb7642e212b",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.service.ReplayDeterminismTest.xml": "1d1db92c7886b68905708d5876e0781f51b4384c699244c2722e32a27c074f15",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.service.ReplayEngineServiceTest.xml": "e2c6f3bd696475bdc79dee09e073210cc9fdc912eb5222685dfba37017285db1",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.ui.components.dashboard.ReplayDashboardModelsTest.xml": "3e85917a1832f7625d32c4a81b4ed4dfa655bc16b2d28b1e85ecc014366634f1",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.validation.DashboardValidationTest.xml": "fb022b0b3d430460da3ade1460dcd3e19592f7bf3f295c94123e9498de230d20",
+    "build/sdk12-reliability-20261110/results-final/app/dashboardSmoke/TEST-com.ares.analytics.viewmodel.field.ReplayFieldSnapshotTest.xml": "1e608ed5ed907ee945a61523fb1da6fa7718afc63780373ea4a2a08f142339f5",
+    "build/sdk12-reliability-20261110/results-final/app/test/TEST-com.ares.analytics.service.project.BiobuzzTemplateAuthoringTest.xml": "b674279f5fe24299749bbdc87d082fb01b219771e140528781cf6f5ef0071b80",
+    "build/sdk12-reliability-20261110/results-final/app/test/TEST-com.ares.analytics.service.project.ConsumerRoundtripSupportTest.xml": "16b037f6343e21a78e965274823c22ce8665dd15632a2d690e7c96ff766323bf",
+    "build/sdk12-reliability-20261110/results-final/app/test/TEST-com.ares.analytics.service.project.GenericStarterTemplateIntegrationTest.xml": "1037826f42dd07443c83dac744a8c4b702e036bcfa5c0621ae28bdc1c8f901b7",
+    "build/sdk12-reliability-20261110/results-final/app/test/TEST-com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest.xml": "f1b19365be681fceba658e252eb8db8059d3b9eb0e3ea69a50160a8bc6f392cb",
+    "build/sdk12-reliability-20261110/results-final/app/test/TEST-com.ares.analytics.service.project.ProjectRoundtripIntegrationTest.xml": "4e71e06b941d9c756a090414996a723863d6c3b5ea9c308d2d5997f30b0a365a",
+    "build/sdk12-reliability-20261110/results-final/app/test/TEST-com.ares.analytics.service.project.RepresentativeZeroCodeStarterIntegrationTest.xml": "50dfad2d14b6134bfc4a726a435b39c46b3152f75c398833d26f7a4ca48a28fc",
+    "build/sdk12-reliability-20261110/results-final/app/test/TEST-com.ares.analytics.service.project.RobotProjectTemplateServiceTest.xml": "1f722281d806b7c1888259a2ae673885d7ebde8f3e6ecdb795ac30021ec9e0dd",
+    "build/sdk12-reliability-20261110/results-final/gateway/test/TEST-com.ares.analytics.gateway.auth.GoogleOidcAuthTest.xml": "c269a75469fe940fade95a79edb8f3d4cf614d87070079163e7f1cb525ebfbca",
+    "build/sdk12-reliability-20261110/results-final/gateway/test/TEST-com.ares.analytics.gateway.routes.DiagnosticsFutureTest.xml": "b4625636f3ea1683bf8126675cabd6a2aefbb3c22cc4807f5df2322a41deb64b",
+    "build/sdk12-reliability-20261110/results-final/gateway/test/TEST-com.ares.analytics.gateway.routes.GatewayRouteTest.xml": "13855a9917c112854568562400d7d88c466e1d3a2fe282dd3eead255f873ff3a",
+    "build/sdk12-reliability-20261110/results-final/gateway/test/TEST-com.ares.analytics.gateway.routes.GoogleOAuthBrokerRoutesTest.xml": "e8c04b6b7c141d34dc72a390588dafc7782617f70f9e0acfb03e71c8c0b943bc",
+    "build/sdk12-reliability-20261110/results-final/gateway/test/TEST-com.ares.analytics.gateway.routes.SourceCodeRoutesTest.xml": "9ad322ff23934fbb08187ba3231a6fd98fc7d2517a96c229e67f295a83e1d54a",
+    "build/sdk12-reliability-20261110/results-final/shared/test/TEST-com.ares.analytics.shared.IntegrationModelsTest.xml": "1fa2c5acb10168e5a7147b72dd8c37e00dc722273d19910eab248167fc7ff47a",
+    "build/sdk12-reliability-20261110/results-final/shared/test/TEST-com.ares.analytics.shared.ModelPackageBoundaryTest.xml": "6d4c40db4a620c99633ca4d5ebed38cc379bb41580abd7bd1ff3e9880141b6df",
+    "build/sdk12-reliability-20261110/results-final/shared/test/TEST-com.ares.analytics.shared.ModelsTest.xml": "a3b0824b9bed77a0521c52107dd4e264ed80c2754fbe2b0800351d2942c388a5",
+    "build/sdk12-reliability-20261110/results-final/shared/test/TEST-com.ares.analytics.shared.SessionModelContractTest.xml": "9b17bbd7a4a6665d66bfbbe6663449c2351cd1d7eb1ac1cfd2eb413e1fe44ce7",
+    "build/sdk12-reliability-20261110/results-final/shared/test/TEST-com.ares.analytics.shared.TelemetryFrameTimestampTest.xml": "bfdf88c2a9405c77b0ff21bfb6c5af0f4887159c062026e70b4f3f46e875a9e1",
+    "build/sdk12-reliability-20261110/results-final/shared/test/TEST-com.ares.analytics.shared.TelemetryMetricCatalogTest.xml": "60ce1e25ba8df0f1225799a63dbd9b047bcea8cbfdf1fe1b70a5fab343fca046",
+    "build/sdk12-reliability-20261110/results-final/shared/test/TEST-com.ares.analytics.shared.UnitConversionTest.xml": "dc820f2b262a96eee8bc24a1fadcd9160400a8fb155d6b28c0ce0c8f2ff09219"
+  },
+  "sourcePolicy": {
+    "result": "passed",
+    "productionFiles": 1116,
+    "violations": 0,
+    "limitsChanged": false
+  },
+  "observations": [
+    "Initial focused new-version invocation was correctly rejected until the canonical base pin was advanced; guard preserved",
+    "Baseline failing actual-SDK and unit observations retained",
+    "No additional adjacent vision defect confirmed; full unrelated Studio unit suite not rerun"
+  ],
+  "limits": [
+    "No physical controller, servo, camera or Driver Station validation",
+    "No controller bus timing, control-loop deadline, or physical performance claim",
+    "No public release, merge/push, deployment or certification/integration of original dirty checkout",
+    "Scoped review and selective Studio validation; no repository-wide full review claim"
+  ]
+}

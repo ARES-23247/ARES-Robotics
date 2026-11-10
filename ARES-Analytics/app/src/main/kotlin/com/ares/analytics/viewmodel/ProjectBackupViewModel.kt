@@ -31,6 +31,7 @@ data class ProjectBackupState(
     val selectedInstallationId: Long? = null,
     val autoSync: ProjectBackupAutoSyncState = ProjectBackupAutoSyncState(),
     val isBusy: Boolean = false,
+    val activity: String? = null,
     val notice: String? = null,
     val error: String? = null,
 )
@@ -74,6 +75,7 @@ class ProjectBackupViewModel(
 ) {
     private val _state = MutableStateFlow(ProjectBackupState(githubState = githubAuthentication.state.value))
     val state: StateFlow<ProjectBackupState> = _state.asStateFlow()
+    private var pendingProjectPath: String? = null
 
     init {
         scope.launch {
@@ -89,6 +91,7 @@ class ProjectBackupViewModel(
     }
 
     fun onIntent(intent: ProjectBackupIntent) {
+        if (_state.value.isBusy && intent !is ProjectBackupIntent.Load) return
         when (intent) {
             is ProjectBackupIntent.Load -> load(intent.projectPath)
             ProjectBackupIntent.Refresh -> load(_state.value.projectPath)
@@ -162,14 +165,21 @@ class ProjectBackupViewModel(
     }
 
     private fun load(projectPath: String) {
-        _state.update { it.copy(projectPath = projectPath, restorePlan = null, recoveryPlan = null, notice = null, error = null) }
+        if (_state.value.isBusy) {
+            // Admitted writes finish against their original project. Only the latest selection
+            // is loaded afterwards; old plans and notices stay hidden under the new UI path.
+            pendingProjectPath = projectPath
+            _state.update { it.copy(plan = null, restorePlan = null, recoveryPlan = null, notice = null, error = null,
+                activity = "Finishing the current operation before opening the selected project…") }
+            return
+        }
+        _state.update { it.copy(projectPath = projectPath, plan = null, restorePlan = null, recoveryPlan = null, notice = null, error = null) }
         if (projectPath.isBlank()) {
             _state.update { it.copy(plan = null, error = "Choose a robot project before opening Project Backup.") }
             return
         }
         runAction(
             notice = null,
-            refreshCatalog = _state.value.githubState is GitHubConnectionState.Connected,
         ) {
             autoSync.load(projectPath)
             service.inspect(projectPath)
@@ -177,14 +187,12 @@ class ProjectBackupViewModel(
     }
 
     private fun setAutomaticGitHubBackup(enabled: Boolean) {
-        if (_state.value.isBusy) return
-        scope.launch {
-            _state.update { it.copy(isBusy = true, error = null, notice = null) }
+        launchAction("Updating automatic backup…") {
+            updateAction { it.copy(isBusy = true, error = null, notice = null) }
             try {
                 val autoSync = autoSync.setEnabled(requireProjectPath(), enabled)
-                _state.update {
+                updateAction {
                     it.copy(
-                        isBusy = false,
                         autoSync = autoSync,
                         notice = if (enabled) {
                             "Automatic GitHub backup is on for this project. Local versions remain the source of truth."
@@ -194,12 +202,10 @@ class ProjectBackupViewModel(
                     )
                 }
             } catch (cancelled: CancellationException) {
-                _state.update { it.copy(isBusy = false) }
                 throw cancelled
             } catch (failure: Exception) {
-                _state.update {
+                updateAction {
                     it.copy(
-                        isBusy = false,
                         error = failure.message ?: "Automatic GitHub backup could not be changed.",
                     )
                 }
@@ -213,17 +219,24 @@ class ProjectBackupViewModel(
         clearCatalog: Boolean = false,
         block: suspend () -> ProjectBackupPlan,
     ) {
-        if (_state.value.isBusy) return
-        scope.launch {
-            _state.update { it.copy(isBusy = true, restorePlan = null, recoveryPlan = null, error = null, notice = null) }
+        launchAction("Reading or updating project history…") {
+            updateAction { it.copy(isBusy = true, restorePlan = null, recoveryPlan = null, error = null, notice = null) }
             try {
                 val plan = block()
-                val catalog = when {
-                    clearCatalog -> GitHubBackupCatalog()
-                    refreshCatalog -> githubAuthentication.discoverDestinations()
-                    else -> _state.value.githubCatalog
+                var catalogError: String? = null
+                val catalog = try {
+                    when {
+                        clearCatalog -> GitHubBackupCatalog()
+                        refreshCatalog -> githubAuthentication.discoverDestinations()
+                        else -> _state.value.githubCatalog
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    catalogError = "Local project history is available. GitHub destinations could not be refreshed; try again when connected."
+                    GitHubBackupCatalog()
                 }
-                _state.update { current ->
+                updateAction { current ->
                     val selected = current.selectedInstallationId
                         ?.takeIf { id -> catalog.accounts.any { it.installationId == id } }
                         ?: catalog.accounts.firstOrNull()?.installationId
@@ -231,17 +244,15 @@ class ProjectBackupViewModel(
                         plan = plan,
                         githubCatalog = catalog,
                         selectedInstallationId = selected,
-                        isBusy = false,
                         notice = notice,
+                        error = catalogError,
                     )
                 }
             } catch (cancelled: CancellationException) {
-                _state.update { it.copy(isBusy = false) }
                 throw cancelled
             } catch (failure: Exception) {
-                _state.update {
+                updateAction {
                     it.copy(
-                        isBusy = false,
                         error = failure.message ?: "Project Backup could not complete that action.",
                     )
                 }
@@ -250,14 +261,12 @@ class ProjectBackupViewModel(
     }
 
     private fun previewRestore() {
-        if (_state.value.isBusy) return
-        scope.launch {
-            _state.update { it.copy(isBusy = true, restorePlan = null, error = null, notice = null) }
+        launchAction("Checking GitHub versions…") {
+            updateAction { it.copy(isBusy = true, restorePlan = null, error = null, notice = null) }
             try {
                 val restore = recovery.previewGitHubRestore(requireProjectPath())
-                _state.update {
+                updateAction {
                     it.copy(
-                        isBusy = false,
                         restorePlan = restore,
                         notice = when (restore.disposition) {
                             com.ares.analytics.service.versioncontrol.ProjectRestoreDisposition.UP_TO_DATE ->
@@ -269,12 +278,10 @@ class ProjectBackupViewModel(
                     )
                 }
             } catch (cancelled: CancellationException) {
-                _state.update { it.copy(isBusy = false) }
                 throw cancelled
             } catch (failure: Exception) {
-                _state.update {
+                updateAction {
                     it.copy(
-                        isBusy = false,
                         error = failure.message ?: "GitHub versions could not be checked.",
                     )
                 }
@@ -283,26 +290,22 @@ class ProjectBackupViewModel(
     }
 
     private fun restoreFromGitHub(confirmationToken: String) {
-        if (_state.value.isBusy) return
-        scope.launch {
-            _state.update { it.copy(isBusy = true, error = null, notice = null) }
+        launchAction("Restoring the reviewed GitHub version…") {
+            updateAction { it.copy(isBusy = true, error = null, notice = null) }
             try {
                 val plan = recovery.restoreFromGitHub(requireProjectPath(), confirmationToken)
-                _state.update {
+                updateAction {
                     it.copy(
                         plan = plan,
                         restorePlan = null,
-                        isBusy = false,
                         notice = "The reviewed GitHub version was restored. ARES preserved the previous local version as a safety checkpoint.",
                     )
                 }
             } catch (cancelled: CancellationException) {
-                _state.update { it.copy(isBusy = false) }
                 throw cancelled
             } catch (failure: Exception) {
-                _state.update {
+                updateAction {
                     it.copy(
-                        isBusy = false,
                         error = failure.message ?: "The GitHub version could not be restored.",
                     )
                 }
@@ -311,71 +314,86 @@ class ProjectBackupViewModel(
     }
 
     private fun previewRecovery(refName: String) {
-        if (_state.value.isBusy) return
-        scope.launch {
-            _state.update { it.copy(isBusy = true, restorePlan = null, recoveryPlan = null, error = null, notice = null) }
+        launchAction("Reviewing the recovery point…") {
+            updateAction { it.copy(isBusy = true, restorePlan = null, recoveryPlan = null, error = null, notice = null) }
             try {
                 val plan = recovery.previewRecovery(requireProjectPath(), refName)
-                _state.update { it.copy(isBusy = false, recoveryPlan = plan) }
+                updateAction { it.copy(recoveryPlan = plan) }
             } catch (cancelled: CancellationException) {
-                _state.update { it.copy(isBusy = false) }
                 throw cancelled
             } catch (failure: Exception) {
-                _state.update {
-                    it.copy(isBusy = false, error = failure.message ?: "That recovery point could not be reviewed.")
+                updateAction {
+                    it.copy(error = failure.message ?: "That recovery point could not be reviewed.")
                 }
             }
         }
     }
 
     private fun recoverToSafetyPoint(refName: String, confirmationToken: String) {
-        if (_state.value.isBusy) return
-        scope.launch {
-            _state.update { it.copy(isBusy = true, error = null, notice = null) }
+        launchAction("Restoring the reviewed recovery point…") {
+            updateAction { it.copy(isBusy = true, error = null, notice = null) }
             try {
                 val plan = recovery.recoverToSafetyPoint(requireProjectPath(), refName, confirmationToken)
-                _state.update {
+                updateAction {
                     it.copy(
                         plan = plan,
                         recoveryPlan = null,
                         restorePlan = null,
-                        isBusy = false,
                         notice = "The reviewed recovery point was restored. ARES preserved the version you just left, so it can also be recovered.",
                     )
                 }
             } catch (cancelled: CancellationException) {
-                _state.update { it.copy(isBusy = false) }
                 throw cancelled
             } catch (failure: Exception) {
-                _state.update {
-                    it.copy(isBusy = false, error = failure.message ?: "The recovery point could not be restored.")
+                updateAction {
+                    it.copy(error = failure.message ?: "The recovery point could not be restored.")
                 }
             }
         }
     }
 
     private fun exportArchive(destinationPath: String) {
-        if (_state.value.isBusy) return
-        scope.launch {
-            _state.update { it.copy(isBusy = true, error = null, notice = null) }
+        launchAction("Exporting the portable project archive…") {
+            updateAction { it.copy(isBusy = true, error = null, notice = null) }
             try {
                 val exported = archiveExporter.export(requireProjectPath(), destinationPath)
                 val skipped = exported.skippedSensitivePaths.takeIf(List<String>::isNotEmpty)
                     ?.let { " Private files were intentionally skipped: ${it.joinToString()}." }
                     .orEmpty()
-                _state.update {
+                updateAction {
                     it.copy(
-                        isBusy = false,
                         notice = "Portable project archive created with ${exported.fileCount} files at ${exported.destinationPath}.$skipped",
                     )
                 }
             } catch (cancelled: CancellationException) {
-                _state.update { it.copy(isBusy = false) }
                 throw cancelled
             } catch (failure: Exception) {
-                _state.update {
-                    it.copy(isBusy = false, error = failure.message ?: "The project archive could not be created.")
+                updateAction {
+                    it.copy(error = failure.message ?: "The project archive could not be created.")
                 }
+            }
+        }
+    }
+
+    private fun updateAction(transform: (ProjectBackupState) -> ProjectBackupState) {
+        _state.update { if (pendingProjectPath == null) transform(it) else it }
+    }
+
+    private fun launchAction(activity: String, block: suspend () -> Unit) {
+        // Reserve before dispatch: several intents can arrive before the UI recomposes.
+        while (true) {
+            val current = _state.value
+            if (current.isBusy) return
+            if (_state.compareAndSet(current, current.copy(isBusy = true, activity = activity, error = null, notice = null))) break
+        }
+        scope.launch {
+            try {
+                block()
+            } finally {
+                val successor = pendingProjectPath
+                pendingProjectPath = null
+                _state.update { it.copy(isBusy = false, activity = null) }
+                if (successor != null) load(successor)
             }
         }
     }

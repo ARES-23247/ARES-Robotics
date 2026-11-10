@@ -1,0 +1,402 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-09",
+  "branch": "codex/ftc-sdk12-20261109",
+  "baseCommit": "f29afd9dfc8de704eb96ed905bf511d0fb9470c3",
+  "librarySourceCommit": "4936e691a1f706cf044233bcf066f513b95a20eb",
+  "scope": "SDK 12 migration on isolated feature worktree; original checkout's unrelated pending work excluded",
+  "dependency": {
+    "aresVersion": "20.0.0",
+    "candidate": "20.0.0-rc.sdk12.20261109.3",
+    "sourceTree": "f5084d63e87180b9895d9227ee37ae12e8f66f54",
+    "repository": "ARESLib-Kotlin/build/release-repository",
+    "studioVersion": "7.0.66",
+    "ftcStarterVersion": "20.0.0",
+    "frcStarterVersion": "20.0.1",
+    "publishedExternally": false
+  },
+  "toolchain": {
+    "ftcSdk": "12.0.0",
+    "gradle": "9.1.0",
+    "agp": "8.13.2",
+    "kotlin": "2.4.10",
+    "loadedR8": "9.1.29"
+  },
+  "tests": {
+    "library": {
+      "suites": 486,
+      "tests": 3109,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    },
+    "ftcUnit": {
+      "suites": 34,
+      "tests": 180,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    },
+    "ftcSim": {
+      "suites": 6,
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    },
+    "ftcStarterUnit": {
+      "suites": 5,
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    },
+    "ftcStarterSim": {
+      "suites": 1,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    },
+    "frc": {
+      "suites": 51,
+      "tests": 306,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    },
+    "frcStarter": {
+      "suites": 25,
+      "tests": 206,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    },
+    "studioApp": {
+      "suites": 392,
+      "tests": 2789,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "skips": [
+        "com.ares.analytics.service.project.GenericStarterTemplateIntegrationTest :: generic starter candidates create and build fresh FTC FRC and XRP projects",
+        "com.ares.analytics.ui.AresFileChooserNativeTest :: nativeDialogRendersSelectsAndCancels",
+        "com.ares.analytics.validation.DashboardPerformanceBaselineTest :: smoke report stays within checked in performance baseline",
+        "com.ares.analytics.validation.HardwareDashboardValidationTest :: physical target streams usable dashboard telemetry"
+      ]
+    },
+    "studioShared": {
+      "suites": 7,
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    },
+    "studioGateway": {
+      "suites": 5,
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skips": []
+    }
+  },
+  "studioFullRunBeforeRecovery": {
+    "suites": 392,
+    "tests": 2789,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 4,
+    "skips": [
+      "com.ares.analytics.service.project.GenericStarterTemplateIntegrationTest :: generic starter candidates create and build fresh FTC FRC and XRP projects",
+      "com.ares.analytics.ui.AresFileChooserNativeTest :: nativeDialogRendersSelectsAndCancels",
+      "com.ares.analytics.validation.DashboardPerformanceBaselineTest :: smoke report stays within checked in performance baseline",
+      "com.ares.analytics.validation.HardwareDashboardValidationTest :: physical target streams usable dashboard telemetry"
+    ]
+  },
+  "studioFocusedRecovery": {
+    "suites": 2,
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skips": []
+  },
+  "studioCoverageAccounting": "App matrix combines original full-run results with the two explicitly passing recovery cases; original failures remain preserved.",
+  "commands": {
+    "library": "ARESLib-Kotlin/gradlew test apiCheck --offline --no-parallel -ParesVersion=20.0.0-rc.sdk12.20261109.3",
+    "candidate": "ARESLib-Kotlin/gradlew apiCheck publishReleaseValidation --offline --no-parallel -ParesVersion=20.0.0-rc.sdk12.20261109.3",
+    "ftcAndStarter": "generateAresProject :TeamCode:verifyAresProject :TeamCode:testDebugUnitTest :simulator:test :TeamCode:assembleDebug; verifyLoadedFtcR8 via local init probe",
+    "frcAndStarter": "generateAresProject verifyAresProject test",
+    "studio": ":shared:test :gateway:test :app:test --offline --no-parallel; official archive and representative FTC,FRC opt-ins enabled",
+    "sourcePolicy": "scripts/verify-monorepo-policy.ps1",
+    "guidance": "scripts/verify_agent_guidance.py; unittest test_agent_guidance.py (6); unittest test_starter_export.py (7); quick_validate.py ares-build-release and ares-subsystem-authoring"
+  },
+  "sdkMockMemberInstructions": 740,
+  "allocationProbe": {
+    "adapterOnly": true,
+    "warmupPolls": 30000,
+    "measuredPollsPerVariant": 20000,
+    "variants": [
+      "stationary tag fixture",
+      "cluster fixture"
+    ],
+    "bytesPerVariant": [
+      0,
+      0
+    ]
+  },
+  "native": {
+    "crashFiles": 0,
+    "runs": [
+      {
+        "ownedPidExited": true,
+        "pid": 52644,
+        "databaseClosedError": false,
+        "snapshotRemoved": true,
+        "disposed": true,
+        "criticalFault": false,
+        "successful": true,
+        "acceptingConnections": false,
+        "disposalEvidence": "Main exits zero only after finishShutdown succeeds; Gradle run returned success",
+        "cycle": 1,
+        "settled": true,
+        "watchdogHalt": false,
+        "port": 49354
+      },
+      {
+        "ownedPidExited": true,
+        "pid": 15248,
+        "databaseClosedError": false,
+        "snapshotRemoved": true,
+        "disposed": true,
+        "criticalFault": false,
+        "successful": true,
+        "acceptingConnections": false,
+        "disposalEvidence": "Main exits zero only after finishShutdown succeeds; Gradle run returned success",
+        "cycle": 2,
+        "settled": true,
+        "watchdogHalt": false,
+        "port": 49355
+      }
+    ]
+  },
+  "bundles": {
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.7.zip": "8fd23ef2b2a3cb1ffba82f6574771d543fe8e50a3c05aa09dd010325c28fe3bb",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.1.zip": "8507245835a4df85c8281122bf1c9d16297e0d64f3625d894ca0460e1132c10b",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.0.zip": "3619c61a50de3a3082c140921543f18a41f30c4cd37d59c8ab153ad89c54b6ab",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.69.zip": "a124b72207fa14234b29a5e76d58d7c6b2909c4a4d88c9e27e4f8937826e7db1",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.65.zip": "b3cdc30ff8a96cd402bfd641827e16ed5a98897393ea5d4f2786b941af86a666"
+  },
+  "apkManifests": [
+    {
+      "manifest": "package: name='com.qualcomm.ftcrobotcontroller' versionCode='63' versionName='12.0' platformBuildVersionName='11' platformBuildVersionCode='30' compileSdkVersion='30' compileSdkVersionCodename='11'",
+      "sha256": "79ce7798f2274eb812be6b93b490d8f557d894fc8bf890a5239a2d6bbb8cbf3d",
+      "bytes": 60323012,
+      "product": "ARES-FTC"
+    },
+    {
+      "manifest": "package: name='com.qualcomm.ftcrobotcontroller' versionCode='63' versionName='12.0' platformBuildVersionName='11' platformBuildVersionCode='30' compileSdkVersion='30' compileSdkVersionCodename='11'",
+      "sha256": "6358ad5ef4d0c00de91c13ce76d55450c5a477e43c36ee7bcda5317fe166d053",
+      "bytes": 55534670,
+      "product": "ARES-FTC-Starter"
+    }
+  ],
+  "files": {
+    ".agents/skills/ares-build-release/SKILL.md": "fca38da4131373358fc7bb9010c2f0adf4524d446df88f2ea7ec7496df7226c8",
+    ".agents/skills/ares-build-release/references/ftc-sdk-compatibility.md": "19791e437b5b3a3693ed62f1005cff2d9d4c57bfa2a60441f2922cb2ffdd4261",
+    ".agents/skills/ares-subsystem-authoring/references/review-checklist.md": "f55c25c4a4c25f7ebf156862444f254322a39860c252c619642a1eab4fe35544",
+    ".github/workflows/build-distributions.yml": "59f49af68d7a215cb0fd91cd433620b3d5ad6030613b25bb902da639408e76b2",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.7.zip": "8fd23ef2b2a3cb1ffba82f6574771d543fe8e50a3c05aa09dd010325c28fe3bb",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.1.zip": "8507245835a4df85c8281122bf1c9d16297e0d64f3625d894ca0460e1132c10b",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.0.zip": "3619c61a50de3a3082c140921543f18a41f30c4cd37d59c8ab153ad89c54b6ab",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.69.zip": "a124b72207fa14234b29a5e76d58d7c6b2909c4a4d88c9e27e4f8937826e7db1",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.65.zip": "b3cdc30ff8a96cd402bfd641827e16ed5a98897393ea5d4f2786b941af86a666",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/RepresentativeZeroCodeStarterIntegrationTest.kt": "d331203f4be7eeeae5190414f4a4ae36f848c218c64eb76f6bc4047ceb07554f",
+    "ARES-Analytics/config/maintainability/codebase_ledger.json": "6789692530cb9f68481ac220bd981841b50d0d740659bd141c9954bc6f3fef82",
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterRegistrationTuningAuditTest.kt": "e5d5da865f0aa139b68c7c43ded30fa9de06784c3d8e408afd9f54b5f91540e9",
+    "ARES-FRC-Starter/src/test/kotlin/org/aresfirst/starter/frc/StarterRuntimeLifecycleAuditTest.kt": "c4ac76e425076ed4cdd8abbb424c3779391f01b7c8be0df7d0990f4239a41a47",
+    "ARES-FTC-Starter/FtcRobotController/src/main/AndroidManifest.xml": "c57ad786d2faff452b58d939bc4a0cc775922c80fb19b2287afd78fddd8bd357",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOpMode_Linear.java": "0535c566dff06b3692606f9cee4c4b175281b9c7e9e9876fb64dceabdaa0c354",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTag.java": "9f2cfbc2875d64d69a65228000f8ad76632458cefa139344dcdc6028d7c3c33e",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagEasy.java": "8c5dcfae1c2ee65818394932ef34108b3f9cf8cdce9705cfc220533a022fc25c",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagLocalization.java": "58facab1b609fc69104f0b22c97c93152fb134e29c1a56b13caf03e97f000557",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagSwitchableCameras.java": "009e314f38c89da7c774b114bf1df230c6cd34379a5f5a84a6bc51e8d4d31f15",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptLEDStick.java": "780d4a80585c6f2fcf5744687acab72331cee4dcb0c944098ee0f96ddd0678ad",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptMotorBulkRead.java": "deba5e896ed2b9e01a6ad8fb00f4533a5838c517e58da0b9b2d175c4fe47ee1d",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagOmni.java": "1131bb676577581762c61b881d2ad357be28ae1e0af4cbe860b5d46feb0c7978",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagTank.java": "fd09c189416579fc5e85d7ccbc0383d2834326fd555973bf353b3f195bdf4ab6",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorColor.java": "9109128bc860c981845648965d5ae861d1e1ce36cddc4c7d52026f2ed5dd4a78",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorGoBildaPinpoint.java": "23f193e089952415da968c55f053077532b16ebf909fe795af673382f2700da1",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorHuskyLens.java": "88ed2dd4e988a20dabe07f33a6352290c912c87fff753083b99bfa9cc03e596a",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/UtilityOctoQuadConfigMenu.java": "193ec93b39bfd59dff030d7c18054a8e32a009a8d8c6e3ec41f0ec968039bc75",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/readme.md": "d3eaed211d095425bd07b0c9537c779cb157803c2e89324e2f08ffa6aaba2f62",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/sample_conventions.md": "d943f89dd4e16910084e6d5d196c11348f183ba68fc2361e195a4cd675fefbbf",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/utilities/UtilityTestGamepad.java": "c5edbba74d00b721fe9667c66402ef6b6ae78a560b31cb1308c16d9c9c672823",
+    "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/utilities/UtilityTestHardware.java": "e6e58164c3a4308fa225450985619ba36eb6ca19b1dd335ead42f9e7e6396f2e",
+    "ARES-FTC-Starter/README.md": "a71312279a143d98473119ff0cfda861b5b3a38e5f9de96cdc791d1abafcf455",
+    "ARES-FTC-Starter/build.dependencies.gradle": "6488cb38d7a57ce65f73f30371b9f4894e835a15054945e6b4ae1604345280d2",
+    "ARES-FTC-Starter/build.gradle": "a1c8fadfb83d30ad56065d4cad3d7010ed6071806041bfbe30c5e08706593fb6",
+    "ARES-FTC-Starter/gradle/wrapper/gradle-wrapper.jar": "2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046",
+    "ARES-FTC-Starter/gradle/wrapper/gradle-wrapper.properties": "6009cea91ce8dbcc62cb2ea6dec6ddd4c87b65fc326872f5abfc7e77fd24aa36",
+    "ARES-FTC-Starter/gradlew": "874d75d37bf38c810a8314e0b2f78a3c77fce9437963ae33cec8543d92662b61",
+    "ARES-FTC-Starter/gradlew.bat": "f4f428c5626b3d90cef3bd4e7fd3ad3ea5760442db8c09d586b5bfe031dbe5e3",
+    "ARES-FTC-Starter/settings.gradle": "4224756c1b95f46ba345e71dacb67f76d7173ce1c8772360bd46fe8ac512703d",
+    "ARES-FTC/FtcRobotController/src/main/AndroidManifest.xml": "c57ad786d2faff452b58d939bc4a0cc775922c80fb19b2287afd78fddd8bd357",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/BasicOpMode_Linear.java": "0535c566dff06b3692606f9cee4c4b175281b9c7e9e9876fb64dceabdaa0c354",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTag.java": "9f2cfbc2875d64d69a65228000f8ad76632458cefa139344dcdc6028d7c3c33e",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagEasy.java": "8c5dcfae1c2ee65818394932ef34108b3f9cf8cdce9705cfc220533a022fc25c",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagLocalization.java": "58facab1b609fc69104f0b22c97c93152fb134e29c1a56b13caf03e97f000557",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/ConceptAprilTagSwitchableCameras.java": "009e314f38c89da7c774b114bf1df230c6cd34379a5f5a84a6bc51e8d4d31f15",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagOmni.java": "1131bb676577581762c61b881d2ad357be28ae1e0af4cbe860b5d46feb0c7978",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/RobotAutoDriveToAprilTagTank.java": "fd09c189416579fc5e85d7ccbc0383d2834326fd555973bf353b3f195bdf4ab6",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorColor.java": "9109128bc860c981845648965d5ae861d1e1ce36cddc4c7d52026f2ed5dd4a78",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/UtilityOctoQuadConfigMenu.java": "193ec93b39bfd59dff030d7c18054a8e32a009a8d8c6e3ec41f0ec968039bc75",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/utilities/UtilityTestGamepad.java": "c5edbba74d00b721fe9667c66402ef6b6ae78a560b31cb1308c16d9c9c672823",
+    "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/utilities/UtilityTestHardware.java": "e6e58164c3a4308fa225450985619ba36eb6ca19b1dd335ead42f9e7e6396f2e",
+    "ARES-FTC/README.md": "a9be217340597a1622ebff7e3a334a9f31ea7acfd09e34c380ac6ac8d6d15e63",
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/sdk/FtcSdk12VisionIntegrationTest.kt": "7777a399186a3766d7e34d020aceb0afcabea86ffbb06ae41535093c5fc8132a",
+    "ARES-FTC/build.dependencies.gradle": "5d447a0d8de46d40c9420d2c68ca0c7c109a7ebbd38f7ac2255d290fe6d31d4f",
+    "ARES-FTC/build.gradle": "a1c8fadfb83d30ad56065d4cad3d7010ed6071806041bfbe30c5e08706593fb6",
+    "ARES-FTC/gradle/wrapper/gradle-wrapper.jar": "2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046",
+    "ARES-FTC/gradle/wrapper/gradle-wrapper.properties": "6009cea91ce8dbcc62cb2ea6dec6ddd4c87b65fc326872f5abfc7e77fd24aa36",
+    "ARES-FTC/gradlew": "874d75d37bf38c810a8314e0b2f78a3c77fce9437963ae33cec8543d92662b61",
+    "ARES-FTC/gradlew.bat": "f4f428c5626b3d90cef3bd4e7fd3ad3ea5760442db8c09d586b5bfe031dbe5e3",
+    "ARES-FTC/settings.gradle": "f7ec6a3e6fd4dbf4cf0b73dce4be564d9f3b545c79229f0895e2f3ba4e2062de",
+    "ARESLib-Kotlin/README.md": "8f6b6f21db25bf8286aad4e9caa657f852240fa73cd3e1fa6d5e734b68b0d779",
+    "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemGeneratedTestRenderer.kt": "937782d730182293f85c0e889ffb39b57c65f450fb3df2e05164428799ee1fcc",
+    "ARESLib-Kotlin/codegen/src/test/kotlin/com/areslib/codegen/SubsystemGeneratorCharacterizationTest.kt": "d27c4b1647c4db37f700bafd7e3aec20ea1f85ec4a3ee3c9eac784511bf46fd8",
+    "ARESLib-Kotlin/docs/ftc-sdk12.md": "262a6440d1e56e7d2da19a42142f776088e9f60e5194072289314c4fcb4e7b5c",
+    "ARESLib-Kotlin/ftc-hardware/api/ftc-hardware.api": "fd888b7c57f221cad65abf63ba56d3296f7b1a0bd6d2fc29bbf03dd80a64a68c",
+    "ARESLib-Kotlin/ftc-hardware/build.gradle.kts": "b405694553609448dad5299c644bfa8ef7d0f93b9cb7b0bbd85ee29663d3e75b",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/SparkFunOtosIO.kt": "0ef2080141323b035ec5f97b417ee3ef412e9b0281f5ed2b9f1f84caee99e8d0",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/CachedHardware.kt": "9304485ead3a224f8027e0179c20f0b2a7586a3540f5c4df63a899d8be11d415",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/OctoquadIO.kt": "d6e6b1940712459acbfccb6baafa754059fe4c1bfc573e440b4403cdc5f60240",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/hardware/SrsHubIO.kt": "df65464d843d2e553f648ee9f58d65ec1b06a453109ec1adf346d45f28b0da49",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/photon/AresPhotonLynxModule.kt": "2a144fc4d6034eda099d7f6e178d5ce7a52cb88751cc4712a09fecf1b115fb96",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcAprilTagLibraryFactory.kt": "bccd6d41bfb760698bf1016a69b5b68b5f56515f9e16ef079e448f5118877fda",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcTagPoseConvention.kt": "24204125c40d4c7d6b226a38a51fab68c4ffdf82948f88326ff19030279f00ce",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionPortalIO.kt": "7101e73c68da0c1d83a8078aa8366e6ab61714d91c0f25924396edec087eef5c",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionPoseMath.kt": "78419e0104baca7107b7ba1a01f492e088b0fdf333b49509db968511717000f6",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcSdkBinaryCompatibilityTest.kt": "2f9eca53adbfe383a8e93e2d928747ddd391ac92e573f6f30bd0d1be24d96ea3",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosConfigurationTest.kt": "92c0de18c661dbc519306e8f4302fd1d2e3b3c943b57920ae85a3834180d95a7",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/vision/FtcAprilTagLibraryFactoryTest.kt": "2e3dbdf11cb16fac056b8e2f5be66c1fca3f655497ae50f8c8932d1f29226071",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/vision/FtcVisionPortalSdk12Test.kt": "6c48e92abd274d18e7154cf769a79dbce2546e4bfebc4cf31bab8aaadab338c7",
+    "ARESLib-Kotlin/ftc-mocks/api/ftc-mocks.api": "6a9a0cc54e5e189e33203f562de71970eb549ab557790886937383c70fd166d0",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/LynxMocks.kt": "ff0c0a81ac646eea2e1a4e4631bf35629f3553dbb5578c09713bdb5533b26f39",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/lynx/commands/LynxCommandMocks.kt": "b30b83710806c13c91fba228eed750e452733f0c50e62901246e4c90c8575ee1",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/hardware/sparkfun/SparkFunOTOS.kt": "ccce3b1f0e976308e8c84389729f1eb7b000f5bed5bcff45ec7dc9a280adf53c",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/I2cMocks.kt": "fb551995d31ef65d328d67a498a6e8a88754952fa6d70efe91cc60383f5328f1",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/MotorMocks.kt": "5aa328c8c2cd485647399957f7f0bc990e2f4c38c28259f55c240c1823ba6171",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/QualcommHardwareMocks.kt": "e6764bba8902d0773dff6d0cf4beb36e4f92a969e254a673bef10b3439b8825c",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/configuration/LynxConstantsMocks.kt": "8bf8b8c1803a080392a9485af6334e226f209908183d28b1fe7ced4131f75491",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/com/qualcomm/robotcore/hardware/usb/UsbMocks.kt": "1c1398d9ac61a24573ac5d48545142ced3fb7789a6f1cbc6b96d4cb7fa02e3a8",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/robotcore/external/matrices/VectorF.kt": "39e5e360e3e719d370b5c8df31a84bb2ae707194a403374d4f284b294341bbe1",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/apriltag/AprilTagMocks.kt": "758bdddb02abdf1e9e288149963c387f70bc40a8617fd694ce1b783ab3d68088",
+    "ARESLib-Kotlin/simulator/api/simulator.api": "fcdb21e3bac148331633fa2259df0ad314819cc780e7be4187c1f8ef236c8b45",
+    "docs/agents/WORKSPACE_GUIDE.md": "ff8310f0760db3ffed2d56bb1bb359062e9eb348f706cc2d01c0b3bcaa7f2e26",
+    "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md": "743ff485ae13143ece0e94e82720fa7b4cfc06517087541b1da14bc9a3b00723",
+    "docs/audits/README.md": "31752eb17674341a276bd5d480d88a5585104a28dec4cc9925b08ad590a538d7",
+    "release/ares-source-tree.txt": "109829b40998f575048c219574f4c555b2cd44c93102e9e126bc232d263113be",
+    "release/ares-versions.properties": "8c6a1ddb8d69f6dd6947dee57f769b3bebaddd57211de78e6499d44f5f361e97",
+    "release/starter-artifacts.properties": "fd61ff1b4bd5aa8faeaba2a618fc2f069cc25efca961268294c16e2adfba7c57"
+  },
+  "retiredArchiveSha256": {
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.6.zip": "e27905cb345732bff8c892f30ac5a16c7e552b3b963d6a0948d9ae803d37571d",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-19.1.5.zip": "930cc7b0c9671d0f7c84469b346a18ed3fc2ee3fc48701e69505e48439731244",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-19.1.5.zip": "e61f2fe5b4995c1e87f4519939f30691659e957b9917b669c3cc82aca16ecc12",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.67.zip": "3b30bb1e7151b55a59d188c8f5ddac32b720ae691bb551dba952b4df3b234350",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.64.zip": "4d34eef6107226f21fea7c16382f05df73a2622d4b70b2d9b188f7afed976973"
+  },
+  "logs": {
+    "build/sdk12-migration/archive-acceptance.log": "0c5cfe7b93807cdb6371c485bb343ac6b8dd3aeeb53afd1f15807e7debf83fd7",
+    "build/sdk12-migration/archive-build-final.log": "6565bd491504ab3e0a2ef0cf2a0d608f17054e12e17f281dcda072e908daedf5",
+    "build/sdk12-migration/archive-build.log": "d43b9abda984efd86267ed59a39d1abb2b53b7d26b42de89f0a085c4d0c23915",
+    "build/sdk12-migration/archives-frc-test-fix.log": "3aef7a84b99ad54e2695af68d816263df7648b5423965b593ac46c7f9231f6f2",
+    "build/sdk12-migration/controller-sdk12.log": "249fc1db52b29ad42da93fa172f35abe64cefcf031dfc7af563ff38c2706dc11",
+    "build/sdk12-migration/frc-final.log": "d88e03cdf986a4e1ffc8fe747e2594afa65fb36ad4538d9de0952779f183e5d4",
+    "build/sdk12-migration/frc-starter-final.log": "a822751e26fb763f3d35be99f4e63f531580668bc011bb4df4050aff16acf1ed",
+    "build/sdk12-migration/ftc-consumer-r8-fixed.log": "f57c6ea67940941fd78234d992746d73c775e71652de50bf8e98640c213c963a",
+    "build/sdk12-migration/ftc-consumer-r8.log": "3ddd0ef67756624a3b4cb0d00f2a55e9831a97851279a1081758d58f911e24b2",
+    "build/sdk12-migration/ftc-consumer.log": "d8f0b31d25c77478e3a82f479ab9100e90aa9c5b771352ced9107b675240df87",
+    "build/sdk12-migration/ftc-final.log": "d12d950509b777629f6a7c7fac0c87efe91a7e465b950f40092a67f326d53d91",
+    "build/sdk12-migration/ftc-gradle9-config.log": "f34e02b8b24a8d81fdab2bc6792d4de73d16ee692342dd07f1d1a0cb496094ab",
+    "build/sdk12-migration/ftc-starter-final.log": "8671a077b09399c124dba98b4474caa65134a5272f6cbe5bbc1d3558869170ff",
+    "build/sdk12-migration/ftc-units-final.log": "42a5b7894739a2a392b32df521405755051005015a5d4a5ea761fdc467437f58",
+    "build/sdk12-migration/gradle-pom-recovery.log": "b169b97980e5671d58b05ba6b14d49ea63a08baf59b24565ff6cabf0ceb22a54",
+    "build/sdk12-migration/gradle9-version.log": "4ccb0b4ffe13de72dbac318bcc020469e3d9b7f3a63fda956c29f77d6d782b69",
+    "build/sdk12-migration/hardware-tests-first.log": "f7602f21b8c946d72089da0bae56718c0bac72adb0613184b62c0f60f8bba416",
+    "build/sdk12-migration/hardware-tests-second.log": "d2986fc0f2a81f68b337b4c1a2af1e3061b78df03b1054418781dced186f9f68",
+    "build/sdk12-migration/library-candidate-3.log": "bf53da074f94a9d90a5605d4663ba77f2dea901496c2b21f9be674c73cf3fa56",
+    "build/sdk12-migration/library-candidate-final.log": "d20ad684489b9bdcb0ffe51dacf6e7fae218c652248e2fc9da65c7de29e16795",
+    "build/sdk12-migration/library-candidate.log": "88b568b69448f59bd8cc5595d87f4d28f571a3b162ae419ac6a783f6b8f96b8e",
+    "build/sdk12-migration/library-final.log": "abedb86cbc54968c36abb949951c1ae993f4bd3dfb62ca5ca6e6cef37f032aab",
+    "build/sdk12-migration/library-homing-final.log": "e8b1acd9187596237bd96cfe278246a12b2b92e34991ba67070e3dc4c327b725",
+    "build/sdk12-migration/library-homing-fix.log": "e80296b348e6f3f1b352251030ea50a15facfe416b33f40b6a3baf9f328e40e1",
+    "build/sdk12-migration/library-matrix-first.log": "f1b19e11fa97d0ff90fc3b82a31fe22f7834f7a56198bab071740e9a332dd482",
+    "build/sdk12-migration/library-matrix-second.log": "defbe51aa968f0a6e4583f7adee5e4e56ca53c50a7ffbe1a0fae1ab43b06e192",
+    "build/sdk12-migration/mock-abi-first.log": "4727978283bfa3624ce09d272b6d459a584f32ea676e9d2340f948d9a1e3137c",
+    "build/sdk12-migration/native-1.log": "771a6dbaa8428970afe7fc6d1a78ef63e52fd096d4cd57f1a9b2e62eefab4952",
+    "build/sdk12-migration/native-2.log": "3cc91d1909a91d65e216f7f6dc2df734b31a6fe9ffd905ab95fafd4c9f1d8069",
+    "build/sdk12-migration/real-sdk-baseline.log": "1d19ef23053d00ce44f5c4bd1273af51675abd10e22d47b1ec1a5eaf047ec6a9",
+    "build/sdk12-migration/real-sdk-fixed-compile.log": "2884dc10e006d191a5ae095988c98fb3b3357b1ed5c5306c1ce52b734f72aae3",
+    "build/sdk12-migration/real-sdk-redux.log": "94b69054bda86eff8d8edc2cd897ff30ff1a96b4517b139c07c92977e994c1cf",
+    "build/sdk12-migration/representative-final.log": "ce22a6d0c7b736bb06a86ca774c9c3d4ba25f022ee8e5a894628fbdaddeabd8b",
+    "build/sdk12-migration/representative-fixed.log": "2e749dcc67016d60ff9f72dcbe7f2477744f674466405d76889cfc817da3d29d",
+    "build/sdk12-migration/representative-retained-20261110033803.log": "ac8805304eebc11b3da406591ed3f9dd107211e4843f74e86f15371d3832683d",
+    "build/sdk12-migration/representative-retained-20261110034301.log": "c27241ddb19bc5675406fa8e0c6885227d05ec33216ebc6aba67ef6b3c27a4bb",
+    "build/sdk12-migration/representative-retry.log": "8ddafd9c00367ec4e398458f1cb465767dad985eb8be1850eb9c3c000a574476",
+    "build/sdk12-migration/source-policy-preliminary.log": "f4f73d60801bb5408c9e0787b153d1aeb2a7396d61236fb87cbf9591d622d41a",
+    "build/sdk12-migration/source-policy.log": "f4f73d60801bb5408c9e0787b153d1aeb2a7396d61236fb87cbf9591d622d41a",
+    "build/sdk12-migration/starter-export-tests.log": "7c3fd04bf56382ae579509e867b55d3569e63f343c1ed9ed68c5a72effa659ff",
+    "build/sdk12-migration/studio-final.log": "96089ec362245b2661c9bfa8aecac548eeb00bd6a49be33ecaa16e4472d62d8a",
+    "build/sdk12-migration/studio-full-fixed.log": "8842ce72be0addaca042572666d1468a296256afd1c973a385c34b4eeb20b6af",
+    "build/sdk12-migration/studio-full.log": "1286efc589250930ac44ccb021ff87d1c609b314d054237b4ad900afe6384d19"
+  },
+  "nativeCaptures": {
+    "build/sdk12-migration/native-1/capture-001.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/sdk12-migration/native-1.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/sdk12-migration/native-2/capture-001.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/sdk12-migration/native-2.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e"
+  },
+  "observedFailuresAndResolution": [
+    "Real SDK production compile exposed 11 API mismatches; corrected before final compilation.",
+    "Mock linkage exposed 37 mismatches; final 740-member JVM resolution check passes.",
+    "First APK task returned success with Kotlin metadata rewrite failures; documented Google R8 9.1.29 override removes them.",
+    "Initial Studio preflight rejected stale workflow version/URLs; aligned workflow to canonical manifest and archive hashes.",
+    "Missing public Kotlin plugin POM recovered with Gradle dependency refresh; no bypass/cache deletion.",
+    "Representative fixture lacked standalone build policy/runtime and checked editable paths; now checks real standalone build-generated output.",
+    "Representative generated homing test mixed live/mock timestamps; generator refreshes IO at every mock-clock step without changing safety gates.",
+    "Characterization digests deliberately changed with corrected generated test output; updated both expected manifests.",
+    "Two FRC starter tuning fixtures assumed the first declaration had default 2.0; they now select acceleration-limit by stable ID and preserve value/fault assertions. New FRC archive 20.0.1 includes the fix."
+  ],
+  "guidanceChecks": {
+    "guidanceTests": 6,
+    "starterExportTests": 7,
+    "skillValidators": [
+      "ares-build-release",
+      "ares-subsystem-authoring"
+    ]
+  },
+  "sourcePolicy": {
+    "result": "passed",
+    "productionKotlinFiles": 1116,
+    "violations": 0,
+    "limitsChanged": false
+  },
+  "limits": [
+    "No physical controller, Driver Station, camera, calibration, actuator, or controller-performance validation",
+    "No external publication, protected-main merge, or deployment",
+    "Original dirty checkout not integrated or certified",
+    "Four separate Studio opt-in skips are listed explicitly",
+    "File review is scoped; no repository-wide full review claim"
+  ]
+}

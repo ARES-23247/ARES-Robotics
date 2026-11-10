@@ -17,10 +17,10 @@ internal class SessionMetadataRepository(
     private val transactions: DatabaseTransactionCoordinator,
 ) {
     private val conn: Connection get() = transactions.writeConnection
-    private val readConn: Connection get() = transactions.readConnection
+    private val readConn: Connection get() = transactions.metadataReadConnection
 
     private suspend fun <T> withDbLock(block: suspend () -> T): T = transactions.write(block)
-    private suspend fun <T> withReadLock(block: suspend () -> T): T = transactions.read(block)
+    private suspend fun <T> withReadLock(block: suspend () -> T): T = transactions.readMetadata(block)
 
     suspend fun insertSession(session: Session) = withDbLock {
         upsertSession(session, IMPORT_STATE_COMPLETE)

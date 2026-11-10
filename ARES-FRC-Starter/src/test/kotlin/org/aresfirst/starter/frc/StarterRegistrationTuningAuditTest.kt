@@ -119,7 +119,8 @@ class StarterRegistrationTuningAuditTest {
 
     @Test fun `live consumer exception propagates through tuning acknowledgement into the runtime latch`() {
         val canonical = GeneratedAresTuningConfig.createRuntime()
-        val additional = canonical.metadata.declarations.first().copy(uid = "frc.starter.extra", key = "drive.extra")
+        val additional = canonical.metadata.declarations.single { it.uid == "frc.starter.path.acceleration-limit" }
+            .copy(uid = "frc.starter.extra", key = "drive.extra")
         val declarations = canonical.metadata.declarations + additional
         val tuning = TypedTuningRuntime(declarations,
             declarations.associate { it.uid to (canonical.canonicalValue(it.uid) ?: it.defaultValue) },

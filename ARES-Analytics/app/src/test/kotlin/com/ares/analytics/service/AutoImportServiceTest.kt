@@ -339,6 +339,33 @@ class AutoImportServiceTest {
     }
 
     @Test
+    fun `slow import cleanup cannot postpone stopping owned robot processes`() = runBlocking {
+        val importEntered = CompletableDeferred<Unit>()
+        val releaseImport = CompletableDeferred<Unit>()
+        var robotProcessesStopped = false
+        var databaseClosed = false
+        val disposal = launch {
+            awaitAutoImportBeforeClosingDependencies(
+                stopOwnedProcesses = { robotProcessesStopped = true },
+                stopAutoImport = {
+                    importEntered.complete(Unit)
+                    releaseImport.await()
+                },
+                closeDependencies = { databaseClosed = true },
+            )
+        }
+        try {
+            withTimeout(1_000) { importEntered.await() }
+            assertTrue(robotProcessesStopped, "A blocked import must not leave the simulator running")
+            assertFalse(databaseClosed, "Storage must remain open until import cleanup finishes")
+        } finally {
+            releaseImport.complete(Unit)
+            disposal.join()
+        }
+        assertTrue(databaseClosed)
+    }
+
+    @Test
     fun `application disposal joins suspended import cleanup before database close`() = runBlocking {
         val projectDir = Files.createTempDirectory("ares-auto-import-disposal").toFile()
         val archiveDir = projectDir.resolve("logs/imported").apply { mkdirs() }

@@ -32,5 +32,5 @@ object LynxConstants {
      * @param serialNumber The module serial number to evaluate.
      * @return `true` if embedded, `false` otherwise.
      */
-    fun isEmbeddedSerialNumber(serialNumber: com.qualcomm.robotcore.util.SerialNumber): Boolean = false
+    @JvmStatic fun isEmbeddedSerialNumber(serialNumber: com.qualcomm.robotcore.util.SerialNumber): Boolean = false
 }

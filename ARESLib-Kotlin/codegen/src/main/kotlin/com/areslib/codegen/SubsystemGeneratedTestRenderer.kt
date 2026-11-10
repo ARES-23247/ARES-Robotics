@@ -127,16 +127,18 @@ $evidenceAssignments
                     io.configurationHealthy = true
                     io.calibrated = true
             $evidenceAssignments
-                    io.refresh()
                     RobotClock.useMockTime(1_000L)
                     try {
-                        controller.update(state, 1.0)
+                        io.refresh()
+                        controller.update(state.copy(feedbackTimestampMs = io.feedbackTimestampMs), 1.0)
                         assertFalse(io.homed)
                         RobotClock.useMockTime(${1_000L + (dwell - 1L).coerceAtLeast(0L)}L)
-                        controller.update(state, 1.0)
+                        io.refresh()
+                        controller.update(state.copy(feedbackTimestampMs = io.feedbackTimestampMs), 1.0)
                         assertFalse(io.homed)
                         RobotClock.useMockTime(${1_000L + dwell}L)
-                        controller.update(state, 1.0)
+                        io.refresh()
+                        controller.update(state.copy(feedbackTimestampMs = io.feedbackTimestampMs), 1.0)
                         assertTrue(io.homed)
                     } finally {
                         RobotClock.useSystemTime()

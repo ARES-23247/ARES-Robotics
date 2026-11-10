@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "baseCommit": "18d5c1cbf88fb9f7d070afa68ad2ada7beb9a645",
+  "branch": "codex/ftc-sdk12-20261109",
+  "scope": "Desktop setup selection, creation validation, project-history orchestration and UI; original dirty checkout excluded",
+  "candidate": "20.0.2-rc.sdk12.otos.20261110.1",
+  "libraryTree": "dc60c8818d75ff351d909535befa9bf8c4096ca9",
+  "tests": {
+    "com.ares.analytics.service.project.RobotProjectTemplateServiceTest": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.service.versioncontrol.ProjectArchiveExporterTest": {
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.service.versioncontrol.ProjectReviewTokenFactoryTest": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.service.versioncontrol.ProjectVersionControlServiceTest": {
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.ui.components.robotstudio.RobotStudioPresentationTest": {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.ui.screens.OnboardingPresentationTest": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.ui.screens.ProjectBackupPresentationTest": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.viewmodel.OnboardingDetectionTest": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.viewmodel.OnboardingModelTest": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.viewmodel.OnboardingSubmissionTest": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.viewmodel.ProjectBackupViewModelTest": {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "failingBaseline": {
+    "com.ares.analytics.viewmodel.OnboardingDetectionTest": {
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.ares.analytics.viewmodel.ProjectBackupViewModelTest": {
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "requestCountProbe": {
+    "directoryEdits": 3,
+    "beforeInspections": 2,
+    "afterInspections": 1,
+    "debounceMs": 200,
+    "budget": "One inspection of the final settled selection",
+    "latencyOrHardwareBenchmark": false
+  },
+  "intermediateObservations": [
+    {
+      "path": "build/studio-followup-20261110/detection-timeout.xml",
+      "type": "Reader-start timeout; diagnostic rerun passed; fixture initialization/stubbing serialized and delayed job joined before assertions; not a confirmed production defect"
+    },
+    {
+      "path": "build/studio-followup-20261110/offline-stub-failure.xml",
+      "type": "Mockito checked-exception stub rejected before behavior; answer corrected"
+    }
+  ],
+  "native": {
+    "runs": [
+      {
+        "port": 49378,
+        "settled": true,
+        "databaseClosedError": false,
+        "successful": true,
+        "criticalFault": false,
+        "snapshotRemoved": true,
+        "ownedPidExited": true,
+        "cycle": 1,
+        "watchdogHalt": false,
+        "controlPortClosed": true,
+        "disposed": true,
+        "pid": 3888
+      },
+      {
+        "port": 49379,
+        "settled": true,
+        "databaseClosedError": false,
+        "successful": true,
+        "criticalFault": false,
+        "snapshotRemoved": true,
+        "ownedPidExited": true,
+        "cycle": 2,
+        "watchdogHalt": false,
+        "controlPortClosed": true,
+        "disposed": true,
+        "pid": 46636
+      },
+      {
+        "port": 49380,
+        "settled": true,
+        "databaseClosedError": false,
+        "successful": true,
+        "criticalFault": false,
+        "snapshotRemoved": true,
+        "ownedPidExited": true,
+        "cycle": 3,
+        "watchdogHalt": false,
+        "controlPortClosed": true,
+        "disposed": true,
+        "pid": 40236
+      }
+    ],
+    "crashFiles": 0
+  },
+  "captureSha256": {
+    "build/studio-followup-20261110/captures/capture-001.png": "86b40661488c7bc1ee2e28b8e005d2423d25bfd0f1f5a908a239344a088e1229",
+    "build/studio-followup-20261110/captures/capture-002.png": "32ceb201e009d3bb01ec722f544aa3922f61aed21f2baff7561ccabb1ebc41d9",
+    "build/studio-followup-20261110/captures/capture-003.png": "9bf69cd946e142ad06158c964363e8dec80fcf158274e551c4767e1ffe13f1e2",
+    "build/studio-followup-20261110/captures/capture-004.png": "d80ad86e377989351d6402d7f2f2a58d753842ccc734ba611f85e5df528869c3",
+    "build/studio-followup-20261110/captures/capture-005.png": "33208df9a3685b7a8fa2558a313e6f8fbd21fcc530c757ed595180ad16f308c4",
+    "build/studio-followup-20261110/captures/capture-006.png": "273b896420e397e8c0b41db473e72b43dae29479116844435ba3f197a01a375a",
+    "build/studio-followup-20261110/captures/capture-007.png": "908155f7c1ce8bd04e358e9e2aff02fb8c524834777d4b4a9907c9e4dc27cfd6",
+    "build/studio-followup-20261110/captures/capture-008.png": "9c84826e2e241dc5d6c4ce2e907af1d96bb32055eaba978ee5ee86446657bf76",
+    "build/studio-followup-20261110/captures/capture-009.png": "6cf211c29ba7fbc87e75592359b986c79c59b17b35aa17c0c02eb9e48ace9733",
+    "build/studio-followup-20261110/captures/capture-010.png": "ff9e84c814bff53819b460a641b44c48a76042d3d7d82515e03a5715c66fe556",
+    "build/studio-followup-20261110/captures/capture-011.png": "d80ecbc499a6fa6c3dcadaf0c8531ad1d53a64860b34afa47ef5b1db1fea509c",
+    "build/studio-followup-20261110/captures/capture-012.png": "0874bb4aea9ef405c6a05911157434b97510cc249a2f1d17bc48cb2e15bdf2cd",
+    "build/studio-followup-20261110/captures/capture-013.png": "940b5f4d8e007f446f8d7fe6bfa8dddace6960c0c72cbefa39dac076d530d018",
+    "build/studio-followup-20261110/captures/capture-014.png": "36134b06d08358f0be62a08355e0137ed48348962cc3706f979b527c361acc78",
+    "build/studio-followup-20261110/captures/capture-015.png": "2b3e6ef637e011565e97615643016e82690382537aae12ee753a407ce752a974",
+    "build/studio-followup-20261110/captures/capture-016.png": "948fb9adb369413dcd51b8655ce2d890afcfb0c336264ab440d0ee01ce7cc80c",
+    "build/studio-followup-20261110/captures/capture-017.png": "71122012cfddad11552264c885412ed7b90426bca935d6c96143f4e32232c1ba",
+    "build/studio-followup-20261110/captures/capture-018.png": "965b9b6b087605442b4acf3039105939f64f0f548a3b1077d988b2aa5a5d8a2c",
+    "build/studio-followup-20261110/captures/capture-019.png": "607f06d5d21b642f5faf44f60873be954c4ef4b34b8c86358ce65c0741b302f5",
+    "build/studio-followup-20261110/captures/capture-020.png": "a77bd218756379d5814e257fe3e2f1b8875cc491e3f3a4f48b55505b54ead5c9",
+    "build/studio-followup-20261110/captures/capture-021.png": "e6dabc78a4a1c040300f9e5d8a43e804001f18a3718e8281013e3138e2a53820",
+    "build/studio-followup-20261110/captures/capture-022.png": "070b39ef9b2df132b32868e14f9e150be7906958eccce56760e29a5a1facf8b0",
+    "build/studio-followup-20261110/captures/capture-023.png": "01334d9189a15fa7217258ab34255c9b954be9915fceee0b8f68f99165b0ffc9",
+    "build/studio-followup-20261110/captures/capture-024.png": "4b260104d03d0e8ae233fe7f821167e4ddeab78d8cf89a42921c3dd9cb0f011b",
+    "build/studio-followup-20261110/captures/capture-025.png": "2fae9cc53dd529d7a9ec46c258d11eac385785d914397f2a573f686c480ea320",
+    "build/studio-followup-20261110/captures-second/capture-001.png": "9826e5689c05f3de39f91261e0b48f7bfe72f3620d69239790627b84c7029c07",
+    "build/studio-followup-20261110/captures-second/capture-002.png": "469ee4770c4c75537e1629c1f9aaf5241ed048a4489690720b94f3952a64cd31",
+    "build/studio-followup-20261110/captures-second/capture-003.png": "d920ee1efd485f8b754daea4526c09bbc3e35a4290f9eae925669b3f83cff927",
+    "build/studio-followup-20261110/captures-second/capture-004.png": "e712d05f5b0dc877b83b8b4244e5ca7ff6954042c01efdd38a80b1ce948790b8",
+    "build/studio-followup-20261110/captures-second/capture-005.png": "bcc38264e8a9b9c31dcc211b63fcc5ec20f983332ef74154915ca757e24b4d5d",
+    "build/studio-followup-20261110/captures-third/capture-001.png": "46c0d5476ab8933d937ca0799b4992b127c9b4ce85ca30ff8313163e99f9bf50"
+  },
+  "cleanupObservation": {
+    "initialThirdPortClosed": false,
+    "settledThirdPortClosed": true,
+    "initialEvidence": "build/studio-followup-20261110/native-summary-initial-port-query.json",
+    "note": "Owned PID had exited on both observations; direct follow-up found no listener and settled queries confirmed all three ports closed"
+  },
+  "nativeScenarios": [
+    "1280x800 setup and identity validation recovery",
+    "Actual code-first XRP project creation",
+    "Optional Python check and creation progress",
+    "Clean and changed local history",
+    "Pinned missing-author error and successful reviewed save",
+    "Corrected platform-neutral ownership label",
+    "Parent-folder error then actual XRP detection and cancellation",
+    "Final repository-root guidance"
+  ],
+  "createdProject": {
+    "metadata": {
+      "schemaVersion": 5,
+      "projectId": "team23247-xrpaudit",
+      "identity": {
+        "teamId": "23247",
+        "seasonId": "2026-2027",
+        "robotId": "XrpAudit",
+        "displayName": "XrpAudit"
+      },
+      "league": "XRP",
+      "coordinateConvention": "CENTER_ORIGIN_CCW",
+      "robotLengthMeters": 0.155,
+      "robotWidthMeters": 0.155,
+      "fieldLengthMeters": 2.54,
+      "fieldWidthMeters": 1.4224,
+      "authoringModel": "CODE_FIRST",
+      "runtimeOptions": {
+        "xrp": {
+          "controllerModel": "SPARKFUN_XRP_RP2350",
+          "wifiMode": "AP",
+          "ssid": "ARES-XRP-AUTO",
+          "port": 5811,
+          "deadmanTimeoutMs": 200,
+          "brownoutThresholdVolts": 4.3
+        }
+      }
+    },
+    "provenance": {
+      "schemaVersion": 1,
+      "templateId": "ares-xrp-starter-3.0.67",
+      "templateRevision": "schema5-micropython-v1",
+      "templateArchiveSha256": "2bb902a642750783b3c7f6996b50ec26e0f9ab56ca423993d3162f7b3213961a",
+      "aresVersion": "20.0.2",
+      "deploymentPolicy": "HARDWARE_REVIEW_REQUIRED"
+    },
+    "localCommits": [
+      "6eb8b82ab220b973ec556ca0d934814256999fc5 Verify local project history",
+      "ca675ee81759ee003d671d4404c3d7c47f86e832 Create robot project with ARES Robotics Studio"
+    ],
+    "cleanFinalGitStatus": true
+  },
+  "commands": {
+    "baseline": ":app:test --tests com.ares.analytics.viewmodel.OnboardingDetectionTest --tests com.ares.analytics.viewmodel.ProjectBackupViewModelTest",
+    "final": ":app:test with Onboarding*, ProjectBackupViewModelTest, OnboardingPresentationTest, ProjectBackupPresentationTest, RobotStudioPresentationTest, RobotProjectTemplateServiceTest and service.versioncontrol.*Test filters; --offline --no-parallel and the same candidate plus absolute local repository URI",
+    "native": ":app:run --offline --no-parallel -PskipKill -ParesIsolatedDesktopHome=build/studio-followup-native-home with identical dependency overrides; owned loopback ports 49378-49380 and WM_CLOSE",
+    "guidance": "verify_agent_guidance.py; six test_agent_guidance.py cases; skill-creator quick_validate.py compose-desktop-tester",
+    "policy": "scripts/verify-monorepo-policy.ps1 and generate_codebase_ledger.py --verify"
+  },
+  "limits": [
+    "No unrelated full Studio or unchanged library/consumer suites repeated",
+    "No physical hardware or live GitHub backup",
+    "No public release, push, protected-main merge, or original-checkout integration"
+  ],
+  "contentSha256": {
+    ".agents/skills/compose-desktop-tester/references/interaction.md": "3b43565a2cf066e9f93904936d0c38a1de3641bc56f87b51202ee64cd24c1712",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/OnboardingScreen.kt": "d3761b726b5d2f7298b1b9a9d06491ef68659670999e5cd7b139a3370060dbb7",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectBackupScreen.kt": "e79d52f6312ed19d2323755e7d26d901877cd93ad1915820d0215eda0a5f6d46",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/RobotStudioScreen.kt": "02ab8f86bf3c3dcb66f5cc77f310152bf573f32724e4214ee6976abd0c911302",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/SyncStep.kt": "061c7b880074ece60bb3692a178c9ea2cf11c1833ac956410ba79e8dc4dabb69",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingProjectDetection.kt": "6778a87fc6cec2c8664af8a35045818ab9c5b769fa0c15c9cb63fee51ad74265",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingValidation.kt": "02170fa34a7f0f283f960308eeba95d97d0bfc99fab3642c15cd87994f7202c5",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt": "c0eb9b5ea550f56cb289860e89331c5e03b197bb587edb3aa0a744173a8a302f",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/ProjectBackupViewModel.kt": "fe4f3a2b8709d62f366be8c40111ab7279962728e2735f36f410d4803e4d5bbc",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/OnboardingPresentationTest.kt": "1cebbec89429f1bdfcb7873bafda042232e0c85a3cec0833a1a6f4bf5001ba72",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/ProjectBackupPresentationTest.kt": "d7921a6d072eb68c70417cc950d432d38fd558e97e46217e06010f7b288d83ba",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/OnboardingDetectionTest.kt": "235fc67edd89ac7b1f46c2a942de209c210101ef1d6c4ce2cb7a4ec7911cb96c",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/OnboardingModelTest.kt": "25e08c7ce4af595fbef6065992f541478c21f78f4735d827d97842280ab28137",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/OnboardingSubmissionTest.kt": "15f6fb589d4cf670712cb88be2c81181f1b24022257765ffe505692cc9b86b99",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/ProjectBackupViewModelTest.kt": "d78dcb9d6be64580360fbdbdf9e3b97c0681b66aecabc1291cd98a5b2d557571",
+    "ARES-Analytics/config/maintainability/codebase_ledger.json": "b22481ff6e06fbd5326d15e16d4b6cc2cbb71275357abcfbc2ca15e0715bad63",
+    "docs/audits/README.md": "88ffb30df1dc3124b9e5631579a9935d6903ec3c6b8ef2636bff0a280bb7250a",
+    "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10.md": "ac8f254c5e6bac29e0d27c92cc8f97eefa0bda73f8c33adbc2078fe97f463d27"
+  }
+}

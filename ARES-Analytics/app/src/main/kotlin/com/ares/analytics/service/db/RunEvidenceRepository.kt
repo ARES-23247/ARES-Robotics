@@ -16,7 +16,7 @@ internal class RunEvidenceRepository(
     private val sessions: SessionMetadataRepository,
 ) {
     private val writeConnection: Connection get() = transactions.writeConnection
-    private val readConnection: Connection get() = transactions.readConnection
+    private val readConnection: Connection get() = transactions.metadataReadConnection
 
     suspend fun getDiagnosticsTelemetry(sessionId: String): List<TelemetryFrame> = transactions.write {
         val frames = mutableListOf<TelemetryFrame>()
@@ -84,7 +84,7 @@ internal class RunEvidenceRepository(
         }
     }
 
-    suspend fun getAnalysisDiagnostics(sessionId: String): List<AnalysisDiagnostic> = transactions.read {
+    suspend fun getAnalysisDiagnostics(sessionId: String): List<AnalysisDiagnostic> = transactions.readMetadata {
         val diagnostics = mutableListOf<AnalysisDiagnostic>()
         readConnection.prepareStatement(
             "SELECT session_id, key, value, string_value FROM analysis_diagnostics WHERE session_id = ? ORDER BY key",
@@ -125,7 +125,7 @@ internal class RunEvidenceRepository(
         }
     }
 
-    suspend fun getImportReports(sessionId: String): List<ImportReport> = transactions.read {
+    suspend fun getImportReports(sessionId: String): List<ImportReport> = transactions.readMetadata {
         val reports = mutableListOf<ImportReport>()
         readConnection.prepareStatement(
             "SELECT report_json FROM session_import_reports WHERE session_id = ? ORDER BY source_name, source_sha256",

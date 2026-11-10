@@ -71,7 +71,7 @@ internal class AnalysisTelemetryRepository(private val transactions: DatabaseTra
             FROM availability a LEFT JOIN latest l ON a.group_id = l.group_id AND a.status = 'complete'
             ORDER BY a.group_id, l.timestamp_us, l.sample_order, l.key
         """.trimIndent()
-        return transactions.read {
+        return transactions.readTelemetry(sessionId) {
             currentCoroutineContext().ensureActive()
             transactions.readConnectionFor(sessionId).prepareStatement(sql).use { statement ->
                 var parameter = 1

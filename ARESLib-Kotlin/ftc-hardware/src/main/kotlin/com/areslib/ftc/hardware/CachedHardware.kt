@@ -37,33 +37,30 @@ class CachedDcMotorEx(
     private var powerWriteUncertain = false
     private var lastPower = 0.0
 
-    override var power: Double
-        get() = if (hasPowerCommand) lastPower else delegate.power
-        set(value) {
-            val command = if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
-            if (!hasPowerCommand || powerWriteUncertain || (command != lastPower &&
-                (command == 0.0 || abs(command - lastPower) >= epsilon))) {
-                powerWriteUncertain = true
-                delegate.power = command
-                powerWriteUncertain = false
-                lastPower = command
-                hasPowerCommand = true
-            }
+    override fun getPower(): Double = if (hasPowerCommand) lastPower else delegate.power
+    override fun setPower(value: Double) {
+        val command = if (value.isFinite()) value.coerceIn(-1.0, 1.0) else 0.0
+        if (!hasPowerCommand || powerWriteUncertain || (command != lastPower &&
+            (command == 0.0 || abs(command - lastPower) >= epsilon))) {
+            powerWriteUncertain = true
+            delegate.power = command
+            powerWriteUncertain = false
+            lastPower = command
+            hasPowerCommand = true
         }
+    }
 
-    override var mode: DcMotor.RunMode
-        get() = delegate.mode
-        set(value) {
-            hasPowerCommand = false
-            delegate.mode = value
-        }
+    override fun getMode(): DcMotor.RunMode = delegate.mode
+    override fun setMode(value: DcMotor.RunMode) {
+        hasPowerCommand = false
+        delegate.mode = value
+    }
 
-    override var direction: DcMotorSimple.Direction
-        get() = delegate.direction
-        set(value) {
-            hasPowerCommand = false
-            delegate.direction = value
-        }
+    override fun getDirection(): DcMotorSimple.Direction = delegate.direction
+    override fun setDirection(value: DcMotorSimple.Direction) {
+        hasPowerCommand = false
+        delegate.direction = value
+    }
 
     override fun resetDeviceConfigurationForOpMode() {
         hasPowerCommand = false
@@ -81,7 +78,8 @@ class CachedDcMotorEx(
  * Prevents redundant servo PWM updates and allocates no objects in the setter. Before the first
  * command, the getter delegates to hardware; afterward it returns only the cached command. The
  * position is clamped to [0, 1]. Non-finite positions are rejected because a servo has
- * no universal neutral position. Device resets invalidate the command cache; failed writes force
+ * no universal neutral position. Direction/range changes and device resets invalidate the command
+ * cache before delegation, including when configuration throws after applying a change. Failed writes force
  * the next command through while getters retain the last accepted value without polling hardware.
  *
  * @param delegate Underlying FTC SDK [Servo] hardware instance.
@@ -100,24 +98,34 @@ class CachedServo(
     private var positionWriteUncertain = false
     private var lastPosition = 0.0
 
-    override var position: Double
-        get() = if (hasPositionCommand) lastPosition else delegate.position
-        set(value) {
-            require(value.isFinite()) { "Servo position must be finite" }
-            val command = value.coerceIn(0.0, 1.0)
-            if (!hasPositionCommand || positionWriteUncertain ||
-                (command != lastPosition && abs(command - lastPosition) >= epsilon)) {
-                positionWriteUncertain = true
-                delegate.position = command
-                positionWriteUncertain = false
-                lastPosition = command
-                hasPositionCommand = true
-            }
+    override fun getPosition(): Double = if (hasPositionCommand) lastPosition else delegate.position
+    override fun setPosition(value: Double) {
+        require(value.isFinite()) { "Servo position must be finite" }
+        val command = value.coerceIn(0.0, 1.0)
+        if (!hasPositionCommand || positionWriteUncertain ||
+            (command != lastPosition && abs(command - lastPosition) >= epsilon)) {
+            positionWriteUncertain = true
+            delegate.position = command
+            positionWriteUncertain = false
+            lastPosition = command
+            hasPositionCommand = true
         }
+    }
 
     override fun resetDeviceConfigurationForOpMode() {
         hasPositionCommand = false
         delegate.resetDeviceConfigurationForOpMode()
+    }
+
+    override fun getDirection(): Servo.Direction = delegate.direction
+    override fun setDirection(value: Servo.Direction) {
+        hasPositionCommand = false
+        delegate.direction = value
+    }
+
+    override fun scaleRange(min: Double, max: Double) {
+        hasPositionCommand = false
+        delegate.scaleRange(min, max)
     }
 }
 

@@ -7,6 +7,7 @@ import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -14,12 +15,15 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.reflect.jvm.isAccessible
 
-/** Enforces that import cancellation cleanup joins before any dependent resource is closed. */
+/** Stop owned robot processes first; import cleanup must still join before storage closes. */
 internal suspend fun awaitAutoImportBeforeClosingDependencies(
+    stopOwnedProcesses: suspend () -> Unit = {},
     stopAutoImport: suspend () -> Unit,
     closeDependencies: suspend () -> Unit
 ) {
+    stopOwnedProcesses()
     stopAutoImport()
     closeDependencies()
 }
@@ -247,8 +251,31 @@ class ServiceRegistry {
      * thread before Compose creates a visible window.
      */
     internal fun prepareForMainScreen() {
+        if (disposed.get()) throw CancellationException("Studio is shutting down")
         databaseService
+        if (disposed.get()) throw CancellationException("Studio is shutting down")
         runBlocking { notificationIntegrationService.start() }
+    }
+
+    /** Reject new workspace work and neutralize input before waiting for Compose cancellation. */
+    internal fun beginShutdown() {
+        disposed.set(true)
+        if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
+    }
+
+    /** May run while UI cancellation is waiting on a native query; owns no database teardown. */
+    internal suspend fun stopOwnedProcessesAndJoin() {
+        if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
+        var failure: Throwable? = null
+        suspend fun stop(block: suspend () -> Unit) {
+            try { block() } catch (error: Throwable) {
+                if (failure == null) failure = error else failure.addSuppressed(error)
+            }
+        }
+        if (lazyFieldInitialized(::simulatorProcessService)) stop { simulatorProcessService.shutdownAndJoin() }
+        if (lazyFieldInitialized(::projectBuildService)) stop { projectBuildService.shutdownAndJoin() }
+        if (lazyFieldInitialized(::robotDeploymentService)) stop { robotDeploymentService.shutdownAndJoin() }
+        failure?.let { throw it }
     }
 
     /** Applies a workspace transition only after the prior scanner generation has joined. */
@@ -276,6 +303,7 @@ class ServiceRegistry {
 
     /** Tears down services that hold coroutine scopes or background jobs, in dependency order. */
     internal suspend fun disposeAndJoin() {
+        beginShutdown()
         var telemetryPersisted = true
         var alertsPersisted = true
         if (lazyFieldInitialized(::updateCheckerService)) {
@@ -290,9 +318,11 @@ class ServiceRegistry {
         if (lazyFieldInitialized(::targetScannerService)) {
             targetScannerService.stopScanning()
         }
-        // AutoImport can be inside a database transaction or filesystem staging move. Its scanner
-        // must finish cancellation cleanup before NT4/process dependencies and DuckDB are closed.
+        // Native summary queries can delay import cancellation beyond the desktop watchdog.
+        // Stop owned processes first so that delay cannot orphan a running simulator. Imports
+        // retain their ADB and storage dependencies until cancellation cleanup has joined.
         awaitAutoImportBeforeClosingDependencies(
+            stopOwnedProcesses = ::stopOwnedProcessesAndJoin,
             stopAutoImport = {
                 autoImportTransitionMutex.withLock {
                     disposed.set(true)
@@ -306,15 +336,6 @@ class ServiceRegistry {
                 if (lazyFieldInitialized(::nt4ClientService)) {
                     if (lazyFieldInitialized(::xrpLinkService)) xrpLinkService.disposeAndJoin()
                     telemetryPersisted = nt4ClientService.disposeAndJoin()
-                }
-                if (lazyFieldInitialized(::projectBuildService)) {
-                    projectBuildService.shutdown()
-                }
-                if (lazyFieldInitialized(::robotDeploymentService)) {
-                    robotDeploymentService.shutdown()
-                }
-                if (lazyFieldInitialized(::simulatorProcessService)) {
-                    simulatorProcessService.shutdownAndJoin()
                 }
                 if (lazyFieldInitialized(::adbService)) {
                     adbService.shutdownAndJoin()
@@ -377,6 +398,9 @@ class ServiceRegistry {
 
     private fun lazyFieldInitialized(prop: kotlin.reflect.KProperty0<*>): Boolean {
         return try {
+            // Public service properties still have private delegate fields. Without access,
+            // getDelegate throws and the conservative fallback starts every cold service.
+            prop.isAccessible = true
             (prop.getDelegate() as? Lazy<*>)?.isInitialized() == true
         } catch (t: Throwable) {
             true // Fallback to true so we dispose the service rather than leaking resources/jobs

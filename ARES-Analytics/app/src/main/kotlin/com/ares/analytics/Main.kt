@@ -15,7 +15,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +38,7 @@ import com.ares.analytics.ui.screens.MainScreen
 import com.ares.analytics.ui.theme.AresTheme
 import com.ares.analytics.ui.theme.rememberAresAppIconPainter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import kotlin.system.exitProcess
 
@@ -77,16 +77,31 @@ private fun launchDesktopApplication() {
         exitProcess(1)
     }
 
-    application {
+    // The host outlives Compose so window effects, workspace scopes, and bootstrap IO have
+    // completed cancellation before their database and service dependencies are disposed.
+    val services = ServiceRegistry()
+    val startupMachine = DesktopStartupMachine()
+    val shutdownCoordinator = DesktopShutdownCoordinator(startupMachine)
+    var disposed = false
+    try {
+        runDesktopComposition(services, startupMachine, shutdownCoordinator)
+    } finally {
+        disposed = shutdownCoordinator.finishShutdown(services)
+    }
+    exitProcess(if (disposed) 0 else 1)
+}
+
+private fun runDesktopComposition(
+    services: ServiceRegistry,
+    startupMachine: DesktopStartupMachine,
+    shutdownCoordinator: DesktopShutdownCoordinator,
+) {
+    application(exitProcessOnExit = false) {
         val windowState = rememberWindowState(
             placement = WindowPlacement.Floating,
             position = WindowPosition.Aligned(Alignment.Center),
             size = DpSize(1440.dp, 900.dp),
         )
-        val services = remember { ServiceRegistry() }
-        val shutdownScope = rememberCoroutineScope()
-        val startupMachine = remember { DesktopStartupMachine() }
-        val shutdownCoordinator = remember { DesktopShutdownCoordinator(startupMachine) }
         val creationWatchdog = remember {
             DesktopWindowCreationWatchdog(
                 machine = startupMachine,
@@ -101,18 +116,18 @@ private fun launchDesktopApplication() {
 
         LaunchedEffect(services, bootstrapAttempt) {
             bootstrapState = DesktopServiceBootstrapState.Loading
-            bootstrapState = runCatching {
+            bootstrapState = try {
                 runDesktopServiceBootstrap(services::prepareForMainScreen)
-            }.fold(
-                onSuccess = { DesktopServiceBootstrapState.Ready },
-                onFailure = { failure ->
-                    DesktopServiceBootstrapState.Failed(
-                        failure.message?.takeIf(String::isNotBlank)
-                            ?: failure::class.simpleName
-                            ?: "Unknown database startup error"
-                    )
-                },
-            )
+                DesktopServiceBootstrapState.Ready
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Throwable) {
+                DesktopServiceBootstrapState.Failed(
+                    failure.message?.takeIf(String::isNotBlank)
+                        ?: failure::class.simpleName
+                        ?: "Unknown database startup error"
+                )
+            }
         }
 
         // This effect belongs to the application composition rather than Window content. It
@@ -125,7 +140,6 @@ private fun launchDesktopApplication() {
         Window(
             onCloseRequest = {
                 shutdownCoordinator.requestShutdown(
-                    scope = shutdownScope,
                     services = services,
                     exitApplication = ::exitApplication,
                 )

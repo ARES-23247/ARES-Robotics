@@ -224,3 +224,4 @@ public class ConceptMotorBulkRead extends LinearOpMode {
         telemetry.update();
     }
 }
+

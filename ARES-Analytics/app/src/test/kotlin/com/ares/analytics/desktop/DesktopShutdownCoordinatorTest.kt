@@ -1,10 +1,14 @@
 package com.ares.analytics.desktop
 
+import com.ares.analytics.di.ServiceRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.io.IOException
 
 class DesktopShutdownCoordinatorTest {
     @Test
@@ -27,5 +31,26 @@ class DesktopShutdownCoordinatorTest {
         }
 
         assertFalse(finished)
+    }
+
+    @Test
+    fun `a teardown failure is not reported as successful disposal`() = runBlocking {
+        assertFalse(awaitBoundedEmergencyDisposal(1_000) { throw IOException("storage flush failed") })
+    }
+
+    @Test
+    fun `the watchdog also bounds a stalled application cancellation`() {
+        val timeout = CountDownLatch(1)
+        val services = ServiceRegistry()
+        val coordinator = DesktopShutdownCoordinator(
+            DesktopStartupMachine(), hardExitGraceMs = 20, shutdownTimeoutMs = 50,
+            forceExit = { timeout.countDown() },
+        )
+        try {
+            coordinator.requestShutdown(services, exitApplication = { /* simulate a stuck UI */ })
+            assertTrue(timeout.await(2, TimeUnit.SECONDS), "watchdog must cover UI cancellation before service disposal")
+        } finally {
+            coordinator.finishShutdown(services)
+        }
     }
 }

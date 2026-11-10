@@ -2,10 +2,12 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.Properties
+import java.util.zip.ZipFile
 import javax.imageio.ImageIO
 
 // Single source of truth for the application version. Consumed both by the native
@@ -133,7 +135,7 @@ dependencies {
     implementation("net.java.dev.jna:jna-platform:5.19.1")
 
     // Pure-Java project version history; students do not need a separate Git installation.
-    implementation("org.eclipse.jgit:org.eclipse.jgit:7.7.1.202607240634-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:7.8.0.202609011348-r")
 
     // Math & Signal Processing
     implementation("org.ejml:ejml-simple:0.46.1")
@@ -193,6 +195,15 @@ tasks.register("generateBuildConfig") {
     val frcHash = frcStarterSha256
     val xrpHash = xrpStarterSha256
     val lightbotHash = lightbotExampleSha256
+    // Archives have independent release lifetimes; their dependency pin must not follow
+    // a Studio-only/library-candidate version change. Resolve it once at build time.
+    val templateArchives = mapOf(
+        "FTC_STARTER" to file("src/main/resources/project-templates/ARES-FTC-Starter-$ftcVersion.zip"),
+        "FRC_STARTER" to file("src/main/resources/project-templates/ARES-FRC-Starter-$frcVersion.zip"),
+        "XRP_STARTER" to file("src/main/resources/project-templates/ARES-XRP-Starter-$xrpVersion.zip"),
+        "LIGHTBOT_EXAMPLE" to file("src/main/resources/project-templates/ARES-Lightbot-Example-$lightbotVersion.zip"),
+        "BIOBUZZ_EXAMPLE" to file("src/main/resources/project-templates/ARES-BIOBUZZ-Example-$biobuzzExampleVersion.zip"),
+    )
     inputs.property("aresAnalyticsVersion", version)
     inputs.property("aresProductName", productName)
     inputs.property("aresProductTagline", productTagline)
@@ -204,10 +215,23 @@ tasks.register("generateBuildConfig") {
     inputs.property("windowsUpdateSignerThumbprints", updateSignerThumbprints)
     inputs.file(aresReleaseManifestFile)
     inputs.file(starterArtifactPropertiesFile)
+    inputs.files(templateArchives.values)
     inputs.property("lightbotExampleVersion", lightbotVersion)
     inputs.property("lightbotExampleSha256", lightbotHash)
     outputs.dir(generatedBuildConfigDir)
     doLast {
+        val templateAresVersions = templateArchives.mapValues { (_, archive) ->
+            ZipFile(archive).use { zip ->
+                val manifests = zip.entries().asSequence().filter { entry ->
+                    !entry.isDirectory && (entry.name == "release/ares-versions.properties" ||
+                        entry.name.endsWith("/release/ares-versions.properties"))
+                }.toList()
+                check(manifests.size == 1) { "$archive must contain one canonical ARES release manifest" }
+                val manifest = Properties().apply { zip.getInputStream(manifests.single()).use(::load) }
+                manifest.getProperty("aresVersion")?.trim()?.takeIf(String::isNotEmpty)
+                    ?: error("$archive does not declare its ARES dependency version")
+            }
+        }
         val pkgDir = generatedBuildConfigDir.get().asFile.resolve("com/ares/analytics")
         pkgDir.mkdirs()
         val escapedOAuthClientId = oauthClientId
@@ -243,6 +267,11 @@ tasks.register("generateBuildConfig") {
             |    const val GITHUB_APP_SLUG = "$escapedGitHubAppSlug"
             |    const val WINDOWS_UPDATE_SIGNER_THUMBPRINTS = "$updateSignerThumbprints"
             |    const val ARES_VERSION = "$aresVersion"
+            |    const val FTC_STARTER_ARES_VERSION = "${templateAresVersions.getValue("FTC_STARTER").kotlinLiteral()}"
+            |    const val FRC_STARTER_ARES_VERSION = "${templateAresVersions.getValue("FRC_STARTER").kotlinLiteral()}"
+            |    const val XRP_STARTER_ARES_VERSION = "${templateAresVersions.getValue("XRP_STARTER").kotlinLiteral()}"
+            |    const val LIGHTBOT_EXAMPLE_ARES_VERSION = "${templateAresVersions.getValue("LIGHTBOT_EXAMPLE").kotlinLiteral()}"
+            |    const val BIOBUZZ_EXAMPLE_ARES_VERSION = "${templateAresVersions.getValue("BIOBUZZ_EXAMPLE").kotlinLiteral()}"
             |    const val FTC_STARTER_VERSION = "$ftcVersion"
             |    const val FRC_STARTER_VERSION = "$frcVersion"
             |    const val XRP_STARTER_VERSION = "$xrpVersion"
@@ -340,6 +369,9 @@ val consumerRoundtripClasses = listOf(
 )
 val appUnitTests = tasks.named<Test>("test") {
     exclude(consumerRoundtripClasses)
+}
+tasks.withType<Test>().configureEach {
+    testLogging.exceptionFormat = TestExceptionFormat.FULL
 }
 tasks.register<Test>("consumerRoundtripTest") {
     group = "verification"

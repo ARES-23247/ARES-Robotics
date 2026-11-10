@@ -19,10 +19,15 @@ import kotlin.math.sin
  * This work happens during camera initialization, not in the periodic loop. The field document
  * remains authoritative; generated projects do not duplicate tag poses in Kotlin. Tags must share
  * one FTC-supported family because [AprilTagProcessor] selects one detector family per processor.
+ * SDK metadata is expressed in inches (including field position, as expected by its robot-pose
+ * solver). [FtcTagPoseConvention] preserves existing FTC optical rotations by default; select
+ * WPILIB_NWU for layouts whose tag rotations use outward/left/up axes. Moving targets belong in a
+ * cluster library, never this stationary field library.
  */
 object FtcAprilTagLibraryFactory {
     @JvmStatic
-    fun create(field: RobotFieldConfig): AprilTagLibrary {
+    @JvmOverloads
+    fun create(field: RobotFieldConfig, convention: FtcTagPoseConvention = FtcTagPoseConvention.FTC_OPTICAL): AprilTagLibrary {
         require(field.fieldType == FieldType.FTC) { "FTC VisionPortal requires an FTC field document" }
         val issues = RobotFieldValidator.validate(field, FieldType.FTC, requireAprilTags = true)
         require(issues.isEmpty()) { issues.joinToString(" ") { it.message } }
@@ -30,13 +35,13 @@ object FtcAprilTagLibraryFactory {
         val builder = AprilTagLibrary.Builder().setAllowOverwrite(false)
         field.apriltags.sortedBy(RobotFieldAprilTag::id).forEach { tag ->
             val size = requireNotNull(tag.sizeMeters) { "FTC AprilTag ${tag.id} is missing its physical size" }
-            val quaternion = tag.toQuaternion()
+            val quaternion = tag.toQuaternion(convention)
             builder.addTag(
                 tag.id,
                 tag.name.ifBlank { "AprilTag ${tag.id}" },
-                size,
-                VectorF(tag.x.toFloat(), tag.y.toFloat(), tag.z.toFloat()),
-                DistanceUnit.METER,
+                size / 0.0254,
+                VectorF((tag.x/0.0254).toFloat(), (tag.y/0.0254).toFloat(), (tag.z/0.0254).toFloat()),
+                DistanceUnit.INCH,
                 Quaternion(
                     quaternion.w.toFloat(),
                     quaternion.x.toFloat(),
@@ -51,12 +56,14 @@ object FtcAprilTagLibraryFactory {
 
     /** Applies the canonical library and its single detector family to an SDK processor builder. */
     @JvmStatic
-    fun configure(builder: AprilTagProcessor.Builder, field: RobotFieldConfig): AprilTagProcessor.Builder {
+    @JvmOverloads
+    fun configure(builder: AprilTagProcessor.Builder, field: RobotFieldConfig,
+                  convention: FtcTagPoseConvention = FtcTagPoseConvention.FTC_OPTICAL): AprilTagProcessor.Builder {
         val families = field.apriltags.map { normalizeFamily(it.family) }.distinct()
         require(families.size == 1) { "FTC VisionPortal requires every AprilTag to use one detector family" }
         return builder
             .setTagFamily(families.single())
-            .setTagLibrary(create(field))
+            .setTagLibrary(create(field, convention))
     }
 
     private fun normalizeFamily(value: String): AprilTagProcessor.TagFamily = when (
@@ -69,7 +76,7 @@ object FtcAprilTagLibraryFactory {
         else -> error("Unreachable canonical FTC AprilTag family")
     }
 
-    private fun RobotFieldAprilTag.toQuaternion(): QuaternionValues {
+    private fun RobotFieldAprilTag.toQuaternion(convention: FtcTagPoseConvention): QuaternionValues {
         val halfRoll = Math.toRadians(roll) * 0.5
         val halfPitch = Math.toRadians(pitch) * 0.5
         val halfYaw = Math.toRadians(yaw) * 0.5
@@ -79,12 +86,13 @@ object FtcAprilTagLibraryFactory {
         val sp = sin(halfPitch)
         val cy = cos(halfYaw)
         val sy = sin(halfYaw)
-        return QuaternionValues(
-            w = cr * cp * cy + sr * sp * sy,
-            x = sr * cp * cy - cr * sp * sy,
-            y = cr * sp * cy + sr * cp * sy,
-            z = cr * cp * sy - sr * sp * cy,
-        )
+        val w = cr * cp * cy + sr * sp * sy
+        val x = sr * cp * cy - cr * sp * sy
+        val y = cr * sp * cy + sr * cp * sy
+        val z = cr * cp * sy - sr * sp * cy
+        if (convention == FtcTagPoseConvention.FTC_OPTICAL) return QuaternionValues(w,x,y,z)
+        // Right-multiply by the fixed optical-tag basis quaternion (0.5,-0.5,-0.5,0.5).
+        return QuaternionValues(0.5*(w+x+y-z), 0.5*(-w+x+y+z), 0.5*(-w-x+y-z), 0.5*(w-x+y+z))
     }
 
     private data class QuaternionValues(val w: Double, val x: Double, val y: Double, val z: Double)

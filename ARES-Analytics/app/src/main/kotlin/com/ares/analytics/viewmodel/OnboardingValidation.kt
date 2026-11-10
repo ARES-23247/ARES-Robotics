@@ -63,6 +63,7 @@ internal fun validateOnboardingFields(
     return OnboardingFieldErrors(
         projectPath = when {
             !validateProject -> null
+            !state.projectSetupMode.createsProject && state.fieldErrors.projectPath != null -> state.fieldErrors.projectPath
             state.projectSetupMode.createsProject && state.projectParentPath.isBlank() ->
                 "Choose where ARES should create the robot project."
             state.projectSetupMode.createsProject && !File(state.projectParentPath.trim()).isDirectory ->
@@ -78,19 +79,27 @@ internal fun validateOnboardingFields(
         teamId = when {
             !validateRobot -> null
             state.teamId.isBlank() -> "Enter your FIRST team number."
-            state.teamId.any { !it.isDigit() } -> "Use numbers only for the team number."
+            state.teamId.trim().any { !it.isDigit() } -> "Use numbers only for the team number."
+            state.projectSetupMode.createsProject && state.teamId.trim().length > 32 -> "Use 32 or fewer digits for the team number."
             else -> null
         },
         seasonId = when {
             !validateRobot -> null
             state.seasonId.isBlank() -> "Enter the season, for example 2026."
+            state.projectSetupMode.createsProject && !state.seasonId.trim().matches(Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,31}")) ->
+                "Use 1–32 letters, numbers, dots, underscores, or dashes for the season."
             else -> null
         },
         robotId = when {
             !validateRobot -> null
             state.robotId.isBlank() -> "Enter a short robot ID."
+            state.projectSetupMode.createsProject && !state.robotId.trim().matches(Regex("[A-Za-z][A-Za-z0-9._-]{0,63}")) ->
+                "Start with a letter; use up to 64 letters, numbers, dots, underscores, or dashes."
             else -> null
         },
+        robotName = if (validateRobot && state.projectSetupMode.createsProject && state.robotName.trim().length > 80) {
+            "Use 80 or fewer characters for the friendly name."
+        } else null,
     )
 }
 

@@ -582,6 +582,7 @@ class NT4Server(
         val serverTimestampUs = com.areslib.util.RobotClock.currentTimeMillis() * 1_000L
         var isNew = false
         var updated = false
+        var refreshPublication = false
         var replacedEntry: NT4Entry? = null
         lateinit var entry: NT4Entry
         synchronized(topicMutationLock) {
@@ -622,6 +623,13 @@ class NT4Server(
                     isNew = true
                 }
             }
+            // Equal values are still new observations when the producer calls putTopic again.
+            // Refresh at most twice a second so receipt-based consumers do not expire healthy,
+            // stationary telemetry. Flush alone never refreshes a stopped producer's value.
+            val lastQueued = entry.lastQueuedServerPublicationUs
+            refreshPublication = isNew || updated || serverTimestampUs < lastQueued ||
+                serverTimestampUs - lastQueued >= UNCHANGED_PUBLICATION_INTERVAL_US
+            if (refreshPublication) entry.lastQueuedServerPublicationUs = serverTimestampUs
         }
 
         replacedEntry?.let { oldEntry ->
@@ -630,7 +638,7 @@ class NT4Server(
             unannounceDeletedEntry(oldEntry)
             oldEntry.notifyListeners(NT4EventType.TOPIC_UNPUBLISHED, oldEntry.value)
         }
-        if (isNew || updated) markDirty(entry)
+        if (refreshPublication) markDirty(entry)
 
         if (isNew) {
             announceEntryToSubscribers(entry)
@@ -786,6 +794,7 @@ class NT4Server(
         internal const val MAX_ENTRIES_PER_SEND = 128
         internal const val MAX_CLIENT_TIMESTAMP_SKEW_US = 60_000_000L
         private const val INITIAL_OWNED_SEND_CAPACITY = 8_192
+        private const val UNCHANGED_PUBLICATION_INTERVAL_US = 500_000L
         private val SUPPORTED_TOPIC_TYPES = setOf(
             "boolean", "double", "int", "float", "string",
             "boolean[]", "double[]", "int[]", "float[]", "string[]"

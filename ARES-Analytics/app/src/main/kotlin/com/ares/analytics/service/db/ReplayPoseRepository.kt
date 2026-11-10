@@ -14,7 +14,7 @@ internal class ReplayPoseRepository(private val transactions: DatabaseTransactio
         require(maxPoints in 2..10_000) { "Replay trace point budget must be in 2..10000" }
         require(endMs >= startMs) { "Replay trace end must not precede start" }
         if (sessionId.isBlank()) return emptyList()
-        return transactions.read {
+        return transactions.readTelemetry(sessionId) {
             currentCoroutineContext().ensureActive()
             transactions.readConnectionFor(sessionId).prepareStatement(SQL).use { statement ->
                 var parameter = 1

@@ -347,7 +347,9 @@ public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/h
 	public synthetic fun <init> (Lcom/areslib/simulation/SimulationFaultTimeline;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun close ()V
 	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getController ()Lcom/qualcomm/robotcore/hardware/DcMotorController;
 	public fun getCurrent (Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;)D
+	public fun getCurrentAlert (Lorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;)D
 	public fun getCurrentPosition ()I
 	public fun getDeviceName ()Ljava/lang/String;
 	public fun getDirection ()Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;
@@ -356,18 +358,38 @@ public final class com/areslib/sim/model/SimDcMotorEx : com/qualcomm/robotcore/h
 	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
 	public fun getMode ()Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;
 	public fun getMotorType ()Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;
+	public fun getPIDCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)Lcom/qualcomm/robotcore/hardware/PIDCoefficients;
 	public fun getPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;
+	public fun getPortNumber ()I
 	public fun getPower ()D
+	public fun getPowerFloat ()Z
+	public fun getTargetPosition ()I
+	public fun getTargetPositionTolerance ()I
 	public fun getVelocity ()D
+	public fun getVelocity (Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)D
 	public fun getVersion ()I
 	public fun getZeroPowerBehavior ()Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;
+	public fun isBusy ()Z
+	public fun isMotorEnabled ()Z
+	public fun isOverCurrent ()Z
 	public fun resetDeviceConfigurationForOpMode ()V
+	public fun setCurrentAlert (DLorg/firstinspires/ftc/robotcore/external/navigation/CurrentUnit;)V
 	public fun setCurrentPosition (I)V
 	public fun setDirection (Lcom/qualcomm/robotcore/hardware/DcMotorSimple$Direction;)V
 	public fun setMode (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;)V
+	public fun setMotorDisable ()V
+	public fun setMotorEnable ()V
+	public fun setMotorType (Lcom/qualcomm/robotcore/hardware/configuration/typecontainers/MotorConfigurationType;)V
+	public fun setPIDCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDCoefficients;)V
 	public fun setPIDFCoefficients (Lcom/qualcomm/robotcore/hardware/DcMotor$RunMode;Lcom/qualcomm/robotcore/hardware/PIDFCoefficients;)V
+	public fun setPositionPIDFCoefficients (D)V
 	public fun setPower (D)V
+	public fun setPowerFloat ()V
+	public fun setTargetPosition (I)V
+	public fun setTargetPositionTolerance (I)V
 	public fun setVelocity (D)V
+	public fun setVelocity (DLorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;)V
+	public fun setVelocityPIDFCoefficients (DDDD)V
 	public fun setZeroPowerBehavior (Lcom/qualcomm/robotcore/hardware/DcMotor$ZeroPowerBehavior;)V
 }
 
@@ -388,11 +410,16 @@ public final class com/areslib/sim/model/SimServo : com/qualcomm/robotcore/hardw
 	public fun <init> ()V
 	public fun close ()V
 	public fun getConnectionInfo ()Ljava/lang/String;
+	public fun getController ()Lcom/qualcomm/robotcore/hardware/ServoController;
 	public fun getDeviceName ()Ljava/lang/String;
+	public fun getDirection ()Lcom/qualcomm/robotcore/hardware/Servo$Direction;
 	public fun getManufacturer ()Lcom/qualcomm/robotcore/hardware/HardwareDevice$Manufacturer;
+	public fun getPortNumber ()I
 	public fun getPosition ()D
 	public fun getVersion ()I
 	public fun resetDeviceConfigurationForOpMode ()V
+	public fun scaleRange (DD)V
+	public fun setDirection (Lcom/qualcomm/robotcore/hardware/Servo$Direction;)V
 	public fun setPosition (D)V
 }
 
