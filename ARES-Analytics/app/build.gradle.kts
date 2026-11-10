@@ -2,6 +2,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -368,6 +369,9 @@ val consumerRoundtripClasses = listOf(
 )
 val appUnitTests = tasks.named<Test>("test") {
     exclude(consumerRoundtripClasses)
+}
+tasks.withType<Test>().configureEach {
+    testLogging.exceptionFormat = TestExceptionFormat.FULL
 }
 tasks.register<Test>("consumerRoundtripTest") {
     group = "verification"

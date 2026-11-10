@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 1
       - uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
 
@@ -154,7 +154,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
@@ -186,7 +186,7 @@ jobs:
       - name: Run the complete released Studio verification contract
         working-directory: ARES-Analytics
         run: >-
-          ./gradlew studioReleaseVerification
+          xvfb-run -a ./gradlew studioReleaseVerification
           -ParesVersion=${{ needs.candidate.outputs.ares-candidate-version }}
           -ParesRepository=${{ steps.repository.outputs.uri }}
           --no-parallel --no-daemon --console=plain
@@ -199,7 +199,9 @@ jobs:
           retention-days: 90
           if-no-files-found: warn
           path: |
-            ARES-Analytics/app/build/reports/tests/test/**
+            ARES-Analytics/app/build/reports/tests/**
+            ARES-Analytics/app/build/test-results/**
+            ARES-Analytics/app/build/consumer-roundtrip-evidence/**
             ARES-Analytics/shared/build/reports/tests/test/**
             ARES-Analytics/gateway/build/reports/tests/test/**
             ARES-Analytics/app/build/reports/kover/**
@@ -215,7 +217,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
@@ -278,7 +280,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - uses: actions/download-artifact@v8
