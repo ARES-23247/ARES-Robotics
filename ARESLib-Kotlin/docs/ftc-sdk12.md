@@ -38,7 +38,10 @@ val vision = FtcVisionPortalIO(
 )
 ```
 
-The field and mount use meters/radians and the ARES +X forward/+Y left/+Z up body convention.
+Field and camera-mount translations use meters and the ARES +X forward/+Y left/+Z up body
+convention. `RobotFieldAprilTag.roll/pitch/yaw` are stored in degrees; camera-mount `Rotation3d`
+angles and internal robot headings use radians. The factory and adapter convert field angles at
+the SDK boundary; do not preconvert the field document to radians.
 Maintained FTC field tag rotations use the SDK optical basis (+X right/+Y down/+Z into the face).
 `FtcTagPoseConvention.FTC_OPTICAL` preserves those existing layouts. For WPILib/PhotonVision tag
 rotations (+X outward/+Y left/+Z up), select `WPILIB_NWU` on both the factory and adapter. Review
