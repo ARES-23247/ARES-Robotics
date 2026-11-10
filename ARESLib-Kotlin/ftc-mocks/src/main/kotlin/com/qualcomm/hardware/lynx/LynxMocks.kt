@@ -10,12 +10,14 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * Hardware IO abstraction layer bridging physical robot sensors and actuators into immutable Redux state representations.
  */
+interface LynxModuleIntf
+
 open class LynxModule(
     val lynxUsbDevice: LynxUsbDevice?,
     val moduleAddress: Int,
     val isParent: Boolean,
     val isUserModule: Boolean
-) : com.qualcomm.robotcore.hardware.HardwareDevice {
+) : com.qualcomm.robotcore.hardware.HardwareDevice, LynxModuleIntf {
     override fun getManufacturer(): com.qualcomm.robotcore.hardware.HardwareDevice.Manufacturer = com.qualcomm.robotcore.hardware.HardwareDevice.Manufacturer.Unknown
     override fun getDeviceName(): String = ""
     override fun getConnectionInfo(): String = ""

@@ -1,142 +1,159 @@
 package com.areslib.ftc.vision
 
+import com.areslib.hardware.vision.AprilTagCluster
+import com.areslib.hardware.vision.ClusterTargetMeasurement
 import com.areslib.hardware.vision.VisionIO
 import com.areslib.hardware.vision.VisionIOInputs
-import com.areslib.state.VisionMeasurement
 import com.areslib.math.geometry.Pose3d
-import com.areslib.math.geometry.Translation3d
-import com.areslib.math.geometry.Rotation3d
-import com.areslib.math.geometry.transformBy
+import com.areslib.math.geometry.deepCopy
+import com.areslib.state.RobotFieldManager
+import com.areslib.state.FieldType
+import com.areslib.state.VisionMeasurement
+import com.areslib.state.VisionSolverType
+import com.areslib.util.RobotClock
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit
+import org.firstinspires.ftc.vision.apriltag.AprilTagClusterDetection
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor
+import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection
+import kotlin.math.sqrt
 
 /**
- * FTC VisionPortal AprilTag adapter using the active field configuration for absolute robot poses.
+ * SDK 12 VisionPortal boundary, polled once per robot loop. Native clusters are camera-relative
+ * aiming observations only, including BIOBUZZ's moving goals. Seeing a cluster latches this camera
+ * into targeting-only operation until it is recreated; mixed frames cannot localize the robot.
  *
- * FTC poses arrive in inches/degrees and are converted to meters/radians. A non-null detection list,
- * including an empty one, means the processor is connected; exceptions mark it disconnected and are
- * rate-limited on stderr. The adapter uses finite ring pools for lists and mutable geometry objects.
- * Returned measurements are therefore ephemeral and must be snapshotted before retention beyond the
- * pool horizon. [updateInputs] is single-loop-owned and performs the only processor read.
+ * Absolute poses require an explicit whitelist of reviewed stationary singleton IDs and exactly
+ * one measured robot-to-camera transform (+X forward, +Y left, +Z up, meters/radians). The default
+ * publishes no absolute pose. Never whitelist moving tags, including BIOBUZZ cluster members.
+ * Tag poses use the canonical WPILib tag basis: +X outward, +Y left, +Z up.
+ *
+ * Distance units come from each SDK detection. [outputAngleUnit] must match the processor builder
+ * (SDK default: degrees). Capture nanoseconds are converted once into the RobotClock millisecond
+ * domain. Invalid, future, or older-than-500ms captures are discarded. A successful poll with no new
+ * frame remains connected and clears observations. Outputs are borrowed until the next poll;
+ * snapshot them before retention. Workspaces cap each frame at 32 observations without aliasing.
  */
 class FtcVisionPortalIO(
     private val aprilTagProcessor: AprilTagProcessor,
-    override val cameraPoses: List<Pose3d> = listOf(Pose3d(Translation3d(0.18, 0.0, 0.0), Rotation3d(0.0, 0.0, 0.0)))
+    cameraPoses: List<Pose3d> = emptyList(),
+    localizationTagIds: Set<Int> = emptySet(),
+    private val outputAngleUnit: AngleUnit = AngleUnit.DEGREES,
+    private val sourceId: String = "visionportal",
 ) : VisionIO {
+    override val cameraPoses: List<Pose3d> = cameraPoses.map { it.deepCopy() }
+    private val stationaryIds = localizationTagIds.toIntArray().apply { sort() }
+    private val measurements = ArrayList<VisionMeasurement>(CAPACITY)
+    private val targets = ArrayList<ClusterTargetMeasurement>(CAPACITY)
+    private val measurementPool = Array(CAPACITY) { VisionMeasurement() }
+    private val targetPool = Array(CAPACITY) { ClusterTargetMeasurement() }
+    private val poseMath = FtcVisionPoseMath()
+    private var targetingOnly = false
+    private var lastWarningTime = Long.MIN_VALUE
 
-    private var lastWarningTime = 0L
-    private val measurementsBuffer = ArrayList<VisionMeasurement>(10)
-    
-    // Object pools to prevent GC overhead
-    private val visionMeasurementPool = Array(10) { VisionMeasurement() }
-    private val translationPool = Array(20) { Translation3d() }
-    private val rotationPool = Array(20) { Rotation3d() }
-    private val posePool = Array(20) { Pose3d() }
-    private val measurementListPool = Array(10) { ArrayList<VisionMeasurement>(10) }
-    
-    private var measurementPoolIndex = 0
-    private var translationPoolIndex = 0
-    private var rotationPoolIndex = 0
-    private var posePoolIndex = 0
-    private var measurementListPoolIndex = 0
+    init {
+        require(sourceId.isNotBlank()) { "A stable camera source ID is required" }
+        require(stationaryIds.all { it >= 0 }) { "Stationary tag IDs must be nonnegative" }
+        require(stationaryIds.isEmpty() || cameraPoses.size == 1) {
+            "Localization requires exactly one measured robot-to-camera transform"
+        }
+        for (pose in this.cameraPoses) {
+            val t = pose.translation
+            val q = pose.rotation.q
+            val norm = sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z)
+            require(t.x.isFinite() && t.y.isFinite() && t.z.isFinite() && norm.isFinite() && norm > 1e-12) {
+                "Camera transform must be finite with a nonzero rotation"
+            }
+            q.w /= norm; q.x /= norm; q.y /= norm; q.z /= norm
+        }
+    }
 
-    /** Replaces connection/measurement fields from one `freshDetections` read. */
+    /** Cluster processors own their SDK tag library. Configuring targeting disables field poses. */
+    override fun configureTargetClusters(clusters: List<AprilTagCluster>) {
+        if (clusters.isNotEmpty()) targetingOnly = true
+    }
+
     override fun updateInputs(inputs: VisionIOInputs) {
+        measurements.clear()
+        targets.clear()
+        inputs.measurements = emptyList()
         inputs.clusterTargets = emptyList()
         inputs.cameraPoses = cameraPoses
         try {
             val detections = aprilTagProcessor.freshDetections
-            
-            if (detections != null && detections.isNotEmpty()) {
-                inputs.isConnected = true
-                
-                measurementsBuffer.clear()
-                for (i in 0 until detections.size) {
-                    val detection = detections[i]
-                    val pose = detection.ftcPose
-                    // VisionPortal returns position in inches and rotation in degrees
-                    // We convert inches to meters (1 inch = 0.0254 meters)
-                    val t = translationPool[translationPoolIndex].apply {
-                        x = pose.x * 0.0254
-                        y = pose.y * 0.0254
-                        z = pose.z * 0.0254
+            inputs.isConnected = true
+            if (detections == null) return
+            for (i in detections.indices) if (detections[i] is AprilTagClusterDetection) targetingOnly = true
+            val nowNs = RobotClock.nanoTime()
+            val nowMs = RobotClock.currentTimeMillis()
+            for (i in detections.indices) {
+                val detection = detections[i]
+                val pose = detection.ftcPose ?: continue
+                val capturedNs = detection.frameAcquisitionNanoTime
+                if (capturedNs <= 0L || capturedNs > nowNs) continue
+                val ageNs = nowNs - capturedNs
+                if (ageNs < 0L || ageNs > 500_000_000L) continue
+                val timestampMs = nowMs - ageNs / 1_000_000L
+                if (timestampMs < 0L) continue
+                val scale = DistanceUnit.METER.fromUnit(detection.distanceUnit, 1.0)
+                if (!pose.x.isFinite() || !pose.y.isFinite() || !pose.z.isFinite() ||
+                    !pose.roll.isFinite() || !pose.pitch.isFinite() || !pose.yaw.isFinite()) continue
+                val forward = pose.y * scale
+                val range = sqrt(pose.x*pose.x + pose.y*pose.y + pose.z*pose.z) * scale
+                if (!range.isFinite() || range > 8.0 || forward <= 0.05) continue
+                when (detection) {
+                    is AprilTagClusterDetection -> {
+                        if (targets.size == CAPACITY || detection.percentClusterFound !in 1..100) continue
+                        val id = detection.metadata.shortName.ifBlank { detection.metadata.name }
+                        var duplicate = false
+                        for (j in targets.indices) if (targets[j].clusterId == id) duplicate = true
+                        if (id.isBlank() || duplicate) continue
+                        val target = targetPool[targets.size]
+                        target.clusterId = id; target.sourceId = sourceId
+                        target.timestampMs = timestampMs; target.frameId = capturedNs
+                        target.xMeters = pose.x * scale
+                        target.yMeters = -pose.z * scale
+                        target.zMeters = forward
+                        // SDK exposes percentage, not member count: report a lower bound of one.
+                        target.contributingTags = 1; target.visibleTags = 1; target.spreadMeters = 0.0
+                        targets.add(target)
                     }
-                    translationPoolIndex = (translationPoolIndex + 1) % 20
-
-                    val r = rotationPool[rotationPoolIndex].apply {
-                        setEulerAngles(
-                            Math.toRadians(pose.roll),
-                            Math.toRadians(pose.pitch),
-                            Math.toRadians(pose.yaw)
-                        )
-                    }
-                    rotationPoolIndex = (rotationPoolIndex + 1) % 20
-
-                    val poseMeters = posePool[posePoolIndex].apply {
-                        translation = t
-                        rotation = r
-                    }
-                    posePoolIndex = (posePoolIndex + 1) % 20
-                    
-                    val tagConfig = com.areslib.state.RobotFieldManager.activeConfig.apriltags.find { it.id == detection.id }
-                    if (tagConfig != null) {
-                        val tagFieldTranslation = translationPool[translationPoolIndex].apply {
-                            x = tagConfig.x
-                            y = tagConfig.y
-                            z = tagConfig.z
-                        }
-                        translationPoolIndex = (translationPoolIndex + 1) % 20
-                        
-                        val tagFieldRotation = rotationPool[rotationPoolIndex].apply {
-                            setEulerAngles(
-                                Math.toRadians(tagConfig.roll),
-                                Math.toRadians(tagConfig.pitch),
-                                Math.toRadians(tagConfig.yaw),
-                            )
-                        }
-                        rotationPoolIndex = (rotationPoolIndex + 1) % 20
-                        
-                        val tagFieldPose = posePool[posePoolIndex].apply {
-                            translation = tagFieldTranslation
-                            rotation = tagFieldRotation
-                        }
-                        posePoolIndex = (posePoolIndex + 1) % 20
-                        
-                        val cameraToTag = com.areslib.math.geometry.Transform3d(poseMeters.translation, poseMeters.rotation)
-                        val robotToCamera = com.areslib.math.geometry.Transform3d(cameraPoses[0].translation, cameraPoses[0].rotation)
-                        
-                        val absoluteRobotPose = tagFieldPose.transformBy(cameraToTag.inverse()).transformBy(robotToCamera.inverse())
-                        
-                        val measurement = visionMeasurementPool[measurementPoolIndex].apply {
-                            timestampMs = com.areslib.util.RobotClock.currentTimeMillis()
-                            targetPose = absoluteRobotPose
-                            tagId = detection.id
-                            ambiguity = 0.0
-                            robotPoseTargetSpace = poseMeters
-                        }
-                        measurementPoolIndex = (measurementPoolIndex + 1) % 10
-                        measurementsBuffer.add(measurement)
+                    is AprilTagSingleDetection -> {
+                        if (targetingOnly || java.util.Arrays.binarySearch(stationaryIds,detection.id) < 0 || measurements.size == CAPACITY) continue
+                        val field = RobotFieldManager.activeConfig
+                        if (field.fieldType != FieldType.FTC) continue
+                        var selected: com.areslib.state.RobotFieldAprilTag? = null
+                        val tags = field.apriltags
+                        for (j in tags.indices) if (tags[j].id == detection.id) { selected = tags[j]; break }
+                        val tag = selected ?: continue
+                        if (!tag.x.isFinite() || !tag.y.isFinite() || !tag.z.isFinite() ||
+                            !tag.roll.isFinite() || !tag.pitch.isFinite() || !tag.yaw.isFinite()) continue
+                        val measurement = measurementPool[measurements.size]
+                        poseMath.solve(tag, cameraPoses[0], pose, scale, outputAngleUnit, measurement)
+                        measurement.timestampMs = timestampMs
+                        measurement.captureTimestampMicros = capturedNs / 1000L
+                        measurement.frameId = capturedNs; measurement.sourceId = sourceId
+                        measurement.tagId = detection.id; measurement.tagCount = 1
+                        measurement.solverType = VisionSolverType.VISION_PORTAL
+                        measurement.latencyMs = ageNs / 1_000_000.0
+                        measurement.averageTagDistanceMeters = range
+                        measurement.ambiguity = 0.0; measurement.ambiguityAvailable = false
+                        measurements.add(measurement)
                     }
                 }
-                
-                // Rotate through pre-sized lists to avoid resizing in the sampling loop. Elements and
-                // lists remain pool-owned; a consumer that retains them must create an owned snapshot.
-                val safeMeasurements = measurementListPool[measurementListPoolIndex]
-                safeMeasurements.clear()
-                for (i in 0 until measurementsBuffer.size) safeMeasurements.add(measurementsBuffer[i])
-                measurementListPoolIndex = (measurementListPoolIndex + 1) % 10
-                inputs.measurements = safeMeasurements
-            } else {
-                inputs.isConnected = detections != null
-                inputs.measurements = emptyList()
             }
-        } catch (e: Exception) {
+            inputs.measurements = measurements
+            inputs.clusterTargets = targets
+        } catch (failure: Exception) {
+            measurements.clear(); targets.clear()
             inputs.isConnected = false
-            inputs.measurements = emptyList()
-            val now = com.areslib.util.RobotClock.currentTimeMillis()
-            if (now - lastWarningTime > 2000L) {
-                System.err.println("FtcVisionPortalIO: Error reading fresh AprilTag detections from hardware. Error: ${e.message}")
+            val now = RobotClock.currentTimeMillis()
+            if (lastWarningTime == Long.MIN_VALUE || now - lastWarningTime > 2000L) {
+                System.err.println("FtcVisionPortalIO: Could not read AprilTag detections: ${failure.message}")
                 lastWarningTime = now
             }
         }
     }
+
+    private companion object { const val CAPACITY = 32 }
 }

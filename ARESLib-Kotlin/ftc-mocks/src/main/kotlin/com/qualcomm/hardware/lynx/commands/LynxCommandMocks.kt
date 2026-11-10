@@ -13,7 +13,7 @@ open class LynxMessage {
     var isResponseExpected: Boolean = false
     var destModuleAddress: Int = 0
     var serialization: LynxDatagram? = null
-    var module: com.qualcomm.hardware.lynx.LynxModule? = null
+    var module: com.qualcomm.hardware.lynx.LynxModuleIntf? = null
 }
 /**
  * Class implementation for Lynx Respondable.

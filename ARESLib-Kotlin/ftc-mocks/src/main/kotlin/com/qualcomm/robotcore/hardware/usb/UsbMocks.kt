@@ -14,9 +14,7 @@ package com.qualcomm.robotcore.hardware.usb
  * that safely handles byte stream writes without native libusb or Android USB host APIs,
  * enabling full communication protocol verification in automated unit tests.
  */
-open class RobotUsbDevice {
-    /** Constructs a default desktop mock [RobotUsbDevice]. */
-    constructor()
+interface RobotUsbDevice {
 
     /**
      * Transmits raw datagram bytes to the simulated USB peripheral endpoint.
@@ -26,5 +24,5 @@ open class RobotUsbDevice {
      *
      * @param data The raw byte buffer to transmit across the USB interface.
      */
-    open fun write(data: ByteArray) {}
+    fun write(data: ByteArray) {}
 }

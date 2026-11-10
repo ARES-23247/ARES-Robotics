@@ -76,9 +76,9 @@ class SparkFunOtosIO @kotlin.jvm.JvmOverloads constructor(
         driver.setLinearUnit(DistanceUnit.METER)
         driver.setAngularUnit(AngleUnit.RADIANS)
         driver.setOffset(SparkFunOTOS.Pose2D(xOffsetMeters, yOffsetMeters, 0.0))
-        driver.setLinearScalar(linearScalar)
-        driver.setAngularScalar(angularScalar)
-        driver.calibrateImu()
+        check(driver.setLinearScalar(linearScalar)) { "OTOS rejected the linear scalar" }
+        check(driver.setAngularScalar(angularScalar)) { "OTOS rejected the angular scalar" }
+        check(driver.calibrateImu()) { "OTOS IMU calibration failed" }
         driver.resetTracking()
     }
 

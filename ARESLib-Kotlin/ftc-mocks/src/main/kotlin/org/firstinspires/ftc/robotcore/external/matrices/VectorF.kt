@@ -13,6 +13,7 @@ package org.firstinspires.ftc.robotcore.external.matrices
  * @param values Initial array or vararg elements defining the vector components.
  */
 class VectorF(vararg values: Float) {
+    constructor(x: Float, y: Float, z: Float) : this(*floatArrayOf(x, y, z))
     /** Defensive copy of the vector elements to guarantee internal immutability. */
     private val components = values.copyOf()
 

@@ -37,11 +37,23 @@ class FtcAprilTagLibraryFactoryTest {
 
         val tag = requireNotNull(library.lookupTag(20))
         assertEquals("Blue target", tag.name)
-        assertEquals(0.1651, tag.tagsize, 1e-9)
-        assertEquals(-1.4f, tag.fieldPosition[0], 1e-6f)
-        assertEquals(-1.3f, tag.fieldPosition[1], 1e-6f)
-        assertEquals(0.75f, tag.fieldPosition[2], 1e-6f)
+        assertEquals(0.1651/0.0254, tag.tagsize, 1e-9)
+        assertEquals(org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.INCH, tag.distanceUnit)
+        assertEquals((-1.4/0.0254).toFloat(), tag.fieldPosition[0], 1e-5f)
+        assertEquals((-1.3/0.0254).toFloat(), tag.fieldPosition[1], 1e-5f)
+        assertEquals((0.75/0.0254).toFloat(), tag.fieldPosition[2], 1e-5f)
         assertEquals(AprilTagProcessor.TagFamily.TAG_36h11, processorBuilder.tagFamily)
+    }
+
+    @Test
+    fun `canonical outward tag normal maps to the SDK optical inward Z axis`() {
+        val metadata = FtcAprilTagLibraryFactory.create(RobotFieldConfig(
+            apriltags=listOf(RobotFieldAprilTag(id=1, family="36h11",sizeMeters=0.1651)),
+        )).lookupTag(1)!!
+        val q = metadata.fieldOrientation
+        assertEquals(-1.0, (2*(q.x*q.z+q.w*q.y)).toDouble(), 1e-6)
+        assertEquals(0.0, (2*(q.y*q.z-q.w*q.x)).toDouble(), 1e-6)
+        assertEquals(0.0, (1-2*(q.x*q.x+q.y*q.y)).toDouble(), 1e-6)
     }
 
     @Test

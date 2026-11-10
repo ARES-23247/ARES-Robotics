@@ -58,16 +58,18 @@ open class SparkFunOTOS {
     }
 
     @Synchronized
-    open fun setLinearScalar(scalar: Double) {
+    open fun setLinearScalar(scalar: Double): Boolean {
         _linearScalar = scalar
+        return true
     }
 
     @Synchronized
-    open fun setAngularScalar(scalar: Double) {
+    open fun setAngularScalar(scalar: Double): Boolean {
         _angularScalar = scalar
+        return true
     }
 
-    open fun calibrateImu() {}
+    open fun calibrateImu(): Boolean = true
 
     @Synchronized
     open fun resetTracking() {

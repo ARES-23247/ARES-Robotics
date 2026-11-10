@@ -35,11 +35,9 @@ interface I2cDeviceSynch : I2cDeviceSynchSimple {
 /**
  * Mock representation of an FTC [I2cDeviceSynchDevice].
  */
-abstract class I2cDeviceSynchDevice<T>(val deviceClient: T, val isOwned: Boolean) where T : I2cDeviceSynchSimple {
+abstract class I2cDeviceSynchDevice<T>(@JvmField protected val deviceClient: T, val isOwned: Boolean) : HardwareDevice where T : I2cDeviceSynchSimple {
     abstract fun doInitialize(): Boolean
     fun initialize(): Boolean = doInitialize()
-    abstract fun getManufacturer(): Manufacturer
-    abstract fun getDeviceName(): String
-
-    enum class Manufacturer { Other, Unknown, Lynx, Rev, Broadcom, Adafruit }
+    abstract override fun getManufacturer(): HardwareDevice.Manufacturer
+    abstract override fun getDeviceName(): String
 }

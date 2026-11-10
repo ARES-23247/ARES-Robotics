@@ -19,6 +19,9 @@ import kotlin.math.sin
  * This work happens during camera initialization, not in the periodic loop. The field document
  * remains authoritative; generated projects do not duplicate tag poses in Kotlin. Tags must share
  * one FTC-supported family because [AprilTagProcessor] selects one detector family per processor.
+ * SDK metadata is expressed in inches (including field position, as expected by its robot-pose
+ * solver). The canonical tag's +X outward/+Y left/+Z up basis is converted to the SDK optical tag
+ * basis. Moving targets belong in a cluster library, never this stationary field library.
  */
 object FtcAprilTagLibraryFactory {
     @JvmStatic
@@ -34,9 +37,9 @@ object FtcAprilTagLibraryFactory {
             builder.addTag(
                 tag.id,
                 tag.name.ifBlank { "AprilTag ${tag.id}" },
-                size,
-                VectorF(tag.x.toFloat(), tag.y.toFloat(), tag.z.toFloat()),
-                DistanceUnit.METER,
+                size / 0.0254,
+                VectorF((tag.x/0.0254).toFloat(), (tag.y/0.0254).toFloat(), (tag.z/0.0254).toFloat()),
+                DistanceUnit.INCH,
                 Quaternion(
                     quaternion.w.toFloat(),
                     quaternion.x.toFloat(),
@@ -79,12 +82,12 @@ object FtcAprilTagLibraryFactory {
         val sp = sin(halfPitch)
         val cy = cos(halfYaw)
         val sy = sin(halfYaw)
-        return QuaternionValues(
-            w = cr * cp * cy + sr * sp * sy,
-            x = sr * cp * cy - cr * sp * sy,
-            y = cr * sp * cy + sr * cp * sy,
-            z = cr * cp * sy - sr * sp * cy,
-        )
+        val w = cr * cp * cy + sr * sp * sy
+        val x = sr * cp * cy - cr * sp * sy
+        val y = cr * sp * cy + sr * cp * sy
+        val z = cr * cp * sy - sr * sp * cy
+        // Right-multiply by the fixed optical-tag basis quaternion (0.5,-0.5,-0.5,0.5).
+        return QuaternionValues(0.5*(w+x+y-z), 0.5*(-w+x+y+z), 0.5*(-w-x+y-z), 0.5*(w-x+y+z))
     }
 
     private data class QuaternionValues(val w: Double, val x: Double, val y: Double, val z: Double)
