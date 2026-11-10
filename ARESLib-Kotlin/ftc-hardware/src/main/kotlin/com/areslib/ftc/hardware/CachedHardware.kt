@@ -78,7 +78,8 @@ class CachedDcMotorEx(
  * Prevents redundant servo PWM updates and allocates no objects in the setter. Before the first
  * command, the getter delegates to hardware; afterward it returns only the cached command. The
  * position is clamped to [0, 1]. Non-finite positions are rejected because a servo has
- * no universal neutral position. Device resets invalidate the command cache; failed writes force
+ * no universal neutral position. Direction/range changes and device resets invalidate the command
+ * cache before delegation, including when configuration throws after applying a change. Failed writes force
  * the next command through while getters retain the last accepted value without polling hardware.
  *
  * @param delegate Underlying FTC SDK [Servo] hardware instance.
@@ -114,6 +115,17 @@ class CachedServo(
     override fun resetDeviceConfigurationForOpMode() {
         hasPositionCommand = false
         delegate.resetDeviceConfigurationForOpMode()
+    }
+
+    override fun getDirection(): Servo.Direction = delegate.direction
+    override fun setDirection(value: Servo.Direction) {
+        hasPositionCommand = false
+        delegate.direction = value
+    }
+
+    override fun scaleRange(min: Double, max: Double) {
+        hasPositionCommand = false
+        delegate.scaleRange(min, max)
     }
 }
 
