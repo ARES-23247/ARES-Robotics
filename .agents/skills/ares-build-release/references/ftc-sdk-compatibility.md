@@ -22,6 +22,8 @@ clearing. Exercise the actual Redux consumer as well as adapter output. Absolute
 must use an explicit tag-pose convention: maintained FTC layouts use optical tag rotations,
 while WPILib/PhotonVision use outward/left/up tag axes. Include a maintained field's actual
 rotations in the regression fixtures; preserve its stored data and convert at the boundary.
+`RobotFieldAprilTag.roll/pitch/yaw` are stored in degrees, while camera-mount `Rotation3d` angles
+and internal headings use radians. Preserve those distinct input units when authoring fixtures.
 Native moving clusters
 belong to targeting state; they must not seed or update absolute localization, including mixed
 frames. VisionPortal localization requires explicit stationary IDs and measured mounting. See
@@ -41,3 +43,7 @@ candidates do not need a forced dependency refresh for every generation/build ph
 For representative-project failures, set `ARES_REPRESENTATIVE_OUTPUT_DIR` to a new directory to
 retain the generated sources, child build log, and full JUnit reports; inspect the actual child
 failure before changing assertions. Default runs still clean their temporary workspace.
+
+The normal Studio `:app:test` excludes the real Android consumer round-trip classes; run
+`:app:consumerRoundtripTest` for export/reopen/edit/build, generated tuning/IO, and interrupted
+generation recovery. A full unit-suite pass does not establish that boundary.

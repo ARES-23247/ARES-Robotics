@@ -1,6 +1,8 @@
 # Monorepo audit coverage
 
-The latest local continuation is the [FTC SDK 12 migration checkpoint](FTC_SDK12_MIGRATION_2026_11_09.md).
+The latest local continuation is the [SDK 12 remaining software verification](FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md),
+covering the remaining software opt-ins and dedicated consumer recovery tests. The preceding
+[FTC SDK 12 migration checkpoint](FTC_SDK12_MIGRATION_2026_11_09.md).
 It updates FTC products and bundles, fixes real-SDK/mock and vision/localization compatibility,
 and records candidate consumer validation. The preceding [initialization cleanup and SDK comparison](INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md)
 retains failed-constructor recovery evidence; the [shutdown/import checkpoint](DATABASE_LIFECYCLE_IMPORT_2026_11_09.md)

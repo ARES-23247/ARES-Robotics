@@ -52,13 +52,13 @@
       ]
     },
     ".agents/skills/ares-build-release/references/commands.md": {
-      "sha256": "9cdc88918189d35c9816e43838ccc97affbe7aee39be68f98a1d313741c9b8be",
+      "sha256": "e50b4a4ab73f5dc5c430eacd3423c7ca272573a9f22ac659efd33547108554cb",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the changed build, architecture, skill guidance, or checkpoint-index content for the bounded database/archive ownership correction and verified applicable links/policy.",
+      "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
       "evidence": [
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "priorDatabase20261109": {
         "sha256": "c41d0546165df32b68dc12b5e2cab6e46885c9eb3e4a7956520f9e0681332099",
@@ -68,6 +68,16 @@
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "9cdc88918189d35c9816e43838ccc97affbe7aee39be68f98a1d313741c9b8be",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the changed build, architecture, skill guidance, or checkpoint-index content for the bounded database/archive ownership correction and verified applicable links/policy.",
+        "evidence": [
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -25788,9 +25798,10 @@
       "sha256": "93deb7280708eaa28a53e231512b7e4631cfb5fa55f67e2cf153c49778e443b0",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -25806,7 +25817,16 @@
         "sha256": "93deb7280708eaa28a53e231512b7e4631cfb5fa55f67e2cf153c49778e443b0",
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "93deb7280708eaa28a53e231512b7e4631cfb5fa55f67e2cf153c49778e443b0",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+        "evidence": [
+          "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        ]
+      }
     },
     "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/RobotFieldPolygonValidation.kt": {
       "sha256": "a147016136ceb4c807921b39679cfa22fe0a05be9c0c41a30a93933f463c762e",
@@ -30799,10 +30819,10 @@
       "sha256": "b405694553609448dad5299c644bfa8ef7d0f93b9cb7b0bbd85ee29663d3e75b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "priorInitialization20261109": {
         "sha256": "b20654d1d769d7a8894669e205c6cf936889fe3f90d9c729c02fa570d904bf2e",
@@ -30821,6 +30841,16 @@
         "evidence": [
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "b405694553609448dad5299c644bfa8ef7d0f93b9cb7b0bbd85ee29663d3e75b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -30950,12 +30980,22 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/config/RobotConfig.kt": {
       "sha256": "c7166f1b49550c96f82716c37647d2312639a5846949b43fba735a78fdc01fe9",
-      "review": "reviewed",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated central FTC dependency injection factory for AprilTagProcessor and VisionIO. Confirmed createAprilTagProcessor integrates canonical field configs via FtcAprilTagLibraryFactory. Verified multi-camera comma-separated parsing delegating to FtcLimelightFactory with composite fallbacks, and getAprilTagVision delegating to FtcVisionPortalIO.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
-      ]
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+      ],
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "c7166f1b49550c96f82716c37647d2312639a5846949b43fba735a78fdc01fe9",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated central FTC dependency injection factory for AprilTagProcessor and VisionIO. Confirmed createAprilTagProcessor integrates canonical field configs via FtcAprilTagLibraryFactory. Verified multi-camera comma-separated parsing delegating to FtcLimelightFactory with composite fallbacks, and getAprilTagVision delegating to FtcVisionPortalIO.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      }
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/core/FtcFailureHandling.kt": {
       "sha256": "7b10e18e35345e1cf9a8ef39c33bce33597d60e090d915e78666588de1e9fbe5",
@@ -31131,10 +31171,10 @@
       "sha256": "0ef2080141323b035ec5f97b417ee3ef412e9b0281f5ed2b9f1f84caee99e8d0",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "priorSdk12Migration20261109": {
         "sha256": "52709ecf7e0e50acc0de73ad1518156357a698e1652a83891c7e4f55df12cd07",
@@ -31143,6 +31183,16 @@
         "scope": "Validated SparkFun Optical Tracking Odometry Sensor (OTOS) IO layer implementing OdometryIO and AutoCloseable. Confirmed coordinate conventions (+X forward, +Y left, CCW-positive radians), health status transitions, jump gating against observation baseline, and updateInputs in-place mutation.",
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "0ef2080141323b035ec5f97b417ee3ef412e9b0281f5ed2b9f1f84caee99e8d0",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -31178,10 +31228,10 @@
       "sha256": "9304485ead3a224f8027e0179c20f0b2a7586a3540f5c4df63a899d8be11d415",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "priorSdk12Migration20261109": {
         "sha256": "f3bea3f9e4cee9f723fad1eb15f9d5dc976eec1519eafd5602df0a1d8f30bb5c",
@@ -31193,6 +31243,16 @@
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "ARESLib-Kotlin/build/audit-pass85-verified-evidence/summary.json",
           "ARESLib-Kotlin/build/audit-pass85-focused-evidence/summary.json"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "9304485ead3a224f8027e0179c20f0b2a7586a3540f5c4df63a899d8be11d415",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -31519,10 +31579,10 @@
       "sha256": "bccd6d41bfb760698bf1016a69b5b68b5f56515f9e16ef079e448f5118877fda",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "priorSdk12Migration20261109": {
         "sha256": "3e646125c70f32e212712a9ac86e0b676fc6f43a0264f326f349435908f96213",
@@ -31531,6 +31591,16 @@
         "scope": "Validated factory converting canonical RobotFieldConfig into SDK AprilTagLibrary and configuring AprilTagProcessor.Builder. Verified single tag family enforcement, distance normalization in meters, roll/pitch/yaw Euler angle to quaternion conversion, and validation during camera initialization.",
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "bccd6d41bfb760698bf1016a69b5b68b5f56515f9e16ef079e448f5118877fda",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -31574,10 +31644,10 @@
       "sha256": "7101e73c68da0c1d83a8078aa8366e6ab61714d91c0f25924396edec087eef5c",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -31613,6 +31683,16 @@
         "evidence": [
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "7101e73c68da0c1d83a8078aa8366e6ab61714d91c0f25924396edec087eef5c",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -35167,13 +35247,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/README.md": {
-      "sha256": "31752eb17674341a276bd5d480d88a5585104a28dec4cc9925b08ad590a538d7",
+      "sha256": "14c6d6bd81a4a2c442c0339e2b2e0ed7d0ef80175c3503074c42acd00d428686",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "priorDatabase20261109": {
         "sha256": "6e2174c04cea10aa280be67085dd7b9042f0bdd17b5140b91d3110c74b08e899",
@@ -35288,6 +35368,16 @@
         "evidence": [
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "31752eb17674341a276bd5d480d88a5585104a28dec4cc9925b08ad590a538d7",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -35492,10 +35582,10 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only this SDK 12 ledger delta. Prior canonical fields retained under priorSdk12Migration20261109 and nested history retained in place; unrelated semantic records unchanged.",
+      "scope": "Reviewed only this SDK software follow-up ledger delta; prior canonical fields and nested history retained, unrelated semantic records unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -35921,7 +36011,7 @@
           ]
         }
       },
-      "sha256": "3af81fac49e733de1d19bdd1281b7d5707211da4e59040f7c2589d45db745f90",
+      "sha256": "827e45a88b9cd8ff12865396872d59442fcfa005b38aac65e0984b8c77c11f63",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -35961,6 +36051,16 @@
         "evidence": [
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "3af81fac49e733de1d19bdd1281b7d5707211da4e59040f7c2589d45db745f90",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only this SDK 12 ledger delta. Prior canonical fields retained under priorSdk12Migration20261109 and nested history retained in place; unrelated semantic records unchanged.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -36279,13 +36379,13 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "109829b40998f575048c219574f4c555b2cd44c93102e9e126bc232d263113be",
+      "sha256": "ddea94c83bf8f71ad77da604ce879b7c68ba58b1478c809d98390e08deee5e3f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ],
       "liveTuningPeerReviewPriorRecord": {
         "sha256": "ec14b29d98d961f96b28b4040d417346a8d62941b91d59c9d32300f63355b9c6",
@@ -36344,6 +36444,16 @@
         "scope": "Verified exact committed ARESLib tree identity for local 19.1.4 source and its uniquely versioned candidate. Source policy and candidate checks passed; no claim of protected-main or release approval.",
         "evidence": [
           "docs/audits/LIVE_TUNING_CONSUMER_PEER_REVIEW.md"
+        ]
+      },
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "109829b40998f575048c219574f4c555b2cd44c93102e9e126bc232d263113be",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -38652,14 +38762,24 @@
       ]
     },
     ".agents/skills/ares-build-release/references/ftc-sdk-compatibility.md": {
-      "sha256": "19791e437b5b3a3693ed62f1005cff2d9d4c57bfa2a60441f2922cb2ffdd4261",
+      "sha256": "086fe4e08ca23fb66d360e995b096fc6c54da80674ff50c62d65bc83a9dbd1c0",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed follow-up test routing, non-skipped evidence requirements, new source identity or checkpoint index delta. Canonical guidance and source-policy checks passed; immutable archive/release pins unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
-      ]
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+      ],
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "19791e437b5b3a3693ed62f1005cff2d9d4c57bfa2a60441f2922cb2ffdd4261",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.7.zip": {
       "sha256": "8fd23ef2b2a3cb1ffba82f6574771d543fe8e50a3c05aa09dd010325c28fe3bb",
@@ -38762,14 +38882,24 @@
       ]
     },
     "ARESLib-Kotlin/docs/ftc-sdk12.md": {
-      "sha256": "262a6440d1e56e7d2da19a42142f776088e9f60e5194072289314c4fcb4e7b5c",
+      "sha256": "0ff679772be3fdb98c87dc1c0089aafdb417b9be122ca018f4a23b59a5dfae5b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+      "scope": "Reviewed and corrected degrees-versus-radians input wording against RobotFieldAprilTag schema, pose solver and factory conversion. Runtime/API unchanged; candidate JAR entry parity and library/consumer checks passed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
-      ]
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+      ],
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "262a6440d1e56e7d2da19a42142f776088e9f60e5194072289314c4fcb4e7b5c",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this SDK 12 migration delta in dependency/toolchain/version policy, generated API/docs, SDK-to-Redux regression, canonical guidance or audit index as applicable. Applicable library, consumer, guidance and source-policy checks pass; no unrelated full-file coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      }
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcTagPoseConvention.kt": {
       "sha256": "24204125c40d4c7d6b226a38a51fab68c4ffdf82948f88326ff19030279f00ce",
@@ -38785,21 +38915,41 @@
       "sha256": "78419e0104baca7107b7ba1a01f492e088b0fdf333b49509db968511717000f6",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
-      ]
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+      ],
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "78419e0104baca7107b7ba1a01f492e088b0fdf333b49509db968511717000f6",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      }
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/FtcSdkBinaryCompatibilityTest.kt": {
       "sha256": "2f9eca53adbfe383a8e93e2d928747ddd391ac92e573f6f30bd0d1be24d96ea3",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
-      ]
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+      ],
+      "priorSdk12SoftwareFollowup20261109": {
+        "sha256": "2f9eca53adbfe383a8e93e2d928747ddd391ac92e573f6f30bd0d1be24d96ea3",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the SDK 12 migration delta: real SDK compilation, mock JVM linkage, OTOS failures, singleton/cluster distinction, stationary-ID/mount gates, tag frame/unit/time conversion and normal Redux localization regression as applicable. Software checks passed; physical SDK/camera accuracy remains untested.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      }
     },
     "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosConfigurationTest.kt": {
       "sha256": "92c0de18c661dbc519306e8f4302fd1d2e3b3c943b57920ae85a3834180d95a7",
@@ -38839,6 +38989,26 @@
       "evidence": [
         "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
         "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md": {
+      "sha256": "b62b95f91b9fcdb55856ed1fe8af71f411b4f6dc0f00ad34750af811291b294b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed this software follow-up evidence, source/candidate/runtime parity, non-skipped JUnit counts, measured unchanged performance budget, native captures/cleanup, expected negative recovery oracles and remaining physical limits.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json": {
+      "sha256": "928a7cff20c036c84572fbfc1ce12e0a924fbfa26b7a6bf87a37b95b184db53b",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed this software follow-up evidence, source/candidate/runtime parity, non-skipped JUnit counts, measured unchanged performance budget, native captures/cleanup, expected negative recovery oracles and remaining physical limits.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
       ]
     }
   }

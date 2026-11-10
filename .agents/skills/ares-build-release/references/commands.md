@@ -44,6 +44,25 @@ Use one candidate version throughout the matrix. The validation publisher reject
 - FRC: generated-project verification as applicable and `test`; run simulation when affected.
 - Analytics: focused UI/service tests; use `:shared:test :gateway:test :app:test` when the change spans those modules or requires broader regression coverage.
 
+Studio opt-ins and dedicated tasks cover separate boundaries:
+
+- `:app:consumerRoundtripTest` runs the real Android export/reopen/tuning and generation-recovery
+  cases excluded from `:app:test`. Supply the same candidate/repository and Android SDK.
+- `GenericStarterTemplateIntegrationTest` uses `ARES_GENERIC_STARTER_ARCHIVE_DIR` (`ftc.zip`,
+  `frc.zip`, `xrp.zip`), `ARES_GENERIC_STARTER_OUTPUT_DIR`, and matching
+  `ARES_GENERIC_STARTER_VALIDATION_REPOSITORY` / `ARES_GENERIC_STARTER_VALIDATION_VERSION`.
+  Set `ARES_GENERIC_STARTER_TEMPLATE_VERSION` to the archives' dependency manifest version,
+  independently of their artifact filenames. Official pinned-archive acceptance is a separate test.
+- `ARES_CHOOSER_NATIVE_TEST=true` enables `AresFileChooserNativeTest`. Use an isolated test JVM
+  home and Windows desktop, inspect its exact dialog captures, and verify approval/cancellation
+  and teardown; a headless rendering test supplies different evidence.
+- `:app:dashboardPerformanceBaseline` runs `dashboardSmoke` before comparing its report against
+  the checked-in budget. Preserve its measured JSON and JUnit results; leave budgets unchanged
+  when diagnosing failures. Physical telemetry remains `:app:dashboardHardware`.
+
+Require actual nonzero test counts and no skips for each selected boundary. `BUILD SUCCESSFUL`
+alone can include an up-to-date, skipped, or `NO-SOURCE` task.
+
 ## Library changes and candidate evidence
 
 Run focused tests for the changed library module and full ARESLib tests/API checks for public
