@@ -43,7 +43,7 @@ class FtcVisionPortalSdk12Test {
     private fun cluster() = AprilTagClusterDetection(25, AprilTagClusterMetadata("Red cell", "red-cell"),
         DistanceUnit.CM, AprilTagPoseFtc(x=10.0, y=200.0, z=30.0), 900_000_000L)
     private fun io(mount: Pose3d = Pose3d(Translation3d(0.2,0.1,0.4)), angles: AngleUnit = AngleUnit.DEGREES) =
-        FtcVisionPortalIO(processor, listOf(mount), setOf(1), angles, "front-camera")
+        FtcVisionPortalIO(processor, listOf(mount), setOf(1), angles, "front-camera", FtcTagPoseConvention.WPILIB_NWU)
 
     @Test fun `field localization needs explicit stationary review and measured mounting`() {
         processor.frame = arrayListOf(singleton())
@@ -175,7 +175,7 @@ class FtcVisionPortalSdk12Test {
         bean.isThreadAllocatedMemoryEnabled = true
         val thread = Thread.currentThread().id
         RobotFieldManager.setActiveConfig(RobotFieldConfig(apriltags=listOf(tag.copy(id=1001))))
-        val camera = FtcVisionPortalIO(processor,listOf(Pose3d()),setOf(1001))
+        val camera = FtcVisionPortalIO(processor,listOf(Pose3d()),setOf(1001),tagPoseConvention=FtcTagPoseConvention.WPILIB_NWU)
         processor.frame = arrayListOf(singleton(id=1001))
         for (variant in 0..1) {
             if (variant == 1) processor.frame = arrayListOf(cluster())
@@ -187,5 +187,20 @@ class FtcVisionPortalSdk12Test {
             assertTrue(if (variant==0) inputs.measurements.isNotEmpty() else inputs.clusterTargets.isNotEmpty())
             println("VisionPortal adapter variant $variant: $allocated bytes / 20000 polls")
         }
+    }
+
+    @Test fun `maintained DECODE optical tag rotations localize without rewriting the field`() {
+        val decode = RobotFieldAprilTag(id=20,x=-1.48266658,y=-1.4133195,z=0.7493,
+            roll=-90.0000032,yaw=144.0499447)
+        RobotFieldManager.setActiveConfig(RobotFieldConfig(apriltags=listOf(decode)))
+        processor.frame = arrayListOf(singleton(AprilTagPoseFtc(y=1.0,z=0.3493),id=20))
+        FtcVisionPortalIO(processor,listOf(Pose3d(Translation3d(0.0,0.0,0.4))),setOf(20)).updateInputs(inputs)
+        val pose = inputs.measurements.single().targetPose
+        val outward = Math.toRadians(decode.yaw-90.0)
+        assertEquals(decode.x+kotlin.math.cos(outward),pose.x,1e-7)
+        assertEquals(decode.y+kotlin.math.sin(outward),pose.y,1e-7)
+        assertEquals(0.0,pose.z,1e-7)
+        assertEquals(wrap(outward+PI),wrap(pose.rotation.z),1e-7)
+        assertEquals(decode,RobotFieldManager.activeConfig.apriltags.single())
     }
 }

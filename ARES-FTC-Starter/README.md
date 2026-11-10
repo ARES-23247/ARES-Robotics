@@ -4,6 +4,12 @@ This is the generic, simulation-first FTC project created by ARES Analytics. It 
 separate from Team 23247's `ARES-FTC` season robot so a new team starts without inherited mechanisms,
 field assets, routines, hardware constants, or calibration values.
 
+This starter uses FTC SDK 12.0, Gradle 9.1, and AGP 8.13.2. Use Android Studio Narwhal 3 Feature
+Drop or later. SDK 12 distinguishes singleton tags from clusters: BIOBUZZ's moving clusters are
+aiming targets, not fixed field landmarks. VisionPortal absolute localization requires explicitly
+reviewed stationary tag IDs and measured camera mounting; the default is targeting-only.
+The settings script pins Google's D8/R8 9.1.29 override for Kotlin 2.4 metadata compatibility.
+
 ## First run
 
 1. Open this folder in ARES Analytics.

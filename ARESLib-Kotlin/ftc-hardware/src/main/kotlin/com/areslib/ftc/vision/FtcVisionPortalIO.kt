@@ -26,7 +26,8 @@ import kotlin.math.sqrt
  * Absolute poses require an explicit whitelist of reviewed stationary singleton IDs and exactly
  * one measured robot-to-camera transform (+X forward, +Y left, +Z up, meters/radians). The default
  * publishes no absolute pose. Never whitelist moving tags, including BIOBUZZ cluster members.
- * Tag poses use the canonical WPILib tag basis: +X outward, +Y left, +Z up.
+ * [tagPoseConvention] defaults to the SDK optical tag basis used by maintained FTC layouts.
+ * Select WPILIB_NWU explicitly for tag rotations imported without that basis conversion.
  *
  * Distance units come from each SDK detection. [outputAngleUnit] must match the processor builder
  * (SDK default: degrees). Capture nanoseconds are converted once into the RobotClock millisecond
@@ -40,6 +41,7 @@ class FtcVisionPortalIO(
     localizationTagIds: Set<Int> = emptySet(),
     private val outputAngleUnit: AngleUnit = AngleUnit.DEGREES,
     private val sourceId: String = "visionportal",
+    private val tagPoseConvention: FtcTagPoseConvention = FtcTagPoseConvention.FTC_OPTICAL,
 ) : VisionIO {
     override val cameraPoses: List<Pose3d> = cameraPoses.map { it.deepCopy() }
     private val stationaryIds = localizationTagIds.toIntArray().apply { sort() }
@@ -129,7 +131,7 @@ class FtcVisionPortalIO(
                         if (!tag.x.isFinite() || !tag.y.isFinite() || !tag.z.isFinite() ||
                             !tag.roll.isFinite() || !tag.pitch.isFinite() || !tag.yaw.isFinite()) continue
                         val measurement = measurementPool[measurements.size]
-                        poseMath.solve(tag, cameraPoses[0], pose, scale, outputAngleUnit, measurement)
+                        poseMath.solve(tag, cameraPoses[0], pose, scale, outputAngleUnit, tagPoseConvention, measurement)
                         measurement.timestampMs = timestampMs
                         measurement.captureTimestampMicros = capturedNs / 1000L
                         measurement.frameId = capturedNs; measurement.sourceId = sourceId

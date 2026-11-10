@@ -22,6 +22,8 @@ Do not mix modes or rely on ambient `mavenLocal()` artifacts. Read versions from
   does not require rebuilding the library or publishing a candidate.
 - For dependency, Gradle, test, or performance failures, use
   [failure-modes.md](references/failure-modes.md).
+- For an FTC SDK update or compatibility claim, use
+  [ftc-sdk-compatibility.md](references/ftc-sdk-compatibility.md).
 - For Studio launch or rendered UI validation, use
   [compose-desktop-tester](../compose-desktop-tester/SKILL.md), including its process ownership checks.
   Simulator task selection is in [commands.md](references/commands.md).

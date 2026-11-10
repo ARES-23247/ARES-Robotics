@@ -39,8 +39,11 @@ val vision = FtcVisionPortalIO(
 ```
 
 The field and mount use meters/radians and the ARES +X forward/+Y left/+Z up body convention.
-Canonical tag orientation uses +X outward/+Y left/+Z up, compatible with WPILib field maps.
-The SDK library factory converts the optical tag basis and expresses SDK metadata in inches,
+Maintained FTC field tag rotations use the SDK optical basis (+X right/+Y down/+Z into the face).
+`FtcTagPoseConvention.FTC_OPTICAL` preserves those existing layouts. For WPILib/PhotonVision tag
+rotations (+X outward/+Y left/+Z up), select `WPILIB_NWU` on both the factory and adapter. Review
+the import's tag orientation convention explicitly; numeric Euler values alone cannot identify it.
+The SDK library factory converts that selected tag basis and expresses SDK metadata in inches,
 including field position. The adapter reconstructs the field pose from that reviewed map and
 camera mounting, rather than trusting an SDK robot pose configured with unrelated field metadata.
 

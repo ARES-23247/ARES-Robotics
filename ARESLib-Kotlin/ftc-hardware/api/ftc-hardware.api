@@ -1738,7 +1738,11 @@ public final class com/areslib/ftc/telemetry/LimelightProxyAutoStart {
 public final class com/areslib/ftc/vision/FtcAprilTagLibraryFactory {
 	public static final field INSTANCE Lcom/areslib/ftc/vision/FtcAprilTagLibraryFactory;
 	public static final fun configure (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;Lcom/areslib/state/RobotFieldConfig;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;
+	public static final fun configure (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;Lcom/areslib/state/RobotFieldConfig;Lcom/areslib/ftc/vision/FtcTagPoseConvention;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;
+	public static synthetic fun configure$default (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;Lcom/areslib/state/RobotFieldConfig;Lcom/areslib/ftc/vision/FtcTagPoseConvention;ILjava/lang/Object;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor$Builder;
 	public static final fun create (Lcom/areslib/state/RobotFieldConfig;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;
+	public static final fun create (Lcom/areslib/state/RobotFieldConfig;Lcom/areslib/ftc/vision/FtcTagPoseConvention;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;
+	public static synthetic fun create$default (Lcom/areslib/state/RobotFieldConfig;Lcom/areslib/ftc/vision/FtcTagPoseConvention;ILjava/lang/Object;)Lorg/firstinspires/ftc/vision/apriltag/AprilTagLibrary;
 }
 
 public final class com/areslib/ftc/vision/FtcLimelightIO : com/areslib/hardware/vision/VisionIO, java/lang/AutoCloseable {
@@ -1754,10 +1758,18 @@ public final class com/areslib/ftc/vision/FtcLimelightIO : com/areslib/hardware/
 	public fun updateInputs (Lcom/areslib/hardware/vision/VisionIOInputs;)V
 }
 
+public final class com/areslib/ftc/vision/FtcTagPoseConvention : java/lang/Enum {
+	public static final field FTC_OPTICAL Lcom/areslib/ftc/vision/FtcTagPoseConvention;
+	public static final field WPILIB_NWU Lcom/areslib/ftc/vision/FtcTagPoseConvention;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/areslib/ftc/vision/FtcTagPoseConvention;
+	public static fun values ()[Lcom/areslib/ftc/vision/FtcTagPoseConvention;
+}
+
 public final class com/areslib/ftc/vision/FtcVisionPortalIO : com/areslib/hardware/vision/VisionIO {
 	public static final field CAPACITY I
-	public fun <init> (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;Ljava/util/List;Ljava/util/Set;Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;Ljava/lang/String;)V
-	public synthetic fun <init> (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;Ljava/util/List;Ljava/util/Set;Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;Ljava/util/List;Ljava/util/Set;Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;Ljava/lang/String;Lcom/areslib/ftc/vision/FtcTagPoseConvention;)V
+	public synthetic fun <init> (Lorg/firstinspires/ftc/vision/apriltag/AprilTagProcessor;Ljava/util/List;Ljava/util/Set;Lorg/firstinspires/ftc/robotcore/external/navigation/AngleUnit;Ljava/lang/String;Lcom/areslib/ftc/vision/FtcTagPoseConvention;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun configureTargetClusters (Ljava/util/List;)V
 	public fun getCameraPoses ()Ljava/util/List;
 	public fun logTelemetry (Lcom/areslib/telemetry/ITelemetry;Ljava/lang/String;)V

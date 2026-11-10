@@ -18,8 +18,16 @@ internal class FtcVisionPoseMath {
     private val rotated = Translation3d()
 
     fun solve(tag: RobotFieldAprilTag, mount: Pose3d, sdk: AprilTagPoseFtc, scale: Double,
-              angleUnit: AngleUnit, output: VisionMeasurement) {
+              angleUnit: AngleUnit, convention: FtcTagPoseConvention, output: VisionMeasurement) {
         tagRotation.setEulerAngles(Math.toRadians(tag.roll), Math.toRadians(tag.pitch), Math.toRadians(tag.yaw))
+        if (convention == FtcTagPoseConvention.FTC_OPTICAL) {
+            // Stored FTC rotations orient the optical tag axes. Convert locally to the
+            // outward/left/up tag basis used by this SE(3) workspace; leave the field document intact.
+            val tq = tagRotation.q
+            val tw = tq.w; val tx = tq.x; val ty = tq.y; val tz = tq.z
+            tq.w = 0.5*(tw-tx-ty+tz); tq.x = 0.5*(tw+tx-ty-tz)
+            tq.y = 0.5*(tw+tx+ty+tz); tq.z = 0.5*(-tw+tx-ty+tz)
+        }
         // Raw intrinsic YXZ -> body ZYX: yaw, -pitch, roll; face-on tag adds local Z pi.
         val radians = if (angleUnit == AngleUnit.RADIANS) 1.0 else Math.PI / 180.0
         cameraTagRotation.setEulerAngles(sdk.roll*radians, -sdk.pitch*radians, sdk.yaw*radians)

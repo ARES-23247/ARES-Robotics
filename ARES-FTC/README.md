@@ -2,7 +2,13 @@
 
 ARES FTC is team 23247's Kotlin robot application for the 2025–2026 **DECODE** season. It is the FTC season layer in the larger ARES robotics workspace: this repository owns the robot-specific hardware bindings, controls, OpModes, generated ARES routines, and field assets, while reusable state, math, localization, path following, safety, telemetry, and simulation live in the sibling [ARESLib-Kotlin](../ARESLib-Kotlin/) repository.
 
-The project is based on FTC SDK 11.1. `FtcRobotController/` remains upstream SDK application code; team-owned robot code belongs in `TeamCode/`.
+The project is based on FTC SDK 12.0, Gradle 9.1, and AGP 8.13.2 (Android Studio Narwhal 3 Feature Drop or later). `FtcRobotController/` remains upstream SDK application code; team-owned robot code belongs in `TeamCode/`.
+The settings script pins Google's D8/R8 9.1.29 override for Kotlin 2.4 metadata compatibility.
+
+The DECODE example keeps its reviewed season field. SDK 12's default game library is BIOBUZZ;
+its moving clusters provide aiming targets and must never supply absolute localization. VisionPortal
+localization requires reviewed stationary IDs and measured camera mounting. Wheel/IMU odometry
+remains available without a stationary vision source.
 
 ## Start here
 

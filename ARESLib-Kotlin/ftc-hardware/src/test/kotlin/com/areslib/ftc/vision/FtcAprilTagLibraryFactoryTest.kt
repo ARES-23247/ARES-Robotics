@@ -49,7 +49,7 @@ class FtcAprilTagLibraryFactoryTest {
     fun `canonical outward tag normal maps to the SDK optical inward Z axis`() {
         val metadata = FtcAprilTagLibraryFactory.create(RobotFieldConfig(
             apriltags=listOf(RobotFieldAprilTag(id=1, family="36h11",sizeMeters=0.1651)),
-        )).lookupTag(1)!!
+        ),FtcTagPoseConvention.WPILIB_NWU).lookupTag(1)!!
         val q = metadata.fieldOrientation
         assertEquals(-1.0, (2*(q.x*q.z+q.w*q.y)).toDouble(), 1e-6)
         assertEquals(0.0, (2*(q.y*q.z-q.w*q.x)).toDouble(), 1e-6)

@@ -2,12 +2,12 @@
 ## Caution
 No Team-specific code should be placed or modified in this ``.../samples`` folder.
 
-Samples should be Copied from here, and then Pasted into the team's
+Samples should be Copied from here, and then Pasted into the team's 
 [/TeamCode/src/main/java/org/firstinspires/ftc/teamcode](../../../../../../../../../../TeamCode/src/main/java/org/firstinspires/ftc/teamcode)
  folder, using the Android Studio cut and paste commands.  This automatically changes all file and
 class names to be consistent.  From there, the sample can be modified to suit the team's needs.
 
-For more detailed instructions see the /teamcode readme.
+For more detailed instructions see the /teamcode readme.  
 
 ### Naming of Samples
 
@@ -35,10 +35,11 @@ Concept:	This is a sample OpMode that illustrates performing a specific function
             These may be complex, but their operation should be explained clearly in the comments,
             or the comments should reference an external doc, guide or tutorial.
             Each OpMode should try to only demonstrate a single concept so they are easy to
-            locate based on their name.  These OpModes may not produce a drivable robot.
+            locate based on their name.  These OpModes may not produce a drivable robot. 
 
 After the prefix, other conventions will apply:
 
 * Sensor class names are constructed as:    Sensor - Company - Type
 * Robot class names are constructed as:     Robot - Mode - Action - OpModetype
 * Concept class names are constructed as:   Concept - Topic - OpModetype
+
