@@ -4452,7 +4452,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/OnboardingScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 350,
+      "lines": 347,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4812,7 +4812,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/SyncStep.kt",
       "product": "ARES-Analytics",
-      "lines": 644,
+      "lines": 689,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4822,7 +4822,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/WelcomeStep.kt",
       "product": "ARES-Analytics",
-      "lines": 129,
+      "lines": 89,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5052,7 +5052,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 518,
+      "lines": 540,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

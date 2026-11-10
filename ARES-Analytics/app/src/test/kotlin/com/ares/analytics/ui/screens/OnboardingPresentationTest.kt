@@ -7,6 +7,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class OnboardingPresentationTest {
+    @Test fun `saving status has a fallback and hides stale progress after completion or failure`() {
+        assertEquals("Saving your workspace…", onboardingProgressMessage(OnboardingState(isSaving = true)))
+        assertEquals("Extracting verified starter…", onboardingProgressMessage(OnboardingState(isSaving = true, projectCreationMessage = "Extracting verified starter…")))
+        assertEquals("Saving your workspace…", onboardingProgressMessage(OnboardingState(isSaving = true, projectCreationMessage = "  ")))
+        assertNull(onboardingProgressMessage(OnboardingState(projectCreationMessage = "Old attempt")))
+    }
+
     @Test fun `finish action describes the selected project mode`() {
         assertEquals("Open project", onboardingFinishLabel(com.ares.analytics.viewmodel.ProjectSetupMode.OPEN_EXISTING))
         assertEquals("Create standalone project", onboardingFinishLabel(com.ares.analytics.viewmodel.ProjectSetupMode.CREATE_NEW))

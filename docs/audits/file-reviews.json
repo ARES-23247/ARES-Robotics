@@ -233,13 +233,23 @@
       ]
     },
     ".agents/skills/compose-desktop-tester/references/interaction.md": {
-      "sha256": "afcf0cd2f1cc5b26be8d337fa735d8beb581a12a42898a7a429b258e298f92b3",
-      "review": "reviewed",
+      "sha256": "d91fd466f59bfd21d19142137020bea29873c63d540276046f3aa4a997e274a1",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Compose desktop tester window interaction reference verification (lines 1-48): enforces owned-window isolation, fail-fast coordinate checks relative to verified windows (no desktop clicking), loopback-only test-control port (ARES_ANALYTICS_TEST_CONTROL_PORT), concurrent modal chooser selection via PowerShell background jobs, and user data isolation.",
+      "scope": "Reviewed this setup/project-creation delta and relevant callers; focused software/native checks and source policy. No unrelated full-file coverage claimed.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
-      ]
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+      ],
+      "priorStudioSetup20261110": {
+        "sha256": "afcf0cd2f1cc5b26be8d337fa735d8beb581a12a42898a7a429b258e298f92b3",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Compose desktop tester window interaction reference verification (lines 1-48): enforces owned-window isolation, fail-fast coordinate checks relative to verified windows (no desktop clicking), loopback-only test-control port (ARES_ANALYTICS_TEST_CONTROL_PORT), concurrent modal chooser selection via PowerShell background jobs, and user data isolation.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      }
     },
     ".agents/skills/compose-desktop-tester/references/launch-capture.md": {
       "sha256": "f3124659e4e502c507fe2b5e581459cdd838585087f0c26dfa0b278419ba9945",
@@ -6199,13 +6209,23 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/OnboardingScreen.kt": {
-      "sha256": "a5af8d209e3a9f478cdc636944d562d39ccf8a8670c9ee98a98c61ec38fb4818",
-      "review": "reviewed",
+      "sha256": "807669171fc442759b96e0ef862dbaefbf56dd868f87b8dd56fcf0f390d3008e",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Novice-first 4-stage workspace onboarding wizard managing step scroll transitions, field error handling, and safe project initialization.",
+      "scope": "Reviewed this setup/project-creation delta and relevant callers; focused software/native checks and source policy. No unrelated full-file coverage claimed.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+      ],
+      "priorStudioSetup20261110": {
+        "sha256": "a5af8d209e3a9f478cdc636944d562d39ccf8a8670c9ee98a98c61ec38fb4818",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Novice-first 4-stage workspace onboarding wizard managing step scroll transitions, field error handling, and safe project initialization.",
+        "evidence": [
+          "docs/audits/pass294-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/PathPlannerScreen.kt": {
       "sha256": "c9f63cd8786fce67fc478a916938ba506f14d0da23fed76ebe406543a6518ce8",
@@ -6552,22 +6572,42 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/SyncStep.kt": {
-      "sha256": "95025a89fe9a8d40b8521025acbe8bc4696f389d64bb1ce92bb24e71224d8da8",
-      "review": "reviewed",
+      "sha256": "e2de8427938dfb0154d5571d514d59ca87dd28390971c2be6159be5b2ba57610",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Onboarding project setup, authoring models (GUI-owned, Code-first, Hybrid), robot details, connection settings, and summary validation.",
+      "scope": "Reviewed this setup/project-creation delta and relevant callers; focused software/native checks and source policy. No unrelated full-file coverage claimed.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+      ],
+      "priorStudioSetup20261110": {
+        "sha256": "95025a89fe9a8d40b8521025acbe8bc4696f389d64bb1ce92bb24e71224d8da8",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Onboarding project setup, authoring models (GUI-owned, Code-first, Hybrid), robot details, connection settings, and summary validation.",
+        "evidence": [
+          "docs/audits/pass294-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/onboarding/WelcomeStep.kt": {
-      "sha256": "498eea7bf1b4282140741b88a67aa5dedbcd9984fe16a4f579545f57480d7b3d",
-      "review": "reviewed",
+      "sha256": "cf1a9e281a0930342ffb28dba2428159b622ff65269f58ab5120d918332dd4f8",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Onboarding welcome banner and progress indicator explaining the document-driven runtime code generation paradigm.",
+      "scope": "Reviewed this setup/project-creation delta and relevant callers; focused software/native checks and source policy. No unrelated full-file coverage claimed.",
       "evidence": [
-        "docs/audits/pass294-pending-elevation-audit.md"
-      ]
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+      ],
+      "priorStudioSetup20261110": {
+        "sha256": "498eea7bf1b4282140741b88a67aa5dedbcd9984fe16a4f579545f57480d7b3d",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Onboarding welcome banner and progress indicator explaining the document-driven runtime code generation paradigm.",
+        "evidence": [
+          "docs/audits/pass294-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/theme/AresBrand.kt": {
       "sha256": "60a51774363764bdfc696c9e35d2741dddad676facb4d5e6de222f90340e8a8d",
@@ -6877,13 +6917,23 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/OnboardingViewModel.kt": {
-      "sha256": "343cac00a879d47e28827a03416db4626599a94b7df982eb122da68ea4e019a3",
-      "review": "reviewed",
+      "sha256": "253db8453d860ed04065d2448c406a0ac4f4f4e3430b228bc0d37271f37174fa",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified OnboardingViewModel 4-step wizard state machine (PROJECT, ROBOT, OPTIONAL, REVIEW). Validated template project creation via RobotProjectTemplateService with NewProjectHistoryInitializer baseline Git commit staging, Java environment verification and managed JDK 21 installation, Drive destination configuration, and best-effort cloud profile registration.",
+      "scope": "Reviewed this setup/project-creation delta and relevant callers; focused software/native checks and source policy. No unrelated full-file coverage claimed.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+      ],
+      "priorStudioSetup20261110": {
+        "sha256": "343cac00a879d47e28827a03416db4626599a94b7df982eb122da68ea4e019a3",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified OnboardingViewModel 4-step wizard state machine (PROJECT, ROBOT, OPTIONAL, REVIEW). Validated template project creation via RobotProjectTemplateService with NewProjectHistoryInitializer baseline Git commit staging, Java environment verification and managed JDK 21 installation, Drive destination configuration, and best-effort cloud profile registration.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerModels.kt": {
       "sha256": "e5e374b26af6628c8374791bd6fba2b64cc91e8b40abbb8603332d5e95dc6f16",
@@ -11447,13 +11497,23 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/OnboardingPresentationTest.kt": {
-      "sha256": "8c31d96e8e123e2165bcb5d9ad93e7d889e0673282bc7b6e54fadf92aa745df3",
-      "review": "reviewed",
+      "sha256": "00c0f9d354c1805abb276578952afe6597b2c3ce1454f5916fdbbfefe5d12edd",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified onboarding UI presentation helpers. Validated onboardingFinishLabel across all ProjectSetupMode options and onboardingReadinessHint error messaging identifying missing mandatory fields during project and robot configuration steps.",
+      "scope": "Reviewed this setup/project-creation delta and relevant callers; focused software/native checks and source policy. No unrelated full-file coverage claimed.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
-      ]
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+      ],
+      "priorStudioSetup20261110": {
+        "sha256": "8c31d96e8e123e2165bcb5d9ad93e7d889e0673282bc7b6e54fadf92aa745df3",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified onboarding UI presentation helpers. Validated onboardingFinishLabel across all ProjectSetupMode options and onboardingReadinessHint error messaging identifying missing mandatory fields during project and robot configuration steps.",
+        "evidence": [
+          "docs/audits/pass292-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ui/screens/ProjectIdentityPresentationTest.kt": {
       "sha256": "8ad3c5c841e5120e389ff3e0c010c44a707c3638345ebece9212462335ca246b",
@@ -12531,13 +12591,13 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "2f371c463b03d94153a2b88e354d64f7424497aaed1d949c0afc3bb806d6018f",
+      "sha256": "5c7f4bff4a4fc7c9ed65d4981cf51cc9b714b1a0fadc4b8adcc1d7cb583c5673",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "scope": "Reviewed this setup/project-creation delta and relevant callers; focused software/native checks and source policy. No unrelated full-file coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
       ],
       "agyDrivebaseSavePriorRecord": {
         "sha256": "6f2416031561edda08bce33e367f86f32a5fbd48749dcc13099fd2da60159d46",
@@ -12724,6 +12784,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
+      },
+      "priorStudioSetup20261110": {
+        "sha256": "2f371c463b03d94153a2b88e354d64f7424497aaed1d949c0afc3bb806d6018f",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -35327,13 +35397,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/README.md": {
-      "sha256": "1706e2d4e098bc327141691c65c6e6de5420c022915ce81c8df0aaee302e5d8d",
+      "sha256": "3c5abafad6f18bad93e78296662745665ad3326652b95dd1d1a0bc4204ec187a",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "scope": "Reviewed this setup/project-creation delta and relevant callers; focused software/native checks and source policy. No unrelated full-file coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
       ],
       "priorDatabase20261109": {
         "sha256": "6e2174c04cea10aa280be67085dd7b9042f0bdd17b5140b91d3110c74b08e899",
@@ -35478,6 +35548,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
+      },
+      "priorStudioSetup20261110": {
+        "sha256": "1706e2d4e098bc327141691c65c6e6de5420c022915ce81c8df0aaee302e5d8d",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -35682,10 +35762,10 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only this OTOS ledger delta; previous canonical fields and nested history retained, unrelated semantic records unchanged.",
+      "scope": "Reviewed only this setup follow-up ledger delta; prior canonical fields and nested history preserved, unrelated semantic records unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -36111,7 +36191,7 @@
           ]
         }
       },
-      "sha256": "676e0b894d63bd85dd497ab5e164669142e6a7cb11db11d660654255469285ed",
+      "sha256": "17066260fc57cdbbd4a0e457eb4698ffbb0fdc23f25a3b1913344df275fac84c",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -36181,6 +36261,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
+      },
+      "priorStudioSetup20261110": {
+        "sha256": "676e0b894d63bd85dd497ab5e164669142e6a7cb11db11d660654255469285ed",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only this OTOS ledger delta; previous canonical fields and nested history retained, unrelated semantic records unchanged.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -39409,6 +39499,36 @@
       "evidence": [
         "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
         "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/viewmodel/OnboardingSubmissionTest.kt": {
+      "sha256": "a52449de20c7afb650f8ed71d7e33f0079b23f2337bcc792d9e01664f298bf98",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new scoped report/evidence or controlled creation fixture, source bindings, test results, cleanup and explicit limits.",
+      "evidence": [
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md": {
+      "sha256": "b016fc19eb03a0bdee9d5cefeecd109360bb83358e74fe291150a6dd03c436a8",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new scoped report/evidence or controlled creation fixture, source bindings, test results, cleanup and explicit limits.",
+      "evidence": [
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json": {
+      "sha256": "1c78c77bc2e4c1c763c93c9c9f1cf8f55af2af94f7274d2a57a0bc07a7c1ece5",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new scoped report/evidence or controlled creation fixture, source bindings, test results, cleanup and explicit limits.",
+      "evidence": [
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10.md",
+        "docs/audits/STUDIO_SETUP_CREATION_2026_11_10_EVIDENCE.json"
       ]
     }
   }

@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import java.io.File
 import java.awt.Desktop
 import java.net.URI
@@ -150,6 +151,7 @@ class OnboardingViewModel(
         ),
     )
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
+    private val submissionMutex = Mutex()
 
     init {
         scope.launch {
@@ -162,6 +164,7 @@ class OnboardingViewModel(
 
     fun handleIntent(intent: OnboardingIntent) {
         scope.launch {
+            if (_state.value.isSaving || _state.value.saveSuccess) return@launch
             when (intent) {
                 is OnboardingIntent.SetProjectSetupMode -> {
                     _state.update { current ->
@@ -173,7 +176,15 @@ class OnboardingViewModel(
                             fieldErrors = current.fieldErrors.copy(projectPath = null),
                         )
                         when (intent.mode) {
-                            ProjectSetupMode.CREATE_NEW -> selected.copy(projectPath = plannedProjectPath(selected))
+                            ProjectSetupMode.CREATE_NEW -> {
+                                val template = projectTemplateService.templateForOrNull(selected.league)
+                                selected.copy(
+                                    projectPath = plannedProjectPath(selected),
+                                    projectTemplateName = template?.displayName.orEmpty(),
+                                    projectTemplateVersion = template?.artifactVersion.orEmpty(),
+                                    errorMessage = if (template == null) "No reviewed ${selected.league.name} starter is bundled with this Studio build." else null,
+                                )
+                            }
                             ProjectSetupMode.EXPLORE_LIGHTBOT, ProjectSetupMode.EXPLORE_BIOBUZZ -> {
                                 val biobuzz = intent.mode == ProjectSetupMode.EXPLORE_BIOBUZZ
                                 val template = projectTemplateService.templateFor(League.FTC, if (biobuzz) RobotProjectTemplateKind.BIOBUZZ_EXAMPLE else RobotProjectTemplateKind.EXAMPLE)
@@ -393,6 +404,17 @@ class OnboardingViewModel(
     }
 
     private suspend fun submitConfig() {
+        // UI disabling alone cannot reject already queued or concurrent submit intents.
+        if (!submissionMutex.tryLock()) return
+        try {
+            if (_state.value.saveSuccess) return
+            saveWorkspace()
+        } finally {
+            submissionMutex.unlock()
+        }
+    }
+
+    private suspend fun saveWorkspace() {
         var current = _state.value
         val errors = validateOnboardingCompletion(current)
         if (errors.hasRequiredFieldErrors) {
@@ -410,7 +432,7 @@ class OnboardingViewModel(
             return
         }
 
-        _state.update { it.copy(isSaving = true, errorMessage = null) }
+        _state.update { it.copy(isSaving = true, errorMessage = null, projectCreationMessage = null) }
         try {
             if (current.projectSetupMode.createsProject) {
                 val result = projectTemplateService.create(
@@ -421,7 +443,7 @@ class OnboardingViewModel(
                         teamId = current.teamId,
                         seasonId = current.seasonId,
                         robotId = current.robotId,
-                        robotName = current.robotName,
+                        robotName = current.robotName.trim().ifBlank { current.robotId.trim() },
                         templateKind = if (current.projectSetupMode == ProjectSetupMode.EXPLORE_BIOBUZZ) {
                             RobotProjectTemplateKind.BIOBUZZ_EXAMPLE
                         } else if (current.projectSetupMode == ProjectSetupMode.EXPLORE_LIGHTBOT) {

@@ -76,11 +76,6 @@ fun OnboardingScreen(
     LaunchedEffect(state.currentStep) {
         contentScrollState.scrollTo(0)
     }
-    LaunchedEffect(state.currentStep, state.fieldErrors) {
-        if (state.currentStep == OnboardingStep.PROJECT && state.fieldErrors.projectPath != null) {
-            contentScrollState.animateScrollTo(contentScrollState.maxValue)
-        }
-    }
 
     LaunchedEffect(state.teamId, token) {
         if (token != null && state.teamId.isNotBlank()) {
@@ -246,16 +241,6 @@ fun OnboardingScreen(
                             )
                         }
 
-                        state.errorMessage?.let { error ->
-                            Text(error, color = AresError, style = MaterialTheme.typography.bodySmall)
-                        }
-                        if (state.isSaving && !state.projectCreationMessage.isNullOrBlank()) {
-                            Text(
-                                state.projectCreationMessage!!,
-                                color = AresCyan,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
                     }
 
                     VerticalScrollbar(
@@ -266,7 +251,14 @@ fun OnboardingScreen(
                     )
                 }
 
-                onboardingReadinessHint(state)?.let { hint ->
+                // Status belongs outside the scroll pane so long summaries cannot hide it.
+                state.errorMessage?.let { error ->
+                    Text(error, color = AresError, style = MaterialTheme.typography.bodySmall)
+                }
+                onboardingProgressMessage(state)?.let { progress ->
+                    Text(progress, color = AresCyan, style = MaterialTheme.typography.bodySmall)
+                }
+                onboardingReadinessHint(state)?.takeIf { state.errorMessage == null && !state.isSaving }?.let { hint ->
                     Text(hint, color = AresTextSecondary, style = MaterialTheme.typography.bodySmall)
                 }
                 HorizontalDivider(color = AresBorder)
@@ -294,6 +286,9 @@ internal fun onboardingReadinessHint(state: com.ares.analytics.viewmodel.Onboard
     else -> null
 }
 
+internal fun onboardingProgressMessage(state: com.ares.analytics.viewmodel.OnboardingState): String? =
+    if (state.isSaving) state.projectCreationMessage?.takeIf { it.isNotBlank() } ?: "Saving your workspace…" else null
+
 @Composable
 private fun NavigationButtons(
     step: OnboardingStep,
@@ -314,6 +309,7 @@ private fun NavigationButtons(
             ) { Text("Back", color = AresTextPrimary) }
             onCancel != null -> OutlinedButton(
                 onClick = onCancel,
+                enabled = !isSaving,
                 modifier = Modifier.weight(1f),
                 border = androidx.compose.foundation.BorderStroke(1.dp, AresBorder),
             ) { Text("Cancel", color = AresTextPrimary) }
@@ -329,6 +325,7 @@ private fun NavigationButtons(
         ) {
             if (isSaving) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AresOnAccent, strokeWidth = 2.dp)
+                Text("  Saving…", color = AresOnAccent, fontWeight = FontWeight.Bold)
             } else {
                 val label = when (step) {
                     OnboardingStep.PROJECT -> "Continue"

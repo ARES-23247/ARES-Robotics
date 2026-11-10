@@ -1,5 +1,8 @@
 # Monorepo audit coverage
 
+The [Studio setup/project-creation follow-up](STUDIO_SETUP_CREATION_2026_11_10.md) records
+the requested UI improvements and creation reliability checks after OTOS validation.
+
 The latest SDK continuation is the [OTOS lifecycle/input-refresh checkpoint](FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md),
 covering reset/close freshness, delayed reads, allocation and framework/starter validation.
 The preceding [servo cache reliability checkpoint](FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md)
