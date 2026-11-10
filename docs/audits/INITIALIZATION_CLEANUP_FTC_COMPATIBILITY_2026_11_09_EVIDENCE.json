@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-09",
+  "baseCommit": "a9526e5b934e7405eb63f84c3892cc80700e82fe",
+  "branch": "codex/framework-lifecycle-audit-20261109",
+  "scope": "Isolated committed baseline plus this database/skill patch; original checkout pending changes excluded",
+  "dependency": {
+    "aresVersion": "19.1.5-rc.acceptance.20260925.1",
+    "canonicalPin": "19.1.5",
+    "sourceTree": "534a2778c52356641621ceaea71532a63219b8e2",
+    "studioVersion": "7.0.65"
+  },
+  "files": {
+    ".agents/skills/ares-build-release/references/failure-modes.md": "4158d11ad39351785312a3a3514c7abd296f4dc1f964c6794aa80f8e1add1063",
+    ".agents/skills/compose-desktop-tester/references/startup-recovery.md": "db16aa864e788c23992e1bde725247692dfea0f48d94a1f72f887af58fa12dbf",
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt": "8d56688ae61a857305d096a8dbe0f349d4e9b2f312b31ae4b4419ab7adaf70cc",
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseInitializationCleanupTest.kt": "d4f02748ad4acc4a82e0d84be8463c60c337174fc4b5f534b6b3f89ef49d4890",
+    "ARES-Analytics/config/maintainability/codebase_ledger.json": "d6ba94071774be34e3f46798b0a2895a1d5bc28aa479b24160eb0c1a04463cf1",
+    "ARES-FTC-Starter/build.dependencies.gradle": "1523aac4622baa37c588091c170a54260150d82d0cb1e392b6a859bfc29428d4",
+    "ARES-FTC/build.dependencies.gradle": "1a16a6153f89cf7ee9309d31e3539e5203d9c3bea61cf8845115b27c1641e6b5",
+    "ARES-FTC/build.gradle": "83892bd4cebb7d10b3bb04ddb5e91482540978d3ee8f91c16ef68ecdf0991656",
+    "ARES-FTC/gradle/wrapper/gradle-wrapper.properties": "cc9996e1b641176fded450c88cecacbb1c06bb7c4e111d2f11f0164af143cfbe",
+    "ARESLib-Kotlin/ftc-hardware/build.gradle.kts": "b20654d1d769d7a8894669e205c6cf936889fe3f90d9c729c02fa570d904bf2e",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionPortalIO.kt": "2856aae18e4b2376d2632295ef2ec79a3f44010bfe57f1286314d6931224d8e0",
+    "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/apriltag/AprilTagMocks.kt": "8b226d81cc7f1fc9ba87169f4ef7d3961d236a1beb151e6a8fa64b2cc8af8538",
+    "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md": "6b4e35c7a2f51e22ba629bbed7e59acd84618a30825743e385e9f964e41187e6",
+    "docs/audits/README.md": "defe9cc51411363e0232366b2fc05bacc2d30b6c0b4c7daac05a51735a3a26e4"
+  },
+  "baselineRegressions": {
+    "suites": 1,
+    "tests": 5,
+    "failures": 5,
+    "errors": 0,
+    "skipped": 0
+  },
+  "focusedSuite": {
+    "suites": 14,
+    "tests": 69,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "finalAppSuite": {
+    "suites": 392,
+    "tests": 2789,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 6
+  },
+  "skippedTests": [
+    "com.ares.analytics.service.project.GenericStarterTemplateIntegrationTest :: generic starter candidates create and build fresh FTC FRC and XRP projects",
+    "com.ares.analytics.service.project.OfficialProjectTemplateIntegrationTest :: official pinned archives create source-valid FTC FRC and XRP projects",
+    "com.ares.analytics.service.project.RepresentativeZeroCodeStarterIntegrationTest :: representative FTC and FRC starter projects generate verify and simulate",
+    "com.ares.analytics.ui.AresFileChooserNativeTest :: nativeDialogRendersSelectsAndCancels",
+    "com.ares.analytics.validation.DashboardPerformanceBaselineTest :: smoke report stays within checked in performance baseline",
+    "com.ares.analytics.validation.HardwareDashboardValidationTest :: physical target streams usable dashboard telemetry"
+  ],
+  "native": {
+    "runs": [
+      {
+        "name": "error",
+        "pid": 21724,
+        "ownedPidExited": true,
+        "port": 49344,
+        "acceptingConnections": false,
+        "settled": true,
+        "snapshotRemoved": true,
+        "successful": true,
+        "disposed": true,
+        "criticalFault": false,
+        "watchdogHalt": false,
+        "databaseClosedError": false
+      },
+      {
+        "name": "ready",
+        "pid": 52236,
+        "ownedPidExited": true,
+        "port": 49345,
+        "acceptingConnections": false,
+        "settled": true,
+        "snapshotRemoved": true,
+        "successful": true,
+        "disposed": true,
+        "criticalFault": false,
+        "watchdogHalt": false,
+        "databaseClosedError": false
+      }
+    ],
+    "crashFiles": 0
+  },
+  "nativeCaptures": {
+    "build/initialization-cleanup/native-error/capture-001.png": "63ff1ca9f05c1763cfbb724aacd22dfc352a393e0e2b43d91355858bd5120298",
+    "build/initialization-cleanup/native-ready/capture-001.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e"
+  },
+  "ftcCompatibility": {
+    "status": "incomplete, migration remains open",
+    "officialRelease": "v12.0",
+    "officialArtifacts": "12.0.0",
+    "officialReleaseUrl": "https://github.com/FIRST-Tech-Challenge/FtcRobotController/releases/tag/v12.0",
+    "officialNotesUrl": "https://github.com/FIRST-Tech-Challenge/FtcRobotController/blob/v12.0/README.md#version-120-20260907-090034",
+    "projectAndStarterPins": "11.1.0",
+    "legacyIdProbe": {
+      "sdk11Compilation": "passed",
+      "sdk12Compilation": "failed: AprilTagDetection.id absent from base"
+    },
+    "binaryInspection": "Candidate calls mock-generated getFtcPose/getId; real SDK 11.1 exposes Java fields, not those getters",
+    "candidateFtcHardwareJarSha256": "4aab6a37541af520d06f0bdb4c8724487e54e4693250bdd25c563ef9560dbda3",
+    "officialVision12ArtifactUrl": "https://repo.maven.apache.org/maven2/org/firstinspires/ftc/Vision/12.0.0/Vision-12.0.0.aar",
+    "probeFiles": {
+      "build/ftc-sdk12-probe/apriltag-api.txt": "900e1ac5fddd16a5a12582488abcfbedc05da2c45dc52d1496f8d44a879dceb6",
+      "build/ftc-sdk12-probe/AprilTagLegacyProbe.java": "41188be086ee3a6a8355f459f5cf911b27f06785d5a310ec40a8d2d72e3a6007",
+      "build/ftc-sdk12-probe/ares-bytecode.txt": "f097d4f695e5d89cc27a9ac9b7ebfdfc4ef4b1de7136ba7a661481d750842f37",
+      "build/ftc-sdk12-probe/classes.jar": "139c6b367b79f693562073c286f1d26aa9ebe79e86eb76dff0bedb3eafd3fea5",
+      "build/ftc-sdk12-probe/sdk11-apriltag-api.txt": "d09926aa18825e9233b4a0580e57d5377233a6479e891602ac5aeb40709eb1d6",
+      "build/ftc-sdk12-probe/sdk11-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "build/ftc-sdk12-probe/sdk12-compile.log": "7a889ea097d358aac0beb7c6f842284f769531e50872c370ad40322f36c38950",
+      "build/ftc-sdk12-probe/Vision-11.1.0-classes.jar": "82f2bafc435f89580c682d97d0a21ec067b8fb6a3dad4962aab1a90135dc79f8",
+      "build/ftc-sdk12-probe/Vision-12.0.0.aar": "96a2a8d0c1071612d1656dcf6e90dafc3863ec1f31a5017152e2f66725a536f4"
+    },
+    "androidBuildPerformed": false,
+    "physicalControllerTestPerformed": false,
+    "migrationNeeds": [
+      "Real SDK field/method ABI parity in mocks and adapters",
+      "Singleton/cluster subtype handling",
+      "Moving targets must not provide absolute localization",
+      "Consumer tooling and starter alignment",
+      "New library version/candidate and dependency-ordered Android/hardware validation"
+    ]
+  },
+  "guidanceChecks": {
+    "unitTests": 6,
+    "failures": 0,
+    "errors": 0,
+    "trackedGuidanceVerifier": "passed",
+    "quickValidateSkills": [
+      "compose-desktop-tester",
+      "ares-build-release"
+    ]
+  },
+  "sourcePolicy": {
+    "result": "passed",
+    "productionKotlinFiles": 1114,
+    "sizeViolations": 0,
+    "limitsChanged": false
+  },
+  "limits": [
+    "No physical hardware validation",
+    "No SDK 12 Android build or compatibility certification",
+    "FTC migration findings remain open",
+    "No protected release or publication",
+    "No integration into or certification of the original dirty checkout",
+    "No new rendering/robot performance benchmark"
+  ]
+}

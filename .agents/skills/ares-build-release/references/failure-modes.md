@@ -8,6 +8,16 @@
 - **Concurrent Kotlin/Gradle corruption**: serialize builds that write the same module outputs or local publication repository.
 - **Maven Central delay**: a staged deployment is not public until reviewed and published; allow propagation time after publication.
 
+## FTC SDK compatibility
+
+When reviewing an FTC SDK upgrade or claiming support for the latest official release, compare
+FIRST's current release notes and artifacts with both the season project's and starter's pins.
+Validate affected adapters against the real SDK classes as well as desktop mocks. Check binary
+member shape, including Java fields versus Kotlin-generated getters; a mock-only compile can hide
+linkage failures on the controller. Review changed vision semantics such as detection subtypes,
+units, and whether a target can provide a stationary field reference. Record source/API probes,
+Android builds, simulator checks, and physical-controller checks as separate evidence.
+
 ## Test failures and performance evidence
 
 - Preserve the failing command, source/candidate identity, environment, and assertion before

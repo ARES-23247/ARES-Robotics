@@ -155,6 +155,11 @@ window-owned coroutine work through cancellation and dependency closure; two set
 cycles alone do not establish that an early close is safe. Preserve the original crash and
 reproduction evidence when the cause remains unresolved.
 
+When a resource-owning constructor fails, its registry lazy value stays uninitialized and normal
+service disposal cannot reach the partial instance. Verify cleanup of resources opened before the
+failure, preservation of the original error if cleanup also fails, and a retry using the same data
+path. A successful cold launch alone does not cover this recovery path.
+
 ```powershell
 Set-Location <monorepo-root>\ARES-Analytics
 git status --short --branch

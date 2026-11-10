@@ -462,7 +462,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt",
       "product": "ARES-Analytics",
-      "lines": 483,
+      "lines": 498,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,

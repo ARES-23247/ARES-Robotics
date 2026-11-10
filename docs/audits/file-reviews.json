@@ -62,13 +62,13 @@
       }
     },
     ".agents/skills/ares-build-release/references/failure-modes.md": {
-      "sha256": "7df7639a9ae1e9dd98c7e49280aaceaa1b9a16f9cfef867582cf7b3efd352094",
-      "review": "reviewed",
+      "sha256": "4158d11ad39351785312a3a3514c7abd296f4dc1f964c6794aa80f8e1add1063",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
+      "scope": "Reviewed changed canonical skill guidance or checkpoint index for the bounded constructor-cleanup/FTC-compatibility follow-up; applicable skill and source-policy checks passed.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
       ],
       "runtimeAuditSubmission": {
         "evidence": [
@@ -80,7 +80,17 @@
         "sha256": "0a720e0c346a445d8e6e0ad09d5d3e2aa6eb635a6e86fa665fb969d22ff50820",
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "priorInitialization20261109": {
+        "sha256": "7df7639a9ae1e9dd98c7e49280aaceaa1b9a16f9cfef867582cf7b3efd352094",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+        ]
+      }
     },
     ".agents/skills/ares-subsystem-authoring/SKILL.md": {
       "sha256": "d34a3b1d3e6defb1e0aa9da52b573d0bbe8e52d248cc39ea6a637b9b56d61dd0",
@@ -220,13 +230,13 @@
       ]
     },
     ".agents/skills/compose-desktop-tester/references/startup-recovery.md": {
-      "sha256": "a078cde2b0364e5b45cafa3f915af0e309204ded14a9434695ec7ee63b25426d",
+      "sha256": "db16aa864e788c23992e1bde725247692dfea0f48d94a1f72f887af58fa12dbf",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed added cold/partial-startup checks against reproduced registry defect and existing native-test requirements. Guide/link validation and three native cycles passed; full early-close race remains open.",
+      "scope": "Reviewed changed canonical skill guidance or checkpoint index for the bounded constructor-cleanup/FTC-compatibility follow-up; applicable skill and source-policy checks passed.",
       "evidence": [
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
       ],
       "priorLifecycle20261109": {
         "sha256": "34ac1f10b1a6c71a4391514fa18e02bd798535d58ee657769c185c15e029133b",
@@ -236,6 +246,16 @@
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+        ]
+      },
+      "priorInitialization20261109": {
+        "sha256": "a078cde2b0364e5b45cafa3f915af0e309204ded14a9434695ec7ee63b25426d",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed added cold/partial-startup checks against reproduced registry defect and existing native-test requirements. Guide/link validation and three native cycles passed; full early-close race remains open.",
+        "evidence": [
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -1207,13 +1227,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt": {
-      "sha256": "234f2d8eaf688bf211dfc6c0bb37bc7eeca665153f4ded06daf1a3f63c7f86a2",
+      "sha256": "8d56688ae61a857305d096a8dbe0f349d4e9b2f312b31ae4b4419ab7adaf70cc",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
+      "scope": "Reviewed failed-constructor connection ownership and original-error preservation, plus unchanged successful initialization/disposal ordering. Passing app checks do not certify unrelated database behavior.",
       "evidence": [
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
       ],
       "priorDatabase20261109": {
         "sha256": "17c49ed7f7f07399aae4ff3b5a80d16cdd96e55dce972c6f691fefaec76a1449",
@@ -1229,6 +1249,16 @@
           "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
           "ARESLib-Kotlin/build/audit-pass23-studio.log",
           "ARESLib-Kotlin/build/audit-pass23-policy.log"
+        ]
+      },
+      "priorInitialization20261109": {
+        "sha256": "234f2d8eaf688bf211dfc6c0bb37bc7eeca665153f4ded06daf1a3f63c7f86a2",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
+        "evidence": [
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -12431,13 +12461,13 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "8ee883e878fa60490cf0740ee36199a99512a0fa2a6a1bfed01a9115179d1775",
+      "sha256": "d6ba94071774be34e3f46798b0a2895a1d5bc28aa479b24160eb0c1a04463cf1",
       "review": "partial",
       "validation": "passed",
-      "scope": "Regenerated source-size inventory; inspected changed line-count entries, unchanged file count and size limits, zero violations. This is size accounting, not behavioral review.",
+      "scope": "Regenerated size inventory and reviewed DatabaseService line-count delta; unchanged limits and zero violations. No behavioral review of other entries implied.",
       "evidence": [
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
       ],
       "agyDrivebaseSavePriorRecord": {
         "sha256": "6f2416031561edda08bce33e367f86f32a5fbd48749dcc13099fd2da60159d46",
@@ -12584,6 +12614,16 @@
         "evidence": [
           "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
           "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorInitialization20261109": {
+        "sha256": "8ee883e878fa60490cf0740ee36199a99512a0fa2a6a1bfed01a9115179d1775",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Regenerated source-size inventory; inspected changed line-count entries, unchanged file count and size limits, zero violations. This is size accounting, not behavioral review.",
+        "evidence": [
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -18699,12 +18739,22 @@
     },
     "ARES-FTC-Starter/build.dependencies.gradle": {
       "sha256": "1523aac4622baa37c588091c170a54260150d82d0cb1e392b6a859bfc29428d4",
-      "review": "reviewed",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Evaluated FTC SDK dependency declarations. Verified resolution of official FTC SDK v11.1.0 modules (Inspection, Blocks, RobotCore, RobotServer, OnBotJava, Hardware, FtcCommon, Vision) and AndroidX AppCompat 1.2.0 from MavenCentral, Google, FRC Maven, CTR, and Dairy Foundation repositories.",
+      "scope": "Read-only FTC compatibility inspection of the recorded detection access, mock member shape, compile-only dependency, or consumer pins/tooling. SDK 12 Android and hardware validation remain open.",
       "evidence": [
-        "docs/audits/pass290-pending-elevation-audit.md"
-      ]
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+      ],
+      "priorInitialization20261109": {
+        "sha256": "1523aac4622baa37c588091c170a54260150d82d0cb1e392b6a859bfc29428d4",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Evaluated FTC SDK dependency declarations. Verified resolution of official FTC SDK v11.1.0 modules (Inspection, Blocks, RobotCore, RobotServer, OnBotJava, Hardware, FtcCommon, Vision) and AndroidX AppCompat 1.2.0 from MavenCentral, Google, FRC Maven, CTR, and Dairy Foundation repositories.",
+        "evidence": [
+          "docs/audits/pass290-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-FTC-Starter/build.gradle": {
       "sha256": "83892bd4cebb7d10b3bb04ddb5e91482540978d3ee8f91c16ef68ecdf0991656",
@@ -20854,21 +20904,41 @@
     },
     "ARES-FTC/build.dependencies.gradle": {
       "sha256": "1a16a6153f89cf7ee9309d31e3539e5203d9c3bea61cf8845115b27c1641e6b5",
-      "review": "reviewed",
+      "review": "partial",
       "validation": "passed",
-      "scope": "FTC Robot Controller dependencies script. Validated repository declarations (Maven Central, Google, WPI, CTR Electronics, Dairy Foundation) and FTC SDK 11.1.0 dependency declarations (Inspection, Blocks, RobotCore, RobotServer, OnBotJava, Hardware, FtcCommon, Vision) along with androidx.appcompat:appcompat:1.2.0.",
+      "scope": "Read-only FTC compatibility inspection of the recorded detection access, mock member shape, compile-only dependency, or consumer pins/tooling. SDK 12 Android and hardware validation remain open.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
-      ]
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+      ],
+      "priorInitialization20261109": {
+        "sha256": "1a16a6153f89cf7ee9309d31e3539e5203d9c3bea61cf8845115b27c1641e6b5",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "FTC Robot Controller dependencies script. Validated repository declarations (Maven Central, Google, WPI, CTR Electronics, Dairy Foundation) and FTC SDK 11.1.0 dependency declarations (Inspection, Blocks, RobotCore, RobotServer, OnBotJava, Hardware, FtcCommon, Vision) along with androidx.appcompat:appcompat:1.2.0.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      }
     },
     "ARES-FTC/build.gradle": {
       "sha256": "83892bd4cebb7d10b3bb04ddb5e91482540978d3ee8f91c16ef68ecdf0991656",
-      "review": "reviewed",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Root Gradle build script. Validated Android Gradle Plugin 8.7.0, Kotlin Gradle Plugin 2.4.10, Kover 0.9.9, ARES version policy enforcement via build-logic/ares-versioning.gradle, dynamic aresRepository URL resolution, and forced Kotlin 2.4.10 stdlib resolution strategy across all configurations. Cleanup noted: redundant root-level repositories block at line 56-58.",
+      "scope": "Read-only FTC compatibility inspection of the recorded detection access, mock member shape, compile-only dependency, or consumer pins/tooling. SDK 12 Android and hardware validation remain open.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
-      ]
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+      ],
+      "priorInitialization20261109": {
+        "sha256": "83892bd4cebb7d10b3bb04ddb5e91482540978d3ee8f91c16ef68ecdf0991656",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Root Gradle build script. Validated Android Gradle Plugin 8.7.0, Kotlin Gradle Plugin 2.4.10, Kover 0.9.9, ARES version policy enforcement via build-logic/ares-versioning.gradle, dynamic aresRepository URL resolution, and forced Kotlin 2.4.10 stdlib resolution strategy across all configurations. Cleanup noted: redundant root-level repositories block at line 56-58.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      }
     },
     "ARES-FTC/doc/legal/AudioBlocksSounds.txt": {
       "sha256": "8f12a65dd6385d8be0ac54a3e7e9328d28b2fde45f936a8a7a50a7b53887dd42",
@@ -20999,13 +21069,23 @@
     },
     "ARES-FTC/gradle/wrapper/gradle-wrapper.properties": {
       "sha256": "cc9996e1b641176fded450c88cecacbb1c06bb7c4e111d2f11f0164af143cfbe",
-      "review": "reviewed",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+      "scope": "Read-only FTC compatibility inspection of the recorded detection access, mock member shape, compile-only dependency, or consumer pins/tooling. SDK 12 Android and hardware validation remain open.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
-      ]
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+      ],
+      "priorInitialization20261109": {
+        "sha256": "cc9996e1b641176fded450c88cecacbb1c06bb7c4e111d2f11f0164af143cfbe",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass 189: complete declarative text review and representative live Git ignore/attribute or wrapper property checks (78 total). Configuration only; excludes binary authenticity, fresh downloads, all possible paths and runtime behavior. Policy boundaries recorded in report.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass189-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-FTC/gradlew": {
       "sha256": "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409",
@@ -30187,12 +30267,22 @@
     },
     "ARESLib-Kotlin/ftc-hardware/build.gradle.kts": {
       "sha256": "b20654d1d769d7a8894669e205c6cf936889fe3f90d9c729c02fa570d904bf2e",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Verified Gradle build configuration for ftc-hardware module. Validated Kotlin JVM toolchain 17, Maven publishing settings with empty javadoc and sourcesJar, repository endpoints, and dependencies (:core, kotlinx-coroutines-core:1.11.0, ftc-mocks, and kotlin test). Clean configuration without redundant plugins or deprecated properties.",
+      "review": "partial",
+      "validation": "failed",
+      "scope": "Read-only FTC compatibility inspection of the recorded detection access, mock member shape, compile-only dependency, or consumer pins/tooling. SDK 12 Android and hardware validation remain open. Actual SDK API probe and candidate bytecode expose compatibility gaps; simulator success does not close these findings.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
-      ]
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+      ],
+      "priorInitialization20261109": {
+        "sha256": "b20654d1d769d7a8894669e205c6cf936889fe3f90d9c729c02fa570d904bf2e",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified Gradle build configuration for ftc-hardware module. Validated Kotlin JVM toolchain 17, Maven publishing settings with empty javadoc and sourcesJar, repository endpoints, and dependencies (:core, kotlinx-coroutines-core:1.11.0, ftc-mocks, and kotlin test). Clean configuration without redundant plugins or deprecated properties.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      }
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcBaseRobot.kt": {
       "sha256": "f4fb239612f170c826b8f3492e02d64423aaf2d00bfe22c198d7ed6cea2345b4",
@@ -30882,13 +30972,12 @@
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionPortalIO.kt": {
       "sha256": "2856aae18e4b2376d2632295ef2ec79a3f44010bfe57f1286314d6931224d8e0",
-      "review": "pending",
-      "validation": "pending",
-      "scope": "Unverified campaign submission: Validated VisionPortal AprilTag adapter. Confirmed coordinate transform from inches/degrees to meters/radians (1 in = 0.0254m), ring pools for measurements and 3D geometry objects, field pose inversion solving (tagFieldPose * cameraToTag^-1 * robotToCamera^-1), rate-limited stderr warnings, and disconnect failsafe.",
+      "review": "partial",
+      "validation": "failed",
+      "scope": "Read-only FTC compatibility inspection of the recorded detection access, mock member shape, compile-only dependency, or consumer pins/tooling. SDK 12 Android and hardware validation remain open. Actual SDK API probe and candidate bytecode expose compatibility gaps; simulator success does not close these findings.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/DEEP_AUDIT_GOAL.md",
-        "docs/audits/DEEP_AUDIT_REPORT.md"
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -30904,7 +30993,18 @@
         "sha256": "2856aae18e4b2376d2632295ef2ec79a3f44010bfe57f1286314d6931224d8e0",
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "priorInitialization20261109": {
+        "sha256": "2856aae18e4b2376d2632295ef2ec79a3f44010bfe57f1286314d6931224d8e0",
+        "review": "pending",
+        "validation": "pending",
+        "scope": "Unverified campaign submission: Validated VisionPortal AprilTag adapter. Confirmed coordinate transform from inches/degrees to meters/radians (1 in = 0.0254m), ring pools for measurements and 3D geometry objects, field pose inversion solving (tagFieldPose * cameraToTag^-1 * robotToCamera^-1), rate-limited stderr warnings, and disconnect failsafe.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "docs/audits/DEEP_AUDIT_GOAL.md",
+          "docs/audits/DEEP_AUDIT_REPORT.md"
+        ]
+      }
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/vision/FtcVisionTracker.kt": {
       "sha256": "7441dc2fd3014685f0851e2666a9b6d52d1379ca221f79f2c11705c7d26b5e4a",
@@ -32356,12 +32456,22 @@
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/firstinspires/ftc/vision/apriltag/AprilTagMocks.kt": {
       "sha256": "8b226d81cc7f1fc9ba87169f4ef7d3961d236a1beb151e6a8fa64b2cc8af8538",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Line-by-line audit of AprilTagPoseFtc, AprilTagDetection, AprilTagProcessor, AprilTagMetadata, and AprilTagLibrary. Verified TagFamily enum, Builder duplicate tag detection assertion (allowOverwrite || id !in tags), VectorF field positions, and Quaternion orientations.",
+      "review": "partial",
+      "validation": "failed",
+      "scope": "Read-only FTC compatibility inspection of the recorded detection access, mock member shape, compile-only dependency, or consumer pins/tooling. SDK 12 Android and hardware validation remain open. Actual SDK API probe and candidate bytecode expose compatibility gaps; simulator success does not close these findings.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
-      ]
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+      ],
+      "priorInitialization20261109": {
+        "sha256": "8b226d81cc7f1fc9ba87169f4ef7d3961d236a1beb151e6a8fa64b2cc8af8538",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Line-by-line audit of AprilTagPoseFtc, AprilTagDetection, AprilTagProcessor, AprilTagMetadata, and AprilTagLibrary. Verified TagFamily enum, Builder duplicate tag detection assertion (allowOverwrite || id !in tags), VectorF field positions, and Quaternion orientations.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      }
     },
     "ARESLib-Kotlin/ftc-mocks/src/main/kotlin/org/json/JsonMocks.kt": {
       "sha256": "a301b71529f98b3729d6cf433cd10f8d8c67f49629fb40b370436ad7dfa88a9b",
@@ -34307,13 +34417,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/README.md": {
-      "sha256": "ad4601bf411acdfc49a39899ac36af3e86b61dd09a6ef003b24c5eb4db5696d2",
+      "sha256": "defe9cc51411363e0232366b2fc05bacc2d30b6c0b4c7daac05a51735a3a26e4",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the changed build, architecture, skill guidance, or checkpoint-index content for the bounded database/archive ownership correction and verified applicable links/policy.",
+      "scope": "Reviewed changed canonical skill guidance or checkpoint index for the bounded constructor-cleanup/FTC-compatibility follow-up; applicable skill and source-policy checks passed.",
       "evidence": [
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
       ],
       "priorDatabase20261109": {
         "sha256": "6e2174c04cea10aa280be67085dd7b9042f0bdd17b5140b91d3110c74b08e899",
@@ -34408,6 +34518,16 @@
           "docs/audits/checkpoints/release-alignment.json",
           "docs/audits/DESKTOP_READINESS_REPORT.md",
           "docs/audits/checkpoints/desktop-readiness.json"
+        ]
+      },
+      "priorInitialization20261109": {
+        "sha256": "ad4601bf411acdfc49a39899ac36af3e86b61dd09a6ef003b24c5eb4db5696d2",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the changed build, architecture, skill guidance, or checkpoint-index content for the bounded database/archive ownership correction and verified applicable links/policy.",
+        "evidence": [
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -34612,10 +34732,10 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only this database follow-up ledger delta. Previous review fields retained under priorDatabase20261109, earlier nested history retained in place, unrelated semantic records unchanged. No full-ledger review implied.",
+      "scope": "Reviewed this initialization/FTC evidence ledger delta only. Earlier canonical fields retained under priorInitialization20261109, nested history retained in place, unrelated semantic records unchanged.",
       "evidence": [
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
-        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -35041,7 +35161,7 @@
           ]
         }
       },
-      "sha256": "2a356f77bdb6fa4f0646f0083fca62d3c4fa7c261dfcb3af8a8349007b7e5800",
+      "sha256": "0b2280e62c6fe4594901b68455632256423540f1dd875ebff66d2e16c8fbcbf2",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -35061,6 +35181,16 @@
         "evidence": [
           "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
           "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorInitialization20261109": {
+        "sha256": "2a356f77bdb6fa4f0646f0083fca62d3c4fa7c261dfcb3af8a8349007b7e5800",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only this database follow-up ledger delta. Previous review fields retained under priorDatabase20261109, earlier nested history retained in place, unrelated semantic records unchanged. No full-ledger review implied.",
+        "evidence": [
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+          "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -37689,6 +37819,36 @@
       "evidence": [
         "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
         "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseInitializationCleanupTest.kt": {
+      "sha256": "d4f02748ad4acc4a82e0d84be8463c60c337174fc4b5f534b6b3f89ef49d4890",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed all five failure-first cleanup regressions, mock resource ownership, cleanup-error assertions, and real DuckDB same-path recovery/deletion fixture.",
+      "evidence": [
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md": {
+      "sha256": "6b4e35c7a2f51e22ba629bbed7e59acd84618a30825743e385e9f964e41187e6",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed constructor cleanup evidence, source/dependency identity, failures/skips, native cleanup, actual FTC API/ABI findings, and explicit open migration limits against retained evidence.",
+      "evidence": [
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json": {
+      "sha256": "67d57400ca36ca0fa082a9de7ddfa5ab5f2551a786ca72b99a0a436687b33446",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed constructor cleanup evidence, source/dependency identity, failures/skips, native cleanup, actual FTC API/ABI findings, and explicit open migration limits against retained evidence.",
+      "evidence": [
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
+        "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
       ]
     }
   }
