@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "integrationPullRequest": "https://github.com/ARES-23247/ARES-Robotics/pull/109",
+  "sourceHead": "c0347955d1d1a1a9f7989f41edb92cae9252a647",
+  "protectedMerge": "a6cb39f28bd88066f0a661149444e697a479d10f",
+  "mergedAt": "2026-11-10T20:05:17Z",
+  "testedAndMergedTree": "3afed066f3af795ac2532559c5d6f26f20cd93c6",
+  "aresLibSourceTree": "dc60c8818d75ff351d909535befa9bf8c4096ca9",
+  "versions": {
+    "library": "20.0.2",
+    "studio": "7.0.70",
+    "ftcStarter": "20.0.3",
+    "frcStarter": "20.0.3",
+    "xrpStarter": "3.0.67",
+    "lightbot": "3.0.72",
+    "biobuzz": "1.1.10"
+  },
+  "requiredChecks": [
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399537/job/130092645776",
+      "name": "Monorepo CI result",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399346/job/130087097685",
+      "name": "Desktop package validation result",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399537/job/130084468774",
+      "name": "Studio, gateway, and analytics",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399537/job/130084468860",
+      "name": "FRC starter mirror source",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399537/job/130084468996",
+      "name": "FTC starter mirror source",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399537/job/130084469000",
+      "name": "FRC robot and simulation contracts",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399537/job/130084468951",
+      "name": "FTC robot and simulator",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399438/job/130081823075",
+      "name": "Autonomous validation result",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399537/job/130081250786",
+      "name": "ARESLib candidate",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399537/job/130081130264",
+      "name": "Source and release policy",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399275/job/130080648918",
+      "name": "CodeQL validation result",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399346/job/130074297692",
+      "name": "Verify generated starter mirrors",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399316/job/130074289270",
+      "name": "Analytics validation result",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399346/job/130073294814",
+      "name": "Prepare package dependency candidate",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399438/job/130072415345",
+      "name": "verify",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399316/job/130072390533",
+      "name": "Dashboard smoke and performance budgets",
+      "state": "SUCCESS"
+    },
+    {
+      "bucket": "pass",
+      "link": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399275/job/130072374229",
+      "name": "CodeQL Java/Kotlin monorepo",
+      "state": "SUCCESS"
+    }
+  ],
+  "allChecks": {
+    "SUCCESS": 30,
+    "SKIPPED": 1
+  },
+  "optionalSkip": "Dashboard 30-minute-equivalent soak",
+  "finalStudioReleaseVerification": {
+    "tests": 2926,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 11,
+    "run": "https://github.com/ARES-23247/ARES-Robotics/actions/runs/42885399346",
+    "appTasks": {
+      "app:consumerRoundtripTest": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "app:dashboardPerformanceBaseline": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "app:dashboardSmoke": {
+        "tests": 59,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "app:test": {
+        "tests": 2807,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 11
+      }
+    },
+    "shared": {
+      "tests": 37,
+      "failures": 0,
+      "skipped": 0
+    },
+    "gateway": {
+      "tests": 18,
+      "failures": 0,
+      "skipped": 0
+    }
+  },
+  "localWindowsFullContractBeforeDependencyUpgrade": {
+    "app:consumerRoundtripTest": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "app:dashboardPerformanceBaseline": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "app:dashboardSmoke": {
+      "tests": 59,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "app:test": {
+      "tests": 2807,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 6
+    },
+    "shared:test": {
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "gateway:test": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "newArchiveFocusedTests": {
+    "tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "dependencyFocusedTests": {
+    "app": {
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "gateway": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "dependencyPullRequestsIntegrated": [
+    86,
+    87,
+    97
+  ],
+  "duplicatePullRequestsClosed": [
+    88,
+    94,
+    95
+  ],
+  "stagingDraftClosed": 110,
+  "cleanupCheckpoint": {
+    "localRefsDeleted": 31,
+    "remoteRefsExplicitlyDeleted": 11,
+    "obsoleteBotHeadsAlreadyAbsent": 5,
+    "remainingRemoteHeads": 9,
+    "documentationBranchExcluded": true,
+    "worktreesRemoved": 0
+  },
+  "remainingDependencyPullRequests": [
+    89,
+    96,
+    99,
+    100,
+    101
+  ],
+  "preservedUniqueRemoteFeatureBranches": [
+    "codex/dashboard-widget-registry",
+    "codex/lightbot-integration"
+  ],
+  "limitations": [
+    "No physical robot validation",
+    "No live cloud or project-backup request validated",
+    "No public release promoted",
+    "Closeout changes documentation/ledger only; runtime validation is bound to the source head above"
+  ]
+}

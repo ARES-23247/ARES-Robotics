@@ -64,3 +64,29 @@ The remaining Kotlin/Compose/serialization, API-validator, and simulator logging
 coordinated compiler/library identity work. The separate BioBuzz turret and other unique/checked-out
 branches remain preserved for scoped integration. Main/Maven refs, tags, dirty worktrees, and
 the original dirty checkout are untouched by branch deletion. No public release is promoted here.
+
+## Completed protected integration and cleanup
+
+All three original dependency PRs (#86, #87, #97) were marked **MERGED** when their preserved
+heads reached main through [PR #109](https://github.com/ARES-23247/ARES-Robotics/pull/109),
+merge `a6cb39f28bd88066f0a661149444e697a479d10f`, on 2026-11-10. The temporary stacked draft
+#110 was closed after consolidation into #109. All 17 required checks passed on combined head
+`c0347955d1d1a1a9f7989f41edb92cae9252a647`; complete Studio verification, both native installers,
+and fresh project acceptance also passed with the new dependencies. No failing dependency PR
+was merged separately around protections.
+
+The final ancestry-guarded cleanup additionally removed three local refs (the SDK, dependency,
+and earlier lifecycle-audit branches) and three remote refs. Two other merged dependency remote
+heads were already absent. At this checkpoint, **31 local branches and 11 remote branches were
+explicitly removed**, and five obsolete bot heads were separately observed absent. Nine remote
+heads remained: main, Maven publication, two unique feature branches, and the five deferred
+dependency branches. Every checked-out branch/worktree and unique unmerged patch was preserved.
+
+The five remaining open dependency PRs are #89 (simulator logging), #96 (Compose compiler),
+#99 (API validator), #100 (Kotlin JVM), and #101 (serialization compiler). These require coordinated
+compiler/library source identity, version, and candidate validation work. The remote dashboard-widget
+and Lightbot integration branches retain unique changes; the checked-out BioBuzz turret branch
+and dirty worktrees also remain intact. They were not treated as redundant merely because they
+were old or behind main. Detailed totals and protected-check evidence are in the
+[integration summary](GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json). The temporary documentation
+branch used to record this closeout is outside these checkpoint counts.

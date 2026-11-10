@@ -101,3 +101,27 @@ No branch-protection bypass, direct main commit, public artifact promotion, live
 or physical hardware validation is part of this checkpoint. Library source-tree identity remains
 `dc60c8818d75ff351d909535befa9bf8c4096ca9`; local tests use candidate
 `20.0.2-rc.sdk12.otos.20261110.1` from the isolated file repository.
+
+## Protected integration result
+
+[PR #109](https://github.com/ARES-23247/ARES-Robotics/pull/109) merged on 2026-11-10 at
+`a6cb39f28bd88066f0a661149444e697a479d10f`, after **all 17 required checks passed** for
+head `c0347955d1d1a1a9f7989f41edb92cae9252a647`. The complete rollup had 30 successful checks
+and one expected optional soak skip, with no failed or pending checks. Normal protected merge
+and an expected-head guard were used. The tested head and protected merge have the same Git tree,
+`3afed066f3af795ac2532559c5d6f26f20cd93c6`.
+
+The final combined revision includes the three dependency updates documented in the
+[dependency checkpoint](DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md). Its complete Linux Studio
+release contract passed **2,926 tests, zero failures/errors, and 11 expected skips**, including
+all four consumer cases, 60 dashboard smoke/performance cases, 37 shared cases, and 18 gateway
+cases. Coverage/maintainability gates, actual FTC/FRC builds and simulator contracts, fresh
+Windows FTC/FRC/XRP acceptance, archive reproducibility, both Windows/macOS installers, the
+separate CodeQL scanning check, and candidate sealing passed. The final monorepo Studio job
+also passed; the earlier Windows full-suite and 19/61 focused results remain separate evidence.
+
+This closeout updates only audit documentation/ledger metadata. Runtime sources, dependency pins,
+library identity, and all archive bytes are unchanged from the tested integration. The
+[integration evidence](GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json) records required-check URLs,
+source identities, counts, cleanup, and limits. No public release was promoted and no hardware,
+live-cloud, or live project-backup result is claimed.

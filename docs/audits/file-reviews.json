@@ -383,10 +383,11 @@
     },
     ".github/workflows/build-distributions.yml": {
       "review": "partial",
-      "validation": "pending",
-      "scope": "Reviewed only Studio 7.0.70 asset-tag/version alignment. Local source policy and release alignment passed; final protected-main package validation remains required.",
+      "validation": "passed",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
-        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
         "sha256": "63167db764e1cd28b8d3e2cdb433d07c32d4f56a3465776ff2cc5c3484887c5a",
@@ -481,6 +482,15 @@
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "82a28179974ee43f8a33fe2789378f3f0605adda49235886aae728f02bd91209",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only Studio 7.0.70 asset-tag/version alignment. Local source policy and release alignment passed; final protected-main package validation remains required.",
+        "evidence": [
+          "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        ]
       }
     },
     ".github/workflows/ci-scopes.yml": {
@@ -517,8 +527,9 @@
       "sha256": "33ac0cab20ebb5f07ae7230a8559a91e8e577ce61890794c9f2fe4c4215a5a0e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Validation refreshed: CI at 65915631e passed 2,807 ordinary app tests (11 skips) and four consumer round-trip/recovery cases, no failures/errors. Display/report delta scope from prior checkpoint remains bounded.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "consumerRoundtripPriorReview": {
@@ -547,6 +558,15 @@
         "review": "partial",
         "validation": "pending",
         "scope": "Reviewed Linux display and report-retention delta. Actual Compose shutdown cases pass locally on Windows; Linux CI remains the integration gate.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "33ac0cab20ebb5f07ae7230a8559a91e8e577ce61890794c9f2fe4c4215a5a0e",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Validation refreshed: CI at 65915631e passed 2,807 ordinary app tests (11 skips) and four consumer round-trip/recovery cases, no failures/errors. Display/report delta scope from prior checkpoint remains bounded.",
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
@@ -722,9 +742,10 @@
       "sha256": "85f054ee2e8c4daff4b970e305cafd1747ee0656b283d631516d066bee0bda34",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only JGit dependency upgrade from PR 97. Production/test compilation and 43 actual local Git-history/archive/review-token cases passed. No unrelated full-file or UI/hardware claim.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
-        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "consumerRoundtripPriorReview": {
         "sha256": "a69665818b7721a0f2eb5f81f51ccdb300ac7746dd9db51cacb8821ea6d2386c",
@@ -761,6 +782,15 @@
         "scope": "Reviewed only full test-exception logging addition. Focused app tests compile and pass; custom consumer task configuration preserved.",
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "85f054ee2e8c4daff4b970e305cafd1747ee0656b283d631516d066bee0bda34",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only JGit dependency upgrade from PR 97. Production/test compilation and 43 actual local Git-history/archive/review-token cases passed. No unrelated full-file or UI/hardware claim.",
+        "evidence": [
+          "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -13766,9 +13796,10 @@
       "sha256": "7926247b270a12812434f3900a62fceb2cd091a686b42be373a78a901f09224e",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only Google API client and GenAI dependency upgrades from PRs 86/87. Affected production/test compilation and all 18 gateway tests passed. No live-cloud requests validated.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
-        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "priorDependencyIntegration20261110": {
         "sha256": "29e77b003e2dd31c8eed409722fb703018f4b91bc915e2ba0cff4646601ead60",
@@ -13777,6 +13808,15 @@
         "scope": "Gateway build configuration: verified Ktor 3.5.2 server setup with Netty engine, content negotiation, authentication, CORS, rate limiting, request validation, 1 MiB body limit, Google GenAI SDK (Vertex AI), Google OIDC token verification, and test task DEV_MODE configuration.",
         "evidence": [
           "docs/audits/pass291-pending-elevation-audit.md"
+        ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "7926247b270a12812434f3900a62fceb2cd091a686b42be373a78a901f09224e",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only Google API client and GenAI dependency upgrades from PRs 86/87. Affected production/test compilation and all 18 gateway tests passed. No live-cloud requests validated.",
+        "evidence": [
+          "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -18263,8 +18303,9 @@
       "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only the float-valued gain-step correction in both SDK sample copies. Actual SDK 12 compileDebugJavaWithJavac passed for season and starter. No unrelated sample/full-file or physical-sensor review claimed.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "submission": {
@@ -18301,6 +18342,15 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only the float-valued gain-step correction in both SDK sample copies. Actual SDK 12 compileDebugJavaWithJavac passed for season and starter. No unrelated sample/full-file or physical-sensor review claimed.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -20267,8 +20317,9 @@
       "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only the float-valued gain-step correction in both SDK sample copies. Actual SDK 12 compileDebugJavaWithJavac passed for season and starter. No unrelated sample/full-file or physical-sensor review claimed.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "priorSdk12Migration20261109": {
@@ -20288,6 +20339,15 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only the float-valued gain-step correction in both SDK sample copies. Actual SDK 12 compileDebugJavaWithJavac passed for season and starter. No unrelated sample/full-file or physical-sensor review claimed.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -35990,9 +36050,10 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only dependency integration checkpoint delta. Prior canonical fields/nested history retained, unrelated semantic records unchanged; self fingerprint bound to final JSON.",
+      "scope": "Reviewed only final integration/cleanup evidence and ledger closeout. Actual check/source/count identities verified; prior nested records and unrelated semantic entries retained. Documentation-only policy checks apply; runtime code/dependencies/archives unchanged.",
       "evidence": [
-        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -36418,7 +36479,7 @@
           ]
         }
       },
-      "sha256": "4676641dac23f18df167a67aa9a98e1b5cc38f4df0d90dc1f0d748f136bf3bad",
+      "sha256": "a6041b68d79848f3aea898b4301f1034599ff78f7e29c29a11112b72e0a5ad73",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -36536,6 +36597,15 @@
         "scope": "Reviewed only sample/archive checkpoint records and validation refresh. Prior canonical fields/nested history retained; unrelated semantic records unchanged.",
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "4676641dac23f18df167a67aa9a98e1b5cc38f4df0d90dc1f0d748f136bf3bad",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only dependency integration checkpoint delta. Prior canonical fields/nested history retained, unrelated semantic records unchanged; self fingerprint bound to final JSON.",
+        "evidence": [
+          "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -36955,9 +37025,10 @@
     "release/ares-versions.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed Studio 7.0.70 reservation for updated desktop dependencies. Other versions, library tree/candidate, and all archive hashes unchanged. Release alignment/provenance and source policy passed.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
-        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
         "sha256": "b6fd04706aae8ee46f6480be81270055b177420d8ed07db8f0120d18a32823ba",
@@ -37043,13 +37114,23 @@
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "1fc222901e295cbf579c4ce6bfd5bfcb9a2bdce7d928dd85ff76ba6695e4f309",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed Studio 7.0.70 reservation for updated desktop dependencies. Other versions, library tree/candidate, and all archive hashes unchanged. Release alignment/provenance and source policy passed.",
+        "evidence": [
+          "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        ]
       }
     },
     "release/starter-artifacts.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Verified updated SHA256 values against new immutable archives. FRC and XRP regenerated archive hashes unchanged.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
@@ -37126,6 +37207,15 @@
         "evidence": [
           "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "d715f26eeea05ca2b41fba753bc28f5a3e65c15aff65bcbc448b95c19cd2320b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Verified updated SHA256 values against new immutable archives. FRC and XRP regenerated archive hashes unchanged.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -39903,12 +39993,13 @@
       ]
     },
     "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md": {
-      "sha256": "e53f538d9942701ad545175ef39a34253e21b5b7c22e378eb550b5b9e6bff381",
+      "sha256": "c08ab76e09c8e30660a46c3b729b17b45fbe6caf352c6b40cd6b0b14af428d68",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed added observed result of 19 passing template/authoring tests against new sample archives. Previous checkpoint findings, CI limits and identities retained.",
+      "scope": "Reviewed only final integration/cleanup evidence and ledger closeout. Actual check/source/count identities verified; prior nested records and unrelated semantic entries retained. Documentation-only policy checks apply; runtime code/dependencies/archives unchanged.",
       "evidence": [
-        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "priorSampleFloat20261110": {
         "sha256": "582c8feacca39a97b7930badad99757fccde73028fdf50539e0e569d10dd553f",
@@ -39927,42 +40018,101 @@
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
+      },
+      "priorProtectedIntegration20261110": {
+        "sha256": "e53f538d9942701ad545175ef39a34253e21b5b7c22e378eb550b5b9e6bff381",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed added observed result of 19 passing template/authoring tests against new sample archives. Previous checkpoint findings, CI limits and identities retained.",
+        "evidence": [
+          "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        ]
       }
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.3.zip": {
       "sha256": "069dd8ed0a8f219be29307b8434eaec3dc3ca3c1e2f7b6019ef14b5b5d02467b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
-      ]
+      ],
+      "priorProtectedIntegration20261110": {
+        "sha256": "069dd8ed0a8f219be29307b8434eaec3dc3ca3c1e2f7b6019ef14b5b5d02467b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.72.zip": {
       "sha256": "cdcd4cc436b5e2e429ea7aeee47a49253dcdeaf06cd7dca9fdbb1525b1f0c205",
       "review": "partial",
       "validation": "passed",
-      "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
-      ]
+      ],
+      "priorProtectedIntegration20261110": {
+        "sha256": "cdcd4cc436b5e2e429ea7aeee47a49253dcdeaf06cd7dca9fdbb1525b1f0c205",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.10.zip": {
       "sha256": "993f596f97a521c84ebbb1f1f4fa2c5839a51496e832434b55569398d8944075",
       "review": "partial",
       "validation": "passed",
-      "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
+      "scope": "Validation refresh only: content hash unchanged. Protected PR 109 passed all 17 required checks at c0347955d, including full Studio suites, fresh projects, native packages and CodeQL. Prior bounded review depth retained; no unrelated full-file or hardware review claimed.",
       "evidence": [
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
-      ]
+      ],
+      "priorProtectedIntegration20261110": {
+        "sha256": "993f596f97a521c84ebbb1f1f4fa2c5839a51496e832434b55569398d8944075",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      }
     },
     "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md": {
-      "sha256": "728aa2345e6662689b99609922a5e2a8ccc6f94f73471a174db0ea5623754c2e",
+      "sha256": "e8512a1afe95163989ae17ce8e0d134c4cc63fb39de4d7ed2717fc763ad3d579",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed three original dependency heads, exact three-line functional delta, observed 61-test result, version/policy evidence and patch-equivalent branch cleanup. Final protected-main CI remains required.",
+      "scope": "Reviewed only final integration/cleanup evidence and ledger closeout. Actual check/source/count identities verified; prior nested records and unrelated semantic entries retained. Documentation-only policy checks apply; runtime code/dependencies/archives unchanged.",
       "evidence": [
-        "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+      ],
+      "priorProtectedIntegration20261110": {
+        "sha256": "728aa2345e6662689b99609922a5e2a8ccc6f94f73471a174db0ea5623754c2e",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed three original dependency heads, exact three-line functional delta, observed 61-test result, version/policy evidence and patch-equivalent branch cleanup. Final protected-main CI remains required.",
+        "evidence": [
+          "docs/audits/DEPENDENCY_BRANCH_CONSOLIDATION_2026_11_10.md"
+        ]
+      }
+    },
+    "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json": {
+      "sha256": "ce9060102c2ae08af1f137d81c16e37736cb789b28559bc184d0fd065571410f",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed only final integration/cleanup evidence and ledger closeout. Actual check/source/count identities verified; prior nested records and unrelated semantic entries retained. Documentation-only policy checks apply; runtime code/dependencies/archives unchanged.",
+      "evidence": [
+        "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ]
     }
   }
