@@ -9632,7 +9632,7 @@
     {
       "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/SparkFunOtosIO.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 193,
+      "lines": 246,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,

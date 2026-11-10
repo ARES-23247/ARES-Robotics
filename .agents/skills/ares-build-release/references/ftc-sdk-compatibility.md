@@ -21,6 +21,12 @@ alter the logical-to-controller mapping; invalidate before delegating, including
 Exercise actual SDK implementations as well as mock call counters. Measure steady-state allocations
 and accepted/suppressed writes separately from configuration; desktop measurements are not bus timing.
 
+Sensor reset/close must invalidate cached motion and timestamps and fence late reads from an earlier
+lifecycle. Keep SDK I/O outside the short cache lock so close can finish while a device call is blocked.
+Preserve owned legacy action snapshots when removing intermediate actions from input-container refresh.
+Output-parameter SDK APIs can still allocate internally: inspect actual driver bytecode and measure
+wrapper allocations separately from SDK/transport allocations before claiming zero-GC behavior.
+
 For vision changes, check singleton/cluster subtypes, null poses, distance and angle units,
 capture-time conversion, frame identity, camera mounting, coordinate bases, and stale/disconnect
 clearing. Exercise the actual Redux consumer as well as adapter output. Absolute localization

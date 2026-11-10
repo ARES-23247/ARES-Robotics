@@ -346,10 +346,10 @@
     ".github/workflows/build-distributions.yml": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "63167db764e1cd28b8d3e2cdb433d07c32d4f56a3465776ff2cc5c3484887c5a",
@@ -385,7 +385,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "0100c40f04778a71da30aabc19ec54cb0f9453f7235cd50a09eb9435f0ac4f44",
+      "sha256": "99feb2c3ef8fa3ba9c741deb8ff4851dd495dfe3b6523514510c1cb98c680bf4",
       "priorSdk12Migration20261109": {
         "sha256": "a0755d3a76feb465fe9fd5c5e6f356ea70dd8862e9d196c2221be658a4ffda38",
         "review": "partial",
@@ -405,6 +405,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "0100c40f04778a71da30aabc19ec54cb0f9453f7235cd50a09eb9435f0ac4f44",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -12521,13 +12531,13 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "e53f83654cade1e704077a9e5b261d6d0702ef4e546aafa293b494fa1d812485",
+      "sha256": "2f371c463b03d94153a2b88e354d64f7424497aaed1d949c0afc3bb806d6018f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Regenerated size ledger for CachedHardware source change: 1116 files, zero violations, unchanged limits; no unrelated behavior review implied.",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "agyDrivebaseSavePriorRecord": {
         "sha256": "6f2416031561edda08bce33e367f86f32a5fbd48749dcc13099fd2da60159d46",
@@ -12704,6 +12714,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "e53f83654cade1e704077a9e5b261d6d0702ef4e546aafa293b494fa1d812485",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Regenerated size ledger for CachedHardware source change: 1116 files, zero violations, unchanged limits; no unrelated behavior review implied.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -31188,13 +31208,13 @@
       ]
     },
     "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/SparkFunOtosIO.kt": {
-      "sha256": "0ef2080141323b035ec5f97b417ee3ef412e9b0281f5ed2b9f1f84caee99e8d0",
+      "sha256": "599feb0d57dcfa6913f54d1acd5d1b046a0e24c7abbb895a3414b00bbbeccbe1",
       "review": "partial",
       "validation": "passed",
-      "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
+      "scope": "Reviewed generation-fenced reset/close publication, SDK I/O outside cache lock, failed-reset reinitialization, fresh timestamp/motion invalidation, preserved owned legacy snapshots, allocation-free input copy, and unchanged pose/unit/plausibility handling.",
       "evidence": [
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
-        "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "priorSdk12Migration20261109": {
         "sha256": "52709ecf7e0e50acc0de73ad1518156357a698e1652a83891c7e4f55df12cd07",
@@ -31213,6 +31233,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "0ef2080141323b035ec5f97b417ee3ef412e9b0281f5ed2b9f1f84caee99e8d0",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Read-only SDK 12 boundary follow-up: selected real SDK/mock linkage, cached IO/configuration, tag units/bases, localization whitelist/mount/cluster gates and timestamp conversions/callers as applicable. Library and relevant consumer tests pass; no additional runtime defect confirmed or full-file/hardware audit claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
+          "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -35297,13 +35327,13 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/README.md": {
-      "sha256": "9e53ac36c7c99f5b0712a6733404b2fd2979bc99fb501731af7c11dbda99be1b",
+      "sha256": "1706e2d4e098bc327141691c65c6e6de5420c022915ce81c8df0aaee302e5d8d",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "priorDatabase20261109": {
         "sha256": "6e2174c04cea10aa280be67085dd7b9042f0bdd17b5140b91d3110c74b08e899",
@@ -35438,6 +35468,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
           "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "9e53ac36c7c99f5b0712a6733404b2fd2979bc99fb501731af7c11dbda99be1b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -35642,10 +35682,10 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only this SDK cache reliability ledger delta; prior canonical fields and nested history retained, unrelated semantic records unchanged.",
+      "scope": "Reviewed only this OTOS ledger delta; previous canonical fields and nested history retained, unrelated semantic records unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -36071,7 +36111,7 @@
           ]
         }
       },
-      "sha256": "4b7bdffa0853ce93ae63a685687ee182bacaf1ac5bbab3bf131e745f89ea8e15",
+      "sha256": "676e0b894d63bd85dd497ab5e164669142e6a7cb11db11d660654255469285ed",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -36131,6 +36171,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
           "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "4b7bdffa0853ce93ae63a685687ee182bacaf1ac5bbab3bf131e745f89ea8e15",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only this SDK cache reliability ledger delta; prior canonical fields and nested history retained, unrelated semantic records unchanged.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -36449,13 +36499,13 @@
       ]
     },
     "release/ares-source-tree.txt": {
-      "sha256": "a23611eacc5c8b03c1ad330339d1491612ccb5b61fdd764861e67a0910864f21",
+      "sha256": "10554b0ca97875264963d5332a23d383525f87d3e0df46bc5ed1db7c148de16b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "liveTuningPeerReviewPriorRecord": {
         "sha256": "ec14b29d98d961f96b28b4040d417346a8d62941b91d59c9d32300f63355b9c6",
@@ -36535,15 +36585,25 @@
           "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
           "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
         ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "a23611eacc5c8b03c1ad330339d1491612ccb5b61fdd764861e67a0910864f21",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "release/ares-versions.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "b6fd04706aae8ee46f6480be81270055b177420d8ed07db8f0120d18a32823ba",
@@ -36579,7 +36639,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "e085876dcf7caef14b977b38d5eefe567008a7450cbd8d5160010b4bbe826450",
+      "sha256": "9e7b170713268e51c4a6e1d01004f3e5669da53637518ea534a90b555cfbceeb",
       "priorSdk12Migration20261109": {
         "sha256": "eaf66a1ab74f8ec98966f3d7160ce0c7e8c24bcfddecd4f88d3deff87310a804",
         "review": "reviewed",
@@ -36600,15 +36660,25 @@
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "e085876dcf7caef14b977b38d5eefe567008a7450cbd8d5160010b4bbe826450",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "release/starter-artifacts.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "7947daf3f941fe53cfc8f68a940089562e509b6769efe903831be3d971da6cb4",
@@ -36644,7 +36714,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "5cd406fd2fb9328b472d3d2da996c40a3d9b17b684510bb1d06b807e67632a46",
+      "sha256": "d918f29ff64196d9dc0c7dfe6adf7ad1bd8dc0cb6222b1b8522f5bf3239dd06c",
       "priorSdk12Migration20261109": {
         "sha256": "4f9324ffcef3ced185ac9f22c64448003297b30006982a23e4216e02d7cbbdbf",
         "review": "reviewed",
@@ -36664,6 +36734,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "5cd406fd2fb9328b472d3d2da996c40a3d9b17b684510bb1d06b807e67632a46",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -38862,13 +38942,13 @@
       ]
     },
     ".agents/skills/ares-build-release/references/ftc-sdk-compatibility.md": {
-      "sha256": "2c63e06d880c7e165bdd75af9cc06bc9dc4da581f8a2c567ced79cebabc3138d",
+      "sha256": "fbf44a1632f20d8b8aa8c95b6be77ccae530ea933fcdf6ece6af6a742e08f56b",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ],
       "priorSdk12SoftwareFollowup20261109": {
         "sha256": "19791e437b5b3a3693ed62f1005cff2d9d4c57bfa2a60441f2922cb2ffdd4261",
@@ -38888,6 +38968,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md",
           "docs/audits/FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSdk12Otos20261110": {
+        "sha256": "2c63e06d880c7e165bdd75af9cc06bc9dc4da581f8a2c567ced79cebabc3138d",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed canonical caching guidance, release/source identity, workflow/archive version/hash or checkpoint index delta as applicable. Guidance/link/source policy and affected builds pass; protected release not performed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -39209,6 +39299,116 @@
       "evidence": [
         "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
         "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.9.zip": {
+      "sha256": "e024a97d851630a873dcfd57c3f16e746385cba543da319c6a0b71cdab88fd45",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.3.zip": {
+      "sha256": "eb0b367581e7e516a1b8fa36383ce41ad8b9ba0064b6b7bd861c845a7e56e324",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.2.zip": {
+      "sha256": "ff330a1a07aac19dd80f84991abd6f521831db7264b41fd2c1c2462dcf66486c",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.71.zip": {
+      "sha256": "5f5d6b9f2ca11ed7cfb5282af2c2efce747b81e85e9891762dd540d944965f1e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.67.zip": {
+      "sha256": "2bb902a642750783b3c7f6996b50ec26e0f9ab56ca423993d3162f7b3213961a",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/sdk/FtcSdk12OtosLifecycleIntegrationTest.kt": {
+      "sha256": "1d81b39c7bc9b0d244c3ac2319c1861c49ea6a1850131423fecf6f72bc147338",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new lifecycle/race/allocation or actual-SDK-type fixture, failure-first assertions, blocked-read/reset cleanup, ownership and normal/diagnostic measurement limits. Final checks pass without skips.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosInputAllocationTest.kt": {
+      "sha256": "2e73c0421f469abe011eb194d7e8e5c3f86c1e3cf13eebb935e68b20df207bb2",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new lifecycle/race/allocation or actual-SDK-type fixture, failure-first assertions, blocked-read/reset cleanup, ownership and normal/diagnostic measurement limits. Final checks pass without skips.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosLifecycleTest.kt": {
+      "sha256": "baf36058a953e2417f32450e58e6a58d3c0f671925c3437dfc5f61875027b79d",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new lifecycle/race/allocation or actual-SDK-type fixture, failure-first assertions, blocked-read/reset cleanup, ownership and normal/diagnostic measurement limits. Final checks pass without skips.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosRaceTest.kt": {
+      "sha256": "50ffe716bcf1c0697c75eaae34a798e5246e4136247bc97c23c0ef1928660d38",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed complete new lifecycle/race/allocation or actual-SDK-type fixture, failure-first assertions, blocked-read/reset cleanup, ownership and normal/diagnostic measurement limits. Final checks pass without skips.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md": {
+      "sha256": "fb34bc1680a73783d6268a108ef34532dfaa2f18e95828648f85840202993aea",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed source/candidate bindings, failing/fixed lifecycle observations, normal/diagnostic wrapper allocation context, test counts, immutable artifacts, native cleanup, limits and subsequent UI-work boundary.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json": {
+      "sha256": "b5e7e8f01abb52424f878e731ec22411164e28f76303fde4151d9349ccbb7547",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed source/candidate bindings, failing/fixed lifecycle observations, normal/diagnostic wrapper allocation context, test counts, immutable artifacts, native cleanup, limits and subsequent UI-work boundary.",
+      "evidence": [
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
       ]
     }
   }

@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-10",
+  "baseCommit": "887fcb4df39e09fa78d229a1d07b6b8368cec3a2",
+  "branch": "codex/ftc-sdk12-20261109",
+  "sourceCommit": "6a52af602a377824fd556f704b30ab580199bb3e",
+  "sourceTree": "dc60c8818d75ff351d909535befa9bf8c4096ca9",
+  "candidate": "20.0.2-rc.sdk12.otos.20261110.1",
+  "scope": "Isolated OTOS lifecycle/allocation follow-up; original dirty checkout excluded",
+  "tests": {
+    "library": {
+      "suites": 490,
+      "tests": 3120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ftc": {
+      "suites": 36,
+      "tests": 185,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "starter": {
+      "suites": 5,
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "sim": {
+      "suites": 6,
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "starterSim": {
+      "suites": 1,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frc": {
+      "suites": 51,
+      "tests": 306,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frcStarter": {
+      "suites": 25,
+      "tests": 206,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "app": {
+      "suites": 5,
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 7,
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "gateway": {
+      "suites": 5,
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "baselineDiagnostic": {
+    "suites": 2,
+    "tests": 5,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 0
+  },
+  "allocation": {
+    "fixture": "primitive driver returning reusable SDK pose buffers; excludes SDK internals",
+    "jdkMajor": 17,
+    "instrument": "ThreadMXBean",
+    "warmupRefreshes": 50000,
+    "measuredRefreshes": 20000,
+    "normalBeforeBytes": 2720000,
+    "normalAfterBytes": 0,
+    "escapeAnalysisDisabledBeforeBytes": 2720000,
+    "escapeAnalysisDisabledAfterBytes": 0,
+    "legacyActionOwnershipPreserved": true,
+    "hardwareTimingMeasured": false
+  },
+  "findings": [
+    "Reset cannot stamp previous motion as fresh if the next read fails",
+    "Uncertain reset suspends sampling until successful explicit initialization",
+    "Close stops reads; lifecycle generation fences delayed read/reset completion and failure",
+    "Input-container refresh avoids intermediate owned action; SDK internal allocations remain"
+  ],
+  "native": {
+    "crashFiles": 0,
+    "runs": [
+      {
+        "settled": true,
+        "ownedPidExited": true,
+        "disposed": true,
+        "snapshotRemoved": true,
+        "criticalFault": false,
+        "pid": 64044,
+        "cycle": 1,
+        "watchdogHalt": false,
+        "port": 49374,
+        "disposalEvidence": "Main exits zero only after finishShutdown succeeds; Gradle run returned success",
+        "acceptingConnections": false,
+        "successful": true,
+        "databaseClosedError": false
+      },
+      {
+        "settled": true,
+        "ownedPidExited": true,
+        "disposed": true,
+        "snapshotRemoved": true,
+        "criticalFault": false,
+        "pid": 31128,
+        "cycle": 2,
+        "watchdogHalt": false,
+        "port": 49375,
+        "disposalEvidence": "Main exits zero only after finishShutdown succeeds; Gradle run returned success",
+        "acceptingConnections": false,
+        "successful": true,
+        "databaseClosedError": false
+      }
+    ]
+  },
+  "versions": {
+    "aresVersion": "20.0.2",
+    "studioVersion": "7.0.68",
+    "ftcStarterVersion": "20.0.2",
+    "frcStarterVersion": "20.0.3",
+    "xrpStarterVersion": "3.0.67",
+    "lightbotExampleVersion": "3.0.71",
+    "biobuzzExampleVersion": "1.1.9",
+    "githubMavenRepository": "https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven"
+  },
+  "bundleHashes": {
+    "final": {
+      "biobuzzExampleSha256": "e024a97d851630a873dcfd57c3f16e746385cba543da319c6a0b71cdab88fd45",
+      "frcStarterSha256": "eb0b367581e7e516a1b8fa36383ce41ad8b9ba0064b6b7bd861c845a7e56e324",
+      "ftcStarterSha256": "ff330a1a07aac19dd80f84991abd6f521831db7264b41fd2c1c2462dcf66486c",
+      "lightbotExampleSha256": "5f5d6b9f2ca11ed7cfb5282af2c2efce747b81e85e9891762dd540d944965f1e",
+      "xrpStarterSha256": "2bb902a642750783b3c7f6996b50ec26e0f9ab56ca423993d3162f7b3213961a"
+    },
+    "retired": {
+      "ARES-FTC-Starter-20.0.1.zip": "54938e5436bc5345f55b002c776d6517927422758e1769ec90f488d79385d7a3",
+      "ARES-FRC-Starter-20.0.2.zip": "8f02bef0e28697bee283b2c2df860677635883407c5171ccfdf06812f9b8fee3",
+      "ARES-XRP-Starter-3.0.66.zip": "c401e4fd2943c714410ad9b6a3ff704e12163566925ea0aabab16603eee29a2a",
+      "ARES-Lightbot-Example-3.0.70.zip": "7ccac131542977b5ba2ccce687d3b4e4c63a78c3f1d4fe5b08fb4b71956b6652",
+      "ARES-BIOBUZZ-Example-1.1.8.zip": "3808e00d80789f3b782f3c21bb42080de0371dcb4c1d536f7c89c2c2886d1583"
+    }
+  },
+  "retiredArtifactSha256": {
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.8.zip": "3808e00d80789f3b782f3c21bb42080de0371dcb4c1d536f7c89c2c2886d1583",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.2.zip": "8f02bef0e28697bee283b2c2df860677635883407c5171ccfdf06812f9b8fee3",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.1.zip": "54938e5436bc5345f55b002c776d6517927422758e1769ec90f488d79385d7a3",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.70.zip": "7ccac131542977b5ba2ccce687d3b4e4c63a78c3f1d4fe5b08fb4b71956b6652",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.66.zip": "c401e4fd2943c714410ad9b6a3ff704e12163566925ea0aabab16603eee29a2a"
+  },
+  "commands": {
+    "library": "test apiDump apiCheck; apiCheck publishReleaseValidation --offline --no-parallel -ParesVersion=20.0.2-rc.sdk12.otos.20261110.1",
+    "diagnostic": ":ftc-hardware:test --tests com.areslib.ftc.SparkFunOtosInputAllocationTest; local init adds -XX:-DoEscapeAnalysis only to this selected run",
+    "consumers": "FTC/starter generation verify/unit/sim/APK; FRC/starter generation verify/test; same candidate and absolute repository URI",
+    "studio": ":shared:test :gateway:test :app:test selecting RobotProjectTemplateServiceTest, BiobuzzTemplateAuthoringTest, ProjectRoundtripIntegrationTest, ConsumerRoundtripSupportTest, OfficialProjectTemplateIntegrationTest with local archive validation",
+    "native": "two :app:run -PskipKill isolated-home launch/capture/WM_CLOSE cycles; final candidate",
+    "policy": "verify-monorepo-policy.ps1; test_agent_guidance.py (6); quick_validate.py ares-build-release"
+  },
+  "files": {
+    ".agents/skills/ares-build-release/references/ftc-sdk-compatibility.md": "fbf44a1632f20d8b8aa8c95b6be77ccae530ea933fcdf6ece6af6a742e08f56b",
+    ".github/workflows/build-distributions.yml": "99feb2c3ef8fa3ba9c741deb8ff4851dd495dfe3b6523514510c1cb98c680bf4",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.9.zip": "e024a97d851630a873dcfd57c3f16e746385cba543da319c6a0b71cdab88fd45",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.3.zip": "eb0b367581e7e516a1b8fa36383ce41ad8b9ba0064b6b7bd861c845a7e56e324",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.2.zip": "ff330a1a07aac19dd80f84991abd6f521831db7264b41fd2c1c2462dcf66486c",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.71.zip": "5f5d6b9f2ca11ed7cfb5282af2c2efce747b81e85e9891762dd540d944965f1e",
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.67.zip": "2bb902a642750783b3c7f6996b50ec26e0f9ab56ca423993d3162f7b3213961a",
+    "ARES-Analytics/config/maintainability/codebase_ledger.json": "2f371c463b03d94153a2b88e354d64f7424497aaed1d949c0afc3bb806d6018f",
+    "ARES-FTC/TeamCode/src/test/kotlin/org/firstinspires/ftc/teamcode/sdk/FtcSdk12OtosLifecycleIntegrationTest.kt": "1d81b39c7bc9b0d244c3ac2319c1861c49ea6a1850131423fecf6f72bc147338",
+    "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/drivetrain/SparkFunOtosIO.kt": "599feb0d57dcfa6913f54d1acd5d1b046a0e24c7abbb895a3414b00bbbeccbe1",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosInputAllocationTest.kt": "2e73c0421f469abe011eb194d7e8e5c3f86c1e3cf13eebb935e68b20df207bb2",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosLifecycleTest.kt": "baf36058a953e2417f32450e58e6a58d3c0f671925c3437dfc5f61875027b79d",
+    "ARESLib-Kotlin/ftc-hardware/src/test/kotlin/com/areslib/ftc/SparkFunOtosRaceTest.kt": "50ffe716bcf1c0697c75eaae34a798e5246e4136247bc97c23c0ef1928660d38",
+    "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md": "fb34bc1680a73783d6268a108ef34532dfaa2f18e95828648f85840202993aea",
+    "docs/audits/README.md": "1706e2d4e098bc327141691c65c6e6de5420c022915ce81c8df0aaee302e5d8d",
+    "release/ares-source-tree.txt": "10554b0ca97875264963d5332a23d383525f87d3e0df46bc5ed1db7c148de16b",
+    "release/ares-versions.properties": "9e7b170713268e51c4a6e1d01004f3e5669da53637518ea534a90b555cfbceeb",
+    "release/starter-artifacts.properties": "d918f29ff64196d9dc0c7dfe6adf7ad1bd8dc0cb6222b1b8522f5bf3239dd06c"
+  },
+  "rawEvidenceHashes": {
+    "build/sdk12-otos-20261110/archives.log": "29917ea85317c224ed740b2cbe97acff6c6df833035989d17285b8c41fdb8696",
+    "build/sdk12-otos-20261110/fixture-compile.log": "873615c97e4176923f39683993f3d0b917a2a04c905a5343b44d0bb50e96cee7",
+    "build/sdk12-otos-20261110/frc-final.log": "7b3aea6ad4eca0f3576d34dd2c8c61ed294855fd94f54280c5fd5285adbae454",
+    "build/sdk12-otos-20261110/frc-starter-final.log": "c0a4163884c68f05e577816676257eaec074d1d0f116ab7253cc6c5a04199e03",
+    "build/sdk12-otos-20261110/ftc-final.log": "9f7cbbe5756bc8d9b54ffe62606c3f09e9f88c69bc2a41aefadeb22d81f3e225",
+    "build/sdk12-otos-20261110/ftc-starter-final.log": "eca73ad78fc0d6086ad3d616212d2b349b1a4ea260ed042cb839eb14f7beb442",
+    "build/sdk12-otos-20261110/guidance-tests.log": "9696414692ae7b9b2aa63cd7609ce7417c96c9131d9803d497eaf133bc8e83fc",
+    "build/sdk12-otos-20261110/Hardware-12.0.0.jar": "f77a6130d820e52328ac30354212ee8c528c9d64e348cd141e071310345e9c66",
+    "build/sdk12-otos-20261110/library-candidate.log": "15f3130614c5b9a3d3edeaa239709d6a1fdebe84c38512758e1b4fb1e2ccd0c2",
+    "build/sdk12-otos-20261110/library-final.log": "301c3e06bc267ad009e158ba2cd98e9795917afe60231a918f0ee74493f69e08",
+    "build/sdk12-otos-20261110/native-1.log": "f62dac94462b0e4906ca16c455d4d28d9022f3401aa87c44d68ec74a9f7e2663",
+    "build/sdk12-otos-20261110/native-1.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/sdk12-otos-20261110/native-2.log": "07051d32e0de975344fbc69398b16a171d9137f301e7ab2b6c7e4a9b8cd26325",
+    "build/sdk12-otos-20261110/native-2.png": "9c1491fbdc835601ef742870355735c6e2e16da13f463161bb2efb75a38d5a5e",
+    "build/sdk12-otos-20261110/otos-baseline-diagnostic.log": "27991610f6cd40e1b0b761723abc3b206889a2627d7332c4ced5ac51cf1522d5",
+    "build/sdk12-otos-20261110/otos-baseline-normal.log": "927891c0c267eead09c119fc398dcf7a88760e98d0dbaa78b413d6f3840501bb",
+    "build/sdk12-otos-20261110/otos-baseline-normal.xml": "e70e39149a44e2cc521e12c976ae11f2be5488a10f2baefd8abe533223faf82f",
+    "build/sdk12-otos-20261110/otos-fixed-diagnostic.log": "5899bf7db9ed12eaed26f915a7d38aad02442245805566903f831a09a948be66",
+    "build/sdk12-otos-20261110/otos-fixed-normal.log": "73f9e35f4456482eb60cfde830d97db11f73c615d2c345dab7ee906b4382049b",
+    "build/sdk12-otos-20261110/real-sdk-otos.txt": "f386bd10ca1c9477660eb9135fb1f2253fb142e41984c0c14245c06e1b44e4a8",
+    "build/sdk12-otos-20261110/source-policy.log": "b05fa89e00c3919c22b0f9b9b18c770f596d18cbb02b4fe9cdd493f85f2a5bd7",
+    "build/sdk12-otos-20261110/studio-final.log": "a0ec7d5bc284c20784d04f67e188025e47ba72f891cf67919c2dccfcf522fa1f"
+  },
+  "limits": [
+    "No physical OTOS, I2C, controller, camera or target-timing verification",
+    "No public release, protected merge, deployment or original-checkout integration",
+    "Unrelated full Studio suite and earlier recovery/performance opt-ins not repeated",
+    "SDK output-parameter method inspected but not substituted; it has internal allocations"
+  ]
+}

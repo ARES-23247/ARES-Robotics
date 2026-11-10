@@ -1,7 +1,9 @@
 # Monorepo audit coverage
 
-The latest local continuation is the [SDK 12 servo cache reliability checkpoint](FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md),
-covering reproduced mapping-change cache failures, allocation/write-count verification, and updated
+The latest SDK continuation is the [OTOS lifecycle/input-refresh checkpoint](FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md),
+covering reset/close freshness, delayed reads, allocation and framework/starter validation.
+The preceding [servo cache reliability checkpoint](FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md)
+covers reproduced mapping-change cache failures, allocation/write-count verification, and updated
 consumer/bundle validation. The [remaining software verification](FTC_SDK12_SOFTWARE_FOLLOWUP_2026_11_09.md)
 covers software opt-ins and dedicated consumer recovery tests. The [migration checkpoint](FTC_SDK12_MIGRATION_2026_11_09.md)
 records the FTC product/bundle update and real-SDK/mock and vision/localization corrections.
