@@ -42,14 +42,24 @@
       ]
     },
     ".agents/skills/ares-build-release/references/commands.md": {
-      "sha256": "c41d0546165df32b68dc12b5e2cab6e46885c9eb3e4a7956520f9e0681332099",
-      "review": "reviewed",
+      "sha256": "9cdc88918189d35c9816e43838ccc97affbe7aee39be68f98a1d313741c9b8be",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
+      "scope": "Reviewed the changed build, architecture, skill guidance, or checkpoint-index content for the bounded database/archive ownership correction and verified applicable links/policy.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "c41d0546165df32b68dc12b5e2cab6e46885c9eb3e4a7956520f9e0681332099",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Full build/dependency/release guidance review: coordinates, released/sibling/isolated modes, same candidate through dependency order, compile/regeneration ownership, immutable release and concurrency rules. Checked Gradle properties/task declarations and prior frozen candidate evidence; no release or new app launch performed.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass113-verified-evidence/summary.json"
+        ]
+      }
     },
     ".agents/skills/ares-build-release/references/failure-modes.md": {
       "sha256": "7df7639a9ae1e9dd98c7e49280aaceaa1b9a16f9cfef867582cf7b3efd352094",
@@ -455,13 +465,23 @@
       ]
     },
     "ARES-Analytics/ARCHITECTURE.md": {
-      "sha256": "7ebd765f84d9e4947e6931242e9c0c82628f5921fdd05408effa529310e441c2",
-      "review": "reviewed",
+      "sha256": "864fa86ed8a4ae92114ce7ec69bf3dd7ef671a118a6c0c61426204e3699a930c",
+      "review": "partial",
       "validation": "passed",
-      "scope": "ARES Robotics Studio architecture: verified comprehensive architectural invariants including robot offline-first principle (no direct robot-to-cloud egress), NT4 topic normalization without leading slashes, 3-tier DuckDB connection model (persistent writer, duplicated read, ephemeral live-telemetry), log decoder streaming/allocation bounds, deterministic replay reconstruction with baseline state latching, monotonic elapsed clock, gateway security/rate-limiting/OAuth brokering without token persistence, coordinate conventions (+X forward, +Y left, CCW positive, internal radians), and multi-module test verification strategy.",
+      "scope": "Reviewed the changed build, architecture, skill guidance, or checkpoint-index content for the bounded database/archive ownership correction and verified applicable links/policy.",
       "evidence": [
-        "docs/audits/pass291-pending-elevation-audit.md"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "7ebd765f84d9e4947e6931242e9c0c82628f5921fdd05408effa529310e441c2",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "ARES Robotics Studio architecture: verified comprehensive architectural invariants including robot offline-first principle (no direct robot-to-cloud egress), NT4 topic normalization without leading slashes, 3-tier DuckDB connection model (persistent writer, duplicated read, ephemeral live-telemetry), log decoder streaming/allocation bounds, deterministic replay reconstruction with baseline state latching, monotonic elapsed clock, gateway security/rate-limiting/OAuth brokering without token persistence, coordinate conventions (+X forward, +Y left, CCW positive, internal radians), and multi-module test verification strategy.",
+        "evidence": [
+          "docs/audits/pass291-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/COMMERCIAL-LICENSE.md": {
       "sha256": "085873e67ea81c856193d24e7c37f4c3e4d6de037ba166bf26eb29fa1ec8e2e2",
@@ -536,12 +556,13 @@
       ]
     },
     "ARES-Analytics/app/build.gradle.kts": {
-      "sha256": "b34b18a6a704b3a828c42dba2755899b6706e3138bdd81338cbac575fc53b426",
+      "sha256": "d5c044edcb1d5d36b3f241310bf3afd99b667467895837a57f2ad2cb6d792ccb",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed the consumerRoundtripTest task and existing app CI scope/evidence wiring delta only. Verified selected dependency forwarding, separate heavyweight consumer scope, one test fork, and existing change propagation; 25 classifier/boundary regressions and real Windows consumer builds passed. GitHub/Linux execution is unverified. No new whole-file review credit.",
+      "scope": "Reviewed the changed build, architecture, skill guidance, or checkpoint-index content for the bounded database/archive ownership correction and verified applicable links/policy.",
       "evidence": [
-        "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
       ],
       "consumerRoundtripPriorReview": {
         "sha256": "a69665818b7721a0f2eb5f81f51ccdb300ac7746dd9db51cacb8821ea6d2386c",
@@ -551,16 +572,35 @@
         "evidence": [
           "docs/audits/RELEASE_7_0_62_REVIEW.md"
         ]
+      },
+      "priorDatabase20261109": {
+        "sha256": "b34b18a6a704b3a828c42dba2755899b6706e3138bdd81338cbac575fc53b426",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed the consumerRoundtripTest task and existing app CI scope/evidence wiring delta only. Verified selected dependency forwarding, separate heavyweight consumer scope, one test fork, and existing change propagation; 25 classifier/boundary regressions and real Windows consumer builds passed. GitHub/Linux execution is unverified. No new whole-file review credit.",
+        "evidence": [
+          "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+        ]
       }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/Main.kt": {
-      "sha256": "6ef8fc324d2ca280f029dd835f60d18b6317e8ec59535a23ce39072209e464aa",
-      "review": "reviewed",
+      "sha256": "5f77c539dddf7d28c80af2ba6b45059de12c03594b90559c153a21a1ebe78db2",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified main(args) composition root for Compose desktop application. Verified single-instance lock acquisition via DesktopInstanceLock, crash handler hook with DesktopCrashHandler, initialization of DesktopStartupMachine, DesktopShutdownCoordinator, and DesktopWindowCreationWatchdog. Confirmed thread isolation with runDesktopServiceBootstrap dispatching on Dispatchers.IO, loading/failure UI states, minimum window dimensions (1100x700), focus lost input neutralizing, and safe presentation controller attachment/detachment.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "6ef8fc324d2ca280f029dd835f60d18b6317e8ec59535a23ce39072209e464aa",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified main(args) composition root for Compose desktop application. Verified single-instance lock acquisition via DesktopInstanceLock, crash handler hook with DesktopCrashHandler, initialization of DesktopStartupMachine, DesktopShutdownCoordinator, and DesktopWindowCreationWatchdog. Confirmed thread isolation with runDesktopServiceBootstrap dispatching on Dispatchers.IO, loading/failure UI states, minimum window dimensions (1100x700), focus lost input neutralizing, and safe presentation controller attachment/detachment.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/PackagedProjectValidation.kt": {
       "sha256": "2dbc01a45fe521d1e6dd6130c353852e7b898d82d5a2b797952a24f70300273c",
@@ -605,13 +645,23 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/DesktopShutdownCoordinator.kt": {
-      "sha256": "8fe55ca7b9559c3c82253da8b2e8e523dbd091033d735e95f7ec5d7ced0bd7ea",
-      "review": "reviewed",
+      "sha256": "502dc49649b62c170e0bb15e0a5826add05e1af51cec409115a6bfc1ac5bfa37",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified shutdown coordination lifecycle: idempotent close entry guarded by AtomicBoolean, bounded service disposal on Dispatchers.IO within 15,000 ms (SHUTDOWN_TIMEOUT_MS), hard-exit watchdog daemon thread escalating to Runtime.getRuntime().halt(1) after grace period to prevent hung services from retaining locks, and terminateForUnusableWindow emergency disposal.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "8fe55ca7b9559c3c82253da8b2e8e523dbd091033d735e95f7ec5d7ced0bd7ea",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified shutdown coordination lifecycle: idempotent close entry guarded by AtomicBoolean, bounded service disposal on Dispatchers.IO within 15,000 ms (SHUTDOWN_TIMEOUT_MS), hard-exit watchdog daemon thread escalating to Runtime.getRuntime().halt(1) after grace period to prevent hung services from retaining locks, and terminateForUnusableWindow emergency disposal.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/desktop/DesktopStartupMachine.kt": {
       "sha256": "71343d7c8e9bc272b12506ccf7e5b9ff10bb623fba3cfcd1cfe7ddfe2c1cb9a7",
@@ -668,13 +718,13 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/di/ServiceRegistry.kt": {
-      "sha256": "87f952cebd90043fd569865fb23683a831bcba12bfc843fbb5b8f1c0f38a7d3c",
+      "sha256": "3857ff389e8213d8ebcdc4aa6573faf0b6029b492c2d2e6c2c2f23497fe6d63f",
       "review": "partial",
       "validation": "passed",
-      "scope": "Inspected registry creation and disposal, lazy delegate access and keyboard neutralization. Reproduced unused initialization on baseline; corrected private delegate access. Historical safe-fallback claim is superseded by this reproduction. Bootstrap/UI work lifetime during early close remains unresolved.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
       ],
       "priorLifecycle20261109": {
         "sha256": "b721ab7bb6581f3de6c394507c5b29ba0f69a1ab020613ea86fda429c1c557df",
@@ -686,6 +736,16 @@
           "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
           "ARESLib-Kotlin/build/audit-pass33-studio.log",
           "ARESLib-Kotlin/build/audit-pass33-policy.log"
+        ]
+      },
+      "priorDatabase20261109": {
+        "sha256": "87f952cebd90043fd569865fb23683a831bcba12bfc843fbb5b8f1c0f38a7d3c",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Inspected registry creation and disposal, lazy delegate access and keyboard neutralization. Reproduced unused initialization on baseline; corrected private delegate access. Historical safe-fallback claim is superseded by this reproduction. Bootstrap/UI work lifetime during early close remains unresolved.",
+        "evidence": [
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -1147,20 +1207,30 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt": {
-      "sha256": "17c49ed7f7f07399aae4ff3b5a80d16cdd96e55dce972c6f691fefaec76a1449",
-      "review": "reviewed",
+      "sha256": "234f2d8eaf688bf211dfc6c0bb37bc7eeca665153f4ded06daf1a3f63c7f86a2",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated embedded DuckDB relational database service managing JDBC connection and duplicated read connection. Verified thread safety with dbMutex and readMutex with ordered acquisition on closeAndJoin. Verified resource limits via resolveDuckDbResourceSettings (adaptive 256MB-768MB memory limit and 1-64 threads). Verified periodic 60s WAL checkpoints and durable boundary checkpoints. Verified SQL injection guards via AiSqlQueryGuard.validate.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass253-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
-        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass23-studio.log",
-        "ARESLib-Kotlin/build/audit-pass23-policy.log"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "17c49ed7f7f07399aae4ff3b5a80d16cdd96e55dce972c6f691fefaec76a1449",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated embedded DuckDB relational database service managing JDBC connection and duplicated read connection. Verified thread safety with dbMutex and readMutex with ordered acquisition on closeAndJoin. Verified resource limits via resolveDuckDbResourceSettings (adaptive 256MB-768MB memory limit and 1-64 threads). Verified periodic 60s WAL checkpoints and durable boundary checkpoints. Verified SQL injection guards via AiSqlQueryGuard.validate.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass253-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+          "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass23-studio.log",
+          "ARESLib-Kotlin/build/audit-pass23-policy.log"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DesignAssistants.kt": {
       "sha256": "6240ea17baa5e9e7f9ef5fa9301f29f85502055d9e3011ee05e315464a3f609d",
@@ -2554,14 +2624,24 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/AnalysisTelemetryRepository.kt": {
-      "sha256": "88ebff2a211cb30a741b88292042e1fc014f698cd788cf7908177af6feb125ec",
-      "review": "reviewed",
+      "sha256": "c8162d5942ef4ba0ca1a3bbb7e28a4b162692b3482c0ebbbb89547366219a7be",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass 246: Complete typed repository and request/limit/input contracts reviewed/tested. Prepared session/key/pattern/limit binding; one coordinator read and statement snapshot; latest sampleOrder per topic/source microsecond before caps; overlapping-rule deduplication; complete group or explicit metadata only; independent row/topic/projected-byte budgets; constant text invalidity marker; Unicode key storage bound; microsecond ordering; live/persistent isolation. Bounded transfer is not fixed query time or exact JVM heap size; JDBC in-flight cancellation remains deferred.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "88ebff2a211cb30a741b88292042e1fc014f698cd788cf7908177af6feb125ec",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass 246: Complete typed repository and request/limit/input contracts reviewed/tested. Prepared session/key/pattern/limit binding; one coordinator read and statement snapshot; latest sampleOrder per topic/source microsecond before caps; overlapping-rule deduplication; complete group or explicit metadata only; independent row/topic/projected-byte budgets; constant text invalidity marker; Unicode key storage bound; microsecond ordering; live/persistent isolation. Bounded transfer is not fixed query time or exact JVM heap size; JDBC in-flight cancellation remains deferred.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass246-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/ConsoleMessageWriter.kt": {
       "sha256": "8a68682a65cd409df676db617160452bd8e898c233dd941092b46703287bf545",
@@ -2593,15 +2673,25 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DatabaseTransactionCoordinator.kt": {
-      "sha256": "8f44add27012f0bc3fcc59c403393adbfc800cdf0772b31a9bb3de4a6b3652e8",
-      "review": "reviewed",
+      "sha256": "a1abef19c83a8e89449431f5a26794af0d7bdbc95f47615f686ebe68c5ded5a7",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass 244: Whole coordinator inspected; cached persistent/live read query facades preserve existing mutex, metrics, IO and connection ownership. Live-vs-recorded isolation exercised through coaching. Earlier scoped coverage retained: Entire coordinator: exact connection routing, independent mutexes, read timing, attempted-operation metrics, cancellation/failure lock release and checkpoint coordination. Eight dedicated tests and full Studio gate passed; clocks remain monotonic by contract.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass25-studio.log"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "8f44add27012f0bc3fcc59c403393adbfc800cdf0772b31a9bb3de4a6b3652e8",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass 244: Whole coordinator inspected; cached persistent/live read query facades preserve existing mutex, metrics, IO and connection ownership. Live-vs-recorded isolation exercised through coaching. Earlier scoped coverage retained: Entire coordinator: exact connection routing, independent mutexes, read timing, attempted-operation metrics, cancellation/failure lock release and checkpoint coordination. Eight dedicated tests and full Studio gate passed; clocks remain monotonic by contract.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass244-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass25-studio.log"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/DuckDbTransaction.kt": {
       "sha256": "6d70b0cee7057eaa0dc54ef5f86dbbe365bfb8174beffc241368032e6100adf2",
@@ -2623,14 +2713,24 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/ReplayPoseRepository.kt": {
-      "sha256": "ef8ac804c43fa6d91b16106f35bfa21496f27f637f888b54b0924229d9cf21ee",
-      "review": "reviewed",
+      "sha256": "27756c985c0fe2f99b15151254a618ecfcff4fd5d31eb9a465aa0f3188a7b539",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass 253: Complete new repository reviewed and executed against actual DuckDB: prepared source/session/window/limit parameters; one coordinator read and correct persistent/live connection; exact timestamp/sample-order groups or unique-per-component timestamp fallback; ambiguity and text/nonfinite/packed-sequence rejection; consistent source priority; endpoint-preserving ordinal sampling with bounded JVM results and no timestamp-span arithmetic; cancellation before work and during result reads, statement/result closure. Native execution still costs matching window size and is not proven immediately interruptible.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass253-verified-evidence/summary.json"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "ef8ac804c43fa6d91b16106f35bfa21496f27f637f888b54b0924229d9cf21ee",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass 253: Complete new repository reviewed and executed against actual DuckDB: prepared source/session/window/limit parameters; one coordinator read and correct persistent/live connection; exact timestamp/sample-order groups or unique-per-component timestamp fallback; ambiguity and text/nonfinite/packed-sequence rejection; consistent source priority; endpoint-preserving ordinal sampling with bounded JVM results and no timestamp-span arithmetic; cancellation before work and during result reads, statement/result closure. Native execution still costs matching window size and is not proven immediately interruptible.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass253-verified-evidence/summary.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/RobotActionRepository.kt": {
       "sha256": "cba6eb44fad2fe78234f78fe660e1b763589fa118b576ef03e7f5e838e54dfc0",
@@ -2648,35 +2748,56 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/RunEvidenceRepository.kt": {
-      "sha256": "133b10f792f3ed617413c293a6a1f01e1d7405468cdc766a351b3732ffb77857",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated lines 1-179: getDiagnosticsTelemetry, replaceAnalysisDiagnostics, getAnalysisDiagnostics, replaceImportReports, completeImport, getImportReports, and toTelemetryFrame. Verified read/write connection isolation via DatabaseTransactionCoordinator, atomic multi-table import completion combining session metadata and source reports within withDuckDbTransaction, strict topic normalization with TelemetryMetricCatalog.normalizeTopic, prepared statements with ? parameter binding, and defensive result set parsing with microsecond timestamp fallback.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass25-studio.log"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/SessionMetadataRepository.kt": {
-      "sha256": "1524e81053b0d5260d455c3ee86dc5164f78d4755b578a0887c32bcc42b30ca5",
-      "review": "reviewed",
-      "validation": "passed",
-      "scope": "Validated lines 1-411: insertSession, insertImportSession, upsertSession, upsertCompletedSessionWithinTransaction, getSession, getSessions, getSessionsForWorkspace, findCompletedSessionBySourceHashes, deleteSession, insertSessionSummary, getSessionSummary, getAllSessionSummaries, insertAnnotation, getAnnotations, updateSessionTags, updateSessionMatchDetails, updateSessionAndSummary, insertAlert, getAlerts, insertTopology, getTopology, insertConsoleMessages, and getConsoleMessages. Verified JDBC prepared statement parameterization, atomic cascading deletion across 9 tables within withDuckDbTransaction, atomic dual-table updates in updateSessionAndSummary, import lifecycle tracking (IMPORTING vs COMPLETE), and deduplication via source hashes.",
-      "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass23-density-before.log",
-        "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass23-studio.log",
-        "ARESLib-Kotlin/build/audit-pass23-policy.log"
-      ]
-    },
-    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryRepository.kt": {
-      "sha256": "ab42a3c282028cc79cae92881eb9223475a9bcc46a3cb125d34deb6fc15d162e",
+      "sha256": "d200467651d5c8058d7d2944b93225f1a1b02e5a2707a5924a39611f7abebcfb",
       "review": "partial",
       "validation": "passed",
-      "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "133b10f792f3ed617413c293a6a1f01e1d7405468cdc766a351b3732ffb77857",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated lines 1-179: getDiagnosticsTelemetry, replaceAnalysisDiagnostics, getAnalysisDiagnostics, replaceImportReports, completeImport, getImportReports, and toTelemetryFrame. Verified read/write connection isolation via DatabaseTransactionCoordinator, atomic multi-table import completion combining session metadata and source reports within withDuckDbTransaction, strict topic normalization with TelemetryMetricCatalog.normalizeTopic, prepared statements with ? parameter binding, and defensive result set parsing with microsecond timestamp fallback.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass25-studio.log"
+        ]
+      }
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/SessionMetadataRepository.kt": {
+      "sha256": "ff0604aa8a3a4357215bfc3a697ec2dfa6f24218604318531521d09fe7f097f8",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
+      "evidence": [
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "1524e81053b0d5260d455c3ee86dc5164f78d4755b578a0887c32bcc42b30ca5",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated lines 1-411: insertSession, insertImportSession, upsertSession, upsertCompletedSessionWithinTransaction, getSession, getSessions, getSessionsForWorkspace, findCompletedSessionBySourceHashes, deleteSession, insertSessionSummary, getSessionSummary, getAllSessionSummaries, insertAnnotation, getAnnotations, updateSessionTags, updateSessionMatchDetails, updateSessionAndSummary, insertAlert, getAlerts, insertTopology, getTopology, insertConsoleMessages, and getConsoleMessages. Verified JDBC prepared statement parameterization, atomic cascading deletion across 9 tables within withDuckDbTransaction, atomic dual-table updates in updateSessionAndSummary, import lifecycle tracking (IMPORTING vs COMPLETE), and deduplication via source hashes.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass23-density-before.log",
+          "ARESLib-Kotlin/build/audit-pass23-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass23-studio.log",
+          "ARESLib-Kotlin/build/audit-pass23-policy.log"
+        ]
+      }
+    },
+    "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryRepository.kt": {
+      "sha256": "76cbecbef94e022c95729b3db7dbb08a0928692cab233d854baaeaf8332db858",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
+      "evidence": [
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -2692,7 +2813,16 @@
         "sha256": "ab42a3c282028cc79cae92881eb9223475a9bcc46a3cb125d34deb6fc15d162e",
         "validation": "passed"
       },
-      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
+      "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md",
+      "priorDatabase20261109": {
+        "sha256": "ab42a3c282028cc79cae92881eb9223475a9bcc46a3cb125d34deb6fc15d162e",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
+        "evidence": [
+          "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/drivebase/DrivebaseModels.kt": {
       "sha256": "efa1cf2b82edb744363eb026ea1acd3c77541f227defb232d4c9ed7580ab02c6",
@@ -3103,13 +3233,23 @@
       ]
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/OfficialRobotProjectTemplates.kt": {
-      "sha256": "c823ce3146e8f8fc0c6442a5d3a250b3b6c1b6d6ae7885218d2b07df27385511",
-      "review": "reviewed",
+      "sha256": "5cf8d04a8692f8657f7f0f72b02028d85203906024ff7c959e411290bb2f7b44",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Validated OfficialRobotProjectTemplates release-pinned robot template definitions. Verified SHA-256 asset digest verification for FTC, FRC, and XRP starter templates, version compatibility matrix, and immutability of template manifest metadata.",
+      "scope": "Reviewed changed lifecycle/connection routing or archive-version ownership and affected callers for this bounded checkpoint. Passing full app suite and linked reproductions do not certify every behavior in the file.",
       "evidence": [
-        "docs/audits/pass293-pending-elevation-audit.md"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "c823ce3146e8f8fc0c6442a5d3a250b3b6c1b6d6ae7885218d2b07df27385511",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Validated OfficialRobotProjectTemplates release-pinned robot template definitions. Verified SHA-256 asset digest verification for FTC, FRC, and XRP starter templates, version compatibility matrix, and immutability of template manifest metadata.",
+        "evidence": [
+          "docs/audits/pass293-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/project/ProjectDocuments.kt": {
       "sha256": "98fca35ea265cd6b02fb813a06d15ad8a046d6c95b8d753d0bfbba1a57ad084c",
@@ -8216,13 +8356,23 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopShutdownCoordinatorTest.kt": {
-      "sha256": "8c9ed7987a1b9abd8a4e42400dbf16392f571b3865ca011181e4c46b65cc7721",
-      "review": "reviewed",
+      "sha256": "0ed5d08829ce1d539f7c1e2fb8878e51ec2a2d23f71c06cd7c3bc768ed281da0",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Verified awaitBoundedEmergencyDisposal: ensures emergency cleanup on desktop window loss waits for service disposal completion while strictly enforcing timeout limits to prevent process hangs.",
+      "scope": "Reviewed new or corrected regressions and their fixture scheduling/cleanup. Baseline failures and final full app checks retained in linked evidence; unrelated existing test cases were not fully re-reviewed.",
       "evidence": [
-        "docs/audits/pass292-pending-elevation-audit.md"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "8c9ed7987a1b9abd8a4e42400dbf16392f571b3865ca011181e4c46b65cc7721",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Verified awaitBoundedEmergencyDisposal: ensures emergency cleanup on desktop window loss waits for service disposal completion while strictly enforcing timeout limits to prevent process hangs.",
+        "evidence": [
+          "docs/audits/pass292-pending-elevation-audit.md"
+        ]
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopStartupMachineTest.kt": {
       "sha256": "234b81c8b136e12e6b0684b36b58abd14b08603b8429da6ac78f21280a798200",
@@ -10119,15 +10269,25 @@
       ]
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/RobotProjectTemplateServiceTest.kt": {
-      "sha256": "beb966bc6ca711b6ff244f292f613949acfcee562e6d86ba086e1e5eac5b5fec",
-      "review": "reviewed",
+      "sha256": "aa31b0816ed56e38b11aa27ab7a4e286ee939bec1ee9de3758f3fc6fc1daad0d",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass 196: Entire test source and fixtures read. Eighteen cases cover template identity/deployment policy, staged publication/rollback, cloud fallback/races, offline/bundled caching, pinned hashes, schema-compatible personalization, field presets, traversal/version rejection and bounded IDs. Hardware-review fixture now supplies its displayed inventory hash. All 18 passed in focused/full runs; this is not a full review of the production template service or a generated-project build.",
+      "scope": "Reviewed new or corrected regressions and their fixture scheduling/cleanup. Baseline failures and final full app checks retained in linked evidence; unrelated existing test cases were not fully re-reviewed.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
-        "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "beb966bc6ca711b6ff244f292f613949acfcee562e6d86ba086e1e5eac5b5fec",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass 196: Entire test source and fixtures read. Eighteen cases cover template identity/deployment policy, staged publication/rollback, cloud fallback/races, offline/bundled caching, pinned hashes, schema-compatible personalization, field presets, traversal/version rejection and bounded IDs. Hardware-review fixture now supplies its displayed inventory hash. All 18 passed in focused/full runs; this is not a full review of the production template service or a generated-project build.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "ARESLib-Kotlin/build/audit-pass196-verified-evidence/focused-final-summary.json",
+          "ARESLib-Kotlin/build/audit-pass196-verified-evidence/studio-app-summary.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/project/persistence/AutonomousCatalogRestoreAuditTest.kt": {
       "sha256": "27b232eea883da20dcfeb4ea62fd1d9623df4548a718328e424909efe55342cf",
@@ -12271,13 +12431,13 @@
       ]
     },
     "ARES-Analytics/config/maintainability/codebase_ledger.json": {
-      "sha256": "e8381a6cc97a1af3431378a2340f130054e0f27de9f3c6276cc723319ed9375c",
+      "sha256": "8ee883e878fa60490cf0740ee36199a99512a0fa2a6a1bfed01a9115179d1775",
       "review": "partial",
       "validation": "passed",
-      "scope": "Generated inventory delta only: registry source grows from 443 to 447 lines, all other semantic entries unchanged; ratchet and source policy pass with zero violations.",
+      "scope": "Regenerated source-size inventory; inspected changed line-count entries, unchanged file count and size limits, zero violations. This is size accounting, not behavioral review.",
       "evidence": [
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
       ],
       "agyDrivebaseSavePriorRecord": {
         "sha256": "6f2416031561edda08bce33e367f86f32a5fbd48749dcc13099fd2da60159d46",
@@ -12414,6 +12574,16 @@
           ".codex-validation/agy-audit-coordination/build/studio-maintenance/final-junit-summary.json",
           ".codex-validation/agy-audit-coordination/build/studio-maintenance/preservation-check.json",
           ".codex-validation/agy-audit-coordination/build/studio-maintenance/source-policy.log"
+        ]
+      },
+      "priorDatabase20261109": {
+        "sha256": "e8381a6cc97a1af3431378a2340f130054e0f27de9f3c6276cc723319ed9375c",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Generated inventory delta only: registry source grows from 443 to 447 lines, all other semantic entries unchanged; ratchet and source policy pass with zero violations.",
+        "evidence": [
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -34137,99 +34307,109 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "docs/audits/README.md": {
-      "sha256": "6e2174c04cea10aa280be67085dd7b9042f0bdd17b5140b91d3110c74b08e899",
-      "review": "reviewed",
+      "sha256": "ad4601bf411acdfc49a39899ac36af3e86b61dd09a6ef003b24c5eb4db5696d2",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Pass277: Entire audit overview and ledger semantics reviewed. Added user-requested pause and links to the durable checkpoint, clarified20-40-file batches and completion versus work pause. Existing historical concerns are retained, not declared resolved. Robot-readiness checkpoint: Bounded objective,scenario evidence,checkpoint identities,historical pause and completion limits checked against retained local results. Broad-file goal superseded without erasing prior coverage. Document links checked separately. Release alignment follow-up: Authorized follow-up evidence and limits checked against retained XML, archive hashes and logs. Original robot-readiness checkpoint and historical pause remain preserved; no renewed every-file objective. Desktop follow-up 2026-09-15: Added the completed hardware-free follow-up link; prior historical audit accounting retained.",
+      "scope": "Reviewed the changed build, architecture, skill guidance, or checkpoint-index content for the bounded database/archive ownership correction and verified applicable links/policy.",
       "evidence": [
-        "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
-        "docs/audits/checkpoints/pass277.json",
-        "ARESLib-Kotlin/build/audit-pass24-before.log",
-        "ARESLib-Kotlin/build/audit-pass24-focused.log",
-        "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
-        "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
-        "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
-        "ARESLib-Kotlin/build/audit-pass24-policy.log",
-        "ARESLib-Kotlin/build/audit-pass30-studio.log",
-        "ARESLib-Kotlin/build/audit-pass30-policy.log",
-        "ARESLib-Kotlin/build/audit-pass31-studio.log",
-        "ARESLib-Kotlin/build/audit-pass31-policy.log",
-        "ARESLib-Kotlin/build/audit-pass32-studio.log",
-        "ARESLib-Kotlin/build/audit-pass32-policy.log",
-        "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass33-studio.log",
-        "ARESLib-Kotlin/build/audit-pass33-policy.log",
-        "ARESLib-Kotlin/build/audit-pass34-before.log",
-        "ARESLib-Kotlin/build/audit-pass34-focused.log",
-        "ARESLib-Kotlin/build/audit-pass34-studio.log",
-        "ARESLib-Kotlin/build/audit-pass34-policy.log",
-        "ARESLib-Kotlin/build/audit-pass35-before.log",
-        "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
-        "ARESLib-Kotlin/build/audit-pass35-focused.log",
-        "ARESLib-Kotlin/build/audit-pass35-studio.log",
-        "ARESLib-Kotlin/build/audit-pass35-policy.log",
-        "ARESLib-Kotlin/build/audit-pass36-before.log",
-        "ARESLib-Kotlin/build/audit-pass36-focused.log",
-        "ARESLib-Kotlin/build/audit-pass36-studio.log",
-        "ARESLib-Kotlin/build/audit-pass36-policy.log",
-        "ARESLib-Kotlin/build/audit-pass37-before.log",
-        "ARESLib-Kotlin/build/audit-pass37-focused.log",
-        "ARESLib-Kotlin/build/audit-pass37-studio.log",
-        "ARESLib-Kotlin/build/audit-pass37-policy.log",
-        "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
-        "ARESLib-Kotlin/build/audit-pass38-before.log",
-        "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
-        "ARESLib-Kotlin/build/audit-pass38-focused.log",
-        "ARESLib-Kotlin/build/audit-pass38-studio.log",
-        "ARESLib-Kotlin/build/audit-pass38-policy.log",
-        "ARESLib-Kotlin/build/audit-pass39-before.log",
-        "ARESLib-Kotlin/build/audit-pass39-focused.log",
-        "ARESLib-Kotlin/build/audit-pass39-library.log",
-        "ARESLib-Kotlin/build/audit-pass39-studio.log",
-        "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass39-policy.log",
-        "ARESLib-Kotlin/build/audit-pass40-before.log",
-        "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
-        "ARESLib-Kotlin/build/audit-pass40-library.log",
-        "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass40-policy.log",
-        "ARESLib-Kotlin/build/audit-pass40-studio.log",
-        "ARESLib-Kotlin/build/audit-pass41-before.log",
-        "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
-        "ARESLib-Kotlin/build/audit-pass41-library.log",
-        "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
-        "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
-        "ARESLib-Kotlin/build/audit-pass42-library-final.log",
-        "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass42-studio.log",
-        "ARESLib-Kotlin/build/audit-pass42-policy.log",
-        "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
-        "ARESLib-Kotlin/build/audit-pass43-library.log",
-        "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass43-studio.log",
-        "ARESLib-Kotlin/build/audit-pass43-policy.log",
-        "ARESLib-Kotlin/build/audit-pass44-final-focus-complete.log",
-        "ARESLib-Kotlin/build/audit-pass44-library-final.log",
-        "ARESLib-Kotlin/build/audit-pass44-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass44-studio.log",
-        "ARESLib-Kotlin/build/audit-pass44-policy.log",
-        "ARESLib-Kotlin/build/audit-pass45-final-focus.log",
-        "ARESLib-Kotlin/build/audit-pass45-library.log",
-        "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
-        "ARESLib-Kotlin/build/audit-pass45-studio.log",
-        "ARESLib-Kotlin/build/audit-pass45-policy.log",
-        "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
-        "ARESLib-Kotlin/build/audit-pass57-policy.log",
-        "ARESLib-Kotlin/build/audit-pass57-verified-evidence",
-        "ARESLib-Kotlin/build/audit-method-doc-links.log",
-        "docs/audits/ROBOT_READINESS_REPORT.md",
-        "docs/audits/checkpoints/robot-readiness.json",
-        "docs/audits/RELEASE_ALIGNMENT_REPORT.md",
-        "docs/audits/checkpoints/release-alignment.json",
-        "docs/audits/DESKTOP_READINESS_REPORT.md",
-        "docs/audits/checkpoints/desktop-readiness.json"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "6e2174c04cea10aa280be67085dd7b9042f0bdd17b5140b91d3110c74b08e899",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Pass277: Entire audit overview and ledger semantics reviewed. Added user-requested pause and links to the durable checkpoint, clarified20-40-file batches and completion versus work pause. Existing historical concerns are retained, not declared resolved. Robot-readiness checkpoint: Bounded objective,scenario evidence,checkpoint identities,historical pause and completion limits checked against retained local results. Broad-file goal superseded without erasing prior coverage. Document links checked separately. Release alignment follow-up: Authorized follow-up evidence and limits checked against retained XML, archive hashes and logs. Original robot-readiness checkpoint and historical pause remain preserved; no renewed every-file objective. Desktop follow-up 2026-09-15: Added the completed hardware-free follow-up link; prior historical audit accounting retained.",
+        "evidence": [
+          "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
+          "docs/audits/checkpoints/pass277.json",
+          "ARESLib-Kotlin/build/audit-pass24-before.log",
+          "ARESLib-Kotlin/build/audit-pass24-focused.log",
+          "ARESLib-Kotlin/build/audit-pass24-cleanup-before.log",
+          "ARESLib-Kotlin/build/audit-pass24-focused-verified.log",
+          "ARESLib-Kotlin/build/audit-pass24-studio-final.log",
+          "ARESLib-Kotlin/build/audit-pass24-policy.log",
+          "ARESLib-Kotlin/build/audit-pass30-studio.log",
+          "ARESLib-Kotlin/build/audit-pass30-policy.log",
+          "ARESLib-Kotlin/build/audit-pass31-studio.log",
+          "ARESLib-Kotlin/build/audit-pass31-policy.log",
+          "ARESLib-Kotlin/build/audit-pass32-studio.log",
+          "ARESLib-Kotlin/build/audit-pass32-policy.log",
+          "ARESLib-Kotlin/build/audit-pass33-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass33-studio.log",
+          "ARESLib-Kotlin/build/audit-pass33-policy.log",
+          "ARESLib-Kotlin/build/audit-pass34-before.log",
+          "ARESLib-Kotlin/build/audit-pass34-focused.log",
+          "ARESLib-Kotlin/build/audit-pass34-studio.log",
+          "ARESLib-Kotlin/build/audit-pass34-policy.log",
+          "ARESLib-Kotlin/build/audit-pass35-before.log",
+          "ARESLib-Kotlin/build/audit-pass35-voltage-before.log",
+          "ARESLib-Kotlin/build/audit-pass35-focused.log",
+          "ARESLib-Kotlin/build/audit-pass35-studio.log",
+          "ARESLib-Kotlin/build/audit-pass35-policy.log",
+          "ARESLib-Kotlin/build/audit-pass36-before.log",
+          "ARESLib-Kotlin/build/audit-pass36-focused.log",
+          "ARESLib-Kotlin/build/audit-pass36-studio.log",
+          "ARESLib-Kotlin/build/audit-pass36-policy.log",
+          "ARESLib-Kotlin/build/audit-pass37-before.log",
+          "ARESLib-Kotlin/build/audit-pass37-focused.log",
+          "ARESLib-Kotlin/build/audit-pass37-studio.log",
+          "ARESLib-Kotlin/build/audit-pass37-policy.log",
+          "ARESLib-Kotlin/build/audit-pass38-baseline-compile.log",
+          "ARESLib-Kotlin/build/audit-pass38-before.log",
+          "ARESLib-Kotlin/build/audit-pass38-focused-first.log",
+          "ARESLib-Kotlin/build/audit-pass38-focused.log",
+          "ARESLib-Kotlin/build/audit-pass38-studio.log",
+          "ARESLib-Kotlin/build/audit-pass38-policy.log",
+          "ARESLib-Kotlin/build/audit-pass39-before.log",
+          "ARESLib-Kotlin/build/audit-pass39-focused.log",
+          "ARESLib-Kotlin/build/audit-pass39-library.log",
+          "ARESLib-Kotlin/build/audit-pass39-studio.log",
+          "ARESLib-Kotlin/build/audit-pass39-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass39-policy.log",
+          "ARESLib-Kotlin/build/audit-pass40-before.log",
+          "ARESLib-Kotlin/build/audit-pass40-focused-final.log",
+          "ARESLib-Kotlin/build/audit-pass40-library.log",
+          "ARESLib-Kotlin/build/audit-pass40-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass40-policy.log",
+          "ARESLib-Kotlin/build/audit-pass40-studio.log",
+          "ARESLib-Kotlin/build/audit-pass41-before.log",
+          "ARESLib-Kotlin/build/audit-pass41-focused-fixed.log",
+          "ARESLib-Kotlin/build/audit-pass41-library.log",
+          "ARESLib-Kotlin/build/audit-pass41-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass41-studio-after-standby.log",
+          "ARESLib-Kotlin/build/audit-pass41-policy-resumed.log",
+          "ARESLib-Kotlin/build/audit-pass42-library-final.log",
+          "ARESLib-Kotlin/build/audit-pass42-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass42-studio.log",
+          "ARESLib-Kotlin/build/audit-pass42-policy.log",
+          "ARESLib-Kotlin/build/audit-pass43-final-focus.log",
+          "ARESLib-Kotlin/build/audit-pass43-library.log",
+          "ARESLib-Kotlin/build/audit-pass43-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass43-studio.log",
+          "ARESLib-Kotlin/build/audit-pass43-policy.log",
+          "ARESLib-Kotlin/build/audit-pass44-final-focus-complete.log",
+          "ARESLib-Kotlin/build/audit-pass44-library-final.log",
+          "ARESLib-Kotlin/build/audit-pass44-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass44-studio.log",
+          "ARESLib-Kotlin/build/audit-pass44-policy.log",
+          "ARESLib-Kotlin/build/audit-pass45-final-focus.log",
+          "ARESLib-Kotlin/build/audit-pass45-library.log",
+          "ARESLib-Kotlin/build/audit-pass45-verified-evidence/summary.json",
+          "ARESLib-Kotlin/build/audit-pass45-studio.log",
+          "ARESLib-Kotlin/build/audit-pass45-policy.log",
+          "ARESLib-Kotlin/build/audit-pass57-final-script-tests.log",
+          "ARESLib-Kotlin/build/audit-pass57-policy.log",
+          "ARESLib-Kotlin/build/audit-pass57-verified-evidence",
+          "ARESLib-Kotlin/build/audit-method-doc-links.log",
+          "docs/audits/ROBOT_READINESS_REPORT.md",
+          "docs/audits/checkpoints/robot-readiness.json",
+          "docs/audits/RELEASE_ALIGNMENT_REPORT.md",
+          "docs/audits/checkpoints/release-alignment.json",
+          "docs/audits/DESKTOP_READINESS_REPORT.md",
+          "docs/audits/checkpoints/desktop-readiness.json"
+        ]
+      }
     },
     "docs/audits/RELEASE_7_0_60_REVIEW.md": {
       "sha256": "fcede191c85bf5a44fbd1e85ee315f9c368074a099ecea77d4c4da5645a18e8f",
@@ -34432,10 +34612,10 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only this scoped checkpoint update. Previous review fields are preserved under priorLifecycle20261109; earlier nested history remains in place and unrelated semantic records are unchanged. Self-fingerprint binds the complete ledger; no full-ledger review inferred.",
+      "scope": "Reviewed only this database follow-up ledger delta. Previous review fields retained under priorDatabase20261109, earlier nested history retained in place, unrelated semantic records unchanged. No full-ledger review implied.",
       "evidence": [
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
       ],
       "preRelease7065": {
         "sha256": "a10bcd89b73121cde037e22e7a3f1a18d2fd335fda90de74541529da7c4d615a",
@@ -34861,7 +35041,7 @@
           ]
         }
       },
-      "sha256": "dbbaf039fb65b319fa98d8caffde177df9c58260b1634086d613b81a39544ccc",
+      "sha256": "2a356f77bdb6fa4f0646f0083fca62d3c4fa7c261dfcb3af8a8349007b7e5800",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -34871,6 +35051,16 @@
           "docs/audits/RELEASE_7_0_65_CHECKPOINT.md",
           "build/release-7-0-65/local-test-summary.json",
           "build/release-7-0-65/source-policy.log"
+        ]
+      },
+      "priorDatabase20261109": {
+        "sha256": "dbbaf039fb65b319fa98d8caffde177df9c58260b1634086d613b81a39544ccc",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only this scoped checkpoint update. Previous review fields are preserved under priorLifecycle20261109; earlier nested history remains in place and unrelated semantic records are unchanged. Self-fingerprint binds the complete ledger; no full-ledger review inferred.",
+        "evidence": [
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -37422,14 +37612,24 @@
       "sha256": "cab105336b37459e8a832fc2a02a40450fc29f44fc065eebae1ef93ed6919dac"
     },
     "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/ServiceRegistryShutdownAuditTest.kt": {
-      "sha256": "4eeb98bb316b68cc62c8a0c80431543b20e7a1fce2e2669c3383a5e5fe51c8b1",
-      "review": "reviewed",
+      "sha256": "3bc9313fb85d06ca230a0a0f56ebc5acafda1b01da63a2ca7d48408e11ffaa1a",
+      "review": "partial",
       "validation": "passed",
-      "scope": "Two real disposal regressions with trapped cold constructors and actual keyboard disarm. Both fail on unchanged baseline and pass after correction; repeated cold disposal covered.",
+      "scope": "Reviewed new or corrected regressions and their fixture scheduling/cleanup. Baseline failures and final full app checks retained in linked evidence; unrelated existing test cases were not fully re-reviewed.",
       "evidence": [
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
-        "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
-      ]
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ],
+      "priorDatabase20261109": {
+        "sha256": "4eeb98bb316b68cc62c8a0c80431543b20e7a1fce2e2669c3383a5e5fe51c8b1",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Two real disposal regressions with trapped cold constructors and actual keyboard disarm. Both fail on unchanged baseline and pass after correction; repeated cold disposal covered.",
+        "evidence": [
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
+          "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+        ]
+      }
     },
     "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md": {
       "sha256": "35b9ca2f3ee97e5cbc87334dd3b1bd2d2278fd95db35c30c89b76c43436a324a",
@@ -37449,6 +37649,46 @@
       "evidence": [
         "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09.md",
         "docs/audits/FRAMEWORK_LIFECYCLE_SKILLS_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/desktop/DesktopDatabaseShutdownRaceTest.kt": {
+      "sha256": "894f851145a297bff506a4a00d549ddbab86d7952104939518c0f3cfe9a8d25e",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed new or corrected regressions and their fixture scheduling/cleanup. Baseline failures and final full app checks retained in linked evidence; unrelated existing test cases were not fully re-reviewed.",
+      "evidence": [
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "ARES-Analytics/app/src/test/kotlin/com/ares/analytics/service/DatabaseImportResponsivenessTest.kt": {
+      "sha256": "52004d5641711377e43cc36b910789f07637e7617740f7eb480f7cb837af90bc",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Reviewed new or corrected regressions and their fixture scheduling/cleanup. Baseline failures and final full app checks retained in linked evidence; unrelated existing test cases were not fully re-reviewed.",
+      "evidence": [
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md": {
+      "sha256": "8edf486563f2e55a27ed5006b7aff9072eac5f0d721735889f60a68024e85633",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed findings, identities, failures/skips, measured workload, native cleanup, and explicit limits against retained evidence.",
+      "evidence": [
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
+      ]
+    },
+    "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json": {
+      "sha256": "6bf8c688a92605be9e325163c90dae202fd16631efc60616e10c7cab413e5aac",
+      "review": "reviewed",
+      "validation": "passed",
+      "scope": "Reviewed findings, identities, failures/skips, measured workload, native cleanup, and explicit limits against retained evidence.",
+      "evidence": [
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09.md",
+        "docs/audits/DATABASE_LIFECYCLE_IMPORT_2026_11_09_EVIDENCE.json"
       ]
     }
   }

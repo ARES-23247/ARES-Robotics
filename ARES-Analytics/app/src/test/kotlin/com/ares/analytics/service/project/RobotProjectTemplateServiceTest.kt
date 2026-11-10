@@ -39,6 +39,7 @@ import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import java.util.zip.ZipInputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -60,7 +61,7 @@ class RobotProjectTemplateServiceTest {
         listOf(League.FTC, League.FRC, League.XRP).forEach { league ->
             val template = service.templateFor(league)
             assertEquals(expectedArtifactVersions.getValue(league), template.artifactVersion)
-            assertEquals(BuildConfig.ARES_VERSION, template.aresVersion)
+            assertEquals(bundledAresVersion(template), template.aresVersion)
             assertTrue(template.displayName.endsWith("Starter"))
             assertEquals(
                 RobotProjectDeploymentPolicy.HARDWARE_REVIEW_REQUIRED,
@@ -76,7 +77,7 @@ class RobotProjectTemplateServiceTest {
 
         assertEquals("Lightbot", template.displayName)
         assertEquals(BuildConfig.LIGHTBOT_EXAMPLE_VERSION, template.artifactVersion)
-        assertEquals(BuildConfig.ARES_VERSION, template.aresVersion)
+        assertEquals(bundledAresVersion(template), template.aresVersion)
         assertEquals(BuildConfig.LIGHTBOT_EXAMPLE_VERSION, template.id.substringAfterLast('-'))
         assertEquals(RobotProjectDeploymentPolicy.SIMULATION_ONLY_REFERENCE, template.deploymentPolicy)
         assertTrue(template.bundledResourcePath!!.contains("ARES-Lightbot-Example"))
@@ -649,6 +650,16 @@ class RobotProjectTemplateServiceTest {
                 TuningProfileDocumentCodec.encode(profile, drivebase.parameters),
             "fixture-root/TeamCode/src/main/assets/paths/field.json" to RobotFieldDocument.encode(field),
         )
+    }
+
+    private fun bundledAresVersion(template: RobotProjectTemplate): String = ZipInputStream(
+        assertNotNull(RobotProjectTemplateService::class.java.getResourceAsStream(template.bundledResourcePath!!)),
+    ).use { archive ->
+        assertNotNull(generateSequence { archive.nextEntry }.firstOrNull {
+            it.name == "release/ares-versions.properties" || it.name.endsWith("/release/ares-versions.properties")
+        })
+        archive.bufferedReader().readLines().map(String::trim)
+            .single { it.startsWith("aresVersion=") }.substringAfter('=').trim()
     }
 
     private fun zipOf(vararg files: Pair<String, String>): ByteArray {

@@ -6,6 +6,11 @@ Use BOM `org.aresfirst.ares:ares-bom:<aresVersion>` and unversioned modules cons
 
 Normal consumers resolve these coordinates from Maven Central and the monorepo's GitHub-hosted ARES Maven branch at `https://raw.githubusercontent.com/ARES-23247/ARES-Robotics/maven`. Do not add old group IDs, hard-coded fallback versions, or ambient `mavenLocal()` artifacts to make resolution appear successful.
 
+Studio's current library version can differ from the dependency pinned inside an immutable bundled
+starter/example. Catalog and export metadata must use that archive's own
+`release/ares-versions.properties`; do not infer it from Studio's version or rewrite an existing
+archive to match a candidate. Preserve archive hashes and the exact manifest-version validation.
+
 ## Local shared-source development
 
 Before a Studio launch, apply the process ownership and isolation rules in

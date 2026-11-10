@@ -111,7 +111,12 @@ Tier 2
   Phoenix diagnostics and FTC dashboard adapters
 ```
 
-Any service that owns a coroutine scope, socket, native device, process, or HTTP client must expose explicit cleanup. `ServiceRegistry.dispose()` shuts services down before closing `DatabaseService`.
+Any service that owns a coroutine scope, socket, native device, process, or HTTP client must expose
+explicit cleanup. The desktop host owns the registry outside the Compose application lifetime.
+A close request disarms controls and starts stopping owned child processes, then closes Compose.
+After window effects, workspace scopes, and bootstrap IO have finished cancellation, the host calls
+`ServiceRegistry.disposeAndJoin()` before exiting. One watchdog bounds both phases; service disposal
+must not race an active window's database reads.
 
 Do not create an anonymous `CoroutineScope` per update. A long-lived service should have one parent `SupervisorJob`; child jobs must be cancelled or joined during target changes and shutdown.
 
@@ -171,15 +176,21 @@ The live session ID is `live-telemetry`; it is stored in the ephemeral database.
 
 ## 6. DuckDB storage
 
-`DatabaseService` owns three connections:
+`DatabaseService` owns five connections:
 
 | Connection | Purpose |
 | --- | --- |
 | persistent writer | sessions, recordings, imports, summaries, alerts, actions, exports |
-| duplicated read connection | read queries that should not share writer statement state |
-| in-memory ephemeral connection | live telemetry rows |
+| duplicated historical reader | recorded telemetry, replay, diagnostics SQL, and analysis |
+| duplicated metadata reader | sessions, summaries, annotations, topology, and import evidence |
+| in-memory ephemeral writer | live telemetry ingestion and retention |
+| duplicated ephemeral reader | live telemetry queries |
 
-Access is serialized with coroutine mutexes at the repository boundary. Keep transactions and locks narrow. Long analysis should fetch its required data and release the connection before performing numerical work.
+Each connection has its own coroutine mutex at the repository boundary. Historical imports and
+analysis must not acquire metadata or ephemeral locks. Mixed live/recording batches flush live rows
+before waiting for the persistent writer. Shutdown drains every connection in a fixed writer-before-reader
+order and releases acquired locks if cancellation interrupts that drain. Keep transactions and locks
+narrow; release query connections before performing numerical work.
 
 ### Core tables
 

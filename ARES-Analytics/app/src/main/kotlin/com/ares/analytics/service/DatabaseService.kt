@@ -19,7 +19,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -68,8 +67,8 @@ internal fun resolveDuckDbResourceSettings(
  * - Native Extensions Loaded: `parquet` (for high-speed binary trace ingestion)
  *
  * ### Thread Safety & Performance Guarantees:
- * Multi-thread safe. All write and query transactions are synchronized through an asynchronous coroutine [dbMutex] lock.
- * Domain repositories share one [DatabaseTransactionCoordinator].
+ * Domain repositories share one [DatabaseTransactionCoordinator]. Historical writes/analysis,
+ * metadata reads, and ephemeral live telemetry use separate connections and coroutine mutexes.
  *
  * @param dbPath Absolute filesystem path to the DuckDB database file.
  *
@@ -94,10 +93,14 @@ class DatabaseService(
 
     private val conn: Connection
     private val readConn: Connection
+    private val metadataReadConn: Connection
     private val ephemeralConn: Connection
     private val ephemeralReadConn: Connection
     private val dbMutex = Mutex()
     private val readMutex = Mutex()
+    private val metadataReadMutex = Mutex()
+    private val liveReadMutex = Mutex()
+    private val liveWriteMutex = Mutex()
     val metrics = DatabaseMetrics()
 
     private val schemaInitializer: DatabaseSchemaInitializer
@@ -131,6 +134,7 @@ class DatabaseService(
         val appDataDir = dbFile.parentFile?.absolutePath ?: AppDataPaths.rootDirectory().absolutePath
         conn = DriverManager.getConnection("jdbc:duckdb:${dbFile.absolutePath}")
         readConn = conn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate()
+        metadataReadConn = conn.unwrap(org.duckdb.DuckDBConnection::class.java).duplicate()
 
         // Ensure parquet extension is loaded for export and configure DuckDB settings
         val tmpDirFile = File(appDataDir, "duckdb_tmp")
@@ -162,6 +166,10 @@ class DatabaseService(
             dbMutex,
             readMutex,
             metrics,
+            metadataReadConn,
+            metadataReadMutex,
+            liveReadMutex,
+            liveWriteMutex,
         )
         sessionMetadataRepo = SessionMetadataRepository(transactionCoordinator)
         telemetryRepo = TelemetryRepository(transactionCoordinator)
@@ -420,25 +428,35 @@ class DatabaseService(
         checkpointScope.cancel()
         checkpointJob.cancelAndJoin()
         withContext(Dispatchers.IO) {
-            // readMutex drains in-flight queries (bounded by their statement timeouts) so a
-            // reader cannot have its connection closed mid-result; dbMutex orders against
-            // writers. Lock order here matches the repository's established write->read order.
-            dbMutex.withLock {
-                readMutex.withLock {
-                    if (!readConn.isClosed) { readConn.close() }
-                    if (!conn.isClosed) {
-                        runCatching { conn.createStatement().use { it.execute("CHECKPOINT") } }
-                            .onFailure { failure ->
-                                System.err.println(
-                                    "[ARES-Analytics] Final DuckDB checkpoint failed; the WAL was preserved for recovery: " +
-                                        (failure.message ?: failure::class.java.simpleName)
-                                )
-                            }
-                        conn.close()
-                    }
-                    if (!ephemeralReadConn.isClosed) { ephemeralReadConn.close() }
-                    if (!ephemeralConn.isClosed) { ephemeralConn.close() }
+            // Drain every independent connection before closing it. Repository operations take
+            // one lane at a time; teardown consistently acquires writers before readers.
+            val locks = listOf(dbMutex, liveWriteMutex, readMutex, metadataReadMutex, liveReadMutex)
+            var acquired = 0
+            try {
+                for (lock in locks) {
+                    lock.lock()
+                    acquired++
                 }
+                if (!conn.isClosed) {
+                    runCatching { conn.createStatement().use { it.execute("CHECKPOINT") } }
+                        .onFailure { failure ->
+                            System.err.println(
+                                "[ARES-Analytics] Final DuckDB checkpoint failed; the WAL was preserved for recovery: " +
+                                    (failure.message ?: failure::class.java.simpleName)
+                            )
+                        }
+                }
+                var failure: Throwable? = null
+                for (connection in listOf(readConn, metadataReadConn, ephemeralReadConn, ephemeralConn, conn)) {
+                    try {
+                        if (!connection.isClosed) connection.close()
+                    } catch (closeFailure: Throwable) {
+                        if (failure == null) failure = closeFailure else failure.addSuppressed(closeFailure)
+                    }
+                }
+                failure?.let { throw it }
+            } finally {
+                for (index in acquired - 1 downTo 0) locks[index].unlock()
             }
         }
     }

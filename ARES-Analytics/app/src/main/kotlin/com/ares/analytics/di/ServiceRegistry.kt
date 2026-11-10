@@ -7,6 +7,7 @@ import com.ares.analytics.ui.components.dashboard.DashboardWidgetRegistry
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -250,8 +251,31 @@ class ServiceRegistry {
      * thread before Compose creates a visible window.
      */
     internal fun prepareForMainScreen() {
+        if (disposed.get()) throw CancellationException("Studio is shutting down")
         databaseService
+        if (disposed.get()) throw CancellationException("Studio is shutting down")
         runBlocking { notificationIntegrationService.start() }
+    }
+
+    /** Reject new workspace work and neutralize input before waiting for Compose cancellation. */
+    internal fun beginShutdown() {
+        disposed.set(true)
+        if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
+    }
+
+    /** May run while UI cancellation is waiting on a native query; owns no database teardown. */
+    internal suspend fun stopOwnedProcessesAndJoin() {
+        if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
+        var failure: Throwable? = null
+        suspend fun stop(block: suspend () -> Unit) {
+            try { block() } catch (error: Throwable) {
+                if (failure == null) failure = error else failure.addSuppressed(error)
+            }
+        }
+        if (lazyFieldInitialized(::simulatorProcessService)) stop { simulatorProcessService.shutdownAndJoin() }
+        if (lazyFieldInitialized(::projectBuildService)) stop { projectBuildService.shutdownAndJoin() }
+        if (lazyFieldInitialized(::robotDeploymentService)) stop { robotDeploymentService.shutdownAndJoin() }
+        failure?.let { throw it }
     }
 
     /** Applies a workspace transition only after the prior scanner generation has joined. */
@@ -279,6 +303,7 @@ class ServiceRegistry {
 
     /** Tears down services that hold coroutine scopes or background jobs, in dependency order. */
     internal suspend fun disposeAndJoin() {
+        beginShutdown()
         var telemetryPersisted = true
         var alertsPersisted = true
         if (lazyFieldInitialized(::updateCheckerService)) {
@@ -297,12 +322,7 @@ class ServiceRegistry {
         // Stop owned processes first so that delay cannot orphan a running simulator. Imports
         // retain their ADB and storage dependencies until cancellation cleanup has joined.
         awaitAutoImportBeforeClosingDependencies(
-            stopOwnedProcesses = {
-                if (lazyFieldInitialized(::keyboardDriveState)) keyboardDriveState.disarm()
-                if (lazyFieldInitialized(::simulatorProcessService)) simulatorProcessService.shutdownAndJoin()
-                if (lazyFieldInitialized(::projectBuildService)) projectBuildService.shutdownAndJoin()
-                if (lazyFieldInitialized(::robotDeploymentService)) robotDeploymentService.shutdownAndJoin()
-            },
+            stopOwnedProcesses = ::stopOwnedProcessesAndJoin,
             stopAutoImport = {
                 autoImportTransitionMutex.withLock {
                     disposed.set(true)

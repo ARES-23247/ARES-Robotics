@@ -2,8 +2,10 @@ package com.ares.analytics
 
 import com.ares.analytics.di.ServiceRegistry
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 
 class ServiceRegistryShutdownAuditTest {
     @Test
@@ -28,6 +30,14 @@ class ServiceRegistryShutdownAuditTest {
         assertFalse(services.keyboardDriveState.enabled)
         assertFalse(services.keyboardDriveState.useGamepad)
         assertFalse(services.keyboardDriveState.isWPressed)
+    }
+
+    @Test
+    fun `a late bootstrap cannot reopen services after disposal`() = runBlocking<Unit> {
+        val services = ServiceRegistry()
+        forbidUnusedServiceInitialization(services)
+        services.disposeAndJoin()
+        assertFailsWith<CancellationException> { services.prepareForMainScreen() }
     }
 
     private fun forbidUnusedServiceInitialization(services: ServiceRegistry) {
