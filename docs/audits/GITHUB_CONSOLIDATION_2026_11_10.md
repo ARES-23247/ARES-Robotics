@@ -39,6 +39,40 @@ underlying assertions were unavailable. Full test exceptions and all app test-ta
 consumer evidence are now retained. The truststore correction is not independently claimed to
 resolve those four assertions until the fresh CI reports establish their result.
 
+At follow-up commit `65915631e5797e897c797bd377433c16ae47162b`, the
+[monorepo run](https://github.com/ARES-23247/ARES-Robotics/actions/runs/42876932903) passed
+all 2,807 ordinary app tests (11 skips) and all four consumer round-trip/recovery tests (no skips),
+with zero failures/errors. The
+[desktop run](https://github.com/ARES-23247/ARES-Robotics/actions/runs/42876932896) passed
+fresh Windows FTC/FRC/XRP acceptance and the complete Studio release-verification job. This
+establishes the corrected CI contract's result; the unavailable original child assertions are
+not retrospectively assigned a proven cause.
+
+The complete local Windows `studioReleaseVerification` contract also passed: 2,926 tests across
+ordinary app, consumer, dashboard smoke/performance, shared, and gateway tasks; six expected
+Windows skips, zero failures/errors, and all coverage/maintainability gates passed. The command
+supplied Temurin through `JAVA_HOME`, but Gradle's toolchain/daemon selection used local Oracle
+Java 17.0.12 workers. Temurin-specific confirmation comes from CI and the isolated truststore
+probe. The original three-test result remains separate from this complete-suite result.
+
+## SDK sample and immutable archive follow-up
+
+The separate CodeQL PR scanning check reported implicit double-to-float compound assignment in
+both SDK `SensorColor.java` sample copies, even though analysis/upload jobs succeeded. The sample's
+gain is a float; both increase and decrease now use a `0.005f` step. Both FTC and starter
+`FtcRobotController:compileDebugJavaWithJavac` tasks passed against SDK 12 after the correction.
+These scanner classifications are not independent evidence of an exploitable vulnerability.
+
+Because those samples are exported, new archives reserve FTC starter `20.0.3`, Lightbot `3.0.72`,
+and BioBuzz `1.1.10`; Studio advances to `7.0.69`. Existing-version bytes are not overwritten.
+Freshly regenerated FRC `20.0.3` and XRP `3.0.67` archives retain their exact prior hashes. The
+canonical manifest, bundled resources, and workflow URLs/checksums are updated together. Library
+version/tree/candidate remain unchanged. After removing the top-level archive-name prefix, each
+new FTC/example archive differs from its predecessor in exactly the sample file; no file is added
+or removed. Source/archive/guidance policy and the 1,117-file,
+zero-violation maintainability ratchet pass. Final archive/sample integration remains subject to
+the subsequent PR-head CI checks, rather than inheriting the earlier archive acceptance result.
+
 Original run evidence: [monorepo run](https://github.com/ARES-23247/ARES-Robotics/actions/runs/42871938995),
 [desktop run](https://github.com/ARES-23247/ARES-Robotics/actions/runs/42871938850).
 Local probes, failed/fixed XML, logs, inventory, and deletion evidence are retained under the ignored

@@ -82,10 +82,10 @@
       }
     },
     ".agents/skills/ares-build-release/references/failure-modes.md": {
-      "sha256": "2dd0990b3f5083a446146129f08636ea121442377b21a7a3618f0164635af8af",
+      "sha256": "49672e81f537d951692f21aa04da3584698d4d21d8c4f33d7392eb4454be4bbb",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed added TLS, display, test-artifact, and real-wire receipt-clock guidance. Six guidance regression tests and source policy passed.",
+      "scope": "Reviewed added distinction between successful analysis/upload and separate PR scanning annotations; sample consistency and immutable archive guidance. Guidance and source policy checks passed.",
       "evidence": [
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
@@ -118,6 +118,15 @@
         "evidence": [
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md",
           "docs/audits/INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09_EVIDENCE.json"
+        ]
+      },
+      "priorSampleFloat20261110": {
+        "sha256": "2dd0990b3f5083a446146129f08636ea121442377b21a7a3618f0164635af8af",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed added TLS, display, test-artifact, and real-wire receipt-clock guidance. Six guidance regression tests and source policy passed.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -375,7 +384,7 @@
     ".github/workflows/build-distributions.yml": {
       "review": "partial",
       "validation": "pending",
-      "scope": "Reviewed only JDK distribution, Linux virtual display, and failure-artifact changes. Local truststore probe reproduced PKIX failure with CI Zulu and HTTP 200 with CI Temurin. Full fresh-CI confirmation remains the PR gate.",
+      "scope": "Reviewed new Studio/starter/example URL and SHA pins. CI at 65915631e passed fresh Windows acceptance and full Studio verification after JDK/display correction. Final new-archive package/scanning checks remain pending.",
       "evidence": [
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
@@ -413,7 +422,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "64b7020480e5a938a377a527214fa4a4b305599bb95fb5a36ccad97167bd3872",
+      "sha256": "1de7f3a2295ce0e4ba803a35e74286719979f91822d23b9a3bc36d109da0febb",
       "priorSdk12Migration20261109": {
         "sha256": "a0755d3a76feb465fe9fd5c5e6f356ea70dd8862e9d196c2221be658a4ffda38",
         "review": "partial",
@@ -454,6 +463,15 @@
           "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
+      },
+      "priorSampleFloat20261110": {
+        "sha256": "64b7020480e5a938a377a527214fa4a4b305599bb95fb5a36ccad97167bd3872",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only JDK distribution, Linux virtual display, and failure-artifact changes. Local truststore probe reproduced PKIX failure with CI Zulu and HTTP 200 with CI Temurin. Full fresh-CI confirmation remains the PR gate.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
       }
     },
     ".github/workflows/ci-scopes.yml": {
@@ -489,8 +507,8 @@
     ".github/workflows/monorepo-ci.yml": {
       "sha256": "33ac0cab20ebb5f07ae7230a8559a91e8e577ce61890794c9f2fe4c4215a5a0e",
       "review": "partial",
-      "validation": "pending",
-      "scope": "Reviewed Linux display and report-retention delta. Actual Compose shutdown cases pass locally on Windows; Linux CI remains the integration gate.",
+      "validation": "passed",
+      "scope": "Validation refreshed: CI at 65915631e passed 2,807 ordinary app tests (11 skips) and four consumer round-trip/recovery cases, no failures/errors. Display/report delta scope from prior checkpoint remains bounded.",
       "evidence": [
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
@@ -513,6 +531,15 @@
         "scope": "Reviewed the consumerRoundtripTest task and existing app CI scope/evidence wiring delta only. Verified selected dependency forwarding, separate heavyweight consumer scope, one test fork, and existing change propagation; 25 classifier/boundary regressions and real Windows consumer builds passed. GitHub/Linux execution is unverified. No new whole-file review credit.",
         "evidence": [
           "docs/audits/PROJECT_ROUNDTRIP_CONSUMER_PEER_REVIEW.md"
+        ]
+      },
+      "priorSampleFloat20261110": {
+        "sha256": "33ac0cab20ebb5f07ae7230a8559a91e8e577ce61890794c9f2fe4c4215a5a0e",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed Linux display and report-retention delta. Actual Compose shutdown cases pass locally on Windows; Linux CI remains the integration gate.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -18206,13 +18233,12 @@
       "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
     },
     "ARES-FTC-Starter/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorColor.java": {
-      "sha256": "9109128bc860c981845648965d5ae861d1e1ce36cddc4c7d52026f2ed5dd4a78",
+      "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed official FIRST SDK v12.0 import provenance and affected Android/toolchain integration. Exact upstream sources/formatting retained; compile and APK acceptance do not claim a full upstream source/security audit.",
+      "scope": "Reviewed only the float-valued gain-step correction in both SDK sample copies. Actual SDK 12 compileDebugJavaWithJavac passed for season and starter. No unrelated sample/full-file or physical-sensor review claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "submission": {
         "commit": "f73d4ceed",
@@ -18238,6 +18264,16 @@
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "docs/audits/DEEP_AUDIT_REPORT.md"
+        ]
+      },
+      "priorSampleFloat20261110": {
+        "sha256": "9109128bc860c981845648965d5ae861d1e1ce36cddc4c7d52026f2ed5dd4a78",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed official FIRST SDK v12.0 import provenance and affected Android/toolchain integration. Exact upstream sources/formatting retained; compile and APK acceptance do not claim a full upstream source/security audit.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -20201,13 +20237,12 @@
       ]
     },
     "ARES-FTC/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples/SensorColor.java": {
-      "sha256": "9109128bc860c981845648965d5ae861d1e1ce36cddc4c7d52026f2ed5dd4a78",
+      "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed official FIRST SDK v12.0 import provenance and affected Android/toolchain integration. Exact upstream sources/formatting retained; compile and APK acceptance do not claim a full upstream source/security audit.",
+      "scope": "Reviewed only the float-valued gain-step correction in both SDK sample copies. Actual SDK 12 compileDebugJavaWithJavac passed for season and starter. No unrelated sample/full-file or physical-sensor review claimed.",
       "evidence": [
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
-        "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "priorSdk12Migration20261109": {
         "sha256": "34ce3853ae848ffdfe4815064b810fc3ea245d08e3e4e79a864d5fadb54c1381",
@@ -20216,6 +20251,16 @@
         "scope": "Generic color and proximity sensor sample; verified @Disabled annotation, NormalizedColorSensor usage, SwitchableLight toggling, runtime gain adjustment, DistanceSensor capability checking, and UI background color synchronization with try...finally cleanup. Cleanup note: allocating Runnable inside 50Hz loop causes GC churn if used in competition opmodes.",
         "evidence": [
           "docs/audits/pass288-pending-elevation-audit.md"
+        ]
+      },
+      "priorSampleFloat20261110": {
+        "sha256": "9109128bc860c981845648965d5ae861d1e1ce36cddc4c7d52026f2ed5dd4a78",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed official FIRST SDK v12.0 import provenance and affected Android/toolchain integration. Exact upstream sources/formatting retained; compile and APK acceptance do not claim a full upstream source/security audit.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
+          "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
       }
     },
@@ -35918,7 +35963,7 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only this consolidation ledger delta. Prior canonical fields and nested history preserved; unrelated semantic records unchanged. Workflow validation remains pending fresh CI.",
+      "scope": "Reviewed only sample/archive checkpoint records and validation refresh. Prior canonical fields/nested history retained; unrelated semantic records unchanged.",
       "evidence": [
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
@@ -36346,7 +36391,7 @@
           ]
         }
       },
-      "sha256": "5ccad574f6e30fd1978ddc5b85644f995d4ff2d6378d1366b3189449b7195ef6",
+      "sha256": "c2e08365428dfcd922730052a367517985285232400b237c42e72a410db4c2c7",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -36446,6 +36491,15 @@
         "evidence": [
           "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10.md",
           "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10_EVIDENCE.json"
+        ]
+      },
+      "priorSampleFloat20261110": {
+        "sha256": "5ccad574f6e30fd1978ddc5b85644f995d4ff2d6378d1366b3189449b7195ef6",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only this consolidation ledger delta. Prior canonical fields and nested history preserved; unrelated semantic records unchanged. Workflow validation remains pending fresh CI.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
       }
     },
@@ -36865,10 +36919,9 @@
     "release/ares-versions.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "scope": "Reviewed only Studio 7.0.69, FTC starter 20.0.3, Lightbot 3.0.72 and BioBuzz 1.1.10 archive identities. ARESLib identity and dependency version unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
         "sha256": "b6fd04706aae8ee46f6480be81270055b177420d8ed07db8f0120d18a32823ba",
@@ -36904,7 +36957,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "9e7b170713268e51c4a6e1d01004f3e5669da53637518ea534a90b555cfbceeb",
+      "sha256": "d12228f8567b00600be3a99414ac15a067ef44e09b2e977aced6ef31b1067fb8",
       "priorSdk12Migration20261109": {
         "sha256": "eaf66a1ab74f8ec98966f3d7160ce0c7e8c24bcfddecd4f88d3deff87310a804",
         "review": "reviewed",
@@ -36935,15 +36988,24 @@
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
+      },
+      "priorSampleFloat20261110": {
+        "sha256": "9e7b170713268e51c4a6e1d01004f3e5669da53637518ea534a90b555cfbceeb",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "release/starter-artifacts.properties": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+      "scope": "Verified updated SHA256 values against new immutable archives. FRC and XRP regenerated archive hashes unchanged.",
       "evidence": [
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
-        "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ],
       "preRelease7065": {
         "sha256": "7947daf3f941fe53cfc8f68a940089562e509b6769efe903831be3d971da6cb4",
@@ -36979,7 +37041,7 @@
           "runtimeAuditDisposition": "Preserved from c1d07aeba as a submitted claim. Existing review status and content identity remain authoritative until the scope is independently substantiated. docs/audits/RELEASE_7_0_62_REVIEW.md"
         }
       },
-      "sha256": "d918f29ff64196d9dc0c7dfe6adf7ad1bd8dc0cb6222b1b8522f5bf3239dd06c",
+      "sha256": "d715f26eeea05ca2b41fba753bc28f5a3e65c15aff65bcbc448b95c19cd2320b",
       "priorSdk12Migration20261109": {
         "sha256": "4f9324ffcef3ced185ac9f22c64448003297b30006982a23e4216e02d7cbbdbf",
         "review": "reviewed",
@@ -37009,6 +37071,16 @@
         "evidence": [
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_CACHE_RELIABILITY_2026_11_10_EVIDENCE.json"
+        ]
+      },
+      "priorSampleFloat20261110": {
+        "sha256": "d918f29ff64196d9dc0c7dfe6adf7ad1bd8dc0cb6222b1b8522f5bf3239dd06c",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed this OTOS lifecycle/allocation delta, version/archive/source identity or canonical guidance as applicable; scoped tests and source policy passed. No unrelated full-file or hardware coverage claimed.",
+        "evidence": [
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
+          "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -39786,10 +39858,46 @@
       ]
     },
     "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md": {
-      "sha256": "582c8feacca39a97b7930badad99757fccde73028fdf50539e0e569d10dd553f",
+      "sha256": "2e9e8b4e62ca568995fb172efa9524ff8f46a49e30f23c1883911a9db370c595",
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed checkpoint against observed local/CI failures, exact truststore probes, three passing focused tests, ancestry/patch-duplicate cleanup, and preserved limits. Full PR check result remains separately linked.",
+      "scope": "Reviewed observed local complete-suite result, actual worker JVM provenance, fresh CI XML, sample warning, actual SDK compilation, exact archive content delta and new version bindings. Final new-archive CI remains separately required.",
+      "evidence": [
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+      ],
+      "priorSampleFloat20261110": {
+        "sha256": "582c8feacca39a97b7930badad99757fccde73028fdf50539e0e569d10dd553f",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed checkpoint against observed local/CI failures, exact truststore probes, three passing focused tests, ancestry/patch-duplicate cleanup, and preserved limits. Full PR check result remains separately linked.",
+        "evidence": [
+          "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      }
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.3.zip": {
+      "sha256": "069dd8ed0a8f219be29307b8434eaec3dc3ca3c1e2f7b6019ef14b5b5d02467b",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
+      "evidence": [
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.72.zip": {
+      "sha256": "cdcd4cc436b5e2e429ea7aeee47a49253dcdeaf06cd7dca9fdbb1525b1f0c205",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
+      "evidence": [
+        "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+      ]
+    },
+    "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.10.zip": {
+      "sha256": "993f596f97a521c84ebbb1f1f4fa2c5839a51496e832434b55569398d8944075",
+      "review": "partial",
+      "validation": "passed",
+      "scope": "Verified SHA256, tracked-source regeneration and archive content delta: only SensorColor.java differs after stripping top-level version prefix, no added/removed files. Sample compiled against SDK 12; final fresh-project CI gate remains separately required.",
       "evidence": [
         "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
       ]

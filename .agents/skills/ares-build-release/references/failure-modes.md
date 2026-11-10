@@ -28,6 +28,9 @@ Android builds, simulator checks, and physical-controller checks as separate evi
   application frame. Use the CI virtual display (`xvfb-run -a`) instead of skipping these tests.
   Retain XML/HTML for every test task and nested consumer logs on failure; Gradle's short exception
   format and a `reports/tests/test`-only artifact can hide custom-task failures.
+- A successful CodeQL analysis/upload job does not establish that its separate PR scanning check
+  passed. Inspect annotations and affected source semantics. Keep sample fixes consistent across
+  season/starter copies, and create new archive versions when exported bytes change.
 - Real socket/coalescing tests must observe actual receipt and sampler progress before asserting
   expiry. Advancing a fake receipt clock while older wire/UI work is queued can make that work
   appear newly received after the jump. Keep deterministic clock tests separate from the real-wire
