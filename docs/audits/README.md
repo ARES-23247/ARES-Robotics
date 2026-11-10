@@ -1,9 +1,10 @@
 # Monorepo audit coverage
 
-The latest local continuation is the [initialization cleanup and official FTC SDK comparison](INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md).
-It fixes failed-constructor resource leaks and records incomplete SDK 12 support with real-artifact
-evidence. The preceding [startup/shutdown and import responsiveness checkpoint](DATABASE_LIFECYCLE_IMPORT_2026_11_09.md)
-retains the bundled-template correction, workload measurements, and native evidence.
+The latest local continuation is the [FTC SDK 12 migration checkpoint](FTC_SDK12_MIGRATION_2026_11_09.md).
+It updates FTC products and bundles, fixes real-SDK/mock and vision/localization compatibility,
+and records candidate consumer validation. The preceding [initialization cleanup and SDK comparison](INITIALIZATION_CLEANUP_FTC_COMPATIBILITY_2026_11_09.md)
+retains failed-constructor recovery evidence; the [shutdown/import checkpoint](DATABASE_LIFECYCLE_IMPORT_2026_11_09.md)
+retains the earlier responsiveness workload and native evidence.
 
 **The open-ended file audit has been superseded by a bounded
 [robot-readiness checkpoint](ROBOT_READINESS_GOAL.md).** Follow that saved objective and its scenario,

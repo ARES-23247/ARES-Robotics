@@ -32,3 +32,12 @@ template versions for changed sources; never replace bytes under an existing arc
 Test fresh exported FTC projects (generation, unit tests, simulation, Android assembly) and Studio's
 archive consumption. Keep Android builds, desktop simulation, and physical controller/camera
 results distinct. Hardware absence limits the final claim; do not weaken enable or deployment gates.
+
+Source-copy acceptance fixtures must include the standalone export's shared version policy,
+dependency manifest, and canonical FTC runtime. Assert mechanical output under `build/generated/ares`
+after normal project generation/build. `generateSubsystemStarters` previews an explicit editable-source
+operation; its successful plan does not establish that editable files were written. Immutable unique
+candidates do not need a forced dependency refresh for every generation/build phase.
+For representative-project failures, set `ARES_REPRESENTATIVE_OUTPUT_DIR` to a new directory to
+retain the generated sources, child build log, and full JUnit reports; inspect the actual child
+failure before changing assertions. Default runs still clean their temporary workspace.

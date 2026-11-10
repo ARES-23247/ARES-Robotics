@@ -22,6 +22,11 @@ soft limits, current validity, and zero-allocation periodic behavior where appli
 ## Verification and teaching
 
 - Generated tests exercise behavior rather than only source shape.
+- Time-sensitive generated tests select the mock clock before sampling IO, refresh feedback at
+  each simulated step, and carry that sample's timestamp into state. Preserve freshness and dwell
+  assertions; a live-clock sample cannot establish homing on a different mock-clock timeline.
+- Tuning fixtures select declarations by stable parameter ID. Adding a subsystem can change the
+  complete declaration ordering; `first()` does not identify a particular default or safety policy.
 - For changed bundled starters/examples or their import path, extract the actual packaged archive
   and load its documents through the production Studio authoring model. Check project ownership,
   drivetrain/tuning identity, controller bindings, and editable validation state, then generate and

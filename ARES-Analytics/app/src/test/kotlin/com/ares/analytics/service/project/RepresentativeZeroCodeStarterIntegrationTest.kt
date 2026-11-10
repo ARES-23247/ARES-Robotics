@@ -63,7 +63,12 @@ class RepresentativeZeroCodeStarterIntegrationTest {
         val validationVersion = requireNotNull(
             System.getProperty("ares.validationVersion") ?: System.getenv("ARES_VALIDATION_VERSION"),
         ) { "Set -Dares.validationVersion or ARES_VALIDATION_VERSION." }
-        val outputRoot = Files.createTempDirectory("ares-representative-zero-code-").toFile()
+        val retainedOutput = System.getenv("ARES_REPRESENTATIVE_OUTPUT_DIR")?.let(::File)
+        require(retainedOutput == null || !retainedOutput.exists()) {
+            "ARES_REPRESENTATIVE_OUTPUT_DIR must name a new directory."
+        }
+        val outputRoot = retainedOutput?.apply { check(mkdirs()) }
+            ?: Files.createTempDirectory("ares-representative-zero-code-").toFile()
 
         try {
             requestedLeagues().forEach { league ->
@@ -71,13 +76,14 @@ class RepresentativeZeroCodeStarterIntegrationTest {
                 require(source.isDirectory) { "Missing local starter source: ${source.path}" }
                 val project = File(outputRoot, league.name.lowercase())
                 copySourceTree(source, project)
+                installStandaloneBuildInputs(workspace, project, league)
                 seedRepresentativeRobot(project, league)
                 runConsumerBuild(project, league, validationRepository, validationVersion)
 
                 val generated = if (league == League.FTC) {
-                    File(project, "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt")
+                    File(project, "TeamCode/build/generated/ares/main/kotlin/org/firstinspires/ftc/teamcode/generated/GeneratedAresProject.kt")
                 } else {
-                    File(project, "src/main/kotlin/org/aresfirst/starter/frc/generated/GeneratedAresProject.kt")
+                    File(project, "build/generated/ares/main/kotlin/org/aresfirst/starter/frc/generated/GeneratedAresProject.kt")
                 }
                 assertTrue(generated.isFile)
                 assertTrue(generated.readText().contains("score-cycle"))
@@ -86,7 +92,7 @@ class RepresentativeZeroCodeStarterIntegrationTest {
                 })
             }
         } finally {
-            outputRoot.deleteRecursively()
+            if (retainedOutput == null) outputRoot.deleteRecursively()
         }
     }
 
@@ -246,12 +252,10 @@ class RepresentativeZeroCodeStarterIntegrationTest {
         val commonArguments = listOf(
             "-ParesVersion=$version",
             "-ParesRepository=${validationRepositoryUri(repository)}",
-            "--refresh-dependencies",
             "--no-parallel",
             "--no-daemon",
             "--console=plain",
         )
-        val starterTask = if (league == League.FTC) ":TeamCode:generateSubsystemStarters" else "generateSubsystemStarters"
         val command = mutableListOf("cmd.exe", "/c", "gradlew.bat", "generateAresProject")
         when (league) {
             League.FTC -> command += listOf(":TeamCode:verifyAresProject", ":TeamCode:testDebugUnitTest", ":simulator:test", ":TeamCode:assembleDebug")
@@ -274,24 +278,44 @@ class RepresentativeZeroCodeStarterIntegrationTest {
                 "${league.name} representative $label failed:\n${log.readLines().takeLast(100).joinToString("\n")}"
             }
         }
-        run("starter generation", listOf("cmd.exe", "/c", "gradlew.bat", starterTask) + commonArguments)
-        val expectedStarter = when (league) {
-            League.FTC -> File(project, "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/subsystems/elevator/ElevatorState.kt")
+        run("build", command)
+        val expectedGenerated = when (league) {
+            League.FTC -> File(project, "TeamCode/build/generated/ares/main/kotlin/elevator/ElevatorState.kt")
             League.FRC -> File(
                 project,
-                "src/main/kotlin/org/aresfirst/starter/frc/generated/subsystems/elevator/ElevatorState.kt",
+                "build/generated/ares/main/kotlin/elevator/ElevatorState.kt",
             )
             League.XRP -> File(project, "src/subsystems/elevator/elevator_state.py")
         }
-        check(expectedStarter.isFile) {
+        check(expectedGenerated.isFile) {
             val generatedKotlin = project.walkTopDown()
                 .filter { it.isFile && it.extension == "kt" && "elevator" in it.invariantSeparatorsPath }
                 .map { it.relativeTo(project).invariantSeparatorsPath }
                 .toList()
-            "${league.name} starter generation did not create ${expectedStarter.relativeTo(project)}. " +
+            "${league.name} generation did not create ${expectedGenerated.relativeTo(project)}. " +
                 "Elevator Kotlin files: $generatedKotlin\n${log.readLines().takeLast(100).joinToString("\n")}"
         }
-        run("build", command)
+        val editable = if (league == League.FTC) "TeamCode/src/main/java/org/firstinspires/ftc/teamcode/subsystems/elevator/ElevatorState.kt"
+            else "src/main/kotlin/org/aresfirst/starter/frc/generated/subsystems/elevator/ElevatorState.kt"
+        assertTrue(!File(project, editable).exists(), "Mechanical output must not become editable starter source")
+    }
+
+    /** Mirrors the shared inputs supplied by export-starter-mirrors.ps1, without a sibling checkout. */
+    private fun installStandaloneBuildInputs(workspace: File, project: File, league: League) {
+        val policy = File(project, "build-logic/ares-versioning.gradle")
+        policy.parentFile.mkdirs()
+        File(workspace, "build-logic/ares-versioning.gradle").copyTo(policy, overwrite = true)
+        val release = java.util.Properties().apply {
+            File(workspace, "release/ares-versions.properties").inputStream().use { load(it) }
+        }
+        val version = requireNotNull(release.getProperty("aresVersion"))
+        val repository = requireNotNull(release.getProperty("githubMavenRepository"))
+        val manifest = File(project, "release/ares-versions.properties")
+        manifest.parentFile.mkdirs()
+        manifest.writeText("aresVersion=$version\ngithubMavenRepository=$repository\n")
+        if (league == League.FTC) {
+            copySourceTree(File(workspace, "templates/ftc/runtime/src/main/kotlin"), File(project, "TeamCode/src/main/java"))
+        }
     }
 
     private fun copySourceTree(source: File, destination: File) {

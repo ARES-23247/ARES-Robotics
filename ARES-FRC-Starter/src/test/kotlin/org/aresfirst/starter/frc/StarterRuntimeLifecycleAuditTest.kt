@@ -224,7 +224,8 @@ class StarterRuntimeLifecycleAuditTest {
 
     @Test fun `additional declared tuning is safely unsupported before any consumer registers`() {
         val canonical = GeneratedAresTuningConfig.createRuntime()
-        val additional = canonical.metadata.declarations.first().copy(uid = "frc.starter.extra", key = "drive.extra")
+        val additional = canonical.metadata.declarations.single { it.uid == "frc.starter.path.acceleration-limit" }
+            .copy(uid = "frc.starter.extra", key = "drive.extra")
         val declarations = canonical.metadata.declarations + additional
         val tuning = TypedTuningRuntime(declarations,
             declarations.associate { it.uid to (canonical.canonicalValue(it.uid) ?: it.defaultValue) },
@@ -326,7 +327,8 @@ class StarterRuntimeLifecycleAuditTest {
 
     @Test fun `subsystem tuning is acknowledged only while exactly one live consumer owns the parameter`() {
         val canonical = GeneratedAresTuningConfig.createRuntime()
-        val additional = canonical.metadata.declarations.first().copy(uid = "frc.starter.extra", key = "drive.extra")
+        val additional = canonical.metadata.declarations.single { it.uid == "frc.starter.path.acceleration-limit" }
+            .copy(uid = "frc.starter.extra", key = "drive.extra")
         val declarations = canonical.metadata.declarations + additional
         val tuning = TypedTuningRuntime(declarations,
             declarations.associate { it.uid to (canonical.canonicalValue(it.uid) ?: it.defaultValue) },
