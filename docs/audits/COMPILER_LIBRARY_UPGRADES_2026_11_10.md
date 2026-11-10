@@ -81,3 +81,51 @@ required before accepting compiler-generated ABI additions. The file ledger reco
 review and validation separately and preserves prior nested evidence. Raw commands, XML, bytecode,
 ABI-probe output, original failures, and archive hashes are retained under the ignored
 `build/compiler-upgrade-20261110/` directory.
+
+## Completed consumer, desktop, and protected integration validation
+
+The final source passed the following local checks against the same isolated RC2 candidate:
+
+| Product/task | Cases | Failures/errors | Skips |
+|---|---:|---:|---:|
+| FTC season unit/simulator | 198 | 0 | 0 |
+| FTC starter unit/simulator | 17 | 0 | 0 |
+| FRC season | 306 | 0 | 0 |
+| FRC starter | 206 | 0 | 0 |
+| MicroPython runtime (host) | 132 | 0 | 0 |
+| XRP starter generation/verification | 124 | 0 | 0 |
+| Studio app | 2,807 | 0 | 6 |
+| Studio shared/gateway | 55 | 0 | 0 |
+| Studio dashboard smoke | 59 | 0 | 0 |
+| Studio performance baseline | 1 | 0 | 0 |
+| Studio complete consumer/recovery roundtrips | 4 | 0 | 0 |
+
+Both FTC products also assembled their debug APKs. `studioReleaseVerification` passed its
+coverage gate in 14m 26s. Ordinary `app:test` skips the three opt-in official/generic/representative
+starter suites, native chooser, dedicated performance baseline, and physical-dashboard test.
+The dedicated baseline task actually executed its case. Protected CI separately passed fresh
+official FTC/FRC/XRP project creation, generation, verification, simulation and packaging;
+native chooser interaction and physical telemetry were not requalified in this compiler pass.
+The four local complete roundtrips exercised generic/BioBuzz consumers and recovery after real
+code-generation cancellation/intermediate writes. Skips are not counted as passing cases.
+
+Dashboard smoke persisted and restored all 12,000 frames with zero drops. On this local workload,
+ingestion was 482,201 frames/s, query p95 11.52 ms, replay scrub p95 27.36 ms, and observed heap
+growth 5.13 MiB. All configured limits and the checked-in performance baseline passed. These
+are bounded desktop measurements, not robot-loop or long-soak performance claims.
+
+Two same-process exact-window captures were inspected at 1424 × 861 client pixels. Both launches
+used `-PskipKill`, a dedicated home, the same candidate/repository as compilation, and isolated
+runtime snapshots. Presentation settled with startup topmost state released. Exact native
+`WM_CLOSE` closed each window; all observed owned app/launcher JVMs exited, loopback test ports
+49381/49382 closed, and both runtime snapshots were deleted. The second launch reused the
+isolated database successfully. No crash log, shutdown-watchdog fault, or database-close error
+was observed. Other tasks' processes were preserved. Capture hashes and cleanup identities are
+in the evidence JSON. All five final archive bytes reproduced their pinned SHA-256 values.
+
+[PR #112](https://github.com/ARES-23247/ARES-Robotics/pull/112) merged through protected main at
+`4c82e6968e9787a615afba2c1a09bf34972b528a` after all **17 required checks passed**. The additional CodeQL
+analysis/check results were also inspected. CI's source-policy job ran all 117 tooling tests.
+The five original dependency heads remain ancestors of main and their PR states/branch cleanup
+are recorded in the evidence. Unique feature branches, dirty worktrees, `main`, and `maven` were
+preserved. No public artifact release or hardware validation was performed.

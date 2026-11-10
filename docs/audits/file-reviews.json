@@ -138,6 +138,16 @@
         "evidence": [
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "8cf9729200e55f9c96ac2ddba28a59685e9fcbd618a278b29f0d6f71ecb384ac",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     ".agents/skills/ares-subsystem-authoring/SKILL.md": {
@@ -393,7 +403,7 @@
     },
     ".github/workflows/build-distributions.yml": {
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
@@ -510,6 +520,16 @@
         "evidence": [
           "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "8d12b164ad3edb45ed43aff9e75dc15a8fbc9479ede52fc5a99d61559ba8c705",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -12805,7 +12825,7 @@
     "ARES-Analytics/build.gradle.kts": {
       "sha256": "184871b76badae51bd4ea0fe79f2a615878e9b2fdae842f12ca6f37cae06b622",
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
@@ -12818,6 +12838,16 @@
         "scope": "Root Gradle build script: verified release preflight verification (verifyReleaseVersionAlignment) enforcing alignment across release manifest, starter artifacts, app build, and CI workflows; verified Kover code coverage floors (app 38%, shared/gateway 54%); verified production Kotlin file size ratchet (verifyProductionKotlinFileSizes enforcing 500-line ceiling for new files); verified studioReleaseVerification composite verification gate; verified killExisting task terminating stale orphaned ARES JVMs by matching main class name via JPS; and verified root run task coordinating gateway and desktop app processes.",
         "evidence": [
           "docs/audits/pass291-pending-elevation-audit.md"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "184871b76badae51bd4ea0fe79f2a615878e9b2fdae842f12ca6f37cae06b622",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -14436,7 +14466,7 @@
     "ARES-FRC-Starter/build.gradle": {
       "sha256": "24b4094bfe2a552e8fc4707891aabf99d3d473f91e26f3f15d31b38db5dc858d",
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
@@ -14450,6 +14480,16 @@
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "ARESLib-Kotlin/build/audit-pass263-verified-evidence/summary.json"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "24b4094bfe2a552e8fc4707891aabf99d3d473f91e26f3f15d31b38db5dc858d",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -15169,7 +15209,7 @@
     "ARES-FRC/build.gradle": {
       "sha256": "9713ec4fa1313a5b1b17e6cb66865b10c928d014628c7e747835ce75d9e32b7e",
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
@@ -15184,6 +15224,16 @@
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "ARESLib-Kotlin/build/audit-pass129-verified-evidence/summary.json",
           "ARESLib-Kotlin/build/audit-pass130-verified-evidence/summary.json"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "9713ec4fa1313a5b1b17e6cb66865b10c928d014628c7e747835ce75d9e32b7e",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -15234,6 +15284,16 @@
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "ARESLib-Kotlin/build/audit-pass131-verified-evidence/summary.json"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "835be946fe1f46b58925bd464388f9352b1cd5f1aa7e81628c1515edb99ea210",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -19472,6 +19532,16 @@
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "41e69891f44ab3f386f8c4338ee3197917d3d8fa0b63bec9dd8a65ae704db39b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "ARES-FTC-Starter/docs/APRILTAG_FIELDS.md": {
@@ -21856,6 +21926,16 @@
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "41e69891f44ab3f386f8c4338ee3197917d3d8fa0b63bec9dd8a65ae704db39b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "ARES-FTC/doc/legal/AudioBlocksSounds.txt": {
@@ -23251,6 +23331,16 @@
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md",
           "ARESLib-Kotlin/build/audit-pass274-verified-evidence/summary.json"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "77e38c07a76ba5b2ad05e861a19d9e7f9fb88cdf55afe4b0fd2bdb330f150d4a",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "ARESLib-Kotlin/codegen/api/codegen.api": {
@@ -23280,6 +23370,16 @@
         "scope": "Gradle Kotlin DSL build configuration for codegen module. Validated dependencies on :core, :project-model, :project-compiler, kotlin-compiler-embeddable 2.4.10, JUnit 5.14.4, JavadocJar/SourcesJar publication, and Java 17 toolchain setup.",
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "74b24070237dd5eec664c900a41c92c30d2ee6defaf339761118369761c5434d",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -23956,6 +24056,16 @@
           "ARESLib-Kotlin/core/api/core.api",
           "ARESLib-Kotlin/build.gradle.kts",
           "docs/audits/DEEP_AUDIT_REPORT.md"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "c3896108b0954e9e622afd4a3abc5333148ba6acd5b68ae56877cc063e5d0890",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -34687,6 +34797,16 @@
         "evidence": [
           "docs/audits/archive/HISTORICAL_AUDITS_INDEX.md"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "42ecc08c29622ac71f5e39187e6b658782ba7b533745a1cb88269ad6678b4db2",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "ARESLib-Kotlin/simulator/networktables.json": {
@@ -35687,6 +35807,16 @@
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09.md",
           "docs/audits/FTC_SDK12_MIGRATION_2026_11_09_EVIDENCE.json"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "7ba62da47a3f4504373ec2feb639f46974e85e16cb9481deebb4ca4f6da47a0f",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "docs/audits/BIOBUZZ_READINESS_EVIDENCE.json": {
@@ -35987,6 +36117,16 @@
           "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10.md",
           "docs/audits/STUDIO_SELECTION_HISTORY_2026_11_10_EVIDENCE.json"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "4169d18d348bf2b03365c390cbf7c2a31f09189e457ebfe0219c748a8511d8ba",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "docs/audits/RELEASE_7_0_60_REVIEW.md": {
@@ -36190,7 +36330,7 @@
     "docs/audits/file-reviews.json": {
       "review": "partial",
       "validation": "passed",
-      "scope": "Reviewed only compiler checkpoint ledger delta. Prior canonical fields and nested history preserved; unrelated semantic records unchanged. Self-fingerprint binds final JSON.",
+      "scope": "Reviewed only final compiler validation and protected integration ledger delta. Prior nested records retained and unrelated semantic records unchanged; no full repository audit claimed.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
@@ -36619,7 +36759,7 @@
           ]
         }
       },
-      "sha256": "3ba13b6a5220a2aeee11a1f8d73d734e3d3088816920c7c87af79b89b986392d",
+      "sha256": "71914eec7c275bd80d497bb3a8f025568374971d4094a289e4abdc5ce4efc935",
       "priorLifecycle20261109": {
         "sha256": "025739913a3efce80ddb65e825263793473b173437e46afa16fc111e95a437a9",
         "review": "reviewed",
@@ -36756,6 +36896,16 @@
         "evidence": [
           "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "3ba13b6a5220a2aeee11a1f8d73d734e3d3088816920c7c87af79b89b986392d",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler checkpoint ledger delta. Prior canonical fields and nested history preserved; unrelated semantic records unchanged. Self-fingerprint binds final JSON.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -37180,6 +37330,16 @@
           "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10.md",
           "docs/audits/FTC_SDK12_OTOS_RELIABILITY_2026_11_10_EVIDENCE.json"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "b5f07d57659671cf31ca4b68486628785e355a3beb304a74f47db48f10b79ebf",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "release/ares-versions.properties": {
@@ -37293,6 +37453,16 @@
           "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "7ff22f3c3df60a57a05be9ba2f73666398c4627d854e6eed93047f9fb217da3b",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "release/starter-artifacts.properties": {
@@ -37396,6 +37566,16 @@
         "evidence": [
           "docs/audits/GITHUB_INTEGRATION_2026_11_10_EVIDENCE.json",
           "docs/audits/GITHUB_CONSOLIDATION_2026_11_10.md"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "7fef1b8a9043830754d7c608ea40c49be02a6f82ba808823b4935cdffb774270",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -37730,6 +37910,16 @@
           "scripts/tests/test_monorepo_policy.py",
           "docs/audits/DEEP_AUDIT_REPORT.md"
         ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "99ebd5a4156fe4d48e2b0887b24baec14b0d40064c59c343be5bc6971f7d18f8",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
       }
     },
     "scripts/tests/test_release_candidate.py": {
@@ -37812,6 +38002,16 @@
         "scope": "Release 7.0.62 diff and affected-contract review against 8463a6537; local validation and remaining CI/hardware boundaries are enumerated in the linked report. Not a full-file audit.",
         "evidence": [
           "docs/audits/RELEASE_7_0_62_REVIEW.md"
+        ]
+      },
+      "priorCompilerCloseout20261110": {
+        "sha256": "e72d9d1f1fcec22fcf00aaa0724668e358b110c75868b522b65baf974f3ce0ec",
+        "review": "partial",
+        "validation": "passed",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
         ]
       }
     },
@@ -40318,52 +40518,102 @@
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-BIOBUZZ-Example-1.1.11.zip": {
       "sha256": "b06df2ad1f06c5214e21a7289dbfc803ad57c3407d2e24a413893ba2d64a8c24",
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "b06df2ad1f06c5214e21a7289dbfc803ad57c3407d2e24a413893ba2d64a8c24",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-FRC-Starter-20.0.4.zip": {
       "sha256": "d3bf6c42aea9202d57846abef012541e4cacdce99a16e8032d934ef3834b229c",
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "d3bf6c42aea9202d57846abef012541e4cacdce99a16e8032d934ef3834b229c",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-FTC-Starter-20.0.4.zip": {
       "sha256": "11d297cb63ff8a1767ab91b00766d0f8d66ab3329f2f059e672d42911d909036",
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "11d297cb63ff8a1767ab91b00766d0f8d66ab3329f2f059e672d42911d909036",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-Lightbot-Example-3.0.73.zip": {
       "sha256": "0e9075b90af42a1d1e585cc420295469bb0840889daa12337899ce86c981a01b",
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "0e9075b90af42a1d1e585cc420295469bb0840889daa12337899ce86c981a01b",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "ARES-Analytics/app/src/main/resources/project-templates/ARES-XRP-Starter-3.0.68.zip": {
       "sha256": "67d4b7686ed7d2f144d1649dd0faaffe88f3451d72c0006595c66cdd6e742aa9",
       "review": "partial",
-      "validation": "pending",
+      "validation": "passed",
       "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "67d4b7686ed7d2f144d1649dd0faaffe88f3451d72c0006595c66cdd6e742aa9",
+        "review": "partial",
+        "validation": "pending",
+        "scope": "Reviewed only compiler/dependency/version/archive or evidence changes in this checkpoint; previous full review and nested history retained.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "ARESLib-Kotlin/core/src/test/kotlin/com/areslib/JavaDefaultConstructorCompatibilityTest.kt": {
       "sha256": "7d0b89c882d803a0206f91d0d0905fce85cb560ff5aca883a4459105561c1cbb",
@@ -40373,27 +40623,57 @@
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "7d0b89c882d803a0206f91d0d0905fce85cb560ff5aca883a4459105561c1cbb",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md": {
-      "sha256": "996b6149db838e4e353957379ac81857fa7f065576be0bc1bf6cded517ec815b",
+      "sha256": "c42ba728e8a9f4305c5f397576e6fdc48ffe763154756092e85cd682ad8b46c1",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "996b6149db838e4e353957379ac81857fa7f065576be0bc1bf6cded517ec815b",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json": {
-      "sha256": "09e0d5d66095112522ad7f96810d8e66edf0a220c1f13808cc517980f7461969",
+      "sha256": "2d5768d623074e8367127613410213652fbe2a14e7b9c608c26b81acadb0cbb2",
       "review": "reviewed",
       "validation": "passed",
       "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "09e0d5d66095112522ad7f96810d8e66edf0a220c1f13808cc517980f7461969",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "scripts/tests/test_kotlin_toolchain.py": {
       "sha256": "e1a7b322abf12228419f5123cf07608c42be204a94cef5478ab3e26636aed12c",
@@ -40403,7 +40683,17 @@
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "e1a7b322abf12228419f5123cf07608c42be204a94cef5478ab3e26636aed12c",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     },
     "scripts/verify_kotlin_toolchain.py": {
       "sha256": "29301ecd88c980fe802010482573c8878fdf1af670c06bbcfcb456c5b86405d2",
@@ -40413,7 +40703,17 @@
       "evidence": [
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
         "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
-      ]
+      ],
+      "priorCompilerCloseout20261110": {
+        "sha256": "29301ecd88c980fe802010482573c8878fdf1af670c06bbcfcb456c5b86405d2",
+        "review": "reviewed",
+        "validation": "passed",
+        "scope": "Reviewed complete new regression/check/report and its evidence bindings.",
+        "evidence": [
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10.md",
+          "docs/audits/COMPILER_LIBRARY_UPGRADES_2026_11_10_EVIDENCE.json"
+        ]
+      }
     }
   }
 }
