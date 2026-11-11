@@ -13,6 +13,7 @@ import com.areslib.pathing.PathPlannerParser
 import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.RoutineDriveStep
 import com.areslib.routine.RoutineDocument
+import com.areslib.routine.RoutineHeadingMode
 import com.areslib.routine.RoutineManager
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineStep
@@ -127,12 +128,16 @@ internal class FtcGeneratedProjectRuntime(
         }
         val target = autonomousEntry?.let { resolveFtcAutonomousPose(it, selectedAlliance, step.target) }
             ?: step.target.toPose2d()
+        val lookAtPoint = resolveFtcLookAtPoint(autonomousEntry, selectedAlliance, step.lookAtPoint)
+        require(step.headingMode != RoutineHeadingMode.POINT_TOWARDS || lookAtPoint != null) {
+            "POINT_TOWARDS drive step requires a finite lookAtPoint"
+        }
         val envelope = ftcFieldEnvelopeForRobot(robot)
         require(isFtcRobotPoseWithinField(target, envelope)) {
             "Drive target (${target.x}, ${target.y}) leaves the FTC field with the configured robot footprint"
         }
         val preset = FtcMotionPreset.fromKey(step.motionPresetKey)
-        return FtcRoutineDriveTask(robot, step, target, preset)
+        return FtcRoutineDriveTask(robot, step, target, lookAtPoint, preset)
     }
 
     /** Resolves hand-authored actions without coupling this adapter to generated method names. */
@@ -212,6 +217,7 @@ private class FtcRoutineDriveTask(
     private val robot: AresRobot,
     private val step: RoutineDriveStep,
     private val target: Pose2d,
+    private val lookAtPoint: Translation2d?,
     private val preset: FtcMotionPreset,
 ) : Task {
     override val name: String = "FTC drive to (%.2f, %.2f)".format(target.x, target.y)
@@ -224,17 +230,20 @@ private class FtcRoutineDriveTask(
         delegateEnded = false
         statusBridge.reset()
         val start = state.drive.poseEstimator.estimatedPose
+        val effectiveTarget = resolveFtcGoalPose(start, target, step.headingMode, lookAtPoint)
         val maximumVelocity = robot.base.mecanumIO.maxWheelSpeedMetersPerSecond * preset.speedScale
         val maximumAcceleration = state.tuning.drive.pathAccelerationLimit * preset.accelerationScale
-        val motionKind = classifyFtcDriveMotion(start, target)
+        val motionKind = classifyFtcDriveMotion(start, effectiveTarget)
         val generatedPath = if (motionKind == FtcDriveMotionKind.TRANSLATE) {
             PathPlannerParser.generatePath(
-                points = listOf(Translation2d(start.x, start.y), Translation2d(target.x, target.y)),
+                points = listOf(Translation2d(start.x, start.y), Translation2d(effectiveTarget.x, effectiveTarget.y)),
                 startHeading = start.heading,
-                endHeading = target.heading,
+                endHeading = effectiveTarget.heading,
                 maxVelocityMps = maximumVelocity,
                 maxAccelerationMps2 = maximumAcceleration,
-            )
+            ).also { path ->
+                applyFtcHeadingMode(path, start, effectiveTarget, step.headingMode, lookAtPoint)
+            }
         } else null
         // Preflight the geometry the robot will actually drive: a Hermite spline through the
         // same endpoints can bow away from the straight chord, so validating only the chord
@@ -251,7 +260,7 @@ private class FtcRoutineDriveTask(
             require(
                 isFtcRobotSweepCollisionFree(
                     start,
-                    target,
+                    effectiveTarget,
                     ftcFieldEnvelopeForRobot(robot),
                     com.areslib.state.RobotFieldManager.activeConfig.obstacles
                 )
@@ -266,10 +275,11 @@ private class FtcRoutineDriveTask(
                 follower = robot.base.pathFollower,
                 path = generatedPath.copy(events = events),
                 mirrorForAlliance = false,
+                predictivePathSkip = step.blendHandoff,
             )
             motionKind == FtcDriveMotionKind.IMMEDIATE -> TimeWaitTask(0L)
             else -> FtcRotateToHeadingTask(
-                targetHeadingRadians = target.heading.radians,
+                targetHeadingRadians = effectiveTarget.heading.radians,
                 maxOmegaRadiansPerSecond = robot.base.drive.maxAngularSpeedRadiansPerSecond * preset.speedScale
             ).withTimeout(ROTATION_TIMEOUT_MS)
         }
@@ -430,6 +440,73 @@ internal class FtcRotateToHeadingTask(
 }
 
 private fun RoutinePose.toPose2d(): Pose2d = Pose2d(xMeters, yMeters, Rotation2d(headingRadians))
+
+internal fun resolveFtcLookAtPoint(
+    autonomousEntry: AutonomousCatalogEntry?,
+    selectedAlliance: com.areslib.state.Alliance,
+    lookAt: RoutinePose?,
+): Translation2d? {
+    val raw = lookAt ?: return null
+    if (!raw.xMeters.isFinite() || !raw.yMeters.isFinite()) return null
+    val normalized = RoutinePose(raw.xMeters, raw.yMeters, 0.0)
+    val transformed = autonomousEntry?.let { resolveFtcAutonomousPose(it, selectedAlliance, normalized) }
+        ?: normalized.toPose2d()
+    return transformed.translation
+}
+
+internal fun resolveFtcGoalPose(
+    start: Pose2d,
+    target: Pose2d,
+    headingMode: RoutineHeadingMode,
+    lookAtPoint: Translation2d?,
+): Pose2d {
+    val endHeading = when (headingMode) {
+        RoutineHeadingMode.LINEAR -> target.heading
+        RoutineHeadingMode.CONSTANT -> start.heading
+        RoutineHeadingMode.TANGENTIAL -> {
+            val dx = target.x - start.x
+            val dy = target.y - start.y
+            if (hypot(dx, dy) >= SAME_POSITION_EPSILON_METERS) Rotation2d(kotlin.math.atan2(dy, dx)) else target.heading
+        }
+        RoutineHeadingMode.TANGENTIAL_REVERSE -> {
+            val dx = target.x - start.x
+            val dy = target.y - start.y
+            if (hypot(dx, dy) >= SAME_POSITION_EPSILON_METERS) {
+                Rotation2d(com.areslib.math.wrapAngle(kotlin.math.atan2(dy, dx) + Math.PI))
+            } else target.heading
+        }
+        RoutineHeadingMode.POINT_TOWARDS -> {
+            if (lookAtPoint != null && hypot(lookAtPoint.x - target.x, lookAtPoint.y - target.y) > 1e-6) {
+                Rotation2d(kotlin.math.atan2(lookAtPoint.y - target.y, lookAtPoint.x - target.x))
+            } else target.heading
+        }
+    }
+    return Pose2d(target.x, target.y, endHeading)
+}
+
+internal fun applyFtcHeadingMode(
+    path: com.areslib.pathing.Path,
+    start: Pose2d,
+    target: Pose2d,
+    headingMode: RoutineHeadingMode,
+    lookAtPoint: Translation2d?,
+) {
+    if (headingMode == RoutineHeadingMode.LINEAR) return
+    for (point in path.points) {
+        val heading = when (headingMode) {
+            RoutineHeadingMode.LINEAR -> point.pose.heading.radians
+            RoutineHeadingMode.CONSTANT -> start.heading.radians
+            RoutineHeadingMode.TANGENTIAL -> point.tangentRadians
+            RoutineHeadingMode.TANGENTIAL_REVERSE -> com.areslib.math.wrapAngle(point.tangentRadians + Math.PI)
+            RoutineHeadingMode.POINT_TOWARDS -> {
+                if (lookAtPoint != null && hypot(lookAtPoint.x - point.pose.x, lookAtPoint.y - point.pose.y) > 1e-6) {
+                    kotlin.math.atan2(lookAtPoint.y - point.pose.y, lookAtPoint.x - point.pose.x)
+                } else target.heading.radians
+            }
+        }
+        point.pose = Pose2d(point.pose.x, point.pose.y, Rotation2d(heading))
+    }
+}
 
 /** Drive owns the deadline; unfinished during-actions are interrupted before arrival actions start. */
 internal fun composeFtcDriveLifecycle(

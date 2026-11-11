@@ -7,11 +7,13 @@ import com.areslib.math.coordinate.AllianceMirroring
 import com.areslib.math.coordinate.FieldOrigin
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.Translation2d
 import com.areslib.routine.AutonomousCatalogEntry
 import com.areslib.routine.AutonomousCatalogResolution
 import com.areslib.routine.AutonomousCatalogResolver
 import com.areslib.routine.RoutineAlliance
 import com.areslib.routine.RoutineDriveStep
+import com.areslib.routine.RoutineHeadingMode
 import com.areslib.routine.RoutinePose
 import com.areslib.routine.RoutineRequestResult
 import com.areslib.routine.ownRoutineTaskTree
@@ -147,6 +149,15 @@ internal class StarterGeneratedCapabilities(
     override fun createDriveTask(step: RoutineDriveStep): Task {
         check(drivePermitted) { "FRC drive tasks require a permitted simulation or reviewed physical adapter" }
         val target = transform(step.target)
+        val lookAtPoint = step.lookAtPoint?.let { raw ->
+            require(raw.xMeters.isFinite() && raw.yMeters.isFinite()) {
+                "FRC autonomous lookAtPoint must contain finite coordinates"
+            }
+            transform(RoutinePose(raw.xMeters, raw.yMeters, 0.0)).translation
+        }
+        require(step.headingMode != RoutineHeadingMode.POINT_TOWARDS || lookAtPoint != null) {
+            "POINT_TOWARDS drive step requires a finite lookAtPoint"
+        }
         val preset = StarterFrcMotionPreset.fromKey(step.motionPresetKey)
         val created = ArrayList<Task>()
         val cleanupOwners = java.util.IdentityHashMap<Task, Boolean>()
@@ -158,7 +169,7 @@ internal class StarterGeneratedCapabilities(
             return task
         }
         try {
-            val drive = own(StarterFrcDriveToPoseTask(target, preset))
+            val drive = own(StarterFrcDriveToPoseTask(target, preset, step.headingMode, lookAtPoint, step.blendHandoff))
             val markerTasks = step.markers.map { marker ->
                 val action = own(requireGeneratedAction(marker.actionKey))
                 own(StarterFrcDriveMarkerTask(target, marker.progress, action)).also {
@@ -214,6 +225,9 @@ internal enum class StarterFrcMotionPreset(val speedScale: Double) {
 internal class StarterFrcDriveToPoseTask(
     private val target: Pose2d,
     private val preset: StarterFrcMotionPreset,
+    internal val headingMode: RoutineHeadingMode = RoutineHeadingMode.LINEAR,
+    internal val lookAtPoint: Translation2d? = null,
+    internal val blendHandoff: Boolean = false,
 ) : Task {
     override val name: String = "Starter FRC drive to (%.2f, %.2f)".format(target.x, target.y)
     override val requiredResources: Long = TaskResources.DRIVE
@@ -225,6 +239,7 @@ internal class StarterFrcDriveToPoseTask(
     private val yController = PIDController(0.0, 0.0, 0.0)
     private val headingController = PIDController(0.0, 0.0, 0.0)
     private val targetHeading = wrapAngle(target.heading.rawRadians)
+    private var initialHeading = targetHeading
     private var configuredTimeoutMs = MAX_DRIVE_DURATION_MS
     private var settledSamples = 0
     private var lastSettledObservationMs = -1L
@@ -251,8 +266,32 @@ internal class StarterFrcDriveToPoseTask(
         // Terminal cleanup removes registry deadlines. Reapply the configured duration on reuse.
         super.withTimeout(configuredTimeoutMs)
         super.initialize(state)
+        if (state.drive.poseEstimator.estimatedPoseHeading.isFinite()) {
+            initialHeading = wrapAngle(state.drive.poseEstimator.estimatedPoseHeading)
+        }
         resetControlHistory()
         return emptyList()
+    }
+
+    internal fun desiredHeading(poseX: Double, poseY: Double): Double = when (headingMode) {
+        RoutineHeadingMode.LINEAR -> targetHeading
+        RoutineHeadingMode.CONSTANT -> initialHeading
+        RoutineHeadingMode.TANGENTIAL -> {
+            val dx = target.x - poseX
+            val dy = target.y - poseY
+            if (hypot(dx, dy) > 1e-4) kotlin.math.atan2(dy, dx) else targetHeading
+        }
+        RoutineHeadingMode.TANGENTIAL_REVERSE -> {
+            val dx = target.x - poseX
+            val dy = target.y - poseY
+            if (hypot(dx, dy) > 1e-4) wrapAngle(kotlin.math.atan2(dy, dx) + PI) else targetHeading
+        }
+        RoutineHeadingMode.POINT_TOWARDS -> {
+            val focus = lookAtPoint
+            if (focus != null && hypot(focus.x - poseX, focus.y - poseY) > 1e-6) {
+                kotlin.math.atan2(focus.y - poseY, focus.x - poseX)
+            } else targetHeading
+        }
     }
 
     private fun resetControlHistory() {
@@ -273,10 +312,12 @@ internal class StarterFrcDriveToPoseTask(
         val pose = state.drive.poseEstimator
         if (pose.lastObservationTimestampMs == lastSettledObservationMs) return false
         lastSettledObservationMs = pose.lastObservationTimestampMs
-        val positionReady = hypot(target.x - pose.estimatedPoseX, target.y - pose.estimatedPoseY) <= POSITION_TOLERANCE_METERS
-        val headingReady = abs(wrapAngle(targetHeading - wrapAngle(pose.estimatedPoseHeading))) <= HEADING_TOLERANCE_RADIANS
+        val positionTolerance = if (blendHandoff) POSITION_TOLERANCE_METERS * 2.5 else POSITION_TOLERANCE_METERS
+        val positionReady = hypot(target.x - pose.estimatedPoseX, target.y - pose.estimatedPoseY) <= positionTolerance
+        val desiredHead = desiredHeading(pose.estimatedPoseX, pose.estimatedPoseY)
+        val headingReady = abs(wrapAngle(desiredHead - wrapAngle(pose.estimatedPoseHeading))) <= HEADING_TOLERANCE_RADIANS
         settledSamples = if (positionReady && headingReady) settledSamples + 1 else 0
-        return settledSamples >= REQUIRED_SETTLED_SAMPLES
+        return settledSamples >= if (blendHandoff) 1 else REQUIRED_SETTLED_SAMPLES
     }
 
     override fun execute(state: RobotState, elapsedMs: Long): List<RobotAction> {
@@ -319,7 +360,8 @@ internal class StarterFrcDriveToPoseTask(
 
         var requestedX = xController.calculate(pose.estimatedPoseX, target.x, dtSeconds)
         var requestedY = yController.calculate(pose.estimatedPoseY, target.y, dtSeconds)
-        val requestedOmega = headingController.calculate(wrapAngle(pose.estimatedPoseHeading), targetHeading, dtSeconds)
+        val desiredHead = desiredHeading(pose.estimatedPoseX, pose.estimatedPoseY)
+        val requestedOmega = headingController.calculate(wrapAngle(pose.estimatedPoseHeading), desiredHead, dtSeconds)
         if (!xController.lastCalculationValid || !yController.lastCalculationValid || !headingController.lastCalculationValid) {
             TaskStateMachine.markFailed(this)
             return neutralAt(now)

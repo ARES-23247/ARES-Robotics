@@ -401,4 +401,24 @@ class StarterCapabilityConstructionAuditTest {
             assertTrue(auto.isFinishedForTest)
         } finally { telemetry.stringFailure = null; controls.cancelAll("Test complete") }
     }
+
+    @Test fun `POINT_TOWARDS lookAtPoint mirrors for opposite alliance and blendHandoff propagates`() = withRobot { robot ->
+        val capabilities = StarterGeneratedCapabilities(robot, true)
+        capabilities.configureAutonomous(entry(), Alliance.RED)
+        val built = capabilities.createDriveTask(
+            RoutineDriveStep(
+                target = RoutinePose(2.0, 3.0, 0.0),
+                headingMode = RoutineHeadingMode.POINT_TOWARDS,
+                lookAtPoint = RoutinePose(1.0, 4.0, 0.0),
+                blendHandoff = true,
+            )
+        ) as StarterFrcDriveToPoseTask
+        assertEquals(RoutineHeadingMode.POINT_TOWARDS, built.headingMode)
+        assertTrue(built.blendHandoff)
+        val focus = requireNotNull(built.lookAtPoint)
+        assertEquals(19.0, focus.x, 1e-12)
+        assertEquals(4.0, focus.y, 1e-12)
+        assertEquals(kotlin.math.atan2(4.0 - 2.0, 19.0 - 15.0), built.desiredHeading(15.0, 2.0), 1e-9)
+        TaskRuntimeOwnership.release(built)
+    }
 }

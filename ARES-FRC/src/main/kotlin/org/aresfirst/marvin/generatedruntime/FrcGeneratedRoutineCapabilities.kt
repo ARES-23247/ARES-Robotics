@@ -12,6 +12,7 @@ import com.areslib.math.coordinate.FieldOrigin
 import com.areslib.math.coordinate.FieldSymmetry
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
+import com.areslib.math.geometry.Translation2d
 import com.areslib.pathing.CommandKey
 import com.areslib.pathing.DriveModel
 import com.areslib.pathing.HolonomicPathFollower
@@ -103,6 +104,12 @@ class FrcGeneratedRoutineCapabilities(
 
     override fun createDriveTask(step: RoutineDriveStep): Task {
         val transformedTarget = transform(step.target)
+        val transformedLookAtPoint = step.lookAtPoint?.let { raw ->
+            require(raw.xMeters.isFinite() && raw.yMeters.isFinite()) {
+                "FRC lookAtPoint must contain finite coordinates"
+            }
+            transform(RoutinePose(raw.xMeters, raw.yMeters, 0.0)).translation
+        }
         return NativeFrcDriveTask(
             step = step.copy(
                 markers = step.markers.toList(),
@@ -110,6 +117,7 @@ class FrcGeneratedRoutineCapabilities(
                 arrivalActionKeys = step.arrivalActionKeys.toList(),
             ),
             target = transformedTarget,
+            lookAtPoint = transformedLookAtPoint,
             planner = trajectoryPlanner,
             follower = follower,
             limitsForPreset = ::trajectoryLimits
@@ -169,6 +177,7 @@ class FrcGeneratedRoutineCapabilities(
 private class NativeFrcDriveTask(
     private val step: RoutineDriveStep,
     private val target: Pose2d,
+    private val lookAtPoint: Translation2d?,
     private val planner: TrajectoryPlanner,
     private val follower: HolonomicPathFollower,
     private val limitsForPreset: (TrajectoryPreset) -> TrajectoryLimits
@@ -200,7 +209,9 @@ private class NativeFrcDriveTask(
                 driveModel = DriveModel.SWERVE,
                 preset = preset,
                 limits = limitsForPreset(preset),
-                preferredEngine = preferredEngine
+                preferredEngine = preferredEngine,
+                headingMode = step.headingMode,
+                lookAtPoint = lookAtPoint,
             )
         )
         val errors = generation.diagnostics.filter {
@@ -221,7 +232,8 @@ private class NativeFrcDriveTask(
             path = withMarkers.toPath(),
             fieldLength = CoordinateTransformers.FRC_FIELD_LENGTH,
             fieldWidth = CoordinateTransformers.FRC_FIELD_WIDTH,
-            mirrorForAlliance = false
+            mirrorForAlliance = false,
+            predictivePathSkip = step.blendHandoff,
         )
         val during = step.duringActionKeys.map(::namedTask)
         val drive: Task = if (during.isEmpty()) follow else ParallelDeadlineGroup(follow, during)
