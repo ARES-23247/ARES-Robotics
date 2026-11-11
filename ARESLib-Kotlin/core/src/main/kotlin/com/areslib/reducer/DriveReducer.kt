@@ -4,6 +4,7 @@ import com.areslib.action.RobotAction
 import com.areslib.state.DriveState
 import com.areslib.state.DriveMode
 import com.areslib.math.estimation.ApplyPoseEstimatorRuntimeResult
+import com.areslib.math.estimation.PoseEstimatorSnapshot
 
 /**
  * Object implementation for Drive Reducer.
@@ -16,106 +17,8 @@ object DriveReducer {
      */
     fun reduce(state: DriveState, action: RobotAction): DriveState {
         return when (action) {
-            is RobotAction.DriveHardwareUpdate -> {
-                if (!action.xVelocity.isFinite() || !action.yVelocity.isFinite() ||
-                    !action.angularVelocity.isFinite() || !action.deltaX.isFinite() ||
-                    !action.deltaY.isFinite() || !action.deltaHeading.isFinite() ||
-                    !action.pitchDegrees.isFinite() || !action.rollDegrees.isFinite() ||
-                    !action.xAccelerationG.isFinite() || !action.yAccelerationG.isFinite() ||
-                    !action.zAccelerationG.isFinite()) {
-                    return state
-                }
-
-                observationDtSeconds(state, action.timestampMs) ?: return state
-                // DriveHardwareUpdate carries a robot-local twist, like the estimator
-                // input. Integrate its arc, then rotate using raw odometry's own heading.
-                // Vision corrections must not rotate the independent raw odometry trace.
-                val theta = action.deltaHeading
-                val s: Double
-                val c: Double
-                if (kotlin.math.abs(theta) < 1e-6) {
-                    s = 1.0 - theta * theta / 6.0
-                    c = theta * 0.5
-                } else {
-                    s = kotlin.math.sin(theta) / theta
-                    c = (1.0 - kotlin.math.cos(theta)) / theta
-                }
-                val arcX = s * action.deltaX - c * action.deltaY
-                val arcY = c * action.deltaX + s * action.deltaY
-                val cosHeading = kotlin.math.cos(state.odometryHeading)
-                val sinHeading = kotlin.math.sin(state.odometryHeading)
-                val nextOdomX = state.odometryX + arcX * cosHeading - arcY * sinHeading
-                val nextOdomY = state.odometryY + arcX * sinHeading + arcY * cosHeading
-                val nextOdomHeading = com.areslib.math.wrapAngle(state.odometryHeading + theta)
-                state.copy(
-                    xVelocityMetersPerSecond = action.xVelocity,
-                    yVelocityMetersPerSecond = action.yVelocity,
-                    angularVelocityRadiansPerSecond = action.angularVelocity,
-                    odometryX = nextOdomX,
-                    odometryY = nextOdomY,
-                    odometryHeading = nextOdomHeading,
-                    pitchDegrees = action.pitchDegrees,
-                    rollDegrees = action.rollDegrees,
-                    xAccelerationG = action.xAccelerationG,
-                    yAccelerationG = action.yAccelerationG,
-                    zAccelerationG = action.zAccelerationG
-                )
-            }
-            is RobotAction.PoseUpdate -> {
-                if (!action.xMeters.isFinite() || !action.yMeters.isFinite() ||
-                    !action.headingRadians.isFinite()) {
-                    return state
-                }
-
-                val motionMeasurementsValid = action.motionMeasurementsValid &&
-                    action.xVelocityMetersPerSecond.isFinite() &&
-                    action.yVelocityMetersPerSecond.isFinite() &&
-                    action.angularVelocityRadiansPerSecond.isFinite()
-                val measuredFieldXVelocity = if (motionMeasurementsValid) {
-                    action.xVelocityMetersPerSecond
-                } else 0.0
-                val measuredFieldYVelocity = if (motionMeasurementsValid) {
-                    action.yVelocityMetersPerSecond
-                } else 0.0
-                val measuredAngularVelocity = if (motionMeasurementsValid) {
-                    action.angularVelocityRadiansPerSecond
-                } else 0.0
-                val imuMeasurementsValid = action.imuMeasurementsValid &&
-                    action.pitchDegrees.isFinite() && action.rollDegrees.isFinite() &&
-                    action.pitchVelocityDegPerSec.isFinite() && action.rollVelocityDegPerSec.isFinite() &&
-                    action.xAccelerationG.isFinite() && action.yAccelerationG.isFinite() &&
-                    action.zAccelerationG.isFinite()
-                val pitchDegrees = if (imuMeasurementsValid) action.pitchDegrees else 0.0
-                val rollDegrees = if (imuMeasurementsValid) action.rollDegrees else 0.0
-                val xAccelerationG = if (imuMeasurementsValid) action.xAccelerationG else 0.0
-                val yAccelerationG = if (imuMeasurementsValid) action.yAccelerationG else 0.0
-                val zAccelerationG = if (imuMeasurementsValid) action.zAccelerationG else 0.0
-
-                if (!action.isReset && !action.isExternalEstimate) {
-                    if (action.timestampMs <= 0L && !action.motionMeasurementsValid) return state
-                    observationDtSeconds(state, action.timestampMs) ?: return state
-                }
-
-                state.copy(
-                    odometryX = action.xMeters,
-                    odometryY = action.yMeters,
-                    odometryHeading = action.headingRadians,
-                    poseEstimateIsExternal = action.isExternalEstimate && !action.isReset,
-                    measuredFieldXVelocityMetersPerSecond = measuredFieldXVelocity,
-                    measuredFieldYVelocityMetersPerSecond = measuredFieldYVelocity,
-                    measuredAngularVelocityRadiansPerSecond = measuredAngularVelocity,
-                    measuredMotionValid = motionMeasurementsValid,
-                    pitchDegrees = pitchDegrees,
-                    rollDegrees = rollDegrees,
-                    imuMeasurementsValid = imuMeasurementsValid,
-                    xAccelerationG = xAccelerationG,
-                    yAccelerationG = yAccelerationG,
-                    zAccelerationG = zAccelerationG,
-                    headingLockTargetRadians = if (action.isReset) null else state.headingLockTargetRadians,
-                    positionLockX = if (action.isReset) null else state.positionLockX,
-                    positionLockY = if (action.isReset) null else state.positionLockY
-                )
-            }
+            is RobotAction.DriveHardwareUpdate -> reduceDriveHardwareUpdate(state, action, null)
+            is RobotAction.PoseUpdate -> reducePoseUpdate(state, action, null)
             is ApplyPoseEstimatorRuntimeResult -> {
                 val updatedEstimator = action.estimatorState ?: return state
                 state.updateDiagnostics(
@@ -195,6 +98,181 @@ object DriveReducer {
                 )
             }
             else -> state
+        }
+    }
+
+    internal fun reduceDriveHardwareUpdate(
+        state: DriveState,
+        action: RobotAction.DriveHardwareUpdate,
+        updatedEstimator: PoseEstimatorSnapshot?,
+    ): DriveState {
+        if (!action.xVelocity.isFinite() || !action.yVelocity.isFinite() ||
+            !action.angularVelocity.isFinite() || !action.deltaX.isFinite() ||
+            !action.deltaY.isFinite() || !action.deltaHeading.isFinite() ||
+            !action.pitchDegrees.isFinite() || !action.rollDegrees.isFinite() ||
+            !action.xAccelerationG.isFinite() || !action.yAccelerationG.isFinite() ||
+            !action.zAccelerationG.isFinite() ||
+            observationDtSeconds(state, action.timestampMs) == null
+        ) {
+            return if (updatedEstimator != null) {
+                state.updateDiagnostics(state.odometryX, state.odometryY, state.odometryHeading, updatedEstimator)
+            } else {
+                state
+            }
+        }
+        // DriveHardwareUpdate carries a robot-local twist, like the estimator input.
+        // Integrate its arc, then rotate using raw odometry's own heading.
+        val theta = action.deltaHeading
+        val s: Double
+        val c: Double
+        if (kotlin.math.abs(theta) < 1e-6) {
+            s = 1.0 - theta * theta / 6.0
+            c = theta * 0.5
+        } else {
+            s = kotlin.math.sin(theta) / theta
+            c = (1.0 - kotlin.math.cos(theta)) / theta
+        }
+        val arcX = s * action.deltaX - c * action.deltaY
+        val arcY = c * action.deltaX + s * action.deltaY
+        val cosHeading = kotlin.math.cos(state.odometryHeading)
+        val sinHeading = kotlin.math.sin(state.odometryHeading)
+        val nextOdomX = state.odometryX + arcX * cosHeading - arcY * sinHeading
+        val nextOdomY = state.odometryY + arcX * sinHeading + arcY * cosHeading
+        val nextOdomHeading = com.areslib.math.wrapAngle(state.odometryHeading + theta)
+        return if (updatedEstimator == null) {
+            state.copy(
+                xVelocityMetersPerSecond = action.xVelocity,
+                yVelocityMetersPerSecond = action.yVelocity,
+                angularVelocityRadiansPerSecond = action.angularVelocity,
+                odometryX = nextOdomX,
+                odometryY = nextOdomY,
+                odometryHeading = nextOdomHeading,
+                pitchDegrees = action.pitchDegrees,
+                rollDegrees = action.rollDegrees,
+                xAccelerationG = action.xAccelerationG,
+                yAccelerationG = action.yAccelerationG,
+                zAccelerationG = action.zAccelerationG
+            )
+        } else {
+            state.copy(
+                xVelocityMetersPerSecond = action.xVelocity,
+                yVelocityMetersPerSecond = action.yVelocity,
+                angularVelocityRadiansPerSecond = action.angularVelocity,
+                odometryX = nextOdomX,
+                odometryY = nextOdomY,
+                odometryHeading = nextOdomHeading,
+                poseEstimator = updatedEstimator,
+                pitchDegrees = action.pitchDegrees,
+                rollDegrees = action.rollDegrees,
+                xAccelerationG = action.xAccelerationG,
+                yAccelerationG = action.yAccelerationG,
+                zAccelerationG = action.zAccelerationG,
+                ekfDriftX = nextOdomX - updatedEstimator.estimatedPoseX,
+                ekfDriftY = nextOdomY - updatedEstimator.estimatedPoseY,
+                rawOdometryX = nextOdomX,
+                rawOdometryY = nextOdomY,
+                rawOdometryHeading = nextOdomHeading,
+                lastInnovationX = updatedEstimator.lastInnovationX,
+                lastInnovationY = updatedEstimator.lastInnovationY,
+                lastInnovationTheta = updatedEstimator.lastInnovationTheta
+            )
+        }
+    }
+
+    internal fun reducePoseUpdate(
+        state: DriveState,
+        action: RobotAction.PoseUpdate,
+        updatedEstimator: PoseEstimatorSnapshot?,
+    ): DriveState {
+        if (!action.xMeters.isFinite() || !action.yMeters.isFinite() ||
+            !action.headingRadians.isFinite()
+        ) {
+            return if (updatedEstimator != null) {
+                state.updateDiagnostics(state.odometryX, state.odometryY, state.odometryHeading, updatedEstimator)
+            } else {
+                state
+            }
+        }
+
+        val motionMeasurementsValid = action.motionMeasurementsValid &&
+            action.xVelocityMetersPerSecond.isFinite() &&
+            action.yVelocityMetersPerSecond.isFinite() &&
+            action.angularVelocityRadiansPerSecond.isFinite()
+        val measuredFieldXVelocity = if (motionMeasurementsValid) action.xVelocityMetersPerSecond else 0.0
+        val measuredFieldYVelocity = if (motionMeasurementsValid) action.yVelocityMetersPerSecond else 0.0
+        val measuredAngularVelocity = if (motionMeasurementsValid) action.angularVelocityRadiansPerSecond else 0.0
+        val imuMeasurementsValid = action.imuMeasurementsValid &&
+            action.pitchDegrees.isFinite() && action.rollDegrees.isFinite() &&
+            action.pitchVelocityDegPerSec.isFinite() && action.rollVelocityDegPerSec.isFinite() &&
+            action.xAccelerationG.isFinite() && action.yAccelerationG.isFinite() &&
+            action.zAccelerationG.isFinite()
+        val pitchDegrees = if (imuMeasurementsValid) action.pitchDegrees else 0.0
+        val rollDegrees = if (imuMeasurementsValid) action.rollDegrees else 0.0
+        val xAccelerationG = if (imuMeasurementsValid) action.xAccelerationG else 0.0
+        val yAccelerationG = if (imuMeasurementsValid) action.yAccelerationG else 0.0
+        val zAccelerationG = if (imuMeasurementsValid) action.zAccelerationG else 0.0
+
+        if (!action.isReset && !action.isExternalEstimate) {
+            if ((action.timestampMs <= 0L && !action.motionMeasurementsValid) ||
+                observationDtSeconds(state, action.timestampMs) == null
+            ) {
+                return if (updatedEstimator != null) {
+                    state.updateDiagnostics(state.odometryX, state.odometryY, state.odometryHeading, updatedEstimator)
+                } else {
+                    state
+                }
+            }
+        }
+
+        return if (updatedEstimator == null) {
+            state.copy(
+                odometryX = action.xMeters,
+                odometryY = action.yMeters,
+                odometryHeading = action.headingRadians,
+                poseEstimateIsExternal = action.isExternalEstimate && !action.isReset,
+                measuredFieldXVelocityMetersPerSecond = measuredFieldXVelocity,
+                measuredFieldYVelocityMetersPerSecond = measuredFieldYVelocity,
+                measuredAngularVelocityRadiansPerSecond = measuredAngularVelocity,
+                measuredMotionValid = motionMeasurementsValid,
+                pitchDegrees = pitchDegrees,
+                rollDegrees = rollDegrees,
+                imuMeasurementsValid = imuMeasurementsValid,
+                xAccelerationG = xAccelerationG,
+                yAccelerationG = yAccelerationG,
+                zAccelerationG = zAccelerationG,
+                headingLockTargetRadians = if (action.isReset) null else state.headingLockTargetRadians,
+                positionLockX = if (action.isReset) null else state.positionLockX,
+                positionLockY = if (action.isReset) null else state.positionLockY
+            )
+        } else {
+            state.copy(
+                odometryX = action.xMeters,
+                odometryY = action.yMeters,
+                odometryHeading = action.headingRadians,
+                poseEstimator = updatedEstimator,
+                poseEstimateIsExternal = action.isExternalEstimate && !action.isReset,
+                measuredFieldXVelocityMetersPerSecond = measuredFieldXVelocity,
+                measuredFieldYVelocityMetersPerSecond = measuredFieldYVelocity,
+                measuredAngularVelocityRadiansPerSecond = measuredAngularVelocity,
+                measuredMotionValid = motionMeasurementsValid,
+                pitchDegrees = pitchDegrees,
+                rollDegrees = rollDegrees,
+                imuMeasurementsValid = imuMeasurementsValid,
+                xAccelerationG = xAccelerationG,
+                yAccelerationG = yAccelerationG,
+                zAccelerationG = zAccelerationG,
+                headingLockTargetRadians = if (action.isReset) null else state.headingLockTargetRadians,
+                positionLockX = if (action.isReset) null else state.positionLockX,
+                positionLockY = if (action.isReset) null else state.positionLockY,
+                ekfDriftX = action.xMeters - updatedEstimator.estimatedPoseX,
+                ekfDriftY = action.yMeters - updatedEstimator.estimatedPoseY,
+                rawOdometryX = action.xMeters,
+                rawOdometryY = action.yMeters,
+                rawOdometryHeading = action.headingRadians,
+                lastInnovationX = updatedEstimator.lastInnovationX,
+                lastInnovationY = updatedEstimator.lastInnovationY,
+                lastInnovationTheta = updatedEstimator.lastInnovationTheta
+            )
         }
     }
 

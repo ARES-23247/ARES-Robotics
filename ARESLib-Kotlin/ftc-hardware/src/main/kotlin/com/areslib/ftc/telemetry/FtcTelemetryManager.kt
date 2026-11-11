@@ -194,7 +194,6 @@ class FtcTelemetryManager(
         val isNtFrame = enableNetworkStreaming && (telemetryFrameCounter % divisor == 0)
         dataLoggingTelemetry.ntEnabled = isNtFrame
         try {
-            val estPose = state.drive.poseEstimator.estimatedPose
             // Subclass-specific telemetry (motor powers, currents, custom subsystems)
             onSubclassPublish()
 
@@ -217,6 +216,7 @@ class FtcTelemetryManager(
             // Non-blocking architecture: string updates are handed to the background worker.
             val localElapsed = timestamp-lastLocalTelemetryUpdateMs
             if (!hasLocalTelemetryTime || timestamp < lastLocalTelemetryUpdateMs || localElapsed < 0L || localElapsed >= 250L) {
+                val estPose = state.drive.poseEstimator.estimatedPose
                 val snapshot = mutableListOf(
                     "EKF Pose (X, Y, Deg)" to estPose.toFormattedString(),
                     "Raw Pinpoint (X, Y, Deg)" to com.areslib.math.geometry.Pose2d(

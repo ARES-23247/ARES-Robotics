@@ -276,22 +276,12 @@ internal class StarterFrcDriveToPoseTask(
     internal fun desiredHeading(poseX: Double, poseY: Double): Double = when (headingMode) {
         RoutineHeadingMode.LINEAR -> targetHeading
         RoutineHeadingMode.CONSTANT -> initialHeading
-        RoutineHeadingMode.TANGENTIAL -> {
-            val dx = target.x - poseX
-            val dy = target.y - poseY
-            if (hypot(dx, dy) > 1e-4) kotlin.math.atan2(dy, dx) else targetHeading
-        }
-        RoutineHeadingMode.TANGENTIAL_REVERSE -> {
-            val dx = target.x - poseX
-            val dy = target.y - poseY
-            if (hypot(dx, dy) > 1e-4) wrapAngle(kotlin.math.atan2(dy, dx) + PI) else targetHeading
-        }
-        RoutineHeadingMode.POINT_TOWARDS -> {
-            val focus = lookAtPoint
-            if (focus != null && hypot(focus.x - poseX, focus.y - poseY) > 1e-6) {
-                kotlin.math.atan2(focus.y - poseY, focus.x - poseX)
-            } else targetHeading
-        }
+        RoutineHeadingMode.TANGENTIAL ->
+            if (hypot(target.x - poseX, target.y - poseY) > 1e-4) kotlin.math.atan2(target.y - poseY, target.x - poseX) else targetHeading
+        RoutineHeadingMode.TANGENTIAL_REVERSE ->
+            if (hypot(target.x - poseX, target.y - poseY) > 1e-4) wrapAngle(kotlin.math.atan2(target.y - poseY, target.x - poseX) + PI) else targetHeading
+        RoutineHeadingMode.POINT_TOWARDS ->
+            lookAtPoint?.takeIf { hypot(it.x - poseX, it.y - poseY) > 1e-6 }?.let { kotlin.math.atan2(it.y - poseY, it.x - poseX) } ?: targetHeading
     }
 
     private fun resetControlHistory() {

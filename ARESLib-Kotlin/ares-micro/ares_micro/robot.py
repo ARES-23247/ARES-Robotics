@@ -66,7 +66,8 @@ class XrpRobot:
         self.autonomous_routines = {}
         self.default_autonomous_id = None
         self.faulted = False
-        self.subsystems = []
+        self.subsystems = ()
+        self._is_mecanum = isinstance(self.drivetrain, MecanumDrivetrain)
         self.brownout_threshold_volts = float(brownout_threshold_volts)
         self.battery_voltage_supplier = battery_voltage_supplier or (lambda: 6.0)
         self.pose_constraint = pose_constraint
@@ -90,7 +91,7 @@ class XrpRobot:
             self.active_routine.reset()
 
     def set_subsystems(self, subsystems):
-        self.subsystems = list(subsystems or [])
+        self.subsystems = tuple(subsystems or ())
 
     def handle_action(self, action_key, arguments=None):
         arguments = arguments or {}
@@ -224,7 +225,9 @@ class XrpRobot:
                     proposed_pose,
                 )
                 if (len(constrained_pose) != 3
-                        or not all(math.isfinite(value) for value in constrained_pose)):
+                        or not (math.isfinite(constrained_pose[0])
+                                and math.isfinite(constrained_pose[1])
+                                and math.isfinite(constrained_pose[2]))):
                     raise ValueError("XRP constrained pose must contain three finite values")
                 if constrained_pose != proposed_pose:
                     self.drivetrain.reset_pose(*constrained_pose)
@@ -251,7 +254,7 @@ class XrpRobot:
                         # Keep mechanism targets under the existing autonomous
                         # lease. Completion is not a request to enter teleop.
                     else:
-                        if isinstance(self.drivetrain, MecanumDrivetrain):
+                        if self._is_mecanum:
                             self.drivetrain.drive(vx, 0.0, omega)
                         else:
                             self.drivetrain.drive(vx, omega)
@@ -264,7 +267,7 @@ class XrpRobot:
                     vx = frame[0]
                     vy = frame[1]
                     omega = frame[2]
-                    if isinstance(self.drivetrain, MecanumDrivetrain):
+                    if self._is_mecanum:
                         self.drivetrain.drive(vx, vy, omega)
                     else:
                         self.drivetrain.drive(vx, omega)
@@ -284,15 +287,24 @@ class XrpRobot:
         # 5. Stream telemetry frame to Studio
         if not self.telemetry.is_connected:
             return
+        any_subsystem_fault = False
+        for subsystem in self.subsystems:
+            if subsystem.faulted:
+                any_subsystem_fault = True
+                break
+        subsystem_payload = (
+            {subsystem.document_id: dict(subsystem.state) for subsystem in self.subsystems}
+            if self.subsystems else None
+        )
         self.telemetry.publish_pose_frame(
             x=self.drivetrain.x,
             y=self.drivetrain.y,
             heading_rad=self.drivetrain.heading,
             battery_volts=battery_volts,
             mode=self.mode,
-            faulted=self.faulted or any(subsystem.faulted for subsystem in self.subsystems),
+            faulted=self.faulted or any_subsystem_fault,
             # LoopTimeMs is the control period, not only the sub-millisecond CPU work inside
             # this method. Studio uses it to display effective control frequency and overruns.
             loop_time_ms=max(0.0, float(dt) * 1000.0),
-            subsystems={subsystem.document_id: dict(subsystem.state) for subsystem in self.subsystems},
+            subsystems=subsystem_payload,
         )

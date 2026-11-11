@@ -182,9 +182,16 @@ fun DrawScope.drawActualPathAndDeviations(
     showDeviations: Boolean = false
 ) {
     val cachedActualPath = pathCache.actualPath
-    val cachedPointsRemainAnExactPrefix =
-        pathCache.actualPoints.size <= actualPath.size &&
-            pathCache.actualPoints.indices.all { index -> pathCache.actualPoints[index] == actualPath[index] }
+    val prevPoints = pathCache.actualPoints
+    val cachedPointsRemainAnExactPrefix = prevPoints === actualPath || (
+        prevPoints.size <= actualPath.size && (
+            prevPoints.isEmpty() || (
+                prevPoints[0] == actualPath[0] &&
+                    prevPoints[prevPoints.lastIndex] == actualPath[prevPoints.lastIndex] &&
+                    prevPoints.indices.all { index -> prevPoints[index] == actualPath[index] }
+                )
+            )
+        )
     val actualPathObj = if (cachedActualPath != null &&
         cachedPointsRemainAnExactPrefix &&
         pathCache.w == w && pathCache.h == h) {
@@ -206,7 +213,7 @@ fun DrawScope.drawActualPathAndDeviations(
         pathCache.actualPoints = actualPath
         path
     } else {
-        val path = Path()
+        val path = cachedActualPath?.apply { reset() } ?: Path()
         if (actualPath.isNotEmpty()) {
             val firstOffset = getCanvasOffsetBase(actualPath.first(), w, h, fieldWidthM, fieldHeightM, league)
             path.moveTo(firstOffset.x, firstOffset.y)
@@ -233,18 +240,20 @@ fun DrawScope.drawActualPathAndDeviations(
                 val actualWp = actualPath[i]
                 val actualOffset = getCanvasOffsetBase(actualWp, w, h, fieldWidthM, fieldHeightM, league)
                 var closestWp = waypoints.first()
-                var minDistance = Double.MAX_VALUE
+                var minDistSq = Double.MAX_VALUE
                 val wpSize = waypoints.size
                 for (j in 0 until wpSize) {
                     val plannedWp = waypoints[j]
-                    val dist = sqrt((actualWp.x - plannedWp.x).pow(2) + (actualWp.y - plannedWp.y).pow(2))
-                    if (dist < minDistance) {
-                        minDistance = dist
+                    val dx = actualWp.x - plannedWp.x
+                    val dy = actualWp.y - plannedWp.y
+                    val distSq = dx * dx + dy * dy
+                    if (distSq < minDistSq) {
+                        minDistSq = distSq
                         closestWp = plannedWp
                     }
                 }
                 val plannedOffset = getCanvasOffsetBase(closestWp, w, h, fieldWidthM, fieldHeightM, league)
-                val deviationM = minDistance
+                val deviationM = sqrt(minDistSq)
                 val deviationColor = when {
                     deviationM < 0.02 -> AresGreen
                     deviationM < 0.05 -> AresAmber
@@ -698,7 +707,7 @@ internal fun DrawScope.drawFreehandPenPreview(
         color = AresGold.copy(alpha = 0.85f),
         style = Stroke(
             width = 2.5.dp.toPx(),
-            pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f),
+            pathEffect = pathCache.dashEffectPen,
         ),
     )
 }

@@ -91,7 +91,7 @@ class ReplayEngineService internal constructor(
     private var windowRequest = 0L
     private var commitSequence = 0L
     private var currentSessionId = ""
-    private var timestamps: List<Long> = emptyList()
+    private var timestamps: LongArray = EMPTY_LONG_ARRAY
     private var startTimestampMs = 0L
     private var endTimestampMs = 0L
     private var currentPlayheadMs = 0L
@@ -123,8 +123,8 @@ class ReplayEngineService internal constructor(
                         "Cannot rewind live telemetry because pending frames could not be persisted"
                     }
                 }
-                val frameTimestamps = databaseService.getDistinctTimestamps(sessionId)
-                val topicCount = databaseService.getDistinctTelemetryKeys(sessionId).size
+                val frameTimestamps = databaseService.getDistinctTimestampsArray(sessionId)
+                val topicCount = databaseService.countDistinctTelemetryKeys(sessionId)
                 val session = databaseService.getSession(sessionId)
                 val actions = databaseService.getActionsForSession(sessionId)
                 val annotations = databaseService.getAnnotations(sessionId)
@@ -134,8 +134,8 @@ class ReplayEngineService internal constructor(
                 if (frameTimestamps.isEmpty()) {
                     LoadedSession(frameTimestamps, actions, annotations, density, topicCount, session, null)
                 } else {
-                    val first = frameTimestamps.first()
-                    val last = frameTimestamps.last()
+                    val first = frameTimestamps[0]
+                    val last = frameTimestamps[frameTimestamps.lastIndex]
                     LoadedSession(
                         timestamps = frameTimestamps,
                         actions = actions,
@@ -172,8 +172,8 @@ class ReplayEngineService internal constructor(
                     _isSeeking.value = false
                     return
                 }
-                startTimestampMs = loaded.timestamps.first()
-                endTimestampMs = loaded.timestamps.last()
+                startTimestampMs = loaded.timestamps[0]
+                endTimestampMs = loaded.timestamps[loaded.timestamps.lastIndex]
                 currentPlayheadMs = startTimestampMs
                 _sessionStartTimestampMs.value = startTimestampMs
                 _sessionDurationMs.value = endTimestampMs - startTimestampMs
@@ -301,7 +301,7 @@ class ReplayEngineService internal constructor(
         synchronized(lock) {
             if (timestamps.isEmpty()) return
             pauseLockedForNavigation()
-            val index = timestamps.binarySearch(currentPlayheadMs)
+            val index = java.util.Arrays.binarySearch(timestamps, currentPlayheadMs)
             val next = if (index >= 0) index + 1 else -index - 1
             if (next >= timestamps.size) {
                 currentPlayheadMs = endTimestampMs
@@ -318,7 +318,7 @@ class ReplayEngineService internal constructor(
         synchronized(lock) {
             if (timestamps.isEmpty()) return
             pauseLockedForNavigation()
-            val index = timestamps.binarySearch(currentPlayheadMs)
+            val index = java.util.Arrays.binarySearch(timestamps, currentPlayheadMs)
             val previous = if (index >= 0) index - 1 else -index - 2
             currentPlayheadMs = if (previous >= 0) timestamps[previous] else startTimestampMs
             _state.value = ReplayState.PAUSED
@@ -398,7 +398,7 @@ class ReplayEngineService internal constructor(
         pendingRange = null
         windowLoadJob = null
         currentSessionId = sessionId
-        timestamps = emptyList()
+        timestamps = EMPTY_LONG_ARRAY
         startTimestampMs = 0L
         endTimestampMs = 0L
         currentPlayheadMs = 0L
@@ -511,32 +511,50 @@ class ReplayEngineService internal constructor(
     private fun commitAtPlayheadLocked() {
         val window = activeWindow ?: return
         if (timestamps.isEmpty()) return
-        var timestampIndex = timestamps.binarySearch(currentPlayheadMs)
+        var timestampIndex = java.util.Arrays.binarySearch(timestamps, currentPlayheadMs)
         if (timestampIndex < 0) timestampIndex = -timestampIndex - 2
         timestampIndex = timestampIndex.coerceIn(0, timestamps.lastIndex)
         val targetTimestamp = timestamps[timestampIndex]
-        if (lastTargetTimestamp == Long.MIN_VALUE || targetTimestamp < lastTargetTimestamp) {
-            lastFrameIndex = 0
-            numericValues.clear()
-            stringValues.clear()
-            window.baseline.forEach(::applyFrameLocked)
-        }
-        lastTargetTimestamp = targetTimestamp
-        while (lastFrameIndex < window.frames.size) {
-            val frame = window.frames[lastFrameIndex]
-            if (frame.timestampMs > targetTimestamp) break
-            applyFrameLocked(frame)
-            lastFrameIndex += 1
+        val prevSnapshot = _currentFrame.value
+        val valuesUnchanged = targetTimestamp == lastTargetTimestamp &&
+            lastTargetTimestamp != Long.MIN_VALUE &&
+            prevSnapshot != null &&
+            prevSnapshot.sessionId == currentSessionId
+        if (!valuesUnchanged) {
+            if (lastTargetTimestamp == Long.MIN_VALUE || targetTimestamp < lastTargetTimestamp) {
+                lastFrameIndex = 0
+                numericValues.clear()
+                stringValues.clear()
+                for (i in window.baseline.indices) applyFrameLocked(window.baseline[i])
+            }
+            lastTargetTimestamp = targetTimestamp
+            while (lastFrameIndex < window.frames.size) {
+                val frame = window.frames[lastFrameIndex]
+                if (frame.timestampMs > targetTimestamp) break
+                applyFrameLocked(frame)
+                lastFrameIndex += 1
+            }
         }
         commitSequence += 1L
-        val snapshot = ReplayFrame(
-            timestampMs = targetTimestamp,
-            values = numericValues.toMap(),
-            stringValues = stringValues.toMap(),
-            sessionId = currentSessionId,
-            playheadMs = currentPlayheadMs,
-            sequence = commitSequence,
-        )
+        val snapshot = if (valuesUnchanged && prevSnapshot != null) {
+            ReplayFrame(
+                timestampMs = targetTimestamp,
+                values = prevSnapshot.values,
+                stringValues = prevSnapshot.stringValues,
+                sessionId = currentSessionId,
+                playheadMs = currentPlayheadMs,
+                sequence = commitSequence,
+            )
+        } else {
+            ReplayFrame(
+                timestampMs = targetTimestamp,
+                values = LinkedHashMap(numericValues),
+                stringValues = if (stringValues.isEmpty()) emptyMap() else LinkedHashMap(stringValues),
+                sessionId = currentSessionId,
+                playheadMs = currentPlayheadMs,
+                sequence = commitSequence,
+            )
+        }
         _currentFrame.value = snapshot
         _playheadTimestampMs.value = currentPlayheadMs
         val duration = endTimestampMs - startTimestampMs
@@ -599,8 +617,8 @@ class ReplayEngineService internal constructor(
         )
     }
 
-    private data class LoadedSession(
-        val timestamps: List<Long>,
+    private class LoadedSession(
+        val timestamps: LongArray,
         val actions: List<RobotActionRecord>,
         val annotations: List<SessionAnnotation>,
         val density: List<Float>,
@@ -609,8 +627,8 @@ class ReplayEngineService internal constructor(
         val initialWindow: ReplayWindow?,
     )
 
-
     private companion object {
+        val EMPTY_LONG_ARRAY = LongArray(0)
         const val WINDOW_HISTORY_MS = 2_500L
         const val WINDOW_LOOKAHEAD_MS = 5_000L
         const val DENSITY_BUCKETS = 100

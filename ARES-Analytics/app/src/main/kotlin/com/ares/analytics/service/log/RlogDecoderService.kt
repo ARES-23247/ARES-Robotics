@@ -30,6 +30,8 @@ class RlogDecoderService : BaseLogDecoder() {
 
                 val keyNames = mutableMapOf<Int, String>()
                 val keyTypes = mutableMapOf<Int, String>()
+                val subKeyCache = HashMap<String, Array<String?>>()
+                val blockFrames = ArrayList<TelemetryFrame>(64)
                 while (true) {
                     val timestampSec = input.readTimestampOrNull() ?: break
                     require(timestampSec.isFinite() && timestampSec >= 0.0) {
@@ -39,7 +41,7 @@ class RlogDecoderService : BaseLogDecoder() {
                         "RLOG timestamp exceeds the supported domain"
                     }
                     val timestampMs = (timestampSec * 1000.0).toLong()
-                    val blockFrames = mutableListOf<TelemetryFrame>()
+                    blockFrames.clear()
                     var blockFrameCount = 0
                     val emitToBlock: suspend (Long, String?, Double, String?, Int?) -> Unit =
                         { frameTime, keyName, value, stringValue, arrayIndex ->
@@ -49,7 +51,14 @@ class RlogDecoderService : BaseLogDecoder() {
                                 require(blockFrameCount <= MAX_FRAMES_PER_TIMESTAMP_BLOCK) {
                                     "RLOG timestamp block contains too many frames"
                                 }
-                                val normalizedKey = if (arrayIndex == null) keyName else "$keyName/$arrayIndex"
+                                val normalizedKey = if (arrayIndex == null) {
+                                    keyName
+                                } else if (arrayIndex in 0 until 64) {
+                                    val arr = subKeyCache.getOrPut(keyName) { arrayOfNulls(64) }
+                                    arr[arrayIndex] ?: "$keyName/$arrayIndex".also { arr[arrayIndex] = it }
+                                } else {
+                                    "$keyName/$arrayIndex"
+                                }
                                 blockFrames += TelemetryFrame(frameTime, sessionId, normalizedKey, value, stringValue)
                             }
                         }

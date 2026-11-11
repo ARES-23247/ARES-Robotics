@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "scope": "Tracked production Kotlin file sizes; no review or test coverage claim.",
   "summary": {
-    "totalProductionKotlinFiles": 1117,
+    "totalProductionKotlinFiles": 1170,
     "grandfatheredFiles": 24,
     "violationsOverLimit": 0,
     "microfilesRemaining": 20,
@@ -462,7 +462,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/DatabaseService.kt",
       "product": "ARES-Analytics",
-      "lines": 502,
+      "lines": 508,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -832,7 +832,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/Nt4ClientService.kt",
       "product": "ARES-Analytics",
-      "lines": 728,
+      "lines": 733,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -992,7 +992,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayEngineService.kt",
       "product": "ARES-Analytics",
-      "lines": 621,
+      "lines": 639,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1022,7 +1022,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/ReplayWindowSource.kt",
       "product": "ARES-Analytics",
-      "lines": 48,
+      "lines": 52,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1272,7 +1272,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/SysIdService.kt",
       "product": "ARES-Analytics",
-      "lines": 289,
+      "lines": 349,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1302,7 +1302,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/UiTelemetryFanout.kt",
       "product": "ARES-Analytics",
-      "lines": 85,
+      "lines": 101,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1382,7 +1382,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/dashboard/DashboardLayoutProfiles.kt",
       "product": "ARES-Analytics",
-      "lines": 218,
+      "lines": 287,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1482,7 +1482,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/ReplayPoseRepository.kt",
       "product": "ARES-Analytics",
-      "lines": 108,
+      "lines": 188,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1522,7 +1522,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/db/TelemetryRepository.kt",
       "product": "ARES-Analytics",
-      "lines": 665,
+      "lines": 698,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1772,7 +1772,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/log/JsonlLogDecoder.kt",
       "product": "ARES-Analytics",
-      "lines": 281,
+      "lines": 454,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1802,7 +1802,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/log/RlogDecoderService.kt",
       "product": "ARES-Analytics",
-      "lines": 263,
+      "lines": 272,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -1832,7 +1832,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/service/log/WpiLogDecoder.kt",
       "product": "ARES-Analytics",
-      "lines": 304,
+      "lines": 447,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2322,7 +2322,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/CommandPalette.kt",
       "product": "ARES-Analytics",
-      "lines": 146,
+      "lines": 370,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2373,6 +2373,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/WorkspaceSelector.kt",
       "product": "ARES-Analytics",
       "lines": 195,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/academy/AcademyStudentCookbookPane.kt",
+      "product": "ARES-Analytics",
+      "lines": 426,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2482,7 +2492,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/controls/ControlsEditorPanel.kt",
       "product": "ARES-Analytics",
-      "lines": 436,
+      "lines": 438,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2620,6 +2630,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresPresetComponents.kt",
+      "product": "ARES-Analytics",
+      "lines": 221,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresSelectionField.kt",
       "product": "ARES-Analytics",
       "lines": 87,
@@ -2632,7 +2652,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/core/AresSpecSummaryModal.kt",
       "product": "ARES-Analytics",
-      "lines": 369,
+      "lines": 482,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2892,7 +2912,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardCommandBar.kt",
       "product": "ARES-Analytics",
-      "lines": 242,
+      "lines": 371,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2932,7 +2952,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardOfflineGuide.kt",
       "product": "ARES-Analytics",
-      "lines": 69,
+      "lines": 175,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2962,7 +2982,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardWidgetRegistry.kt",
       "product": "ARES-Analytics",
-      "lines": 380,
+      "lines": 448,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -2972,7 +2992,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/DashboardWidgetServices.kt",
       "product": "ARES-Analytics",
-      "lines": 43,
+      "lines": 45,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3112,7 +3132,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/LocalSimulatorControlBar.kt",
       "product": "ARES-Analytics",
-      "lines": 643,
+      "lines": 385,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3122,7 +3142,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/LocalSimulatorControlModel.kt",
       "product": "ARES-Analytics",
-      "lines": 213,
+      "lines": 340,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/LocalSimulatorSessionController.kt",
+      "product": "ARES-Analytics",
+      "lines": 553,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3132,7 +3162,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/LocalSimulatorStatusHint.kt",
       "product": "ARES-Analytics",
-      "lines": 91,
+      "lines": 245,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3222,7 +3252,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/ReplayTimelineScrubber.kt",
       "product": "ARES-Analytics",
-      "lines": 429,
+      "lines": 701,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3262,7 +3292,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SignalTreePanel.kt",
       "product": "ARES-Analytics",
-      "lines": 323,
+      "lines": 314,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3302,7 +3332,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SingleSignalWidget.kt",
       "product": "ARES-Analytics",
-      "lines": 312,
+      "lines": 337,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3322,7 +3352,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/StatisticsPanel.kt",
       "product": "ARES-Analytics",
-      "lines": 596,
+      "lines": 477,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/StatisticsStudentRecipes.kt",
+      "product": "ARES-Analytics",
+      "lines": 339,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3342,7 +3382,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SwerveModuleVisualizer.kt",
       "product": "ARES-Analytics",
-      "lines": 243,
+      "lines": 306,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3352,7 +3392,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/SwerveVisualizer.kt",
       "product": "ARES-Analytics",
-      "lines": 159,
+      "lines": 202,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3370,9 +3410,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartControls.kt",
+      "product": "ARES-Analytics",
+      "lines": 373,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartModel.kt",
       "product": "ARES-Analytics",
-      "lines": 139,
+      "lines": 192,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3382,7 +3432,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryChartPanel.kt",
       "product": "ARES-Analytics",
-      "lines": 681,
+      "lines": 536,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/TelemetryTopicQuickPicker.kt",
+      "product": "ARES-Analytics",
+      "lines": 332,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3412,7 +3472,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/dashboard/VideoPlayerPanel.kt",
       "product": "ARES-Analytics",
-      "lines": 362,
+      "lines": 423,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3460,9 +3520,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/drivebase/DrivebaseChassisMeasurementGuideCard.kt",
+      "product": "ARES-Analytics",
+      "lines": 486,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/drivebase/DrivebaseControlSteps.kt",
       "product": "ARES-Analytics",
-      "lines": 343,
+      "lines": 376,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3482,7 +3552,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/drivebase/DrivebaseSelectionSteps.kt",
       "product": "ARES-Analytics",
-      "lines": 414,
+      "lines": 415,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/drivebase/DrivebaseVectorAndSensorCards.kt",
+      "product": "ARES-Analytics",
+      "lines": 435,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3493,6 +3573,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/forms/AresTextField.kt",
       "product": "ARES-Analytics",
       "lines": 76,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/hardware/HardwareWiringFilterStrip.kt",
+      "product": "ARES-Analytics",
+      "lines": 648,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3562,7 +3652,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvas.kt",
       "product": "ARES-Analytics",
-      "lines": 455,
+      "lines": 502,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3592,7 +3682,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasGestures.kt",
       "product": "ARES-Analytics",
-      "lines": 454,
+      "lines": 487,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3612,7 +3702,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasToolbar.kt",
       "product": "ARES-Analytics",
-      "lines": 297,
+      "lines": 324,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3622,7 +3712,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldCanvasUtils.kt",
       "product": "ARES-Analytics",
-      "lines": 293,
+      "lines": 311,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3653,6 +3743,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FieldObstacleSelection.kt",
       "product": "ARES-Analytics",
       "lines": 64,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/FreehandStrokeSplineFitter.kt",
+      "product": "ARES-Analytics",
+      "lines": 306,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3692,7 +3792,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/pathplanner/PathRenderer.kt",
       "product": "ARES-Analytics",
-      "lines": 605,
+      "lines": 713,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3722,7 +3822,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/robotstudio/RobotContextInspector.kt",
       "product": "ARES-Analytics",
-      "lines": 239,
+      "lines": 337,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/robotstudio/RobotFootprintPreviewCard.kt",
+      "product": "ARES-Analytics",
+      "lines": 527,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3733,6 +3843,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/robotstudio/RobotHierarchyTree.kt",
       "product": "ARES-Analytics",
       "lines": 443,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/robotstudio/RobotProjectSpecModal.kt",
+      "product": "ARES-Analytics",
+      "lines": 341,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3772,7 +3892,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/routine/RoutineEditorPanel.kt",
       "product": "ARES-Analytics",
-      "lines": 489,
+      "lines": 538,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3792,7 +3912,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/routine/RoutineFirstGuide.kt",
       "product": "ARES-Analytics",
-      "lines": 274,
+      "lines": 332,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3802,7 +3922,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/routine/RoutineParameterEditors.kt",
       "product": "ARES-Analytics",
-      "lines": 332,
+      "lines": 455,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3832,7 +3952,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/routine/RoutineStepCards.kt",
       "product": "ARES-Analytics",
-      "lines": 226,
+      "lines": 250,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/routine/RoutineTimelineScrubberCard.kt",
+      "product": "ARES-Analytics",
+      "lines": 453,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3842,7 +3972,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/runanalysis/RunComparisonPanel.kt",
       "product": "ARES-Analytics",
-      "lines": 499,
+      "lines": 689,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3853,6 +3983,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/FaultRecoveryCard.kt",
       "product": "ARES-Analytics",
       "lines": 84,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemCommissioningOverviewCard.kt",
+      "product": "ARES-Analytics",
+      "lines": 294,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3912,7 +4052,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemPurposeSection.kt",
       "product": "ARES-Analytics",
-      "lines": 255,
+      "lines": 272,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStateflowInspectors.kt",
+      "product": "ARES-Analytics",
+      "lines": 245,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3922,7 +4072,27 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStateflowSection.kt",
       "product": "ARES-Analytics",
-      "lines": 678,
+      "lines": 491,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStudentAuthoringGuide.kt",
+      "product": "ARES-Analytics",
+      "lines": 562,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemStudentControlRecipeBar.kt",
+      "product": "ARES-Analytics",
+      "lines": 322,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3932,7 +4102,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/subsystems/SubsystemTuningReviewSection.kt",
       "product": "ARES-Analytics",
-      "lines": 346,
+      "lines": 430,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3950,6 +4120,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/superstructure/SuperstructureGraphAndPresets.kt",
+      "product": "ARES-Analytics",
+      "lines": 215,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/superstructure/SuperstructurePostureMatrix.kt",
       "product": "ARES-Analytics",
       "lines": 466,
@@ -3960,9 +4140,29 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/superstructure/SuperstructureSimulationLabCard.kt",
+      "product": "ARES-Analytics",
+      "lines": 502,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/superstructure/SuperstructureStateflowCanvas.kt",
+      "product": "ARES-Analytics",
+      "lines": 255,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/superstructure/SuperstructureTransitionsSection.kt",
       "product": "ARES-Analytics",
-      "lines": 682,
+      "lines": 491,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -3972,7 +4172,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/superstructure/SuperstructureVerificationSection.kt",
       "product": "ARES-Analytics",
-      "lines": 143,
+      "lines": 122,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4002,7 +4202,27 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/tuning/GuidedTuningExperimentPanel.kt",
       "product": "ARES-Analytics",
-      "lines": 674,
+      "lines": 507,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/tuning/GuidedTuningExperimentSteps.kt",
+      "product": "ARES-Analytics",
+      "lines": 251,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/components/tuning/StudentTuningSymptomHelperCard.kt",
+      "product": "ARES-Analytics",
+      "lines": 302,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4042,7 +4262,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/help/DeveloperReferenceCatalog.kt",
       "product": "ARES-Analytics",
-      "lines": 252,
+      "lines": 345,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4093,6 +4313,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/help/RoutineValidationLearningLinks.kt",
       "product": "ARES-Analytics",
       "lines": 44,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/help/StudentFriendlyDiagnosticGuide.kt",
+      "product": "ARES-Analytics",
+      "lines": 160,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4170,6 +4400,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyLessonViews.kt",
+      "product": "ARES-Analytics",
+      "lines": 315,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyRuntimeHost.kt",
       "product": "ARES-Analytics",
       "lines": 76,
@@ -4182,7 +4422,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/AcademyScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 668,
+      "lines": 530,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4232,7 +4472,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/DashboardScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 346,
+      "lines": 395,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4252,7 +4492,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/DrivebaseBuilderScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 544,
+      "lines": 549,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4262,7 +4502,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/FieldEditorScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 666,
+      "lines": 452,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4292,7 +4532,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/GuidedRunAnalysisScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 545,
+      "lines": 558,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4322,7 +4562,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/HardwareSetupScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 592,
+      "lines": 546,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4412,7 +4652,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/MainScreenOverlays.kt",
       "product": "ARES-Analytics",
-      "lines": 159,
+      "lines": 160,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4462,7 +4702,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/PathPlannerScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 351,
+      "lines": 412,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4510,9 +4750,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectBackupComponents.kt",
+      "product": "ARES-Analytics",
+      "lines": 454,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectBackupScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 716,
+      "lines": 546,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4522,7 +4772,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/ProjectIdentityScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 578,
+      "lines": 609,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4562,7 +4812,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/RobotStudioScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 385,
+      "lines": 429,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4572,7 +4822,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/RobotVerificationReportScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 277,
+      "lines": 518,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4632,7 +4882,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/SubsystemGeneratorScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 682,
+      "lines": 554,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4642,7 +4892,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/SuperstructureStudioScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 299,
+      "lines": 365,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4652,7 +4902,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/TuningScreen.kt",
       "product": "ARES-Analytics",
-      "lines": 677,
+      "lines": 466,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4703,6 +4953,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/fieldeditor/AprilTagRow.kt",
       "product": "ARES-Analytics",
       "lines": 198,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/screens/fieldeditor/FieldEditorAprilTagsSection.kt",
+      "product": "ARES-Analytics",
+      "lines": 295,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4872,7 +5132,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/ui/util/AresFormatters.kt",
       "product": "ARES-Analytics",
-      "lines": 89,
+      "lines": 112,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4912,7 +5172,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/util/ProjectLayout.kt",
       "product": "ARES-Analytics",
-      "lines": 116,
+      "lines": 139,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4982,7 +5242,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorState.kt",
       "product": "ARES-Analytics",
-      "lines": 122,
+      "lines": 124,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -4992,7 +5252,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/FieldEditorViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 745,
+      "lines": 747,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5072,7 +5332,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerModels.kt",
       "product": "ARES-Analytics",
-      "lines": 164,
+      "lines": 200,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5082,7 +5342,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/PathPlannerViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 703,
+      "lines": 613,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5152,7 +5412,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/SubsystemGeneratorViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 696,
+      "lines": 605,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5282,7 +5542,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderState.kt",
       "product": "ARES-Analytics",
-      "lines": 119,
+      "lines": 120,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5292,7 +5552,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseBuilderViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 687,
+      "lines": 551,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/drivebase/DrivebaseChassisPresets.kt",
+      "product": "ARES-Analytics",
+      "lines": 295,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5333,6 +5603,16 @@
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorInteraction.kt",
       "product": "ARES-Analytics",
       "lines": 272,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/FieldEditorSelectionOps.kt",
+      "product": "ARES-Analytics",
+      "lines": 185,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5450,6 +5730,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/StudentPracticeFieldPresets.kt",
+      "product": "ARES-Analytics",
+      "lines": 335,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/field/VisionPoseAccumulator.kt",
       "product": "ARES-Analytics",
       "lines": 112,
@@ -5512,7 +5802,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/robotstudio/RobotStudioModel.kt",
       "product": "ARES-Analytics",
-      "lines": 585,
+      "lines": 584,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5532,7 +5822,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutineEditorModel.kt",
       "product": "ARES-Analytics",
-      "lines": 475,
+      "lines": 579,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5562,7 +5852,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePlaybackController.kt",
       "product": "ARES-Analytics",
-      "lines": 56,
+      "lines": 93,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5572,7 +5862,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutinePreviewAnalyzer.kt",
       "product": "ARES-Analytics",
-      "lines": 130,
+      "lines": 150,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5592,7 +5882,17 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/RoutineTrajectoryPreviewCompiler.kt",
       "product": "ARES-Analytics",
-      "lines": 191,
+      "lines": 197,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/routine/StudentAutonomousStarterRecipes.kt",
+      "product": "ARES-Analytics",
+      "lines": 272,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5602,7 +5902,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/runanalysis/GuidedRunAnalysisViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 290,
+      "lines": 314,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5620,9 +5920,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemCookbookPresets.kt",
+      "product": "ARES-Analytics",
+      "lines": 253,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/subsystem/SubsystemCreationOps.kt",
       "product": "ARES-Analytics",
-      "lines": 174,
+      "lines": 205,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5700,6 +6010,26 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureCoordinationPresets.kt",
+      "product": "ARES-Analytics",
+      "lines": 372,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureDocumentMutators.kt",
+      "product": "ARES-Analytics",
+      "lines": 223,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructurePreviewSession.kt",
       "product": "ARES-Analytics",
       "lines": 261,
@@ -5712,7 +6042,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioState.kt",
       "product": "ARES-Analytics",
-      "lines": 108,
+      "lines": 124,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5722,7 +6052,7 @@
     {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/superstructure/SuperstructureStudioViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 742,
+      "lines": 570,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -5780,9 +6110,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/tuning/GuidedTuningExperimentReportAndStarters.kt",
+      "product": "ARES-Analytics",
+      "lines": 187,
+      "lineLimit": 750,
+      "effectiveLimit": 750,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARES-Analytics/app/src/main/kotlin/com/ares/analytics/viewmodel/tuning/GuidedTuningExperimentViewModel.kt",
       "product": "ARES-Analytics",
-      "lines": 628,
+      "lines": 558,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6022,7 +6362,7 @@
     {
       "path": "ARES-FRC-Starter/src/main/kotlin/org/aresfirst/starter/frc/StarterFrcAutonomousRuntime.kt",
       "product": "ARES-FRC-Starter",
-      "lines": 711,
+      "lines": 743,
       "lineLimit": 750,
       "effectiveLimit": 750,
       "grandfathered": false,
@@ -6162,7 +6502,7 @@
     {
       "path": "ARES-FRC/src/main/kotlin/org/aresfirst/marvin/generatedruntime/FrcGeneratedRoutineCapabilities.kt",
       "product": "ARES-FRC",
-      "lines": 354,
+      "lines": 366,
       "lineLimit": 1000,
       "effectiveLimit": 1000,
       "grandfathered": false,
@@ -6892,7 +7232,7 @@
     {
       "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/RoutineKotlinRenderer.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 144,
+      "lines": 153,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -6952,7 +7292,7 @@
     {
       "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemFrcIoRenderer.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 369,
+      "lines": 371,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -6962,7 +7302,7 @@
     {
       "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemFtcIoRenderer.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 323,
+      "lines": 325,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -6992,7 +7332,7 @@
     {
       "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemIoRenderingSupport.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 211,
+      "lines": 250,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7022,7 +7362,7 @@
     {
       "path": "ARESLib-Kotlin/codegen/src/main/kotlin/com/areslib/codegen/SubsystemMockIoRenderer.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 206,
+      "lines": 208,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7082,7 +7422,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/Store.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 151,
+      "lines": 156,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7182,7 +7522,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/drivetrain/HolonomicDriveController.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 290,
+      "lines": 341,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7222,7 +7562,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/PIDController.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 239,
+      "lines": 264,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7232,7 +7572,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/control/feedback/ProfiledPIDController.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 156,
+      "lines": 161,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7322,7 +7662,17 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/controls/ControlSchemeDsl.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 295,
+      "lines": 427,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/controls/ControlSchemeDslRenderer.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 234,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7972,7 +8322,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimatorRuntime.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 245,
+      "lines": 290,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -7983,6 +8333,16 @@
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimatorSnapshot.kt",
       "product": "ARESLib-Kotlin",
       "lines": 147,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/PoseEstimatorVision2D.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 130,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8012,7 +8372,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/math/estimation/VisionMahalanobisFilter.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 481,
+      "lines": 389,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8212,7 +8572,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/networktables/NT4Server.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 947,
+      "lines": 967,
       "lineLimit": 500,
       "effectiveLimit": 1056,
       "grandfathered": true,
@@ -8222,7 +8582,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/networktables/NT4Value.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 191,
+      "lines": 194,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8290,9 +8650,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/ForesightLookaheadEstimator.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 229,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/HolonomicPathFollower.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 175,
+      "lines": 229,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8472,7 +8842,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/pathing/TrajectoryPlanning.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 426,
+      "lines": 455,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8502,7 +8872,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/DriveReducer.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 213,
+      "lines": 291,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8542,7 +8912,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/reducer/SuperstructureReducer.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 40,
+      "lines": 41,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8592,7 +8962,17 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/routine/RoutineDsl.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 207,
+      "lines": 334,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/routine/RoutineDslRenderer.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 187,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8602,7 +8982,17 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/routine/RoutineManager.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 464,
+      "lines": 498,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/routine/RoutineSuspensionStack.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 90,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8632,7 +9022,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/FollowPathTask.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 377,
+      "lines": 433,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8652,7 +9042,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/RobotSequence.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 170,
+      "lines": 264,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8692,7 +9082,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskExecutor.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 500,
+      "lines": 498,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8712,7 +9102,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/sequencer/TaskExecutorFailures.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 44,
+      "lines": 72,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -8890,6 +9280,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/SubsystemStateTable.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 105,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/state/TuningState.kt",
       "product": "ARESLib-Kotlin",
       "lines": 168,
@@ -8992,7 +9392,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemDsl.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 669,
+      "lines": 490,
       "lineLimit": 500,
       "effectiveLimit": 669,
       "grandfathered": true,
@@ -9000,9 +9400,49 @@
       "isMicrofile": false
     },
     {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemDslRenderer.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 372,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemDslRendererSupport.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 157,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemHardwareAndControlDsl.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 463,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemHardwareScaffolding.kt",
       "product": "ARESLib-Kotlin",
       "lines": 362,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/subsystem/SubsystemSafetyAndLinkageDsl.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 337,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -9082,7 +9522,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/AresGamepad.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 509,
+      "lines": 462,
       "lineLimit": 500,
       "effectiveLimit": 515,
       "grandfathered": true,
@@ -9102,7 +9542,7 @@
     {
       "path": "ARESLib-Kotlin/core/src/main/kotlin/com/areslib/telemetry/GamepadState.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 155,
+      "lines": 194,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -9270,9 +9710,19 @@
       "isMicrofile": false
     },
     {
+      "path": "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/FrcSwerveRobotBuilder.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 118,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARESLib-Kotlin/frc-hardware/src/main/kotlin/com/areslib/frc/XboxControllerExt.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 73,
+      "lines": 142,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -9432,7 +9882,7 @@
     {
       "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/FtcMecanumRobotBuilder.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 127,
+      "lines": 152,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -9662,7 +10112,7 @@
     {
       "path": "ARESLib-Kotlin/ftc-hardware/src/main/kotlin/com/areslib/ftc/dsl/FtcTeleOpDSL.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 246,
+      "lines": 300,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -10460,6 +10910,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARESLib-Kotlin/project-model/src/main/kotlin/com/areslib/project/model/AresProjectDsl.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 458,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARESLib-Kotlin/project-model/src/main/kotlin/com/areslib/project/model/EffectiveRobotProjectQueries.kt",
       "product": "ARESLib-Kotlin",
       "lines": 73,
@@ -10502,7 +10962,7 @@
     {
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/controls/ControlSchemeDocument.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 172,
+      "lines": 173,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -10533,6 +10993,26 @@
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/drivetrain/DrivetrainDocument.kt",
       "product": "ARESLib-Kotlin",
       "lines": 370,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/drivetrain/DrivetrainDsl.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 493,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/drivetrain/DrivetrainDslRenderer.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 281,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -10580,6 +11060,16 @@
       "isMicrofile": false
     },
     {
+      "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/AutonomousCatalogDsl.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 155,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/AutonomousCatalogResolver.kt",
       "product": "ARESLib-Kotlin",
       "lines": 37,
@@ -10592,7 +11082,7 @@
     {
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/RoutineCodec.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 353,
+      "lines": 434,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -10602,7 +11092,17 @@
     {
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/RoutineDocument.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 164,
+      "lines": 181,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/RoutineGraphAnalysis.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 174,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -10612,7 +11112,7 @@
     {
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/routine/RoutineValidation.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 621,
+      "lines": 455,
       "lineLimit": 500,
       "effectiveLimit": 621,
       "grandfathered": true,
@@ -10722,7 +11222,7 @@
     {
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/subsystem/SubsystemValidation.kt",
       "product": "ARESLib-Kotlin",
-      "lines": 457,
+      "lines": 468,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -10740,6 +11240,26 @@
       "isMicrofile": false
     },
     {
+      "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDsl.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 493,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDslRenderer.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 255,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/superstructure/SuperstructureDynamicLut.kt",
       "product": "ARESLib-Kotlin",
       "lines": 47,
@@ -10753,6 +11273,16 @@
       "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/tuning/TuningProfileDocument.kt",
       "product": "ARESLib-Kotlin",
       "lines": 234,
+      "lineLimit": 500,
+      "effectiveLimit": 500,
+      "grandfathered": false,
+      "compliant": true,
+      "isMicrofile": false
+    },
+    {
+      "path": "ARESLib-Kotlin/project-schema/src/main/kotlin/com/areslib/tuning/TuningProfileDsl.kt",
+      "product": "ARESLib-Kotlin",
+      "lines": 339,
       "lineLimit": 500,
       "effectiveLimit": 500,
       "grandfathered": false,
@@ -11172,7 +11702,7 @@
     {
       "path": "templates/ftc/runtime/src/main/kotlin/org/firstinspires/ftc/teamcode/dsl/FtcGeneratedProjectRuntime.kt",
       "product": "templates",
-      "lines": 818,
+      "lines": 895,
       "lineLimit": 1000,
       "effectiveLimit": 1000,
       "grandfathered": false,

@@ -70,8 +70,26 @@ class XrpTelemetryServer:
         self.field_sequence = 0
         self.field_session = "%s-%s" % (project_id, _ticks_ms())
         self.field_config_handler = None
-        self._recv_buffer = b""
+        self._recv_buffer = bytearray()
         self._send_buffer = b""
+        self._empty_subsystems = {}
+        self._pose_frame = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0]
+        self._telemetry_payload = {
+            "protocol": PROTOCOL,
+            "type": "telemetry",
+            "sequence": 0,
+            "poseFrame": self._pose_frame,
+            "poseX": 0.0,
+            "poseY": 0.0,
+            "heading": 0.0,
+            "battery": 6.0,
+            "mode": "INIT",
+            "timestampMs": 0,
+            "armed": False,
+            "faulted": False,
+            "loopTimeMs": 0.0,
+            "subsystems": self._empty_subsystems,
+        }
 
     def set_field_config_handler(self, handler):
         """Installs the desktop-simulator field replacement hook.
@@ -119,7 +137,7 @@ class XrpTelemetryServer:
                 self.client_socket = client
                 client.setblocking(False)
                 self.is_connected = True
-                self._recv_buffer = b""
+                self._recv_buffer.clear()
                 self._send(self.hello_payload())
             except OSError as error:
                 # A non-blocking socket reports "no bytes available" as would-block;
@@ -141,7 +159,10 @@ class XrpTelemetryServer:
                     if len(self._recv_buffer) + len(chunk) > MAX_BUFFER_BYTES:
                         self.close_client()
                     else:
-                        self._recv_buffer += chunk
+                        if isinstance(self._recv_buffer, bytearray):
+                            self._recv_buffer.extend(chunk)
+                        else:
+                            self._recv_buffer = bytearray(self._recv_buffer) + chunk
                         self._process_buffer()
             except OSError as error:
                 # Only a would-block error means there is simply no complete
@@ -168,22 +189,24 @@ class XrpTelemetryServer:
             return
 
         self.sequence += 1
-        payload = {
-            "protocol": PROTOCOL,
-            "type": "telemetry",
-            "sequence": self.sequence,
-            "poseFrame": [x, y, heading_rad, x, y, heading_rad, x, y, heading_rad, self.sequence],
-            "poseX": x,
-            "poseY": y,
-            "heading": heading_rad,
-            "battery": battery_volts,
-            "mode": mode,
-            "timestampMs": _ticks_ms(),
-            "armed": self.armed,
-            "faulted": bool(faulted),
-            "loopTimeMs": loop_time_ms,
-            "subsystems": subsystems or {},
-        }
+        seq = self.sequence
+        pf = self._pose_frame
+        pf[0] = pf[3] = pf[6] = x
+        pf[1] = pf[4] = pf[7] = y
+        pf[2] = pf[5] = pf[8] = heading_rad
+        pf[9] = seq
+        payload = self._telemetry_payload
+        payload["sequence"] = seq
+        payload["poseX"] = x
+        payload["poseY"] = y
+        payload["heading"] = heading_rad
+        payload["battery"] = battery_volts
+        payload["mode"] = mode
+        payload["timestampMs"] = _ticks_ms()
+        payload["armed"] = self.armed
+        payload["faulted"] = bool(faulted)
+        payload["loopTimeMs"] = loop_time_ms
+        payload["subsystems"] = subsystems if subsystems is not None else self._empty_subsystems
         self._send(payload)
 
     def hello_payload(self):
@@ -220,7 +243,10 @@ class XrpTelemetryServer:
 
     def close_client(self):
         self._send_buffer = b""
-        self._recv_buffer = b""
+        if isinstance(self._recv_buffer, bytearray):
+            self._recv_buffer.clear()
+        else:
+            self._recv_buffer = bytearray()
         self.neutralize()
         self.last_command = ""
         self.selected_opmode = ""
@@ -273,10 +299,17 @@ class XrpTelemetryServer:
             self.close_client()
 
     def _process_buffer(self):
-        while b"\n" in self._recv_buffer:
+        while True:
+            newline_index = self._recv_buffer.find(b"\n")
+            if newline_index < 0:
+                break
             self._expire_lease()
-            line, self._recv_buffer = self._recv_buffer.split(b"\n", 1)
-            line = line.strip()
+            if isinstance(self._recv_buffer, bytearray):
+                line = bytes(self._recv_buffer[:newline_index]).strip()
+                del self._recv_buffer[:newline_index + 1]
+            else:
+                line = self._recv_buffer[:newline_index].strip()
+                self._recv_buffer = self._recv_buffer[newline_index + 1:]
             if not line:
                 continue
             try:

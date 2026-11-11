@@ -419,6 +419,6 @@ class StarterCapabilityConstructionAuditTest {
         assertEquals(19.0, focus.x, 1e-12)
         assertEquals(4.0, focus.y, 1e-12)
         assertEquals(kotlin.math.atan2(4.0 - 2.0, 19.0 - 15.0), built.desiredHeading(15.0, 2.0), 1e-9)
-        TaskRuntimeOwnership.release(built)
+        built.releaseRuntimeState()
     }
 }

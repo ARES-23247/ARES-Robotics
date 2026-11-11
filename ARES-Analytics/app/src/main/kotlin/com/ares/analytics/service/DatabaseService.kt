@@ -270,6 +270,12 @@ class DatabaseService(
     internal suspend fun getReplayPoseTrace(
         sessionId: String, startMs: Long, endMs: Long, maxPoints: Int,
     ): List<ReplayPoseSample> = replayPoseRepo.read(sessionId, startMs, endMs, maxPoints)
+    internal suspend fun getTelemetryWindowPageAfter(
+        sessionId: String, startMs: Long, endMs: Long, after: TelemetryExportCursor?, limit: Int,
+    ): List<TelemetryFrame> = replayPoseRepo.readWindowPageAfter(sessionId, startMs, endMs, after, limit)
+    internal suspend fun countDistinctTelemetryKeys(sessionId: String): Int = replayPoseRepo.countDistinctKeys(sessionId)
+    internal suspend fun getDistinctTimestampsArray(sessionId: String): LongArray =
+        replayPoseRepo.readDistinctTimestampsArray(sessionId)
 
     override suspend fun getTelemetrySeries(
         sessionId: String,

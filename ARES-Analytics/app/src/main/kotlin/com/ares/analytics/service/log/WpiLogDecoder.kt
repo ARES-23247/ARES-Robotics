@@ -2,13 +2,16 @@ package com.ares.analytics.service.log
 
 import com.ares.analytics.service.FrameBatcher
 import com.ares.analytics.shared.models.TelemetryFrame
+import java.io.BufferedInputStream
 import java.io.EOFException
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.CharacterCodingException
+import java.nio.charset.CharsetDecoder
 import java.nio.charset.CodingErrorAction
 import java.util.Base64
 
@@ -16,10 +19,14 @@ import java.util.Base64
 class WpiLogDecoder {
 
     suspend fun parseWpiLog(file: File, sessionId: String, batcher: FrameBatcher) {
-        FileInputStream(file).use { input ->
-            val fixedHeader = input.readExact(FILE_HEADER_SIZE, "WPILOG header")
-            if (!fixedHeader.copyOfRange(0, MAGIC.size).contentEquals(MAGIC)) {
-                throw IOException("Invalid WPILOG magic in ${file.name}")
+        val fileLength = file.length()
+        BufferedInputStream(FileInputStream(file), STREAM_BUFFER_BYTES).use { input ->
+            val fixedHeader = ByteArray(FILE_HEADER_SIZE)
+            input.readExactInto(fixedHeader, FILE_HEADER_SIZE, "WPILOG header")
+            for (i in MAGIC.indices) {
+                if (fixedHeader[i] != MAGIC[i]) {
+                    throw IOException("Invalid WPILOG magic in ${file.name}")
+                }
             }
 
             val header = ByteBuffer.wrap(fixedHeader).order(ByteOrder.LITTLE_ENDIAN)
@@ -29,13 +36,21 @@ class WpiLogDecoder {
                 throw IOException("Invalid WPILOG version 0x${version.toString(16).padStart(4, '0')}")
             }
             val extraHeaderSize = header.int.toLong() and UINT32_MASK
-            if (extraHeaderSize > MAX_EXTRA_HEADER_BYTES || extraHeaderSize > file.length() - FILE_HEADER_SIZE) {
+            if (extraHeaderSize > MAX_EXTRA_HEADER_BYTES || extraHeaderSize > fileLength - FILE_HEADER_SIZE) {
                 throw IOException("Invalid WPILOG extra-header size: $extraHeaderSize")
             }
             input.skipExact(extraHeaderSize, "WPILOG extra header")
 
-            val entries = mutableMapOf<Long, EntryDefinition>()
-            var remaining = file.length() - FILE_HEADER_SIZE - extraHeaderSize
+            val utf8Decoder = Charsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+            val entries = HashMap<Long, EntryDefinition>(64)
+            val varHeaderBytes = ByteArray(16)
+            val varHeaderBuf = ByteBuffer.wrap(varHeaderBytes).order(ByteOrder.LITTLE_ENDIAN)
+            var payloadBytes = ByteArray(256)
+            var payloadBuf = ByteBuffer.wrap(payloadBytes).order(ByteOrder.LITTLE_ENDIAN)
+
+            var remaining = fileLength - FILE_HEADER_SIZE - extraHeaderSize
             while (remaining > 0) {
                 val descriptor = input.read()
                 if (descriptor < 0) throw EOFException("Truncated WPILOG record descriptor")
@@ -51,34 +66,51 @@ class WpiLogDecoder {
                 if (variableHeaderSize.toLong() > remaining) {
                     throw EOFException("Truncated WPILOG record header")
                 }
-                val variableHeader = ByteBuffer.wrap(
-                    input.readExact(variableHeaderSize, "WPILOG record header")
-                ).order(ByteOrder.LITTLE_ENDIAN)
+                input.readExactInto(varHeaderBytes, variableHeaderSize, "WPILOG record header")
                 remaining -= variableHeaderSize
 
-                val entryId = readUnsigned(variableHeader, entryIdSize)
-                val payloadSize = readUnsigned(variableHeader, payloadSizeSize)
-                val timestampMicros = readUnsigned(variableHeader, timestampSize)
+                varHeaderBuf.clear().limit(variableHeaderSize)
+                val entryId = readUnsigned(varHeaderBuf, entryIdSize)
+                val payloadSize = readUnsigned(varHeaderBuf, payloadSizeSize)
+                val timestampMicros = readUnsigned(varHeaderBuf, timestampSize)
                 if (timestampMicros < 0) {
                     throw IOException("WPILOG timestamp exceeds signed 64-bit range")
                 }
                 if (payloadSize > MAX_RECORD_BYTES || payloadSize > remaining) {
                     throw IOException("Invalid WPILOG record payload size: $payloadSize")
                 }
-                val payload = input.readExact(payloadSize.toInt(), "WPILOG record payload")
+                val payloadLen = payloadSize.toInt()
+                if (payloadLen > payloadBytes.size) {
+                    var nextCap = payloadBytes.size
+                    while (nextCap < payloadLen) {
+                        nextCap = (nextCap * 2).coerceAtLeast(payloadLen.coerceAtMost(4096))
+                        if (nextCap < 0) {
+                            nextCap = payloadLen
+                            break
+                        }
+                    }
+                    payloadBytes = ByteArray(maxOf(nextCap, payloadLen))
+                    payloadBuf = ByteBuffer.wrap(payloadBytes).order(ByteOrder.LITTLE_ENDIAN)
+                }
+                input.readExactInto(payloadBytes, payloadLen, "WPILOG record payload")
                 remaining -= payloadSize
 
+                payloadBuf.clear().limit(payloadLen)
                 if (entryId == CONTROL_ENTRY_ID) {
-                    decodeControlRecord(payload, entries)
+                    decodeControlRecord(payloadBuf, payloadLen, entries, utf8Decoder)
                 } else {
-                    entries[entryId]?.let { definition ->
+                    val definition = entries[entryId]
+                    if (definition != null) {
                         decodeDataRecord(
                             definition = definition,
-                            payload = payload,
+                            payloadBytes = payloadBytes,
+                            payloadLen = payloadLen,
+                            buffer = payloadBuf,
                             timestampMs = timestampMicros / MICROS_PER_MILLISECOND,
                             timestampUs = timestampMicros,
                             sessionId = sessionId,
-                            batcher = batcher
+                            batcher = batcher,
+                            utf8Decoder = utf8Decoder,
                         )
                     }
                 }
@@ -86,19 +118,23 @@ class WpiLogDecoder {
         }
     }
 
-    private fun decodeControlRecord(payload: ByteArray, entries: MutableMap<Long, EntryDefinition>) {
-        if (payload.isEmpty()) throw IOException("Empty WPILOG control record")
-        val buffer = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN)
+    private fun decodeControlRecord(
+        buffer: ByteBuffer,
+        payloadLen: Int,
+        entries: MutableMap<Long, EntryDefinition>,
+        utf8Decoder: CharsetDecoder,
+    ) {
+        if (payloadLen == 0) throw IOException("Empty WPILOG control record")
         when (buffer.get().toInt() and 0xFF) {
             CONTROL_START -> {
                 requireRemaining(buffer, Integer.BYTES, "start entry id")
                 val entryId = buffer.int.toLong() and UINT32_MASK
                 if (entryId == CONTROL_ENTRY_ID) throw IOException("WPILOG data entry id cannot be zero")
-                val name = readLengthPrefixedString(buffer, "entry name")
-                val type = readLengthPrefixedString(buffer, "entry type")
-                readLengthPrefixedString(buffer, "entry metadata")
+                val name = readLengthPrefixedString(buffer, "entry name", utf8Decoder)
+                val type = readLengthPrefixedString(buffer, "entry type", utf8Decoder)
+                skipLengthPrefixedString(buffer, "entry metadata", utf8Decoder)
                 requireFullyConsumed(buffer, "start")
-                entries[entryId] = EntryDefinition(name, type)
+                entries[entryId] = EntryDefinition(name, type, classifyKind(type))
             }
 
             CONTROL_FINISH -> {
@@ -110,7 +146,7 @@ class WpiLogDecoder {
             CONTROL_SET_METADATA -> {
                 requireRemaining(buffer, Integer.BYTES, "metadata entry id")
                 buffer.int
-                readLengthPrefixedString(buffer, "entry metadata")
+                skipLengthPrefixedString(buffer, "entry metadata", utf8Decoder)
                 requireFullyConsumed(buffer, "metadata")
             }
 
@@ -120,136 +156,179 @@ class WpiLogDecoder {
 
     private suspend fun decodeDataRecord(
         definition: EntryDefinition,
-        payload: ByteArray,
+        payloadBytes: ByteArray,
+        payloadLen: Int,
+        buffer: ByteBuffer,
         timestampMs: Long,
         timestampUs: Long,
         sessionId: String,
-        batcher: FrameBatcher
+        batcher: FrameBatcher,
+        utf8Decoder: CharsetDecoder,
     ) {
-        val buffer = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN)
-        suspend fun addNumber(key: String, value: Double) {
-            batcher.add(TelemetryFrame(timestampMs, sessionId, key, value, timestampUs = timestampUs))
-        }
-        suspend fun addString(key: String, value: String) {
-            batcher.add(TelemetryFrame(timestampMs, sessionId, key, 0.0, value, timestampUs = timestampUs))
-        }
-
-        when (definition.type) {
-            "raw" -> addString(definition.name, taggedBase64(definition.type, payload))
-            "boolean" -> {
-                requirePayloadSize(payload, 1, definition)
-                addNumber(definition.name, if (payload[0].toInt() != 0) 1.0 else 0.0)
+        when (definition.kind) {
+            EntryKind.DOUBLE -> {
+                requirePayloadSize(payloadLen, Double.SIZE_BYTES, definition)
+                batcher.add(TelemetryFrame(timestampMs, sessionId, definition.name, buffer.double, timestampUs = timestampUs))
             }
-            "int64" -> {
-                requirePayloadSize(payload, Long.SIZE_BYTES, definition)
-                addNumber(definition.name, buffer.long.toDouble())
+            EntryKind.FLOAT -> {
+                requirePayloadSize(payloadLen, Float.SIZE_BYTES, definition)
+                batcher.add(TelemetryFrame(timestampMs, sessionId, definition.name, buffer.float.toDouble(), timestampUs = timestampUs))
             }
-            "int32" -> {
-                // Retained for third-party producers; WPILib's standard integer type is int64.
-                requirePayloadSize(payload, Integer.BYTES, definition)
-                addNumber(definition.name, buffer.int.toDouble())
+            EntryKind.INT64 -> {
+                requirePayloadSize(payloadLen, Long.SIZE_BYTES, definition)
+                batcher.add(TelemetryFrame(timestampMs, sessionId, definition.name, buffer.long.toDouble(), timestampUs = timestampUs))
             }
-            "float" -> {
-                requirePayloadSize(payload, Float.SIZE_BYTES, definition)
-                addNumber(definition.name, buffer.float.toDouble())
+            EntryKind.INT32 -> {
+                requirePayloadSize(payloadLen, Integer.BYTES, definition)
+                batcher.add(TelemetryFrame(timestampMs, sessionId, definition.name, buffer.int.toDouble(), timestampUs = timestampUs))
             }
-            "double" -> {
-                requirePayloadSize(payload, Double.SIZE_BYTES, definition)
-                addNumber(definition.name, buffer.double)
+            EntryKind.BOOLEAN -> {
+                requirePayloadSize(payloadLen, 1, definition)
+                batcher.add(
+                    TelemetryFrame(
+                        timestampMs,
+                        sessionId,
+                        definition.name,
+                        if (payloadBytes[0].toInt() != 0) 1.0 else 0.0,
+                        timestampUs = timestampUs,
+                    )
+                )
             }
-            "string", "json" ->
-                addString(definition.name, decodeUtf8Strict(payload, "${definition.type} value for ${definition.name}"))
-            "msgpack", "protobuf", "struct" ->
-                addString(definition.name, taggedBase64(definition.type, payload))
-            "boolean[]" -> {
-                requireArrayCount(payload.size, definition)
-                payload.forEachIndexed { index, value ->
-                    addNumber("${definition.name}/$index", if (value.toInt() != 0) 1.0 else 0.0)
+            EntryKind.UTF8_TEXT -> {
+                val text = decodeUtf8Strict(payloadBytes, 0, payloadLen, "${definition.type} value for ${definition.name}", utf8Decoder)
+                batcher.add(TelemetryFrame(timestampMs, sessionId, definition.name, 0.0, text, timestampUs = timestampUs))
+            }
+            EntryKind.TAGGED_BASE64 -> {
+                batcher.add(
+                    TelemetryFrame(
+                        timestampMs,
+                        sessionId,
+                        definition.name,
+                        0.0,
+                        taggedBase64(definition.type, payloadBytes, payloadLen),
+                        timestampUs = timestampUs,
+                    )
+                )
+            }
+            EntryKind.DOUBLE_ARRAY -> {
+                val count = requireFixedArrayCount(payloadLen, Double.SIZE_BYTES, definition)
+                for (index in 0 until count) {
+                    batcher.add(
+                        TelemetryFrame(timestampMs, sessionId, definition.subKey(index), buffer.double, timestampUs = timestampUs)
+                    )
                 }
             }
-            "int64[]" -> decodeFixedArray(buffer, Long.SIZE_BYTES, definition) { index ->
-                addNumber("${definition.name}/$index", buffer.long.toDouble())
+            EntryKind.FLOAT_ARRAY -> {
+                val count = requireFixedArrayCount(payloadLen, Float.SIZE_BYTES, definition)
+                for (index in 0 until count) {
+                    batcher.add(
+                        TelemetryFrame(timestampMs, sessionId, definition.subKey(index), buffer.float.toDouble(), timestampUs = timestampUs)
+                    )
+                }
             }
-            "float[]" -> decodeFixedArray(buffer, Float.SIZE_BYTES, definition) { index ->
-                addNumber("${definition.name}/$index", buffer.float.toDouble())
+            EntryKind.INT64_ARRAY -> {
+                val count = requireFixedArrayCount(payloadLen, Long.SIZE_BYTES, definition)
+                for (index in 0 until count) {
+                    batcher.add(
+                        TelemetryFrame(timestampMs, sessionId, definition.subKey(index), buffer.long.toDouble(), timestampUs = timestampUs)
+                    )
+                }
             }
-            "double[]" -> decodeFixedArray(buffer, Double.SIZE_BYTES, definition) { index ->
-                addNumber("${definition.name}/$index", buffer.double)
+            EntryKind.BOOLEAN_ARRAY -> {
+                requireArrayCount(payloadLen, definition)
+                for (index in 0 until payloadLen) {
+                    batcher.add(
+                        TelemetryFrame(
+                            timestampMs,
+                            sessionId,
+                            definition.subKey(index),
+                            if (payloadBytes[index].toInt() != 0) 1.0 else 0.0,
+                            timestampUs = timestampUs,
+                        )
+                    )
+                }
             }
-            "string[]" -> {
+            EntryKind.STRING_ARRAY -> {
                 var index = 0
                 while (buffer.hasRemaining()) {
                     if (index >= MAX_ARRAY_ELEMENTS) {
                         throw IOException("WPILOG string array is too large for ${definition.name}")
                     }
-                    addString("${definition.name}/$index", readLengthPrefixedString(buffer, "string array value"))
+                    val str = readLengthPrefixedString(buffer, "string array value", utf8Decoder)
+                    batcher.add(TelemetryFrame(timestampMs, sessionId, definition.subKey(index), 0.0, str, timestampUs = timestampUs))
                     index++
                 }
             }
-            else -> when {
-                definition.type.startsWith("msgpack:") ||
-                    definition.type.startsWith("proto:") ||
-                    definition.type.startsWith("protobuf:") ||
-                    definition.type.startsWith("struct:") ->
-                    addString(definition.name, taggedBase64(definition.type, payload))
-                else -> Unit // Unknown custom schemas cannot be decoded without their metadata.
-            }
+            EntryKind.UNKNOWN -> Unit
         }
     }
 
-    private suspend inline fun decodeFixedArray(
-        buffer: ByteBuffer,
-        elementSize: Int,
-        definition: EntryDefinition,
-        consume: suspend (Int) -> Unit
-    ) {
-        if (buffer.remaining() % elementSize != 0) {
+    private fun requireFixedArrayCount(payloadLen: Int, elementSize: Int, definition: EntryDefinition): Int {
+        if (payloadLen % elementSize != 0) {
             throw IOException("Invalid ${definition.type} payload size for ${definition.name}")
         }
-        val count = buffer.remaining() / elementSize
+        val count = payloadLen / elementSize
         requireArrayCount(count, definition)
-        repeat(count) { consume(it) }
+        return count
     }
 
-    private fun readLengthPrefixedString(buffer: ByteBuffer, field: String): String {
+    private fun readLengthPrefixedString(buffer: ByteBuffer, field: String, utf8Decoder: CharsetDecoder): String {
         requireRemaining(buffer, Integer.BYTES, "$field length")
         val length = buffer.int.toLong() and UINT32_MASK
         if (length > MAX_STRING_BYTES || length > buffer.remaining()) {
             throw IOException("Invalid WPILOG $field length: $length")
         }
-        val bytes = ByteArray(length.toInt())
-        buffer.get(bytes)
-        return decodeUtf8Strict(bytes, field)
+        val len = length.toInt()
+        val pos = buffer.position()
+        val decoded = decodeUtf8Strict(buffer.array(), buffer.arrayOffset() + pos, len, field, utf8Decoder)
+        buffer.position(pos + len)
+        return decoded
     }
 
-    private fun decodeUtf8Strict(bytes: ByteArray, field: String): String = try {
-        Charsets.UTF_8.newDecoder()
-            .onMalformedInput(CodingErrorAction.REPORT)
-            .onUnmappableCharacter(CodingErrorAction.REPORT)
-            .decode(ByteBuffer.wrap(bytes))
-            .toString()
+    private fun skipLengthPrefixedString(buffer: ByteBuffer, field: String, utf8Decoder: CharsetDecoder) {
+        readLengthPrefixedString(buffer, field, utf8Decoder)
+    }
+
+    private fun decodeUtf8Strict(
+        bytes: ByteArray,
+        offset: Int,
+        length: Int,
+        field: String,
+        utf8Decoder: CharsetDecoder,
+    ): String = try {
+        if (length == 0) {
+            ""
+        } else {
+            utf8Decoder.reset()
+            utf8Decoder.decode(ByteBuffer.wrap(bytes, offset, length)).toString()
+        }
     } catch (error: CharacterCodingException) {
         throw IOException("Invalid UTF-8 in WPILOG $field", error)
     }
 
-    private fun taggedBase64(type: String, payload: ByteArray): String =
-        "base64:$type:${Base64.getEncoder().encodeToString(payload)}"
+    private fun taggedBase64(type: String, payloadBytes: ByteArray, payloadLen: Int): String {
+        val exact = if (payloadLen == payloadBytes.size) payloadBytes else payloadBytes.copyOfRange(0, payloadLen)
+        return "base64:$type:${Base64.getEncoder().encodeToString(exact)}"
+    }
 
     private fun readUnsigned(buffer: ByteBuffer, size: Int): Long {
         var value = 0L
-        repeat(size) { index ->
+        for (index in 0 until size) {
             value = value or ((buffer.get().toLong() and 0xFFL) shl (index * 8))
         }
         return value
     }
 
-    private fun FileInputStream.readExact(size: Int, description: String): ByteArray {
-        val bytes = ByteArray(size)
-        if (readNBytes(bytes, 0, size) != size) throw EOFException("Truncated $description")
-        return bytes
+    private fun InputStream.readExactInto(target: ByteArray, size: Int, description: String) {
+        var offset = 0
+        while (offset < size) {
+            val read = read(target, offset, size - offset)
+            if (read < 0) throw EOFException("Truncated $description")
+            offset += read
+        }
     }
 
-    private fun FileInputStream.skipExact(size: Long, description: String) {
+    private fun InputStream.skipExact(size: Long, description: String) {
         var remaining = size
         while (remaining > 0) {
             val skipped = skip(remaining)
@@ -271,9 +350,9 @@ class WpiLogDecoder {
         if (buffer.hasRemaining()) throw IOException("Trailing bytes in WPILOG $controlType control record")
     }
 
-    private fun requirePayloadSize(payload: ByteArray, expected: Int, definition: EntryDefinition) {
-        if (payload.size != expected) {
-            throw IOException("Invalid ${definition.type} payload size for ${definition.name}: ${payload.size}")
+    private fun requirePayloadSize(actual: Int, expected: Int, definition: EntryDefinition) {
+        if (actual != expected) {
+            throw IOException("Invalid ${definition.type} payload size for ${definition.name}: $actual")
         }
     }
 
@@ -283,10 +362,74 @@ class WpiLogDecoder {
         }
     }
 
-    private data class EntryDefinition(val name: String, val type: String)
+    private enum class EntryKind {
+        DOUBLE,
+        FLOAT,
+        INT64,
+        INT32,
+        BOOLEAN,
+        UTF8_TEXT,
+        TAGGED_BASE64,
+        DOUBLE_ARRAY,
+        FLOAT_ARRAY,
+        INT64_ARRAY,
+        BOOLEAN_ARRAY,
+        STRING_ARRAY,
+        UNKNOWN,
+    }
+
+    private fun classifyKind(type: String): EntryKind = when (type) {
+        "double" -> EntryKind.DOUBLE
+        "float" -> EntryKind.FLOAT
+        "int64" -> EntryKind.INT64
+        "int32" -> EntryKind.INT32
+        "boolean" -> EntryKind.BOOLEAN
+        "string", "json" -> EntryKind.UTF8_TEXT
+        "raw", "msgpack", "protobuf", "struct" -> EntryKind.TAGGED_BASE64
+        "double[]" -> EntryKind.DOUBLE_ARRAY
+        "float[]" -> EntryKind.FLOAT_ARRAY
+        "int64[]" -> EntryKind.INT64_ARRAY
+        "boolean[]" -> EntryKind.BOOLEAN_ARRAY
+        "string[]" -> EntryKind.STRING_ARRAY
+        else -> if (
+            type.startsWith("msgpack:") ||
+            type.startsWith("proto:") ||
+            type.startsWith("protobuf:") ||
+            type.startsWith("struct:")
+        ) {
+            EntryKind.TAGGED_BASE64
+        } else {
+            EntryKind.UNKNOWN
+        }
+    }
+
+    private class EntryDefinition(
+        val name: String,
+        val type: String,
+        val kind: EntryKind,
+    ) {
+        private var cachedSubKeys: Array<String?>? = null
+
+        fun subKey(index: Int): String {
+            if (index >= CACHED_SUBKEY_LIMIT) return "$name/$index"
+            var cache = cachedSubKeys
+            if (cache == null) {
+                cache = arrayOfNulls(CACHED_SUBKEY_LIMIT)
+                cachedSubKeys = cache
+            }
+            var sub = cache[index]
+            if (sub == null) {
+                sub = "$name/$index"
+                cache[index] = sub
+            }
+            return sub
+        }
+    }
 
     private companion object {
         val MAGIC = "WPILOG".toByteArray(Charsets.US_ASCII)
+        const val STREAM_BUFFER_BYTES = 64 * 1024
+        const val CACHED_SUBKEY_LIMIT = 64
         const val FILE_HEADER_SIZE = 12
         const val MIN_SUPPORTED_VERSION = 0x0100
         const val CONTROL_ENTRY_ID = 0L

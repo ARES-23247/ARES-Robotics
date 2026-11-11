@@ -123,7 +123,7 @@ sealed interface NT4Value {
 
         fun fromObject(obj: Any?): NT4Value = when (obj) {
             is NT4Value -> obj
-            is Boolean -> BooleanVal(obj)
+            is Boolean -> if (obj) BOOLEAN_TRUE else BOOLEAN_FALSE
             is Double -> DoubleVal(obj)
             is Float -> FloatVal(obj)
             is Number -> LongVal(obj.toNT4LongExact())
@@ -146,6 +146,9 @@ sealed interface NT4Value {
         }
     }
 }
+
+internal val BOOLEAN_TRUE = NT4Value.BooleanVal(true)
+internal val BOOLEAN_FALSE = NT4Value.BooleanVal(false)
 
 /** Exact integral conversion for extended Number implementations; common integer boxes allocate nothing. */
 internal fun Number.toNT4LongExact(): Long = when (this) {

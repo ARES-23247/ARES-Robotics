@@ -122,7 +122,7 @@ internal class FrcStudioSimulationBridge(
         val shouldEnableTeleOp = studioControlRequested &&
             gate.receiverReady(nowMs) &&
             latestCommand?.isTeleopMode == true &&
-            latestCommand?.isFieldCentric == true
+            latestCommand.isFieldCentric
         applyDriverStationState(
             enabled = shouldEnableTeleOp || autonomousRequested,
             autonomous = autonomousRequested,

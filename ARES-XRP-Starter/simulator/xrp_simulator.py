@@ -71,6 +71,15 @@ def main():
         robot.shutdown()
 
 
+def _simulated_battery_voltage(motors):
+    peak_effort = 0.0
+    for motor in motors:
+        effort = abs(motor.effort)
+        if effort > peak_effort:
+            peak_effort = effort
+    return 6.0 - 0.6 * peak_effort
+
+
 def create_simulated_robot():
     motor_count = 4 if PROJECT["drivetrain_type"] == "mecanum" else 2
     motors = tuple(SimMotor(PROJECT["max_linear_speed_mps"]) for _ in range(motor_count))
@@ -85,7 +94,7 @@ def create_simulated_robot():
         link_port=PROJECT["link_port"],
         deadman_timeout_ms=PROJECT["deadman_timeout_ms"],
         brownout_threshold_volts=PROJECT["brownout_threshold_volts"],
-        battery_voltage_supplier=lambda: 6.0 - 0.6 * max(abs(motor.effort) for motor in motors),
+        battery_voltage_supplier=lambda: _simulated_battery_voltage(motors),
         track_width=PROJECT["track_width_meters"],
         wheel_base=PROJECT["wheel_base_meters"],
         wheel_radius=PROJECT["wheel_diameter_meters"] / 2.0,

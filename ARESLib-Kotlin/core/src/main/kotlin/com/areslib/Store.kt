@@ -30,9 +30,11 @@ import com.areslib.reducer.rootReducer
  * @param initialState State visible before the first dispatch.
  * @param reducer Pure transition function. It must not mutate [RobotState] or perform hardware IO.
  */
+internal val DEFAULT_STORE_ROOT_REDUCER: (RobotState, RobotAction) -> RobotState = ::rootReducer
+
 class Store(
     initialState: RobotState = RobotState(),
-    private val reducer: (RobotState, RobotAction) -> RobotState = ::rootReducer
+    private val reducer: (RobotState, RobotAction) -> RobotState = DEFAULT_STORE_ROOT_REDUCER
 ) {
     private val poseEstimatorRuntime = PoseEstimatorRuntime(initialState.drive.poseEstimator)
     // Accessed only under the store monitor. No history copies or allocations on the healthy path.
@@ -128,6 +130,9 @@ class Store(
 
     private fun reduceWithRuntime(currentState: RobotState, action: RobotAction): RobotState {
         try {
+            if (reducer === DEFAULT_STORE_ROOT_REDUCER) {
+                return poseEstimatorRuntime.reduceDefault(currentState, action)
+            }
             val prepared = poseEstimatorRuntime.prepare(currentState, action)
                 ?: return reducer(currentState, action)
             var reduced = reducer(currentState, prepared.publicAction)

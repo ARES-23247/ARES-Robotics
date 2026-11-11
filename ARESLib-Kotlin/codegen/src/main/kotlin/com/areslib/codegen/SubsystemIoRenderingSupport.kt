@@ -179,33 +179,72 @@ override fun latchOutputFault() {
     }
 
 
-    fun telemetryBody(document: SubsystemDocument): String {
-        if (!document.safety.telemetryEnabled) return "        // Telemetry is disabled by the subsystem safety document."
-        val measurements = document.hardware.flatMap { it.measurements }
+    private val SAFETY_TELEMETRY_SUFFIXES = listOf(
+        "FeedbackValid" to "feedbackValid",
+        "ConfigurationHealthy" to "configurationHealthy",
+        "Homed" to "homed",
+        "HomingConditionMet" to "homingConditionMet",
+        "HomingFaultLatched" to "homingFaultLatched",
+        "Calibrated" to "calibrated",
+        "CurrentReadingValid" to "currentReadingValid",
+        "OutputFaultLatched" to "outputFaultLatched",
+    )
+
+    private fun telemetryTopicSuffixes(document: SubsystemDocument): List<String> {
+        val measurementSuffixes = document.hardware.flatMap { it.measurements }
             .mapNotNull { document.field(it.fieldId) }
             .distinctBy { it.fieldId }
-            .joinToString("\n") { field ->
-                when (field.type) {
-                    SubsystemValueType.DOUBLE -> "        telemetry.putNumber(\"${'$'}prefix/${field.fieldId}\", ${field.fieldId})"
-                    SubsystemValueType.BOOLEAN -> "        telemetry.putBoolean(\"${'$'}prefix/${field.fieldId}\", ${field.fieldId})"
-                    SubsystemValueType.INT -> "        telemetry.putNumber(\"${'$'}prefix/${field.fieldId}\", ${field.fieldId}.toDouble())"
-                    SubsystemValueType.STRING -> "        telemetry.putString(\"${'$'}prefix/${field.fieldId}\", ${field.fieldId})"
+            .map { it.fieldId }
+        val actuatorSuffixes = document.hardware.filter { it.kind.isActuator() }
+            .map { "AppliedOutputs/${it.hardwareId}/${it.kind.name}" }
+        return measurementSuffixes + actuatorSuffixes + SAFETY_TELEMETRY_SUFFIXES.map { it.first }
+    }
+
+    fun telemetryCacheDeclaration(document: SubsystemDocument): String {
+        if (!document.safety.telemetryEnabled) return ""
+        val entries = telemetryTopicSuffixes(document).joinToString(",\n            ") { suffix ->
+            "\"${'$'}prefix/$suffix\""
+        }
+        return """
+    private var cachedTelemetryPrefix: String? = null
+    private var cachedTelemetryTopics: Array<String>? = null
+
+    private fun telemetryTopics(prefix: String): Array<String> {
+        val existing = cachedTelemetryTopics
+        if (existing != null && cachedTelemetryPrefix == prefix) return existing
+        val created = arrayOf(
+            $entries,
+        )
+        cachedTelemetryPrefix = prefix
+        cachedTelemetryTopics = created
+        return created
+    }
+        """.trimIndent().prependIndent("                ")
+    }
+
+    fun telemetryBody(document: SubsystemDocument): String {
+        if (!document.safety.telemetryEnabled) return "        // Telemetry is disabled by the subsystem safety document."
+        var index = 0
+        val lines = mutableListOf("        val topics = telemetryTopics(prefix)")
+        document.hardware.flatMap { it.measurements }
+            .mapNotNull { document.field(it.fieldId) }
+            .distinctBy { it.fieldId }
+            .forEach { field ->
+                val topicExpr = "topics[${index++}]"
+                lines += when (field.type) {
+                    SubsystemValueType.DOUBLE -> "        telemetry.putNumber($topicExpr, ${field.fieldId})"
+                    SubsystemValueType.BOOLEAN -> "        telemetry.putBoolean($topicExpr, ${field.fieldId})"
+                    SubsystemValueType.INT -> "        telemetry.putNumber($topicExpr, ${field.fieldId}.toDouble())"
+                    SubsystemValueType.STRING -> "        telemetry.putString($topicExpr, ${field.fieldId})"
                 }
             }
-        val safety = """
-        telemetry.putBoolean("${'$'}prefix/FeedbackValid", feedbackValid)
-        telemetry.putBoolean("${'$'}prefix/ConfigurationHealthy", configurationHealthy)
-        telemetry.putBoolean("${'$'}prefix/Homed", homed)
-        telemetry.putBoolean("${'$'}prefix/HomingConditionMet", homingConditionMet)
-        telemetry.putBoolean("${'$'}prefix/HomingFaultLatched", homingFaultLatched)
-        telemetry.putBoolean("${'$'}prefix/Calibrated", calibrated)
-        telemetry.putBoolean("${'$'}prefix/CurrentReadingValid", currentReadingValid)
-        telemetry.putBoolean("${'$'}prefix/OutputFaultLatched", outputFaultLatched)
-        """.trimIndent()
-        val appliedOutputs = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
-            "        telemetry.putNumber(\"${'$'}prefix/AppliedOutputs/${device.hardwareId}/${device.kind.name}\", ${device.hardwareId}Command)"
+        document.hardware.filter { it.kind.isActuator() }.forEach { device ->
+            lines += "        telemetry.putNumber(topics[${index++}], ${device.hardwareId}Command)"
         }
-        return listOf(measurements, appliedOutputs, safety).filter(String::isNotBlank).joinToString("\n")
+        SAFETY_TELEMETRY_SUFFIXES.forEach { (_, expr) ->
+            lines += "        telemetry.putBoolean(topics[${index++}], $expr)"
+        }
+        return lines.joinToString("\n")
     }
 }
 

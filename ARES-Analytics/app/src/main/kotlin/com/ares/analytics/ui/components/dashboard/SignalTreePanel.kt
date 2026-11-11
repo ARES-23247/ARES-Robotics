@@ -64,18 +64,23 @@ fun SignalTreePanel(
     // Track expanded folders: fullPath -> Boolean
     val expandedStates = remember { mutableStateMapOf<String, Boolean>() }
 
-    // Periodically update active topics
+    // Periodically update active topics using O(N) HashSet diffing instead of O(N^2) scans
     LaunchedEffect(Unit) {
+        val knownSet = HashSet<String>()
         while (true) {
             val topics = nt4ClientService.getActiveTopics()
-            // Add any new topics
-            topics.forEach { topic ->
-                if (!activeTopics.contains(topic)) {
+            val incomingSet = HashSet<String>(topics.size * 2)
+            for (i in topics.indices) {
+                val topic = topics[i]
+                incomingSet.add(topic)
+                if (knownSet.add(topic)) {
                     activeTopics.add(topic)
                 }
             }
-            // Remove inactive topics
-            activeTopics.removeAll { !topics.contains(it) }
+            if (knownSet.size != incomingSet.size) {
+                knownSet.retainAll(incomingSet)
+                activeTopics.removeAll { it !in incomingSet }
+            }
             delay(1000)
         }
     }
@@ -94,21 +99,7 @@ fun SignalTreePanel(
         } else {
             activeTopics.filter { it.contains(searchQuery, ignoreCase = true) }
         }
-        val root = SignalNode("", "", false)
-        for (topic in filtered) {
-            val parts = topic.split("/").filter { it.isNotEmpty() }
-            var current = root
-            var currentPath = ""
-            for (i in parts.indices) {
-                val part = parts[i]
-                currentPath += "/$part"
-                val isLeaf = (i == parts.lastIndex)
-                current = current.children.getOrPut(part) {
-                    SignalNode(part, currentPath, isLeaf)
-                }
-            }
-        }
-        root
+        buildSignalTree(filtered)
     }
 
     // Flatten tree to visible items based on expansion state

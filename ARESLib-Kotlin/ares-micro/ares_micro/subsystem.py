@@ -91,14 +91,21 @@ class GeneratedXrpSubsystem:
                 self.devices[device["hardwareId"]] = adapter
                 groups = {}
                 for measurement in device.get("measurements", []):
-                    groups.setdefault(measurement["source"], []).append(measurement)
-                self._read_groups.append((adapter, tuple(groups.items())))
+                    groups.setdefault(measurement["source"], []).append((
+                        measurement["fieldId"],
+                        measurement.get("scale", 1.0),
+                        measurement.get("offset", 0.0),
+                        measurement.get("validMinimum"),
+                        measurement.get("validMaximum"),
+                    ))
+                self._read_groups.append((adapter, tuple((src, tuple(items)) for src, items in groups.items())))
                 for measurement in device.get("measurements", []):
                     available_measurements.add(measurement["fieldId"])
             except Exception:
                 if device.get("required", True):
                     self.configured = False
                     self.faulted = True
+        self._read_groups = tuple(self._read_groups)
         hardware_by_id = {device["hardwareId"]: device for device in self._hardware}
         for device in self._hardware:
             following = device.get("following")
@@ -195,12 +202,11 @@ class GeneratedXrpSubsystem:
             for adapter, groups in self._read_groups:
                 for source, measurements in groups:
                     raw = adapter.read(source)
-                    for measurement in measurements:
-                        value = _number(raw * measurement.get("scale", 1.0) + measurement.get("offset", 0.0))
-                        minimum, maximum = measurement.get("validMinimum"), measurement.get("validMaximum")
+                    for field_id, scale, offset, minimum, maximum in measurements:
+                        value = _number(raw * scale + offset)
                         if minimum is not None and value < minimum or maximum is not None and value > maximum:
                             raise ValueError("XRP feedback outside declared validity bounds")
-                        self.state[measurement["fieldId"]] = value
+                        self.state[field_id] = value
             # Validate every controller result before issuing any nonzero output.
             for index, loop in enumerate(self._loops):
                 self._outputs[index] = self._calculate(loop, dt)

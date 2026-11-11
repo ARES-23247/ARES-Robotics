@@ -105,6 +105,7 @@ internal object SubsystemMockIoRenderer {
         val currentValidity = if (document.safety.requiresCurrentMonitoring) {
             currentFields.joinToString(" && ") { "$it.isFinite() && $it >= 0.0" }.ifBlank { "false" }
         } else "true"
+        val telemetryCache = SubsystemIoRenderingSupport.telemetryCacheDeclaration(document)
         val telemetry = SubsystemIoRenderingSupport.telemetryBody(document)
         val mockHomingCondition = SubsystemIoRenderingSupport.homingConditionExpression(document, "")
         return """
@@ -147,6 +148,7 @@ internal object SubsystemMockIoRenderer {
                 /** True after idempotent resource cleanup. */
                 var closed: Boolean = false
                     private set
+$telemetryCache
 
                 override fun refresh() {
                     if (closed) return

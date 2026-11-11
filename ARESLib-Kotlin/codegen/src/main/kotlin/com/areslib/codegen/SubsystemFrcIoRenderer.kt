@@ -186,6 +186,7 @@ internal object SubsystemFrcIoRenderer {
                 "cached${it.pascalCase()}.isFinite() && cached${it.pascalCase()} >= 0.0"
             }.ifBlank { "false" }
         } else "true"
+        val telemetryCache = SubsystemIoRenderingSupport.telemetryCacheDeclaration(document)
         val telemetry = SubsystemIoRenderingSupport.telemetryBody(document)
         val commands = document.actuatorLeaders().joinToString("\n\n") { device ->
             val neutral = requireNotNull(device.safeOutput).kotlinDouble()
@@ -302,6 +303,7 @@ internal object SubsystemFrcIoRenderer {
                 override var outputFaultLatched: Boolean = false
                     private set
                 private var closed = false
+$telemetryCache
 
                 init {
                     configurationHealthy = try {

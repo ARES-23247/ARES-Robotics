@@ -71,7 +71,7 @@ class AutonomousCatalogBuilder internal constructor(
             enabled = enabled,
         )
         entries += built
-        if (makeDefault || (defaultEntryId == null && entries.size == 1 && enabled)) {
+        if (makeDefault || (defaultEntryId == null && enabled && entries.count { it.enabled } == 1)) {
             defaultEntryId = id
         }
         return built
