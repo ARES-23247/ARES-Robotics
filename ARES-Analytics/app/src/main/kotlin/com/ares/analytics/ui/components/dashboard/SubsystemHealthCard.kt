@@ -15,12 +15,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,8 +28,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
+import com.ares.analytics.service.ReplayFrame
+import com.ares.analytics.service.hardware.SubsystemHealthAccumulator
 import com.ares.analytics.service.hardware.SubsystemHealthSnapshot
 import com.ares.analytics.service.hardware.SubsystemHealthStatus
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -42,21 +44,48 @@ import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresTextTertiary
 
+/** Evaluates [SubsystemHealthAccumulator] from an atomic [ReplayFrame] snapshot, preserving staleness semantics. */
+internal fun extractReplaySubsystemHealth(frame: ReplayFrame): List<SubsystemHealthSnapshot> {
+    val accumulator = SubsystemHealthAccumulator()
+    val receiptNs = frame.timestampMs * 1_000_000L
+    for ((rawKey, value) in frame.values) {
+        val cleanKey = rawKey.trimStart('/')
+        if (!cleanKey.startsWith("Subsystems/")) continue
+        accumulator.accept(
+            frame = TelemetryFrame(
+                timestampMs = frame.timestampMs,
+                sessionId = frame.sessionId,
+                key = cleanKey,
+                value = value,
+                stringValue = frame.stringValues[rawKey] ?: frame.stringValues[cleanKey],
+            ),
+            receiptTimeNs = receiptNs,
+        )
+    }
+    val playheadNs = maxOf(receiptNs, frame.playheadMs * 1_000_000L)
+    return accumulator.snapshots(nowNs = playheadNs)
+}
+
 /** Generic health view for every GUI-generated or hand-authored subsystem using ARES telemetry. */
 @Composable
 fun SubsystemHealthCard(
     nt4ClientService: Nt4ClientService,
     modifier: Modifier = Modifier,
+    replayFrame: ReplayFrame? = null,
 ) {
-    val snapshots = key(nt4ClientService) {
-        val observations = remember(nt4ClientService) {
-            observeSubsystemHealth(
-                nt4ClientService.uiTelemetryFlow,
-                nt4ClientService.telemetryStore::currentTargetEpoch,
-                nt4ClientService.telemetryStore::isCurrentNotifiedFrame,
-            )
+    val snapshots = if (replayFrame != null) {
+        remember(replayFrame.sequence) { extractReplaySubsystemHealth(replayFrame) }
+    } else {
+        key(nt4ClientService) {
+            val observations = remember(nt4ClientService) {
+                observeSubsystemHealth(
+                    nt4ClientService.uiTelemetryFlow,
+                    nt4ClientService.telemetryStore::currentTargetEpoch,
+                    nt4ClientService.telemetryStore::isCurrentNotifiedFrame,
+                )
+            }
+            observations.collectAsState(emptyList()).value
         }
-        observations.collectAsState(emptyList()).value
     }
     SubsystemHealthContent(snapshots = snapshots, modifier = modifier)
 }
@@ -99,7 +128,7 @@ internal fun SubsystemHealthContent(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text("No subsystem health telemetry yet", color = AresTextSecondary, fontWeight = FontWeight.SemiBold)
-                Text("Run a generated robot or simulator to discover mechanisms automatically.", color = AresTextTertiary, fontSize = 11.sp)
+                Text("Run a generated robot, simulator, or replay session to inspect mechanisms.", color = AresTextTertiary, fontSize = 11.sp)
             }
         } else {
             Column(

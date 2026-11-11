@@ -12,10 +12,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.ui.theme.*
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.ui.components.core.*
+import com.ares.analytics.ui.theme.*
+import kotlinx.coroutines.launch
 
 internal data class BrownoutTelemetryState(
     val powerScale: Double? = null,
@@ -30,7 +30,7 @@ internal fun BrownoutTelemetryState.acceptBrownoutTelemetry(
     key: String,
     value: Double,
     stringValue: String?,
-): BrownoutTelemetryState = when (key) {
+): BrownoutTelemetryState = when (key.trim().trimStart('/')) {
     "Robot/BrownoutPowerScale" -> value
         .takeIf { it.isFinite() && it in 0.0..1.0 }
         ?.let { copy(powerScale = it) }
@@ -52,31 +52,50 @@ internal fun BrownoutTelemetryState.acceptBrownoutTelemetry(
     else -> this
 }
 
+internal fun extractReplayBrownoutTelemetry(frame: ReplayFrame): BrownoutTelemetryState {
+    var state = BrownoutTelemetryState()
+    for ((key, value) in frame.values) {
+        state = state.acceptBrownoutTelemetry(key, value, frame.stringValues[key])
+    }
+    for ((key, str) in frame.stringValues) {
+        if (key !in frame.values) {
+            state = state.acceptBrownoutTelemetry(key, Double.NaN, str)
+        }
+    }
+    return state
+}
+
 @Composable
 fun BrownoutProtectionCard(
     nt4ClientService: Nt4ClientService,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    replayFrame: ReplayFrame? = null,
 ) {
     var connected by remember(nt4ClientService) { mutableStateOf(nt4ClientService.isConnected.value) }
-    var telemetry by remember(nt4ClientService) { mutableStateOf(BrownoutTelemetryState()) }
+    var liveTelemetry by remember(nt4ClientService) { mutableStateOf(BrownoutTelemetryState()) }
 
-    LaunchedEffect(nt4ClientService) {
+    LaunchedEffect(nt4ClientService, replayFrame != null) {
+        if (replayFrame != null) return@LaunchedEffect
         launch {
             nt4ClientService.isConnected.collect { isConnected ->
                 connected = isConnected
-                if (!isConnected) telemetry = BrownoutTelemetryState()
+                if (!isConnected) liveTelemetry = BrownoutTelemetryState()
             }
         }
         launch {
             nt4ClientService.uiTelemetryFlow.collect { frame ->
-                telemetry = telemetry.acceptBrownoutTelemetry(frame.key, frame.value, frame.stringValue)
+                liveTelemetry = liveTelemetry.acceptBrownoutTelemetry(frame.key, frame.value, frame.stringValue)
             }
         }
     }
+
+    val telemetry = remember(replayFrame?.sequence, liveTelemetry) {
+        replayFrame?.let(::extractReplayBrownoutTelemetry) ?: liveTelemetry
+    }
     val reportedState = telemetry.brownoutState
     val statusText = when {
-        !connected -> "OFFLINE"
-        reportedState == null -> "NO DATA"
+        replayFrame == null && !connected -> "OFFLINE"
+        reportedState == null -> if (replayFrame != null) "REPLAY" else "NO DATA"
         else -> reportedState
     }
     val stateColor = when (reportedState) {
@@ -103,43 +122,42 @@ fun BrownoutProtectionCard(
             value = telemetry.powerScale?.let { "${(it * 100).toInt()}%" } ?: "---"
         )
 
-            Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            LinearProgressIndicator(
-                progress = { telemetry.powerScale?.toFloat()?.coerceIn(0f, 1f) ?: 0f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = stateColor,
-                trackColor = AresBorder
-            )
+        LinearProgressIndicator(
+            progress = { telemetry.powerScale?.toFloat()?.coerceIn(0f, 1f) ?: 0f },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
+            color = stateColor,
+            trackColor = AresBorder
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("State of Charge", color = AresTextSecondary)
-                    Text(
-                        text = telemetry.stateOfCharge?.let { "${String.format("%.1f", it)}%" } ?: "---",
-                        color = AresTextPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("State of Charge", color = AresTextSecondary)
+                Text(
+                    text = telemetry.stateOfCharge?.let { "${String.format("%.1f", it)}%" } ?: "---",
+                    color = AresTextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("Brownout Trips", color = AresTextSecondary)
-                    Text(
-                        text = telemetry.tripCount?.toString() ?: "---",
-                        color = if ((telemetry.tripCount ?: 0) > 0) AresAmber else AresTextPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            Column(horizontalAlignment = Alignment.End) {
+                Text("Brownout Trips", color = AresTextSecondary)
+                Text(
+                    text = telemetry.tripCount?.toString() ?: "---",
+                    color = if ((telemetry.tripCount ?: 0) > 0) AresAmber else AresTextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
-
+}

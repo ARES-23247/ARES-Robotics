@@ -39,6 +39,10 @@ class DashboardWidgetCatalogTest {
             "pit_evidence_checklist" to (5 to 6),
             "vision_quality" to (3 to 4),
             "motor_health" to (3 to 4),
+            "empirical_sysid" to (5 to 6),
+            "signal_spectrum" to (5 to 6),
+            "xy_scatter" to (5 to 6),
+            "cycle_splits" to (5 to 6),
             "system_health" to (3 to 4),
             "alerts" to (3 to 4),
             "battery_health" to (3 to 4),
@@ -114,6 +118,31 @@ class DashboardWidgetCatalogTest {
         assertTrue(console.capabilities.allows(DashboardWidgetServiceGroup.LIVE))
         assertTrue(console.capabilities.allows(DashboardWidgetServiceGroup.ANALYSIS))
         assertTrue(console.capabilities.allows(DashboardWidgetServiceGroup.REPLAY))
+
+        val replayDiagnostics = listOf(
+            "power_distribution",
+            "brownout_protection",
+            "imu_visualizer",
+            "control_profiler",
+            "profiling_diagnostics",
+            "subsystem_health",
+            "state_tracker",
+        )
+        replayDiagnostics.forEach { widgetId ->
+            val spec = requireNotNull(DashboardWidgetRegistry.find(widgetId))
+            assertTrue(spec.capabilities.allows(DashboardWidgetServiceGroup.REPLAY), "Expected $widgetId to support replay")
+        }
+
+        val newAnalysisWidgets = listOf("empirical_sysid", "signal_spectrum", "xy_scatter", "cycle_splits")
+        newAnalysisWidgets.forEach { widgetId ->
+            val spec = requireNotNull(DashboardWidgetRegistry.find(widgetId))
+            assertTrue(spec.capabilities.allows(DashboardWidgetServiceGroup.ANALYSIS), "Expected $widgetId to support analysis")
+            assertTrue(spec.capabilities.allows(DashboardWidgetServiceGroup.REPLAY), "Expected $widgetId to support replay")
+        }
+
+        val engineeringLab = requireNotNull(BuiltInDashboardLayoutProfiles.profileMetadata("Engineering Lab"))
+        assertEquals("Engineering", engineeringLab.roleTag)
+        assertTrue(engineeringLab.layout.widgets.map { it.type }.containsAll(newAnalysisWidgets))
     }
 
     @Test

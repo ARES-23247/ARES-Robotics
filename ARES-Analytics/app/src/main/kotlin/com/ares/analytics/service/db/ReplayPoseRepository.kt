@@ -4,7 +4,12 @@ import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 
-internal data class ReplayPoseSample(val x: Double, val y: Double, val headingRadians: Double)
+internal data class ReplayPoseSample(
+    val x: Double,
+    val y: Double,
+    val headingRadians: Double,
+    val timestampMs: Long = 0L,
+)
 
 /**
  * Selects one complete source across the requested window, then samples whole poses in order.
@@ -114,7 +119,14 @@ internal class ReplayPoseRepository(private val transactions: DatabaseTransactio
                     buildList {
                         while (result.next()) {
                             currentCoroutineContext().ensureActive()
-                            add(ReplayPoseSample(result.getDouble(1), result.getDouble(2), result.getDouble(3)))
+                            add(
+                                ReplayPoseSample(
+                                    x = result.getDouble(1),
+                                    y = result.getDouble(2),
+                                    headingRadians = result.getDouble(3),
+                                    timestampMs = result.getLong(4),
+                                ),
+                            )
                         }
                     }
                 }
@@ -136,7 +148,7 @@ internal class ReplayPoseRepository(private val transactions: DatabaseTransactio
         val SQL = """
             WITH rules(source, component, key) AS (VALUES ${SOURCE_KEYS.flatten().joinToString { "(?, ?, ?)" }}),
             matching AS MATERIALIZED (
-                SELECT r.source, r.component, t.timestamp_us, t.sample_order, t.value,
+                SELECT r.source, r.component, t.timestamp_ms, t.timestamp_us, t.sample_order, t.value,
                     COALESCE(t.string_value IS NULL AND isfinite(t.value) AND
                         (r.component <> 9 OR (t.value BETWEEN 0 AND 9007199254740991
                             AND t.value = FLOOR(t.value))), FALSE) AS valid
@@ -144,7 +156,7 @@ internal class ReplayPoseRepository(private val transactions: DatabaseTransactio
                 WHERE t.session_id = ? AND t.timestamp_ms BETWEEN ? AND ?
             ),
             exact AS MATERIALIZED (
-                SELECT source, timestamp_us, sample_order,
+                SELECT source, MAX(timestamp_ms) AS timestamp_ms, timestamp_us, sample_order,
                     MAX(value) FILTER (WHERE component = 0) AS x,
                     MAX(value) FILTER (WHERE component = 1) AS y,
                     MAX(value) FILTER (WHERE component = 2) AS heading
@@ -153,7 +165,7 @@ internal class ReplayPoseRepository(private val transactions: DatabaseTransactio
                     AND COUNT(DISTINCT component) = COUNT(*) AND BOOL_AND(valid)
             ),
             unique_instants AS (
-                SELECT source, timestamp_us, MAX(sample_order) AS sample_order,
+                SELECT source, MAX(timestamp_ms) AS timestamp_ms, timestamp_us, MAX(sample_order) AS sample_order,
                     MAX(value) FILTER (WHERE component = 0) AS x,
                     MAX(value) FILTER (WHERE component = 1) AS y,
                     MAX(value) FILTER (WHERE component = 2) AS heading
@@ -169,7 +181,7 @@ internal class ReplayPoseRepository(private val transactions: DatabaseTransactio
                     WHERE e.source = u.source AND e.timestamp_us = u.timestamp_us)
             ),
             numbered AS MATERIALIZED (
-                SELECT x, y, heading, ROW_NUMBER() OVER (ORDER BY timestamp_us, sample_order) AS ordinal
+                SELECT x, y, heading, timestamp_ms, ROW_NUMBER() OVER (ORDER BY timestamp_us, sample_order) AS ordinal
                 FROM poses WHERE source = (SELECT MIN(source) FROM poses)
             ),
             buckets AS (
@@ -181,7 +193,7 @@ internal class ReplayPoseRepository(private val transactions: DatabaseTransactio
                 UNION ALL
                 SELECT MAX(ordinal) FROM buckets GROUP BY bucket
             )
-            SELECT n.x, n.y, n.heading FROM numbered n JOIN selected s USING (ordinal)
+            SELECT n.x, n.y, n.heading, n.timestamp_ms FROM numbered n JOIN selected s USING (ordinal)
             ORDER BY n.ordinal LIMIT ?
         """.trimIndent()
     }

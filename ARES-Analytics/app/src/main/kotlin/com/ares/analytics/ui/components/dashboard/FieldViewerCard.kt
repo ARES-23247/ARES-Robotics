@@ -71,6 +71,9 @@ fun FieldViewerCard(
     modifier: Modifier = Modifier,
     isFullscreen: Boolean = false,
     onToggleFullscreen: (() -> Unit)? = null,
+    primarySessionId: String? = null,
+    compareSessionId: String? = null,
+    crosshairCoordinator: DashboardCrosshairCoordinator? = null,
 ) {
     val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
     val scope = rememberCoroutineScope()
@@ -343,6 +346,16 @@ fun FieldViewerCard(
                     .clip(RoundedCornerShape(8.dp))
             ) {
                 val tracerEnabled = properties["show_tracer"]?.toBoolean() == true
+                val compareAndHoverOverlay = rememberFieldCompareAndHoverOverlayState(
+                    databaseService = databaseService,
+                    primarySessionId = primarySessionId,
+                    compareSessionId = compareSessionId,
+                    currentFrame = currentFrame,
+                    crosshairCoordinator = crosshairCoordinator,
+                )
+                val hasExtraOverlay = compareAndHoverOverlay.compareTrajectory.isNotEmpty() ||
+                    compareAndHoverOverlay.comparePlayheadGhost != null ||
+                    compareAndHoverOverlay.hoverPrimaryGhost != null
 
                 FieldCanvas(
                     league = league,
@@ -368,8 +381,21 @@ fun FieldViewerCard(
                             simulationShape = "circle", colorRgb = b.kind.color) },
                     showAllianceStations = biobuzz == null,
                     fieldWaypoints = if (biobuzz == null) null else emptyList(),
-                    fieldOverlay = if (biobuzz == null) null else { w, h, fw, fh ->
-                        drawBiobuzz(biobuzz, textMeasurer, w, h, fw, fh)
+                    fieldOverlay = if (biobuzz == null && !hasExtraOverlay) null else { w, h, fw, fh ->
+                        if (biobuzz != null) {
+                            drawBiobuzz(biobuzz, textMeasurer, w, h, fw, fh)
+                        }
+                        if (hasExtraOverlay) {
+                            drawFieldCompareAndHoverOverlay(
+                                overlayState = compareAndHoverOverlay,
+                                canvasW = w,
+                                canvasH = h,
+                                fieldWidthM = fw,
+                                fieldHeightM = fh,
+                                league = league,
+                                robotDimensions = robotDimensions,
+                            )
+                        }
                     },
                     showPathControls = false,
                     showObstacleControls = false,
@@ -387,6 +413,11 @@ fun FieldViewerCard(
                     prismPulseWidthUs = liveState.prismLights.toSortedMap().values.firstOrNull(),
                     robotDimensions = robotDimensions,
                     modifier = Modifier.fillMaxSize()
+                )
+
+                FieldCompareBadge(
+                    compareSessionId = compareSessionId,
+                    hoverPose = compareAndHoverOverlay.hoverPrimaryGhost,
                 )
             }
         }
