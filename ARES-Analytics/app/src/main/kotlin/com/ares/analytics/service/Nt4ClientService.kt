@@ -197,6 +197,7 @@ open class Nt4ClientService(
     private val retryFrames = java.util.ArrayDeque<TelemetryFrame>()
     private val flushMutex = kotlinx.coroutines.sync.Mutex()
     private val sessionMutex = kotlinx.coroutines.sync.Mutex()
+    @Volatile private var lastLivePruneTimestampMs = Long.MIN_VALUE
     suspend fun flushPendingFrames(): Boolean = flushMutex.withLock {
         // Do not drain newer channel values behind a failed batch. Keeping one ordered retry
         // deque plus the bounded channel preserves arrival order and applies backpressure.
@@ -233,11 +234,13 @@ open class Nt4ClientService(
         }
 
         latestLiveTimestamp?.let { newestTimestamp ->
-            try {
-                databaseService.pruneTelemetryFrames(LIVE_SESSION_ID, newestTimestamp - LIVE_RETENTION_MS)
-            } catch (e: Exception) {
-                // Pruning is maintenance, not persistence. Frames were committed successfully.
-                e.printStackTrace()
+            if (lastLivePruneTimestampMs == Long.MIN_VALUE || newestTimestamp - lastLivePruneTimestampMs >= LIVE_PRUNE_INTERVAL_MS) {
+                try {
+                    databaseService.pruneTelemetryFrames(LIVE_SESSION_ID, newestTimestamp - LIVE_RETENTION_MS)
+                    lastLivePruneTimestampMs = newestTimestamp
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
         true
@@ -256,6 +259,7 @@ open class Nt4ClientService(
 
     internal fun clearLiveTargetState() = synchronized(fieldArrays.lock) {
         hasReceivedSimulatorPoseFrame = false
+        lastLivePruneTimestampMs = Long.MIN_VALUE
         inboundRouter.clear()
         val nextTargetEpoch = telemetryStore.clear()
         uiTelemetryFanout.reset(nextTargetEpoch)
@@ -717,6 +721,7 @@ open class Nt4ClientService(
         internal const val LIVE_SESSION_ID = "live-telemetry"
         /** Amount of recent live telemetry intentionally retained in the ephemeral database. */
         internal const val LIVE_RETENTION_MS = 300_000L
+        private const val LIVE_PRUNE_INTERVAL_MS = 15_000L
         internal val CANONICAL_SUBSCRIPTION_PREFIXES = listOf(
             "ARES", "Drive", "Robot", "Hardware", "Topology", "Tuning",
             "Profiling", "Diagnostics", "Vision", "Path", "Gamepad1", "Gamepad2",

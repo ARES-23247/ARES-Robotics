@@ -25,11 +25,11 @@ class NT4Telemetry : ITelemetry {
     }
 
     override fun putNumber(key: String, value: Double) {
-        try { NT4Server.publishTopic(key, value) } catch (e: Exception) { /* swallow */ }
+        try { NT4Server.publishDouble(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putBoolean(key: String, value: Boolean) {
-        try { NT4Server.publishTopic(key, value) } catch (e: Exception) { /* swallow */ }
+        try { NT4Server.publishBoolean(key, value) } catch (e: Exception) { /* swallow */ }
     }
 
     override fun putString(key: String, value: String) {

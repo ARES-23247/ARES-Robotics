@@ -121,6 +121,10 @@ fun GuidedRunAnalysisScreen(
                         onSelect = viewModel::selectSession,
                         onRefresh = viewModel::refreshSessions,
                     )
+                    com.ares.analytics.ui.components.runanalysis.StudentRunComparisonPresetBar(
+                        sessions = state.sessions,
+                        onApplyPreset = viewModel::applyComparisonPreset,
+                    )
                     if (!state.loadingSessions && state.sessions.isEmpty()) {
                         EmptyEvidenceState(onOpenImports, onOpenAcademy)
                     }
@@ -185,8 +189,10 @@ fun GuidedRunAnalysisScreen(
                 item {
                     PreserveEvidenceStep(
                         report = report,
+                        comparisonReport = state.comparisonReport,
                         message = state.exportMessage,
                         onExport = { destination -> viewModel.export(destination) },
+                        onCopiedNotice = viewModel::setExportNotice,
                         onOpenRunHistory = onOpenRunHistory,
                     )
                 }
@@ -442,11 +448,13 @@ private fun NextActionsStep(report: GuidedRunAnalysisReport, onOpen: (GuidedRunD
 @Composable
 private fun PreserveEvidenceStep(
     report: GuidedRunAnalysisReport,
+    comparisonReport: com.ares.analytics.service.RunComparisonReport?,
     message: String?,
     onExport: (File) -> Unit,
+    onCopiedNotice: (String) -> Unit,
     onOpenRunHistory: () -> Unit,
 ) {
-    GuideStep(7, "Preserve the review", "Export a checked Markdown summary while keeping the original database session unchanged.") {
+    GuideStep(7, "Preserve the review", "Export a checked Markdown summary or copy an Engineering Notebook entry while keeping the original database session unchanged.") {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = { chooseGuidedReviewFile(report.session.sessionId)?.let(onExport) },
@@ -456,6 +464,11 @@ private fun PreserveEvidenceStep(
                 Spacer(Modifier.width(6.dp))
                 Text("Export evidence report")
             }
+            com.ares.analytics.ui.components.runanalysis.StudentEngineeringNotebookCopyButton(
+                report = report,
+                comparisonReport = comparisonReport,
+                onCopiedNotice = onCopiedNotice,
+            )
             OutlinedButton(onClick = onOpenRunHistory) {
                 Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(6.dp))
@@ -464,7 +477,7 @@ private fun PreserveEvidenceStep(
         }
         message?.let {
             val messageColor = when {
-                it.startsWith("Saved") -> AresGreen
+                it.startsWith("Saved") || it.startsWith("Prepared") -> AresGreen
                 it.startsWith("Saving") -> AresTextSecondary
                 else -> AresRed
             }

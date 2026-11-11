@@ -46,6 +46,8 @@ class DifferentialDrivetrain:
 
         self.last_left_pos = 0.0
         self.last_right_pos = 0.0
+        self._heading_offset = 0.0
+        self._motors = (self.left_motor, self.right_motor)
 
     def set_powers(self, left_power, right_power):
         """Sets motor powers in [-1.0, 1.0]."""
@@ -77,13 +79,25 @@ class DifferentialDrivetrain:
         if self.left_motor is not None and self.right_motor is not None:
             # XRPLib exposes these motors; its combined set_effort stops at the
             # first exception. Stop each independently during emergency cleanup.
-            _stop_motors((self.left_motor, self.right_motor))
+            _stop_motors(self._motors)
         elif self.drivetrain_io:
             self.drivetrain_io.set_effort(0.0, 0.0)
 
     def has_output(self):
         return self.drivetrain_io is not None or (
             self.left_motor is not None and self.right_motor is not None
+        )
+
+    def _read_encoder_distances(self):
+        if self.drivetrain_io and hasattr(self.drivetrain_io, "get_left_encoder_position"):
+            # XRPLib exposes drivetrain distances in centimeters.
+            return (
+                float(self.drivetrain_io.get_left_encoder_position()) / 100.0,
+                float(self.drivetrain_io.get_right_encoder_position()) / 100.0,
+            )
+        return (
+            self._get_motor_distance(self.left_motor),
+            self._get_motor_distance(self.right_motor),
         )
 
     def update_odometry(self, dt=0.02):
@@ -99,13 +113,7 @@ class DifferentialDrivetrain:
             return
 
         # Encoder-based odometry integration fallback
-        if self.drivetrain_io and hasattr(self.drivetrain_io, "get_left_encoder_position"):
-            # XRPLib exposes drivetrain distances in centimeters.
-            cur_left = float(self.drivetrain_io.get_left_encoder_position()) / 100.0
-            cur_right = float(self.drivetrain_io.get_right_encoder_position()) / 100.0
-        else:
-            cur_left = self._get_motor_distance(self.left_motor)
-            cur_right = self._get_motor_distance(self.right_motor)
+        cur_left, cur_right = self._read_encoder_distances()
         d_left = cur_left - self.last_left_pos
         d_right = cur_right - self.last_right_pos
         self.last_left_pos = cur_left
@@ -113,7 +121,11 @@ class DifferentialDrivetrain:
 
         d_center = (d_left + d_right) / 2.0
         wheel_d_theta = (d_right - d_left) / self.track_width
-        next_heading = wrap_angle(float(self.heading_supplier())) if self.heading_supplier else wrap_angle(self.heading + wheel_d_theta)
+        next_heading = (
+            wrap_angle(float(self.heading_supplier()) + self._heading_offset)
+            if self.heading_supplier
+            else wrap_angle(self.heading + wheel_d_theta)
+        )
         d_theta = wrap_angle(next_heading - self.heading)
 
         # Exact constant-curvature integration of the encoder arc length.
@@ -131,17 +143,17 @@ class DifferentialDrivetrain:
     def reset_pose(self, x=0.0, y=0.0, heading_rad=0.0):
         self.x = float(x)
         self.y = float(y)
-        self.heading = float(heading_rad)
+        self.heading = wrap_angle(float(heading_rad))
         if self.otos:
             self.otos.set_pose(self.x, self.y, self.heading)
+            return
+        self.last_left_pos, self.last_right_pos = self._read_encoder_distances()
+        if self.heading_supplier:
+            self._heading_offset = wrap_angle(self.heading - float(self.heading_supplier()))
 
     def _get_motor_distance(self, motor):
         if motor and hasattr(motor, "get_position"):
-            try:
-                # get_position returns ticks or rotations
-                return motor.get_position() * (2.0 * math.pi * self.wheel_radius)
-            except Exception:
-                pass
+            return float(motor.get_position()) * (2.0 * math.pi * self.wheel_radius)
         return 0.0
 
 
@@ -169,6 +181,8 @@ class MecanumDrivetrain:
         self.vy = 0.0
         self.omega = 0.0
         self.last_positions = [0.0, 0.0, 0.0, 0.0]
+        self._heading_offset = 0.0
+        self._motors = (self.fl, self.fr, self.bl, self.br)
 
     def set_powers(self, fl_p, fr_p, bl_p, br_p):
         if not (math.isfinite(fl_p) and math.isfinite(fr_p) and math.isfinite(bl_p) and math.isfinite(br_p)):
@@ -196,10 +210,10 @@ class MecanumDrivetrain:
         self.set_powers(fl_p, fr_p, bl_p, br_p)
 
     def stop(self):
-        _stop_motors((self.fl, self.fr, self.bl, self.br))
+        _stop_motors(self._motors)
 
     def has_output(self):
-        return all(motor is not None for motor in (self.fl, self.fr, self.bl, self.br))
+        return all(motor is not None for motor in self._motors)
 
     def update_odometry(self, dt=0.02):
         if self.otos:
@@ -222,7 +236,11 @@ class MecanumDrivetrain:
         previous[1] = fr
         previous[2] = bl
         previous[3] = br
-        next_heading = wrap_angle(float(self.heading_supplier())) if self.heading_supplier else wrap_angle(self.heading + wheel_d_heading)
+        next_heading = (
+            wrap_angle(float(self.heading_supplier()) + self._heading_offset)
+            if self.heading_supplier
+            else wrap_angle(self.heading + wheel_d_heading)
+        )
         d_heading = wrap_angle(next_heading - self.heading)
         mid_heading = self.heading + d_heading / 2.0
         chord_scale = arc_chord_scale(d_heading)
@@ -239,10 +257,13 @@ class MecanumDrivetrain:
     def reset_pose(self, x=0.0, y=0.0, heading_rad=0.0):
         self.x = float(x)
         self.y = float(y)
-        self.heading = float(heading_rad)
+        self.heading = wrap_angle(float(heading_rad))
         if self.otos:
             self.otos.set_pose(self.x, self.y, self.heading)
-        self.last_positions = [self._get_motor_distance(motor) for motor in (self.fl, self.fr, self.bl, self.br)]
+            return
+        self.last_positions = [self._get_motor_distance(motor) for motor in self._motors]
+        if self.heading_supplier:
+            self._heading_offset = wrap_angle(self.heading - float(self.heading_supplier()))
 
     def _get_motor_distance(self, motor):
         if motor and hasattr(motor, "get_position"):

@@ -590,8 +590,9 @@ class NT4Server(
             if (existing == null) {
                 require(entries.size < MAX_TOPICS) { "NT4 topic limit of $MAX_TOPICS reached" }
             }
-            serverOwnedTopics.add(normalizedTopic)
-            revokeClientPublishersLocked(normalizedTopic)
+            if (serverOwnedTopics.add(normalizedTopic) && clientPublishers.isNotEmpty()) {
+                revokeClientPublishersLocked(normalizedTopic)
+            }
             when {
                 existing == null -> {
                     isNew = true
@@ -651,13 +652,16 @@ class NT4Server(
 
     /** Must be called with [topicMutationLock] held. */
     private fun revokeClientPublishersLocked(topic: String) {
-        val emptyConnections = ArrayList<WebSocket>()
+        if (clientPublishers.isEmpty()) return
+        var emptyConnections: ArrayList<WebSocket>? = null
         for ((connection, publishers) in clientPublishers) {
             publishers.entries.removeIf { it.value.topic == topic }
-            if (publishers.isEmpty()) emptyConnections.add(connection)
+            if (publishers.isEmpty()) {
+                (emptyConnections ?: ArrayList<WebSocket>().also { emptyConnections = it }).add(connection)
+            }
         }
-        for (connection in emptyConnections) {
-            val publishers = clientPublishers[connection] ?: continue
+        emptyConnections?.forEach { connection ->
+            val publishers = clientPublishers[connection] ?: return@forEach
             if (publishers.isEmpty()) clientPublishers.remove(connection, publishers)
         }
     }
@@ -867,6 +871,22 @@ class NT4Server(
         fun publishTopic(topic: String, value: Any) {
             val s = serverInstance ?: return
             s.putTopic(topic, value)
+        }
+
+        internal fun publishDouble(topic: String, value: Double) {
+            val s = serverInstance ?: return
+            val existing = entries[topic.trimStart('/')]
+            val cached = if (existing != null && existing.hasValue) {
+                (existing.value as? NT4Value.DoubleVal)?.takeIf {
+                    java.lang.Double.compare(it.value, value) == 0
+                }
+            } else null
+            s.putTopic(topic, cached ?: NT4Value.DoubleVal(value))
+        }
+
+        internal fun publishBoolean(topic: String, value: Boolean) {
+            val s = serverInstance ?: return
+            s.putTopic(topic, if (value) BOOLEAN_TRUE else BOOLEAN_FALSE)
         }
 
         @JvmStatic

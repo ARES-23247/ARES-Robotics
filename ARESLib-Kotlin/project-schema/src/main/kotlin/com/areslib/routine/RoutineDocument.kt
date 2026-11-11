@@ -51,6 +51,20 @@ data class RoutineDriveMarker(
     val actionKey: String
 )
 
+/** Heading interpolation mode along a declarative field-motion segment. */
+enum class RoutineHeadingMode {
+    /** Linearly interpolates robot heading from the start pose to [RoutineDriveStep.target]. */
+    LINEAR,
+    /** Holds the robot's entry heading constant throughout the segment. */
+    CONSTANT,
+    /** Aligns the robot's forward (+X) axis with the spline velocity tangent. */
+    TANGENTIAL,
+    /** Aligns the robot's rear (-X) axis with the spline velocity tangent. */
+    TANGENTIAL_REVERSE,
+    /** Continuously rotates the robot to face [RoutineDriveStep.lookAtPoint] on the field. */
+    POINT_TOWARDS
+}
+
 /**
  * Declarative field-motion request.
  *
@@ -63,7 +77,10 @@ data class RoutineDriveStep(
     val preferredEngineKey: String? = null,
     val markers: List<RoutineDriveMarker> = emptyList(),
     val duringActionKeys: List<String> = emptyList(),
-    val arrivalActionKeys: List<String> = emptyList()
+    val arrivalActionKeys: List<String> = emptyList(),
+    val headingMode: RoutineHeadingMode = RoutineHeadingMode.LINEAR,
+    val lookAtPoint: RoutinePose? = null,
+    val blendHandoff: Boolean = false
 )
 
 /**

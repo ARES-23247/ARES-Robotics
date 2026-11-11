@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Tune
@@ -15,20 +17,32 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.ui.components.core.AresDoubleField
+import com.ares.analytics.ui.components.core.AresEditorCard
+import com.ares.analytics.ui.components.core.AresNullableDoubleField
+import com.ares.analytics.ui.components.core.AresSelectionField
+import com.ares.analytics.ui.components.core.AresSelectionFieldLayout
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.viewmodel.SubsystemBuilderStage
 import com.ares.analytics.viewmodel.SubsystemGeneratorState
 import com.ares.analytics.viewmodel.SubsystemGeneratorViewModel
-import com.ares.analytics.viewmodel.SubsystemBuilderStage
 import com.ares.analytics.viewmodel.SubsystemProblemSeverity
 import com.areslib.codegen.SubsystemArtifactGroup
 import com.areslib.codegen.SubsystemArtifactOwnership
+import com.areslib.subsystem.SubsystemControlStrategy
 import com.areslib.subsystem.SubsystemDocument
 import com.areslib.subsystem.SubsystemFieldRole
+import com.areslib.subsystem.SubsystemHardwareDocument
+import com.areslib.subsystem.SubsystemHardwareKind
 import com.areslib.subsystem.SubsystemPlatform
+import com.areslib.subsystem.SubsystemVisualAnchor
+import com.areslib.subsystem.SubsystemVisualPlacementDocument
+import com.areslib.subsystem.supportsPlatform
 import com.areslib.tuning.TuningApplyPolicy
 import com.areslib.tuning.TuningParameterDeclaration
 import com.areslib.tuning.TuningParameterType
@@ -38,6 +52,7 @@ import com.areslib.tuning.TuningValue
 fun SubsystemTuningReviewSection(
     state: SubsystemGeneratorState,
     viewModel: SubsystemGeneratorViewModel,
+    authoringMode: SubsystemAuthoringComplexityMode = SubsystemAuthoringComplexityMode.STUDENT_ESSENTIALS,
     modifier: Modifier = Modifier,
 ) {
     val document = state.draft?.document ?: return
@@ -48,9 +63,15 @@ fun SubsystemTuningReviewSection(
             SubsystemBuilderStage.CAPABILITIES -> CapabilityInspectorCard(document)
             SubsystemBuilderStage.SIMULATION_AND_TESTING -> VerificationInspectorCard(document, viewModel)
             SubsystemBuilderStage.REVIEW -> {
-                TuningParametersCard(document, state.selectedTuningParameterUid, viewModel)
-                ProblemsCard(state, viewModel)
                 ReviewSummaryCard(document, state)
+                ProblemsCard(state, viewModel)
+                CapabilityInspectorCard(document)
+                GuiToCodeBridgeCardContent(bridge = buildGuiToCodeBridgeSummary(document))
+                TuningParametersCard(document, state.selectedTuningParameterUid, viewModel)
+                if (authoringMode == SubsystemAuthoringComplexityMode.FULL_ENGINEERING) {
+                    SubsystemCommissioningOverviewCard(document, viewModel)
+                    VerificationInspectorCard(document, viewModel)
+                }
                 ArtifactPlanCard(state, viewModel)
             }
             else -> Unit
@@ -239,11 +260,14 @@ private fun ArtifactPlanCard(state: SubsystemGeneratorState, viewModel: Subsyste
         return
     }
 
+    var expandedFilePath by remember { mutableStateOf<String?>(null) }
+    var copiedFilePath by remember { mutableStateOf<String?>(null) }
+
     EditorCard("Generated Code Artifacts (${state.previewFiles.size})", Icons.Default.Code) {
         val starterCount = state.previewFiles.count { it.ownership == SubsystemArtifactOwnership.GENERATED_STARTER }
         val plumbingCount = state.previewFiles.count { it.ownership == SubsystemArtifactOwnership.GENERATED_DO_NOT_EDIT }
         Text(
-            "$starterCount customization starters · $plumbingCount generated plumbing files",
+            "$starterCount customization starters · $plumbingCount generated plumbing files · Click any file to inspect its generated Kotlin source.",
             color = AresTextSecondary,
             fontSize = 11.sp,
         )
@@ -253,19 +277,79 @@ private fun ArtifactPlanCard(state: SubsystemGeneratorState, viewModel: Subsyste
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(group.name.replace('_', ' '), color = AresCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 files.forEach { file ->
+                    val isExpanded = expandedFilePath == file.path
                     Surface(
                         color = AresSurface,
                         shape = RoundedCornerShape(4.dp),
-                        border = BorderStroke(1.dp, AresBorder),
-                        modifier = Modifier.fillMaxWidth(),
+                        border = BorderStroke(1.dp, if (isExpanded) AresCyan else AresBorder),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { expandedFilePath = if (isExpanded) null else file.path },
                     ) {
-                        Row(
-                            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(file.path.substringAfterLast('/'), color = AresTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                            Text(file.ownership.name.replace('_', ' ').lowercase(), color = AresTextTertiary, fontSize = 9.sp)
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(file.path.substringAfterLast('/'), color = AresTextPrimary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                    Text(file.path, color = AresTextTertiary, fontSize = 9.sp, fontFamily = FontFamily.Monospace)
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(file.ownership.name.replace('_', ' ').lowercase(), color = AresTextTertiary, fontSize = 9.sp)
+                                    Text(
+                                        if (isExpanded) "Hide code" else "Inspect (${file.content.lines().size}L)",
+                                        color = AresCyan,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                            if (isExpanded) {
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text("Generated Kotlin preview", color = AresTextSecondary, fontSize = 10.sp)
+                                    TextButton(
+                                        onClick = {
+                                            try {
+                                                java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(
+                                                    java.awt.datatransfer.StringSelection(file.content),
+                                                    null,
+                                                )
+                                                copiedFilePath = file.path
+                                            } catch (_: Exception) {
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    ) {
+                                        Text(
+                                            if (copiedFilePath == file.path) "Copied!" else "Copy File",
+                                            color = AresCyan,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                    }
+                                }
+                                Surface(
+                                    color = AresBackground,
+                                    shape = RoundedCornerShape(4.dp),
+                                    border = BorderStroke(1.dp, AresBorder),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text(
+                                        text = file.content,
+                                        color = AresTextPrimary,
+                                        fontSize = 10.sp,
+                                        lineHeight = 15.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        modifier = Modifier.padding(8.dp),
+                                    )
+                                }
+                            }
                         }
                     }
                 }

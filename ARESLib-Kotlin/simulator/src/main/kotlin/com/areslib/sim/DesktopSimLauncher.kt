@@ -402,7 +402,7 @@ object DesktopSimLauncher {
                             kotlin.math.abs(rlP) < 1e-3 && kotlin.math.abs(rrP) < 1e-3
 
             if (isNoInput) {
-                physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(0.0, 0.0)
+                physicsWorld.robotBody.setLinearVelocity(0.0, 0.0)
                 physicsWorld.robotBody.angularVelocity = 0.0
             } else {
                 val rawVx = (flP + frP + rlP + rrP) / 4.0 * 2.6
@@ -426,7 +426,7 @@ object DesktopSimLauncher {
                 val fieldVy = rawVx * sinH + rawVy * cosH
 
                 physicsWorld.robotBody.setAtRest(false)
-                physicsWorld.robotBody.linearVelocity = org.dyn4j.geometry.Vector2(fieldVx, fieldVy)
+                physicsWorld.robotBody.setLinearVelocity(fieldVx, fieldVy)
                 physicsWorld.robotBody.angularVelocity = rawOmega
             }
 

@@ -61,6 +61,27 @@ class PIDController(
     var deadzone: Double = 0.0
 
     /**
+     * Optional dual-bandwidth gain-scheduled proportional gain $K_{p,\text{large}}$ used when
+     * $|e(k)| \ge$ [gainScheduleThreshold]. Leave `Double.NaN` to disable gain scheduling.
+     */
+    var largeErrorKp: Double = Double.NaN
+
+    /**
+     * Error magnitude threshold above which [largeErrorKp] replaces [p].
+     * Leave `Double.NaN` to disable gain scheduling.
+     */
+    var gainScheduleThreshold: Double = Double.NaN
+
+    /**
+     * Configures dual-bandwidth proportional gain scheduling (Pedro v3 dual-PID equivalence).
+     * When $|e(k)| \ge [threshold]$, [largeKp] is applied instead of [p].
+     */
+    fun configureGainSchedule(largeKp: Double, threshold: Double) {
+        largeErrorKp = largeKp
+        gainScheduleThreshold = threshold
+    }
+
+    /**
      * Enables continuous circular input domain wrapping (e.g., $[-\pi, +\pi]$ or $[0, 360^\circ]$) to compute the shortest error path.
      *
      * @param minimumInput Lower bound of continuous domain (e.g. $-\pi$).
@@ -152,9 +173,12 @@ class PIDController(
      */
     fun calculate(measurement: Double, dtSeconds: Double): Double {
         lastCalculationValid = false
+        val gainScheduleActive = !largeErrorKp.isNaN() || !gainScheduleThreshold.isNaN()
+        val gainScheduleValid = !gainScheduleActive ||
+            (largeErrorKp.isFinite() && gainScheduleThreshold.isFinite() && gainScheduleThreshold > 0.0)
         if (!measurement.isFinite() || !setpoint.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
             !p.isFinite() || !i.isFinite() || !d.isFinite() || !deadzone.isFinite() || deadzone < 0.0 ||
-            !outputLimitsValid || !integralLimitsValid || !continuousInputValid
+            !outputLimitsValid || !integralLimitsValid || !continuousInputValid || !gainScheduleValid
         ) return neutralAndReset()
 
         val error = if (isContinuous) wrappedDifference(setpoint, measurement) else setpoint - measurement
@@ -186,7 +210,8 @@ class PIDController(
             if (!maxIntegral.isNaN()) candidateIntegral = minOf(candidateIntegral, maxIntegral)
         }
 
-        val proportional = p * error
+        val effectiveP = if (gainScheduleActive && abs(error) >= gainScheduleThreshold) largeErrorKp else p
+        val proportional = effectiveP * error
         val derivative = d * nextDerivative
         val preSatOutput = proportional + i * candidateIntegral - derivative
         if (!preSatOutput.isFinite()) return neutralAndReset()

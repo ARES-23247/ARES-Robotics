@@ -3,6 +3,7 @@
 import json
 import hashlib
 import math
+import time
 
 
 class FieldCollisionConstraint:
@@ -12,22 +13,39 @@ class FieldCollisionConstraint:
         self.field_path = field_path
         self.robot_length = _positive(robot_length, "robot length")
         self.robot_width = _positive(robot_width, "robot width")
+        self._half_diag = 0.5 * math.hypot(self.robot_length, self.robot_width)
         self.width = 0.0
         self.height = 0.0
+        self._half_width = 0.0
+        self._half_height = 0.0
         self.obstacles = []
         self._geometry = ()
+        self._obstacle_aabbs = ()
         self._file_signature = None
+        self._last_stat_time = 0.0
         self._load(required=True)
 
     def constrain(self, previous, proposed):
-        self._load(required=False)
-        if self.collides(previous) or not all(math.isfinite(value) for value in proposed):
+        now = time.monotonic()
+        if now - self._last_stat_time >= 0.25:
+            self._load(required=False)
+        px, py, ph = previous[0], previous[1], previous[2]
+        qx, qy, qh = proposed[0], proposed[1], proposed[2]
+        if not (math.isfinite(px) and math.isfinite(py) and math.isfinite(ph)
+                and math.isfinite(qx) and math.isfinite(qy) and math.isfinite(qh)):
             return previous
+        r = self._half_diag
+        if not self._aabb_strictly_clear(px - r, px + r, py - r, py + r):
+            if self.collides(previous):
+                return previous
         # Process intervals in time order. Only advance over a proven clear sweep,
         # so a clear endpoint cannot skip a thin obstacle or a rotating corner hit.
+        if not self._sweep_collides(previous, proposed):
+            return proposed
         safe = previous
-        pending = [(proposed, 0)]
-        for _ in range(256):
+        middle = _interpolate_pose(safe, proposed, 0.5)
+        pending = [(proposed, 1), (middle, 1)]
+        for _ in range(255):
             if not pending:
                 return proposed
             end, depth = pending.pop()
@@ -42,14 +60,33 @@ class FieldCollisionConstraint:
         # Degenerate near-contact geometry cannot consume an unbounded loop tick.
         return safe
 
+    def _aabb_strictly_clear(self, min_x, max_x, min_y, max_y):
+        if (min_x < -self._half_width or max_x > self._half_width
+                or min_y < -self._half_height or max_y > self._half_height):
+            return False
+        for obs_min_x, obs_max_x, obs_min_y, obs_max_y in self._obstacle_aabbs:
+            if not (max_x < obs_min_x or min_x > obs_max_x
+                    or max_y < obs_min_y or min_y > obs_max_y):
+                return False
+        return True
+
     def _sweep_collides(self, start, end):
-        first = _rectangle_corners(start[0], start[1], self.robot_length, self.robot_width, start[2])
-        last = _rectangle_corners(end[0], end[1], self.robot_length, self.robot_width, end[2])
-        angle = (end[2] - start[2] + math.pi) % (2.0 * math.pi) - math.pi
+        sx, sy, sh = start[0], start[1], start[2]
+        ex, ey, eh = end[0], end[1], end[2]
+        angle = (eh - sh + math.pi) % (2.0 * math.pi) - math.pi
         # Each corner follows linear translation plus rotation. Linear interpolation
         # error is bounded by max|corner''(t)| / 8 = radius * angle^2 / 8.
         # Expanding the endpoint hull by this square encloses that error disk.
-        margin = math.hypot(self.robot_length, self.robot_width) * angle * angle / 16.0
+        margin = (self._half_diag * 2.0) * angle * angle / 16.0
+        reach = self._half_diag + margin
+        min_x = (sx if sx < ex else ex) - reach
+        max_x = (sx if sx > ex else ex) + reach
+        min_y = (sy if sy < ey else ey) - reach
+        max_y = (sy if sy > ey else ey) + reach
+        if self._aabb_strictly_clear(min_x, max_x, min_y, max_y):
+            return False
+        first = _rectangle_corners(sx, sy, self.robot_length, self.robot_width, sh)
+        last = _rectangle_corners(ex, ey, self.robot_length, self.robot_width, eh)
         if margin == 0.0 and not self._geometry:
             # A rectangular field is convex: a pure translation stays inside when
             # both endpoint footprints are inside. No hull construction is needed.
@@ -61,7 +98,7 @@ class FieldCollisionConstraint:
         return self._polygon_collides(_convex_hull(points))
 
     def collides(self, pose):
-        if not all(math.isfinite(value) for value in pose):
+        if not (math.isfinite(pose[0]) and math.isfinite(pose[1]) and math.isfinite(pose[2])):
             return True
         robot = _rectangle_corners(
             pose[0], pose[1], self.robot_length, self.robot_width, pose[2]
@@ -69,9 +106,12 @@ class FieldCollisionConstraint:
         return self._polygon_collides(robot)
 
     def _polygon_outside_field(self, polygon):
-        half_width = self.width / 2.0
-        half_height = self.height / 2.0
-        return any(abs(x) > half_width or abs(y) > half_height for x, y in polygon)
+        half_width = self._half_width
+        half_height = self._half_height
+        for x, y in polygon:
+            if abs(x) > half_width or abs(y) > half_height:
+                return True
+        return False
 
     def _polygon_collides(self, robot):
         if self._polygon_outside_field(robot):
@@ -89,6 +129,7 @@ class FieldCollisionConstraint:
         return False
 
     def _load(self, required):
+        self._last_stat_time = time.monotonic()
         try:
             stat = self.field_path.stat()
             signature = (stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size, stat.st_ino)
@@ -120,6 +161,7 @@ class FieldCollisionConstraint:
             and str(obstacle.get("obstacleType", "blocking")).lower() != "ramp"
         ]
         geometry = tuple(_compile_obstacle(obstacle) for obstacle in obstacles)
+        obstacle_aabbs = tuple(_obstacle_aabb(shape, geom) for shape, geom in geometry)
         receipt = {
             "configId": str(document.get("id", "")),
             "revision": document.get("revision"),
@@ -131,8 +173,11 @@ class FieldCollisionConstraint:
         # Commit only after both geometry and receipt have been validated/built.
         self.width = width
         self.height = height
+        self._half_width = width / 2.0
+        self._half_height = height / 2.0
         self.obstacles = obstacles
         self._geometry = geometry
+        self._obstacle_aabbs = obstacle_aabbs
         return receipt
 
 
@@ -188,6 +233,15 @@ def _compile_obstacle(obstacle):
     if not all(math.isfinite(value) for point in corners for value in point):
         raise ValueError("obstacle corners must be finite")
     return shape, corners
+
+
+def _obstacle_aabb(shape, geometry):
+    if shape == "circle":
+        (cx, cy), radius = geometry
+        return (cx - radius, cx + radius, cy - radius, cy + radius)
+    xs = [pt[0] for pt in geometry]
+    ys = [pt[1] for pt in geometry]
+    return (min(xs), max(xs), min(ys), max(ys))
 
 
 def _interpolate_pose(start, end, fraction):

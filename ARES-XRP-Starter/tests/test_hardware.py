@@ -29,6 +29,27 @@ class XrpPhysicalBusTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "No verified OTOS"):
             create_otos_i2c("generic board", _I2C, _Pin)
 
+    def test_motor_adapter_inverts_encoder_feedback_when_inverted(self):
+        from hardware import _MotorAdapter
+
+        class RawMotor:
+            def __init__(self):
+                self.effort = 0.0
+
+            def set_effort(self, effort):
+                self.effort = effort
+
+            def get_position(self):
+                return 12.5
+
+            def get_speed(self):
+                return 120.0
+
+        raw = RawMotor()
+        adapter = _MotorAdapter(raw, inverted=True)
+        self.assertAlmostEqual(adapter.read("MOTOR_POSITION_NATIVE"), -12.5, places=6)
+        self.assertAlmostEqual(adapter.read("MOTOR_VELOCITY_NATIVE_PER_SECOND"), -2.0, places=6)
+
 
 if __name__ == "__main__":
     unittest.main()

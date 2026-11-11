@@ -1,7 +1,10 @@
 package com.ares.analytics.ui.components.dashboard
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,11 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MonitorHeart
-import com.ares.analytics.ui.components.core.AresDialog
-import com.ares.analytics.ui.components.forms.AresTextField
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -26,6 +30,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +39,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,6 +52,9 @@ import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayFrame
 import com.ares.analytics.shared.models.TelemetryFrame
+import com.ares.analytics.ui.components.core.AresDialog
+import com.ares.analytics.ui.components.forms.AresTextField
+import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -54,6 +67,7 @@ import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresTextTertiary
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 enum class DashboardSignalSource { LIVE, REPLAY }
 
@@ -273,17 +287,28 @@ private fun SingleSignalConfigurationDialog(
         scrollable = true,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            AresTextField(topic, { topic = it }, label = "Telemetry topic", singleLine = true, modifier = Modifier.fillMaxWidth())
-            if (suggestions.isNotEmpty()) {
-                Text("Available now", color = AresTextTertiary, fontSize = 10.sp)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    suggestions.take(3).forEach { suggestion ->
-                        OutlinedButton(onClick = { topic = suggestion }, modifier = Modifier.weight(1f)) {
-                            Text(suggestion.substringAfterLast('/'), maxLines = 1, fontSize = 10.sp)
-                        }
+            TelemetryTopicQuickPickerSection(
+                selectedTopic = topic,
+                topicSuggestions = suggestions,
+                onSelectPreset = { preset ->
+                    val applied = applySignalPreset(preset)
+                    topic = applied.topic
+                    label = applied.label
+                    unit = applied.unit
+                    displayMode = applied.displayMode
+                    minimum = applied.minimum.toString()
+                    maximum = applied.maximum.toString()
+                    warningLow = applied.warningLow?.toString().orEmpty()
+                    warningHigh = applied.warningHigh?.toString().orEmpty()
+                },
+                onSelectTopic = { selected ->
+                    topic = selected
+                    if (label.isBlank() || label == initial.label) {
+                        label = selected.substringAfterLast('/')
                     }
-                }
-            }
+                },
+            )
+            AresTextField(topic, { topic = it }, label = "Telemetry topic", singleLine = true, modifier = Modifier.fillMaxWidth())
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AresTextField(label, { label = it }, label = "Label", singleLine = true, modifier = Modifier.weight(2f))
                 AresTextField(unit, { unit = it }, label = "Display unit", singleLine = true, modifier = Modifier.weight(1f))

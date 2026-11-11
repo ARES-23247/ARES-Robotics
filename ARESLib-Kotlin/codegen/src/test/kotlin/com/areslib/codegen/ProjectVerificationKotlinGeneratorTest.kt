@@ -54,5 +54,7 @@ class ProjectVerificationKotlinGeneratorTest {
 
         assertContains(output, "import org.junit.jupiter.api.Test")
         assertContains(output, "assertTrue(errors.isEmpty())")
+        assertContains(output, "ResourceAccess.EXCLUSIVE")
+        assertContains(output, "Target '\${target.first}.\${target.second}' is owned by more than one superstructure")
     }
 }

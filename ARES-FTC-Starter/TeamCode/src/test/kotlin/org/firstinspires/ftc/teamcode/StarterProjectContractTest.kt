@@ -75,4 +75,32 @@ class StarterProjectContractTest {
         assertFalse(sources.contains("import edu.wpi.first.wpilibj.TimedRobot"))
         assertFalse(sources.contains("import com.ctre.phoenix"))
     }
+
+    @Test
+    fun partialGeneratedSubsystemRegistrationClosesUnownedTailEntries() {
+        val firstClosed = java.util.concurrent.atomic.AtomicBoolean(false)
+        val secondClosed = java.util.concurrent.atomic.AtomicBoolean(false)
+        val first = object : com.areslib.subsystem.Subsystem {
+            override fun readSensors(store: com.areslib.Store, timestampMs: Long) = Unit
+            override fun writeOutputs(state: com.areslib.state.RobotState, scale: Double) = Unit
+            override fun close() { firstClosed.set(true) }
+        }
+        val second = object : com.areslib.subsystem.Subsystem {
+            override fun readSensors(store: com.areslib.Store, timestampMs: Long) = Unit
+            override fun writeOutputs(state: com.areslib.state.RobotState, scale: Double) = Unit
+            override fun close() { secondClosed.set(true) }
+        }
+        var calls = 0
+        org.junit.Assert.assertThrows(IllegalStateException::class.java) {
+            org.firstinspires.ftc.teamcode.opmodes.installGeneratedSuperstructures(
+                register = {
+                    calls += 1
+                    if (calls == 2) throw IllegalStateException("duplicate registration")
+                },
+                createAll = { listOf(first, second) },
+            )
+        }
+        assertFalse(firstClosed.get())
+        assertTrue(secondClosed.get())
+    }
 }

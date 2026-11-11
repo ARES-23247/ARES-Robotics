@@ -1,36 +1,70 @@
 package com.ares.analytics.ui.components.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.GpsOff
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.service.DatabaseService
 import com.ares.analytics.service.ReplayEngineService
 import com.ares.analytics.service.ReplayLoadState
 import com.ares.analytics.service.ReplayState
 import com.ares.analytics.shared.models.AlertRecord
+import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.SessionMode
+import com.ares.analytics.shared.models.TelemetryFrame
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.theme.AresAmber
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresError
+import com.ares.analytics.ui.theme.AresGold
+import com.ares.analytics.ui.theme.AresTextPrimary
+import com.ares.analytics.ui.theme.AresTextSecondary
+import java.util.Locale
+import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun ReplayTimelineScrubber(
@@ -45,7 +79,9 @@ internal fun ReplayTimelineScrubber(
     onScrubLive: (Double) -> Unit,
     onPauseLive: () -> Unit,
     onPlayLive: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    league: League = League.FTC,
+    databaseService: DatabaseService? = null,
 ) {
     val scope = rememberCoroutineScope()
     val rawProgress by replayEngine.progress.collectAsState()
@@ -59,6 +95,26 @@ internal fun ReplayTimelineScrubber(
     val isSeeking by replayEngine.isSeeking.collectAsState()
     val progress = if (isLiveConnection && !isReplayActive) 1.0 else rawProgress
     val replayReady = isLiveConnection && !isReplayActive || loadState == ReplayLoadState.READY
+    val diagnosticFrames by produceState<List<TelemetryFrame>>(emptyList(), sessionId, loadState, databaseService) {
+        val activeSession = sessionId
+        value = if (!activeSession.isNullOrBlank() && databaseService != null && loadState == ReplayLoadState.READY) {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    databaseService.getTelemetryForKeyPatterns(activeSession, REPLAY_DIAGNOSTIC_KEY_PATTERNS)
+                }.getOrDefault(emptyList())
+            }
+        } else {
+            emptyList()
+        }
+    }
+    val diagnosticBookmarks = remember(sessionId, league, diagnosticFrames, alerts) {
+        buildReplayDiagnosticBookmarks(
+            sessionId = sessionId,
+            league = league,
+            frames = diagnosticFrames,
+            alerts = alerts,
+        )
+    }
     // Keep these comparisons direct. A stale incremental desktop build once omitted
     // Kotlin synthetic DashboardScreenKt class and crashed as soon as
     // the replay bar rendered. Direct enum comparisons have no companion class to lose.
@@ -98,6 +154,7 @@ internal fun ReplayTimelineScrubber(
         shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, modeColor.copy(alpha = 0.5f))
     ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -121,7 +178,7 @@ internal fun ReplayTimelineScrubber(
                         } else if (sessionMode == SessionMode.LIVE_REWIND) {
                             "LIVE REWIND"
                         } else {
-                            "REPLAY · "
+                            "REPLAY · ${sessionInfo?.robotId ?: sessionId?.take(12)}"
                         },
                         color = modeColor,
                         fontSize = 11.sp,
@@ -337,7 +394,7 @@ internal fun ReplayTimelineScrubber(
                 isSeeking -> "Seeking…"
                 sessionInfo != null -> {
                     val elapsed = (playheadTimestamp - sessionInfo!!.startTimestampMs).coerceAtLeast(0L)
-                    " / "
+                    "${formatReplayDuration(elapsed)} / ${formatReplayDuration(sessionDuration)}"
                 }
                 else -> "0:00.000"
             }
@@ -352,7 +409,7 @@ internal fun ReplayTimelineScrubber(
             if (currentFrame != null && !isLiveConnection) {
                 val sampleAge = (currentFrame!!.playheadMs - currentFrame!!.timestampMs).coerceAtLeast(0L)
                 Text(
-                    text = if (sampleAge == 0L) "Exact sample" else "Held  ms",
+                    text = if (sampleAge == 0L) "Exact sample" else "Held ${sampleAge} ms",
                     color = if (sampleAge == 0L) AresGreen else AresTextTertiary,
                     fontSize = 10.sp,
                     maxLines = 1,
@@ -393,7 +450,7 @@ internal fun ReplayTimelineScrubber(
                 TextButton(
                     onClick = { speedExpanded = !speedExpanded }
                 ) {
-                    Text("×", color = AresAmber, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("${speed}×", color = AresAmber, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 DropdownMenu(
                     expanded = speedExpanded,
@@ -401,7 +458,7 @@ internal fun ReplayTimelineScrubber(
                 ) {
                     listOf(0.25, 0.5, 1.0, 2.0, 4.0, 8.0).forEach { s ->
                         DropdownMenuItem(
-                            text = { Text("×", color = AresTextPrimary) },
+                            text = { Text("${s}×", color = AresTextPrimary) },
                             onClick = {
                                 scope.launch { replayEngine.setSpeed(s) }
                                 speedExpanded = false
@@ -411,11 +468,21 @@ internal fun ReplayTimelineScrubber(
                 }
             }
         }
+        if (diagnosticBookmarks.isNotEmpty() && (!isLiveConnection || isReplayActive)) {
+            ReplayDiagnosticBookmarkBar(
+                bookmarks = diagnosticBookmarks,
+                sessionStartMs = sessionInfo?.startTimestampMs ?: 0L,
+                onSelectBookmark = { bookmark ->
+                    scope.launch { replayEngine.seekToTimestamp(bookmark.timestampMs) }
+                },
+            )
+        }
+        }
     }
 
     if (loadState == ReplayLoadState.ERROR && !loadError.isNullOrBlank()) {
         LaunchedEffect(loadError) {
-            System.err.println("[Replay] ")
+            System.err.println("[Replay] $loadError")
         }
     }
 }
@@ -426,4 +493,209 @@ internal fun formatReplayDuration(durationMs: Long): String {
     val seconds = (safe % 60_000L) / 1_000L
     val millis = safe % 1_000L
     return "%d:%02d.%03d".format(minutes, seconds, millis)
+}
+
+/**
+ * Categories of post-match diagnostic bookmarks surfaced on the Replay timeline.
+ */
+enum class ReplayDiagnosticKind(
+    val shortTitle: String,
+) {
+    VOLTAGE_SAG("Voltage Sag"),
+    LOOP_OVERRUN("Loop Overrun"),
+    TRACKING_SPIKE("Tracking Spike"),
+    ALERT_TRIGGER("Alert"),
+}
+
+/**
+ * A single clickable diagnostic event on a recorded session timeline.
+ */
+data class ReplayDiagnosticBookmark(
+    val id: String,
+    val kind: ReplayDiagnosticKind,
+    val timestampMs: Long,
+    val label: String,
+    val detail: String,
+)
+
+/**
+ * Scans telemetry frames and recorded alerts to build a chronological list of "What Went Wrong?"
+ * diagnostic bookmarks for 1-click replay scrubbing.
+ */
+fun buildReplayDiagnosticBookmarks(
+    sessionId: String?,
+    league: League,
+    frames: List<TelemetryFrame>,
+    alerts: List<AlertRecord>,
+): List<ReplayDiagnosticBookmark> {
+    val voltageSagThreshold = when (league) {
+        League.FRC -> 8.5
+        League.FTC -> 10.0
+        League.XRP -> 4.5
+    }
+    val candidates = mutableListOf<ReplayDiagnosticBookmark>()
+
+    frames.asSequence()
+        .filter { sessionId == null || it.sessionId == sessionId }
+        .forEach { frame ->
+            val keyLower = frame.key.lowercase(Locale.ROOT)
+            val value = frame.value
+            if (!value.isFinite()) return@forEach
+
+            val isBatteryKey = keyLower.contains("batteryvoltage") ||
+                keyLower.contains("battery_voltage") ||
+                keyLower.endsWith("/vin") ||
+                keyLower == "vin" ||
+                keyLower.endsWith("battery")
+            if (isBatteryKey && value > 0.5 && value < voltageSagThreshold) {
+                candidates += ReplayDiagnosticBookmark(
+                    id = "sag-${frame.timestampMs}",
+                    kind = ReplayDiagnosticKind.VOLTAGE_SAG,
+                    timestampMs = frame.timestampMs,
+                    label = String.format(Locale.US, "Voltage Sag (%.1f V)", value),
+                    detail = String.format(
+                        Locale.US,
+                        "Battery dipped to %.2f V (below %.1f V %s threshold)",
+                        value,
+                        voltageSagThreshold,
+                        league.name,
+                    ),
+                )
+            }
+
+            val isLoopTimeKey = keyLower.contains("looptime") || keyLower.contains("loop_time")
+            if (isLoopTimeKey && value > 25.0) {
+                candidates += ReplayDiagnosticBookmark(
+                    id = "loop-${frame.timestampMs}",
+                    kind = ReplayDiagnosticKind.LOOP_OVERRUN,
+                    timestampMs = frame.timestampMs,
+                    label = String.format(Locale.US, "Loop Overrun (%.1f ms)", value),
+                    detail = String.format(Locale.US, "Control loop took %.1f ms (> 25.0 ms budget)", value),
+                )
+            }
+
+            val isTrackingErrorKey = keyLower.contains("trackingerror") ||
+                keyLower.contains("tracking_error") ||
+                keyLower.contains("crosstrackerror") ||
+                keyLower.contains("alongtrackerror") ||
+                keyLower.contains("poseerror")
+            if (isTrackingErrorKey && abs(value) > 0.15) {
+                candidates += ReplayDiagnosticBookmark(
+                    id = "track-${frame.timestampMs}",
+                    kind = ReplayDiagnosticKind.TRACKING_SPIKE,
+                    timestampMs = frame.timestampMs,
+                    label = String.format(Locale.US, "Tracking Spike (%.2f m)", abs(value)),
+                    detail = String.format(Locale.US, "Path tracking error reached %.2f m (> 0.15 m)", abs(value)),
+                )
+            }
+        }
+
+    alerts.asSequence()
+        .filter { sessionId == null || it.sessionId == sessionId }
+        .forEach { alert ->
+            val shortRule = alert.ruleKey.trim('/').substringAfterLast('/')
+            candidates += ReplayDiagnosticBookmark(
+                id = "alert-${alert.alertId}-${alert.triggerTimestampMs}",
+                kind = ReplayDiagnosticKind.ALERT_TRIGGER,
+                timestampMs = alert.triggerTimestampMs,
+                label = "Alert: $shortRule",
+                detail = "${alert.ruleKey} triggered (peak ${String.format(Locale.US, "%.2f", alert.peakValue)})",
+            )
+        }
+
+    if (candidates.isEmpty()) return emptyList()
+
+    val sorted = candidates.sortedBy { it.timestampMs }
+    val deduplicated = mutableListOf<ReplayDiagnosticBookmark>()
+    val lastTimestampByKind = mutableMapOf<ReplayDiagnosticKind, Long>()
+
+    for (bookmark in sorted) {
+        val prevTs = lastTimestampByKind[bookmark.kind]
+        if (prevTs == null || bookmark.timestampMs - prevTs >= 1_000L || bookmark.kind == ReplayDiagnosticKind.ALERT_TRIGGER) {
+            deduplicated += bookmark
+            lastTimestampByKind[bookmark.kind] = bookmark.timestampMs
+        }
+    }
+    return deduplicated.take(16)
+}
+
+internal val REPLAY_DIAGNOSTIC_KEY_PATTERNS = listOf(
+    "%BatteryVoltage%",
+    "%battery_voltage%",
+    "%LoopTime%",
+    "%loop_time%",
+    "%TrackingError%",
+    "%tracking_error%",
+    "%CrossTrackError%",
+    "%AlongTrackError%",
+    "%PoseError%",
+)
+
+@Composable
+internal fun ReplayDiagnosticBookmarkBar(
+    bookmarks: List<ReplayDiagnosticBookmark>,
+    sessionStartMs: Long,
+    onSelectBookmark: (ReplayDiagnosticBookmark) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (bookmarks.isEmpty()) return
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = "What Went Wrong? (${bookmarks.size}):",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = AresTextSecondary,
+        )
+        bookmarks.forEach { bookmark ->
+            val color = bookmark.kind.accentColor()
+            val relativeMs = if (sessionStartMs > 0L) {
+                (bookmark.timestampMs - sessionStartMs).coerceAtLeast(0L)
+            } else {
+                0L
+            }
+            OutlinedButton(
+                onClick = { onSelectBookmark(bookmark) },
+                shape = RoundedCornerShape(6.dp),
+                border = BorderStroke(1.dp, color.copy(alpha = 0.55f)),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                modifier = Modifier.height(24.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AresTextPrimary),
+            ) {
+                Icon(
+                    imageVector = bookmark.kind.icon(),
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(12.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "${bookmark.label} @ ${formatReplayDuration(relativeMs)}",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = color,
+                )
+            }
+        }
+    }
+}
+
+private fun ReplayDiagnosticKind.accentColor(): Color = when (this) {
+    ReplayDiagnosticKind.VOLTAGE_SAG -> AresAmber
+    ReplayDiagnosticKind.LOOP_OVERRUN -> AresGold
+    ReplayDiagnosticKind.TRACKING_SPIKE -> AresCyan
+    ReplayDiagnosticKind.ALERT_TRIGGER -> AresError
+}
+
+private fun ReplayDiagnosticKind.icon(): ImageVector = when (this) {
+    ReplayDiagnosticKind.VOLTAGE_SAG -> Icons.Default.BatteryAlert
+    ReplayDiagnosticKind.LOOP_OVERRUN -> Icons.Default.Speed
+    ReplayDiagnosticKind.TRACKING_SPIKE -> Icons.Default.GpsOff
+    ReplayDiagnosticKind.ALERT_TRIGGER -> Icons.Default.Flag
 }

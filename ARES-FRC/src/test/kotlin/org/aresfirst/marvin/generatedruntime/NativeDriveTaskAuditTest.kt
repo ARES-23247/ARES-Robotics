@@ -280,4 +280,44 @@ class NativeDriveTaskAuditTest {
             wrapper.end(robot.store.state, true)
         }
     }
+
+    @Test fun `POINT_TOWARDS lookAtPoint mirrors on RED alliance and blendHandoff enables predictivePathSkip`() {
+        val (robot, _) = adapter()
+        val redAdapter = FrcGeneratedRoutineCapabilities(robot).apply {
+            configure(
+                AutonomousCatalogEntry(
+                    entryId = "red-aim",
+                    displayName = "Red Aim",
+                    routineId = "red-aim",
+                    startingPose = RoutinePose(2.0, 2.0, 0.0),
+                    authoredAlliance = RoutineAlliance.BLUE,
+                    mirrorForOppositeAlliance = true,
+                ),
+                Alliance.RED,
+            )
+        }
+        val focusBlue = RoutinePose(1.0, 4.0, 0.0)
+        val step = RoutineDriveStep(
+            target = RoutinePose(3.0, 2.0, 0.0),
+            headingMode = com.areslib.routine.RoutineHeadingMode.POINT_TOWARDS,
+            lookAtPoint = focusBlue,
+            blendHandoff = true,
+        )
+        val wrapper = task(redAdapter, step)
+        val lookAtField = wrapper.javaClass.getDeclaredField("lookAtPoint").apply { isAccessible = true }
+        val mirroredFocus = lookAtField.get(wrapper) as com.areslib.math.geometry.Translation2d
+        assertEquals(com.areslib.math.coordinate.CoordinateTransformers.FRC_FIELD_LENGTH - 1.0, mirroredFocus.x, 1e-9)
+        assertEquals(4.0, mirroredFocus.y, 1e-9)
+
+        val initActions = wrapper.initialize(robot.store.state)
+        val switchPath = initActions.filterIsInstance<RobotAction.SwitchPath>().single()
+        val firstPoint = switchPath.path.points.first()
+        val expectedHeading = kotlin.math.atan2(mirroredFocus.y - firstPoint.pose.y, mirroredFocus.x - firstPoint.pose.x)
+        assertEquals(expectedHeading, firstPoint.pose.heading.radians, 1e-4)
+
+        val delegate = wrapper.javaClass.getDeclaredField("delegate").apply { isAccessible = true }.get(wrapper) as FollowPathTask
+        val skipField = FollowPathTask::class.java.getDeclaredField("predictivePathSkip").apply { isAccessible = true }
+        assertTrue(skipField.getBoolean(delegate))
+        wrapper.end(robot.store.state, true)
+    }
 }

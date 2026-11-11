@@ -107,6 +107,7 @@ fun DriveTypeStep(state: DrivebaseBuilderState, viewModel: DrivebaseBuilderViewM
             if (row.size == 1) Spacer(Modifier.weight(1f))
         }
     }
+    DrivebaseChassisPresetBar(state = state, viewModel = viewModel)
     if (state.draft.kind == DrivebaseKind.FRC_CTRE_SWERVE) CtreImportCard(state, viewModel)
 }
 

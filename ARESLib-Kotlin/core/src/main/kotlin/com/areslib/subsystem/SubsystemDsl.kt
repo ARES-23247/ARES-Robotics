@@ -1,5 +1,10 @@
 package com.areslib.subsystem
 
+import com.areslib.tuning.TuningApplyPolicy
+import com.areslib.tuning.TuningParameterDeclaration
+import com.areslib.tuning.TuningParameterType
+import com.areslib.tuning.TuningValue
+
 /** Keeps nested subsystem builders from accidentally mutating a parent receiver. */
 @DslMarker
 annotation class AresSubsystemDsl
@@ -13,9 +18,54 @@ data class SubsystemFieldRef internal constructor(val id: String)
 data class SubsystemHardwareRef internal constructor(val id: String)
 
 /**
- * Hand-code entry point used by the GUI-generated source as well as student-written mechanisms.
+ * Converts a camelCase, snake_case, or kebab-case identifier into a human-readable display name.
  *
- * Example:
+ * Examples:
+ * - `"targetMeters"` -> `"Target Meters"`
+ * - `"leader_motor"` -> `"Leader Motor"`
+ */
+internal fun defaultSubsystemDisplayName(id: String): String {
+    val spaced = id
+        .replace(Regex("(?<=[a-z0-9])(?=[A-Z])"), " ")
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .trim()
+    if (spaced.isEmpty()) return id
+    return spaced.split(Regex("\\s+")).joinToString(" ") { token ->
+        token.replaceFirstChar { it.uppercase() }
+    }
+}
+
+/** Converts a kebab-case or snake_case document ID (e.g. `"intake-wrist"`) into PascalCase (`"IntakeWrist"`). */
+internal fun defaultSubsystemKotlinTypeName(documentId: String): String =
+    documentId.split('-', '_').filter { it.isNotEmpty() }.joinToString("") { token ->
+        token.replaceFirstChar { it.uppercase() }
+    }
+
+/**
+ * Declarative entry point for defining a validated [SubsystemDocument] (Schema v11) in pure Kotlin.
+ *
+ * Used by both Studio code generation and text-first mechanism authoring. Every call validates the
+ * resulting [SubsystemDocument] against [SubsystemSchema] before returning, failing fast with clear
+ * path-prefixed diagnostics if a hardware connection, unit contract, or safety invariant is invalid.
+ *
+ * ### Concise Text-First Example
+ * ```kotlin
+ * val elevator = subsystem("elevator", SubsystemPlatform.FTC) {
+ *     val target = state.targetDouble("targetMeters", default = 0.0, unit = "m", minimum = 0.0, maximum = 1.2)
+ *     val position = state.measurementDouble("positionMeters", default = 0.0, unit = "m")
+ *     val leader = hardware.motor("elevator") {
+ *         measurement(position, SubsystemMeasurementSource.MOTOR_POSITION_NATIVE, scale = 0.0005)
+ *     }
+ *     control.profiledPositionPid("liftPid", leader, target, position) {
+ *         kP = 8.0
+ *         maximumVelocity = 0.8
+ *         maximumAcceleration = 1.5
+ *     }
+ * }
+ * ```
+ *
+ * ### Explicit Display-Name Example (Studio / Codegen Compatible)
  * ```kotlin
  * val elevator = subsystem("elevator", "Elevator", SubsystemPlatform.FTC) {
  *     val target = state.double("targetMeters", "Target", SubsystemFieldRole.TARGET, 0.0, "m")
@@ -29,6 +79,17 @@ fun subsystem(
     documentId: String,
     kotlinTypeName: String,
     platform: SubsystemPlatform,
+    block: SubsystemBuilder.() -> Unit,
+): SubsystemDocument = SubsystemBuilder(documentId, kotlinTypeName, platform).apply(block).build()
+
+/**
+ * Convenience overload for text-first authoring that derives `kotlinTypeName` in PascalCase from [documentId]
+ * (for example, `"arm-pivot"` -> `"ArmPivot"`).
+ */
+fun subsystem(
+    documentId: String,
+    platform: SubsystemPlatform,
+    kotlinTypeName: String = defaultSubsystemKotlinTypeName(documentId),
     block: SubsystemBuilder.() -> Unit,
 ): SubsystemDocument = SubsystemBuilder(documentId, kotlinTypeName, platform).apply(block).build()
 
@@ -46,12 +107,88 @@ class SubsystemBuilder internal constructor(
     var generateTest: Boolean = true
     var autonomousResourceKey: String? = null
     private val capabilityActionKeys = mutableListOf<String>()
+    private val interlockEntries = mutableListOf<SubsystemInterlockDocument>()
+    private val tuningParameterEntries = mutableListOf<TuningParameterDeclaration>()
 
     val state = SubsystemStateBuilder()
     val hardware = SubsystemHardwareBuilder(platform)
     val control = SubsystemControlBuilder()
     val safety = SubsystemSafetyBuilder()
     val implementation = SubsystemImplementationBuilder()
+    val linkage = SubsystemLinkageBuilder()
+
+    /** Configures multi-joint linkage geometry and dynamics for 2-DOF mechanisms. */
+    fun linkage(block: SubsystemLinkageBuilder.() -> Unit) {
+        linkage.enabled = true
+        linkage.apply(block)
+    }
+
+    /** Configures safety timeouts, homing, and automatic jam/fault recovery. */
+    fun safety(block: SubsystemSafetyBuilder.() -> Unit) {
+        safety.apply(block)
+    }
+
+    /** Configures implementation ownership, user-owned source paths, and simulator interaction. */
+    fun implementation(block: SubsystemImplementationBuilder.() -> Unit) {
+        implementation.apply(block)
+    }
+
+    /** Declares a cross-subsystem safety interlock that blocks unsafe actuation zones. */
+    fun interlock(
+        id: String,
+        targetSubsystemUid: String,
+        targetFieldId: String,
+        comparison: InterlockComparison = InterlockComparison.LESS_THAN,
+        thresholdValue: Double = 0.0,
+        block: SubsystemInterlockBuilder.() -> Unit = {},
+    ) {
+        val builder = SubsystemInterlockBuilder(
+            interlockId = id,
+            targetSubsystemUid = targetSubsystemUid,
+            targetFieldId = targetFieldId,
+            comparison = comparison,
+            thresholdValue = thresholdValue,
+        ).apply(block)
+        interlockEntries += builder.build()
+    }
+
+    /** Registers a pre-built [TuningParameterDeclaration] owned by this subsystem or one of its components. */
+    fun tuningParameter(declaration: TuningParameterDeclaration) {
+        tuningParameterEntries += declaration
+    }
+
+    /** Declares a numeric double tuning parameter owned by a component in this subsystem. */
+    fun tuningDouble(
+        key: String,
+        defaultValue: Double,
+        componentUid: String = documentId,
+        uid: String = key.replace(Regex("([a-z0-9])([A-Z])"), "$1-$2").lowercase(),
+        displayName: String = defaultSubsystemDisplayName(key.substringAfterLast('.')),
+        description: String = "$displayName tuning parameter for physical and simulation runtimes.",
+        unit: String? = null,
+        minimum: Double? = null,
+        maximum: Double? = null,
+        applyPolicy: TuningApplyPolicy = TuningApplyPolicy.LIVE_SAFE,
+    ) {
+        tuningParameterEntries += TuningParameterDeclaration(
+            uid = uid,
+            key = key,
+            componentUid = componentUid,
+            displayName = displayName,
+            description = description,
+            type = TuningParameterType.DOUBLE,
+            unit = unit,
+            minimum = minimum,
+            maximum = maximum,
+            defaultValue = TuningValue(doubleValue = defaultValue),
+            applyPolicy = applyPolicy,
+        )
+    }
+
+    /** Declares an arbitrary typed [TuningParameterDeclaration] owned by this subsystem. */
+    fun tuningParam(declaration: TuningParameterDeclaration) {
+        tuningParameterEntries += declaration
+    }
 
     internal fun build(): SubsystemDocument {
         val document = SubsystemDocument(
@@ -64,9 +201,12 @@ class SubsystemBuilder internal constructor(
             hardware = hardware.entries.toList(),
             stateFields = state.entries.toList(),
             controlLoops = control.entries.toList(),
+            tuningParameters = tuningParameterEntries.toList(),
             implementation = implementation.build(generateMockIo),
             capabilityActionKeys = capabilityActionKeys.toList(),
             safety = safety.build(),
+            interlocks = interlockEntries.toList(),
+            linkage = linkage.build(),
             autonomousResourceKey = autonomousResourceKey,
             requiredAtStartup = requiredAtStartup,
             generateMockIo = generateMockIo,
@@ -92,11 +232,15 @@ class SubsystemImplementationBuilder internal constructor() {
     var subsystemClassName: String? = null
     var ioContractClassName: String? = null
     var hardwareAdapterClassName: String? = null
+    var pythonModuleName: String? = null
+    var pythonFactoryName: String? = null
+    var pythonSimulationFactoryName: String? = null
     var simulationSupport: SubsystemSimulationSupport = SubsystemSimulationSupport.GENERATED_MOCK
     var simulationAdapterClassName: String? = null
     var teachingLevel: SubsystemTeachingLevel = SubsystemTeachingLevel.INTERMEDIATE
     var teachingSummary: String = ""
     var documentationPath: String? = null
+    internal var simInteraction = SubsystemSimInteractionDocument()
     internal val sourceFiles = mutableListOf<String>()
     internal val teachingConcepts = mutableListOf<String>()
 
@@ -106,6 +250,16 @@ class SubsystemImplementationBuilder internal constructor() {
 
     fun teaches(concept: String) {
         teachingConcepts += concept
+    }
+
+    /** Configures simulator field-piece interaction (intake, indexer, or projectile launcher). */
+    fun simulationInteraction(
+        role: SimInteractionRole,
+        triggerActuator: SubsystemHardwareRef,
+        block: SubsystemSimInteractionBuilder.() -> Unit = {},
+    ) {
+        val builder = SubsystemSimInteractionBuilder(role, triggerActuator.id).apply(block)
+        simInteraction = builder.build()
     }
 
     internal fun build(generateMockIo: Boolean): SubsystemImplementationDocument {
@@ -126,7 +280,14 @@ class SubsystemImplementationBuilder internal constructor() {
             subsystemClassName = subsystemClassName,
             ioContractClassName = ioContractClassName,
             hardwareAdapterClassName = hardwareAdapterClassName,
-            simulation = SubsystemSimulationDocument(effectiveSimulation, simulationAdapterClassName),
+            pythonModuleName = pythonModuleName,
+            pythonFactoryName = pythonFactoryName,
+            pythonSimulationFactoryName = pythonSimulationFactoryName,
+            simulation = SubsystemSimulationDocument(
+                support = effectiveSimulation,
+                adapterClassName = simulationAdapterClassName,
+                interaction = simInteraction,
+            ),
             teaching = SubsystemTeachingDocument(
                 level = teachingLevel,
                 summary = teachingSummary,
@@ -137,170 +298,47 @@ class SubsystemImplementationBuilder internal constructor() {
     }
 }
 
-/** Declarative fail-closed requirements used by codegen, preview warnings, and verification. */
+/** Configures how a simulated mechanism interacts with field game pieces. */
 @AresSubsystemDsl
-class SubsystemSafetyBuilder internal constructor() {
-    var feedbackTimeoutMs: Long? = 250L
-    val homing = SubsystemHomingBuilder()
-    var requiresCalibration: Boolean = false
-    var requiresConfigurationHealth: Boolean = true
-    var requiresCurrentMonitoring: Boolean = false
-    var latchOutputFaults: Boolean = true
-    var requiresExplicitNeutralRecovery: Boolean = true
-    var telemetryEnabled: Boolean = true
-    var zeroAllocationPeriodic: Boolean = true
+class SubsystemSimInteractionBuilder internal constructor(
+    var role: SimInteractionRole,
+    var triggerActuatorId: String?,
+) {
+    var triggerThreshold: Double = 1.0
+    var storageCapacity: Int = 1
+    var intakeDistanceMeters: Double = 0.35
+    var captureRadiusMeters: Double = 0.15
+    var launchSpeedMps: Double = 8.0
+    var launchElevationDeg: Double = 45.0
+    var beamBreakField: SubsystemFieldRef? = null
 
-    internal fun build() = SubsystemSafetyDocument(
-        feedbackTimeoutMs = feedbackTimeoutMs,
-        homing = homing.build(),
-        requiresCalibration = requiresCalibration,
-        requiresConfigurationHealth = requiresConfigurationHealth,
-        requiresCurrentMonitoring = requiresCurrentMonitoring,
-        latchOutputFaults = latchOutputFaults,
-        requiresExplicitNeutralRecovery = requiresExplicitNeutralRecovery,
-        telemetryEnabled = telemetryEnabled,
-        zeroAllocationPeriodic = zeroAllocationPeriodic,
+    internal fun build() = SubsystemSimInteractionDocument(
+        role = role,
+        triggerActuatorId = triggerActuatorId,
+        triggerThreshold = triggerThreshold,
+        storageCapacity = storageCapacity,
+        intakeDistanceMeters = intakeDistanceMeters,
+        captureRadiusMeters = captureRadiusMeters,
+        launchSpeedMps = launchSpeedMps,
+        launchElevationDeg = launchElevationDeg,
+        beamBreakFieldId = beamBreakField?.id,
     )
 }
 
-/** Typed homing recipes; stall methods always include bounded effort, dwell, and timeout. */
-@AresSubsystemDsl
-class SubsystemHomingBuilder internal constructor() {
-    private var document = SubsystemHomingDocument()
-
-    fun none() {
-        document = SubsystemHomingDocument()
-    }
-
-    fun digitalSensor(
-        actuator: SubsystemHardwareRef,
-        sensor: SubsystemFieldRef,
-        searchOutput: Double,
-        activeWhen: Boolean = true,
-        dwellMs: Long = 80L,
-        timeoutMs: Long = 3_000L,
-        zeroPosition: Double = 0.0,
-    ) {
-        document = SubsystemHomingDocument(
-            method = SubsystemHomingMethod.DIGITAL_SENSOR,
-            actuatorId = actuator.id,
-            searchOutput = searchOutput,
-            evidence = listOf(
-                SubsystemHomingEvidenceDocument(
-                    sensor.id,
-                    if (activeWhen) SubsystemHomingComparison.TRUE else SubsystemHomingComparison.FALSE,
-                )
-            ),
-            dwellMs = dwellMs,
-            timeoutMs = timeoutMs,
-            zeroPosition = zeroPosition,
-        )
-    }
-
-    fun currentStall(
-        actuator: SubsystemHardwareRef,
-        current: SubsystemFieldRef,
-        searchOutput: Double,
-        minimumCurrentAmps: Double,
-        dwellMs: Long = 250L,
-        timeoutMs: Long = 3_000L,
-        zeroPosition: Double = 0.0,
-    ) {
-        document = stallDocument(
-            SubsystemHomingMethod.CURRENT_STALL,
-            actuator,
-            searchOutput,
-            listOf(SubsystemHomingEvidenceDocument(current.id, SubsystemHomingComparison.AT_OR_ABOVE, minimumCurrentAmps)),
-            dwellMs,
-            timeoutMs,
-            zeroPosition,
-        )
-    }
-
-    fun velocityStall(
-        actuator: SubsystemHardwareRef,
-        velocity: SubsystemFieldRef,
-        searchOutput: Double,
-        maximumAbsoluteVelocity: Double,
-        dwellMs: Long = 250L,
-        timeoutMs: Long = 3_000L,
-        zeroPosition: Double = 0.0,
-    ) {
-        document = stallDocument(
-            SubsystemHomingMethod.VELOCITY_STALL,
-            actuator,
-            searchOutput,
-            listOf(SubsystemHomingEvidenceDocument(velocity.id, SubsystemHomingComparison.ABS_AT_OR_BELOW, maximumAbsoluteVelocity)),
-            dwellMs,
-            timeoutMs,
-            zeroPosition,
-        )
-    }
-
-    fun currentAndVelocityStall(
-        actuator: SubsystemHardwareRef,
-        current: SubsystemFieldRef,
-        velocity: SubsystemFieldRef,
-        searchOutput: Double,
-        minimumCurrentAmps: Double,
-        maximumAbsoluteVelocity: Double,
-        dwellMs: Long = 250L,
-        timeoutMs: Long = 3_000L,
-        zeroPosition: Double = 0.0,
-    ) {
-        document = stallDocument(
-            SubsystemHomingMethod.CURRENT_AND_VELOCITY_STALL,
-            actuator,
-            searchOutput,
-            listOf(
-                SubsystemHomingEvidenceDocument(current.id, SubsystemHomingComparison.AT_OR_ABOVE, minimumCurrentAmps),
-                SubsystemHomingEvidenceDocument(velocity.id, SubsystemHomingComparison.ABS_AT_OR_BELOW, maximumAbsoluteVelocity),
-            ),
-            dwellMs,
-            timeoutMs,
-            zeroPosition,
-        )
-    }
-
-    fun custom(
-        actuator: SubsystemHardwareRef,
-        searchOutput: Double,
-        evidence: List<SubsystemHomingEvidenceDocument>,
-        dwellMs: Long = 250L,
-        timeoutMs: Long = 3_000L,
-        zeroPosition: Double = 0.0,
-    ) {
-        document = stallDocument(
-            SubsystemHomingMethod.CUSTOM_MEASUREMENT,
-            actuator,
-            searchOutput,
-            evidence,
-            dwellMs,
-            timeoutMs,
-            zeroPosition,
-        )
-    }
-
-    internal fun build(): SubsystemHomingDocument = document
-
-    private fun stallDocument(
-        method: SubsystemHomingMethod,
-        actuator: SubsystemHardwareRef,
-        searchOutput: Double,
-        evidence: List<SubsystemHomingEvidenceDocument>,
-        dwellMs: Long,
-        timeoutMs: Long,
-        zeroPosition: Double,
-    ) = SubsystemHomingDocument(method, actuator.id, searchOutput, evidence, dwellMs, timeoutMs, zeroPosition)
-}
-
+/**
+ * Builder for immutable Redux state fields owned by a subsystem.
+ *
+ * Supports both explicit role declarations (`state.double("targetMeters", "Target", SubsystemFieldRole.TARGET, ...)`)
+ * and concise role-specific shorthands (`state.targetDouble("targetMeters", 0.0, unit = "m")`,
+ * `state.measurementDouble("positionMeters", 0.0, unit = "m")`, `state.statusBoolean("homed")`).
+ */
 @AresSubsystemDsl
 class SubsystemStateBuilder internal constructor() {
     internal val entries = mutableListOf<SubsystemStateFieldDocument>()
 
     fun double(
         id: String,
-        displayName: String,
+        displayName: String = defaultSubsystemDisplayName(id),
         role: SubsystemFieldRole,
         default: Double = 0.0,
         unit: String? = null,
@@ -308,362 +346,145 @@ class SubsystemStateBuilder internal constructor() {
         maximum: Double? = null,
     ): SubsystemFieldRef = add(
         SubsystemStateFieldDocument(
-            fieldId = id,
-            displayName = displayName,
-            type = SubsystemValueType.DOUBLE,
-            role = role,
-            unit = unit,
-            defaultNumber = default,
-            minimum = minimum,
-            maximum = maximum,
+            fieldId = id, displayName = displayName, type = SubsystemValueType.DOUBLE,
+            role = role, unit = unit, defaultNumber = default, minimum = minimum, maximum = maximum,
         )
     )
 
+    fun double(
+        id: String, role: SubsystemFieldRole, default: Double = 0.0,
+        unit: String? = null, minimum: Double? = null, maximum: Double? = null,
+    ): SubsystemFieldRef = double(id, defaultSubsystemDisplayName(id), role, default, unit, minimum, maximum)
+
     fun boolean(
-        id: String,
-        displayName: String,
-        role: SubsystemFieldRole,
-        default: Boolean = false,
+        id: String, displayName: String = defaultSubsystemDisplayName(id),
+        role: SubsystemFieldRole, default: Boolean = false,
     ): SubsystemFieldRef = add(
         SubsystemStateFieldDocument(
-            fieldId = id,
-            displayName = displayName,
-            type = SubsystemValueType.BOOLEAN,
-            role = role,
-            defaultBoolean = default,
+            fieldId = id, displayName = displayName, type = SubsystemValueType.BOOLEAN,
+            role = role, defaultBoolean = default,
+        )
+    )
+
+    fun boolean(id: String, role: SubsystemFieldRole, default: Boolean = false): SubsystemFieldRef =
+        boolean(id, defaultSubsystemDisplayName(id), role, default)
+
+    fun int(
+        id: String, displayName: String = defaultSubsystemDisplayName(id),
+        role: SubsystemFieldRole, default: Int = 0,
+        unit: String? = null, minimum: Double? = null, maximum: Double? = null,
+    ): SubsystemFieldRef = add(
+        SubsystemStateFieldDocument(
+            fieldId = id, displayName = displayName, type = SubsystemValueType.INT,
+            role = role, unit = unit, defaultInt = default, minimum = minimum, maximum = maximum,
         )
     )
 
     fun int(
-        id: String,
-        displayName: String,
-        role: SubsystemFieldRole,
-        default: Int = 0,
-        unit: String? = null,
-        minimum: Double? = null,
-        maximum: Double? = null,
+        id: String, role: SubsystemFieldRole, default: Int = 0,
+        unit: String? = null, minimum: Double? = null, maximum: Double? = null,
+    ): SubsystemFieldRef = int(id, defaultSubsystemDisplayName(id), role, default, unit, minimum, maximum)
+
+    fun text(
+        id: String, displayName: String = defaultSubsystemDisplayName(id),
+        role: SubsystemFieldRole, default: String = "",
     ): SubsystemFieldRef = add(
         SubsystemStateFieldDocument(
-            fieldId = id,
-            displayName = displayName,
-            type = SubsystemValueType.INT,
-            role = role,
-            unit = unit,
-            defaultInt = default,
-            minimum = minimum,
-            maximum = maximum,
+            fieldId = id, displayName = displayName, type = SubsystemValueType.STRING,
+            role = role, defaultText = default,
         )
     )
 
-    fun text(
-        id: String,
-        displayName: String,
-        role: SubsystemFieldRole,
-        default: String = "",
-    ): SubsystemFieldRef = add(
-        SubsystemStateFieldDocument(
-            fieldId = id,
-            displayName = displayName,
-            type = SubsystemValueType.STRING,
-            role = role,
-            defaultText = default,
-        )
-    )
+    fun text(id: String, role: SubsystemFieldRole, default: String = ""): SubsystemFieldRef =
+        text(id, defaultSubsystemDisplayName(id), role, default)
+
+    // --- Role-specific shorthands for text-first authoring ---
+
+    /** Declares a `DOUBLE` state field with [SubsystemFieldRole.TARGET]. */
+    fun targetDouble(
+        id: String, default: Double = 0.0, unit: String? = null,
+        minimum: Double? = null, maximum: Double? = null, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = double(id, displayName, SubsystemFieldRole.TARGET, default, unit, minimum, maximum)
+
+    /** Declares a `BOOLEAN` state field with [SubsystemFieldRole.TARGET]. */
+    fun targetBoolean(
+        id: String, default: Boolean = false, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = boolean(id, displayName, SubsystemFieldRole.TARGET, default)
+
+    /** Declares an `INT` state field with [SubsystemFieldRole.TARGET]. */
+    fun targetInt(
+        id: String, default: Int = 0, unit: String? = null,
+        minimum: Double? = null, maximum: Double? = null, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = int(id, displayName, SubsystemFieldRole.TARGET, default, unit, minimum, maximum)
+
+    /** Declares a `STRING` state field with [SubsystemFieldRole.TARGET]. */
+    fun targetText(
+        id: String, default: String = "", displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = text(id, displayName, SubsystemFieldRole.TARGET, default)
+
+    /** Declares a `DOUBLE` state field with [SubsystemFieldRole.MEASUREMENT]. */
+    fun measurementDouble(
+        id: String, default: Double = 0.0, unit: String? = null,
+        minimum: Double? = null, maximum: Double? = null, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = double(id, displayName, SubsystemFieldRole.MEASUREMENT, default, unit, minimum, maximum)
+
+    /** Declares a `BOOLEAN` state field with [SubsystemFieldRole.MEASUREMENT]. */
+    fun measurementBoolean(
+        id: String, default: Boolean = false, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = boolean(id, displayName, SubsystemFieldRole.MEASUREMENT, default)
+
+    /** Declares an `INT` state field with [SubsystemFieldRole.MEASUREMENT]. */
+    fun measurementInt(
+        id: String, default: Int = 0, unit: String? = null,
+        minimum: Double? = null, maximum: Double? = null, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = int(id, displayName, SubsystemFieldRole.MEASUREMENT, default, unit, minimum, maximum)
+
+    /** Declares a `BOOLEAN` state field with [SubsystemFieldRole.STATUS]. */
+    fun statusBoolean(
+        id: String, default: Boolean = false, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = boolean(id, displayName, SubsystemFieldRole.STATUS, default)
+
+    /** Declares a `DOUBLE` state field with [SubsystemFieldRole.STATUS]. */
+    fun statusDouble(
+        id: String, default: Double = 0.0, unit: String? = null,
+        minimum: Double? = null, maximum: Double? = null, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = double(id, displayName, SubsystemFieldRole.STATUS, default, unit, minimum, maximum)
+
+    /** Declares an `INT` state field with [SubsystemFieldRole.STATUS]. */
+    fun statusInt(
+        id: String, default: Int = 0, unit: String? = null,
+        minimum: Double? = null, maximum: Double? = null, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = int(id, displayName, SubsystemFieldRole.STATUS, default, unit, minimum, maximum)
+
+    /** Declares a `STRING` state field with [SubsystemFieldRole.STATUS]. */
+    fun statusText(
+        id: String, default: String = "", displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = text(id, displayName, SubsystemFieldRole.STATUS, default)
+
+    /** Declares a `DOUBLE` state field with [SubsystemFieldRole.CONFIGURATION]. */
+    fun configDouble(
+        id: String, default: Double = 0.0, unit: String? = null,
+        minimum: Double? = null, maximum: Double? = null, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = double(id, displayName, SubsystemFieldRole.CONFIGURATION, default, unit, minimum, maximum)
+
+    /** Declares an `INT` state field with [SubsystemFieldRole.CONFIGURATION]. */
+    fun configInt(
+        id: String, default: Int = 0, unit: String? = null,
+        minimum: Double? = null, maximum: Double? = null, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = int(id, displayName, SubsystemFieldRole.CONFIGURATION, default, unit, minimum, maximum)
+
+    /** Declares a `BOOLEAN` state field with [SubsystemFieldRole.CONFIGURATION]. */
+    fun configBoolean(
+        id: String, default: Boolean = false, displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = boolean(id, displayName, SubsystemFieldRole.CONFIGURATION, default)
+
+    /** Declares a `STRING` state field with [SubsystemFieldRole.CONFIGURATION]. */
+    fun configText(
+        id: String, default: String = "", displayName: String = defaultSubsystemDisplayName(id),
+    ): SubsystemFieldRef = text(id, displayName, SubsystemFieldRole.CONFIGURATION, default)
 
     private fun add(document: SubsystemStateFieldDocument): SubsystemFieldRef {
         entries += document
         return SubsystemFieldRef(document.fieldId)
     }
-}
-
-@AresSubsystemDsl
-class SubsystemHardwareBuilder internal constructor(private val platform: SubsystemPlatform) {
-    internal val entries = mutableListOf<SubsystemHardwareDocument>()
-
-    fun motor(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.MOTOR, block)
-
-    fun positionalServo(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.POSITIONAL_SERVO, block)
-
-    fun continuousServo(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.CONTINUOUS_SERVO, block)
-
-    fun absoluteEncoder(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.ABSOLUTE_ENCODER, block)
-
-    fun quadratureEncoder(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.QUADRATURE_ENCODER, block)
-
-    fun digitalInput(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.DIGITAL_INPUT, block)
-
-    fun analogInput(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.ANALOG_INPUT, block)
-
-    fun distanceSensor(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.DISTANCE_SENSOR, block)
-
-    fun imu(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.IMU, block)
-
-    fun colorSensor(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.COLOR_SENSOR, block)
-
-    fun solenoid(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.SOLENOID, block)
-
-    fun indicatorLight(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.INDICATOR_LIGHT, block)
-
-    fun prismDriver(id: String, displayName: String, block: HardwareDeviceBuilder.() -> Unit): SubsystemHardwareRef =
-        add(id, displayName, SubsystemHardwareKind.PRISM_DRIVER, block)
-
-    private fun add(
-        id: String,
-        displayName: String,
-        kind: SubsystemHardwareKind,
-        block: HardwareDeviceBuilder.() -> Unit,
-    ): SubsystemHardwareRef {
-        val builder = HardwareDeviceBuilder(platform).apply(block)
-        entries += SubsystemHardwareDocument(
-            hardwareId = id,
-            displayName = displayName,
-            kind = kind,
-            connection = SubsystemHardwareConnection(
-                hardwareMapName = builder.hardwareMapName,
-                canId = builder.canId,
-                canBus = builder.canBus,
-                channel = builder.channel,
-                secondaryChannel = builder.secondaryChannel,
-                pneumaticsModuleType = builder.pneumaticsModuleType,
-            ),
-            required = builder.required,
-            inverted = builder.inverted,
-            measurements = builder.measurements.map { measurement ->
-                SubsystemMeasurementDocument(
-                    measurement.field.id,
-                    measurement.source ?: kind.compatibleMeasurementSources().first(),
-                    measurement.scale,
-                    measurement.offset,
-                    measurement.maxAgeMs,
-                    measurement.validMinimum,
-                    measurement.validMaximum,
-                )
-            },
-            currentLimitAmps = builder.currentLimitAmps,
-            safeOutput = builder.safeOutput ?: when (kind) {
-                SubsystemHardwareKind.MOTOR, SubsystemHardwareKind.CONTINUOUS_SERVO -> 0.0
-                SubsystemHardwareKind.POSITIONAL_SERVO -> 0.5
-                SubsystemHardwareKind.SOLENOID -> 0.0
-                else -> null
-            },
-            following = builder.following,
-            encoderCountsPerRevolution = builder.encoderCountsPerRevolution,
-            distanceMetersPerVolt = builder.distanceMetersPerVolt,
-            imuLogoFacingDirection = builder.imuLogoFacingDirection,
-            imuUsbFacingDirection = builder.imuUsbFacingDirection,
-        )
-        return SubsystemHardwareRef(id)
-    }
-}
-
-@AresSubsystemDsl
-class HardwareDeviceBuilder internal constructor(platform: SubsystemPlatform) {
-    var hardwareMapName: String? = null
-    var canId: Int? = null
-    var canBus: String = "rio"
-    var channel: Int? = null
-    var secondaryChannel: Int? = null
-    var pneumaticsModuleType: SubsystemPneumaticsModuleType? = null
-    var required: Boolean = true
-    var inverted: Boolean = false
-    var currentLimitAmps: Double? = null
-    var safeOutput: Double? = null
-    var encoderCountsPerRevolution: Double? = null
-    var distanceMetersPerVolt: Double? = null
-    var imuLogoFacingDirection: SubsystemHubFacingDirection? = null
-    var imuUsbFacingDirection: SubsystemHubFacingDirection? = null
-    internal var following: SubsystemFollowerDocument? = null
-    internal val measurements = mutableListOf<MeasurementBuilderValue>()
-
-    init {
-        if (platform == SubsystemPlatform.FRC) hardwareMapName = null
-    }
-
-    fun measurement(
-        field: SubsystemFieldRef,
-        source: SubsystemMeasurementSource? = null,
-        scale: Double = 1.0,
-        offset: Double = 0.0,
-        maxAgeMs: Long? = null,
-        validMinimum: Double? = null,
-        validMaximum: Double? = null,
-    ) {
-        measurements += MeasurementBuilderValue(field, source, scale, offset, maxAgeMs, validMinimum, validMaximum)
-    }
-
-    /** Routes this actuator from [leader] instead of creating a second competing control loop. */
-    fun follow(
-        leader: SubsystemHardwareRef,
-        transform: SubsystemFollowerTransform = SubsystemFollowerTransform.SAME_DIRECTION,
-    ) {
-        following = SubsystemFollowerDocument(leader.id, transform)
-    }
-}
-
-internal data class MeasurementBuilderValue(
-    val field: SubsystemFieldRef,
-    val source: SubsystemMeasurementSource?,
-    val scale: Double,
-    val offset: Double,
-    val maxAgeMs: Long?,
-    val validMinimum: Double?,
-    val validMaximum: Double?,
-)
-
-@AresSubsystemDsl
-class SubsystemControlBuilder internal constructor() {
-    internal val entries = mutableListOf<SubsystemControlLoopDocument>()
-
-    fun direct(
-        id: String,
-        displayName: String,
-        actuator: SubsystemHardwareRef,
-        target: SubsystemFieldRef,
-        block: ControlLoopBuilder.() -> Unit = {},
-    ) = add(id, displayName, SubsystemControlStrategy.DIRECT, actuator, target, null, block)
-
-    fun positionPid(
-        id: String,
-        displayName: String,
-        actuator: SubsystemHardwareRef,
-        target: SubsystemFieldRef,
-        measurement: SubsystemFieldRef,
-        block: ControlLoopBuilder.() -> Unit = {},
-    ) = add(id, displayName, SubsystemControlStrategy.POSITION_PID, actuator, target, measurement, block)
-
-    /** Position PID with an allocation-free trapezoidal setpoint profile. */
-    fun profiledPositionPid(
-        id: String,
-        displayName: String,
-        actuator: SubsystemHardwareRef,
-        target: SubsystemFieldRef,
-        measurement: SubsystemFieldRef,
-        block: ControlLoopBuilder.() -> Unit = {},
-    ) = add(id, displayName, SubsystemControlStrategy.PROFILED_POSITION_PID, actuator, target, measurement, block)
-
-    fun velocityPid(
-        id: String,
-        displayName: String,
-        actuator: SubsystemHardwareRef,
-        target: SubsystemFieldRef,
-        measurement: SubsystemFieldRef,
-        block: ControlLoopBuilder.() -> Unit = {},
-    ) = add(id, displayName, SubsystemControlStrategy.VELOCITY_PID, actuator, target, measurement, block)
-
-    fun bangBang(
-        id: String,
-        displayName: String,
-        actuator: SubsystemHardwareRef,
-        target: SubsystemFieldRef,
-        measurement: SubsystemFieldRef,
-        block: ControlLoopBuilder.() -> Unit = {},
-    ) = add(id, displayName, SubsystemControlStrategy.BANG_BANG, actuator, target, measurement, block)
-
-    fun servoPosition(
-        id: String,
-        displayName: String,
-        actuator: SubsystemHardwareRef,
-        target: SubsystemFieldRef,
-        block: ControlLoopBuilder.() -> Unit = {},
-    ) = add(id, displayName, SubsystemControlStrategy.SERVO_POSITION, actuator, target, null, block)
-
-    private fun add(
-        id: String,
-        displayName: String,
-        strategy: SubsystemControlStrategy,
-        actuator: SubsystemHardwareRef,
-        target: SubsystemFieldRef,
-        measurement: SubsystemFieldRef?,
-        block: ControlLoopBuilder.() -> Unit,
-    ) {
-        val builder = ControlLoopBuilder().apply(block)
-        entries += SubsystemControlLoopDocument(
-            loopId = id,
-            displayName = displayName,
-            strategy = strategy,
-            actuatorId = actuator.id,
-            targetFieldId = target.id,
-            measurementFieldId = measurement?.id,
-            kP = builder.kP,
-            kI = builder.kI,
-            kD = builder.kD,
-            motionProfile = SubsystemMotionProfileDocument(
-                maximumVelocity = builder.maximumVelocity,
-                maximumAcceleration = builder.maximumAcceleration,
-            ),
-            feedforward = builder.feedforward.build(),
-            derivativeFilterTimeConstantSeconds = builder.derivativeFilterTimeConstantSeconds,
-            continuousInput = SubsystemContinuousInputDocument(
-                enabled = builder.continuousInputEnabled,
-                minimumInput = builder.continuousInputMinimum,
-                maximumInput = builder.continuousInputMaximum,
-            ),
-            tolerance = builder.tolerance,
-            hysteresis = builder.hysteresis,
-            minimumOutput = builder.minimumOutput,
-            maximumOutput = builder.maximumOutput,
-        )
-    }
-}
-
-@AresSubsystemDsl
-class ControlLoopBuilder internal constructor() {
-    var kP: Double = 0.0
-    var kI: Double = 0.0
-    var kD: Double = 0.0
-    /** Maximum profiled setpoint velocity in the target field's unit per second. */
-    var maximumVelocity: Double = 1.0
-    /** Maximum profiled setpoint acceleration in the target field's unit per second squared. */
-    var maximumAcceleration: Double = 2.0
-    val feedforward = SubsystemFeedforwardBuilder()
-    var derivativeFilterTimeConstantSeconds: Double = 0.02
-    /** Enables shortest-path wrapping for a position target and measurement expressed in radians. */
-    var continuousInputEnabled: Boolean = false
-    /** Lower boundary of one complete angular turn in radians. */
-    var continuousInputMinimum: Double = -Math.PI
-    /** Upper boundary of one complete angular turn in radians. */
-    var continuousInputMaximum: Double = Math.PI
-    var tolerance: Double = 0.0
-    /** Additional error required to restart bang-bang output after entering the stop band. */
-    var hysteresis: Double = 0.0
-    var minimumOutput: Double = -12.0
-    var maximumOutput: Double = 12.0
-}
-
-/** Unit-aware feedforward configuration; use NONE when feedback alone is intentional. */
-@AresSubsystemDsl
-class SubsystemFeedforwardBuilder internal constructor() {
-    var kind: SubsystemFeedforwardKind = SubsystemFeedforwardKind.NONE
-    var kS: Double = 0.0
-    var kV: Double = 0.0
-    var kA: Double = 0.0
-    var kG: Double = 0.0
-    var velocityField: SubsystemFieldRef? = null
-    var accelerationField: SubsystemFieldRef? = null
-    var gravityAngleField: SubsystemFieldRef? = null
-    var linkageJoint: Int? = null
-
-    internal fun build() = SubsystemFeedforwardDocument(
-        kind = kind,
-        kS = kS,
-        kV = kV,
-        kA = kA,
-        kG = kG,
-        velocityFieldId = velocityField?.id,
-        accelerationFieldId = accelerationField?.id,
-        gravityAngleFieldId = gravityAngleField?.id,
-        linkageJoint = linkageJoint,
-    )
 }

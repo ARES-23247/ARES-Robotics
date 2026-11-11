@@ -1,8 +1,11 @@
 package com.ares.analytics.ui.util
 
+import com.ares.analytics.ui.components.core.AresFileChooserLauncher
+import com.ares.analytics.ui.components.core.AresFileChooserMode
+import java.io.File
+import java.time.format.DateTimeFormatter
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
@@ -86,4 +89,24 @@ internal object AresFormatters {
         val gb = mb / 1024.0
         return String.format(Locale.US, "%.1f GB/s", gb)
     }
+
+    fun formatDecimal(value: Double, decimals: Int = 2, fallback: String = "—"): String =
+        if (value.isFinite()) String.format(Locale.US, "%.${decimals}f", value) else fallback
 }
+
+/** Returns this [Double] if finite (neither NaN nor infinite), or [fallback] otherwise. */
+internal fun Double.finiteOr(fallback: Double = 0.0): Double =
+    if (isFinite()) this else fallback
+
+/** Returns this [Double] coerced to [min]..[max] if finite, or [fallback] coerced to [min]..[max] otherwise. */
+internal fun Double.finiteCoerceIn(min: Double, max: Double, fallback: Double = min): Double =
+    (if (isFinite()) this else fallback).coerceIn(min, max)
+
+/** Copies plain text to the system AWT clipboard, returning true when successful. */
+internal fun copyTextToSystemClipboard(text: String): Boolean = runCatching {
+    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(
+        java.awt.datatransfer.StringSelection(text),
+        null,
+    )
+    true
+}.getOrDefault(false)

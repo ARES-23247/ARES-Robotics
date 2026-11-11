@@ -64,9 +64,21 @@ internal object SubsystemFtcIoRenderer {
             "    private var cached${field.fieldId.pascalCase()}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}\n" +
                 "    override val ${field.fieldId}: ${field.kotlinType()} get() = cached${field.fieldId.pascalCase()}"
         }.distinct().joinToString("\n")
-        val commandFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
-            "    private var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}"
+        val homedMotorIds = if (document.requiresHoming()) {
+            val leader = document.hardware.first { it.hardwareId == document.safety.homing.actuatorId }
+            if (leader.kind == SubsystemHardwareKind.MOTOR) {
+                (listOf(leader) + document.followersOf(leader.hardwareId)).mapTo(linkedSetOf()) { it.hardwareId }
+            } else emptySet()
+        } else emptySet()
+        val homeOffsetFields = homedMotorIds.joinToString("\n") { id ->
+            "    private var ${id}HomeOffsetNative: Double = 0.0"
         }
+        val commandFields = listOf(
+            document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
+                "    private var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}"
+            },
+            homeOffsetFields,
+        ).filter(String::isNotBlank).joinToString("\n")
         val configure = document.hardware.mapNotNull { device ->
             when {
                 (device.kind == SubsystemHardwareKind.MOTOR ||
@@ -95,7 +107,11 @@ internal object SubsystemFtcIoRenderer {
             val field = document.field(measurement.fieldId) ?: return@mapNotNull null
             val read = when (measurement.source) {
                 SubsystemMeasurementSource.MOTOR_POSITION_NATIVE ->
-                    "${device.hardwareId}?.currentPosition?.toDouble() ?: 0.0"
+                    if (device.hardwareId in homedMotorIds) {
+                        "((${device.hardwareId}?.currentPosition?.toDouble() ?: 0.0) + ${device.hardwareId}HomeOffsetNative)"
+                    } else {
+                        "${device.hardwareId}?.currentPosition?.toDouble() ?: 0.0"
+                    }
                 SubsystemMeasurementSource.MOTOR_VELOCITY_NATIVE_PER_SECOND ->
                     "${device.hardwareId}?.velocity ?: 0.0"
                 SubsystemMeasurementSource.MOTOR_CURRENT_AMPS ->
@@ -155,6 +171,7 @@ internal object SubsystemFtcIoRenderer {
                 "cached${it.pascalCase()}.isFinite() && cached${it.pascalCase()} >= 0.0"
             }.ifBlank { "false" }
         } else "true"
+        val telemetryCache = SubsystemIoRenderingSupport.telemetryCacheDeclaration(document)
         val telemetry = SubsystemIoRenderingSupport.telemetryBody(document)
         val commands = document.actuatorLeaders().joinToString("\n\n") { device ->
             val neutral = requireNotNull(device.safeOutput).kotlinDouble()
@@ -241,6 +258,7 @@ internal object SubsystemFtcIoRenderer {
                 override var outputFaultLatched: Boolean = false
                     private set
                 private var closed = false
+$telemetryCache
 
                 init {
                     configurationHealthy = try {

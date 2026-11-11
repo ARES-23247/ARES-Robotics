@@ -85,7 +85,14 @@ class ProjectBackupViewModel(
         }
         scope.launch {
             autoSync.state.collectLatest { state ->
-                _state.update { it.copy(autoSync = state) }
+                _state.update { current ->
+                    val targetPath = current.projectPath
+                    if (targetPath.isBlank() || state.projectPath.isBlank() || sameCanonicalPath(targetPath, state.projectPath)) {
+                        current.copy(autoSync = state)
+                    } else {
+                        current
+                    }
+                }
             }
         }
     }
@@ -400,4 +407,11 @@ class ProjectBackupViewModel(
 
     private fun requireProjectPath(): String = _state.value.projectPath.takeIf(String::isNotBlank)
         ?: error("Choose a robot project before opening Project Backup.")
+
+    private fun sameCanonicalPath(left: String, right: String): Boolean {
+        if (left == right) return true
+        val leftCanonical = runCatching { java.io.File(left).canonicalPath }.getOrDefault(left)
+        val rightCanonical = runCatching { java.io.File(right).canonicalPath }.getOrDefault(right)
+        return leftCanonical == rightCanonical
+    }
 }

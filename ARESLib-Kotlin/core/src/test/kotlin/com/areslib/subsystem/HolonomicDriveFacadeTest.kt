@@ -116,6 +116,19 @@ class HolonomicDriveFacadeTest {
     }
 
     @Test
+    fun `swerve facade with WPILib red mirrored alliance drives +X on Blue and -X on Red`() {
+        for (alliance in Alliance.entries) {
+            val store = Store(RobotState(drive = com.areslib.state.DriveState(alliance = alliance)), ::rootReducer)
+            val facade = SwerveDriveFacade(store, mirroredAlliance = Alliance.RED)
+            val pad = AresGamepad()
+            pad.update(GamepadState(leftStickY = -1.0f, rightBumper = true))
+            facade.driveWithGamepad(pad, useHeadingLock = false)
+            val expectedSign = if (alliance == Alliance.RED) -1.0 else 1.0
+            assertEquals(expectedSign * facade.maxSpeedMps, store.state.drive.xVelocityMetersPerSecond, 1e-9)
+        }
+    }
+
+    @Test
     fun testFollowPath() {
         val store = Store(RobotState(), ::rootReducer)
         val facade = MecanumDriveFacade(store)

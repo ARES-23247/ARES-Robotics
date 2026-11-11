@@ -49,33 +49,12 @@ fun SuperstructureVerificationSection(
             }
         }
 
-        // Deterministic Simulation Lab & Trace Panel
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = AresSurface,
-            shape = RoundedCornerShape(10.dp),
-            border = BorderStroke(1.dp, AresBorder),
-        ) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("DETERMINISTIC SIMULATION TRACE", color = AresTextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                val preview = state.preview
-                if (preview != null) {
-                    Surface(
-                        color = AresSurfaceElevated,
-                        shape = RoundedCornerShape(6.dp),
-                        border = BorderStroke(1.dp, AresBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Current Posture: ${preview.currentStateId}", color = AresCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            Text("Status: ${if (preview.isFaulted) "FAULTED (${preview.faultReason ?: "Unknown"})" else if (preview.isEnabled) "ENABLED" else "DISABLED"}", color = if (preview.isFaulted) AresError else AresGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                } else {
-                    Text("State evaluator runs deterministically on every edit against cached sensor and action inputs.", color = AresTextTertiary, fontSize = 10.sp)
-                }
-            }
-        }
+        // Deterministic Simulation Lab & Fault Injection Panel
+        SuperstructureSimulationLabCard(
+            state = state,
+            draft = draft,
+            viewModel = viewModel,
+        )
 
         // Structured Diff & Code Generation Review
         Surface(

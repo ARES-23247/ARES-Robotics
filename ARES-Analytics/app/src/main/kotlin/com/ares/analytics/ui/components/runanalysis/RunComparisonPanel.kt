@@ -1,29 +1,32 @@
 @file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-
 package com.ares.analytics.ui.components.runanalysis
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,18 +41,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -58,12 +62,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.ComparisonClaimKind
 import com.ares.analytics.service.GuidedComparisonFinding
+import com.ares.analytics.service.GuidedRunAnalysisReport
 import com.ares.analytics.service.RunComparisonMetric
 import com.ares.analytics.service.RunComparisonReport
 import com.ares.analytics.service.RunTrajectoryOverlay
 import com.ares.analytics.service.shortRunLabel
+import com.ares.analytics.shared.models.isSimulationSessionTags
 import com.ares.analytics.shared.models.Session
 import com.ares.analytics.ui.components.core.AresCard
+import com.ares.analytics.ui.theme.*
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -75,8 +82,10 @@ import com.ares.analytics.ui.theme.AresSurfaceElevated
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
 import com.ares.analytics.ui.theme.AresTextTertiary
-import java.io.File
 import com.ares.analytics.ui.util.DesktopFileChoosers
+import java.awt.datatransfer.StringSelection
+import java.awt.Toolkit
+import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 
@@ -497,3 +506,184 @@ private val RUN_COLORS = listOf(
     Color(0xFFFF8A80),
     Color(0xFF80CBC4),
 )
+
+/**
+ * 1-click run comparison presets for students reviewing post-match or practice logs.
+ */
+enum class StudentRunComparisonPreset(
+    val id: String,
+    val label: String,
+    val helperHint: String,
+) {
+    LATEST_VS_PREVIOUS(
+        id = "latest_vs_previous",
+        label = "Latest vs Previous Run",
+        helperHint = "Compare your newest run directly against the run recorded right before it.",
+    ),
+    LATEST_VS_LONGEST_COMPLETED(
+        id = "latest_vs_longest_completed",
+        label = "Latest vs Longest Completed Run",
+        helperHint = "Compare your newest run against the longest full match or practice session in this workspace.",
+    ),
+    LATEST_VS_SIMULATOR_BASELINE(
+        id = "latest_vs_simulator_baseline",
+        label = "Latest vs Simulator Baseline",
+        helperHint = "Compare your newest run against the most recent local simulator baseline run.",
+    ),
+}
+
+data class ResolvedRunComparisonPreset(
+    val preset: StudentRunComparisonPreset,
+    val primarySessionId: String,
+    val comparisonSessionIds: List<String>,
+    val summaryLabel: String,
+)
+
+fun resolveStudentComparisonPreset(
+    sessions: List<Session>,
+    preset: StudentRunComparisonPreset,
+): ResolvedRunComparisonPreset? {
+    if (sessions.isEmpty()) return null
+    val sortedByTimeDesc = sessions.sortedByDescending { it.createdAt }
+    val latest = sortedByTimeDesc.first()
+    val candidates = sortedByTimeDesc.drop(1)
+    if (candidates.isEmpty()) return null
+
+    val targetComparison: Session = when (preset) {
+        StudentRunComparisonPreset.LATEST_VS_PREVIOUS -> candidates.first()
+        StudentRunComparisonPreset.LATEST_VS_LONGEST_COMPLETED -> {
+            candidates.maxWithOrNull(compareBy<Session> { it.durationMs }.thenBy { it.createdAt }) ?: candidates.first()
+        }
+        StudentRunComparisonPreset.LATEST_VS_SIMULATOR_BASELINE -> {
+            candidates.firstOrNull { it.tags.isSimulationSessionTags() } ?: candidates.first()
+        }
+    }
+
+    return ResolvedRunComparisonPreset(
+        preset = preset,
+        primarySessionId = latest.sessionId,
+        comparisonSessionIds = listOf(targetComparison.sessionId),
+        summaryLabel = "${latest.shortRunLabel()} vs ${targetComparison.shortRunLabel()}",
+    )
+}
+
+/**
+ * Builds a structured FTC/FRC Engineering Notebook markdown entry from a [GuidedRunAnalysisReport]
+ * and optional [RunComparisonReport] so students can paste evidence-backed notes with 1 click.
+ */
+fun formatStudentEngineeringNotebookEntry(
+    report: GuidedRunAnalysisReport,
+    comparisonReport: RunComparisonReport? = null,
+): String = buildString {
+    appendLine("# Engineering Notebook Run Review")
+    appendLine()
+    appendLine("## 1. Run Identity & Evidence Source")
+    appendLine("- **Run**: ${report.session.shortRunLabel()} (`${report.session.sessionId}`)")
+    appendLine("- **Team / Robot**: Team ${report.session.teamId} · Robot `${report.session.robotId}` (${report.session.seasonId})")
+    appendLine("- **Source**: ${report.source.kind.label} — ${report.source.explanation}")
+    appendLine("- **Confidence**: ${report.evidenceContext.confidence.label} (${report.evidenceContext.confidenceExplanation})")
+    appendLine()
+    appendLine("## 2. Key Metrics")
+    if (report.metrics.isEmpty()) {
+        appendLine("- No summary metrics recorded for this session.")
+    } else {
+        report.metrics.forEach { metric ->
+            appendLine("- **${metric.label}**: ${metric.value} ${metric.unit} _(from `${metric.evidenceSource}`)_")
+        }
+    }
+    appendLine()
+    appendLine("## 3. Observed Findings & Hypotheses")
+    if (report.findings.isEmpty()) {
+        appendLine("- No configured fault threshold was crossed during this run.")
+    } else {
+        report.findings.forEach { finding ->
+            appendLine("### ${finding.title} (${finding.statusText})")
+            appendLine("- **Observed Evidence**: ${finding.observedEvidence}")
+            if (finding.possibleCauses.isNotEmpty()) {
+                appendLine("- **Hypotheses to Test**: ${finding.possibleCauses.joinToString("; ")}")
+            }
+            if (finding.safeVerificationSteps.isNotEmpty()) {
+                appendLine("- **Safe Verification**: ${finding.safeVerificationSteps.joinToString("; ")}")
+            }
+        }
+    }
+    appendLine()
+    appendLine("## 4. Multi-Run Comparison")
+    if (comparisonReport == null || comparisonReport.findings.isEmpty() && comparisonReport.metrics.isEmpty()) {
+        appendLine("- Single-run review (no multi-run comparison active).")
+    } else {
+        appendLine("- **Alignment**: ${comparisonReport.selectedAlignment.label}")
+        comparisonReport.findings.forEach { finding ->
+            appendLine("- **${finding.title}** (${finding.kind.label}): ${finding.explanation}")
+        }
+        comparisonReport.metrics.take(4).forEach { metric ->
+            val summaryText = metric.series.joinToString(" vs ") { series ->
+                "${series.runLabel}: avg ${"%.2f".format(series.summary.average)} ${metric.unit}, P95 ${"%.2f".format(series.summary.p95)} ${metric.unit}"
+            }
+            appendLine("- **${metric.label}**: $summaryText")
+        }
+    }
+    appendLine()
+    appendLine("## 5. Safe Next Action")
+    if (report.nextActions.isEmpty()) {
+        appendLine("- Review timeline in Dashboard Replay before making hardware or tuning changes.")
+    } else {
+        report.nextActions.forEach { action ->
+            appendLine("- **${action.title}**: ${action.reason}")
+        }
+    }
+}.trimEnd()
+
+fun copyEngineeringNotebookToSystemClipboard(markdown: String): Boolean =
+    com.ares.analytics.ui.util.copyTextToSystemClipboard(markdown)
+
+@Composable
+fun StudentRunComparisonPresetBar(
+    sessions: List<Session>,
+    onApplyPreset: (StudentRunComparisonPreset) -> Unit,
+) {
+    if (sessions.size < 2) return
+    com.ares.analytics.ui.components.core.AresCoachBanner(
+        badgeText = "COMPARE",
+        title = "1-Click Student Comparison Presets",
+        subtitle = "Quickly pair your newest run against a reference baseline without manually searching session IDs:",
+    ) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            StudentRunComparisonPreset.entries.forEach { preset ->
+                val resolved = remember(sessions, preset) { resolveStudentComparisonPreset(sessions, preset) }
+                OutlinedButton(
+                    onClick = { onApplyPreset(preset) },
+                    enabled = resolved != null,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                ) {
+                    Column {
+                        Text(preset.label, color = AresTextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
+                        resolved?.let { Text(it.summaryLabel, color = AresCyan, fontSize = 10.sp) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StudentEngineeringNotebookCopyButton(
+    report: GuidedRunAnalysisReport,
+    comparisonReport: RunComparisonReport?,
+    onCopiedNotice: (String) -> Unit,
+) {
+    OutlinedButton(
+        onClick = {
+            val markdown = formatStudentEngineeringNotebookEntry(report, comparisonReport)
+            if (copyEngineeringNotebookToSystemClipboard(markdown)) {
+                onCopiedNotice("Saved Engineering Notebook Markdown summary to clipboard (${markdown.lines().size} lines).")
+            } else {
+                onCopiedNotice("Prepared Engineering Notebook summary (${markdown.lines().size} lines) — clipboard unavailable in headless mode.")
+            }
+        },
+    ) {
+        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(17.dp))
+        Spacer(Modifier.width(6.dp))
+        Text("Copy Engineering Notebook Entry")
+    }
+}

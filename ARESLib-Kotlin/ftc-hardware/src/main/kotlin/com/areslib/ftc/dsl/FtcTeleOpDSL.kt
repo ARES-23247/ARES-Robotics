@@ -34,8 +34,46 @@ class FtcTeleOpContext<R> internal constructor(
 /**
  * Declarative FTC TeleOp definition with lifecycle names that match when each block executes.
  *
- * A typical mode needs [controls] and [everyLoop]. [duringInit] and [onStart] are optional. Registering
- * the same phase twice is a configuration error instead of silently discarding the first block.
+ * A typical mode defines [controls] and/or [everyLoop], or opts into generated project drive
+ * (`allowGeneratedDrive = true` in `AresTeleOpBase`). [setup], [duringInit], [onStart], and
+ * [onStop] are optional. Registering the same phase twice is a configuration error instead of
+ * silently discarding the first block.
+ *
+ * ### Lifecycle Order
+ * 1. [setup] — once during `init()`, immediately after the robot is constructed.
+ * 2. [controls] — once during `init()`, after [setup], to register [driver] and [operator] bindings.
+ * 3. [duringInit] — every `init_loop()` tick while waiting for Start (keep non-blocking).
+ * 4. [onStart] — once during `start()`, after autonomous pose restoration and input priming.
+ * 5. [everyLoop] — every active `loop()` tick after gamepad bindings are evaluated and before `updateRobot`.
+ * 6. [onStop] — once during `stop()`, before generated controls are cancelled and the robot is closed.
+ *
+ * ### Example
+ * ```kotlin
+ * @TeleOp(name = "Competition TeleOp", group = "Competition")
+ * class CompetitionTeleOp : AresTeleOpBase() {
+ *     override fun define() = teleOp {
+ *         val moveStick = driver.leftStick.withDeadband(0.05).withExponentialCurve(2.0)
+ *         val turnStick = driver.rightStick.withDeadband(0.05).withExponentialCurve(2.0)
+ *
+ *         controls {
+ *             driver.a.onPress("Collect") { robot.intake.collect() }
+ *             driver.rightTrigger.onPress(threshold = 0.5, description = "Score") { robot.shooter.score() }
+ *         }
+ *
+ *         everyLoop {
+ *             robot.driveFieldCentric(
+ *                 vx = -moveStick.shapedY * 2.5,
+ *                 vy = -moveStick.shapedX * 2.5,
+ *                 omega = -turnStick.shapedX * Math.PI,
+ *             )
+ *         }
+ *
+ *         onStop {
+ *             telemetry.addData("Status", "Stopped cleanly")
+ *         }
+ *     }
+ * }
+ * ```
  */
 @AresOpModeDsl
 class FtcTeleOpBuilder<R> {
@@ -49,6 +87,9 @@ class FtcTeleOpBuilder<R> {
         private set
     internal var everyLoopBlock: (FtcTeleOpContext<R>.() -> Unit)? = null
         private set
+    internal var onStopBlock: (FtcTeleOpContext<R>.() -> Unit)? = null
+        private set
+    internal var hasExternalDriveOrControls: Boolean = false
 
     /** Runs once immediately after the robot is built. Configure initial robot state here. */
     fun setup(block: FtcTeleOpContext<R>.() -> Unit) {
@@ -74,15 +115,21 @@ class FtcTeleOpBuilder<R> {
         onStartBlock = block
     }
 
-    /** Runs once per active robot loop and is required for a usable TeleOp. */
+    /** Runs once per active robot loop. Optional when [controls] or generated project drive is active. */
     fun everyLoop(block: FtcTeleOpContext<R>.() -> Unit) {
         check(everyLoopBlock == null) { "TeleOp everyLoop { } may only be declared once" }
         everyLoopBlock = block
     }
 
+    /** Runs once when the OpMode stops, before generated controls are cancelled and hardware is closed. */
+    fun onStop(block: FtcTeleOpContext<R>.() -> Unit) {
+        check(onStopBlock == null) { "TeleOp onStop { } may only be declared once" }
+        onStopBlock = block
+    }
+
     internal fun validate() {
-        require(everyLoopBlock != null) {
-            "TeleOp definition is missing everyLoop { ... }; add the robot's periodic driver behavior there"
+        require(everyLoopBlock != null || controlsBlock != null || hasExternalDriveOrControls) {
+            "TeleOp definition is missing everyLoop { ... } or controls { ... }; add the robot's periodic or button behavior there"
         }
     }
 }
@@ -179,12 +226,19 @@ abstract class FtcTeleOpBase<R> : OpMode() {
         if (closed) return
         closed = true
         val activeRobot = robot
+        val activeContext = context
         try {
-            if (activeRobot != null) {
-                try {
-                    cancelProjectControls(activeRobot)
-                } finally {
-                    closeRobot(activeRobot)
+            try {
+                if (activeContext != null) {
+                    definition?.onStopBlock?.invoke(activeContext)
+                }
+            } finally {
+                if (activeRobot != null) {
+                    try {
+                        cancelProjectControls(activeRobot)
+                    } finally {
+                        closeRobot(activeRobot)
+                    }
                 }
             }
         } finally {

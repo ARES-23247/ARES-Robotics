@@ -100,6 +100,7 @@ class AresRobot(
     )
 
     private val typedTuningRuntime: TypedTuningRuntime
+    private val tuningConsumers = ArrayList<com.areslib.tuning.TypedTuningConsumer>()
     private val driveController: AresDriveController
     private val superstructureController: AresSuperstructureController
     private val telemetryHelper: AresTelemetryHelper
@@ -135,7 +136,7 @@ class AresRobot(
                         outputsNeutralAndInhibited = base.isCalibrationNeutralOutputHoldActive,
                     )
                 },
-                onApplied = { parameterUid, _ ->
+                onApplied = { parameterUid, value ->
                     if (GeneratedAresFtcMecanumRuntimeConfig.supportsRuntimeParameter(parameterUid)) {
                         base.store.dispatch(
                             com.areslib.action.RobotAction.UpdateTuningState(
@@ -147,10 +148,10 @@ class AresRobot(
                         )
                         true
                     } else {
-                        false
+                        applySubsystemTuning(parameterUid, value)
                     }
                 },
-                isConsumerSupported = GeneratedAresFtcMecanumRuntimeConfig::supportsRuntimeParameter,
+                isConsumerSupported = ::supportsRuntimeParameter,
                 localProjectRoot = tuningProjectRoot,
                 localOverlayFile = tuningProjectRoot.resolve(".ares/local/tuning/runtime.arestuning"),
             )
@@ -195,10 +196,16 @@ class AresRobot(
 
             // GENERATED - DO NOT EDIT registry entries still use the normal subsystem lifecycle:
             // readSensors -> immutable Redux state -> writeOutputs -> safe/close on every exit path.
-            installGeneratedSubsystems(hardwareMap, base.hardwareRegistry, base::registerSubsystem)
+            installGeneratedSubsystems(hardwareMap, base.hardwareRegistry, base::registerSubsystem).forEach { subsystem ->
+                if (subsystem is com.areslib.tuning.TypedTuningConsumer) {
+                    tuningConsumers += subsystem
+                    applyCanonicalValues(subsystem)
+                }
+            }
             installGeneratedSuperstructures(base::registerSubsystem)
 
             FtcAutoCapabilities.registerDriveRecovery(base::recoverDriveOutputWithNeutral)
+            base.tuningManager?.publishMetadataAndValues()
         } catch (failure: Throwable) {
             preserveInterrupt(failure)
             // Every season initializer after shared construction belongs to this transaction.
@@ -214,6 +221,35 @@ class AresRobot(
      * @param value The telemetry data value.
      */
     fun addTelemetry(key: String, value: Any) = telemetryHelper.addTelemetry(key, value)
+
+    private fun supportsRuntimeParameter(parameterUid: String): Boolean {
+        if (GeneratedAresFtcMecanumRuntimeConfig.supportsRuntimeParameter(parameterUid)) return true
+        var matches = 0
+        for (index in tuningConsumers.indices) {
+            if (tuningConsumers[index].supportsTuningParameter(parameterUid)) matches += 1
+        }
+        return matches == 1
+    }
+
+    private fun applySubsystemTuning(parameterUid: String, value: com.areslib.tuning.TuningValue): Boolean {
+        var matchIndex = -1
+        for (index in tuningConsumers.indices) {
+            if (!tuningConsumers[index].supportsTuningParameter(parameterUid)) continue
+            if (matchIndex >= 0) return false
+            matchIndex = index
+        }
+        return matchIndex >= 0 && tuningConsumers[matchIndex].applyTuningParameter(parameterUid, value)
+    }
+
+    private fun applyCanonicalValues(consumer: com.areslib.tuning.TypedTuningConsumer) {
+        typedTuningRuntime.metadata.declarations.forEach { declaration ->
+            if (consumer.supportsTuningParameter(declaration.uid)) {
+                check(consumer.applyTuningParameter(declaration.uid, requireNotNull(typedTuningRuntime.value(declaration.uid)))) {
+                    "Generated subsystem rejected canonical tuning parameter '${declaration.uid}'"
+                }
+            }
+        }
+    }
 
     /**
      * Executes one complete season and shared robot frame.

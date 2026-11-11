@@ -1,6 +1,8 @@
 package com.ares.analytics.service
 
 import java.io.File
+import java.nio.file.AccessDeniedException
+import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
@@ -35,22 +37,41 @@ internal class SimulatorRuntimeWorkspace private constructor(val directory: File
     @Synchronized
     fun cleanup(): Boolean {
         if (handles.values.any(ProcessHandle::isAlive)) return false
-        if (!Files.exists(directory.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) return true
-        Files.walkFileTree(directory.toPath(), object : SimpleFileVisitor<Path>() {
-            override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-                Files.delete(file)
-                return FileVisitResult.CONTINUE
+        val rootPath = directory.toPath()
+        for (attempt in 0 until CLEANUP_MAX_ATTEMPTS) {
+            if (!Files.exists(rootPath, java.nio.file.LinkOption.NOFOLLOW_LINKS)) return true
+            try {
+                Files.walkFileTree(rootPath, object : SimpleFileVisitor<Path>() {
+                    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                        Files.deleteIfExists(file)
+                        return FileVisitResult.CONTINUE
+                    }
+                    override fun postVisitDirectory(dir: Path, error: java.io.IOException?): FileVisitResult {
+                        if (error != null) throw error
+                        Files.deleteIfExists(dir)
+                        return FileVisitResult.CONTINUE
+                    }
+                })
+                return true
+            } catch (locked: FileSystemException) {
+                if (attempt == CLEANUP_MAX_ATTEMPTS - 1 || locked !is AccessDeniedException && locked.javaClass != FileSystemException::class.java) {
+                    throw locked
+                }
+                try {
+                    Thread.sleep(CLEANUP_RETRY_DELAY_MS * (attempt + 1))
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    throw locked
+                }
             }
-            override fun postVisitDirectory(dir: Path, error: java.io.IOException?): FileVisitResult {
-                if (error != null) throw error
-                Files.delete(dir)
-                return FileVisitResult.CONTINUE
-            }
-        })
-        return true
+        }
+        return !Files.exists(rootPath, java.nio.file.LinkOption.NOFOLLOW_LINKS)
     }
 
     companion object {
+        private const val CLEANUP_MAX_ATTEMPTS = 3
+        private const val CLEANUP_RETRY_DELAY_MS = 50L
+
         fun create(): SimulatorRuntimeWorkspace = SimulatorRuntimeWorkspace(
             Files.createTempDirectory("ares-studio-sim-").toFile(),
         )

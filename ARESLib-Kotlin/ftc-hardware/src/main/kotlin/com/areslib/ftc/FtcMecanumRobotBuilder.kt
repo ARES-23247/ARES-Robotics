@@ -104,24 +104,49 @@ class FtcMecanumRobotBuilder(private val hardwareMap: HardwareMap) {
 /**
  * Creates and configures an [FtcMecanumRobot] instance using a clean, fluent Kotlin DSL.
  *
- * ### Example Usage:
+ * When your Robot Controller configuration already uses the standard hardware map names
+ * (`"fl"`, `"fr"`, `"rl"`, `"rr"`, `"pinpoint"`, `"limelight"`), you can invoke
+ * `ftcMecanumRobot(hardwareMap)` with an empty block or omit the block entirely.
+ *
+ * ### Example Usage Inside `teleOp { }`:
  * ```kotlin
- * val robot = ftcMecanumRobot(hardwareMap) {
- *     frontLeftMotorName = "fl"
- *     frontRightMotorName = "fr"
- *     rearLeftMotorName = "rl"
- *     rearRightMotorName = "rr"
- *     pinpointName = "pinpoint"
- *     limelightName = "limelight"
+ * class DriveTeleOp : LinearOpMode() {
+ *     override fun runOpMode() = teleOp {
+ *         lateinit var robot: FtcMecanumRobot
+ *
+ *         setup {
+ *             robot = ftcMecanumRobot(hardwareMap) {
+ *                 frontLeftMotorName = "fl"
+ *                 frontRightMotorName = "fr"
+ *                 rearLeftMotorName = "rl"
+ *                 rearRightMotorName = "rr"
+ *                 pinpointName = "pinpoint"
+ *                 limelightName = "limelight"
+ *                 maxWheelSpeedMetersPerSecond = 3.5
+ *             }
+ *             useDriveRobot(robot)
+ *         }
+ *
+ *         controls {
+ *             val moveStick = driver.leftStick.withDeadband(0.05).withExponentialCurve(2.0)
+ *             val turnStick = driver.rightStick.withDeadband(0.05).withExponentialCurve(2.0)
+ *             everyLoop {
+ *                 robot.driveFieldCentric(
+ *                     vx = -moveStick.y * 2.5,
+ *                     vy = -moveStick.x * 2.5,
+ *                     omega = -turnStick.x * Math.PI,
+ *                 )
+ *             }
+ *         }
+ *     }
  * }
  * ```
  *
  * @param hardwareMap Qualcomm FTC SDK hardware map reference.
- * @param block Configuration builder lambda expression.
+ * @param block Configuration builder lambda expression (optional when using default hardware names).
  * @return Fully initialized [FtcMecanumRobot] instance.
  */
 fun ftcMecanumRobot(
     hardwareMap: HardwareMap,
-    block: FtcMecanumRobotBuilder.() -> Unit
+    block: FtcMecanumRobotBuilder.() -> Unit = {},
 ): FtcMecanumRobot = FtcMecanumRobotBuilder(hardwareMap).apply(block).build()
-

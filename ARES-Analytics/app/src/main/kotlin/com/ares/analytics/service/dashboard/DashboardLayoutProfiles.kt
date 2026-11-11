@@ -8,17 +8,30 @@ data class DashboardLayoutProfile(
     val displayName: String,
     val aliases: Set<String> = emptySet(),
     val layout: DashboardLayoutConfig,
-)
+    val summary: String = "",
+    val roleTag: String = "General",
+    val beginnerRecommended: Boolean = false,
+) {
+    val widgetCount: Int
+        get() = layout.widgets.size
+}
 
 interface DashboardLayoutProfileCatalog {
     val profiles: List<DashboardLayoutProfile>
 
     fun getDefaultLayout(profileName: String): DashboardLayoutConfig
 
+    fun profileMetadata(profileName: String): DashboardLayoutProfile? =
+        profiles.firstOrNull { profile ->
+            profile.displayName.equals(profileName, ignoreCase = true) ||
+                profile.aliases.any { it.equals(profileName, ignoreCase = true) }
+        }
+
     fun availableNames(): List<String>
 
     fun validationErrors(widgetCatalog: DashboardWidgetCatalog): List<String>
 }
+
 fun dashboardLayoutValidationErrors(
     owner: String,
     layout: DashboardLayoutConfig,
@@ -64,22 +77,30 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
     )
 
     override val profiles = listOf(
-        profile("Student",
+        profile(
+            "Student",
             widget("field_viewer", 0, 0, 5, 7),
             widget("system_health", 0, 7, 3, 5),
             widget("autonomous_selector", 3, 7, 2, 5),
             widget("telemetry_chart", 5, 0, 5, 7),
             widget("alerts", 5, 7, 5, 5),
             widget("subsystem_health", 10, 0, 4, 7),
+            summary = "Clean starter view with field map, robot health, autonomous selector, and live chart.",
+            roleTag = "Starter",
+            beginnerRecommended = true,
         ),
-        profile("Driver",
+        profile(
+            "Driver",
             widget("field_viewer", 0, 0, 6, 8),
             widget("joystick_visualizer", 0, 8, 3, 4),
             widget("system_health", 3, 8, 3, 4),
             widget("telemetry_chart", 6, 0, 4, 8),
             widget("alerts", 6, 8, 4, 4),
+            summary = "Large field view, gamepad/keyboard stick visualizer, and critical drive alerts.",
+            roleTag = "Drive Team",
         ),
-        profile("Builder",
+        profile(
+            "Builder",
             widget("hardware_topology", 0, 0, 5, 7),
             widget("system_health", 0, 7, 3, 5),
             widget("motor_health", 3, 7, 4, 5),
@@ -87,44 +108,62 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
             widget("battery_health", 5, 4, 4, 3),
             widget("alerts", 7, 7, 2, 5),
             widget("subsystem_health", 9, 0, 4, 7),
+            summary = "CAN/bus wiring topology, motor currents/temps, power channels, and battery health.",
+            roleTag = "Hardware",
         ),
-        profile("Autonomous",
+        profile(
+            "Autonomous",
             widget("field_viewer", 0, 0, 6, 7),
             widget("autonomous_selector", 0, 7, 3, 5),
             widget("pose_viewer", 3, 7, 3, 5),
             widget("path_tuning", 6, 0, 5, 6),
             widget("ekf_telemetry", 6, 6, 5, 6),
+            summary = "Routine selector, numeric pose coordinates, path tracking error, and EKF fusion.",
+            roleTag = "Auton & Vision",
         ),
-        profile("Analyst",
+        profile(
+            "Analyst",
             widget("runs_index", 0, 0, 3, 12),
             widget("telemetry_chart", 3, 0, 5, 8),
             widget("session_summary", 3, 8, 5, 4),
             widget("advanced_analytics", 8, 0, 5, 6),
             widget("trends_card", 8, 6, 5, 6),
+            summary = "Multi-session comparison, recorded runs list, cycle statistics, and multi-run trends.",
+            roleTag = "Data & Scouting",
         ),
-        profile("Mentor",
+        profile(
+            "Mentor",
             widget("system_health", 0, 0, 3, 6),
             widget("alerts", 0, 6, 3, 6),
             widget("pit_evidence_checklist", 3, 0, 5, 6),
             widget("ai_coach", 3, 6, 5, 6),
             widget("runs_index", 8, 0, 4, 6),
             widget("control_profiler", 8, 6, 4, 6),
+            summary = "Pit readiness checklist, AI diagnostics coach, control loop profiler, and alerts.",
+            roleTag = "Coaching",
         ),
-        profile("Driver Coach",
+        profile(
+            "Driver Coach",
             widget("field_viewer", 0, 0, 5, 7),
             widget("autonomous_selector", 0, 7, 3, 5),
             widget("system_health", 3, 7, 2, 5),
             widget("telemetry_chart", 5, 0, 5, 8),
             widget("alerts", 5, 8, 5, 4),
+            summary = "Match-side overview combining field positioning, autonomous lock, and fault alerts.",
+            roleTag = "Drive Team",
         ),
-        profile("Programmer",
+        profile(
+            "Programmer",
             widget("telemetry_chart", 0, 0, 6, 8),
             widget("console_viewer", 0, 8, 6, 4, id = "console_viewer_0"),
             widget("system_health", 6, 0, 3, 4),
             widget("profiling_diagnostics", 6, 4, 3, 4),
             widget("ekf_telemetry", 6, 8, 3, 4),
+            summary = "High-density time-series chart, live robot logcat console, and loop timing diagnostics.",
+            roleTag = "Software",
         ),
-        profile("Pit Crew",
+        profile(
+            "Pit Crew",
             widget("runs_index", 0, 0, 3, 8),
             widget("system_health", 0, 8, 3, 4),
             widget("motor_health", 3, 0, 4, 4),
@@ -132,8 +171,11 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
             widget("alerts", 3, 8, 4, 4),
             widget("advanced_analytics", 7, 0, 4, 6),
             widget("ai_coach", 7, 6, 4, 6),
+            summary = "Between-match turnaround checks: motor temperatures, vision quality, and AI forensics.",
+            roleTag = "Pit Turnaround",
         ),
-        profile("Replay",
+        profile(
+            "Replay",
             widget("runs_index", 0, 0, 3, 12),
             widget("telemetry_chart", 3, 0, 5, 8),
             widget("field_viewer", 3, 8, 5, 4),
@@ -141,8 +183,12 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
             widget("alerts", 8, 6, 5, 3),
             widget("system_health", 8, 9, 5, 3),
             aliases = setOf("Match Review"),
+            summary = "Post-match log playback with recorded session picker, synchronized chart, and 2D field.",
+            roleTag = "Log Review",
+            beginnerRecommended = true,
         ),
-        profile("Pit Diagnostics",
+        profile(
+            "Pit Diagnostics",
             widget("system_health", 0, 0, 3, 6),
             widget("alerts", 0, 6, 3, 6),
             widget("motor_health", 3, 0, 4, 4),
@@ -150,15 +196,22 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
             widget("vision_quality", 3, 8, 4, 4),
             widget("ai_coach", 7, 0, 5, 6),
             widget("advanced_analytics", 7, 6, 5, 6),
+            summary = "Focused hardware troubleshooting for brownouts, motor stalls, and camera dropouts.",
+            roleTag = "Pit Turnaround",
         ),
-        profile("Driver Practice",
+        profile(
+            "Driver Practice",
             widget("field_viewer", 0, 0, 6, 8),
             widget("joystick_visualizer", 0, 8, 3, 4),
             widget("system_health", 3, 8, 3, 4),
             widget("telemetry_chart", 6, 0, 4, 8),
             widget("alerts", 6, 8, 4, 4),
+            summary = "Ideal for simulator or practice-field driving with large 2D field and joystick monitor.",
+            roleTag = "Starter",
+            beginnerRecommended = true,
         ),
-        profile("Standard",
+        profile(
+            "Standard",
             widget("runs_index", 0, 0, 3, 7),
             widget("system_health", 0, 7, 3, 5),
             widget("field_viewer", 3, 0, 5, 7),
@@ -167,6 +220,9 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
             widget("alerts", 8, 6, 5, 3),
             widget("joystick_visualizer", 8, 9, 5, 3),
             widget("subsystem_health", 13, 0, 4, 6),
+            summary = "Balanced all-around dashboard with field map, live chart, session history, and health.",
+            roleTag = "Starter",
+            beginnerRecommended = true,
         ),
     )
 
@@ -180,6 +236,9 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
 
     override fun getDefaultLayout(profileName: String): DashboardLayoutConfig =
         byKey[profileKey(profileName)]?.layout ?: requireNotNull(byKey[profileKey("Standard")]).layout
+
+    override fun profileMetadata(profileName: String): DashboardLayoutProfile? =
+        byKey[profileKey(profileName)]
 
     override fun availableNames(): List<String> = selectableOrder
 
@@ -202,7 +261,17 @@ object BuiltInDashboardLayoutProfiles : DashboardLayoutProfileCatalog {
         displayName: String,
         vararg widgets: WidgetConfig,
         aliases: Set<String> = emptySet(),
-    ) = DashboardLayoutProfile(displayName, aliases, DashboardLayoutConfig(widgets.toList()))
+        summary: String = "",
+        roleTag: String = "General",
+        beginnerRecommended: Boolean = false,
+    ) = DashboardLayoutProfile(
+        displayName = displayName,
+        aliases = aliases,
+        layout = DashboardLayoutConfig(widgets.toList()),
+        summary = summary,
+        roleTag = roleTag,
+        beginnerRecommended = beginnerRecommended,
+    )
 
     private fun widget(
         type: String,

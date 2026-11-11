@@ -73,7 +73,8 @@ enum class RoutineInvocationPolicy {
     RESTART_EXISTING,
     QUEUE,
     PARALLEL,
-    TOGGLE_CANCEL
+    TOGGLE_CANCEL,
+    PREEMPT_AND_SUSPEND
 }
 
 /** Serializable analog shaping settings compiled to `AxisTransform`. */

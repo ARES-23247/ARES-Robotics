@@ -23,7 +23,9 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     private val fieldLength: Double = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE,
     private val fieldWidth: Double = com.areslib.math.coordinate.CoordinateTransformers.FTC_FIELD_SIZE,
     private val mirrorForAlliance: Boolean = true,
-    private val holdVelocity: Boolean = false
+    private val holdVelocity: Boolean = false,
+    private val predictivePathSkip: Boolean = false,
+    private val handoffRadiusMeters: Double = 0.20
 ) : Task {
     private companion object {
         const val MAX_PATH_DURATION_MS = 15_000L
@@ -138,6 +140,19 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         if (holdVelocity && isVirtualComplete) {
             return true
         }
+        if (predictivePathSkip && handoffRadiusMeters.isFinite() && handoffRadiusMeters > 0.0) {
+            updateForesight(state)
+            val endPose = activePath.points.last().pose
+            if (follower.foresightEstimator.shouldTriggerPathSkip(
+                    estimate.estimatedPoseX,
+                    estimate.estimatedPoseY,
+                    endPose,
+                    handoffRadiusMeters
+                )
+            ) {
+                return true
+            }
+        }
         if (!isVirtualComplete && elapsedMs < MAX_PATH_DURATION_MS) {
             return false
         }
@@ -232,6 +247,13 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         if (nextDistance > closestDist + maxLead) {
             nextDistance = closestDist + maxLead
         }
+        updateForesight(state)
+        if (follower.foresightEstimator.config.enabled && follower.foresightEstimator.lastEstimateValid) {
+            val stoppingArc = follower.foresightEstimator.projectStoppingArcLength(activePath, currentDistance)
+            if (!holdVelocity && !predictivePathSkip && stoppingArc >= endDistance && follower.foresightEstimator.stoppingDistanceMeters > 1e-3) {
+                nextDistance = maxOf(nextDistance, minOf(endDistance, closestDist + follower.foresightEstimator.stoppingDistanceMeters))
+            }
+        }
         val targetPose = scratchPathPoint.pose
         val xError = targetPose.x - currentPose.estimatedPoseX
         val yError = targetPose.y - currentPose.estimatedPoseY
@@ -294,6 +316,40 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
         return actionsList
     }
 
+    private fun updateForesight(state: RobotState) {
+        if (!follower.foresightEstimator.config.enabled) return
+        val drive = state.drive
+        val pose = drive.poseEstimator
+        if (drive.measuredMotionValid) {
+            follower.foresightEstimator.updateFieldRelative(
+                currentX = pose.estimatedPoseX,
+                currentY = pose.estimatedPoseY,
+                currentHeadingRad = pose.estimatedPoseHeading,
+                fieldVxMps = drive.measuredFieldXVelocityMetersPerSecond,
+                fieldVyMps = drive.measuredFieldYVelocityMetersPerSecond,
+                omegaRadPerSec = drive.measuredAngularVelocityRadiansPerSecond
+            )
+        } else if (drive.isFieldCentric) {
+            follower.foresightEstimator.updateFieldRelative(
+                currentX = pose.estimatedPoseX,
+                currentY = pose.estimatedPoseY,
+                currentHeadingRad = pose.estimatedPoseHeading,
+                fieldVxMps = drive.xVelocityMetersPerSecond,
+                fieldVyMps = drive.yVelocityMetersPerSecond,
+                omegaRadPerSec = drive.angularVelocityRadiansPerSecond
+            )
+        } else {
+            follower.foresightEstimator.updateRobotRelative(
+                currentX = pose.estimatedPoseX,
+                currentY = pose.estimatedPoseY,
+                currentHeadingRad = pose.estimatedPoseHeading,
+                robotVxMps = drive.xVelocityMetersPerSecond,
+                robotVyMps = drive.yVelocityMetersPerSecond,
+                omegaRadPerSec = drive.angularVelocityRadiansPerSecond
+            )
+        }
+    }
+
     private fun advanceEventTime(deltaMs: Long) {
         var index = 0
         while (index < activeEventTasks.size) {
@@ -346,7 +402,7 @@ class FollowPathTask @kotlin.jvm.JvmOverloads constructor(
     /** Stops on every interrupted exit; successful velocity-hold exits may retain the final command. */
     override fun end(state: RobotState, interrupted: Boolean): List<RobotAction> {
         var firstFailure: Throwable? = null
-        if (interrupted || !holdVelocity) {
+        if (interrupted || (!holdVelocity && !predictivePathSkip)) {
             try {
                 follower.stop()
             } catch (failure: Throwable) {

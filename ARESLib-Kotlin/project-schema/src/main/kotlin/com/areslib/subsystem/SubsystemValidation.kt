@@ -445,6 +445,17 @@ object SubsystemSchema {
     fun validateAll(documents: List<SubsystemDocument>): List<SubsystemValidationIssue> =
         SubsystemProjectValidation.validateAll(documents)
 
+    /** Formats [SubsystemValidationIssue] entries into an actionable multi-line diagnostic report. */
+    fun formatValidationReport(issues: List<SubsystemValidationIssue>): String {
+        if (issues.isEmpty()) return "Subsystem document is valid."
+        return buildString {
+            appendLine("Subsystem validation found ${issues.size} error(s):")
+            issues.forEach { issue ->
+                appendLine("  [ERROR] ${issue.path}: ${issue.message}")
+            }
+        }.trimEnd()
+    }
+
     private fun SubsystemHubFacingDirection.isPerpendicularTo(other: SubsystemHubFacingDirection): Boolean =
         axisGroup() != other.axisGroup()
 

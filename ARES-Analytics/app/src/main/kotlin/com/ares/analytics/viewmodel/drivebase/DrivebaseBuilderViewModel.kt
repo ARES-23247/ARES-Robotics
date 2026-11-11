@@ -1,16 +1,11 @@
 package com.ares.analytics.viewmodel.drivebase
 
 import com.ares.analytics.service.DrivebaseDesignAssistant
-import com.ares.analytics.service.DrivebaseDesignProposal
 import com.ares.analytics.service.drivebase.*
 import com.ares.analytics.service.project.ProjectSession
-import com.ares.analytics.service.project.ProjectSessionMutationResult
-import com.ares.analytics.service.project.ProjectSessionRevision
 import com.ares.analytics.service.versioncontrol.ProjectCheckpointRecorder
 import com.ares.analytics.shared.models.League
-import com.ares.analytics.util.Sha256
 import com.areslib.drivetrain.DrivetrainDocumentCodec
-import com.areslib.project.AresProjectMetadataCodec
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,10 +20,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.hypot
-import kotlin.math.sin
 
 class DrivebaseBuilderViewModel(
     projectPath: String,
@@ -64,6 +55,7 @@ class DrivebaseBuilderViewModel(
                 }
                 intent.kind != _state.value.draft.kind -> edit(drivebaseForKind(_state.value, intent.kind))
             }
+            is DrivebaseBuilderIntent.ApplyChassisPreset -> applyPreset(intent.preset)
             is DrivebaseBuilderIntent.SelectHardware -> _state.update { it.copy(selectedHardwareId = intent.id) }
             is DrivebaseBuilderIntent.UpdateHardware -> edit(_state.value.draft.copy(
                 hardware = _state.value.draft.hardware.map { if (it.id == intent.device.id) intent.device else it }
@@ -538,150 +530,22 @@ class DrivebaseBuilderViewModel(
         }
     }
 
-}
-
-private fun League.targetPlatform() = when (this) {
-    League.FTC -> com.areslib.controls.ControllerInputPlatform.FTC
-    League.FRC -> com.areslib.controls.ControllerInputPlatform.FRC
-    League.XRP -> com.areslib.controls.ControllerInputPlatform.XRP
-}
-
-internal fun canonicalRuntimeProjectId(projectPath: String, fallback: String, league: League): String {
-    val identity = File(projectPath, ".ares/project.json")
-    return runCatching { AresProjectMetadataCodec.decode(identity.readText()).projectId }
-        .getOrElse { fallback }
-}
-
-private fun uidSegment(value: String, fallback: String): String =
-    value.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { fallback }
-
-private fun drivebaseForKind(state: DrivebaseBuilderState, kind: DrivebaseKind): DrivebaseDocument {
-    val replacement = defaultDrivebase(state.projectId, kind, state.league)
-    val replacementCanonical = replacement.canonical ?: return replacement
-    val currentCanonical = state.draft.canonical ?: return replacement
-    val reboundUid = currentCanonical.uid
-    return replacement.copy(
-        canonical = replacementCanonical.copy(
-            uid = reboundUid,
-            canonicalProfileUid = currentCanonical.canonicalProfileUid,
-            parameters = replacementCanonical.parameters.map { parameter ->
-                if (parameter.componentUid == replacementCanonical.uid) parameter.copy(componentUid = reboundUid) else parameter
-            },
-        ),
-    )
-}
-
-internal fun DrivebaseDocument.requireCanonicalProjectIdentity(projectId: String): DrivebaseDocument {
-    val canonicalDocument = requireNotNull(canonical) { "The drivebase must use the canonical document contract." }
-    val profileId = canonicalDocument.canonicalProfileUid.substringAfter(".profile.", "competition")
-    val expectedProfileUid = "$projectId.profile.$profileId"
-    require(this.projectId == projectId) {
-        "The drivebase belongs to project '$projectId', but its projectId is '${this.projectId}'."
-    }
-    require(canonicalDocument.canonicalProfileUid == expectedProfileUid) {
-        "The drivebase canonical profile must be '$expectedProfileUid'."
-    }
-    return this
-}
-
-fun evaluateDriveLab(
-    kind: DrivebaseKind,
-    input: DriveLabState,
-    geometry: DriveGeometry = DriveGeometry(),
-    hardware: List<DriveHardwareDeclaration> = emptyList()
-): DriveLabResult {
-    val heading = input.headingDegrees * PI / 180.0
-    val forward = if (input.fieldRelative) input.forward * cos(heading) + input.strafe * sin(heading) else input.forward
-    val strafe = if (input.fieldRelative) -input.forward * sin(heading) + input.strafe * cos(heading) else input.strafe
-    var moduleAngles = emptyMap<String, Double>()
-    val raw = when (kind) {
-        DrivebaseKind.FTC_MECANUM, DrivebaseKind.CUSTOM -> linkedMapOf(
-            "frontLeft" to forward + strafe + input.rotate,
-            "frontRight" to forward - strafe - input.rotate,
-            "rearLeft" to forward - strafe + input.rotate,
-            "rearRight" to forward + strafe - input.rotate
-        )
-        DrivebaseKind.FRC_CTRE_SWERVE -> {
-            val positions = linkedMapOf(
-                "frontLeft" to (geometry.wheelBaseMeters / 2.0 to geometry.trackWidthMeters / 2.0),
-                "frontRight" to (geometry.wheelBaseMeters / 2.0 to -geometry.trackWidthMeters / 2.0),
-                "rearLeft" to (-geometry.wheelBaseMeters / 2.0 to geometry.trackWidthMeters / 2.0),
-                "rearRight" to (-geometry.wheelBaseMeters / 2.0 to -geometry.trackWidthMeters / 2.0)
+    private fun applyPreset(preset: DrivebaseChassisPreset) {
+        val current = _state.value
+        if (preset.league != current.league) {
+            _state.update { it.copy(error = "${preset.title} is a ${preset.league.name} chassis preset.") }
+            return
+        }
+        val candidate = applyChassisPreset(current, preset)
+        val requiresAdvanced = preset.kind.runtimeSupport(current.league) == DrivebaseRuntimeSupport.CODE_REQUIRED
+        edit(candidate)
+        _state.update {
+            it.copy(
+                advanced = it.advanced || requiresAdvanced,
+                status = "Applied ${preset.title} (${preset.measurementSummary}). Verify hardware port names before saving.",
+                error = null,
             )
-            val vectors = positions.mapValues { (_, position) ->
-                val (x, y) = position
-                val moduleForward = forward - input.rotate * y
-                val moduleStrafe = strafe + input.rotate * x
-                moduleForward to moduleStrafe
-            }
-            moduleAngles = vectors.mapValues { (_, vector) -> Math.toDegrees(kotlin.math.atan2(vector.second, vector.first)) }
-            vectors.mapValues { (_, vector) -> kotlin.math.hypot(vector.first, vector.second) }.toMap(LinkedHashMap())
         }
-        DrivebaseKind.DIFFERENTIAL -> linkedMapOf("left" to forward + input.rotate, "right" to forward - input.rotate)
     }
-    val inversionRoles = mapOf(
-        "frontLeft" to setOf(DriveHardwareRole.FRONT_LEFT, DriveHardwareRole.FRONT_LEFT_DRIVE),
-        "frontRight" to setOf(DriveHardwareRole.FRONT_RIGHT, DriveHardwareRole.FRONT_RIGHT_DRIVE),
-        "rearLeft" to setOf(DriveHardwareRole.REAR_LEFT, DriveHardwareRole.REAR_LEFT_DRIVE),
-        "rearRight" to setOf(DriveHardwareRole.REAR_RIGHT, DriveHardwareRole.REAR_RIGHT_DRIVE),
-        "left" to setOf(DriveHardwareRole.LEFT_LEADER),
-        "right" to setOf(DriveHardwareRole.RIGHT_LEADER)
-    )
-    val afterInversion = raw.mapValues { (name, output) ->
-        val inverted = hardware.any { it.inverted && it.role in inversionRoles[name].orEmpty() }
-        if (inverted) -output else output
-    }.toMutableMap()
-    hardware.filter { it.role in setOf(DriveHardwareRole.LEFT_FOLLOWER, DriveHardwareRole.RIGHT_FOLLOWER) }.forEach { follower ->
-        val side = if (follower.role == DriveHardwareRole.LEFT_FOLLOWER) "left" else "right"
-        val leaderOutput = afterInversion[side] ?: 0.0
-        afterInversion["follower:${follower.id}"] = if (follower.inverted) -leaderOutput else leaderOutput
-    }
-    val scale = afterInversion.values.maxOfOrNull { kotlin.math.abs(it) }?.coerceAtLeast(1.0) ?: 1.0
-    return DriveLabResult(
-        robotForward = forward,
-        robotStrafe = strafe,
-        wheelOutputs = afterInversion.mapValues { it.value / scale },
-        moduleAnglesDegrees = moduleAngles,
-        explanation = "Simulation only: text includes each declared drive inversion after field-to-robot transformation. This does not connect to or move hardware."
-    )
-}
 
-fun evaluateGeometryLab(
-    geometry: DriveGeometry,
-    linearCommand: Double,
-    angularCommand: Double,
-    configuredMaxLinearSpeedMps: Double,
-    useCornerModuleRadius: Boolean
-): GeometryLabResult {
-    val radius = if (kotlin.math.abs(angularCommand) < 1e-9) null else kotlin.math.abs(linearCommand / angularCommand)
-    val maxLinearSpeed = configuredMaxLinearSpeedMps.takeIf { it.isFinite() && it > 0.0 }
-    val rotationalRadius = if (useCornerModuleRadius) {
-        hypot(geometry.trackWidthMeters / 2.0, geometry.wheelBaseMeters / 2.0)
-    } else {
-        geometry.trackWidthMeters / 2.0
-    }
-    val maxAngularSpeed = maxLinearSpeed?.takeIf { rotationalRadius > 0.005 }?.div(rotationalRadius)
-    return GeometryLabResult(
-        turningRadiusMeters = radius,
-        trackCircleDiameterMeters = radius?.let { 2.0 * (it + geometry.trackWidthMeters / 2.0) },
-        maxLinearSpeedMps = maxLinearSpeed,
-        maxAngularSpeedRadPerSec = maxAngularSpeed,
-        explanation = if (radius == null) {
-            "Zero turn command predicts a straight path. The configured safety limit is ${maxLinearSpeed?.let { "%.2f m/s".format(it) } ?: "not valid"}."
-        } else {
-            "The chassis center follows a ${"%.2f".format(radius)} m radius. The configured linear limit implies ${maxAngularSpeed?.let { "%.1f rad/s".format(it) } ?: "no valid angular estimate"}; the outside wheel/module travels a larger circle."
-        }
-    )
-}
-
-fun evaluateLocalizationFailure(scenario: LocalizationFailureScenario): LocalizationLabResult = when (scenario) {
-    LocalizationFailureScenario.ALL_HEALTHY -> LocalizationLabResult(true, true, "Primary odometry and heading are fresh. Valid vision may correct drift.")
-    LocalizationFailureScenario.PRIMARY_STALE -> LocalizationLabResult(false, false, "Primary odometry is stale, so closed-loop driving fails closed. Vision is not a substitute for fresh primary motion feedback.")
-    LocalizationFailureScenario.HEADING_INVALID -> LocalizationLabResult(false, false, "Heading is invalid, so field-relative and closed-loop rotation are blocked.")
-    LocalizationFailureScenario.VISION_REJECTED -> LocalizationLabResult(true, false, "Primary odometry and heading remain usable. Rejected vision is ignored rather than snapping the pose.")
-}
-
-private fun reviewToken(contentHash: String?, changes: List<DrivebaseChange>): String {
-    val content = "$contentHash|" + changes.joinToString("|") { "${it.path}:${it.before}->${it.after}" }
-    return Sha256.prefixHex(content, byteCount = 8)
 }

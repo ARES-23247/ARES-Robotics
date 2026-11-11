@@ -138,7 +138,7 @@ fun defaultRoutineStep(
     )
 }
 
-private fun routinePoseFitsField(pose: RoutinePose, league: League, dimensions: RobotDimensions): Boolean {
+internal fun routinePoseFitsField(pose: RoutinePose, league: League, dimensions: RobotDimensions): Boolean {
     if (!pose.xMeters.isFinite() || !pose.yMeters.isFinite() || !pose.headingRadians.isFinite()) return false
     val bounds = legalCenterBounds(league, dimensions, pose.headingRadians)
     return bounds.canFit && pose.xMeters in bounds.minX..bounds.maxX && pose.yMeters in bounds.minY..bounds.maxY
@@ -294,6 +294,9 @@ fun routineEditorValidation(
             dimensions = dimensions,
             issues = this,
         )
+        validateSweptFootprintWarnings(routine, league, dimensions, autonomousEntry, this)
+        if (league == League.FTC) {
+        }
         autonomousEntry?.let { entry ->
             if (entry.routineId != routine.documentId) {
                 add(routineIssue(routine, "autonomousEntry.routineId", "wrong_routine", "Autonomous choice points to another routine"))
@@ -473,3 +476,104 @@ fun defaultAutonomousEntry(
     authoredAlliance = RoutineAlliance.RED,
     mirrorForOppositeAlliance = true,
 )
+
+
+fun List<RoutineStep>.withRoutineRouteWaypointsAndAppendRemaining(
+    driveWaypoints: List<Waypoint>,
+    league: League,
+    dimensions: RobotDimensions,
+): List<RoutineStep> {
+    val iterator = driveWaypoints.iterator()
+    val updatedExisting = withRoutineRouteWaypoints(iterator, league, dimensions)
+    val remaining = buildList {
+        while (iterator.hasNext()) {
+            add(iterator.next())
+        }
+    }
+    if (remaining.isEmpty()) return updatedExisting
+    val appendedSteps = remaining.mapIndexed { idx, wp ->
+        val isInterior = remaining.size >= 2 && idx < remaining.lastIndex
+        val clamped = clampRoutinePose(
+            RoutinePose(
+                xMeters = wp.x,
+                yMeters = wp.y,
+                headingRadians = wp.rotationDeg?.let(Math::toRadians) ?: wp.headingRad ?: 0.0,
+            ),
+            league,
+            dimensions,
+        )
+        RoutineStep.driveTo(
+            RoutineDriveStep(
+                target = clamped,
+                motionPresetKey = "balanced",
+                headingMode = if (isInterior) com.areslib.routine.RoutineHeadingMode.TANGENTIAL else com.areslib.routine.RoutineHeadingMode.LINEAR,
+                blendHandoff = isInterior,
+            ),
+        )
+    }
+    return updatedExisting + appendedSteps
+}
+
+internal fun validateSweptFootprintWarnings(
+    routine: RoutineDocument,
+    league: League,
+    dimensions: RobotDimensions,
+    autonomousEntry: AutonomousCatalogEntry?,
+    issues: MutableList<RoutineValidationIssue>,
+) {
+    var previousPose: RoutinePose? = autonomousEntry?.startingPose
+    val driveStepsWithPaths = mutableListOf<Pair<String, RoutineDriveStep>>()
+    fun collectDrives(steps: List<RoutineStep>, pathPrefix: String) {
+        steps.forEach { step ->
+            val stepPath = "$pathPrefix/${step.stepId}"
+            step.drive?.let { driveStepsWithPaths += stepPath to it }
+            step.deadline?.let { collectDrives(listOf(it), "$stepPath.deadline") }
+            collectDrives(step.children, "$stepPath.children")
+            collectDrives(step.elseChildren, "$stepPath.elseChildren")
+        }
+    }
+    collectDrives(routine.steps, "steps")
+    driveStepsWithPaths.forEachIndexed { idx, (stepPath, drive) ->
+        val start = previousPose
+        val end = drive.target
+        if (start != null && routinePoseFitsField(start, league, dimensions) && routinePoseFitsField(end, league, dimensions)) {
+            val dx = end.xMeters - start.xMeters
+            val dy = end.yMeters - start.yMeters
+            val chordHeading = kotlin.math.atan2(dy, dx)
+            var sweptCrossesBoundary = false
+            for (sampleIdx in 1..15) {
+                val alpha = sampleIdx / 16.0
+                val x = start.xMeters + dx * alpha
+                val y = start.yMeters + dy * alpha
+                val heading = when (drive.headingMode) {
+                    com.areslib.routine.RoutineHeadingMode.CONSTANT -> start.headingRadians
+                    com.areslib.routine.RoutineHeadingMode.TANGENTIAL -> chordHeading
+                    com.areslib.routine.RoutineHeadingMode.TANGENTIAL_REVERSE -> chordHeading + kotlin.math.PI
+                    com.areslib.routine.RoutineHeadingMode.POINT_TOWARDS -> {
+                        val lookAt = drive.lookAtPoint
+                        if (lookAt != null) kotlin.math.atan2(lookAt.yMeters - y, lookAt.xMeters - x) else start.headingRadians
+                    }
+                    com.areslib.routine.RoutineHeadingMode.LINEAR -> {
+                        var dTheta = (end.headingRadians - start.headingRadians + kotlin.math.PI) % (2.0 * kotlin.math.PI)
+                        if (dTheta < 0.0) dTheta += 2.0 * kotlin.math.PI
+                        start.headingRadians + (dTheta - kotlin.math.PI) * alpha
+                    }
+                }
+                if (!routinePoseFitsField(RoutinePose(x, y, heading), league, dimensions)) {
+                    sweptCrossesBoundary = true
+                    break
+                }
+            }
+            if (sweptCrossesBoundary) {
+                issues += RoutineValidationIssue(
+                    severity = RoutineValidationSeverity.WARNING,
+                    documentId = routine.documentId,
+                    path = "$stepPath.drive.sweptFootprint",
+                    code = "swept_footprint_collision_warning",
+                    message = "Swept robot footprint along drive ${idx + 1} rotates across the field boundary during motion",
+                )
+            }
+        }
+        previousPose = end
+    }
+}

@@ -8,7 +8,7 @@ import com.areslib.math.wrapAngle
 /**
  * Extended Kalman Filter (EKF) Vision Measurement Update and Mahalanobis Outlier Rejection Pipeline.
  *
- * Implements 3-DOF ($x, y, \theta$) EKF correction from camera-observed AprilTag poses
+ * Implements 3-DOF ($x, y, \theta$) and 2-DOF planar ($x, y$) EKF correction from camera-observed AprilTag poses
  * with statistical Mahalanobis distance outlier filtering and historical trajectory rewind.
  *
  * ### Mathematical Formulation:
@@ -65,6 +65,8 @@ object VisionMahalanobisFilter {
      * @param scratchCov Pre-allocated scratchpad matrix for updated state covariance $\mathbf{P}$.
      * @param scratchHistory Pre-allocated scratchpad buffer for trajectory re-propagation.
      * @param scratchCov2 Secondary pre-allocated scratchpad matrix for state propagation.
+     * @param observeHeading When `false` (or when [visionStdDevHeading] is `+Infinity`), performs a 2-DOF planar
+     * $(x, y)$ observation update (ideal for MegaTag2 where heading is slaved to the gyro) without perturbing $\theta$.
      *
      * @return Updated [PoseEstimatorState] with updated state history and diagnostic metrics (`lastMeasurementAccepted`, `lastRejectionReason`).
      */
@@ -90,7 +92,8 @@ object VisionMahalanobisFilter {
         scratchInterpolatedEntry: PoseHistoryEntry,
         scaleStdDevX: Boolean = true,
         scaleStdDevY: Boolean = true,
-        scaleStdDevHeading: Boolean = true
+        scaleStdDevHeading: Boolean = true,
+        observeHeading: Boolean = true
     ): PoseEstimatorState {
         if (state.history.isEmpty()) {
             state.lastMeasurementAccepted = false
@@ -114,9 +117,11 @@ object VisionMahalanobisFilter {
             state.lastRejectionReason = "high_ambiguity"
             return state
         }
+        val effectiveObserveHeading = observeHeading && visionStdDevHeading != Double.POSITIVE_INFINITY
         val measuredHeading = measurement.targetPose.rotation.z
         if (!measurement.targetPose.x.isFinite() || !measurement.targetPose.y.isFinite() || !measurement.targetPose.z.isFinite() ||
-            !measurement.targetPose.rotation.x.isFinite() || !measurement.targetPose.rotation.y.isFinite() || !measuredHeading.isFinite()) {
+            !measurement.targetPose.rotation.x.isFinite() || !measurement.targetPose.rotation.y.isFinite() ||
+            (effectiveObserveHeading && !measuredHeading.isFinite())) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "nan_measurement"
             return state
@@ -129,7 +134,8 @@ object VisionMahalanobisFilter {
         }
         if (!visionStdDevX.isFinite() || visionStdDevX <= 0.0 ||
             !visionStdDevY.isFinite() || visionStdDevY <= 0.0 ||
-            !visionStdDevHeading.isFinite() || visionStdDevHeading <= 0.0) {
+            (effectiveObserveHeading && (!visionStdDevHeading.isFinite() || visionStdDevHeading <= 0.0)) ||
+            (!effectiveObserveHeading && (visionStdDevHeading.isNaN() || visionStdDevHeading <= 0.0))) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "invalid_std_devs"
             return state
@@ -169,7 +175,7 @@ object VisionMahalanobisFilter {
             return state
         }
 
-        val stdDevScale = if (scaleStdDevX || scaleStdDevY || scaleStdDevHeading) {
+        val stdDevScale = if (scaleStdDevX || scaleStdDevY || (effectiveObserveHeading && scaleStdDevHeading)) {
             val tagPose = activeTags[measurement.tagId]
             var incidenceScale = 1.0
             val distance = if (tagPose != null) {
@@ -193,7 +199,11 @@ object VisionMahalanobisFilter {
         } else 1.0
         val scaledStdDevsX = visionStdDevX * if (scaleStdDevX) stdDevScale else 1.0
         val scaledStdDevsY = visionStdDevY * if (scaleStdDevY) stdDevScale else 1.0
-        val scaledStdDevsZ = visionStdDevHeading * if (scaleStdDevHeading) stdDevScale else 1.0
+        val scaledStdDevsZ = if (effectiveObserveHeading) {
+            visionStdDevHeading * if (scaleStdDevHeading) stdDevScale else 1.0
+        } else {
+            1.0
+        }
 
         scratchR.m00 = scaledStdDevsX * scaledStdDevsX; scratchR.m01 = 0.0; scratchR.m02 = 0.0
         scratchR.m10 = 0.0; scratchR.m11 = scaledStdDevsY * scaledStdDevsY; scratchR.m12 = 0.0
@@ -258,16 +268,20 @@ object VisionMahalanobisFilter {
         val l11 = kotlin.math.sqrt(l11Squared)
         val l21 = (scratchS.m21 - l20 * l10) / l11
         val l22Squared = scratchS.m22 - l20 * l20 - l21 * l21
-        if (!l22Squared.isFinite() || l22Squared <= 0.0) {
+        if (effectiveObserveHeading && (!l22Squared.isFinite() || l22Squared <= 0.0)) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "non_positive_definite_innovation_covariance"
             return state
         }
-        val l22 = kotlin.math.sqrt(l22Squared)
+        val l22 = if (effectiveObserveHeading) kotlin.math.sqrt(l22Squared) else 1.0
 
-        val rawHeadingDiff = measuredHeading - baseEntry.headingRad
-        val headingDiff = if (rawHeadingDiff.isFinite()) wrapAngle(rawHeadingDiff)
+        val headingDiff = if (effectiveObserveHeading) {
+            val rawHeadingDiff = measuredHeading - baseEntry.headingRad
+            if (rawHeadingDiff.isFinite()) wrapAngle(rawHeadingDiff)
             else wrapAngle(wrapAngle(measuredHeading) - wrapAngle(baseEntry.headingRad))
+        } else {
+            0.0
+        }
 
         val yX = measurement.targetPose.x - baseEntry.x
         val yY = measurement.targetPose.y - baseEntry.y
@@ -277,7 +291,11 @@ object VisionMahalanobisFilter {
         // cancellation in y^T S^-1 y, and rejected observations need no inverse.
         val whitenedX = (yX / axisX) / l00
         val whitenedY = (yY / axisY - l10 * whitenedX) / l11
-        val whitenedHeading = (yZ / axisHeading - l20 * whitenedX - l21 * whitenedY) / l22
+        val whitenedHeading = if (effectiveObserveHeading) {
+            (yZ / axisHeading - l20 * whitenedX - l21 * whitenedY) / l22
+        } else {
+            0.0
+        }
         val dMSquared = whitenedX * whitenedX + whitenedY * whitenedY + whitenedHeading * whitenedHeading
         state.lastNormalizedInnovationSquared = if (dMSquared.isFinite() && dMSquared >= 0.0) dMSquared else 0.0
         if (!dMSquared.isFinite() || dMSquared < -1e-9 ||
@@ -290,126 +308,16 @@ object VisionMahalanobisFilter {
                 return state
         }
 
-        // Solve S K^T = P^T directly. No explicit inverse or products of three large pivots.
-        var z0 = scratchSInv.m00 / l00
-        var z1 = (scratchSInv.m01 - l10 * z0) / l11
-        var z2 = (scratchSInv.m02 - l20 * z0 - l21 * z1) / l22
-        scratchK.m02 = z2 / l22
-        scratchK.m01 = (z1 - l21 * scratchK.m02) / l11
-        scratchK.m00 = (z0 - l10 * scratchK.m01 - l20 * scratchK.m02) / l00
-        z0 = scratchSInv.m10 / l00
-        z1 = (scratchSInv.m11 - l10 * z0) / l11
-        z2 = (scratchSInv.m12 - l20 * z0 - l21 * z1) / l22
-        scratchK.m12 = z2 / l22
-        scratchK.m11 = (z1 - l21 * scratchK.m12) / l11
-        scratchK.m10 = (z0 - l10 * scratchK.m11 - l20 * scratchK.m12) / l00
-        z0 = scratchSInv.m20 / l00
-        z1 = (scratchSInv.m21 - l10 * z0) / l11
-        z2 = (scratchSInv.m22 - l20 * z0 - l21 * z1) / l22
-        scratchK.m22 = z2 / l22
-        scratchK.m21 = (z1 - l21 * scratchK.m22) / l11
-        scratchK.m20 = (z0 - l10 * scratchK.m21 - l20 * scratchK.m22) / l00
-
-        // Restore K = D K_normalized D^-1. Sequential multiply/divide avoids an
-        // overflowing scale ratio, including zero cross gains between extreme axes.
-        scratchK.m01 = scratchK.m01 * axisX / axisY
-        scratchK.m02 = scratchK.m02 * axisX / axisHeading
-        scratchK.m10 = scratchK.m10 * axisY / axisX
-        scratchK.m12 = scratchK.m12 * axisY / axisHeading
-        scratchK.m20 = scratchK.m20 * axisHeading / axisX
-        scratchK.m21 = scratchK.m21 * axisHeading / axisY
-
+        PoseEstimatorVision2D.solveKalmanGainAndJosephCovariance(
+            effectiveObserveHeading = effectiveObserveHeading,
+            l00 = l00, l10 = l10, l11 = l11, l20 = l20, l21 = l21, l22 = l22,
+            axisX = axisX, axisY = axisY, axisHeading = axisHeading,
+            prior = baseEntry.covariance,
+            scratchR = scratchR, scratchSInv = scratchSInv, scratchK = scratchK, scratchCov = scratchCov,
+        )
         val dxX = scratchK.m00 * yX + scratchK.m01 * yY + scratchK.m02 * yZ
         val dxY = scratchK.m10 * yX + scratchK.m11 * yY + scratchK.m12 * yZ
         val dxZ = scratchK.m20 * yX + scratchK.m21 * yY + scratchK.m22 * yZ
-
-        val imk00 = 1.0 - scratchK.m00
-        val imk01 = -scratchK.m01
-        val imk02 = -scratchK.m02
-        val imk10 = -scratchK.m10
-        val imk11 = 1.0 - scratchK.m11
-        val imk12 = -scratchK.m12
-        val imk20 = -scratchK.m20
-        val imk21 = -scratchK.m21
-        val imk22 = 1.0 - scratchK.m22
-
-        val P = baseEntry.covariance
-        val t00 = imk00 * P.m00 + imk01 * P.m10 + imk02 * P.m20
-        val t01 = imk00 * P.m01 + imk01 * P.m11 + imk02 * P.m21
-        val t02 = imk00 * P.m02 + imk01 * P.m12 + imk02 * P.m22
-
-        val t10 = imk10 * P.m00 + imk11 * P.m10 + imk12 * P.m20
-        val t11 = imk10 * P.m01 + imk11 * P.m11 + imk12 * P.m21
-        val t12 = imk10 * P.m02 + imk11 * P.m12 + imk12 * P.m22
-
-        val t20 = imk20 * P.m00 + imk21 * P.m10 + imk22 * P.m20
-        val t21 = imk20 * P.m01 + imk21 * P.m11 + imk22 * P.m21
-        val t22 = imk20 * P.m02 + imk21 * P.m12 + imk22 * P.m22
-
-        val p1_00 = t00 * imk00 + t01 * imk01 + t02 * imk02
-        val p1_01 = t00 * imk10 + t01 * imk11 + t02 * imk12
-        val p1_02 = t00 * imk20 + t01 * imk21 + t02 * imk22
-
-        val p1_10 = t10 * imk00 + t11 * imk01 + t12 * imk02
-        val p1_11 = t10 * imk10 + t11 * imk11 + t12 * imk12
-        val p1_12 = t10 * imk20 + t11 * imk21 + t12 * imk22
-
-        val p1_20 = t20 * imk00 + t21 * imk01 + t22 * imk02
-        val p1_21 = t20 * imk10 + t21 * imk11 + t22 * imk12
-        val p1_22 = t20 * imk20 + t21 * imk21 + t22 * imk22
-
-        val r00 = scratchR.m00
-        val r11 = scratchR.m11
-        val r22 = scratchR.m22
-
-        val kr00 = scratchK.m00 * r00
-        val kr01 = scratchK.m01 * r11
-        val kr02 = scratchK.m02 * r22
-
-        val kr10 = scratchK.m10 * r00
-        val kr11 = scratchK.m11 * r11
-        val kr12 = scratchK.m12 * r22
-
-        val kr20 = scratchK.m20 * r00
-        val kr21 = scratchK.m21 * r11
-        val kr22 = scratchK.m22 * r22
-
-        val p2_00 = kr00 * scratchK.m00 + kr01 * scratchK.m01 + kr02 * scratchK.m02
-        val p2_01 = kr00 * scratchK.m10 + kr01 * scratchK.m11 + kr02 * scratchK.m12
-        val p2_02 = kr00 * scratchK.m20 + kr01 * scratchK.m21 + kr02 * scratchK.m22
-
-        val p2_10 = kr10 * scratchK.m00 + kr11 * scratchK.m01 + kr12 * scratchK.m02
-        val p2_11 = kr10 * scratchK.m10 + kr11 * scratchK.m11 + kr12 * scratchK.m12
-        val p2_12 = kr10 * scratchK.m20 + kr11 * scratchK.m21 + kr12 * scratchK.m22
-
-        val p2_20 = kr20 * scratchK.m00 + kr21 * scratchK.m01 + kr22 * scratchK.m02
-        val p2_21 = kr20 * scratchK.m10 + kr21 * scratchK.m11 + kr22 * scratchK.m12
-        val p2_22 = kr20 * scratchK.m20 + kr21 * scratchK.m21 + kr22 * scratchK.m22
-
-        val pn00 = p1_00 + p2_00
-        val pn01 = p1_01 + p2_01
-        val pn02 = p1_02 + p2_02
-
-        val pn10 = p1_10 + p2_10
-        val pn11 = p1_11 + p2_11
-        val pn12 = p1_12 + p2_12
-
-        val pn20 = p1_20 + p2_20
-        val pn21 = p1_21 + p2_21
-        val pn22 = p1_22 + p2_22
-
-        val sym00 = pn00.coerceAtLeast(0.0)
-        val sym01 = pn01 * 0.5 + pn10 * 0.5
-        val sym02 = pn02 * 0.5 + pn20 * 0.5
-
-        val sym11 = pn11.coerceAtLeast(0.0)
-        val sym12 = pn12 * 0.5 + pn21 * 0.5
-
-        val sym22 = pn22.coerceAtLeast(0.0)
-
-        scratchCov.m00 = sym00; scratchCov.m01 = sym01; scratchCov.m02 = sym02
-        scratchCov.m10 = sym01; scratchCov.m11 = sym11; scratchCov.m12 = sym12
-        scratchCov.m20 = sym02; scratchCov.m21 = sym12; scratchCov.m22 = sym22
         if (!dxX.isFinite() || !dxY.isFinite() || !dxZ.isFinite() || !VisionCovarianceValidation.isValid(scratchCov)) {
             state.lastMeasurementAccepted = false
             state.lastRejectionReason = "invalid_correction"

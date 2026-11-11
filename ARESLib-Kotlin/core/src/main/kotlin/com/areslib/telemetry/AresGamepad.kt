@@ -1,40 +1,30 @@
 package com.areslib.telemetry
 
 import com.areslib.util.RobotClock
-import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.pow
-import kotlin.math.sign
 
 /**
- * A declarative, command-based wrapper for [GamepadState].
- * 
- * Allows students to map human-readable descriptions to button actions.
- * This class tracks the previous state to detect button edge transitions
- * (onPress, onRelease) without requiring manual boolean logic.
- * 
- * To conform to the ARESLib-Kotlin Redux architecture, the executable
- * block should ideally dispatch a `RobotAction` to the central store.
- * 
- * Example usage:
+ * A declarative, allocation-free wrapper for [GamepadState].
+ *
+ * Allows text-first TeleOp code to bind digital buttons, analog triggers, and shaped dual-axis
+ * sticks without manual boolean edge tracking or per-frame heap allocations.
+ *
+ * All controls are sampled once per loop before callbacks fire, and any button or trigger held
+ * during the FTC `INIT` phase ([prime]) is quarantined until released so hardware cannot energize
+ * unexpectedly when `START` is pressed.
+ *
  * ```kotlin
- * val driver = AresGamepad()
- * 
- * driver.a.onPress("Spin up shooter to 3500 RPM") {
- *     store.dispatch(SuperstructureAction.SpinUpShooter(3500.0))
+ * controls {
+ *     val moveStick = driver.leftStick.withDeadband(0.06).withExponentialCurve(2.0).withSlewRateLimit(3.5)
+ *     driver.a.onPress("Collect") { store.dispatch(IntakeAction.Collect) }
+ *     driver.rightBumper.whileHeld("Boost") { boostActive = true }
+ *     driver.x.toggle("Hood", currentState = { store.state.shooter.hoodRaised }) {
+ *         store.dispatch(ShooterAction.SetHood(it))
+ *     }
+ *     driver.rightTrigger.onPress(threshold = 0.5) { store.dispatch(ShooterAction.Fire) }
+ *     operator.leftStickY.withDeadband(0.08).withInversion().bindAxis { manualArmCommand = it }
  * }
- *
- * driver.leftStick
- *     .withDeadband(0.08)
- *     .withExponentialCurve(2.0)
- *     .withSlewRateLimit(3.0)
- *
- * driver.x.toggle("Toggle intake", currentState = { store.state.superstructure.intakeEnabled }) {
- *     store.dispatch(SuperstructureAction.SetIntakeEnabled(it))
- * }
- * 
- * // Inside your high-frequency control loop (50Hz-100Hz):
- * driver.update(latestGamepadState)
  * ```
  */
 class AresGamepad {
@@ -48,10 +38,10 @@ class AresGamepad {
     fun interface StickConsumer {
         fun accept(x: Double, y: Double)
     }
-    
+
     private var previousState = GamepadState()
     private var currentState = GamepadState()
-    
+
     val a = BindableButton { it.a }
     val b = BindableButton { it.b }
     val x = BindableButton { it.x }
@@ -88,14 +78,8 @@ class AresGamepad {
     val f11 = BindableButton { it.f11 }
     val f12 = BindableButton { it.f12 }
 
-    val leftStick = BindableStick(
-        GamepadAxisSource { it.leftStickX },
-        GamepadAxisSource { it.leftStickY }
-    )
-    val rightStick = BindableStick(
-        GamepadAxisSource { it.rightStickX },
-        GamepadAxisSource { it.rightStickY }
-    )
+    val leftStick = BindableStick(GamepadAxisSource { it.leftStickX }, GamepadAxisSource { it.leftStickY })
+    val rightStick = BindableStick(GamepadAxisSource { it.rightStickX }, GamepadAxisSource { it.rightStickY })
     val leftStickX = BindableAxis(GamepadAxisSource { it.leftStickX })
     val leftStickY = BindableAxis(GamepadAxisSource { it.leftStickY })
     val rightStickX = BindableAxis(GamepadAxisSource { it.rightStickX })
@@ -104,23 +88,16 @@ class AresGamepad {
     val rightTrigger = BindableAxis(GamepadAxisSource { it.rightTrigger })
 
     private val allButtons = listOf(
-        a, b, x, y, 
-        dpadUp, dpadDown, dpadLeft, dpadRight, 
-        leftBumper, rightBumper, 
-        leftStickButton, rightStickButton, 
-        start, back,
-        touchpad, share, options,
-        c, z, m1, m2, m3, m4,
-        f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12
+        a, b, x, y, dpadUp, dpadDown, dpadLeft, dpadRight, leftBumper, rightBumper,
+        leftStickButton, rightStickButton, start, back, touchpad, share, options,
+        c, z, m1, m2, m3, m4, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12,
     )
+
+    private val allAxes = listOf(leftStickX, leftStickY, rightStickX, rightStickY, leftTrigger, rightTrigger)
 
     /**
      * Updates the internal state of the gamepad and triggers any bound actions.
-     * This method is allocation-free and should be called in the hot path.
-     * All controls are sampled from one owned copy before any callback runs. Calls to [update]
-     * and [prime] belong to one loop owner and must not be invoked recursively from bindings.
-     * 
-     * @param newState The latest polled gamepad state.
+     * Allocation-free; all controls are sampled from one owned copy before any callback runs.
      */
     fun update(newState: GamepadState) {
         val reusable = previousState
@@ -131,12 +108,9 @@ class AresGamepad {
         val timestampMs = RobotClock.currentTimeMillis()
         leftStick.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
         rightStick.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
-        leftStickX.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
-        leftStickY.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
-        rightStickX.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
-        rightStickY.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
-        leftTrigger.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
-        rightTrigger.updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        for (i in allAxes.indices) {
+            allAxes[i].updateValue(currentState, timestampMs, notifyConsumer = false, resetSlew = false)
+        }
         for (i in allButtons.indices) {
             val button = allButtons[i]
             button.isPressed = button.stateSelector(currentState)
@@ -144,32 +118,27 @@ class AresGamepad {
 
         leftStick.notifyConsumer()
         rightStick.notifyConsumer()
-        leftStickX.notifyConsumer()
-        leftStickY.notifyConsumer()
-        rightStickX.notifyConsumer()
-        rightStickY.notifyConsumer()
-        leftTrigger.notifyConsumer()
-        rightTrigger.notifyConsumer()
-        
-        // Iterate through all bindable buttons and trigger actions if transitions occurred
-        // Using a standard loop to avoid allocations (iterator object creation) on the hot path
+        for (i in allAxes.indices) {
+            allAxes[i].notifyConsumer()
+        }
+
+        // Standard indexed loop avoids iterator allocations on the hot path.
         for (i in allButtons.indices) {
             val button = allButtons[i]
             val wasPressed = button.stateSelector(previousState)
             val isPressed = button.isPressed
 
-            // Inputs held during INIT are deliberately quarantined until they are released. This
-            // prevents both edge and level bindings from energizing hardware as Play is pressed.
+            // Inputs held during INIT are quarantined until released.
             if (button.suppressedUntilRelease) {
                 if (!isPressed) button.suppressedUntilRelease = false
                 continue
             }
-            
+
             when {
                 isPressed && !wasPressed -> button.firePress()
                 !isPressed && wasPressed -> button.fireRelease()
             }
-            
+
             if (isPressed) {
                 button.fireWhilePressed()
             }
@@ -178,9 +147,7 @@ class AresGamepad {
 
     /**
      * Samples controls without invoking bindings.
-     *
-     * A pressed button is suppressed until a later release, so a control held through the FTC
-     * INIT-to-START transition cannot become either an `onPress` or `whilePressed` command.
+     * Any control held during [prime] is quarantined until a subsequent release.
      */
     fun prime(newState: GamepadState) {
         previousState.copyFrom(newState)
@@ -188,12 +155,9 @@ class AresGamepad {
         val timestampMs = RobotClock.currentTimeMillis()
         leftStick.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
         rightStick.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
-        leftStickX.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
-        leftStickY.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
-        rightStickX.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
-        rightStickY.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
-        leftTrigger.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
-        rightTrigger.updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        for (i in allAxes.indices) {
+            allAxes[i].updateValue(newState, timestampMs, notifyConsumer = false, resetSlew = true)
+        }
         for (i in allButtons.indices) {
             val button = allButtons[i]
             val isPressed = button.stateSelector(newState)
@@ -211,93 +175,71 @@ class AresGamepad {
         private var onReleaseAction: (() -> Unit)? = null
         private var whilePressedAction: (() -> Unit)? = null
 
-        fun label(@Suppress("UNUSED_PARAMETER") description: String) {
-            // No-op at runtime, used statically for ARES-Analytics parsing
-        }
+        fun label(@Suppress("UNUSED_PARAMETER") description: String) {}
 
-        /**
-         * Binds an action to execute exactly once when the button transitions from unpressed to pressed.
-         * 
-         * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
-         * @param action The block of code to execute. Must not block the thread.
-         */
+        /** Binds an action to execute once when the button transitions from unpressed to pressed. */
         fun onPress(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
             this.onPressAction = action
         }
 
-        /**
-         * Binds an action to execute exactly once when the button transitions from pressed to unpressed.
-         * 
-         * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
-         * @param action The block of code to execute. Must not block the thread.
-         */
+        /** Binds an action to execute once when the button transitions from pressed to unpressed. */
         fun onRelease(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
             this.onReleaseAction = action
         }
 
-        /**
-         * Binds an action to execute continuously every loop cycle while the button is held down.
-         * 
-         * @param description Human-readable description of this action (used by ARES-Analytics telemetry).
-         * @param action The block of code to execute. Must not block the thread.
-         */
+        /** Binds an action to execute every loop cycle while the button is held down. */
         fun whilePressed(@Suppress("UNUSED_PARAMETER") description: String = "", action: () -> Unit) {
             this.whilePressedAction = action
         }
 
-        /**
-         * Requests the inverse of the authoritative Redux-backed [currentState] on each press.
-         *
-         * The binding deliberately owns no hidden toggle latch. If safety rejects a request, the
-         * next press derives from the unchanged store state instead of drifting out of sync.
-         */
+        /** Alias for [whilePressed] matching [com.areslib.controls.DigitalControlBindingBuilder.whileHeld]. */
+        fun whileHeld(description: String = "", action: () -> Unit) {
+            whilePressed(description, action)
+        }
+
+        /** Requests the inverse of the authoritative Redux-backed [currentState] on each press. */
         fun toggle(
             @Suppress("UNUSED_PARAMETER") description: String = "",
             currentState: () -> Boolean,
-            action: (Boolean) -> Unit
-        ) {
-            onPress(description) {
-                action(!currentState())
-            }
-        }
+            action: (Boolean) -> Unit,
+        ) = onPress(description) { action(!currentState()) }
 
-        internal fun firePress() {
-            onPressAction?.invoke()
-        }
-
-        internal fun fireRelease() {
-            onReleaseAction?.invoke()
-        }
-
-        internal fun fireWhilePressed() {
-            whilePressedAction?.invoke()
-        }
+        internal fun firePress() { onPressAction?.invoke() }
+        internal fun fireRelease() { onReleaseAction?.invoke() }
+        internal fun fireWhilePressed() { whilePressedAction?.invoke() }
     }
 
     /**
-     * One continuously sampled analog input with deadband, curvature, and slew shaping.
-     * Nonfinite input immediately clears the output and slew history to neutral.
+     * One continuously sampled analog input with deadband, curvature, inversion, slew shaping,
+     * and optional digital threshold trigger callbacks.
      */
-    class BindableAxis(
-        private val valueSource: GamepadAxisSource,
-    ) {
+    class BindableAxis(private val valueSource: GamepadAxisSource) {
         var value: Float = 0.0f
             private set
-
         var shapedValue: Double = 0.0
+            private set
+
+        /** True when the raw axis deflection meets or exceeds the configured trigger threshold. */
+        var isPressed: Boolean = false
             private set
 
         private var deadbandThreshold: Double = 0.0
         private var curveExponent: Double = 1.0
-        private var slewRateLimit: Double = 0.0 // 0.0 means disabled
+        private var slewRateLimit: Double = 0.0
+        private var inverted: Boolean = false
         private var lastSlewValue: Double = 0.0
         private var lastUpdateTimeMs: Long = 0L
         private var hasSlewTimestamp = false
         private var axisConsumer: AxisConsumer? = null
 
-        fun label(@Suppress("UNUSED_PARAMETER") description: String) {
-            // No-op at runtime, used statically for ARES-Analytics parsing
-        }
+        private var triggerThreshold: Double = 0.5
+        private var wasThresholdPressed: Boolean = false
+        internal var suppressedUntilRelease: Boolean = false
+        private var onPressAction: (() -> Unit)? = null
+        private var onReleaseAction: (() -> Unit)? = null
+        private var whilePressedAction: (() -> Unit)? = null
+
+        fun label(@Suppress("UNUSED_PARAMETER") description: String) {}
 
         /** Configures a deadband with smooth linear rescaling above threshold. */
         fun withDeadband(threshold: Double): BindableAxis {
@@ -326,62 +268,83 @@ class AresGamepad {
             return this
         }
 
+        /** Inverts the sign of the shaped axis output (`shapedValue`). */
+        fun withInversion(inverted: Boolean = true): BindableAxis {
+            this.inverted = inverted
+            return this
+        }
+
         /** Binds a primitive consumer invoked by [update], never by INIT-safe [prime]. */
         fun bindAxis(consumer: AxisConsumer): BindableAxis {
             this.axisConsumer = consumer
             return this
         }
 
-        internal fun updateValue(
-            state: GamepadState,
-            timestampMs: Long,
-            notifyConsumer: Boolean,
-            resetSlew: Boolean
-        ) {
+        /** Binds a callback that fires once when the axis crosses at or above [threshold] in `(0.0, 1.0]`. */
+        fun onPress(@Suppress("UNUSED_PARAMETER") description: String = "", threshold: Double = 0.5, action: () -> Unit): BindableAxis {
+            configureThreshold(threshold)
+            this.onPressAction = action
+            return this
+        }
+
+        /** Binds a callback that fires once when the axis drops below [threshold] in `(0.0, 1.0]`. */
+        fun onRelease(@Suppress("UNUSED_PARAMETER") description: String = "", threshold: Double = 0.5, action: () -> Unit): BindableAxis {
+            configureThreshold(threshold)
+            this.onReleaseAction = action
+            return this
+        }
+
+        /** Binds a callback that executes every active loop while the axis remains at or above [threshold]. */
+        fun whilePressed(@Suppress("UNUSED_PARAMETER") description: String = "", threshold: Double = 0.5, action: () -> Unit): BindableAxis {
+            configureThreshold(threshold)
+            this.whilePressedAction = action
+            return this
+        }
+
+        /** Alias for [whilePressed] matching [com.areslib.controls.DigitalControlBindingBuilder.whileHeld]. */
+        fun whileHeld(description: String = "", threshold: Double = 0.5, action: () -> Unit): BindableAxis =
+            whilePressed(description, threshold, action)
+
+        private fun configureThreshold(threshold: Double) {
+            require(threshold.isFinite() && threshold > 0.0 && threshold <= 1.0) {
+                "Trigger threshold must be finite and in (0.0, 1.0]"
+            }
+            this.triggerThreshold = threshold
+        }
+
+        internal fun updateValue(state: GamepadState, timestampMs: Long, notifyConsumer: Boolean, resetSlew: Boolean) {
             val selected = valueSource.read(state).toDouble()
             val raw = if (selected.isFinite()) selected.coerceIn(-1.0, 1.0) else 0.0
             value = raw.toFloat()
-
-            // 1. Deadband with linear rescaling
-            val afterDeadband = if (abs(raw) < deadbandThreshold) {
-                0.0
-            } else {
-                val s = sign(raw)
-                s * (abs(raw) - deadbandThreshold) / (1.0 - deadbandThreshold)
+            wasThresholdPressed = isPressed
+            isPressed = raw >= triggerThreshold
+            if (resetSlew) {
+                wasThresholdPressed = isPressed
+                suppressedUntilRelease = isPressed
             }
 
-            // 2. Exponential curvature
-            val afterCurve = if (curveExponent == 1.0) {
-                afterDeadband
-            } else {
-                val s = sign(afterDeadband)
-                s * (abs(afterDeadband).pow(curveExponent))
-            }
-
-            // 3. Slew rate limiter
-            val finalVal = if (!selected.isFinite()) {
-                0.0
-            } else if (resetSlew) {
-                afterCurve
-            } else if (slewRateLimit > 0.0) {
-                val dt = slewIntervalSeconds(timestampMs, lastUpdateTimeMs, hasSlewTimestamp)
-                val maxDelta = slewRateLimit * dt
-                val delta = (afterCurve - lastSlewValue).coerceIn(-maxDelta, maxDelta)
-                lastSlewValue + delta
-            } else {
-                afterCurve
-            }
-
+            val finalVal = shapeSingleAxisSample(
+                selected, raw, deadbandThreshold, curveExponent, inverted,
+                slewRateLimit, lastSlewValue, timestampMs, lastUpdateTimeMs, hasSlewTimestamp, resetSlew,
+            )
             lastSlewValue = finalVal
             lastUpdateTimeMs = timestampMs
             hasSlewTimestamp = true
             shapedValue = finalVal
-
-            if (notifyConsumer) axisConsumer?.accept(finalVal)
+            if (notifyConsumer) notifyConsumer()
         }
 
         internal fun notifyConsumer() {
             axisConsumer?.accept(shapedValue)
+            if (suppressedUntilRelease) {
+                if (!isPressed) suppressedUntilRelease = false
+                return
+            }
+            when {
+                isPressed && !wasThresholdPressed -> onPressAction?.invoke()
+                !isPressed && wasThresholdPressed -> onReleaseAction?.invoke()
+            }
+            if (isPressed) whilePressedAction?.invoke()
         }
     }
 
@@ -412,9 +375,7 @@ class AresGamepad {
         private var hasSlewTimestamp = false
         private var stickConsumer: StickConsumer? = null
 
-        fun label(@Suppress("UNUSED_PARAMETER") description: String) {
-            // No-op at runtime, used statically for ARES-Analytics parsing
-        }
+        fun label(@Suppress("UNUSED_PARAMETER") description: String) {}
 
         /** Configures a radial deadband (preserves vector angle while zeroing near center). */
         fun withDeadband(threshold: Double): BindableStick {
@@ -434,10 +395,7 @@ class AresGamepad {
             return this
         }
 
-        /**
-         * Configures a radial maximum rate of change in stick-deflection units per second.
-         * Bounds the Euclidean distance traveled by the output vector, including direction changes.
-         */
+        /** Configures a radial maximum rate of change in stick-deflection units per second. */
         fun withSlewRateLimit(unitsPerSecond: Double): BindableStick {
             require(unitsPerSecond.isFinite() && unitsPerSecond >= 0.0) {
                 "Stick slew rate must be finite and non-negative"
@@ -456,7 +414,7 @@ class AresGamepad {
             state: GamepadState,
             timestampMs: Long,
             notifyConsumer: Boolean,
-            resetSlew: Boolean
+            resetSlew: Boolean,
         ) {
             val selectedX = xSource.read(state).toDouble()
             val selectedY = ySource.read(state).toDouble()
@@ -468,8 +426,6 @@ class AresGamepad {
             x = (rawX * normalization).toFloat()
             y = (rawY * normalization).toFloat()
 
-            // Shape the scalar radius once. Recomputing hypot after normalization can round a
-            // saturated radius below one and erase full-scale input with a near-one deadband.
             val magnitude = rawMagnitude.coerceAtMost(1.0)
             val afterDeadband = if (magnitude <= deadbandThreshold) 0.0 else
                 (magnitude - deadbandThreshold) / (1.0 - deadbandThreshold)
@@ -478,16 +434,13 @@ class AresGamepad {
             var dbX = rawX * scaleToRadius
             var dbY = rawY * scaleToRadius
 
-            // 3. Slew rate limiter
             if (valid && !resetSlew && slewRateLimit > 0.0) {
                 val dt = slewIntervalSeconds(timestampMs, lastUpdateTimeMs, hasSlewTimestamp)
                 val maxDelta = slewRateLimit * dt
                 val dx = dbX - lastSlewX
                 val dy = dbY - lastSlewY
                 val deltaMagnitude = hypot(dx, dy)
-                val scale = if (deltaMagnitude > maxDelta && deltaMagnitude > 0.0) {
-                    maxDelta / deltaMagnitude
-                } else 1.0
+                val scale = if (deltaMagnitude > maxDelta && deltaMagnitude > 0.0) maxDelta / deltaMagnitude else 1.0
                 dbX = lastSlewX + dx * scale
                 dbY = lastSlewY + dy * scale
             }

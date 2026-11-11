@@ -53,4 +53,44 @@ class ControlSchemeDslTest {
 
     private fun targetWithArguments(arguments: RoutineArgumentsBuilder.() -> Unit) =
         BindingTargetBuilder().apply { action("test.action", arguments) }.build()
+
+    @Test
+    fun `fluent axis shaping whilePressed alias default name and drive targets work without boilerplate`() {
+        val scheme = controlScheme("competition_default") {
+            controller("driver", profile = "vader5-pro", devicePort = 0) {
+                axis("left_stick_y")
+                    .deadband(0.06)
+                    .curve(2.0)
+                    .invert()
+                    .scale(0.85)
+                    .slewRate(3.5, 5.0)
+                    .drive(DriveAxisKeys.VX)
+
+                trigger("right_trigger")
+                    .deadband(0.05)
+                    .curve(1.5)
+                    .whilePressed {
+                        action("shooter.spin") { number("rpm", 4200.0) }
+                    }
+            }
+        }
+
+        assertEquals("Competition Default", scheme.name)
+        val driveBinding = scheme.bindings.first { it.target.kind == ControlTargetKind.DRIVE }
+        assertEquals(DriveAxisKeys.VX, driveBinding.target.key)
+        val driveTransform = requireNotNull(driveBinding.source.transform)
+        assertEquals(0.06, driveTransform.deadband, 1e-9)
+        assertEquals(2.0, driveTransform.exponent, 1e-9)
+        assertTrue(driveTransform.inverted)
+        assertEquals(-0.85, driveTransform.outputMinimum, 1e-9)
+        assertEquals(0.85, driveTransform.outputMaximum, 1e-9)
+        assertEquals(3.5, driveBinding.analogPolicy?.riseRatePerSecond)
+        assertEquals(5.0, driveBinding.analogPolicy?.fallRatePerSecond)
+
+        val triggerBinding = scheme.bindings.first { it.source.kind == ControlSourceKind.AXIS_THRESHOLD }
+        assertEquals(ControlEvent.HELD, triggerBinding.event)
+        assertEquals(0.05, triggerBinding.source.transform?.deadband)
+        assertEquals(1.5, triggerBinding.source.transform?.exponent)
+        assertTrue(validateControlScheme(scheme).none { it.severity == ControlValidationSeverity.ERROR })
+    }
 }

@@ -3,8 +3,11 @@ package com.areslib.math.estimation
 import com.areslib.action.RobotAction
 import com.areslib.math.geometry.Matrix3x3
 import com.areslib.math.wrapAngle
+import com.areslib.reducer.DriveReducer
+import com.areslib.reducer.VisionReducer
 import com.areslib.reducer.controller.VisionEstimatorDiagnostics
 import com.areslib.reducer.controller.StoreVisionMeasurementProcessor
+import com.areslib.reducer.rootReducer
 import com.areslib.state.RobotState
 
 /** Reducer input prepared by one store-owned estimator runtime. */
@@ -34,6 +37,48 @@ internal data class ApplyPoseEstimatorRuntimeResult(
 internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
     private var estimator = createWorkspace(initialState)
     private val visionController = StoreVisionMeasurementProcessor()
+
+    /**
+     * Single-pass reduction fast path when [com.areslib.Store] uses [rootReducer].
+     *
+     * Eliminates `PreparedStoreAction`, `ApplyPoseEstimatorRuntimeResult`, and the intermediate
+     * first-pass `DriveState`/`RobotState` copies on 50 Hz drive/pose ticks while preserving exact
+     * two-pass state semantics.
+     */
+    fun reduceDefault(state: RobotState, action: RobotAction): RobotState {
+        return when (action) {
+            is RobotAction.DriveHardwareUpdate -> {
+                val estimatorSnapshot = processDriveHardwareUpdate(action)
+                val drive = DriveReducer.reduceDriveHardwareUpdate(state.drive, action, estimatorSnapshot)
+                if (drive === state.drive && action.timestampMs == state.timestampMs) {
+                    state
+                } else {
+                    state.copy(drive = drive, timestampMs = action.timestampMs)
+                }
+            }
+            is RobotAction.PoseUpdate -> {
+                val estimatorSnapshot = processPoseUpdate(state, action)
+                val drive = DriveReducer.reducePoseUpdate(state.drive, action, estimatorSnapshot)
+                val vision = if (action.isReset) VisionReducer.reduce(state.vision, action) else state.vision
+                if (drive === state.drive && vision === state.vision && action.timestampMs == state.timestampMs) {
+                    state
+                } else {
+                    state.copy(drive = drive, vision = vision, timestampMs = action.timestampMs)
+                }
+            }
+            is RobotAction.VisionMeasurementsReceived -> {
+                val prepared = visionController.prepare(state, action, estimator)
+                val estimatorAction = ApplyPoseEstimatorRuntimeResult(
+                    estimatorState = if (action.fuseIntoPoseEstimator) estimator.reduxSnapshot() else null,
+                    visionDiagnostics = prepared.diagnostics,
+                    timestampMs = action.timestampMs
+                )
+                val reduced = rootReducer(state, prepared.action)
+                rootReducer(reduced, estimatorAction)
+            }
+            else -> rootReducer(state, action)
+        }
+    }
 
     /** Null means the original action needs no estimator middleware or preparation allocation. */
     fun prepare(state: RobotState, action: RobotAction): PreparedStoreAction? {
@@ -148,6 +193,7 @@ internal class PoseEstimatorRuntime(initialState: PoseEstimatorSnapshot) {
             return estimator.reduxSnapshot()
         }
 
+        if (action.timestampMs <= 0L && !action.motionMeasurementsValid) return null
         val dtSeconds = observationDtSeconds(action.timestampMs) ?: return null
         val fieldDeltaX = action.xMeters - state.drive.odometryX
         val fieldDeltaY = action.yMeters - state.drive.odometryY

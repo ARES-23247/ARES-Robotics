@@ -10,6 +10,7 @@ import com.areslib.pathing.Path
 import com.areslib.sequencer.tasks.BlinkIndicatorTask
 import com.areslib.sequencer.tasks.SetIndicatorColorTask
 import com.areslib.state.RobotState
+import kotlin.math.ceil
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -18,22 +19,42 @@ import kotlin.time.Duration.Companion.milliseconds
 annotation class AresSequenceDsl
 
 /**
- * Typed builder for autonomous task trees.
+ * Typed builder for cross-platform autonomous and teleop-macro task trees.
  *
  * The builder is shared by FTC and FRC. It describes robot behavior only; platform lifecycle code
- * remains responsible for running the resulting [Task] through [TaskExecutor]. Durations use
- * Kotlin [Duration], named commands use [CommandKey], and nested control flow is visually explicit.
+ * remains responsible for running the resulting [Task] through [TaskExecutor].
  *
+ * To keep text-first authoring consistent across runtime sequences and declarative `.aresroutine`
+ * files, [RobotSequence] supports both runtime sequencer vocabulary (`parallel`, `race`,
+ * `waitFor(Duration)`, `namedCommand`) and [com.areslib.routine.routine] vocabulary (`together`,
+ * `firstToFinish`, `waitSeconds(Double)`, `step`, `deadline(main = { ... }, companions = { ... })`).
+ *
+ * ### Example
  * ```kotlin
- * val routine = robotSequence {
+ * val scorePreload = robotSequence {
  *     dispatch(RobotAction.SetDriveMode(DriveMode.HEADING_HOLD))
+ *
+ *     // Run all children concurrently until all complete (alias: together { ... })
  *     parallel {
- *         task(deployIntake())
+ *         namedCommand("arm.scoreHeight")
  *         waitFor(250.milliseconds)
  *     }
+ *
+ *     // Wait for a sensor or state condition with a mandatory safety timeout
+ *     waitUntil(timeout = 1500.milliseconds) { state ->
+ *         state.arm.isAtTarget
+ *     }
+ *
+ *     // Run companions until the main deadline task finishes
+ *     deadline(
+ *         main = { waitSeconds(0.6) },
+ *         companions = { namedCommand("outtake.release") },
+ *     )
+ *
+ *     // Complete as soon as the first branch finishes (alias: firstToFinish { ... })
  *     race {
- *         namedCommand(CommandKey("collect_piece"))
- *         waitFor(2.seconds)
+ *         namedCommand("arm.stow")
+ *         waitSeconds(1.5)
  *     }
  * }
  * ```
@@ -52,9 +73,32 @@ class RobotSequence internal constructor() {
         task(ActionDispatchTask(action, requiredResources))
     }
 
+    /**
+     * Dispatches one immutable Redux intent computed from the [RobotState] observed when this step starts,
+     * completing immediately.
+     */
+    fun dispatch(
+        name: String = "StateAction",
+        requiredResources: Long = TaskResources.NONE,
+        actionFactory: (RobotState) -> RobotAction,
+    ) {
+        task(StateActionTask(name, requiredResources, actionFactory))
+    }
+
     /** Waits for a finite, non-negative [duration], rounded up to the next whole millisecond. */
     fun waitFor(duration: Duration) {
         task(TimeWaitTask(ceilingMilliseconds(duration, "Wait duration")))
+    }
+
+    /**
+     * Waits for a finite, non-negative number of [seconds], rounded up to the next whole millisecond.
+     * Matches [com.areslib.routine.RoutineBuilder.waitSeconds] for consistent text-first authoring.
+     */
+    fun waitSeconds(seconds: Double) {
+        require(seconds.isFinite() && seconds >= 0.0) { "Wait duration must be finite and non-negative" }
+        val ms = ceil(seconds * 1_000.0)
+        require(ms <= Long.MAX_VALUE.toDouble()) { "Wait duration overflows millisecond representation" }
+        task(TimeWaitTask(ms.toLong()))
     }
 
     /** Waits until [condition] becomes true. */
@@ -99,9 +143,38 @@ class RobotSequence internal constructor() {
         task(NamedCommands.task(key, requiredResources))
     }
 
+    /**
+     * Convenience overload that resolves a registered command by its string [key] without requiring
+     * an explicit [CommandKey] wrapper at the call site.
+     */
+    fun namedCommand(
+        key: String,
+        requiredResources: Long = NamedCommands.registeredResources(CommandKey(key)) ?: TaskResources.NONE,
+    ) {
+        namedCommand(CommandKey(key), requiredResources)
+    }
+
+    /**
+     * Alias for [namedCommand] that matches declarative [com.areslib.routine.RoutineBuilder] step syntax.
+     */
+    fun step(
+        key: String,
+        requiredResources: Long = NamedCommands.registeredResources(CommandKey(key)) ?: TaskResources.NONE,
+    ) {
+        namedCommand(CommandKey(key), requiredResources)
+    }
+
     /** Runs every child concurrently and completes when every child completes. */
     fun parallel(block: RobotSequence.() -> Unit) {
         task(ParallelTaskGroup(childTasks("parallel", block)))
+    }
+
+    /**
+     * Runs every child concurrently and completes when every child completes.
+     * Alias for [parallel] that matches [com.areslib.routine.RoutineBuilder.together].
+     */
+    fun together(block: RobotSequence.() -> Unit) {
+        parallel(block)
     }
 
     /** Runs every child concurrently and completes when the first child completes. */
@@ -109,10 +182,31 @@ class RobotSequence internal constructor() {
         task(ParallelRaceGroup(childTasks("race", block)))
     }
 
+    /**
+     * Runs every child concurrently and completes when the first child completes.
+     * Alias for [race] that matches [com.areslib.routine.RoutineBuilder.firstToFinish].
+     */
+    fun firstToFinish(block: RobotSequence.() -> Unit) {
+        race(block)
+    }
+
     /** Runs [deadline] with the child tasks and interrupts the children when it completes. */
     fun deadline(deadline: Task, block: RobotSequence.() -> Unit) {
         val companions = childTasks("deadline", block)
         task(ParallelDeadlineGroup(deadline, companions))
+    }
+
+    /**
+     * Block-based deadline group matching [com.areslib.routine.RoutineBuilder.deadline].
+     *
+     * Runs [main] alongside [companions] and interrupts [companions] when [main] completes.
+     * If [main] contains multiple steps, they execute sequentially as the deadline task.
+     */
+    fun deadline(main: RobotSequence.() -> Unit, companions: RobotSequence.() -> Unit) {
+        val mainTasks = childTasks("deadline main", main)
+        val deadlineTask = mainTasks.singleOrNull() ?: SequentialTaskGroup(mainTasks)
+        val companionTasks = childTasks("deadline", companions)
+        task(ParallelDeadlineGroup(deadlineTask, companionTasks))
     }
 
     /** Adds a nested sequential group when explicit grouping improves readability. */

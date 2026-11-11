@@ -2,44 +2,49 @@ package com.ares.analytics.viewmodel
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import com.ares.analytics.shared.*
-import com.ares.analytics.shared.models.*
-import com.ares.analytics.service.Nt4ClientService
-import com.ares.analytics.service.writeFileAtomically
-import com.ares.analytics.util.ProjectLayout
-import com.ares.analytics.util.Sha256
 import com.ares.analytics.domain.project.FieldDocumentMapper
-import com.ares.analytics.service.project.persistence.FieldDocumentStore
+import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.project.ProjectSession
 import com.ares.analytics.service.project.ProjectSessionMutationResult
 import com.ares.analytics.service.project.ProjectSessionRevision
-import com.ares.analytics.viewmodel.field.FieldImageLoader
-import com.ares.analytics.viewmodel.field.FieldEditorValidator
+import com.ares.analytics.service.project.persistence.FieldDocumentStore
+import com.ares.analytics.service.writeFileAtomically
+import com.ares.analytics.shared.*
+import com.ares.analytics.shared.models.*
+import com.ares.analytics.util.ProjectLayout
+import com.ares.analytics.util.Sha256
+import com.ares.analytics.viewmodel.field.ExpectedSimulatorField
+import com.ares.analytics.viewmodel.field.FieldAprilTagTransfer
 import com.ares.analytics.viewmodel.field.FieldEditorClipboard
 import com.ares.analytics.viewmodel.field.FieldEditorHistory
-import com.ares.analytics.viewmodel.field.FieldEditorSnapshot
-import com.ares.analytics.viewmodel.field.editorSnapshot
-import com.ares.analytics.viewmodel.field.FieldAprilTagTransfer
-import com.ares.analytics.viewmodel.field.FieldEditorTransferOps
-import com.ares.analytics.viewmodel.field.FieldEditorSimulatorSync
-import com.ares.analytics.viewmodel.field.FieldEditorValidationOps
 import com.ares.analytics.viewmodel.field.FieldEditorLayout
+import com.ares.analytics.viewmodel.field.FieldEditorSimulatorSync
+import com.ares.analytics.viewmodel.field.FieldEditorSnapshot
+import com.ares.analytics.viewmodel.field.FieldEditorTransferOps
+import com.ares.analytics.viewmodel.field.FieldEditorValidationOps
+import com.ares.analytics.viewmodel.field.FieldEditorValidator
+import com.ares.analytics.viewmodel.field.FieldImageLoader
 import com.ares.analytics.viewmodel.field.FieldMeasurementUnit
 import com.ares.analytics.viewmodel.field.FieldPrefabCatalog
 import com.ares.analytics.viewmodel.field.FieldPrefabKind
 import com.ares.analytics.viewmodel.field.FieldValidationIssue
 import com.ares.analytics.viewmodel.field.FieldValidationSeverity
-import com.ares.analytics.viewmodel.field.ExpectedSimulatorField
 import com.ares.analytics.viewmodel.field.SIMULATOR_FIELD_APPLIED_RECEIPT_TOPIC
 import com.ares.analytics.viewmodel.field.SIMULATOR_FIELD_APPLY_ERROR_TOPIC
-import com.ares.analytics.viewmodel.field.SimulatorFieldApplyReceipt
 import com.ares.analytics.viewmodel.field.SimulatorFieldApplyFailure
+import com.ares.analytics.viewmodel.field.SimulatorFieldApplyReceipt
+import com.ares.analytics.viewmodel.field.applyStudentPracticeFieldPreset
+import com.ares.analytics.viewmodel.field.editorSnapshot
 import com.ares.analytics.viewmodel.field.parseSimulatorFieldApplyReceipt
-import com.areslib.state.FieldType
 import com.areslib.state.AprilTagMapFormat
+import com.areslib.state.FieldType
 import com.areslib.state.RobotFieldConfig
 import com.areslib.state.RobotFieldDocument
 import com.areslib.state.RobotFieldValidator
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,10 +61,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Single owner for field editor state and persistence.
@@ -94,6 +95,7 @@ class FieldEditorViewModel(
     fun onIntent(intent: FieldEditorIntent) {
         when (intent) {
             FieldEditorIntent.LoadBiobuzzPreset -> loadBiobuzzPreset()
+            is FieldEditorIntent.ApplyPracticeFieldPreset -> applyEdit("practice-preset-${intent.preset.name}") { applyStudentPracticeFieldPreset(it, intent.preset, activeLeague) }
             is FieldEditorIntent.LoadConfig -> load(intent.projectPath, intent.league)
             is FieldEditorIntent.ImportFieldImage -> importFieldImage(intent)
             FieldEditorIntent.ClearFieldImage -> applyEdit {

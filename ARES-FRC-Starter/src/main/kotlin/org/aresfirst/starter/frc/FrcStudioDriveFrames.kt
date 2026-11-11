@@ -13,6 +13,7 @@ internal data class FrcStudioDriveCommand(
     val omegaRadiansPerSecond: Double,
     val isTeleopMode: Boolean,
     val isFieldCentric: Boolean,
+    val isRedAlliance: Boolean = false,
     val buttonA: Boolean,
     val buttonB: Boolean,
     val buttonX: Boolean,
@@ -88,6 +89,7 @@ internal class FrcStudioDriveFrameGate {
             omegaRadiansPerSecond = omega,
             isTeleopMode = flags has FLAG_TELEOP,
             isFieldCentric = flags has FLAG_FIELD_CENTRIC,
+            isRedAlliance = flags has FLAG_RED_ALLIANCE,
             buttonA = flags has FLAG_BUTTON_A,
             buttonB = flags has FLAG_BUTTON_B,
             buttonX = flags has FLAG_BUTTON_X,
@@ -197,6 +199,7 @@ internal class FrcStudioDriveFrameGate {
         private const val FLAGS_INDEX = DesktopDriveProtocol.FLAGS_INDEX
         private const val FLAG_TELEOP = DesktopDriveProtocol.FLAG_TELEOP
         private const val FLAG_FIELD_CENTRIC = DesktopDriveProtocol.FLAG_FIELD_CENTRIC
+        private const val FLAG_RED_ALLIANCE = DesktopDriveProtocol.FLAG_RED_ALLIANCE
         private const val FLAG_BUTTON_A = DesktopDriveProtocol.FLAG_BUTTON_A
         private const val FLAG_BUTTON_B = DesktopDriveProtocol.FLAG_BUTTON_B
         private const val FLAG_BUTTON_X = DesktopDriveProtocol.FLAG_BUTTON_X

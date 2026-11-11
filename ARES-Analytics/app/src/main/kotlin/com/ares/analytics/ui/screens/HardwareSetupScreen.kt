@@ -2,6 +2,7 @@ package com.ares.analytics.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,8 +21,9 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,23 +39,31 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.service.commissioning.CommissioningSimulationStatus
 import com.ares.analytics.service.hardware.HardwareInventoryItem
 import com.ares.analytics.service.hardware.HardwareInventoryOwner
 import com.ares.analytics.service.hardware.HardwareIssueSeverity
 import com.ares.analytics.service.hardware.HardwareReviewStatus
 import com.ares.analytics.service.hardware.HardwareSetupSnapshot
 import com.ares.analytics.service.hardware.commissioningPlan
-import com.ares.analytics.service.commissioning.CommissioningSimulationStatus
 import com.ares.analytics.ui.components.core.AresCard
+import com.ares.analytics.ui.components.core.AresSpecSummaryModal
+import com.ares.analytics.ui.components.hardware.HardwareOwnerFilter
+import com.ares.analytics.ui.components.hardware.HardwareWiringFilterStrip
+import com.ares.analytics.ui.components.hardware.filterHardwareInventory
+import com.ares.analytics.ui.components.hardware.formatHardwareWiringMarkdown
+import com.ares.analytics.ui.components.hardware.generateHardwareWiringSpecSections
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -78,60 +88,120 @@ fun HardwareSetupScreen(
     onBackToStudio: (() -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsState()
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item {
-            HardwareSetupHeader(state, viewModel::refresh, onBackToStudio)
-        }
-        state.error?.let { error -> item { MessageCard("Hardware Setup error", error, HardwareIssueSeverity.ERROR) } }
-        if (state.loading) {
+    var searchQuery by remember { mutableStateOf("") }
+    var ownerFilter by remember { mutableStateOf(HardwareOwnerFilter.ALL) }
+    var selectedBus by remember { mutableStateOf<String?>(null) }
+    var showWiringSpecModal by remember { mutableStateOf(false) }
+
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             item {
-                Row(
-                    Modifier.fillMaxWidth().padding(24.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CircularProgressIndicator(Modifier.size(24.dp), color = AresCyan)
-                    Spacer(Modifier.width(10.dp))
-                    Text("Reading canonical hardware descriptors…", color = AresTextSecondary)
-                }
+                HardwareSetupHeader(
+                    state = state,
+                    onRefresh = viewModel::refresh,
+                    onOpenWiringSpec = if (state.snapshot != null) ({ showWiringSpecModal = true }) else null,
+                    onBack = onBackToStudio,
+                )
             }
-        } else {
-            state.snapshot?.let { snapshot ->
-                item { ReviewStatusCard(snapshot) }
-                item { CommissioningEvidenceLadder(snapshot) }
-                snapshot.issues.forEach { issue ->
-                    item { MessageCard(if (issue.itemUid == null) "Project check" else "Device check", issue.message, issue.severity) }
-                }
+            state.error?.let { error -> item { MessageCard("Hardware Setup error", error, HardwareIssueSeverity.ERROR) } }
+            if (state.loading) {
                 item {
-                    SourceActions(onOpenDrivebase, onOpenSubsystems)
-                }
-                item {
-                    CommissioningGuide(snapshot, onOpenPitDiagnostics)
-                }
-                HardwareInventoryOwner.entries.forEach { owner ->
-                    val owned = snapshot.items.filter { it.owner == owner }
-                    if (owned.isNotEmpty()) {
-                        item {
-                            Text(
-                                if (owner == HardwareInventoryOwner.DRIVEBASE) "Drivebase hardware" else "Subsystem hardware",
-                                color = AresTextPrimary,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        items(owned, key = HardwareInventoryItem::uid) { item -> HardwareItemCard(item) }
+                    Row(
+                        Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator(Modifier.size(24.dp), color = AresCyan)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Reading canonical hardware descriptors…", color = AresTextSecondary)
                     }
                 }
-                item {
-                    ReviewChecklist(state, viewModel, onBackToStudio)
-                }
-                item {
-                    PhysicalValidationSection(state, viewModel)
+            } else {
+                state.snapshot?.let { snapshot ->
+                    val filteredItems = filterHardwareInventory(
+                        snapshot = snapshot,
+                        searchQuery = searchQuery,
+                        ownerFilter = ownerFilter,
+                        selectedBus = selectedBus,
+                    )
+                    item {
+                        com.ares.analytics.ui.components.hardware.StudentPortChecklistBanner(
+                            snapshot = snapshot,
+                            onFilterIssues = { ownerFilter = HardwareOwnerFilter.ISSUES_ONLY },
+                            onShowAll = { ownerFilter = HardwareOwnerFilter.ALL; selectedBus = null; searchQuery = "" },
+                            onOpenDrivebase = onOpenDrivebase,
+                            onOpenSubsystems = onOpenSubsystems,
+                        )
+                    }
+                    item { ReviewStatusCard(snapshot) }
+                    item { CommissioningEvidenceLadder(snapshot) }
+                    snapshot.issues.forEach { issue ->
+                        item { MessageCard(if (issue.itemUid == null) "Project check" else "Device check", issue.message, issue.severity) }
+                    }
+                    item {
+                        SourceActions(onOpenDrivebase, onOpenSubsystems)
+                    }
+                    item {
+                        com.ares.analytics.ui.components.hardware.CommissioningGuideCard(snapshot, onOpenPitDiagnostics)
+                    }
+                    item {
+                        HardwareWiringFilterStrip(
+                            snapshot = snapshot,
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = { searchQuery = it },
+                            ownerFilter = ownerFilter,
+                            onOwnerFilterChange = { ownerFilter = it },
+                            selectedBus = selectedBus,
+                            onSelectedBusChange = { selectedBus = it },
+                            filteredCount = filteredItems.size,
+                        )
+                    }
+                    if (filteredItems.isEmpty() && snapshot.items.isNotEmpty()) {
+                        item {
+                            MessageCard(
+                                "No devices match current filter",
+                                "Clear the search query or bus/owner filter above to view all ${snapshot.items.size} hardware device(s).",
+                                HardwareIssueSeverity.INFO,
+                            )
+                        }
+                    }
+                    HardwareInventoryOwner.entries.forEach { owner ->
+                        val owned = filteredItems.filter { it.owner == owner }
+                        if (owned.isNotEmpty()) {
+                            item {
+                                Text(
+                                    if (owner == HardwareInventoryOwner.DRIVEBASE) "Drivebase hardware (${owned.size})" else "Subsystem hardware (${owned.size})",
+                                    color = AresTextPrimary,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                            items(owned, key = HardwareInventoryItem::uid) { item -> HardwareItemCard(item) }
+                        }
+                    }
+                    item {
+                        ReviewChecklist(state, viewModel, onBackToStudio)
+                    }
+                    item {
+                        PhysicalValidationSection(state, viewModel)
+                    }
                 }
             }
+        }
+
+        val currentSnapshot = state.snapshot
+        if (currentSnapshot != null && showWiringSpecModal) {
+            AresSpecSummaryModal(
+                isOpen = true,
+                title = "Robot Hardware & Port Map Specification",
+                subtitle = "${currentSnapshot.league.name} · ${currentSnapshot.items.size} mapped devices · Inventory ${currentSnapshot.inventoryHash.take(12)}…",
+                sections = generateHardwareWiringSpecSections(currentSnapshot),
+                onDismiss = { showWiringSpecModal = false },
+                kotlinDslGenerator = { formatHardwareWiringMarkdown(currentSnapshot) },
+            )
         }
     }
 }
@@ -272,148 +342,16 @@ private fun EvidenceRow(label: String, passed: Boolean, detail: String) {
 /** Inventory diagnostics can change without changing any successfully decoded source fingerprint. */
 @Composable
 internal fun rememberCommissioningPlan(snapshot: HardwareSetupSnapshot) =
-    remember(snapshot) { snapshot.commissioningPlan() }
-
-@Composable
-private fun CommissioningGuide(
-    snapshot: HardwareSetupSnapshot,
-    onOpenPitDiagnostics: (() -> Unit)?,
-) {
-    val plan = rememberCommissioningPlan(snapshot)
-    @Suppress("DEPRECATION") val clipboard = LocalClipboardManager.current
-    Card(
-        colors = CardDefaults.cardColors(containerColor = AresSurface),
-        border = BorderStroke(1.dp, AresBorder),
-        shape = RoundedCornerShape(12.dp),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Configure and identify the real robot", color = AresTextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text(
-                "These names come from the canonical robot description. Enter them exactly in Driver Station → Configure Robot → Hardware; capitalization matters.",
-                color = AresTextSecondary,
-                lineHeight = 19.sp,
-            )
-            if (plan.hardwareMapEntries.isNotEmpty()) {
-                Surface(color = AresSurfaceElevated, shape = RoundedCornerShape(9.dp), border = BorderStroke(1.dp, AresBorder)) {
-                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        plan.hardwareMapEntries.forEach { item ->
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text(item.displayName, color = AresTextPrimary, modifier = Modifier.weight(1f), fontSize = 12.sp)
-                                Text(item.address.ifBlank { "NOT CONFIGURED" }, color = if (item.address.isBlank()) AresRed else AresCyan, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-                OutlinedButton(onClick = { clipboard.setText(AnnotatedString(plan.clipboardText)) }) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Copy exact hardware names")
-                }
-            }
-
-            HorizontalDivider(color = AresBorder)
-            Text("Safely check motor position and direction", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-            Text(
-                "ARES Robotics Studio never pulses a physical motor from this screen. On the Driver Station, select the TeleOp named ARES Drivetrain Diagnostic. It is hold-to-run and uses the generated names and directions below.",
-                color = AresTextSecondary,
-                fontSize = 12.sp,
-                lineHeight = 18.sp,
-            )
-            Surface(color = AresAmber.copy(alpha = 0.10f), border = BorderStroke(1.dp, AresAmber), shape = RoundedCornerShape(9.dp)) {
-                Text(
-                    "Before Play: put the robot on secure blocks so every wheel is clear of the floor, remove game pieces, keep hands and clothing away, and have one person ready to press Stop. Release the button immediately if the wrong wheel or direction moves.",
-                    color = AresTextPrimary,
-                    modifier = Modifier.fillMaxWidth().padding(11.dp),
-                    fontSize = 12.sp,
-                    lineHeight = 18.sp,
-                )
-            }
-            if (plan.ftcDiagnosticAvailable) {
-                plan.ftcMotorChecks.forEach { check ->
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(check.gamepadControl, color = AresCyan, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
-                        Text("${check.displayName}  [${check.hardwareMapName}]  · ${check.configuredDirection}", color = AresTextPrimary, fontSize = 12.sp)
-                    }
-                }
-            } else {
-                Text(plan.ftcDiagnosticBlockReason.orEmpty(), color = AresAmber, fontSize = 12.sp, lineHeight = 18.sp)
-            }
-            Text(
-                "The diagnostic proves only motor identity and configured direction. It does not validate odometry, closed-loop tuning, current limits, mechanisms, or match readiness.",
-                color = AresTextTertiary,
-                fontSize = 11.sp,
-                lineHeight = 16.sp,
-            )
-            if (plan.subsystemChecks.isNotEmpty()) {
-                HorizontalDivider(color = AresBorder)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    Icon(Icons.Default.Science, contentDescription = null, tint = AresCyan, modifier = Modifier.size(18.dp))
-                    Text("Commission subsystem devices", color = AresTextPrimary, fontWeight = FontWeight.Bold)
-                }
-                Text(
-                    "Start with read-only signals in the simulator or live self-test. Motion proposals below are intentionally unarmed: this app does not send them to a robot.",
-                    color = AresTextSecondary,
-                    fontSize = 12.sp,
-                    lineHeight = 18.sp,
-                )
-                plan.subsystemChecks.forEach { check ->
-                    Surface(color = AresSurfaceElevated, shape = RoundedCornerShape(9.dp), border = BorderStroke(1.dp, AresBorder)) {
-                        Column(Modifier.fillMaxWidth().padding(11.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("${check.subsystemName} · ${check.deviceName}", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text(check.hardwareAddress, color = AresCyan, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
-                            }
-                            if (check.readOnlySignals.isNotEmpty()) {
-                                Text("Observe first: ${check.readOnlySignals.joinToString()}", color = AresTextSecondary, fontSize = 11.sp)
-                            }
-                            if (check.controlStrategies.isNotEmpty()) {
-                                Text("Control: ${check.controlStrategies.joinToString { it.lowercase().replace('_', ' ') }}", color = AresTextSecondary, fontSize = 11.sp)
-                            }
-                            check.homingMethod?.let { method ->
-                                Text(
-                                    "Homing: ${method.lowercase().replace('_', ' ')}${check.homingEvidence.takeIf { it.isNotEmpty() }?.joinToString(prefix = " · evidence: ").orEmpty()}",
-                                    color = AresTextSecondary,
-                                    fontSize = 11.sp,
-                                )
-                            }
-                            if (check.requiresCalibration) Text("Calibration must be established before motion.", color = AresAmber, fontSize = 11.sp)
-                            if (check.requiresCurrentMonitoring) Text("A fresh, valid current reading is required.", color = AresAmber, fontSize = 11.sp)
-                            when {
-                                check.followerOnly -> Text("Follower device: verify it with its leader; do not command it independently.", color = AresAmber, fontSize = 11.sp)
-                                check.pulseProposal != null -> Text(
-                                    "UNARMED PULSE PROPOSAL · safety checklist required · ≤${check.pulseProposal.maximumDurationMs} ms · ≤${(check.pulseProposal.maximumTravelFromNeutralFraction * 100).toInt()}% from neutral ${check.pulseProposal.safeNeutralOutput}",
-                                    color = AresAmber,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                            }
-                        }
-                    }
-                }
-                Text(
-                    "After identity, direction, sensors, and homing pass, transfer only reviewed gains from the simulation/tuning tools. Re-run neutral recovery before enabling normal commands.",
-                    color = AresTextTertiary,
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp,
-                )
-            }
-            if (onOpenPitDiagnostics != null) {
-                OutlinedButton(onClick = onOpenPitDiagnostics) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Open live read-only self-test")
-                }
-            }
-        }
-    }
-}
+    com.ares.analytics.ui.components.hardware.rememberCommissioningPlan(snapshot)
 
 @Composable
 private fun HardwareSetupHeader(
     state: HardwareSetupState,
     onRefresh: () -> Unit,
+    onOpenWiringSpec: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null,
 ) {
+    @Suppress("DEPRECATION") val clipboard = LocalClipboardManager.current
     Card(
         colors = CardDefaults.cardColors(containerColor = AresSurface),
         border = BorderStroke(1.dp, AresBorder),
@@ -429,6 +367,22 @@ private fun HardwareSetupHeader(
                     }
                 }
                 Text("Hardware Setup", color = AresTextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                if (onOpenWiringSpec != null) {
+                    OutlinedButton(onClick = onOpenWiringSpec) {
+                        Icon(Icons.Default.TableChart, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text("Wiring Spec")
+                    }
+                }
+                state.snapshot?.let { snapshot ->
+                    OutlinedButton(
+                        onClick = { clipboard.setText(AnnotatedString(formatHardwareWiringMarkdown(snapshot))) },
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text("Copy Wiring Markdown")
+                    }
+                }
                 OutlinedButton(onClick = onRefresh, enabled = !state.loading && !state.saving) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(17.dp))
                     Spacer(Modifier.width(5.dp))

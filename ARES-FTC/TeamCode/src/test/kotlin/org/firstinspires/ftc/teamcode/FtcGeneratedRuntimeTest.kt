@@ -387,6 +387,43 @@ class GeneratedDriveCommandTest {
     }
 
     @Test
+    fun `resolveFtcLookAtPoint mirrors POINT_TOWARDS focus coordinate across alliances and applyFtcHeadingMode aims spline`() {
+        val entry = AutonomousCatalogEntry(
+            entryId = "aim-auto",
+            displayName = "Aim Auto",
+            routineId = "aim",
+            startingPose = RoutinePose(0.0, 0.0, 0.0),
+            authoredAlliance = com.areslib.routine.RoutineAlliance.RED,
+            mirrorForOppositeAlliance = true,
+        )
+        val rawFocus = RoutinePose(1.5, -1.2, 0.0)
+        val redFocus = org.firstinspires.ftc.teamcode.dsl.resolveFtcLookAtPoint(entry, Alliance.RED, rawFocus)!!
+        val blueFocus = org.firstinspires.ftc.teamcode.dsl.resolveFtcLookAtPoint(entry, Alliance.BLUE, rawFocus)!!
+        assertEquals(1.5, redFocus.x, 1e-9)
+        assertEquals(-1.2, redFocus.y, 1e-9)
+        // FTC default rotational/mirrored alliance transform mirrors opposite alliance coordinates
+        assertTrue(kotlin.math.hypot(blueFocus.x - redFocus.x, blueFocus.y - redFocus.y) > 0.1)
+
+        val start = Pose2d(0.0, 0.0, Rotation2d(0.0))
+        val target = Pose2d(1.0, 0.0, Rotation2d(0.0))
+        val path = PathPlannerParser.generatePath(
+            points = listOf(Translation2d(start.x, start.y), Translation2d(target.x, target.y)),
+            startHeading = start.heading,
+            endHeading = target.heading,
+        )
+        org.firstinspires.ftc.teamcode.dsl.applyFtcHeadingMode(
+            path = path,
+            start = start,
+            target = target,
+            headingMode = com.areslib.routine.RoutineHeadingMode.POINT_TOWARDS,
+            lookAtPoint = Translation2d(0.5, 1.0),
+        )
+        val midPoint = path.points[path.points.size / 2]
+        val expectedAngle = kotlin.math.atan2(1.0 - midPoint.pose.y, 0.5 - midPoint.pose.x)
+        assertEquals(expectedAngle, midPoint.pose.heading.radians, 1e-4)
+    }
+
+    @Test
     fun `checked-in scheme binds every drive axis and an explicit neutral recovery chord`() {
         val workingDirectory = requireNotNull(System.getProperty("user.dir"))
         var dir: java.io.File? = java.io.File(workingDirectory)

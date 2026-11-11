@@ -102,6 +102,8 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     }
     
     private val lock = Any()
+    private var pendingEncoderResetMask = 0
+    private val resetCmdBytes = ByteArray(2).apply { this[0] = 0x01 }
     @Volatile private var running = true
     private val pollingThread: Thread
 
@@ -109,6 +111,21 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         pollingThread = Thread {
             while (running) {
                 if (isInitialized) {
+                    val resetMask = synchronized(lock) {
+                        val mask = pendingEncoderResetMask
+                        pendingEncoderResetMask = 0
+                        mask
+                    }
+                    if (resetMask != 0) {
+                        for (ch in 0 until 8) {
+                            if ((resetMask and (1 shl ch)) != 0) {
+                                try {
+                                    resetCmdBytes[1] = ch.toByte()
+                                    deviceClient.write(0x10, resetCmdBytes)
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    }
                     var posSuccess = false
                     var velSuccess = false
                     var pwSuccess = false
@@ -217,12 +234,13 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
     /** Returns thread-safe cached PWM pulse width ($\mu s$) for channel $[0 \dots 7]$. */
     fun getCachedPulseWidth(channel: Int): Int = synchronized(lock) { cachedPulseWidths.getOrElse(channel) { 0 } }
 
-    /** Sends a command byte resetting the specified encoder channel position counter $[0 \dots 7]$ to zero. */
+    /** Enqueues a reset command for the specified encoder channel $[0 \dots 7]$ on the polling thread. */
     fun resetEncoder(channel: Int) {
-        try {
-            val cmdBytes = byteArrayOf(0x01, channel.toByte())
-            deviceClient.write(0x10, cmdBytes) // 0x10 is COMMAND register
-        } catch (_: Exception) {}
+        synchronized(lock) {
+            if (channel in 0..7) {
+                pendingEncoderResetMask = pendingEncoderResetMask or (1 shl channel)
+            }
+        }
     }
 
     /**
@@ -255,6 +273,12 @@ class OctoQuadFWv3(deviceClient: I2cDeviceSynch) : I2cDeviceSynchDevice<I2cDevic
         destination.velX_mmS = cachedLocalizerData.velX_mmS
         destination.velY_mmS = cachedLocalizerData.velY_mmS
         destination.velHeading_radS = cachedLocalizerData.velHeading_radS
+    }
+
+    /** Atomically copies the current localizer block into [destination] and returns its timestamp. */
+    fun copyLocalizerSnapshotInto(destination: LocalizerDataBlock): Long = synchronized(lock) {
+        copyLocalizerDataInto(destination)
+        lastLocalizerUpdateTimestampMs
     }
 
     /** Terminates background sampling thread and releases device client handles. */
@@ -360,12 +384,13 @@ class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
         }
         requestedStartPose = startPose
         frameInitialized = false
-        initializeFrameFromCacheIfFresh()
+        val ts = octoQuad.copyLocalizerSnapshotInto(rawData)
+        initializeFrameFromSnapshotIfFresh(ts)
     }
 
     /** Copies the latest cached localizer block into meter/radian odometry fields. */
     override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
-        val sampleTimestampMs = octoQuad.lastLocalizerUpdateTimestampMs
+        val sampleTimestampMs = octoQuad.copyLocalizerSnapshotInto(rawData)
         if (sampleTimestampMs <= 0L) {
             inputs.posX = requestedStartPose.x
             inputs.posY = requestedStartPose.y
@@ -376,15 +401,13 @@ class OctoQuadOdometryIO(private val octoQuad: OctoQuadFWv3) : OdometryIO {
             inputs.timestampMs = 0L
             return
         }
-        octoQuad.copyLocalizerDataInto(rawData)
-        initializeFrameFromCacheIfFresh()
+        initializeFrameFromSnapshotIfFresh(sampleTimestampMs)
         frameTransform.apply(rawData, inputs)
         inputs.timestampMs = sampleTimestampMs
     }
 
-    private fun initializeFrameFromCacheIfFresh() {
-        if (frameInitialized || octoQuad.lastLocalizerUpdateTimestampMs <= 0L) return
-        octoQuad.copyLocalizerDataInto(rawData)
+    private fun initializeFrameFromSnapshotIfFresh(sampleTimestampMs: Long) {
+        if (frameInitialized || sampleTimestampMs <= 0L) return
         frameTransform.initialize(requestedStartPose, rawData)
         frameInitialized = true
     }

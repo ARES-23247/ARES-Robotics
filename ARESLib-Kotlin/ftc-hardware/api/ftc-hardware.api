@@ -213,6 +213,7 @@ public final class com/areslib/ftc/FtcMecanumRobotBuilder {
 
 public final class com/areslib/ftc/FtcMecanumRobotBuilderKt {
 	public static final fun ftcMecanumRobot (Lcom/qualcomm/robotcore/hardware/HardwareMap;Lkotlin/jvm/functions/Function1;)Lcom/areslib/ftc/FtcMecanumRobot;
+	public static synthetic fun ftcMecanumRobot$default (Lcom/qualcomm/robotcore/hardware/HardwareMap;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/ftc/FtcMecanumRobot;
 }
 
 public final class com/areslib/ftc/FtcTeleopDriveFrame : java/lang/Enum {
@@ -637,6 +638,7 @@ public final class com/areslib/ftc/dsl/FtcTeleOpBuilder {
 	public final fun duringInit (Lkotlin/jvm/functions/Function1;)V
 	public final fun everyLoop (Lkotlin/jvm/functions/Function1;)V
 	public final fun onStart (Lkotlin/jvm/functions/Function1;)V
+	public final fun onStop (Lkotlin/jvm/functions/Function1;)V
 	public final fun setup (Lkotlin/jvm/functions/Function1;)V
 }
 
@@ -1059,6 +1061,7 @@ public final class com/areslib/ftc/hardware/OctoQuadFWv3 : com/qualcomm/robotcor
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)V
 	public fun close ()V
 	public final fun copyLocalizerDataInto (Lcom/areslib/ftc/hardware/OctoQuadFWv3$LocalizerDataBlock;)V
+	public final fun copyLocalizerSnapshotInto (Lcom/areslib/ftc/hardware/OctoQuadFWv3$LocalizerDataBlock;)J
 	public final fun getCachedPosition (I)I
 	public final fun getCachedPulseWidth (I)I
 	public final fun getCachedVelocity (I)I
@@ -1160,6 +1163,8 @@ public final class com/areslib/ftc/hardware/SrsHubDigitalIO {
 public final class com/areslib/ftc/hardware/SrsHubDriver : com/qualcomm/robotcore/hardware/I2cDeviceSynchDevice, java/lang/AutoCloseable {
 	public fun <init> (Lcom/qualcomm/robotcore/hardware/I2cDeviceSynch;)V
 	public fun close ()V
+	public final fun copyI2cColorRgbaInto (I[I)V
+	public final fun copyI2cOdometryInto (I[D)J
 	public final fun copyVL53L5CXDistances (I[I)I
 	public final fun getAnalogVoltage (I)D
 	public fun getDeviceName ()Ljava/lang/String;

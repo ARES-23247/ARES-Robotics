@@ -139,4 +139,47 @@ class FtcTeleOpDslTest {
         opMode.stop()
         assertEquals(listOf("cancel-controls", "close-robot"), events)
     }
+
+    @Test
+    fun `controls-only teleOp succeeds without dummy everyLoop and invokes onStop before close`() {
+        val events = mutableListOf<String>()
+        val opMode = object : FtcTeleOpBase<Unit>() {
+            override fun define() = teleOp<Unit> {
+                controls {
+                    driver.a.onPress("Score") { events += "score" }
+                }
+                onStop {
+                    events += "on-stop"
+                }
+            }
+
+            override fun buildRobot() = Unit
+            override fun getBaseRobot(robot: Unit) = null
+            override fun updateRobot(
+                robot: Unit,
+                g1: com.areslib.telemetry.GamepadState,
+                g2: com.areslib.telemetry.GamepadState,
+            ) {
+                events += "robot-update"
+            }
+
+            override fun cancelProjectControls(robot: Unit) {
+                events += "cancel-controls"
+            }
+
+            override fun closeRobot(robot: Unit) {
+                events += "close-robot"
+            }
+        }
+
+        opMode.init()
+        opMode.start()
+        opMode.gamepad1.a = true
+        opMode.loop()
+        assertEquals(listOf("score", "robot-update"), events)
+
+        events.clear()
+        opMode.stop()
+        assertEquals(listOf("on-stop", "cancel-controls", "close-robot"), events)
+    }
 }

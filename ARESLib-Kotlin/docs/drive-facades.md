@@ -45,9 +45,11 @@ neutralizes; malformed targets and invalid hold tuning produce no correction for
 Constructor heading gains/deadzone apply initially. A new Redux drive-tuning object subsequently
 becomes authoritative. Position tuning is read from the initial state and later tuning updates.
 
-`driveWithGamepad` preserves the existing shaped-stick behavior, turbo precedence and legacy BLUE
-alliance translation inversion. Season code with its own alliance transform should pass its explicit
-field-relative inputs rather than applying this helper's inversion a second time.
+`driveWithGamepad` preserves the existing shaped-stick behavior, turbo precedence and configurable
+`mirroredAlliance` translation inversion (defaulting to `Alliance.BLUE` for FTC center-origin frames
+and configured to `Alliance.RED` on `FrcSwerveRobot.swerveDrive` for WPILib blue-origin frames).
+Season code with its own alliance transform should pass its explicit field-relative inputs rather
+than applying this helper's inversion a second time.
 
 ## Path requests
 

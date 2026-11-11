@@ -34,12 +34,43 @@ internal fun installGeneratedSubsystems(
     hardwareRegistry: HardwareRegistry,
     register: (Subsystem) -> Unit,
     createAll: (HardwareMap, HardwareRegistry) -> List<Subsystem> = GeneratedSubsystemRegistry::createAll,
-): List<Subsystem> = createAll(hardwareMap, hardwareRegistry).also { created -> created.forEach(register) }
+): List<Subsystem> = registerGeneratedSubsystems(createAll(hardwareMap, hardwareRegistry), register)
 
 internal fun installGeneratedSuperstructures(
     register: (Subsystem) -> Unit,
     createAll: () -> List<Subsystem> = GeneratedSuperstructureRegistry::createAll,
-): List<Subsystem> = createAll().also { created -> created.forEach(register) }
+): List<Subsystem> = registerGeneratedSubsystems(createAll(), register)
+
+private fun registerGeneratedSubsystems(subsystems: List<Subsystem>, register: (Subsystem) -> Unit): List<Subsystem> {
+    var registered = 0
+    try {
+        while (registered < subsystems.size) {
+            register(subsystems[registered])
+            registered++
+        }
+        return subsystems
+    } catch (failure: Throwable) {
+        preserveInterrupt(failure)
+        val released = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Subsystem, Boolean>())
+        for (index in 0 until registered) released.add(subsystems[index])
+        for (index in subsystems.lastIndex downTo registered) {
+            val subsystem = subsystems[index]
+            if (!released.add(subsystem)) continue
+            try { subsystem.close() }
+            catch (cleanup: Throwable) { retainSuppressed(failure, cleanup) }
+        }
+        throw failure
+    }
+}
+
+private fun preserveInterrupt(failure: Throwable) {
+    if (failure is InterruptedException || failure.cause is InterruptedException) Thread.currentThread().interrupt()
+}
+
+private fun retainSuppressed(primary: Throwable, failure: Throwable) {
+    preserveInterrupt(failure)
+    if (primary !== failure && primary.suppressed.none { it === failure }) primary.addSuppressed(failure)
+}
 
 /**
  * Generic zero-code FTC composition root.
@@ -70,58 +101,58 @@ class AresRobot(
         get() = fatalFrameFailure ?: base.fatalUpdateFailure
 
     init {
-        val projectRoot = if (FtcBaseRobot.isAndroid) Paths.get("/sdcard/FIRST")
-            else Paths.get("").toAbsolutePath().normalize()
-        val tuningManager = TuningManager(
-            runtime = typedTuningRuntime,
-            telemetry = base.telemetryManager.dataLoggingTelemetry,
-            contextProvider = {
-                TuningApplyContext(
-                    sessionArmed = base.isCalibrationModeArmed,
-                    robotDisabled = false,
-                    calibrationParameterUids = emptySet(),
-                    outputsNeutralAndInhibited = base.isCalibrationNeutralOutputHoldActive,
-                )
-            },
-            onApplied = { parameterUid, value ->
-                if (GeneratedAresFtcMecanumRuntimeConfig.supportsRuntimeParameter(parameterUid)) {
-                    base.store.dispatch(
-                        RobotAction.UpdateTuningState(
-                            GeneratedAresFtcMecanumRuntimeConfig.withRuntimeValues(
-                                base.store.state.tuning,
-                                typedTuningRuntime,
+        try {
+            val projectRoot = if (FtcBaseRobot.isAndroid) Paths.get("/sdcard/FIRST")
+                else Paths.get("").toAbsolutePath().normalize()
+            val tuningManager = TuningManager(
+                runtime = typedTuningRuntime,
+                telemetry = base.telemetryManager.dataLoggingTelemetry,
+                contextProvider = {
+                    TuningApplyContext(
+                        sessionArmed = base.isCalibrationModeArmed,
+                        robotDisabled = false,
+                        calibrationParameterUids = emptySet(),
+                        outputsNeutralAndInhibited = base.isCalibrationNeutralOutputHoldActive,
+                    )
+                },
+                onApplied = { parameterUid, value ->
+                    if (GeneratedAresFtcMecanumRuntimeConfig.supportsRuntimeParameter(parameterUid)) {
+                        base.store.dispatch(
+                            RobotAction.UpdateTuningState(
+                                GeneratedAresFtcMecanumRuntimeConfig.withRuntimeValues(
+                                    base.store.state.tuning,
+                                    typedTuningRuntime,
+                                )
                             )
                         )
-                    )
-                    true
-                } else applySubsystemTuning(parameterUid, value)
-            },
-            isConsumerSupported = ::supportsRuntimeParameter,
-            localProjectRoot = projectRoot,
-            localOverlayFile = projectRoot.resolve(".ares/local/tuning/runtime.arestuning"),
-        )
-        base.tuningManager = tuningManager
-
-        val fieldBytes = runCatching {
-            hardwareMap.appContext.assets.open("paths/field.json").use { it.readBytes() }
-        }.getOrNull()
-        val fieldConfig = fieldBytes?.let(::loadStarterFtcFieldContract)
-        if (fieldConfig != null) {
-            RobotFieldManager.setActiveConfig(fieldConfig)
-            com.areslib.math.estimation.PoseEstimator.activeTags = fieldConfig.aprilTagPoseMap()
-            hasCanonicalFieldContract = true
-        } else {
-            // Manual driving remains available, but localization must never inherit a stale tag map.
-            RobotFieldManager.setActiveConfig(emptyStarterField())
-            com.areslib.math.estimation.PoseEstimator.activeTags = emptyMap()
-            addTelemetry(
-                "Field",
-                "Canonical field unavailable; AprilTag localization disabled: ${StarterFtcFieldContractLoader.error}",
+                        true
+                    } else applySubsystemTuning(parameterUid, value)
+                },
+                isConsumerSupported = ::supportsRuntimeParameter,
+                localProjectRoot = projectRoot,
+                localOverlayFile = projectRoot.resolve(".ares/local/tuning/runtime.arestuning"),
             )
-        }
+            base.tuningManager = tuningManager
 
-        NamedCommands.clear()
-        try {
+            val fieldBytes = runCatching {
+                hardwareMap.appContext.assets.open("paths/field.json").use { it.readBytes() }
+            }.getOrNull()
+            val fieldConfig = fieldBytes?.let(::loadStarterFtcFieldContract)
+            if (fieldConfig != null) {
+                RobotFieldManager.setActiveConfig(fieldConfig)
+                com.areslib.math.estimation.PoseEstimator.activeTags = fieldConfig.aprilTagPoseMap()
+                hasCanonicalFieldContract = true
+            } else {
+                // Manual driving remains available, but localization must never inherit a stale tag map.
+                RobotFieldManager.setActiveConfig(emptyStarterField())
+                com.areslib.math.estimation.PoseEstimator.activeTags = emptyMap()
+                addTelemetry(
+                    "Field",
+                    "Canonical field unavailable; AprilTag localization disabled: ${StarterFtcFieldContractLoader.error}",
+                )
+            }
+
+            NamedCommands.clear()
             installGeneratedSubsystems(hardwareMap, base.hardwareRegistry, base::registerSubsystem).forEach { subsystem ->
                 if (subsystem is TypedTuningConsumer) {
                     tuningConsumers += subsystem
@@ -132,7 +163,8 @@ class AresRobot(
             FtcAutoCapabilities.registerDriveRecovery(base::recoverDriveOutputWithNeutral)
             tuningManager.publishMetadataAndValues()
         } catch (failure: Throwable) {
-            runCatching { base.close() }.exceptionOrNull()?.let(failure::addSuppressed)
+            preserveInterrupt(failure)
+            try { base.close() } catch (cleanup: Throwable) { retainSuppressed(failure, cleanup) }
             throw failure
         }
     }
@@ -175,6 +207,7 @@ class AresRobot(
         gamepad1: com.areslib.telemetry.GamepadState? = null,
         gamepad2: com.areslib.telemetry.GamepadState? = null,
     ) {
+        check(!closed) { "AresRobot is closed" }
         fatalUpdateFailure?.let { failure ->
             runCatching { base.safeAll() }
             runCatching { base.safeHardware() }

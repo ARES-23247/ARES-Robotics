@@ -11,6 +11,7 @@ import com.ares.analytics.service.DriverAnalysisService
 import com.ares.analytics.service.GamepadService
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayEngineService
+import com.ares.analytics.service.VideoSyncService
 import com.ares.analytics.service.XrpLinkService
 
 /** Live robot/simulator dependencies available to dashboard widget renderers. */
@@ -34,6 +35,7 @@ data class DashboardAnalysisWidgetServices(
 /** Replay dependency kept separate so live-only widgets do not acquire replay internals. */
 data class DashboardReplayWidgetServices(
     val replayEngineService: ReplayEngineService,
+    val videoSyncService: VideoSyncService = VideoSyncService(replayEngineService),
 )
 
 data class DashboardWidgetServices(

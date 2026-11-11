@@ -217,7 +217,8 @@ $registeredActionAssertions
             """.trimIndent()
         } else ""
         val controllerNeutralAssertion = firstActuator?.let { device ->
-            "assertEquals(${requireNotNull(device.safeOutput).kotlinDouble()}, io.${device.hardwareId}Command, 0.0)"
+            val expected = device.invertedExpression(requireNotNull(device.safeOutput).kotlinDouble())
+            "assertEquals($expected, io.${device.hardwareId}Command, 0.0)"
         } ?: "assertNotNull(controller)"
         val neutralRecoveryControllerTest = if (document.safety.requiresExplicitNeutralRecovery) {
             """

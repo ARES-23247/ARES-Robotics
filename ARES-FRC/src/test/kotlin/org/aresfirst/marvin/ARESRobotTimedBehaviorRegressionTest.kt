@@ -163,6 +163,30 @@ class ARESRobotTimedBehaviorRegressionTest {
         assertEquals(323.25 * 0.0254, CoordinateTransformers.FRC_FIELD_WIDTH, 1e-9)
     }
 
+    @Test
+    fun `dashboard remote drive command survives generatedControlsRuntime in teleopPeriodic`() {
+        val instance = edu.wpi.first.networktables.NetworkTableInstance.getDefault()
+        val outer = ARESRobot()
+        timedRobot = outer
+        outer.robotInit()
+        val facade = privateField<FrcSwerveRobot>(outer, "robot")
+        val flags = ((1L shl 3) or (1L shl 4) or (1L shl 5)).toDouble() // TeleOp + FieldCentric + Red
+        instance.getStringTopic("ARES/Simulation/FrcDriverStationCommand").publish().use { dsPub ->
+            instance.getDoubleArrayTopic("ARES/Input/driveFrame").publish().use { drivePub ->
+                dsPub.set("ENABLE_TELEOP")
+                // Neutral handshake first, then forward command (+2.25 m/s driver-perspective -> -2.25 m/s on Red)
+                drivePub.set(doubleArrayOf(2.0, 77.0, 1.0, 100.0, 0.0, 0.0, 0.0, flags))
+                outer.robotPeriodic()
+                outer.teleopInit()
+                drivePub.set(doubleArrayOf(2.0, 77.0, 2.0, 120.0, 2.25, 0.0, 0.0, flags))
+                outer.robotPeriodic()
+                outer.teleopPeriodic()
+                assertEquals(Alliance.RED, facade.store.state.drive.alliance)
+                assertTrue(facade.store.state.drive.xVelocityMetersPerSecond < -1.5)
+            }
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun <T> privateField(owner: ARESRobot, name: String): T {
         return ARESRobot::class.java.getDeclaredField(name).run {

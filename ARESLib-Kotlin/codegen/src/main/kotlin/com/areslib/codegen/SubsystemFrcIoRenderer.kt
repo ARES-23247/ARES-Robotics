@@ -37,42 +37,69 @@ internal object SubsystemFrcIoRenderer {
         if (document.hardware.any { it.kind == SubsystemHardwareKind.MOTOR }) {
             imports += "com.ctre.phoenix6.configs.TalonFXConfiguration"
         }
-        val fields = document.hardware.joinToString("\n") { device ->
-            val constructor = when (device.kind) {
-                SubsystemHardwareKind.MOTOR -> "TalonFX(${device.connection.canId}, ${device.connection.canBus.quoted()})"
-                SubsystemHardwareKind.POSITIONAL_SERVO,
-                SubsystemHardwareKind.INDICATOR_LIGHT,
-                SubsystemHardwareKind.PRISM_DRIVER -> "Servo(${device.connection.channel})"
-                SubsystemHardwareKind.CONTINUOUS_SERVO -> "PWMSparkMax(${device.connection.channel})"
-                SubsystemHardwareKind.ABSOLUTE_ENCODER -> "DutyCycleEncoder(${device.connection.channel})"
-                SubsystemHardwareKind.QUADRATURE_ENCODER ->
-                    "Encoder(${device.connection.channel}, ${device.connection.secondaryChannel})"
-                SubsystemHardwareKind.DIGITAL_INPUT -> "DigitalInput(${device.connection.channel})"
-                SubsystemHardwareKind.ANALOG_INPUT -> "AnalogInput(${device.connection.channel})"
-                SubsystemHardwareKind.DISTANCE_SENSOR -> "AnalogInput(${device.connection.channel})"
-                SubsystemHardwareKind.IMU -> "ADXRS450_Gyro()"
-                SubsystemHardwareKind.SOLENOID -> {
-                    val module = when (device.connection.pneumaticsModuleType) {
-                        com.areslib.subsystem.SubsystemPneumaticsModuleType.REV_PH -> "PneumaticsModuleType.REVPH"
-                        com.areslib.subsystem.SubsystemPneumaticsModuleType.CTRE_PCM -> "PneumaticsModuleType.CTREPCM"
-                        null -> error("Validated solenoid requires a pneumatics module type")
-                    }
-                    "Solenoid(${device.connection.canId}, $module, ${device.connection.channel})"
-                }
-                SubsystemHardwareKind.COLOR_SENSOR,
-                SubsystemHardwareKind.DIGITAL_OUTPUT,
-                SubsystemHardwareKind.PWM_OUTPUT,
-                SubsystemHardwareKind.BUZZER -> error("Unsupported")
+        val fields = buildString {
+            if (document.hardware.isNotEmpty()) {
+                append("    private val ownedDevices = ArrayList<AutoCloseable>(${document.hardware.size})\n")
+                append("    private fun <T : AutoCloseable> ownDevice(create: () -> T): T = try {\n")
+                append("        create().also { ownedDevices.add(it) }\n")
+                append("    } catch (failure: Throwable) {\n")
+                append("        for (i in ownedDevices.lastIndex downTo 0) {\n")
+                append("            try { ownedDevices[i].close() } catch (c: Throwable) { if (c !== failure) failure.addSuppressed(c) }\n")
+                append("        }\n")
+                append("        ownedDevices.clear()\n")
+                append("        throw failure\n")
+                append("    }\n")
             }
-            "    private val ${device.hardwareId} = $constructor"
+            append(
+                document.hardware.joinToString("\n") { device ->
+                    val constructor = when (device.kind) {
+                        SubsystemHardwareKind.MOTOR -> "TalonFX(${device.connection.canId}, ${device.connection.canBus.quoted()})"
+                        SubsystemHardwareKind.POSITIONAL_SERVO,
+                        SubsystemHardwareKind.INDICATOR_LIGHT,
+                        SubsystemHardwareKind.PRISM_DRIVER -> "Servo(${device.connection.channel})"
+                        SubsystemHardwareKind.CONTINUOUS_SERVO -> "PWMSparkMax(${device.connection.channel})"
+                        SubsystemHardwareKind.ABSOLUTE_ENCODER -> "DutyCycleEncoder(${device.connection.channel})"
+                        SubsystemHardwareKind.QUADRATURE_ENCODER ->
+                            "Encoder(${device.connection.channel}, ${device.connection.secondaryChannel})"
+                        SubsystemHardwareKind.DIGITAL_INPUT -> "DigitalInput(${device.connection.channel})"
+                        SubsystemHardwareKind.ANALOG_INPUT -> "AnalogInput(${device.connection.channel})"
+                        SubsystemHardwareKind.DISTANCE_SENSOR -> "AnalogInput(${device.connection.channel})"
+                        SubsystemHardwareKind.IMU -> "ADXRS450_Gyro()"
+                        SubsystemHardwareKind.SOLENOID -> {
+                            val module = when (device.connection.pneumaticsModuleType) {
+                                com.areslib.subsystem.SubsystemPneumaticsModuleType.REV_PH -> "PneumaticsModuleType.REVPH"
+                                com.areslib.subsystem.SubsystemPneumaticsModuleType.CTRE_PCM -> "PneumaticsModuleType.CTREPCM"
+                                null -> error("Validated solenoid requires a pneumatics module type")
+                            }
+                            "Solenoid(${device.connection.canId}, $module, ${device.connection.channel})"
+                        }
+                        SubsystemHardwareKind.COLOR_SENSOR,
+                        SubsystemHardwareKind.DIGITAL_OUTPUT,
+                        SubsystemHardwareKind.PWM_OUTPUT,
+                        SubsystemHardwareKind.BUZZER -> error("Unsupported")
+                    }
+                    "    private val ${device.hardwareId} = ownDevice { $constructor }"
+                }
+            )
         }
         val cached = document.hardware.flatMap { it.measurements }.mapNotNull { measurement ->
             val field = document.field(measurement.fieldId) ?: return@mapNotNull null
             "    private var cached${field.fieldId.pascalCase()}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}\n" +
                 "    override val ${field.fieldId}: ${field.kotlinType()} get() = cached${field.fieldId.pascalCase()}"
         }.distinct().joinToString("\n")
+        fun softwareAppliedLiteral(device: com.areslib.subsystem.SubsystemHardwareDocument, literal: String): String =
+            if (device.kind == SubsystemHardwareKind.POSITIONAL_SERVO ||
+                device.kind == SubsystemHardwareKind.INDICATOR_LIGHT ||
+                device.kind == SubsystemHardwareKind.PRISM_DRIVER ||
+                device.kind == SubsystemHardwareKind.SOLENOID
+            ) {
+                device.invertedExpression(literal)
+            } else {
+                literal
+            }
         val commandFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
-            "    private var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}"
+            val neutral = requireNotNull(device.safeOutput).kotlinDouble()
+            "    private var ${device.hardwareId}Command: Double = ${softwareAppliedLiteral(device, neutral)}"
         }
         val init = document.hardware.filter {
             it.kind == SubsystemHardwareKind.MOTOR ||
@@ -159,6 +186,7 @@ internal object SubsystemFrcIoRenderer {
                 "cached${it.pascalCase()}.isFinite() && cached${it.pascalCase()} >= 0.0"
             }.ifBlank { "false" }
         } else "true"
+        val telemetryCache = SubsystemIoRenderingSupport.telemetryCacheDeclaration(document)
         val telemetry = SubsystemIoRenderingSupport.telemetryBody(document)
         val commands = document.actuatorLeaders().joinToString("\n\n") { device ->
             val neutral = requireNotNull(device.safeOutput).kotlinDouble()
@@ -210,20 +238,14 @@ internal object SubsystemFrcIoRenderer {
         val neutralWrites = document.hardware.filter { it.kind.isActuator() }
             .joinToString("\n") { device ->
                 val neutral = requireNotNull(device.safeOutput).kotlinDouble()
-                val appliedNeutral = if (device.kind == SubsystemHardwareKind.POSITIONAL_SERVO ||
-                    device.kind == SubsystemHardwareKind.INDICATOR_LIGHT ||
-                    device.kind == SubsystemHardwareKind.PRISM_DRIVER) {
-                    device.invertedExpression(neutral)
-                } else {
-                    neutral
-                }
+                val appliedNeutral = softwareAppliedLiteral(device, neutral)
                 val command = when (device.kind) {
-                    SubsystemHardwareKind.MOTOR -> "${device.hardwareId}.setVoltage($appliedNeutral.coerceIn(-12.0, 12.0))"
+                    SubsystemHardwareKind.MOTOR -> "${device.hardwareId}.setVoltage(($appliedNeutral).coerceIn(-12.0, 12.0))"
                     SubsystemHardwareKind.POSITIONAL_SERVO,
-                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${device.hardwareId}.set($appliedNeutral.coerceIn(0.0, 1.0))"
-                    SubsystemHardwareKind.PRISM_DRIVER -> "${device.hardwareId}.set((($appliedNeutral - 500.0) / 2000.0).coerceIn(0.0, 1.0))"
-                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set($appliedNeutral.coerceIn(-1.0, 1.0))"
-                    SubsystemHardwareKind.SOLENOID -> "${device.hardwareId}.set($appliedNeutral >= 0.5)"
+                    SubsystemHardwareKind.INDICATOR_LIGHT -> "${device.hardwareId}.set(($appliedNeutral).coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.PRISM_DRIVER -> "${device.hardwareId}.set(((($appliedNeutral) - 500.0) / 2000.0).coerceIn(0.0, 1.0))"
+                    SubsystemHardwareKind.CONTINUOUS_SERVO -> "${device.hardwareId}.set(($appliedNeutral).coerceIn(-1.0, 1.0))"
+                    SubsystemHardwareKind.SOLENOID -> "${device.hardwareId}.set(($appliedNeutral) >= 0.5)"
                     else -> error("Not an FRC actuator")
                 }
                 "        try { $command; ${device.hardwareId}Command = $appliedNeutral } catch (_: Exception) { succeeded = false }"
@@ -281,6 +303,7 @@ internal object SubsystemFrcIoRenderer {
                 override var outputFaultLatched: Boolean = false
                     private set
                 private var closed = false
+$telemetryCache
 
                 init {
                     configurationHealthy = try {

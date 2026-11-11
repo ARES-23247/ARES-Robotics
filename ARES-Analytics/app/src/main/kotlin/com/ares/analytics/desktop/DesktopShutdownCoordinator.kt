@@ -33,11 +33,12 @@ internal class DesktopShutdownCoordinator(
     private val shutdownTimeoutMs: Long = SHUTDOWN_TIMEOUT_MS,
     private val forceExit: (Int) -> Unit = { Runtime.getRuntime().halt(it) },
 ) {
+    private val stateLock = Any()
     private val started = AtomicBoolean(false)
     private val completed = CountDownLatch(1)
     private val processCleanupScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var processCleanup: Job? = null
-    private var startedAtNanos = 0L
+    @Volatile private var processCleanup: Job? = null
+    @Volatile private var startedAtNanos = 0L
 
     val isShutdownStarted: Boolean get() = started.get()
 
@@ -49,8 +50,8 @@ internal class DesktopShutdownCoordinator(
         exitApplication()
     }
 
-    private fun beginClosing(services: ServiceRegistry): Boolean {
-        if (!started.compareAndSet(false, true)) return false
+    private fun beginClosing(services: ServiceRegistry): Boolean = synchronized(stateLock) {
+        if (!started.compareAndSet(false, true)) return@synchronized false
         startedAtNanos = System.nanoTime()
         machine.beginClosing()
         services.beginShutdown()
@@ -60,17 +61,18 @@ internal class DesktopShutdownCoordinator(
         processCleanup = processCleanupScope.launch {
             runCatching { services.stopOwnedProcessesAndJoin() }.onFailure(Throwable::printStackTrace)
         }
-        return true
+        true
     }
 
     /** Called by the host only after all Compose-owned work has stopped. */
     fun finishShutdown(services: ServiceRegistry): Boolean {
         beginClosing(services)
-        val elapsedMs = (System.nanoTime() - startedAtNanos) / 1_000_000L
+        val (cleanupJob, begunNanos) = synchronized(stateLock) { processCleanup to startedAtNanos }
+        val elapsedMs = (System.nanoTime() - begunNanos) / 1_000_000L
         val remainingMs = (shutdownTimeoutMs - elapsedMs).coerceAtLeast(1L)
         val disposed = runBlocking {
             awaitBoundedEmergencyDisposal(remainingMs) {
-                processCleanup?.join()
+                cleanupJob?.join()
                 services.disposeAndJoin()
             }
         }
@@ -107,6 +109,11 @@ internal class DesktopShutdownCoordinator(
          */
         fun terminateForUnusableWindow(reason: String, services: ServiceRegistry): Nothing {
             System.err.println("[ARES-Analytics] $reason")
+            thread(isDaemon = true, name = "emergency-shutdown-halt-watchdog") {
+                Thread.sleep(SHUTDOWN_TIMEOUT_MS + 3_000L)
+                System.err.println("[ARES-Analytics] Emergency shutdown hung; halting JVM.")
+                Runtime.getRuntime().halt(1)
+            }
             services.beginShutdown()
             val disposed = runBlocking {
                 awaitBoundedEmergencyDisposal(SHUTDOWN_TIMEOUT_MS) {

@@ -65,6 +65,15 @@ public abstract class com/areslib/frc/FrcBaseRobot : com/areslib/subsystem/AresR
 	protected abstract fun writeHardwareOutputs (DD)V
 }
 
+public final class com/areslib/frc/FrcGamepadSession {
+	public fun <init> (Ledu/wpi/first/wpilibj/XboxController;Ledu/wpi/first/wpilibj/XboxController;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Ledu/wpi/first/wpilibj/XboxController;Ledu/wpi/first/wpilibj/XboxController;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getDriver ()Lcom/areslib/telemetry/AresGamepad;
+	public final fun getOperator ()Lcom/areslib/telemetry/AresGamepad;
+	public final fun prime ()V
+	public final fun update ()V
+}
+
 public final class com/areslib/frc/FrcLimelightIO : com/areslib/hardware/vision/VisionIO, java/lang/AutoCloseable {
 	public static final field MAX_COMPANION_TIMESTAMP_DELTA_MICROS J
 	public static final field RAW_FIDUCIAL_START I
@@ -104,7 +113,40 @@ public final class com/areslib/frc/FrcSwerveRobot : com/areslib/frc/FrcBaseRobot
 public final class com/areslib/frc/FrcSwerveRobot$Companion {
 }
 
+public final class com/areslib/frc/FrcSwerveRobotBuilder {
+	public fun <init> ()V
+	public final fun build ()Lcom/areslib/frc/FrcSwerveRobot;
+	public final fun getBaseTelemetry ()Lcom/areslib/telemetry/ITelemetry;
+	public final fun getHardwareRegistry ()Lcom/areslib/hardware/HardwareRegistry;
+	public final fun getInitialState ()Lcom/areslib/state/RobotState;
+	public final fun getReducer ()Lkotlin/jvm/functions/Function2;
+	public final fun getRobotModeProvider ()Lkotlin/jvm/functions/Function0;
+	public final fun getSwerveIO ()Lcom/areslib/hardware/drive/SwerveHardwareIO;
+	public final fun getVisionIO ()Lcom/areslib/hardware/vision/VisionIO;
+	public final fun isEnabledProvider ()Lkotlin/jvm/functions/Function0;
+	public final fun isLiveTuningEnabled ()Z
+	public final fun isSimulation ()Z
+	public final fun setBaseTelemetry (Lcom/areslib/telemetry/ITelemetry;)V
+	public final fun setEnabledProvider (Lkotlin/jvm/functions/Function0;)V
+	public final fun setHardwareRegistry (Lcom/areslib/hardware/HardwareRegistry;)V
+	public final fun setInitialState (Lcom/areslib/state/RobotState;)V
+	public final fun setLiveTuningEnabled (Z)V
+	public final fun setReducer (Lkotlin/jvm/functions/Function2;)V
+	public final fun setRobotModeProvider (Lkotlin/jvm/functions/Function0;)V
+	public final fun setSimulation (Z)V
+	public final fun setSwerveIO (Lcom/areslib/hardware/drive/SwerveHardwareIO;)V
+	public final fun setVisionIO (Lcom/areslib/hardware/vision/VisionIO;)V
+	public final fun subsystems ([Lcom/areslib/subsystem/Subsystem;)V
+}
+
+public final class com/areslib/frc/FrcSwerveRobotBuilderKt {
+	public static final fun frcSwerveRobot (Lkotlin/jvm/functions/Function1;)Lcom/areslib/frc/FrcSwerveRobot;
+	public static synthetic fun frcSwerveRobot$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/frc/FrcSwerveRobot;
+}
+
 public final class com/areslib/frc/XboxControllerExtKt {
+	public static final fun frcControls (Ledu/wpi/first/wpilibj/XboxController;Ledu/wpi/first/wpilibj/XboxController;Lkotlin/jvm/functions/Function1;)Lcom/areslib/frc/FrcGamepadSession;
+	public static synthetic fun frcControls$default (Ledu/wpi/first/wpilibj/XboxController;Ledu/wpi/first/wpilibj/XboxController;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/areslib/frc/FrcGamepadSession;
 	public static final fun toState (Ledu/wpi/first/wpilibj/XboxController;)Lcom/areslib/telemetry/GamepadState;
 	public static final fun updateState (Ledu/wpi/first/wpilibj/XboxController;Lcom/areslib/telemetry/GamepadState;)V
 }

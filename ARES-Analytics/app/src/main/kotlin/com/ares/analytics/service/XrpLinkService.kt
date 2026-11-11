@@ -87,6 +87,8 @@ class XrpLinkService internal constructor(
     private val _fieldApplyFailure = MutableStateFlow<XrpFieldApplyFailure?>(null)
     val fieldApplyFailure: StateFlow<XrpFieldApplyFailure?> = _fieldApplyFailure.asStateFlow()
     private val lifecycleLock = Any()
+    @Volatile var serverHost: String = "127.0.0.1"
+        private set
     @Volatile private var socket: Socket? = null
     @Volatile private var writer: BufferedWriter? = null
     private var job: Job? = null
@@ -100,6 +102,7 @@ class XrpLinkService internal constructor(
         previous?.cancel()
         runCatching { socket?.close() }
         clearConnectionState()
+        serverHost = host
         job = scope.launch {
             // A replaced owner must finish all telemetry delivery and cleanup before
             // its successor can publish a connection, even if connect was blocking.
@@ -165,7 +168,8 @@ class XrpLinkService internal constructor(
             "XRP autonomous start requires a selected routine"
         }
         val active = synchronized(lifecycleLock) {
-            if (!_isConnected.value) null else socket?.let { connection -> writer?.let { connection to it } }
+            if (!_isConnected.value || !isLoopbackDriveControlHost(serverHost)) null
+            else socket?.let { connection -> writer?.let { connection to it } }
         } ?: return@withLock false
         val (activeSocket, activeWriter) = active
         val message = JsonObject().apply {
@@ -199,7 +203,8 @@ class XrpLinkService internal constructor(
             ?: return@withLock false
         val revision = root.finiteLong("revision") ?: return@withLock false
         val active = synchronized(lifecycleLock) {
-            if (!_isConnected.value) null else socket?.let { connection -> writer?.let { connection to it } }
+            if (!_isConnected.value || !isLoopbackDriveControlHost(serverHost)) null
+            else socket?.let { connection -> writer?.let { connection to it } }
         } ?: return@withLock false
         val (activeSocket, activeWriter) = active
         val message = JsonObject().apply {
@@ -292,6 +297,7 @@ class XrpLinkService internal constructor(
                     if (generation.get() != requestedGeneration || socket !== connected) return
                     connected.soTimeout = 0
                     lastTelemetrySequence = -1L
+                    serverHost = host
                     writer = connected.getOutputStream().bufferedWriter(StandardCharsets.UTF_8)
                     _peerIdentity.value = peer
                     _connectionError.value = null

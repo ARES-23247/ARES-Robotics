@@ -83,12 +83,27 @@ internal class TelemetryRepository(
     suspend fun insertTelemetryFrames(frames: List<TelemetryFrame>) = withContext(Dispatchers.IO) {
         if (frames.isEmpty()) return@withContext
 
+        val firstLive = frames[0].sessionId == "live-telemetry"
+        var homogeneous = true
+        for (i in 1 until frames.size) {
+            if ((frames[i].sessionId == "live-telemetry") != firstLive) {
+                homogeneous = false
+                break
+            }
+        }
+        if (homogeneous) {
+            if (firstLive) {
+                transactions.writeTelemetry("live-telemetry") { insertTelemetryFrames(ephemeralConn, frames) }
+            } else {
+                withDbLock { insertTelemetryFrames(conn, frames) }
+            }
+            return@withContext
+        }
+
         // A single channel flush can straddle the moment a recording starts or stops.
         // Route every row by its own session identity instead of trusting frame[0].
         val liveFrames = frames.filter { it.sessionId == "live-telemetry" }
         val persistentFrames = frames.filter { it.sessionId != "live-telemetry" }
-        // Flush live rows first, including a mixed batch crossing a recording boundary.
-        // A long persistent CSV import must not hold up the ephemeral control/telemetry buffer.
         if (liveFrames.isNotEmpty()) transactions.writeTelemetry("live-telemetry") {
             insertTelemetryFrames(ephemeralConn, liveFrames)
         }
@@ -107,7 +122,7 @@ internal class TelemetryRepository(
      * ~10-100x faster than JDBC PreparedStatement batch for bulk imports.
      *
      * IMPORTANT: Must be called under withDbLock or from a single-writer context.
-     * Does not support INSERT OR REPLACE â€” assumes no duplicate keys (safe for imports).
+     * Does not support INSERT OR REPLACE — assumes no duplicate keys (safe for imports).
      */
     private fun insertTelemetryFramesAppender(targetConn: Connection, frames: List<TelemetryFrame>) {
         val duckConn = targetConn.unwrap(DuckDBConnection::class.java)
@@ -126,7 +141,7 @@ internal class TelemetryRepository(
                 appender.endRow()
             }
             appender.flush()
-            // CHECKPOINT intentionally NOT run per batch â€” a per-batch WAL fsync dominated
+            // CHECKPOINT intentionally NOT run per batch — a per-batch WAL fsync dominated
             // import time. Checkpointing is now caller/timer-controlled by
             // [DatabaseTransactionCoordinator.checkpoint]
             // (DatabaseService runs it on a periodic timer; connection close still flushes).
@@ -153,13 +168,17 @@ internal class TelemetryRepository(
 
     suspend fun getTelemetryRange(sessionId: String, startMs: Long, endMs: Long): List<TelemetryFrame> = withReadLock(sessionId) {
         val targetConn = readConnectionFor(sessionId)
-        val list = mutableListOf<TelemetryFrame>()
-        targetConn.prepareStatement("SELECT * FROM telemetry_frames WHERE session_id = ? AND timestamp_ms BETWEEN ? AND ? ORDER BY timestamp_us ASC, sample_order ASC").use { ps ->
+        val list = ArrayList<TelemetryFrame>(1024)
+        targetConn.prepareStatement(
+            "SELECT timestamp_ms, key, value, string_value, timestamp_us, sample_order " +
+                "FROM telemetry_frames WHERE session_id = ? AND timestamp_ms BETWEEN ? AND ? " +
+                "ORDER BY timestamp_us ASC, sample_order ASC"
+        ).use { ps ->
             ps.setString(1, sessionId)
             ps.setLong(2, startMs)
             ps.setLong(3, endMs)
             ps.executeQuery().use { rs ->
-                while (rs.next()) list.add(rs.toTelemetryFrame())
+                while (rs.next()) list.add(rs.toIndexedTelemetryFrame(sessionId))
             }
         }
         list
@@ -612,6 +631,20 @@ internal class TelemetryRepository(
             ps.setLong(2, cutoffMs)
             ps.executeUpdate()
         }
+    }
+
+    private fun ResultSet.toIndexedTelemetryFrame(sessionId: String): TelemetryFrame {
+        val sVal = getString(4)
+        val sValFinal = if (wasNull()) null else sVal
+        return TelemetryFrame(
+            timestampMs = getLong(1),
+            sessionId = sessionId,
+            key = getString(2),
+            value = getDouble(3),
+            stringValue = sValFinal,
+            timestampUs = getLong(5),
+            sampleOrder = getLong(6),
+        )
     }
 
     private fun ResultSet.toTelemetryFrame(): TelemetryFrame {

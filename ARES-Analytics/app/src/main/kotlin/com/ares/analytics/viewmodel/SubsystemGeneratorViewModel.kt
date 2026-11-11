@@ -259,57 +259,15 @@ class SubsystemGeneratorViewModel(
 
     fun applyTemplate(template: SubsystemTemplate) = creationOps.applyTemplate(template)
 
+    fun applyCookbookPreset(preset: com.ares.analytics.viewmodel.subsystem.SubsystemCookbookPreset) =
+        creationOps.applyCookbookPreset(preset)
+
     fun selectStage(stage: SubsystemBuilderStage) = _state.update {
         it.copy(activeStage = stage, visitedStages = it.visitedStages + stage)
     }
 
     fun navigateToProblem(path: String) = _state.update { current ->
-        val document = current.draft?.document ?: return@update current
-        val index = Regex("\\[(\\d+)]").find(path)?.groupValues?.getOrNull(1)?.toIntOrNull()
-        when {
-            path.startsWith("hardware") -> current.copy(
-                activeStage = SubsystemBuilderStage.HARDWARE,
-                visitedStages = current.visitedStages + SubsystemBuilderStage.HARDWARE,
-                selectedHardwareUid = index?.let { document.hardware.getOrNull(it)?.uid },
-                selectedFieldUid = null,
-                selectedLoopUid = null,
-            )
-            path.startsWith("stateFields") -> current.copy(
-                activeStage = SubsystemBuilderStage.STATE_AND_BEHAVIOR,
-                visitedStages = current.visitedStages + SubsystemBuilderStage.STATE_AND_BEHAVIOR,
-                selectedFieldUid = index?.let { document.stateFields.getOrNull(it)?.uid },
-                selectedHardwareUid = null,
-                selectedLoopUid = null,
-            )
-            path.startsWith("controlLoops") -> current.copy(
-                activeStage = SubsystemBuilderStage.STATE_AND_BEHAVIOR,
-                visitedStages = current.visitedStages + SubsystemBuilderStage.STATE_AND_BEHAVIOR,
-                selectedLoopUid = index?.let { document.controlLoops.getOrNull(it)?.uid },
-                selectedHardwareUid = null,
-                selectedFieldUid = null,
-            )
-            path.startsWith("tuningParameters") -> current.copy(
-                activeStage = SubsystemBuilderStage.TUNING,
-                visitedStages = current.visitedStages + SubsystemBuilderStage.TUNING,
-                selectedTuningParameterUid = index?.let { document.tuningParameters.getOrNull(it)?.uid },
-                selectedHardwareUid = null,
-                selectedFieldUid = null,
-                selectedLoopUid = null,
-            )
-            path.startsWith("safety") -> current.copy(
-                activeStage = SubsystemBuilderStage.SAFETY,
-                visitedStages = current.visitedStages + SubsystemBuilderStage.SAFETY,
-            )
-            path.startsWith("implementation") || path == "displayName" || path == "kotlinTypeName" || path == "documentId" ->
-                current.copy(
-                    activeStage = SubsystemBuilderStage.PURPOSE,
-                    visitedStages = current.visitedStages + SubsystemBuilderStage.PURPOSE,
-                )
-            else -> current.copy(
-                activeStage = SubsystemBuilderStage.REVIEW,
-                visitedStages = current.visitedStages + SubsystemBuilderStage.REVIEW,
-            )
-        }
+        com.ares.analytics.viewmodel.subsystem.navigateToSubsystemProblemState(current, path)
     }
 
     fun previousStage() = _state.update { state ->
@@ -332,24 +290,12 @@ class SubsystemGeneratorViewModel(
 
     fun selectDocument(documentId: String) {
         _state.update { current ->
-            if (current.dirty) return@update current.copy(status = "Save or reload the current draft before switching subsystems.")
-            val document = current.documents.firstOrNull { it.documentId == documentId } ?: return@update current
-            aiProposalGeneration.incrementAndGet()
-            current.copy(
-                selectedDocumentId = document.documentId,
-                draft = SubsystemEditorDraft(document),
-                selectedHardwareUid = null,
-                selectedFieldUid = null,
-                selectedLoopUid = null,
-                selectedTuningParameterUid = null,
-                activeStage = SubsystemBuilderStage.PURPOSE,
-                visitedStages = setOf(SubsystemBuilderStage.PURPOSE),
-                selectedTemplate = document.template,
-                status = null,
-                aiProposalInProgress = false,
-                aiProposal = null,
-                aiProposalError = null,
-            ).revalidated()
+            com.ares.analytics.viewmodel.subsystem.selectSubsystemDocumentState(
+                current = current,
+                documentId = documentId,
+                aiProposalGeneration = aiProposalGeneration,
+                revalidate = { it.revalidated() },
+            )
         }
     }
 
@@ -483,17 +429,8 @@ class SubsystemGeneratorViewModel(
     ) {
         val id = uniqueId("value", _state.value.draft?.document?.stateFields.orEmpty().map { it.fieldId })
         edit { document ->
-        val field = SubsystemStateFieldDocument(
-            fieldId = id,
-            displayName = displayName,
-            type = type,
-            role = role,
-            defaultNumber = 0.0.takeIf { type == SubsystemValueType.DOUBLE },
-            defaultBoolean = false.takeIf { type == SubsystemValueType.BOOLEAN },
-            defaultInt = 0.takeIf { type == SubsystemValueType.INT },
-            defaultText = "".takeIf { type == SubsystemValueType.STRING },
-        )
-        document.copy(stateFields = document.stateFields + field)
+            val field = com.ares.analytics.viewmodel.subsystem.createNewSubsystemStateField(id, displayName, role, type)
+            document.copy(stateFields = document.stateFields + field)
         }
         selectField(id)
     }
@@ -554,14 +491,7 @@ class SubsystemGeneratorViewModel(
     }
 
     fun renameControlLoopId(id: String, newId: String) {
-        if (newId == id) return
-        edit { document ->
-            document.copy(
-                controlLoops = document.controlLoops.map { loop ->
-                    if (loop.loopId == id) loop.copy(loopId = newId) else loop
-                },
-            )
-        }
+        if (newId != id) edit { doc -> doc.copy(controlLoops = doc.controlLoops.map { if (it.loopId == id) it.copy(loopId = newId) else it }) }
     }
 
     fun changeControlLoopStrategy(id: String, strategy: SubsystemControlStrategy) = edit { document ->
@@ -574,11 +504,8 @@ class SubsystemGeneratorViewModel(
         val snapshot = _state.value
         val current = snapshot.draft?.document ?: return
         val id = uniqueId("interlock", current.interlocks.map { it.interlockId })
-        val interlock = SubsystemDocumentAuthoring.createInterlock(current, snapshot.documents, id)
-        if (interlock == null) {
-            _state.update {
-                it.copy(status = "Add another generated subsystem with state values before creating a cross-mechanism interlock.")
-            }
+        val interlock = SubsystemDocumentAuthoring.createInterlock(current, snapshot.documents, id) ?: run {
+            _state.update { it.copy(status = "Add another generated subsystem with state values before creating a cross-mechanism interlock.") }
             return
         }
         edit { it.copy(interlocks = it.interlocks + interlock) }
@@ -593,89 +520,27 @@ class SubsystemGeneratorViewModel(
         document.copy(interlocks = document.interlocks.map { if (it.interlockId == id) transform(it) else it })
     }
 
-    fun applyControlLoopGains(
-        id: String,
-        kp: Double,
-        ki: Double,
-        kd: Double,
-        ks: Double,
-        kv: Double,
-        kg: Double,
-    ) {
-        require(listOf(kp, ki, kd, ks, kv, kg).all(Double::isFinite)) {
-            "Control and feedforward gains must be finite."
-        }
-        updateControlLoop(id) { loop ->
-            loop.copy(
-                kP = kp,
-                kI = ki,
-                kD = kd,
-                feedforward = loop.feedforward.copy(
-                    kS = ks,
-                    kV = kv,
-                    kG = kg
-                )
-            )
-        }
-    }
+    fun applyControlLoopGains(id: String, kp: Double, ki: Double, kd: Double, ks: Double, kv: Double, kg: Double) =
+        updateControlLoop(id) { loop -> com.ares.analytics.viewmodel.subsystem.applyControlLoopGainsToLoop(loop, kp, ki, kd, ks, kv, kg) }
 
-    fun save(generateAfterSave: Boolean = false) {
-        val current = _state.value
-        val draft = current.draft?.document ?: return
-        if (!current.canSave) {
-            _state.update { it.copy(status = "Fix validation errors before saving.") }
-            return
-        }
-        runCatching {
-            ensureXrpExtensionScaffold(current.projectPath, draft)
-            persistence.save(current.projectPath, current.projectRevision, draft)
-        }
-            .onSuccess { saved ->
-                _state.update { state ->
-                    val persisted = saved.document
-                    state.copy(
-                        documents = state.documents.filterNot { it.documentId == persisted.documentId } + persisted,
-                        selectedDocumentId = persisted.documentId,
-                        draft = SubsystemEditorDraft(persisted),
-                        dirty = false,
-                        projectRevision = persistence.currentRevision(state.projectRevision),
-                        status = "Saved revision ${persisted.revision} (${saved.contentHash.take(12)}â€¦).",
-                    ).revalidated()
-                }
-                if (generateAfterSave) projectGenerator?.generateAresProject(current.projectPath, current.league)
-                scope.launch {
-                    runCatching {
-                        val root = File(current.projectPath).canonicalFile
-                        checkpointRecorder.checkpoint(
-                            current.projectPath,
-                            "Saved ${saved.document.displayName} subsystem",
-                            setOf(
-                                saved.currentFile.relativeTo(root).invariantSeparatorsPath,
-                                saved.historyFile.relativeTo(root).invariantSeparatorsPath,
-                            ),
-                        )
-                    }.onFailure { failure ->
-                        _state.update { it.copy(status = "Subsystem saved, but automatic Project History checkpoint failed: ${failure.message}") }
-                    }
-                }
-            }
-            .onFailure { error -> _state.update { it.copy(status = error.message ?: "Subsystem could not be saved.") } }
-    }
+    fun save(generateAfterSave: Boolean = false) = executeSubsystemSave(
+        scope = scope,
+        stateFlow = _state,
+        persistence = persistence,
+        projectGenerator = projectGenerator,
+        checkpointRecorder = checkpointRecorder,
+        generateAfterSave = generateAfterSave,
+        revalidate = { it.revalidated() },
+    )
+
 
     fun requestRemoveSubsystem() = removalCoordinator.requestRemoveSubsystem()
-
     fun cancelRemoveSubsystem() = removalCoordinator.cancelRemoveSubsystem()
-
     fun confirmRemoveSubsystem() = removalCoordinator.confirmRemoveSubsystem()
-
     fun restoreRemovedSubsystem() = removalCoordinator.restoreRemovedSubsystem()
-
     fun dismissRecoveryNotice() = removalCoordinator.dismissRecoveryNotice()
-
     fun generate() = starterGeneratorOps.generate { if (_state.value.dirty) save() }
-
     fun cancelStarterReplacement() = starterGeneratorOps.cancelStarterReplacement()
-
     fun confirmStarterReplacement() = starterGeneratorOps.confirmStarterReplacement()
 
     private fun SubsystemGeneratorState.revalidated(
@@ -685,12 +550,56 @@ class SubsystemGeneratorViewModel(
     override fun close() = scope.cancel()
 
     private companion object {
-        fun uniqueId(base: String, used: List<String>): String {
-            if (base !in used) return base
-            var suffix = 2
-            while ("$base$suffix" in used) suffix++
-            return "$base$suffix"
-        }
-
+        fun uniqueId(base: String, used: List<String>): String =
+            com.ares.analytics.util.ProjectLayout.uniqueSlugId(base, used, separator = "")
     }
 }
+
+internal fun executeSubsystemSave(
+    scope: CoroutineScope,
+    stateFlow: MutableStateFlow<SubsystemGeneratorState>,
+    persistence: SubsystemProjectPersistence,
+    projectGenerator: AresProjectGenerator?,
+    checkpointRecorder: ProjectCheckpointRecorder,
+    generateAfterSave: Boolean,
+    revalidate: (SubsystemGeneratorState) -> SubsystemGeneratorState,
+) {
+    val current = stateFlow.value
+    val draft = current.draft?.document ?: return
+    if (!current.canSave) {
+        stateFlow.update { it.copy(status = "Fix validation errors before saving.") }
+        return
+    }
+    runCatching {
+        ensureXrpExtensionScaffold(current.projectPath, draft)
+        persistence.save(current.projectPath, current.projectRevision, draft)
+    }.onSuccess { saved ->
+        stateFlow.update { state ->
+            val persisted = saved.document
+            revalidate(
+                state.copy(
+                    documents = state.documents.filterNot { it.documentId == persisted.documentId } + persisted,
+                    selectedDocumentId = persisted.documentId,
+                    draft = SubsystemEditorDraft(persisted),
+                    dirty = false,
+                    projectRevision = persistence.currentRevision(state.projectRevision),
+                    status = "Saved revision ${persisted.revision} (${saved.contentHash.take(12)}…).",
+                ),
+            )
+        }
+        if (generateAfterSave) projectGenerator?.generateAresProject(current.projectPath, current.league)
+        scope.launch {
+            runCatching {
+                val root = File(current.projectPath).canonicalFile
+                checkpointRecorder.checkpoint(
+                    current.projectPath,
+                    "Saved ${saved.document.displayName} subsystem",
+                    setOf(saved.currentFile.relativeTo(root).invariantSeparatorsPath, saved.historyFile.relativeTo(root).invariantSeparatorsPath),
+                )
+            }.onFailure { failure ->
+                stateFlow.update { it.copy(status = "Subsystem saved, but automatic Project History checkpoint failed: ${failure.message}") }
+            }
+        }
+    }.onFailure { error -> stateFlow.update { it.copy(status = error.message ?: "Subsystem could not be saved.") } }
+}
+

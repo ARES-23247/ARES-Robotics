@@ -1,11 +1,14 @@
 package com.ares.analytics.util
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import com.ares.analytics.shared.models.League
 import java.io.File
 import java.io.IOException
-import java.nio.file.Path
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.Path
+import java.security.MessageDigest
 
 /**
  * Resolves files owned by an FTC, FRC or XRP robot project.
@@ -113,4 +116,24 @@ internal object ProjectLayout {
         }
         return false
     }
+
+    /** Compares two project paths using canonical resolution with normalized fallback. */
+    fun sameCanonicalProjectPath(first: String, second: String): Boolean {
+        if (first.isBlank() || second.isBlank()) return false
+        return runCatching { File(first).canonicalFile == File(second).canonicalFile }
+            .getOrElse { File(first).absoluteFile.normalize() == File(second).absoluteFile.normalize() }
+    }
+
+    /** Allocates `base`, `base-2`, `base-3`, ... avoiding collisions with `usedIds`. */
+    fun uniqueSlugId(base: String, usedIds: Iterable<String>, separator: String = "-"): String {
+        val taken = usedIds.toSet()
+        if (base !in taken) return base
+        var suffix = 2
+        while ("$base$separator$suffix" in taken) suffix++
+        return "$base$separator$suffix"
+    }
 }
+
+internal fun formatDecimal(value: Double, decimals: Int = 2, fallback: String = "—"): String =
+    if (value.isFinite()) String.format(java.util.Locale.US, "%.${decimals}f", value) else fallback
+

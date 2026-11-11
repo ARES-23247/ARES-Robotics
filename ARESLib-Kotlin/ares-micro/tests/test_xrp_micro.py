@@ -622,5 +622,140 @@ class TestGeneratedXrpSubsystem(unittest.TestCase):
         device.fail_writes = False
         self.assertTrue(subsystem.recover_neutral())
 
+    def test_inverted_and_follower_actuators_apply_transforms_and_safe_outputs(self):
+        devices = {
+            "leader": MockXrpDevice({"MOTOR_POSITION_NATIVE": 0.0}),
+            "follower": MockXrpDevice(),
+            "servo": MockXrpDevice(),
+        }
+        desc = {
+            "documentId": "elevator",
+            "stateFields": [
+                {"fieldId": "target", "type": "DOUBLE", "role": "TARGET", "defaultNumber": 0.0, "minimum": -1.0, "maximum": 1.0},
+                {"fieldId": "servoTarget", "type": "DOUBLE", "role": "TARGET", "defaultNumber": 0.0, "minimum": 0.0, "maximum": 1.0},
+                {"fieldId": "position", "type": "DOUBLE", "role": "MEASUREMENT", "defaultNumber": 0.0},
+            ],
+            "hardware": [
+                {
+                    "hardwareId": "leader",
+                    "kind": "MOTOR",
+                    "inverted": True,
+                    "safeOutput": 0.0,
+                    "measurements": [{"fieldId": "position", "source": "MOTOR_POSITION_NATIVE", "scale": 1.0, "offset": 0.0}],
+                },
+                {
+                    "hardwareId": "follower",
+                    "kind": "MOTOR",
+                    "inverted": False,
+                    "safeOutput": 0.0,
+                    "following": {"leaderId": "leader", "transform": "INVERTED"},
+                },
+                {
+                    "hardwareId": "servo",
+                    "kind": "POSITIONAL_SERVO",
+                    "inverted": True,
+                    "safeOutput": 0.2,
+                },
+            ],
+            "controlLoops": [
+                {"loopId": "lift", "strategy": "DIRECT", "actuatorId": "leader", "targetFieldId": "target", "minimumOutput": -12.0, "maximumOutput": 12.0},
+                {"loopId": "gate", "strategy": "SERVO_POSITION", "actuatorId": "servo", "targetFieldId": "servoTarget", "minimumOutput": 0.0, "maximumOutput": 1.0},
+            ],
+            "safety": {"latchOutputFaults": False},
+        }
+        subsystem = GeneratedXrpSubsystem(desc, lambda d: devices[d["hardwareId"]])
+        self.assertAlmostEqual(devices["servo"].last_output, 0.8, places=6)
+        subsystem.set_target("target", 0.5)
+        subsystem.set_target("servoTarget", 0.25)
+        subsystem.periodic(0.02)
+        self.assertAlmostEqual(devices["leader"].last_output, -0.5, places=6)
+        self.assertAlmostEqual(devices["follower"].last_output, -0.5, places=6)
+        self.assertAlmostEqual(devices["servo"].last_output, 0.75, places=6)
+
+        # Unlatched output fault policy recovers on the next healthy cycle without explicit recover_neutral().
+        devices["leader"].fail_writes = True
+        subsystem.periodic(0.02)
+        self.assertFalse(subsystem.faulted)
+        devices["leader"].fail_writes = False
+        subsystem.periodic(0.02)
+        self.assertAlmostEqual(devices["leader"].last_output, -0.5, places=6)
+
+
+class TestDrivetrainPoseResetAndFaults(unittest.TestCase):
+    def test_differential_reset_pose_syncs_encoders_and_heading_supplier_offset(self):
+        from ares_micro.drivetrain import DifferentialDrivetrain
+        import math
+
+        class EncoderMotor:
+            def __init__(self, pos=0.0):
+                self.pos = pos
+
+            def set_effort(self, effort):
+                pass
+
+            def get_position(self):
+                return self.pos
+
+        left = EncoderMotor(5.0)
+        right = EncoderMotor(5.0)
+        imu_yaw = [0.2]
+        dt = DifferentialDrivetrain(
+            left_motor=left,
+            right_motor=right,
+            heading_supplier=lambda: imu_yaw[0],
+        )
+        dt.reset_pose(1.0, 2.0, math.pi / 2.0)
+        dt.update_odometry(0.02)
+        self.assertAlmostEqual(dt.x, 1.0, places=6)
+        self.assertAlmostEqual(dt.y, 2.0, places=6)
+        self.assertAlmostEqual(dt.heading, math.pi / 2.0, places=6)
+        self.assertAlmostEqual(dt.omega, 0.0, places=6)
+
+        # Advancing IMU yaw by +0.1 rad advances robot heading from pi/2 by +0.1 rad.
+        imu_yaw[0] = 0.3
+        dt.update_odometry(0.02)
+        self.assertAlmostEqual(dt.heading, math.pi / 2.0 + 0.1, places=6)
+
+    def test_mecanum_reset_pose_preserves_heading_offset_with_heading_supplier(self):
+        from ares_micro.drivetrain import MecanumDrivetrain
+        import math
+
+        class EncoderMotor:
+            def set_effort(self, effort):
+                pass
+
+            def get_position(self):
+                return 3.0
+
+        imu_yaw = [-0.4]
+        dt = MecanumDrivetrain(
+            fl_motor=EncoderMotor(),
+            fr_motor=EncoderMotor(),
+            bl_motor=EncoderMotor(),
+            br_motor=EncoderMotor(),
+            heading_supplier=lambda: imu_yaw[0],
+        )
+        dt.reset_pose(-0.5, 0.25, -math.pi / 3.0)
+        dt.update_odometry(0.02)
+        self.assertAlmostEqual(dt.x, -0.5, places=6)
+        self.assertAlmostEqual(dt.y, 0.25, places=6)
+        self.assertAlmostEqual(dt.heading, -math.pi / 3.0, places=6)
+        self.assertAlmostEqual(dt.omega, 0.0, places=6)
+
+    def test_differential_encoder_fault_propagates_instead_of_silently_zeroing(self):
+        from ares_micro.drivetrain import DifferentialDrivetrain
+
+        class FaultingMotor:
+            def set_effort(self, effort):
+                pass
+
+            def get_position(self):
+                raise OSError("encoder disconnected")
+
+        dt = DifferentialDrivetrain(left_motor=FaultingMotor(), right_motor=FaultingMotor())
+        with self.assertRaises(OSError):
+            dt.update_odometry(0.02)
+
+
 if __name__ == "__main__":
     unittest.main()

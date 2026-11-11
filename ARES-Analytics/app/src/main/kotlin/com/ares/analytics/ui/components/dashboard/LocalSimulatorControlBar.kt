@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DesktopWindows
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Gamepad
@@ -45,6 +46,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +57,9 @@ import com.ares.analytics.service.RobotTopicContract
 import com.ares.analytics.service.project.persistence.AutonomousCatalogProjectRepository
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.SIMULATION_SESSION_TAG
+import com.ares.analytics.shared.models.Session
+import com.ares.analytics.ui.help.StudentFriendlyDiagnosticCallout
+import com.ares.analytics.ui.help.translateDiagnosticForStudent
 import com.ares.analytics.ui.theme.AresAmber
 import com.ares.analytics.ui.theme.AresBorder
 import com.ares.analytics.ui.theme.AresCyan
@@ -64,13 +70,16 @@ import com.ares.analytics.ui.theme.AresSurface
 import com.ares.analytics.ui.theme.AresSurfaceElevated
 import com.ares.analytics.ui.theme.AresTextPrimary
 import com.ares.analytics.ui.theme.AresTextSecondary
-import kotlinx.coroutines.Job
+import com.ares.analytics.ui.theme.AresTextTertiary
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.Json
+
 /**
  * An always-visible control path for the FTC simulator and the FRC starter simulator.
  *
@@ -98,233 +107,51 @@ fun LocalSimulatorControlBar(
     onRecordingSaved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var teleOps by remember(nt4Client) {
-        mutableStateOf(decodeSimulatorOpModes(nt4Client.latestValues[TELEOP_LIST_TOPIC]?.stringValue))
-    }
-    var autonomousOpModes by remember(nt4Client) {
-        mutableStateOf(decodeSimulatorOpModes(nt4Client.latestValues[AUTONOMOUS_LIST_TOPIC]?.stringValue))
-    }
-    var selectedOpMode by remember(nt4Client) {
-        mutableStateOf(
-            nt4Client.latestValues[SELECTED_OPMODE_TOPIC]?.stringValue
-                ?.takeIf { it.isNotBlank() }
-                ?: preferredSimulatorTeleOp(teleOps),
-        )
-    }
-    var command by remember(nt4Client) {
-        mutableStateOf(nt4Client.latestValues[DRIVER_STATION_COMMAND_TOPIC]?.stringValue ?: "STOP")
-    }
-    var activeOpMode by remember(nt4Client) {
-        mutableStateOf(nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]?.stringValue?.takeIf(String::isNotBlank))
-    }
-    var activeOpModeDisplayName by remember(nt4Client) {
-        mutableStateOf(nt4Client.latestValues[ACTIVE_OPMODE_DISPLAY_NAME_TOPIC]?.stringValue?.takeIf(String::isNotBlank))
-    }
-    var activeOpModeState by remember(nt4Client) {
-        mutableStateOf(nt4Client.latestValues[ACTIVE_OPMODE_STATE_TOPIC]?.stringValue)
-    }
-    var frcDriverStationState by remember(nt4Client) {
-        mutableStateOf(nt4Client.latestValues[FRC_DRIVER_STATION_STATE_TOPIC]?.stringValue)
-    }
-    var availableAutos by remember(nt4Client) {
-        mutableStateOf(
-            parseAvailableAutoDocuments(
-                nt4Client.latestValues[RobotTopicContract.AVAILABLE_AUTONOMOUS_ROUTINES]?.stringValue,
-            ),
-        )
-    }
-    var robotSelectedAuto by remember(nt4Client) {
-        mutableStateOf(
-            nt4Client.latestValues[RobotTopicContract.SELECTED_AUTONOMOUS_ROUTINE]
-                ?.stringValue
-                .orEmpty(),
-        )
-    }
-    var requestedAuto by remember(nt4Client) {
-        mutableStateOf(preferredSimulatorAutonomous(availableAutos, null, robotSelectedAuto))
-    }
-    var autonomousStatus by remember(nt4Client) {
-        mutableStateOf(
-            nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]
-                ?.stringValue
-                ?.ifBlank { "Idle" }
-                ?: "Waiting for robot",
-        )
-    }
-    var driveReceiverStatusCode by remember(nt4Client) {
-        mutableStateOf(nt4Client.driveInputAcknowledgement.value?.statusCode)
-    }
-    var driveReceiverLeaseAgeMs by remember(nt4Client) {
-        mutableStateOf(nt4Client.driveInputAcknowledgement.value?.leaseAgeMs)
-    }
-    var starting by remember { mutableStateOf(false) }
-    var startFailure by remember { mutableStateOf<String?>(null) }
-    var ftcRoutineSelectorExpanded by remember { mutableStateOf(false) }
-    var autonomousLabels by remember(projectPath) { mutableStateOf<Map<String, String>>(emptyMap()) }
-    var startJob by remember { mutableStateOf<Job?>(null) }
-    var recordingBusy by remember { mutableStateOf(false) }
-    var recordingMessage by remember { mutableStateOf<String?>(null) }
-    var recordingFailure by remember { mutableStateOf<String?>(null) }
+    val controller = rememberLocalSimulatorSessionController(
+        nt4Client = nt4Client,
+        keyboardDriveState = keyboardDriveState,
+        league = league,
+        projectPath = projectPath,
+        isConnected = isConnected,
+    )
     val scope = rememberCoroutineScope()
     val connectedNow by rememberUpdatedState(isConnected)
     val recordingSession by nt4Client.currentSession.collectAsState()
-    LaunchedEffect(projectPath) {
-        val localEntries = withContext(Dispatchers.IO) {
-            AutonomousCatalogProjectRepository().load(projectPath).getOrNull()?.entries.orEmpty()
-                .filter { it.enabled }
-                .sortedWith(compareBy({ it.sortOrder }, { it.entryId }))
-        }
-        autonomousLabels = localEntries.associate { it.entryId to it.displayName }
-        val localIds = localEntries.map { it.entryId }
-        if (availableAutos.isEmpty() && localIds.isNotEmpty()) availableAutos = localIds
-        requestedAuto = preferredSimulatorAutonomous(availableAutos, requestedAuto, robotSelectedAuto)
-    }
-    var autonomousDetail by remember(nt4Client) {
-        mutableStateOf(nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_DETAIL]?.stringValue.orEmpty())
-    }
-    suspend fun stopAndSaveRecording() {
-        if (recordingSession == null) return
-        recordingBusy = true
-        recordingFailure = null
-        try {
-            nt4Client.stopRecordingSession()
-            onRecordingSaved()
-            recordingMessage = "Simulation run saved and available in Recorded Sessions."
-        } catch (failure: Exception) {
-            recordingFailure = failure.message ?: "The simulation run could not be saved."
-        } finally {
-            recordingBusy = false
-        }
-    }
-    LaunchedEffect(nt4Client) {
-        nt4Client.uiTelemetryFlow.collect { frame ->
-            when (frame.key.trimStart('/')) {
-                TELEOP_LIST_TOPIC -> frame.stringValue?.let { encoded ->
-                    teleOps = decodeSimulatorOpModes(encoded)
-                    if (selectedOpMode !in teleOps && selectedOpMode !in autonomousOpModes) {
-                        selectedOpMode = preferredSimulatorTeleOp(teleOps) ?: autonomousOpModes.firstOrNull()
-                    }
-                }
-                AUTONOMOUS_LIST_TOPIC -> frame.stringValue?.let { encoded ->
-                    autonomousOpModes = decodeSimulatorOpModes(encoded)
-                    if (selectedOpMode !in teleOps && selectedOpMode !in autonomousOpModes) {
-                        selectedOpMode = preferredSimulatorTeleOp(teleOps) ?: autonomousOpModes.firstOrNull()
-                    }
-                }
-                SELECTED_OPMODE_TOPIC -> frame.stringValue?.takeIf { it.isNotBlank() }?.let {
-                    selectedOpMode = it
-                }
-                DRIVER_STATION_COMMAND_TOPIC -> frame.stringValue?.let {
-                    command = it
-                }
-                ACTIVE_OPMODE_CLASS_TOPIC -> activeOpMode = frame.stringValue?.takeIf(String::isNotBlank)
-                ACTIVE_OPMODE_DISPLAY_NAME_TOPIC -> activeOpModeDisplayName = frame.stringValue?.takeIf(String::isNotBlank)
-                ACTIVE_OPMODE_STATE_TOPIC -> activeOpModeState = frame.stringValue
-                FRC_DRIVER_STATION_STATE_TOPIC -> frcDriverStationState = frame.stringValue
-                RobotTopicContract.AVAILABLE_AUTONOMOUS_ROUTINES -> {
-                    availableAutos = parseAvailableAutoDocuments(frame.stringValue)
-                    requestedAuto = preferredSimulatorAutonomous(
-                        available = availableAutos,
-                        requested = requestedAuto,
-                        robotSelected = robotSelectedAuto,
-                    )
-                }
-                RobotTopicContract.SELECTED_AUTONOMOUS_ROUTINE -> {
-                    robotSelectedAuto = frame.stringValue.orEmpty()
-                    requestedAuto = preferredSimulatorAutonomous(
-                        available = availableAutos,
-                        requested = requestedAuto,
-                        robotSelected = robotSelectedAuto,
-                    )
-                }
-                RobotTopicContract.AUTONOMOUS_STATUS -> {
-                    autonomousStatus = frame.stringValue.orEmpty().ifBlank { "Idle" }
-                }
-                RobotTopicContract.AUTONOMOUS_DETAIL -> autonomousDetail = frame.stringValue.orEmpty()
-            }
-        }
-    }
 
-    LaunchedEffect(nt4Client) {
-        nt4Client.driveInputAcknowledgement.collect { acknowledgement ->
-            driveReceiverStatusCode = acknowledgement?.statusCode
-            driveReceiverLeaseAgeMs = acknowledgement?.leaseAgeMs
-        }
-    }
-
-    LaunchedEffect(isConnected) {
-        if (!isConnected) {
-            startJob?.cancel()
-            startJob = null
-            starting = false
-            startFailure = null
-            keyboardDriveState.disarm()
-        }
-    }
-
-    val isFtc = league == League.FTC
-    val ftcModeKind = ftcSimulatorOpModeKind(selectedOpMode, teleOps, autonomousOpModes)
-    val isFtcAutonomousSelection = ftcModeKind == FtcSimulatorOpModeKind.AUTONOMOUS
-    val isRunning = isConnected && (
-        if (isFtc) {
-            val expectedState = ftcModeKind?.runningState()
-            simulatorOpModeAcknowledged(
-                selectedOpMode = selectedOpMode,
-                activeOpMode = activeOpMode,
-                activeState = activeOpModeState,
-                expectedState = expectedState.orEmpty(),
-            ) && expectedState != null
-        } else {
-            frcSimulatorTeleOpEnabled(frcDriverStationState)
-        }
-    ) && !starting
-    val isAutonomousRunning = isConnected && !starting && if (isFtc) {
-        isFtcAutonomousSelection && isRunning
-    } else {
-        frcSimulatorAutonomousEnabled(frcDriverStationState)
-    }
-    val autonomousDisplayState = if (isConnected && !isFtc) {
-        frcAutonomousDisplayState(frcDriverStationState, autonomousStatus)
-    } else if (isConnected && isFtcAutonomousSelection) {
-        ftcAutonomousDisplayState(autonomousStatus)
-    } else {
-        FrcAutonomousDisplayState.INACTIVE
-    }
-    val receiverReady = simulatorDriveReceiverReady(
-        statusCode = driveReceiverStatusCode,
-        leaseAgeMs = driveReceiverLeaseAgeMs,
-    )
+    val isFtc = controller.isFtc
+    val isFtcAutonomousSelection = controller.isFtcAutonomousSelection
+    val isRunning = controller.isRunning(isConnected)
+    val isAutonomousRunning = controller.isAutonomousRunning(isConnected)
+    val autonomousDisplayState = controller.autonomousDisplayState(isConnected)
+    val receiverReady = controller.receiverReady
     val primaryAction = localSimulatorPrimaryAction(
         isConnected = isConnected,
         isSimulatorProcessRunning = isSimulatorProcessRunning,
         isLaunchPreparationRunning = isLaunchPreparationRunning,
         launchRequiresVerification = launchRequiresVerification,
-        isTeleOpStarting = starting,
+        isTeleOpStarting = controller.starting,
         isTeleOpRunning = isRunning,
     )
-    val statusText = when {
-        !isConnected && isSimulatorProcessRunning -> "CONNECTING"
-        !isConnected -> "OFFLINE"
-        starting -> "STARTING"
-        startFailure != null -> "START FAILED"
-        isRunning && !isFtcAutonomousSelection && keyboardDriveState.enabled && !receiverReady -> "CONTROL RECOVERING"
-        isRunning && !isFtcAutonomousSelection && keyboardDriveState.enabled -> simulatorDriveReceiverStatus(driveReceiverStatusCode)
-        autonomousDisplayState == FrcAutonomousDisplayState.COMPLETE -> "AUTONOMOUS COMPLETE"
-        autonomousDisplayState == FrcAutonomousDisplayState.BLOCKED -> "AUTONOMOUS BLOCKED"
-        autonomousDisplayState == FrcAutonomousDisplayState.RUNNING -> "AUTONOMOUS RUNNING"
-        isFtcAutonomousSelection && isRunning -> "AUTONOMOUS RUNNING"
-        isRunning -> "TELEOP RUNNING"
-        !isFtc && frcDriverStationState == FRC_WAITING_FOR_CONTROL_STATE -> "WAITING FOR SAFE CONTROL"
-        command == "INIT" -> "INITIALIZED"
-        else -> "WAITING FOR TELEOP"
-    }
-    val statusColor = when {
-        !isConnected -> AresTextSecondary
-        startFailure != null || autonomousDisplayState == FrcAutonomousDisplayState.BLOCKED -> AresError
-        starting || command == "INIT" || (isRunning && keyboardDriveState.enabled && !receiverReady) -> AresAmber
-        isRunning || isAutonomousRunning -> AresGreen
-        else -> AresCyan
-    }
+    val statusText = controller.statusText(
+        isConnected = isConnected,
+        isSimulatorProcessRunning = isSimulatorProcessRunning,
+        keyboardDriveEnabled = keyboardDriveState.enabled,
+    )
+    val statusColor = controller.statusColor(
+        isConnected = isConnected,
+        keyboardDriveEnabled = keyboardDriveState.enabled,
+    )
+    val readinessSteps = computeSimulatorReadinessSteps(
+        isConnected = isConnected,
+        isSimulatorProcessRunning = isSimulatorProcessRunning,
+        isLaunchPreparationRunning = isLaunchPreparationRunning,
+        isStarting = controller.starting,
+        isRunning = isRunning,
+        isAutonomousRunning = isAutonomousRunning,
+        isAutonomousSelection = isFtcAutonomousSelection,
+        isKeyboardDriveArmed = keyboardDriveState.enabled,
+        receiverReady = receiverReady,
+    )
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -353,251 +180,83 @@ fun LocalSimulatorControlBar(
                 SimulatorModeDropdown(
                     isFtc = isFtc,
                     isConnected = isConnected,
-                    starting = starting,
-                    selectedOpMode = selectedOpMode,
-                    onSelectedOpModeChanged = { selectedOpMode = it },
-                    teleOps = teleOps,
-                    autonomousOpModes = autonomousOpModes,
-                    availableAutos = availableAutos,
-                    requestedAuto = requestedAuto,
-                    onRequestedAutoChanged = { requestedAuto = it },
+                    starting = controller.starting,
+                    selectedOpMode = controller.selectedOpMode,
+                    onSelectedOpModeChanged = { controller.selectedOpMode = it },
+                    teleOps = controller.teleOps,
+                    autonomousOpModes = controller.autonomousOpModes,
+                    availableAutos = controller.availableAutos,
+                    requestedAuto = controller.requestedAuto,
+                    onRequestedAutoChanged = { controller.requestedAuto = it },
                     onDisarmDrive = { keyboardDriveState.disarm() },
                     modifier = Modifier.weight(1f),
                 )
 
                 if (isFtcAutonomousSelection) {
                     FtcAutonomousRoutineSelector(
-                        expanded = ftcRoutineSelectorExpanded,
-                        enabled = isConnected && !starting,
-                        availableAutos = availableAutos,
-                        labels = autonomousLabels,
-                        selectedAuto = requestedAuto,
-                        onExpandedChange = { ftcRoutineSelectorExpanded = it },
-                        onSelected = { requestedAuto = it },
+                        expanded = controller.ftcRoutineSelectorExpanded,
+                        enabled = isConnected && !controller.starting,
+                        availableAutos = controller.availableAutos,
+                        labels = controller.autonomousLabels,
+                        selectedAuto = controller.requestedAuto,
+                        onExpandedChange = { controller.ftcRoutineSelectorExpanded = it },
+                        onSelected = { controller.requestedAuto = it },
                     )
-                }
-
-                val onPrimaryActionClick: () -> Unit = {
-                    if (
-                        primaryAction == LocalSimulatorPrimaryAction.LAUNCH_SIMULATOR ||
-                        primaryAction == LocalSimulatorPrimaryAction.VERIFY_AND_LAUNCH
-                    ) {
-                        onLaunchSimulator()
-                    } else if (primaryAction == LocalSimulatorPrimaryAction.START_DRIVING) {
-                        val opMode = selectedOpMode
-                        if (!isFtc || opMode != null) {
-                            startJob?.cancel()
-                            startJob = scope.launch {
-                                starting = true
-                                startFailure = null
-                                keyboardDriveState.disarm()
-                                try {
-                                    if (!isFtc) {
-                                        nt4Client.publishString(FRC_DRIVER_STATION_COMMAND_TOPIC, FRC_ENABLE_TELEOP_COMMAND)
-                                        val running = withTimeoutOrNull(OPMODE_ACK_TIMEOUT_MS) {
-                                            while (connectedNow && !frcSimulatorTeleOpEnabled(frcDriverStationState)) delay(20)
-                                            connectedNow
-                                        } == true
-                                        if (!running) {
-                                            startFailure = when (frcDriverStationState) {
-                                                FRC_WAITING_FOR_CONTROL_STATE ->
-                                                    "The FRC simulator did not receive a fresh neutral control handshake"
-                                                else -> "The FRC simulator did not enable TeleOp"
-                                            }
-                                            return@launch
-                                        }
-                                        keyboardDriveState.enabled = true
-                                        return@launch
-                                    }
-
-                                    checkNotNull(opMode)
-                                    val modeKind = requireNotNull(
-                                        ftcSimulatorOpModeKind(opMode, teleOps, autonomousOpModes)
-                                    ) { "The selected FTC OpMode is no longer available" }
-                                    val autonomousSelection = if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS) {
-                                        requireNotNull(requestedAuto) { "Choose an autonomous routine" }
-                                    } else null
-                                    autonomousSelection?.let { selection ->
-                                        nt4Client.publishString(RobotTopicContract.FTC_AUTONOMOUS_REQUEST, selection)
-                                        delay(150)
-                                    }
-                                    nt4Client.publishString(SELECTED_OPMODE_TOPIC, opMode)
-                                    nt4Client.publishString(DRIVER_STATION_COMMAND_TOPIC, "INIT")
-                                    command = "INIT"
-                                    val initialized = awaitSimulatorOpModeAcknowledgement(
-                                        selectedOpMode = opMode,
-                                        expectedState = modeKind.initState(),
-                                        isConnected = { connectedNow },
-                                        snapshot = {
-                                            SimulatorOpModeSnapshot(
-                                                activeOpMode = nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]
-                                                    ?.stringValue
-                                                    ?.takeIf(String::isNotBlank),
-                                                activeState = nt4Client.latestValues[ACTIVE_OPMODE_STATE_TOPIC]?.stringValue,
-                                                autonomousStatus = nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]
-                                                    ?.stringValue,
-                                            )
-                                        },
-                                    )
-                                    if (!initialized) {
-                                        startFailure = "The simulator did not initialize ${opMode.substringAfterLast('.')}"
-                                        return@launch
-                                    }
-
-                                    nt4Client.publishString(DRIVER_STATION_COMMAND_TOPIC, "START")
-                                    command = "START"
-                                    val running = awaitSimulatorOpModeAcknowledgement(
-                                        selectedOpMode = opMode,
-                                        expectedState = modeKind.runningState(),
-                                        isConnected = { connectedNow },
-                                        snapshot = {
-                                            SimulatorOpModeSnapshot(
-                                                activeOpMode = nt4Client.latestValues[ACTIVE_OPMODE_CLASS_TOPIC]
-                                                    ?.stringValue
-                                                    ?.takeIf(String::isNotBlank),
-                                                activeState = nt4Client.latestValues[ACTIVE_OPMODE_STATE_TOPIC]?.stringValue,
-                                                autonomousStatus = nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]
-                                                    ?.stringValue,
-                                            )
-                                        },
-                                        acceptedAutonomousStatuses = if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS) {
-                                            setOf("RUNNING", "COMPLETE", "BLOCKED", "FAILED", "CANCELLED")
-                                        } else emptySet(),
-                                    )
-                                    if (!running) {
-                                        startFailure = "The simulator did not start ${opMode.substringAfterLast('.')}"
-                                        return@launch
-                                    }
-                                    if (modeKind == FtcSimulatorOpModeKind.AUTONOMOUS &&
-                                        ftcAutonomousDisplayState(
-                                            nt4Client.latestValues[RobotTopicContract.AUTONOMOUS_STATUS]?.stringValue,
-                                        ) == FrcAutonomousDisplayState.BLOCKED
-                                    ) {
-                                        startFailure = autonomousDetail.ifBlank {
-                                            "Autonomous '${autonomousSelection.orEmpty()}' was blocked or failed"
-                                        }
-                                        return@launch
-                                    }
-                                    keyboardDriveState.enabled = modeKind == FtcSimulatorOpModeKind.TELEOP
-                                } catch (cancelled: CancellationException) {
-                                    throw cancelled
-                                } catch (error: Exception) {
-                                    startFailure = error.message ?: "Simulator TeleOp start failed"
-                                    keyboardDriveState.disarm()
-                                } finally {
-                                    starting = false
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val onRunFrcAutoClick: () -> Unit = {
-                    if (!starting && !isAutonomousRunning) {
-                        val selection = requestedAuto
-                        if (selection != null) {
-                            startJob?.cancel()
-                            startJob = scope.launch {
-                                starting = true
-                                startFailure = null
-                                keyboardDriveState.disarm()
-                                try {
-                                    nt4Client.publishString(RobotTopicContract.FRC_AUTONOMOUS_REQUEST, selection)
-                                    nt4Client.publishString(
-                                        RobotTopicContract.FRC_SMART_DASHBOARD_AUTONOMOUS_REQUEST,
-                                        selection,
-                                    )
-                                    delay(150)
-                                    nt4Client.publishString(
-                                        FRC_DRIVER_STATION_COMMAND_TOPIC,
-                                        FRC_ENABLE_AUTONOMOUS_COMMAND,
-                                    )
-                                    val running = withTimeoutOrNull(OPMODE_ACK_TIMEOUT_MS) {
-                                        while (
-                                            connectedNow &&
-                                            (!frcSimulatorAutonomousEnabled(frcDriverStationState) ||
-                                                robotSelectedAuto != selection)
-                                        ) {
-                                            delay(20)
-                                        }
-                                        connectedNow
-                                    } == true
-                                    if (!running) {
-                                        startFailure = if (frcSimulatorAutonomousEnabled(frcDriverStationState)) {
-                                            "The robot did not lock autonomous '$selection'"
-                                        } else {
-                                            "The FRC simulator did not start autonomous"
-                                        }
-                                    }
-                                } catch (cancelled: CancellationException) {
-                                    throw cancelled
-                                } catch (error: Exception) {
-                                    startFailure = error.message ?: "Simulator autonomous start failed"
-                                } finally {
-                                    starting = false
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val onToggleRecording: () -> Unit = {
-                    scope.launch {
-                        recordingBusy = true
-                        recordingFailure = null
-                        try {
-                            if (recordingSession == null) {
-                                val session = nt4Client.startRecordingSession(
-                                    teamId = teamId,
-                                    seasonId = seasonId,
-                                    robotId = robotId,
-                                    tags = listOf(SIMULATION_SESSION_TAG, "studio-experiment"),
-                                )
-                                recordingMessage = "Recording simulation run ${session.sessionId.take(8)}…"
-                            } else {
-                                stopAndSaveRecording()
-                            }
-                        } catch (failure: Exception) {
-                            recordingFailure = failure.message ?: "Recording could not be changed."
-                        } finally {
-                            recordingBusy = false
-                        }
-                    }
-                }
-
-                val onStopClick: () -> Unit = {
-                    startJob?.cancel()
-                    startJob = null
-                    starting = false
-                    command = "STOP"
-                    keyboardDriveState.disarm()
-                    scope.launch {
-                        stopAndSaveRecording()
-                        nt4Client.publishString(
-                            if (isFtc) DRIVER_STATION_COMMAND_TOPIC else FRC_DRIVER_STATION_COMMAND_TOPIC,
-                            if (isFtc) "STOP" else FRC_DISABLE_COMMAND,
-                        )
-                    }
                 }
 
                 SimulatorActionButtons(
                     primaryAction = primaryAction,
                     canLaunchSimulator = canLaunchSimulator,
                     isFtc = isFtc,
-                    selectedOpMode = selectedOpMode,
+                    selectedOpMode = controller.selectedOpMode,
                     isFtcAutonomousSelection = isFtcAutonomousSelection,
-                    onPrimaryActionClick = onPrimaryActionClick,
+                    onPrimaryActionClick = {
+                        controller.handlePrimaryActionClick(
+                            primaryAction = primaryAction,
+                            scope = scope,
+                            nt4Client = nt4Client,
+                            keyboardDriveState = keyboardDriveState,
+                            isConnected = { connectedNow },
+                            onLaunchSimulator = onLaunchSimulator,
+                        )
+                    },
                     isConnected = isConnected,
-                    requestedAuto = requestedAuto,
-                    starting = starting,
+                    requestedAuto = controller.requestedAuto,
+                    starting = controller.starting,
                     isAutonomousRunning = isAutonomousRunning,
                     autonomousDisplayState = autonomousDisplayState,
-                    onRunFrcAutoClick = onRunFrcAutoClick,
+                    onRunFrcAutoClick = {
+                        controller.handleRunFrcAutoClick(
+                            isConnected = isConnected,
+                            scope = scope,
+                            nt4Client = nt4Client,
+                            keyboardDriveState = keyboardDriveState,
+                            connectedNow = { connectedNow },
+                        )
+                    },
                     recordingSession = recordingSession,
-                    recordingBusy = recordingBusy,
+                    recordingBusy = controller.recordingBusy,
                     isRunning = isRunning,
-                    onToggleRecording = onToggleRecording,
-                    onStopClick = onStopClick,
+                    onToggleRecording = {
+                        controller.handleToggleRecording(
+                            scope = scope,
+                            nt4Client = nt4Client,
+                            recordingSession = recordingSession,
+                            teamId = teamId,
+                            seasonId = seasonId,
+                            robotId = robotId,
+                            onRecordingSaved = onRecordingSaved,
+                        )
+                    },
+                    onStopClick = {
+                        controller.handleStopClick(
+                            scope = scope,
+                            nt4Client = nt4Client,
+                            keyboardDriveState = keyboardDriveState,
+                            recordingSession = recordingSession,
+                            onRecordingSaved = onRecordingSaved,
+                        )
+                    },
                     useGamepad = keyboardDriveState.useGamepad,
                     onToggleGamepad = {
                         keyboardDriveState.releaseAll()
@@ -612,10 +271,12 @@ fun LocalSimulatorControlBar(
                 )
             }
 
+            SimulatorReadinessStepperRow(steps = readinessSteps)
+
             LocalSimulatorStatusHint(
-                recordingFailure = recordingFailure,
+                recordingFailure = controller.recordingFailure,
                 recordingSession = recordingSession,
-                recordingMessage = recordingMessage,
+                recordingMessage = controller.recordingMessage,
                 isConnected = isConnected,
                 isLaunchPreparationRunning = isLaunchPreparationRunning,
                 isSimulatorProcessRunning = isSimulatorProcessRunning,
@@ -624,20 +285,101 @@ fun LocalSimulatorControlBar(
                 launchRequiresVerification = launchRequiresVerification,
                 isFtc = isFtc,
                 autonomousDisplayState = autonomousDisplayState,
-                robotSelectedAuto = robotSelectedAuto,
-                requestedAuto = requestedAuto,
-                availableAutos = availableAutos,
-                frcDriverStationState = frcDriverStationState,
+                robotSelectedAuto = controller.robotSelectedAuto,
+                requestedAuto = controller.requestedAuto,
+                availableAutos = controller.availableAutos,
+                frcDriverStationState = controller.frcDriverStationState,
                 isKeyboardDriveArmed = keyboardDriveState.enabled,
                 useGamepad = keyboardDriveState.useGamepad,
-                startFailure = startFailure,
+                startFailure = controller.startFailure,
                 isRunning = isRunning,
                 isFtcAutonomousSelection = isFtcAutonomousSelection,
                 receiverReady = receiverReady,
-                driveReceiverStatusCode = driveReceiverStatusCode,
-                activeOpModeDisplayName = activeOpModeDisplayName,
-                selectedOpMode = selectedOpMode,
+                driveReceiverStatusCode = controller.driveReceiverStatusCode,
+                activeOpModeDisplayName = controller.activeOpModeDisplayName,
+                selectedOpMode = controller.selectedOpMode,
             )
+        }
+    }
+}
+
+@Composable
+internal fun SimulatorReadinessStepperRow(
+    steps: List<SimulatorReadinessStep>,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        steps.forEach { step ->
+            val accentColor = when (step.status) {
+                SimulatorStepStatus.COMPLETE -> AresGreen
+                SimulatorStepStatus.ACTIVE -> AresCyan
+                SimulatorStepStatus.PENDING -> AresTextTertiary
+            }
+            val bgColor = when (step.status) {
+                SimulatorStepStatus.COMPLETE -> AresGreen.copy(alpha = 0.08f)
+                SimulatorStepStatus.ACTIVE -> AresCyan.copy(alpha = 0.12f)
+                SimulatorStepStatus.PENDING -> AresSurfaceElevated
+            }
+            val borderColor = when (step.status) {
+                SimulatorStepStatus.COMPLETE -> AresGreen.copy(alpha = 0.45f)
+                SimulatorStepStatus.ACTIVE -> AresCyan.copy(alpha = 0.65f)
+                SimulatorStepStatus.PENDING -> AresBorder.copy(alpha = 0.6f)
+            }
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(bgColor, RoundedCornerShape(7.dp))
+                    .border(1.dp, borderColor, RoundedCornerShape(7.dp))
+                    .padding(horizontal = 9.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .background(
+                            if (step.status == SimulatorStepStatus.COMPLETE) AresGreen else accentColor.copy(alpha = 0.2f),
+                            CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (step.status == SimulatorStepStatus.COMPLETE) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = AresOnAccent,
+                            modifier = Modifier.size(11.dp),
+                        )
+                    } else {
+                        Text(
+                            text = step.stepNumber.toString(),
+                            color = accentColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = step.title,
+                        color = if (step.status == SimulatorStepStatus.PENDING) AresTextSecondary else AresTextPrimary,
+                        fontSize = 11.sp,
+                        fontWeight = if (step.status == SimulatorStepStatus.ACTIVE) FontWeight.Bold else FontWeight.SemiBold,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = step.actionHint,
+                        color = accentColor,
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                    )
+                }
+            }
         }
     }
 }

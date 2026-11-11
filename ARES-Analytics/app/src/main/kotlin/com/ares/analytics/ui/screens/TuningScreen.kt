@@ -128,6 +128,12 @@ fun TuningScreen(
                 }
             }
         }
+        StudentTuningSymptomHelperCard(
+            onApplySymptomStarter = { starter ->
+                activeMode = 0
+                experimentViewModel.onIntent(GuidedTuningExperimentIntent.ApplySymptomStarter(starter))
+            },
+        )
         if (activeMode == 0) {
             GuidedTuningExperimentPanel(
                 viewModel = experimentViewModel,
@@ -299,9 +305,10 @@ fun TuningScreen(
                                 fontSize = 10.sp,
                             )
                             simulation?.recommendation?.let { preview ->
-                                ParamRow("Teaching feedforward kS / kV / kA", String.format("%.3f / %.3f / %.3f", preview.recommendedkS, preview.recommendedkV, preview.recommendedkA))
-                                ParamRow("Teaching feedback kP / kI / kD", String.format("%.3f / %.3f / %.3f", preview.recommendedGains.kP, preview.recommendedGains.kI, preview.recommendedGains.kD))
-                                ParamRow("Known-plant fit", String.format("%.1f%% R²", preview.rSquared * 100.0))
+                                val f = com.ares.analytics.ui.util.AresFormatters::formatDecimal
+                                ParamRow("Teaching feedforward kS / kV / kA", "${f(preview.recommendedkS, 3, "N/A")} / ${f(preview.recommendedkV, 3, "N/A")} / ${f(preview.recommendedkA, 3, "N/A")}")
+                                ParamRow("Teaching feedback kP / kI / kD", "${f(preview.recommendedGains.kP, 3, "N/A")} / ${f(preview.recommendedGains.kI, 3, "N/A")} / ${f(preview.recommendedGains.kD, 3, "N/A")}")
+                                ParamRow("Known-plant fit", "${f(preview.rSquared * 100.0, 1, "N/A")}% R²")
                             }
                         }
                         HorizontalDivider(color = AresBorder)
@@ -370,38 +377,34 @@ fun TuningScreen(
                         }
                         val summary = sysIdState.summary
                         if (summary != null) {
+                            val f = com.ares.analytics.ui.util.AresFormatters::formatDecimal
                             HorizontalDivider(color = AresBorder)
                             Text("SysId Calculation Results:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AresCyan)
-                            ParamRow("Static Friction (kS)", String.format("%.4f V", summary.kS))
-                            ParamRow("Velocity Constant (kV)", String.format("%.4f V/(m/s)", summary.kV))
-                            ParamRow("Acceleration Constant (kA)", String.format("%.4f V/(m/s²)", summary.kA))
-                            ParamRow("OLS Fit Quality (R²)", String.format("%.2f%%", summary.rSquared * 100))
+                            ParamRow("Static Friction (kS)", "${f(summary.kS, 4, "N/A")} V")
+                            ParamRow("Velocity Constant (kV)", "${f(summary.kV, 4, "N/A")} V/(m/s)")
+                            ParamRow("Acceleration Constant (kA)", "${f(summary.kA, 4, "N/A")} V/(m/s²)")
+                            ParamRow("OLS Fit Quality (R²)", "${f(summary.rSquared * 100, 2, "N/A")}%")
                         }
                         val recommendation = sysIdState.tuningRecommendation
                         if (recommendation != null) {
+                            val f = com.ares.analytics.ui.util.AresFormatters::formatDecimal
                             HorizontalDivider(color = AresBorder)
                             Text("Measured-Plant Recommendation", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AresCyan)
                             ParamRow("Safety status", recommendation.quality.name.replace('_', ' '))
-                            ParamRow("Confidence", String.format("%.1f%%", recommendation.confidence * 100.0))
-                            ParamRow("Data quality", String.format("%.1f%%", recommendation.dataQuality.score * 100.0))
+                            ParamRow("Confidence", "${f(recommendation.confidence * 100.0, 1, "N/A")}%")
+                            ParamRow("Data quality", "${f(recommendation.dataQuality.score * 100.0, 1, "N/A")}%")
                             ParamRow(
                                 "Capture coverage",
-                                "${recommendation.dataQuality.sampleCount} samples / " +
-                                    String.format("%.2fs", recommendation.dataQuality.durationMs / 1000.0)
+                                "${recommendation.dataQuality.sampleCount} samples / ${f(recommendation.dataQuality.durationMs / 1000.0, 2, "N/A")}s"
                             )
                             ParamRow(
                                 "Telemetry cadence",
-                                String.format(
-                                    "%.1fms median / %dms max gap",
-                                    recommendation.dataQuality.medianPeriodMs,
-                                    recommendation.dataQuality.maximumGapMs
-                                )
+                                "${f(recommendation.dataQuality.medianPeriodMs, 1, "N/A")}ms median / ${recommendation.dataQuality.maximumGapMs}ms max gap"
                             )
-                            ParamRow("Feedback kP / kI / kD", String.format("%.4f / %.4f / %.4f",
-                                recommendation.recommendedGains.kP,
-                                recommendation.recommendedGains.kI,
-                                recommendation.recommendedGains.kD
-                            ))
+                            ParamRow(
+                                "Feedback kP / kI / kD",
+                                "${f(recommendation.recommendedGains.kP, 4, "N/A")} / ${f(recommendation.recommendedGains.kI, 4, "N/A")} / ${f(recommendation.recommendedGains.kD, 4, "N/A")}"
+                            )
                             recommendation.warnings.forEach { warning ->
                                 Text(warning, color = AresAmber, fontSize = 10.sp)
                             }
@@ -424,120 +427,13 @@ fun TuningScreen(
                             }
                         }
                     }
-                    1 -> { // Pinpoint Offset & Ticks/m Tab
-                        if (sysIdState.isRoutineRunning) {
-                            AbortCard(sysIdViewModel)
-                        } else {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text("Module Offset Calibration", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AresCyan)
-                                CalibrationTriggerCard(
-                                    name = "Start Pinpoint Offset Calibration",
-                                    desc = "Robot spins in place. Computes pinpoint module offsets from physical center of rotation.",
-                                    onClick = { sysIdViewModel.onIntent(SysIdIntent.StartCalibration("PINPOINT_SPIN")) },
-                                    enabled = motionEnabled
-                                )
-                                val px = sysIdState.recommendedPinpointXOffsetMm
-                                val py = sysIdState.recommendedPinpointYOffsetMm
-                                if (px != null && py != null) {
-                                    ParamRow("Recommended X Offset", String.format("%.2f mm", px))
-                                    ParamRow("Recommended Y Offset", String.format("%.2f mm", py))
-                                    Spacer(Modifier.height(4.dp))
-                                    ApplyButton(onClick = { sysIdViewModel.onIntent(SysIdIntent.ApplyCalibration("PINPOINT_SPIN")) })
-                                }
-
-                                HorizontalDivider(color = AresBorder)
-
-                                Text("Ticks/Meter Encoder Calibration", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AresCyan)
-                                var distText by remember(sysIdState.linearDriveActualDistanceMeters) {
-                                    mutableStateOf(sysIdState.linearDriveActualDistanceMeters.toString())
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Text("Physical Distance Traveled (meters):", fontSize = 12.sp, color = AresTextSecondary)
-                                    BasicTextField(
-                                        value = distText,
-                                        onValueChange = {
-                                            distText = it
-                                            val parsed = it.toDoubleOrNull()
-                                            if (parsed != null && parsed > 0.0) {
-                                                sysIdViewModel.onIntent(SysIdIntent.SetLinearDriveDistance(parsed))
-                                            }
-                                        },
-                                        singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = AresTextPrimary),
-                                        cursorBrush = SolidColor(AresCyan),
-                                        modifier = Modifier
-                                            .width(60.dp)
-                                            .height(30.dp)
-                                            .background(AresSurfaceElevated, RoundedCornerShape(6.dp))
-                                            .border(1.dp, AresBorder, RoundedCornerShape(6.dp))
-                                            .padding(horizontal = 8.dp, vertical = 6.dp)
-                                    )
-                                }
-                                CalibrationTriggerCard(
-                                    name = "Start Linear Ticks Calibration",
-                                    desc = "Robot will drive straight for 3 seconds. Mark start and end points and measure distance to input above.",
-                                    onClick = { sysIdViewModel.onIntent(SysIdIntent.StartCalibration("LINEAR_DRIVE")) },
-                                    enabled = motionEnabled
-                                )
-                                val ticks = sysIdState.recommendedTicksPerMeter
-                                if (ticks != null) {
-                                    ParamRow("Recommended Ticks/Meter", String.format("%.2f", ticks))
-                                    Spacer(Modifier.height(4.dp))
-                                    ApplyButton(onClick = { sysIdViewModel.onIntent(SysIdIntent.ApplyCalibration("LINEAR_DRIVE")) })
-                                }
-                            }
-                        }
-                    }
-                    2 -> { // Track Width Tab
-                        if (sysIdState.isRoutineRunning) {
-                            AbortCard(sysIdViewModel)
-                        } else {
-                            CalibrationTriggerCard(
-                                name = "Start Track Width Calibration",
-                                desc = "Robot will spin in place to calibrate effective track width / moment arm based on IMU vs wheel travel.",
-                                onClick = { sysIdViewModel.onIntent(SysIdIntent.StartCalibration("TRACK_WIDTH_SPIN")) },
-                                    enabled = motionEnabled
-                            )
-                        }
-                        val tw = sysIdState.recommendedTrackWidthMeters
-                        if (tw != null) {
-                            HorizontalDivider(color = AresBorder)
-                            Text("Calibrated Drivetrain Kinematics:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AresCyan)
-                            ParamRow("Recommended Track Width", String.format("%.4f m", tw))
-                            Spacer(Modifier.height(4.dp))
-                            ApplyButton(onClick = { sysIdViewModel.onIntent(SysIdIntent.ApplyCalibration("TRACK_WIDTH_SPIN")) })
-                        }
-                    }
-                    3 -> { // Vision Tab
-                        if (sysIdState.isRoutineRunning) {
-                            AbortCard(sysIdViewModel)
-                        } else {
-                            CalibrationTriggerCard(
-                                name = "Start Vision Noise Calibration",
-                                desc = "Place the robot stationary facing an AprilTag. Collects standard deviations of Limelight observations.",
-                                onClick = { sysIdViewModel.onIntent(SysIdIntent.StartCalibration("VISION_CALIBRATION")) },
-                                enabled = motionEnabled
-                            )
-                        }
-                        val vx = sysIdState.recommendedVisionStdDevsX
-                        val vy = sysIdState.recommendedVisionStdDevsY
-                        val vh = sysIdState.recommendedVisionStdDevsHeading
-                        if (vx != null && vy != null && vh != null) {
-                            HorizontalDivider(color = AresBorder)
-                            Text("Calibrated Vision Std Devs:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AresCyan)
-                            ParamRow("Recommended Std Dev X", String.format("%.4f m", vx))
-                            ParamRow("Recommended Std Dev Y", String.format("%.4f m", vy))
-                            ParamRow("Recommended Std Dev Heading", String.format("%.4f rad", vh))
-                            Spacer(Modifier.height(4.dp))
-                            ApplyButton(onClick = { sysIdViewModel.onIntent(SysIdIntent.ApplyCalibration("VISION_CALIBRATION")) })
-                        }
+                    1, 2, 3 -> {
+                        DrivetrainKinematicsAndVisionCalibrationTabContent(
+                            activeCalTab = activeCalTab,
+                            sysIdState = sysIdState,
+                            sysIdViewModel = sysIdViewModel,
+                            motionEnabled = motionEnabled,
+                        )
                     }
                 }
 
@@ -566,112 +462,5 @@ fun TuningScreen(
             }
         }
         }
-    }
-}
-
-
-private fun getCustomCategory(key: String): String {
-    val cleanKey = key.removePrefix("Tuning/")
-    val parts = cleanKey.split("/")
-    if (parts.size > 1) {
-        return when (parts[0]) {
-            "drive" -> when (parts.getOrNull(1)) {
-                "pathTranslationGains" -> "Path Translation PID"
-                "pathRotationGains" -> "Path Rotation PID"
-                "headingGains" -> "Heading Lock PID"
-                "driveFeedforward" -> "Linear Feedforward"
-                "angularFeedforward" -> "Angular Feedforward"
-                "ftc" -> "FTC Drivetrain"
-                else -> "Drivetrain"
-            }
-            "localization" -> "Odometry & Localization"
-            "vision" -> "Limelight Vision"
-            "driver" -> "Driver Profile"
-            "subsystem" -> "Mechanism Tuning"
-            else -> parts[0].replace(Regex("([a-z])([A-Z]+)"), "$1 $2").replaceFirstChar { it.uppercase() }
-        }
-    }
-
-    return when {
-        cleanKey == "pinpointXOffsetMm" ||
-        cleanKey == "pinpointYOffsetMm" ||
-        cleanKey == "pinpointEncoderResolution" ||
-        cleanKey == "ticksPerMeter" -> "Pinpoint Odometry"
-
-        cleanKey.startsWith("vision") -> "Limelight Vision"
-
-        cleanKey.startsWith("odomQ") -> "EKF Position Filter"
-
-        else -> "General Drivetrain Constants"
-    }
-}
-
-private fun getConstantDescriptionAndRange(key: String): Pair<String, String> {
-    val cleanKey = key.removePrefix("Tuning/")
-    return when (cleanKey) {
-        "trackWidthMeters" -> Pair("Distance between center of left and right wheels.", "0.30 - 0.50 m")
-        "wheelBaseMeters" -> Pair("Distance between center of front and rear wheels.", "0.30 - 0.50 m")
-        "pathTranslationGains/kP" -> Pair("Proportional feedback gain for autonomous path translational errors.", "1.0 - 5.0")
-        "pathTranslationGains/kI" -> Pair("Integral feedback gain for autonomous path translational errors.", "0.0 - 0.1")
-        "pathTranslationGains/kD" -> Pair("Derivative feedback gain for autonomous path translational errors.", "0.01 - 0.1")
-        "pathTranslationGains/kF" -> Pair("Feedforward velocity feedback gain coefficient for translation.", "0.0")
-        "pathRotationGains/kP" -> Pair("Proportional feedback gain for autonomous path rotational heading errors.", "1.0 - 5.0")
-        "pathRotationGains/kI" -> Pair("Integral feedback gain for autonomous path rotational heading errors.", "0.0 - 0.1")
-        "pathRotationGains/kD" -> Pair("Derivative feedback gain for autonomous path rotational heading errors.", "0.01 - 0.1")
-        "pathRotationGains/kF" -> Pair("Feedforward velocity feedback gain coefficient for rotation.", "0.0")
-        "headingGains/kP" -> Pair("Proportional feedback gain to active hold current heading.", "2.0 - 6.0")
-        "headingGains/kI" -> Pair("Integral feedback gain to active hold current heading.", "0.0")
-        "headingGains/kD" -> Pair("Derivative feedback gain to active hold current heading.", "0.1 - 0.5")
-        "headingGains/kF" -> Pair("Feedforward velocity feedback gain coefficient for heading.", "0.0")
-        "headingDeadzoneDeg" -> Pair("Angular deadband before heading corrections are applied.", "0.1 - 1.0 deg")
-        "driveFeedforward/kS" -> Pair("Static friction feedforward voltage offset to overcome friction.", "0.02 - 0.08")
-        "driveFeedforward/kV" -> Pair("Velocity feedforward coefficient (1.0 / max physical speed).", "0.20 - 0.35")
-        "driveFeedforward/kA" -> Pair("Acceleration feedforward coefficient.", "0.0 - 0.05")
-        "driveSlewRateLimit" -> Pair("Maximum rate of velocity change (acceleration limit).", "2.0 - 4.0 m/s^2")
-        "motorGains/kP" -> Pair("Proportional gain for wheel-level closed-loop velocity tracking.", "5.0 - 15.0")
-        "motorGains/kI" -> Pair("Integral gain for wheel-level closed-loop velocity tracking.", "0.0 - 5.0")
-        "motorGains/kD" -> Pair("Derivative gain for wheel-level closed-loop velocity tracking.", "0.0")
-        "motorGains/kF" -> Pair("Feedforward gain for wheel-level closed-loop velocity tracking.", "0.0")
-        "visionStdDevsX" -> Pair("Expected measurement noise standard deviation along X-axis.", "0.02 - 0.15 m")
-        "visionStdDevsY" -> Pair("Expected measurement noise standard deviation along Y-axis.", "0.02 - 0.15 m")
-        "visionStdDevsHeading" -> Pair("Expected measurement noise standard deviation for heading rotation.", "0.05 - 0.20 rad")
-        "visionMaxDistanceMeters" -> Pair("Cutoff distance beyond which AprilTag decodes are discarded.", "4.0 - 7.0 m")
-        "visionMaxAmbiguity" -> Pair("Maximum pose ambiguity limit for accepting vision tag decodes.", "0.1 - 0.3")
-        "visionMahalanobisThreshold" -> Pair("Maximum standard deviations variance mismatch before EKF rejection.", "6.0 - 15.0")
-        "odomQx" -> Pair("EKF process noise covariance diagonal parameter for X-axis.", "0.001 - 0.05")
-        "odomQy" -> Pair("EKF process noise covariance diagonal parameter for Y-axis.", "0.001 - 0.05")
-        "odomQtheta" -> Pair("EKF process noise covariance diagonal parameter for heading.", "0.001 - 0.05")
-        "pinpointXOffsetMm" -> Pair("Mounting distance offset of the Pinpoint computer along robot X-axis.", "-200.0 - 200.0 mm")
-        "pinpointYOffsetMm" -> Pair("Mounting distance offset of the Pinpoint computer along robot Y-axis.", "-200.0 - 200.0 mm")
-        "pinpointEncoderResolution" -> Pair("Resolution calibration factor of the Pinpoint encoders.", "20.0 - 21.0 ticks/mm")
-        "ticksPerMeter" -> Pair("Odometry encoder ticks per meter of linear travel.", "1000.0 - 4000.0")
-        "driverDeadbandExponent" -> Pair("Input response curve scaling exponent for joysticks.", "1.0 - 2.0 (1.0 = linear)")
-        "driverSlewRateLimit" -> Pair("Slew rate acceleration limit mapping on driver input command.", "2.0 - 10.0")
-        "stolenRobotRejectionThreshold" -> Pair("Consecutive vision rejections before performing a reseed/snap.", "5 - 20 frames")
-        "stolenRobotVelocityThreshold" -> Pair("Robot velocity threshold below which the robot is considered stationary.", "0.01 - 0.10 m/s")
-        "pathVelocityScale" -> Pair("Scale factor applied to physical max speed limit during pathfinding.", "0.50 - 1.00 (0.85 = default)")
-        "pathAccelerationLimit" -> Pair("Maximum acceleration limit allowed during pathfinding.", "1.5 - 4.0 m/s^2")
-        "visionAlignTargetDistance" -> Pair("Target standoff distance to AprilTag center during auto alignment.", "1.5 - 3.5 m")
-        "visionAlignMaxHeadingChangeRad" -> Pair("Maximum allowed heading change per frame to reject PnP flips.", "0.10 - 0.50 rad")
-        "visionAlignAlphaTranslation" -> Pair("Low-pass filtering factor for vision-based translation tracking.", "0.1 - 0.8 (lower = smoother)")
-        "visionAlignAlphaHeading" -> Pair("Low-pass filtering factor for vision-based heading tracking.", "0.1 - 0.8")
-        "visionAlignKpTranslation" -> Pair("Proportional tracking gain for vision-assisted alignment translation.", "0.5 - 2.0")
-        "visionAlignKpRotation" -> Pair("Proportional tracking gain for vision-assisted alignment rotation.", "0.5 - 2.5")
-        "visionAlignKdRotation" -> Pair("Derivative tracking gain for vision-assisted alignment rotation damping.", "0.1 - 0.8")
-        "visionAlignKsRotational" -> Pair("Rotational scrubbing static friction feedforward offset.", "0.02 - 0.12")
-        "visionAlignTranslationDeadband" -> Pair("Translational deadband tolerance before alignment corrections end.", "0.01 - 0.08 m")
-        "visionAlignHeadingErrorDeadband" -> Pair("Rotational error deadband tolerance before alignment corrections end.", "0.01 - 0.05 rad")
-        "visionAlignClampTranslationX" -> Pair("Maximum translational X speed override command.", "0.2 - 0.8")
-        "visionAlignClampTranslationY" -> Pair("Maximum translational Y speed override command.", "0.2 - 0.8")
-        "visionAlignClampRotation" -> Pair("Maximum rotational speed override command.", "0.3 - 0.8")
-        "visionAlignSearchFirstSweepMs" -> Pair("First sweep duration when searching for lost AprilTag.", "500 - 2000 ms")
-        "visionAlignSearchSecondSweepMs" -> Pair("Second sweep duration (opposite direction) when searching.", "1000 - 4000 ms")
-        "visionAlignSearchSpeed" -> Pair("Rotational sweep velocity when searching for lost AprilTag.", "0.3 - 1.0")
-        "telemetryRateDivisor" -> Pair("Network tables telemetry streaming frame rate divisor.", "1 - 10 (1 = full speed, 3 = default)")
-        "motorCurrentPollingIntervalMs" -> Pair("Background motor current polling sleep interval duration.", "20 - 150 ms")
-        "intakeNominalVoltage" -> Pair("Nominal voltage applied to active intake rollers.", "6.0 - 12.0 V")
-        "flywheelTargetRpmPreset" -> Pair("Target RPM preset for active flywheel shooter.", "1000.0 - 4000.0 RPM")
-        "driverTriggerThreshold" -> Pair("Joystick trigger analog threshold to feed game piece.", "0.2 - 0.8")
-        else -> Pair("Tunable parameter configuration constant.", "Varies")
     }
 }

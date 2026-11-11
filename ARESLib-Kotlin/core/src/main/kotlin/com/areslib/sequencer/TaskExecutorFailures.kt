@@ -42,3 +42,31 @@ internal object TaskExecutorFailures {
         return emptyList()
     }
 }
+
+internal fun admitExecutorTask(
+    task: Task,
+    admissions: java.util.IdentityHashMap<Task, com.areslib.routine.RoutineTaskOwnership>,
+) {
+    val ownership = com.areslib.routine.RoutineTaskOwnership(allowTerminalReuse = true)
+    try {
+        ownership.acquire(task)
+        ownership.prepareQueuedInvocation()
+    } catch (failure: Throwable) {
+        ownership.abandonClaims()
+        throw failure
+    }
+    admissions[task] = ownership
+}
+
+internal fun releaseExecutorTaskMetadata(
+    task: Task,
+    admissions: java.util.IdentityHashMap<Task, com.areslib.routine.RoutineTaskOwnership>,
+): Boolean = try {
+    val ownership = admissions.remove(task)
+    if (ownership != null) ownership.releaseAll() else TaskRuntimeOwnership.release(task)
+    true
+} catch (failure: Throwable) {
+    TaskStateMachine.markFailed(task)
+    TaskExecutorFailures.report(task, "metadata release", failure)
+    false
+}

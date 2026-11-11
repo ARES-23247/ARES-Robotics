@@ -63,6 +63,11 @@ fun SubsystemStateflowSection(
                 color = AresTextSecondary,
                 fontSize = 11.sp,
             )
+            SubsystemStudentControlRecipeBar(
+                document = document,
+                viewModel = viewModel,
+                selectedLoopId = state.selectedLoopUid,
+            )
             document.controlLoops.forEach { loop ->
                 SelectableRow(
                     title = loop.displayName,
@@ -116,64 +121,6 @@ fun SubsystemStateflowSection(
         SafetyInspector(state, viewModel)
         FaultRecoveryCard(document, viewModel)
         InterlockMatrixCard(document, state, viewModel)
-    }
-}
-
-@Composable
-fun StateFieldInspectorBody(field: SubsystemStateFieldDocument, viewModel: SubsystemGeneratorViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Configure state field role, value type, and default initial value.", color = AresTextSecondary, fontSize = 11.sp)
-        TextInput("State value name", field.displayName) { value ->
-            viewModel.updateStateField(field.fieldId) { it.copy(displayName = value) }
-        }
-        TextInput("Description", field.description) { value ->
-            viewModel.updateStateField(field.fieldId) { it.copy(description = value) }
-        }
-        StableIdLabel("Code ID", field.fieldId, "Used by cached inputs, controller rules, and actions.")
-        TextInput("Rename code ID (advanced)", field.fieldId) { value ->
-            viewModel.renameStateFieldId(field.fieldId, value)
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) {
-                EnumSelector("Role", field.role, SubsystemFieldRole.entries) { role ->
-                    viewModel.updateStateField(field.fieldId) { it.copy(role = role) }
-                }
-            }
-            ConceptHelp(
-                "state roles",
-                "Targets describe what the robot should do; measurements describe cached hardware observations; status reports derived conditions; configuration stores reviewed constants.",
-                "state-roles",
-                compact = true,
-            )
-        }
-        EnumSelector("Value Type", field.type, SubsystemValueType.entries) { type ->
-            viewModel.changeStateFieldType(field.fieldId, type)
-        }
-        when (field.type) {
-            SubsystemValueType.DOUBLE -> DoubleInput("Default number", field.defaultNumber ?: 0.0) { value ->
-                viewModel.updateStateField(field.fieldId) { it.copy(defaultNumber = value) }
-            }
-            SubsystemValueType.BOOLEAN -> ToggleRow("Default boolean", field.defaultBoolean ?: false) { value ->
-                viewModel.updateStateField(field.fieldId) { it.copy(defaultBoolean = value) }
-            }
-            SubsystemValueType.INT -> IntInput("Default integer", field.defaultInt ?: 0) { value ->
-                viewModel.updateStateField(field.fieldId) { it.copy(defaultInt = value) }
-            }
-            SubsystemValueType.STRING -> TextInput("Default text", field.defaultText.orEmpty()) { value ->
-                viewModel.updateStateField(field.fieldId) { it.copy(defaultText = value) }
-            }
-        }
-        if (field.type == SubsystemValueType.DOUBLE || field.type == SubsystemValueType.INT) {
-            TextInput("Physical unit (optional)", field.unit.orEmpty()) { value ->
-                viewModel.updateStateField(field.fieldId) { it.copy(unit = value.ifBlank { null }) }
-            }
-            NullableDoubleInput("Minimum bound", field.minimum) { value ->
-                viewModel.updateStateField(field.fieldId) { it.copy(minimum = value) }
-            }
-            NullableDoubleInput("Maximum bound", field.maximum) { value ->
-                viewModel.updateStateField(field.fieldId) { it.copy(maximum = value) }
-            }
-        }
     }
 }
 
@@ -527,140 +474,6 @@ private fun feedforwardGuidance(kind: SubsystemFeedforwardKind): String = when (
     SubsystemFeedforwardKind.TWO_DOF_ARM -> "Uses both joint angles and the declared linkage model to compensate coupled gravity. Configure each joint controller deliberately."
     SubsystemFeedforwardKind.FOUR_BAR_LINKAGE -> "Generation remains blocked until a constrained four-bar model and hardware contract are available."
 }
-
-@Composable
-fun SafetyInspector(state: SubsystemGeneratorState, viewModel: SubsystemGeneratorViewModel) {
-    val document = state.draft?.document ?: return
-    val safety = document.safety
-    var showAdvanced by remember { mutableStateOf(false) }
-    var showHomingLab by remember { mutableStateOf(false) }
-    val motorIds = document.hardware.filter { it.kind == SubsystemHardwareKind.MOTOR && it.following == null }.map { it.hardwareId }
-    val cachedFields = document.hardware.flatMap { device -> device.measurements.map { it.fieldId } }.distinct()
-
-    EditorCard("Safety & Health Protections", Icons.Default.Warning) {
-        Text("Outputs are held in safe neutral if feedback is stale, current is unsafe, or writes fail.", color = AresTextSecondary, fontSize = 11.sp)
-        NullableDoubleInput("Feedback timeout (ms)", safety.feedbackTimeoutMs?.toDouble()) { value ->
-            viewModel.edit { it.copy(safety = it.safety.copy(feedbackTimeoutMs = value?.toLong())) }
-        }
-        FieldGuidance("Closed-loop output stops when the newest complete cached snapshot is older than this lease.")
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) {
-                EnumSelector("Homing method", safety.homing.method, SubsystemHomingMethod.entries) { method ->
-                    viewModel.setHomingMethod(method)
-                }
-            }
-            ConceptHelp(
-                "Homing",
-                "Homing establishes a physical zero using a switch, current stall, velocity stall, combined evidence, or another cached signal.",
-                "homing",
-                compact = true,
-            )
-        }
-        if (safety.homing.method != SubsystemHomingMethod.NONE) {
-            if (motorIds.isNotEmpty()) {
-                DropdownSelector("Homing motor", safety.homing.actuatorId ?: motorIds.first(), motorIds) { selected ->
-                    viewModel.edit { it.copy(safety = it.safety.copy(homing = it.safety.homing.copy(actuatorId = selected))) }
-                }
-            }
-            DoubleInput("Search output (V, limited to ±4)", safety.homing.searchOutput ?: -2.0) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(homing = it.safety.homing.copy(searchOutput = value))) }
-            }
-            LongInput("Evidence dwell (ms)", safety.homing.dwellMs) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(homing = it.safety.homing.copy(dwellMs = value))) }
-            }
-            LongInput("Hard timeout (ms)", safety.homing.timeoutMs) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(homing = it.safety.homing.copy(timeoutMs = value))) }
-            }
-            DoubleInput("Position assigned after neutral succeeds", safety.homing.zeroPosition) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(homing = it.safety.homing.copy(zeroPosition = value))) }
-            }
-            Text("HOMING EVIDENCE", color = AresTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            safety.homing.evidence.forEachIndexed { index, evidence ->
-                Surface(color = AresSurface, border = BorderStroke(1.dp, AresBorder), shape = RoundedCornerShape(6.dp)) {
-                    Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (cachedFields.isNotEmpty()) {
-                            DropdownSelector("Cached signal", evidence.fieldId, cachedFields) { selected ->
-                                viewModel.edit { doc ->
-                                    doc.copy(safety = doc.safety.copy(homing = doc.safety.homing.copy(
-                                        evidence = doc.safety.homing.evidence.mapIndexed { i, item -> if (i == index) item.copy(fieldId = selected) else item }
-                                    )))
-                                }
-                            }
-                        }
-                        EnumSelector("Condition", evidence.comparison, SubsystemHomingComparison.entries) { comparison ->
-                            viewModel.edit { doc ->
-                                doc.copy(safety = doc.safety.copy(homing = doc.safety.homing.copy(
-                                    evidence = doc.safety.homing.evidence.mapIndexed { i, item ->
-                                        if (i == index) item.copy(
-                                            comparison = comparison,
-                                            threshold = item.threshold.takeUnless { comparison in setOf(SubsystemHomingComparison.TRUE, SubsystemHomingComparison.FALSE) },
-                                        ) else item
-                                    }
-                                )))
-                            }
-                        }
-                        if (evidence.comparison !in setOf(SubsystemHomingComparison.TRUE, SubsystemHomingComparison.FALSE)) {
-                            DoubleInput("Threshold", evidence.threshold ?: 0.0) { value ->
-                                viewModel.edit { doc ->
-                                    doc.copy(safety = doc.safety.copy(homing = doc.safety.homing.copy(
-                                        evidence = doc.safety.homing.evidence.mapIndexed { i, item -> if (i == index) item.copy(threshold = value) else item }
-                                    )))
-                                }
-                            }
-                        }
-                        if (safety.homing.method == SubsystemHomingMethod.CUSTOM_MEASUREMENT) {
-                            TextButton(onClick = {
-                                viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(homing = doc.safety.homing.copy(evidence = doc.safety.homing.evidence.filterIndexed { i, _ -> i != index }))) }
-                            }) { Text("Remove evidence") }
-                        }
-                    }
-                }
-            }
-            if (safety.homing.method == SubsystemHomingMethod.CUSTOM_MEASUREMENT && cachedFields.isNotEmpty()) {
-                OutlinedButton(onClick = {
-                    viewModel.edit { doc -> doc.copy(safety = doc.safety.copy(homing = doc.safety.homing.copy(
-                        evidence = doc.safety.homing.evidence + SubsystemHomingEvidenceDocument(cachedFields.first(), SubsystemHomingComparison.AT_OR_ABOVE, 0.0)
-                    ))) }
-                }, modifier = Modifier.fillMaxWidth()) { Text("+ Add cached evidence") }
-            }
-            FieldGuidance("ARES requires fresh evidence for the full dwell, then commands neutral before assigning zero. A timeout latches a homing fault.")
-            if (safety.homing.evidence.isNotEmpty()) {
-                OutlinedButton(onClick = { showHomingLab = !showHomingLab }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (showHomingLab) "Hide homing lab" else "Try the homing evidence without hardware")
-                }
-                if (showHomingLab) HomingConceptLab(safety.homing)
-            }
-        }
-        ToggleRow("Latch failed output writes", safety.latchOutputFaults) { value ->
-            viewModel.edit { it.copy(safety = it.safety.copy(latchOutputFaults = value)) }
-        }
-        ToggleRow("Zero-allocation hot loop path", safety.zeroAllocationPeriodic) { value ->
-            viewModel.edit { it.copy(safety = it.safety.copy(zeroAllocationPeriodic = value)) }
-        }
-        OutlinedButton(onClick = { showAdvanced = !showAdvanced }, modifier = Modifier.fillMaxWidth()) {
-            Text(if (showAdvanced) "Hide advanced safety flags" else "Show advanced safety flags", fontSize = 11.sp)
-        }
-        if (showAdvanced) {
-            ToggleRow("Require calibration", safety.requiresCalibration) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(requiresCalibration = value)) }
-            }
-            ToggleRow("Require configuration health", safety.requiresConfigurationHealth) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(requiresConfigurationHealth = value)) }
-            }
-            ToggleRow("Require valid current monitoring", safety.requiresCurrentMonitoring) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(requiresCurrentMonitoring = value)) }
-            }
-            ToggleRow("Require explicit successful neutral recovery", safety.requiresExplicitNeutralRecovery) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(requiresExplicitNeutralRecovery = value)) }
-            }
-            ToggleRow("Publish subsystem telemetry", safety.telemetryEnabled) { value ->
-                viewModel.edit { it.copy(safety = it.safety.copy(telemetryEnabled = value)) }
-            }
-        }
-    }
-}
-
-
 
 private fun controlStrategyGuidance(strategy: SubsystemControlStrategy): String = when (strategy) {
     SubsystemControlStrategy.DIRECT ->

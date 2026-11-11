@@ -17,7 +17,9 @@ object AresRoutineCodec {
     /** Encodes a structurally valid document with stable argument ordering. */
     fun encode(document: RoutineDocument): String {
         requireValid(document)
-        return gson.toJson(document.withSortedArguments())
+        val tree = gson.toJsonTree(document.withSortedArguments()).asJsonObject
+        stripDefaultDriveFieldsInSteps(tree.getAsJsonArray("steps"))
+        return gson.toJson(tree)
     }
 
     /** Decodes and validates one native `.aresroutine` document. */
@@ -28,7 +30,7 @@ object AresRoutineCodec {
         validateRootJson(root)
         validateStepJson(root.getAsJsonArray("steps"), "steps", 0, intArrayOf(0))
         val document = try {
-            gson.fromJson(root, RoutineDocument::class.java)
+            gson.fromJson(root, RoutineDocument::class.java).withNormalizedDefaults()
         } catch (error: RuntimeException) {
             throw IllegalArgumentException("Routine document has invalid field types: ${error.message}", error)
         }
@@ -134,6 +136,11 @@ object AresRoutineCodec {
         requireString(drive, "preferredEngineKey", drivePath, nullable = true)
         requireStringArray(drive, "duringActionKeys", drivePath)
         requireStringArray(drive, "arrivalActionKeys", drivePath)
+        requireString(drive, "headingMode", drivePath)?.let { modeElem ->
+            runCatching { RoutineHeadingMode.valueOf(modeElem.asString) }
+                .getOrElse { throw IllegalArgumentException("Unknown headingMode at $drivePath.headingMode") }
+        }
+        requireBoolean(drive, "blendHandoff", drivePath)
 
         val targetElement = drive.get("target")
         require(targetElement != null && !targetElement.isJsonNull && targetElement.isJsonObject) {
@@ -146,6 +153,17 @@ object AresRoutineCodec {
         requireNumber(target, "yMeters", targetPath, required = true)
         requireNumber(target, "headingRadians", targetPath, required = true)
 
+        val lookAtElement = drive.get("lookAtPoint")
+        if (lookAtElement != null && !lookAtElement.isJsonNull) {
+            require(lookAtElement.isJsonObject) { "$drivePath.lookAtPoint must be an object" }
+            val lookAt = lookAtElement.asJsonObject
+            val lookAtPath = "$drivePath.lookAtPoint"
+            requireExactFields(lookAt, TARGET_FIELDS, lookAtPath)
+            requireNumber(lookAt, "xMeters", lookAtPath, required = true)
+            requireNumber(lookAt, "yMeters", lookAtPath, required = true)
+            requireNumber(lookAt, "headingRadians", lookAtPath, required = true)
+        }
+
         val markersElement = drive.get("markers") ?: return
         require(!markersElement.isJsonNull && markersElement.isJsonArray) { "$drivePath.markers must be an array" }
         markersElement.asJsonArray.forEachIndexed { index, markerElement ->
@@ -157,6 +175,48 @@ object AresRoutineCodec {
             requireString(marker, "actionKey", markerPath, required = true)
         }
     }
+
+    private fun stripDefaultDriveFieldsInSteps(steps: JsonArray?) {
+        if (steps == null) return
+        for (element in steps) {
+            if (!element.isJsonObject) continue
+            val step = element.asJsonObject
+            val drive = step.get("drive")?.takeIf { it.isJsonObject }?.asJsonObject
+            if (drive != null) {
+                if (drive.get("headingMode")?.takeIf { it.isJsonPrimitive }?.asString == RoutineHeadingMode.LINEAR.name) {
+                    drive.remove("headingMode")
+                }
+                if (drive.get("blendHandoff")?.takeIf { it.isJsonPrimitive }?.asBoolean == false) {
+                    drive.remove("blendHandoff")
+                }
+            }
+            stripDefaultDriveFieldsInSteps(step.get("children")?.takeIf { it.isJsonArray }?.asJsonArray)
+            stripDefaultDriveFieldsInSteps(step.get("elseChildren")?.takeIf { it.isJsonArray }?.asJsonArray)
+            step.get("deadline")?.takeIf { it.isJsonObject }?.let { deadline ->
+                val wrapper = JsonArray().apply { add(deadline) }
+                stripDefaultDriveFieldsInSteps(wrapper)
+            }
+        }
+    }
+
+    private fun RoutineDocument.withNormalizedDefaults(): RoutineDocument = copy(
+        steps = steps.map { it.withNormalizedStepDefaults() }
+    )
+
+    @Suppress("USELESS_ELVIS")
+    private fun RoutineStep.withNormalizedStepDefaults(): RoutineStep = copy(
+        drive = drive?.let { d ->
+            d.copy(
+                headingMode = d.headingMode ?: RoutineHeadingMode.LINEAR,
+                markers = d.markers ?: emptyList(),
+                duringActionKeys = d.duringActionKeys ?: emptyList(),
+                arrivalActionKeys = d.arrivalActionKeys ?: emptyList()
+            )
+        },
+        children = (children ?: emptyList()).map { it.withNormalizedStepDefaults() },
+        deadline = deadline?.withNormalizedStepDefaults(),
+        elseChildren = (elseChildren ?: emptyList()).map { it.withNormalizedStepDefaults() }
+    )
 
     private fun requireExactFields(value: JsonObject, allowed: Set<String>, path: String) {
         val unknown = value.entrySet().mapTo(linkedSetOf()) { it.key } - allowed
@@ -180,6 +240,26 @@ object AresRoutineCodec {
             return null
         }
         require(element.isJsonPrimitive && element.asJsonPrimitive.isString) { "$path.$field must be a string" }
+        return element
+    }
+
+    private fun requireBoolean(
+        value: JsonObject,
+        field: String,
+        path: String,
+        required: Boolean = false,
+        nullable: Boolean = false
+    ): JsonElement? {
+        val element = value.get(field)
+        if (element == null) {
+            require(!required) { "$path.$field is required" }
+            return null
+        }
+        if (element.isJsonNull) {
+            require(nullable && !required) { "$path.$field must be a boolean" }
+            return null
+        }
+        require(element.isJsonPrimitive && element.asJsonPrimitive.isBoolean) { "$path.$field must be a boolean" }
         return element
     }
 
@@ -341,7 +421,8 @@ object AresRoutineCodec {
     )
     private val DRIVE_FIELDS = setOf(
         "target", "motionPresetKey", "preferredEngineKey", "markers",
-        "duringActionKeys", "arrivalActionKeys"
+        "duringActionKeys", "arrivalActionKeys",
+        "headingMode", "lookAtPoint", "blendHandoff"
     )
     private val TARGET_FIELDS = setOf("xMeters", "yMeters", "headingRadians")
     private val MARKER_FIELDS = setOf("progress", "actionKey")

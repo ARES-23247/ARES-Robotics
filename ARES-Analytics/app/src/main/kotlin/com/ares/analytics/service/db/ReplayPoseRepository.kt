@@ -1,5 +1,6 @@
 package com.ares.analytics.service.db
 
+import com.ares.analytics.shared.models.TelemetryFrame
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 
@@ -10,6 +11,85 @@ internal data class ReplayPoseSample(val x: Double, val y: Double, val headingRa
  * SQL keeps raw history inside DuckDB and transfers at most maxPoints triples to the JVM.
  */
 internal class ReplayPoseRepository(private val transactions: DatabaseTransactionCoordinator) {
+    suspend fun readWindowPageAfter(
+        sessionId: String,
+        startMs: Long,
+        endMs: Long,
+        after: TelemetryExportCursor?,
+        limit: Int,
+    ): List<TelemetryFrame> = transactions.readTelemetry(sessionId) {
+        val targetConn = transactions.readConnectionFor(sessionId)
+        val list = ArrayList<TelemetryFrame>(minOf(limit, 8_192))
+        val sql = if (after == null) {
+            "SELECT timestamp_ms, key, value, string_value, timestamp_us, sample_order " +
+                "FROM telemetry_frames WHERE session_id = ? AND timestamp_ms BETWEEN ? AND ? " +
+                "ORDER BY timestamp_us ASC, sample_order ASC, key ASC LIMIT ?"
+        } else {
+            "SELECT timestamp_ms, key, value, string_value, timestamp_us, sample_order " +
+                "FROM telemetry_frames WHERE session_id = ? AND timestamp_ms BETWEEN ? AND ? " +
+                "AND (timestamp_us > ? OR (timestamp_us = ? AND sample_order > ?) OR (timestamp_us = ? AND sample_order = ? AND key > ?)) " +
+                "ORDER BY timestamp_us ASC, sample_order ASC, key ASC LIMIT ?"
+        }
+        targetConn.prepareStatement(sql).use { ps ->
+            var idx = 1
+            ps.setString(idx++, sessionId)
+            ps.setLong(idx++, startMs)
+            ps.setLong(idx++, endMs)
+            if (after != null) {
+                ps.setLong(idx++, after.timestampUs)
+                ps.setLong(idx++, after.timestampUs)
+                ps.setLong(idx++, after.sampleOrder)
+                ps.setLong(idx++, after.timestampUs)
+                ps.setLong(idx++, after.sampleOrder)
+                ps.setString(idx++, after.key)
+            }
+            ps.setInt(idx, limit)
+            ps.executeQuery().use { rs ->
+                while (rs.next()) {
+                    val sVal = rs.getString(4)
+                    list.add(
+                        TelemetryFrame(
+                            timestampMs = rs.getLong(1),
+                            sessionId = sessionId,
+                            key = rs.getString(2),
+                            value = rs.getDouble(3),
+                            stringValue = if (rs.wasNull()) null else sVal,
+                            timestampUs = rs.getLong(5),
+                            sampleOrder = rs.getLong(6),
+                        )
+                    )
+                }
+            }
+        }
+        list
+    }
+
+    suspend fun countDistinctKeys(sessionId: String): Int = transactions.readTelemetry(sessionId) {
+        transactions.readConnectionFor(sessionId).prepareStatement(
+            "SELECT COUNT(DISTINCT key) FROM telemetry_frames WHERE session_id = ?"
+        ).use { ps ->
+            ps.setString(1, sessionId)
+            ps.executeQuery().use { rs -> if (rs.next()) rs.getInt(1) else 0 }
+        }
+    }
+
+    suspend fun readDistinctTimestampsArray(sessionId: String): LongArray = transactions.readTelemetry(sessionId) {
+        var buffer = LongArray(256)
+        var size = 0
+        transactions.readConnectionFor(sessionId).prepareStatement(
+            "SELECT DISTINCT timestamp_ms FROM telemetry_frames WHERE session_id = ? ORDER BY timestamp_ms ASC"
+        ).use { ps ->
+            ps.setString(1, sessionId)
+            ps.executeQuery().use { rs ->
+                while (rs.next()) {
+                    if (size == buffer.size) buffer = buffer.copyOf(buffer.size * 2)
+                    buffer[size++] = rs.getLong(1)
+                }
+            }
+        }
+        if (size == buffer.size) buffer else buffer.copyOf(size)
+    }
+
     suspend fun read(sessionId: String, startMs: Long, endMs: Long, maxPoints: Int): List<ReplayPoseSample> {
         require(maxPoints in 2..10_000) { "Replay trace point budget must be in 2..10000" }
         require(endMs >= startMs) { "Replay trace end must not precede start" }

@@ -10,6 +10,28 @@ def _wrap_delta(value, period):
     return (value + period / 2.0) % period - period / 2.0
 
 
+def _transform_follower(transform, requested):
+    if transform == "SAME_DIRECTION":
+        return requested
+    if transform == "INVERTED":
+        return -requested
+    if transform == "MIRRORED_POSITION":
+        return 1.0 - requested
+    raise ValueError("Unknown XRP follower transform: " + str(transform))
+
+
+def _invert_output(kind, inverted, value):
+    if not inverted:
+        return value
+    if kind in ("MOTOR", "CONTINUOUS_SERVO"):
+        return -value
+    if kind in ("POSITIONAL_SERVO", "DIGITAL_OUTPUT", "PWM_OUTPUT", "INDICATOR_LIGHT", "SOLENOID"):
+        return 1.0 - value
+    if kind == "PRISM_DRIVER":
+        return 3000.0 - value
+    return value
+
+
 class MockXrpDevice:
     """Deterministic simulator/test device with the same read/write boundary as physical adapters."""
 
@@ -47,7 +69,9 @@ class GeneratedXrpSubsystem:
         self._fields = {field["fieldId"]: field for field in descriptor.get("stateFields", [])}
         self._hardware = tuple(descriptor.get("hardware", []))
         self._loops = tuple(descriptor.get("controlLoops", []))
+        self._latch_output_faults = bool(descriptor.get("safety", EMPTY).get("latchOutputFaults", True))
         self._outputs = [0.0] * len(self._loops)
+        self._loop_targets = []
         self._profiles = {loop["loopId"]: TrapezoidProfile() for loop in self._loops
                           if loop["strategy"] == "PROFILED_POSITION_PID"}
         self._read_groups = []
@@ -67,21 +91,41 @@ class GeneratedXrpSubsystem:
                 self.devices[device["hardwareId"]] = adapter
                 groups = {}
                 for measurement in device.get("measurements", []):
-                    groups.setdefault(measurement["source"], []).append(measurement)
-                self._read_groups.append((adapter, tuple(groups.items())))
+                    groups.setdefault(measurement["source"], []).append((
+                        measurement["fieldId"],
+                        measurement.get("scale", 1.0),
+                        measurement.get("offset", 0.0),
+                        measurement.get("validMinimum"),
+                        measurement.get("validMaximum"),
+                    ))
+                self._read_groups.append((adapter, tuple((src, tuple(items)) for src, items in groups.items())))
                 for measurement in device.get("measurements", []):
                     available_measurements.add(measurement["fieldId"])
             except Exception:
                 if device.get("required", True):
                     self.configured = False
                     self.faulted = True
+        self._read_groups = tuple(self._read_groups)
+        hardware_by_id = {device["hardwareId"]: device for device in self._hardware}
+        for device in self._hardware:
+            following = device.get("following")
+            if following is not None:
+                leader = hardware_by_id.get(following.get("leaderId"))
+                if (leader is None
+                        or leader.get("hardwareId") == device["hardwareId"]
+                        or leader.get("kind") != device.get("kind")
+                        or leader.get("following") is not None
+                        or following.get("transform") not in ("SAME_DIRECTION", "INVERTED", "MIRRORED_POSITION")):
+                    self.configured = False
+                    self.faulted = True
         for loop in self._loops:
+            actuator = hardware_by_id.get(loop["actuatorId"], EMPTY)
             if (loop["actuatorId"] not in self.devices
+                    or actuator.get("following") is not None
                     or (loop["strategy"] not in ("DIRECT", "SERVO_POSITION")
                         and loop.get("measurementFieldId") not in available_measurements)):
                 self.configured = False
                 self.faulted = True
-        hardware_by_id = {device["hardwareId"]: device for device in self._hardware}
         for loop in self._loops:
             model = loop.get("feedforward", EMPTY)
             kind = model.get("kind", "NONE")
@@ -110,6 +154,18 @@ class GeneratedXrpSubsystem:
                     self.configured = False
             if not self.configured:
                 self.faulted = True
+        for loop in self._loops:
+            leader_id = loop["actuatorId"]
+            leader = hardware_by_id.get(leader_id, EMPTY)
+            targets = []
+            if leader_id in self.devices:
+                targets.append((self.devices[leader_id], leader.get("kind"), bool(leader.get("inverted", False)), "SAME_DIRECTION"))
+            for follower in self._hardware:
+                rel = follower.get("following")
+                if rel is not None and rel.get("leaderId") == leader_id and follower["hardwareId"] in self.devices:
+                    targets.append((self.devices[follower["hardwareId"]], follower.get("kind"), bool(follower.get("inverted", False)), rel["transform"]))
+            self._loop_targets.append(tuple(targets))
+        self._loop_targets = tuple(self._loop_targets)
         self.stop()
 
     def set_target(self, field_id, value):
@@ -146,19 +202,30 @@ class GeneratedXrpSubsystem:
             for adapter, groups in self._read_groups:
                 for source, measurements in groups:
                     raw = adapter.read(source)
-                    for measurement in measurements:
-                        value = _number(raw * measurement.get("scale", 1.0) + measurement.get("offset", 0.0))
-                        minimum, maximum = measurement.get("validMinimum"), measurement.get("validMaximum")
+                    for field_id, scale, offset, minimum, maximum in measurements:
+                        value = _number(raw * scale + offset)
                         if minimum is not None and value < minimum or maximum is not None and value > maximum:
                             raise ValueError("XRP feedback outside declared validity bounds")
-                        self.state[measurement["fieldId"]] = value
+                        self.state[field_id] = value
             # Validate every controller result before issuing any nonzero output.
             for index, loop in enumerate(self._loops):
                 self._outputs[index] = self._calculate(loop, dt)
-            for index, loop in enumerate(self._loops):
-                self.devices[loop["actuatorId"]].write(self._outputs[index])
         except Exception:
             self.faulted = True
+            try:
+                self.stop()
+            except Exception:
+                pass
+            return
+        try:
+            for index, targets in enumerate(self._loop_targets):
+                requested = self._outputs[index]
+                for adapter, kind, inverted, transform in targets:
+                    transformed = _transform_follower(transform, requested)
+                    adapter.write(_invert_output(kind, inverted, transformed))
+        except Exception:
+            if self._latch_output_faults:
+                self.faulted = True
             try:
                 self.stop()
             except Exception:
@@ -168,9 +235,11 @@ class GeneratedXrpSubsystem:
         try:
             self.stop()
             self.faulted = not self.configured
+            return not self.faulted
         except Exception:
-            self.faulted = True
-        return not self.faulted
+            if self._latch_output_faults or not self.configured:
+                self.faulted = True
+            return False
 
     def stop(self):
         self._reset_control()
@@ -181,11 +250,13 @@ class GeneratedXrpSubsystem:
             if neutral is None or adapter is None:
                 continue
             try:
-                adapter.write(_number(neutral))
+                applied = _invert_output(device.get("kind"), bool(device.get("inverted", False)), _number(neutral))
+                adapter.write(applied)
             except Exception:
                 failed = True
         if failed:
-            self.faulted = True
+            if self._latch_output_faults:
+                self.faulted = True
             raise OSError("XRP subsystem neutral write failed")
 
     def _reset_control(self):

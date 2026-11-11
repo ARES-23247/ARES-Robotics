@@ -74,6 +74,54 @@ class SysIdService(private val databaseService: DatabaseService) {
         return analyzeRawData(RecordedSysIdInputs.align(voltages, velocities, accelerations))
     }
 
+    /**
+     * Estimates translational braking deceleration ($a_{\text{decel}}$ in $\text{m/s}^2$) and zero-power coasting
+     * decay from aligned velocity/acceleration/voltage samples for configuring `ForesightConfig` and
+     * `HolonomicDriveController.maxOpposingBrakingMps`.
+     */
+    fun estimateBrakingDeceleration(alignedData: List<AlignedDataRow>): BrakingDecelerationSummary {
+        val finiteRows = alignedData.filter {
+            it.voltage.isFinite() && it.velocity.isFinite() && it.accel.isFinite()
+        }
+        val brakingRows = finiteRows.filter { row ->
+            abs(row.velocity) >= 0.15 && (row.velocity * row.accel) < -0.05
+        }
+        if (brakingRows.isEmpty()) {
+            return BrakingDecelerationSummary()
+        }
+        val meanBrakingDecel = brakingRows.sumOf { abs(it.accel) } / brakingRows.size.toDouble()
+        val coastingRows = brakingRows.filter { abs(it.voltage) <= 1.0 }
+        val coastingDecel = if (coastingRows.isNotEmpty()) {
+            coastingRows.sumOf { abs(it.accel) } / coastingRows.size.toDouble()
+        } else {
+            meanBrakingDecel * 0.65
+        }
+        val peakSpeed = finiteRows.maxOfOrNull { abs(it.velocity) } ?: 0.0
+        val recommendedOpposingClamp = (peakSpeed * 0.45).coerceIn(0.35, 1.50)
+        val safeDecel = meanBrakingDecel.coerceAtLeast(0.5)
+        val quadraticStoppingCoeff = (1.0 / (2.0 * safeDecel)).coerceIn(0.02, 0.50)
+        val linearStoppingCoeff = 0.04
+        val plantFit = analyzeRawData(finiteRows)
+        val tau = if (plantFit.kV > 1e-4 && plantFit.kA > 1e-5) {
+            (plantFit.kA / plantFit.kV).coerceIn(0.05, 1.0)
+        } else {
+            0.18
+        }
+        val smallErrorKp = (1.0 / tau).coerceIn(1.5, 8.0)
+        val largeErrorKp = (smallErrorKp * 0.60).coerceIn(0.8, 5.0)
+        return BrakingDecelerationSummary(
+            brakingDecelerationMps2 = meanBrakingDecel,
+            zeroPowerCoastingDecelerationMps2 = coastingDecel,
+            peakObservedVelocityMps = peakSpeed,
+            recommendedMaxOpposingBrakingMps = recommendedOpposingClamp,
+            linearStoppingCoeff = linearStoppingCoeff,
+            quadraticStoppingCoeff = quadraticStoppingCoeff,
+            smallErrorKp = smallErrorKp,
+            largeErrorKp = largeErrorKp,
+            sampleCount = brakingRows.size,
+        )
+    }
+
     fun analyzeRawData(alignedData: List<AlignedDataRow>): CalculatedSummary =
         analyzePreparedData(PreparedSysIdData.from(alignedData))
 
@@ -286,4 +334,16 @@ data class FftResult(
     val frequencies: DoubleArray,
     val magnitudes: DoubleArray,
     val dominantFrequency: Double
+)
+
+data class BrakingDecelerationSummary(
+    val brakingDecelerationMps2: Double = 0.0,
+    val zeroPowerCoastingDecelerationMps2: Double = 0.0,
+    val peakObservedVelocityMps: Double = 0.0,
+    val recommendedMaxOpposingBrakingMps: Double = 0.0,
+    val linearStoppingCoeff: Double = 0.04,
+    val quadraticStoppingCoeff: Double = 0.14,
+    val smallErrorKp: Double = 3.5,
+    val largeErrorKp: Double = 2.1,
+    val sampleCount: Int = 0,
 )

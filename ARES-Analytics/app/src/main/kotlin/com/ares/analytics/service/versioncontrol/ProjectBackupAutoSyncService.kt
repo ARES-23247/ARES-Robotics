@@ -1,5 +1,6 @@
 package com.ares.analytics.service.versioncontrol
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -46,7 +47,9 @@ class ProjectBackupAutoSyncService internal constructor(
     private val workerDelay: suspend (Long) -> Unit = { milliseconds -> delay(milliseconds) },
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val requests = Channel<String>(Channel.CONFLATED)
+    private val pendingLock = Any()
+    private val pendingPaths = LinkedHashSet<String>()
+    private val wakeups = Channel<Unit>(Channel.CONFLATED)
     private val worker: Job = scope.launch { processRequests() }
     private val _state = MutableStateFlow(ProjectBackupAutoSyncState())
     val state: StateFlow<ProjectBackupAutoSyncState> = _state.asStateFlow()
@@ -81,7 +84,11 @@ class ProjectBackupAutoSyncService internal constructor(
             message = "A local version was saved. GitHub backup is queued.",
             lastSuccessEpochSeconds = _state.value.lastSuccessEpochSeconds,
         )
-        requests.trySend(root.path)
+        synchronized(pendingLock) {
+            pendingPaths.remove(root.path)
+            pendingPaths.add(root.path)
+        }
+        wakeups.trySend(Unit)
     }
 
     fun markSynchronized(projectPath: String) {
@@ -107,20 +114,23 @@ class ProjectBackupAutoSyncService internal constructor(
     }
 
     suspend fun closeAndJoin() {
-        requests.close()
+        wakeups.close()
         worker.cancelAndJoin()
         scope.cancel()
     }
 
     private suspend fun processRequests() {
-        for (firstPath in requests) {
-            var projectPath = firstPath
+        for (wakeup in wakeups) {
             do {
                 workerDelay(DEBOUNCE_MS)
-                val newer = requests.tryReceive().getOrNull()
-                if (newer != null) projectPath = newer
-            } while (newer != null)
-            runSync(projectPath)
+            } while (wakeups.tryReceive().isSuccess)
+            while (true) {
+                val nextPath = synchronized(pendingLock) {
+                    val iterator = pendingPaths.iterator()
+                    if (!iterator.hasNext()) null else iterator.next().also { iterator.remove() }
+                } ?: break
+                runSync(nextPath)
+            }
         }
     }
 
@@ -171,6 +181,8 @@ class ProjectBackupAutoSyncService internal constructor(
                 pushBackup(root.path)
                 markSynchronized(root.path)
                 return
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (failure: Exception) {
                 if (!isRecoverableFailure(failure)) {
                     _state.value = ProjectBackupAutoSyncState(

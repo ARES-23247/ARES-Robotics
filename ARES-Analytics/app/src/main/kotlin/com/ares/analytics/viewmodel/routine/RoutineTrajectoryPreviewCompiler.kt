@@ -81,6 +81,7 @@ internal class RoutineTrajectoryPreviewCompiler(
         val previewStates = mutableListOf<TrajectoryState>()
         val actions = mutableListOf<RoutinePreviewAction>()
         var driveIndex = 0
+        var handoffStartVelocityMps = 0.0
 
         fun shiftedTime(duration: Double): Double {
             val next = timeOffset + duration
@@ -147,6 +148,10 @@ internal class RoutineTrajectoryPreviewCompiler(
                             preset = preset,
                             limits = ROUTINE_PREVIEW_LIMITS,
                             preferredEngine = null,
+                            headingMode = drive.headingMode,
+                            lookAtPoint = drive.lookAtPoint?.let { com.areslib.math.geometry.Translation2d(it.xMeters, it.yMeters) },
+                            startVelocityMps = handoffStartVelocityMps,
+                            endVelocityMps = if (drive.blendHandoff) 0.90 else 0.0,
                         ),
                     )
                     checkActive()
@@ -171,6 +176,7 @@ internal class RoutineTrajectoryPreviewCompiler(
                     }
                     timeOffset = endTime
                     current = target
+                    handoffStartVelocityMps = if (drive.blendHandoff) 0.90 else 0.0
                     driveIndex++
                 }
                 else -> error("Preview analyzer emitted unsupported ${step.kind} step")

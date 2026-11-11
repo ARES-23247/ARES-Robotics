@@ -80,6 +80,8 @@ class SparkFunOtosIO @kotlin.jvm.JvmOverloads constructor(
     private var observationTimestampMs = 0L
 
     init {
+        require(xOffsetMeters.isFinite() && yOffsetMeters.isFinite()) { "OTOS mounting offsets must be finite" }
+        require(linearScalar.isFinite() && angularScalar.isFinite()) { "OTOS scalars must be finite" }
         driver.setLinearUnit(DistanceUnit.METER)
         driver.setAngularUnit(AngleUnit.RADIANS)
         driver.setOffset(SparkFunOTOS.Pose2D(xOffsetMeters, yOffsetMeters, 0.0))
@@ -124,11 +126,13 @@ class SparkFunOtosIO @kotlin.jvm.JvmOverloads constructor(
     fun getPoseUpdate(): RobotAction.PoseUpdate {
         refreshSample()
         return synchronized(sampleLock) {
+            val trusted = hasTrustedSample && healthStatus == HealthStatus.HEALTHY
             RobotAction.PoseUpdate(
                 xMeters = lastX, yMeters = lastY, headingRadians = lastHeading,
-                timestampMs = if (hasTrustedSample) lastTimestampMs else 0L,
+                timestampMs = if (trusted) lastTimestampMs else 0L,
                 xVelocityMetersPerSecond = lastVelX, yVelocityMetersPerSecond = lastVelY,
                 angularVelocityRadiansPerSecond = lastHeadingVelocity,
+                motionMeasurementsValid = trusted,
                 applyControlHubGyroCorrection = false,
             )
         }
@@ -166,12 +170,16 @@ class SparkFunOtosIO @kotlin.jvm.JvmOverloads constructor(
                     kotlin.math.abs(rawHeadingVelocity) <= MAX_ANGULAR_SPEED_RADIANS_PER_SECOND
 
                 var deltaPlausible = true
-                if (finite && hasObservationBaseline && now >= observationTimestampMs) {
-                    val dtSeconds = kotlin.math.max(0.0, (now - observationTimestampMs) / 1000.0)
-                    val maxDistance = MAX_LINEAR_SPEED_METERS_PER_SECOND * dtSeconds + POSITION_JUMP_TOLERANCE_METERS
-                    val maxHeading = MAX_ANGULAR_SPEED_RADIANS_PER_SECOND * dtSeconds + HEADING_JUMP_TOLERANCE_RADIANS
-                    deltaPlausible = kotlin.math.hypot(x - observationX, y - observationY) <= maxDistance &&
-                        kotlin.math.abs(wrapAngle(nextHeading - observationHeading)) <= maxHeading
+                if (finite && hasObservationBaseline) {
+                    if (now < observationTimestampMs) {
+                        deltaPlausible = false
+                    } else {
+                        val dtSeconds = (now - observationTimestampMs) / 1000.0
+                        val maxDistance = MAX_LINEAR_SPEED_METERS_PER_SECOND * dtSeconds + POSITION_JUMP_TOLERANCE_METERS
+                        val maxHeading = MAX_ANGULAR_SPEED_RADIANS_PER_SECOND * dtSeconds + HEADING_JUMP_TOLERANCE_RADIANS
+                        deltaPlausible = kotlin.math.hypot(x - observationX, y - observationY) <= maxDistance &&
+                            kotlin.math.abs(wrapAngle(nextHeading - observationHeading)) <= maxHeading
+                    }
                 }
 
                 if (finite) {
@@ -211,9 +219,10 @@ class SparkFunOtosIO @kotlin.jvm.JvmOverloads constructor(
     override fun updateInputs(inputs: OdometryInputs) {
         refreshSample()
         synchronized(sampleLock) {
+            val trusted = hasTrustedSample && healthStatus == HealthStatus.HEALTHY
             inputs.posX = lastX; inputs.posY = lastY; inputs.heading = lastHeading
             inputs.velX = lastVelX; inputs.velY = lastVelY; inputs.headingVelocity = lastHeadingVelocity
-            inputs.timestampMs = if (hasTrustedSample) lastTimestampMs else 0L
+            inputs.timestampMs = if (trusted) lastTimestampMs else 0L
         }
     }
 
@@ -229,6 +238,7 @@ class SparkFunOtosIO @kotlin.jvm.JvmOverloads constructor(
     }
 
     private fun markReadFailure(failureStatus: HealthStatus) {
+        lastVelX = 0.0; lastVelY = 0.0; lastHeadingVelocity = 0.0
         consecutiveReadFailures++
         healthStatus = failureStatus
     }

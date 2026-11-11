@@ -2,7 +2,9 @@ package com.ares.analytics.ui.input
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.GamepadState
@@ -15,6 +17,7 @@ import com.areslib.telemetry.schema.DesktopDriveFrameGate
 import com.areslib.telemetry.schema.DesktopDriveProtocol
 import com.areslib.telemetry.schema.DesktopDriveReceiverStatus
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -281,77 +284,96 @@ internal fun DesktopDriveInputPublisher(
         }
     }
 
-    LaunchedEffect(connected, controlSurfaceActive, league) {
+    val latestControlSurfaceActive by rememberUpdatedState(controlSurfaceActive)
+
+    LaunchedEffect(connected, league) {
         if (!connected) return@LaunchedEffect
         // Incoming telemetry and Compose layout can briefly saturate the UI dispatcher. The
         // simulator's 500 ms fail-closed lease must be renewed independently of that work, using
         // the latest immutable input snapshot produced by the UI thread.
         withContext(DRIVE_HEARTBEAT_DISPATCHER) {
             var lastReportedReceiverStall: Triple<Int?, Long?, Long?>? = null
-            while (currentCoroutineContext().isActive) {
-                val session = DesktopDriveFrameSession(nt4ClientService.nextDriveSessionNonce())
-                try {
-                    while (currentCoroutineContext().isActive) {
-                        // A single GC/transport pause can outlive the simulator's receiver lease.
-                        // Resume with a new session's neutral handshake; an old-session motion
-                        // frame is intentionally rejected by the fail-closed receiver.
-                        if (session.needsRehandshake()) {
-                            System.err.println(
-                                "[DesktopDriveInput] Control heartbeat stalled for " +
-                                    "${session.successfulTransmissionAgeMs()} ms; starting a neutral session"
-                            )
-                            break
-                        }
-                        val acknowledgement = nt4ClientService.driveInputAcknowledgement.value
-                        val acknowledgementAvailable = acknowledgement?.version == DesktopDriveFrameGate.ACK_VERSION
-                        session.observeReceiverAcknowledgement(
-                            receiverSession = acknowledgement?.acceptedSession,
-                            receiverSequence = acknowledgement?.acceptedSequence,
-                        )
-                        if (session.needsReceiverRehandshake(acknowledgementAvailable, acknowledgement?.statusCode)) {
-                            val stallIdentity = Triple(
-                                acknowledgement?.statusCode,
-                                acknowledgement?.acceptedSession,
-                                acknowledgement?.acceptedSequence,
-                            )
-                            if (stallIdentity != lastReportedReceiverStall) {
+            var activeSession: DesktopDriveFrameSession? = null
+            try {
+                while (currentCoroutineContext().isActive) {
+                    val session = DesktopDriveFrameSession(nt4ClientService.nextDriveSessionNonce())
+                    activeSession = session
+                    try {
+                        while (currentCoroutineContext().isActive) {
+                            // A single GC/transport pause can outlive the simulator's receiver lease.
+                            // Resume with a new session's neutral handshake; an old-session motion
+                            // frame is intentionally rejected by the fail-closed receiver.
+                            if (session.needsRehandshake()) {
                                 System.err.println(
-                                    "[DesktopDriveInput] Simulator acknowledgement stalled for " +
-                                        "${session.receiverAcknowledgementAgeMs() ?: "startup"}; " +
-                                        "status=${acknowledgement?.statusCode}, " +
-                                        "senderSession=${session.sessionNonce.toLong()}, " +
-                                        "receiverSession=${acknowledgement?.acceptedSession}, " +
-                                        "receiverSequence=${acknowledgement?.acceptedSequence}; " +
-                                        "starting a neutral session"
+                                    "[DesktopDriveInput] Control heartbeat stalled for " +
+                                        "${session.successfulTransmissionAgeMs()} ms; starting a neutral session"
                                 )
-                                lastReportedReceiverStall = stallIdentity
+                                break
                             }
-                            break
+                            val acknowledgement = nt4ClientService.driveInputAcknowledgement.value
+                            val acknowledgementAvailable = acknowledgement?.version == DesktopDriveFrameGate.ACK_VERSION
+                            session.observeReceiverAcknowledgement(
+                                receiverSession = acknowledgement?.acceptedSession,
+                                receiverSequence = acknowledgement?.acceptedSequence,
+                            )
+                            if (session.needsReceiverRehandshake(acknowledgementAvailable, acknowledgement?.statusCode)) {
+                                val stallIdentity = Triple(
+                                    acknowledgement?.statusCode,
+                                    acknowledgement?.acceptedSession,
+                                    acknowledgement?.acceptedSequence,
+                                )
+                                if (stallIdentity != lastReportedReceiverStall) {
+                                    System.err.println(
+                                        "[DesktopDriveInput] Simulator acknowledgement stalled for " +
+                                            "${session.receiverAcknowledgementAgeMs() ?: "startup"}; " +
+                                            "status=${acknowledgement?.statusCode}, " +
+                                            "senderSession=${session.sessionNonce.toLong()}, " +
+                                            "receiverSession=${acknowledgement?.acceptedSession}, " +
+                                            "receiverSequence=${acknowledgement?.acceptedSequence}; " +
+                                            "starting a neutral session"
+                                    )
+                                    lastReportedReceiverStall = stallIdentity
+                                }
+                                break
+                            }
+                            if (acknowledgement?.acceptedSession?.toDouble() == session.sessionNonce) {
+                                lastReportedReceiverStall = null
+                            }
+                            val intent = desktopDriveIntent(
+                                keyboard = keyboardSnapshot.value,
+                                gamepad = gamepadState.value,
+                                controlSurfaceActive = latestControlSurfaceActive,
+                                league = league,
+                                isRedAlliance = nt4ClientService.selectedRedAlliance.value,
+                            )
+                            if (nt4ClientService.publishDriveFrame(session.frameFor(intent))) {
+                                session.markTransmitted()
+                            }
+                            delay(PUBLISH_INTERVAL_MS)
                         }
-                        if (acknowledgement?.acceptedSession?.toDouble() == session.sessionNonce) {
-                            lastReportedReceiverStall = null
-                        }
-                        val intent = desktopDriveIntent(
-                            keyboard = keyboardSnapshot.value,
-                            gamepad = gamepadState.value,
-                            controlSurfaceActive = controlSurfaceActive,
-                            league = league,
-                            isRedAlliance = nt4ClientService.selectedRedAlliance.value,
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        System.err.println(
+                            "[DesktopDriveInput] Publisher session failed; restarting with a neutral frame: " +
+                                "${error::class.simpleName}: ${error.message}"
                         )
-                        if (nt4ClientService.publishDriveFrame(session.frameFor(intent))) {
+                        error.printStackTrace(System.err)
+                        delay(RESTART_DELAY_MS)
+                    }
+                }
+            } finally {
+                withContext(NonCancellable) {
+                    activeSession?.let { session ->
+                        val neutral = DesktopDriveIntent(
+                            command = DesktopFieldDriveCommand(0.0, 0.0, 0.0),
+                            modeFlags = desktopDriveModeFlags(nt4ClientService.selectedRedAlliance.value),
+                            actuationFlags = 0L,
+                        )
+                        if (nt4ClientService.publishDriveFrame(session.frameFor(neutral))) {
                             session.markTransmitted()
                         }
-                        delay(PUBLISH_INTERVAL_MS)
                     }
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (error: Exception) {
-                    System.err.println(
-                        "[DesktopDriveInput] Publisher session failed; restarting with a neutral frame: " +
-                            "${error::class.simpleName}: ${error.message}"
-                    )
-                    error.printStackTrace(System.err)
-                    delay(RESTART_DELAY_MS)
                 }
             }
         }
@@ -368,10 +390,11 @@ internal fun XrpDriveInputPublisher(
     controlSurfaceActive: Boolean,
 ) {
     val keyboardSnapshot = remember(keyboardState) { MutableStateFlow(keyboardState.driveSnapshot()) }
+    val latestControlSurfaceActive by rememberUpdatedState(controlSurfaceActive)
     LaunchedEffect(keyboardState) {
         snapshotFlow { keyboardState.driveSnapshot() }.collect { keyboardSnapshot.value = it }
     }
-    LaunchedEffect(connected, controlSurfaceActive) {
+    LaunchedEffect(connected) {
         if (!connected) return@LaunchedEffect
         withContext(DRIVE_HEARTBEAT_DISPATCHER) {
             val sessionId = UUID.randomUUID().toString()
@@ -381,7 +404,7 @@ internal fun XrpDriveInputPublisher(
                     val keyboard = keyboardSnapshot.value
                     val request = xrpLinkService.controlRequest.value
                     val teleOpArmed = request.mode == XrpRequestedMode.TELEOP &&
-                        controlSurfaceActive && keyboard.enabled
+                        latestControlSurfaceActive && keyboard.enabled
                     val autonomousArmed = request.mode == XrpRequestedMode.AUTONOMOUS
                     val armed = teleOpArmed || autonomousArmed
                     val intent = if (teleOpArmed) desktopDriveIntent(
@@ -391,8 +414,7 @@ internal fun XrpDriveInputPublisher(
                             league = League.XRP,
                             isRedAlliance = true,
                         ) else DesktopDriveIntent(DesktopFieldDriveCommand(0.0, 0.0, 0.0), 0L, 0L)
-                    val keyboardScale = if (keyboard.isSpacePressed) 0.1 else 1.0
-    val command = when {
+                    val command = when {
                         autonomousArmed -> "START_AUTO"
                         teleOpArmed -> "START_TELEOP"
                         request.mode == XrpRequestedMode.INITIALIZE -> "INIT"
@@ -412,17 +434,19 @@ internal fun XrpDriveInputPublisher(
                     delay(PUBLISH_INTERVAL_MS)
                 }
             } finally {
-                val request = xrpLinkService.controlRequest.value
-                xrpLinkService.publishControl(
-                    sessionId = sessionId,
-                    sequence = sequence,
-                    requestRevision = request.revision + 1L,
-                    armed = false,
-                    vx = 0.0,
-                    vy = 0.0,
-                    omega = 0.0,
-                    command = "STOP",
-                )
+                withContext(NonCancellable) {
+                    val request = xrpLinkService.controlRequest.value
+                    xrpLinkService.publishControl(
+                        sessionId = sessionId,
+                        sequence = sequence,
+                        requestRevision = request.revision + 1L,
+                        armed = false,
+                        vx = 0.0,
+                        vy = 0.0,
+                        omega = 0.0,
+                        command = "STOP",
+                    )
+                }
             }
         }
     }

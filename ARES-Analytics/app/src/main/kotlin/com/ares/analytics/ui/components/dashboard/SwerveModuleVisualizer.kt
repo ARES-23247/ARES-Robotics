@@ -4,25 +4,45 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.ReplayFrame
+import com.ares.analytics.ui.canvas.drawVectorArrow
 import com.ares.analytics.ui.theme.*
+import com.ares.analytics.ui.theme.AresBackground
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresCyan
+import com.ares.analytics.ui.theme.AresGold
+import com.ares.analytics.ui.theme.AresSurfaceElevated
+import com.ares.analytics.ui.theme.AresTextSecondary
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlinx.coroutines.launch
 
 @Composable
 fun SwerveModuleVisualizer(
@@ -35,15 +55,26 @@ fun SwerveModuleVisualizer(
     val anglesTarget = remember { mutableStateListOf(0.0, 0.0, 0.0, 0.0) }
     val speedsActual = remember { mutableStateListOf(0.0, 0.0, 0.0, 0.0) }
     val anglesActual = remember { mutableStateListOf(0.0, 0.0, 0.0, 0.0) }
-    val replayHasSwerveTelemetry = currentFrame?.values?.keys?.any { it.startsWith("Swerve/Module") } ?: false
+    var showChassis2dView by remember { mutableStateOf(false) }
+    val replayHasSwerveTelemetry = currentFrame?.values?.keys?.any {
+        it.startsWith("Swerve/Module") || it.startsWith("Drive/Swerve/")
+    } ?: false
 
     SideEffect {
         if (currentFrame != null) {
+            val cornerCodes = listOf("FL", "FR", "BL", "BR")
             for (index in 0..3) {
+                val corner = cornerCodes[index]
                 speedsTarget[index] = currentFrame.values["Swerve/ModuleSpeedsTarget/$index"] ?: 0.0
                 anglesTarget[index] = currentFrame.values["Swerve/ModuleAnglesTarget/$index"] ?: 0.0
-                speedsActual[index] = currentFrame.values["Swerve/ModuleSpeedsActual/$index"] ?: 0.0
-                anglesActual[index] = currentFrame.values["Swerve/ModuleAnglesActual/$index"] ?: 0.0
+                speedsActual[index] = currentFrame.values["Swerve/ModuleSpeedsActual/$index"]
+                    ?: currentFrame.values["Drive/Swerve/Vel_$corner"]
+                    ?: currentFrame.values["Drive/Swerve/${corner}_Vel"]
+                    ?: 0.0
+                anglesActual[index] = currentFrame.values["Swerve/ModuleAnglesActual/$index"]
+                    ?: currentFrame.values["Drive/Swerve/Angle_$corner"]
+                    ?: currentFrame.values["Drive/Swerve/${corner}_Angle"]
+                    ?: 0.0
             }
         }
     }
@@ -51,7 +82,7 @@ fun SwerveModuleVisualizer(
     LaunchedEffect(nt4ClientService, currentFrame == null) {
         if (currentFrame != null) return@LaunchedEffect
         nt4ClientService.uiTelemetryFlow.collect { frame ->
-            val key = frame.key
+            val key = frame.key.trimStart('/')
             val value = frame.value
             when {
                 key.startsWith("Swerve/ModuleSpeedsTarget/") -> {
@@ -70,6 +101,14 @@ fun SwerveModuleVisualizer(
                     val idx = key.substringAfterLast("/").toIntOrNull()
                     if (idx != null && idx in 0..3) anglesActual[idx] = value
                 }
+                key == "Drive/Swerve/Vel_FL" || key == "Drive/Swerve/FL_Vel" -> speedsActual[0] = value
+                key == "Drive/Swerve/Vel_FR" || key == "Drive/Swerve/FR_Vel" -> speedsActual[1] = value
+                key == "Drive/Swerve/Vel_BL" || key == "Drive/Swerve/BL_Vel" -> speedsActual[2] = value
+                key == "Drive/Swerve/Vel_BR" || key == "Drive/Swerve/BR_Vel" -> speedsActual[3] = value
+                key == "Drive/Swerve/Angle_FL" || key == "Drive/Swerve/FL_Angle" -> anglesActual[0] = value
+                key == "Drive/Swerve/Angle_FR" || key == "Drive/Swerve/FR_Angle" -> anglesActual[1] = value
+                key == "Drive/Swerve/Angle_BL" || key == "Drive/Swerve/BL_Angle" -> anglesActual[2] = value
+                key == "Drive/Swerve/Angle_BR" || key == "Drive/Swerve/BR_Angle" -> anglesActual[3] = value
             }
         }
     }
@@ -92,17 +131,34 @@ fun SwerveModuleVisualizer(
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
             )
-            val isConnected by nt4ClientService.isConnected.collectAsState()
-            Text(
-                when {
-                    currentFrame != null -> "Replay"
-                    isConnected -> "Live Connected"
-                    else -> "Live Disconnected"
-                },
-                color = if (currentFrame != null || isConnected) AresGreen else AresTextTertiary,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                androidx.compose.material3.TextButton(
+                    onClick = { showChassis2dView = !showChassis2dView },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(24.dp),
+                ) {
+                    Text(
+                        if (showChassis2dView) "View: 4-Corner Cards" else "View: Chassis 2D",
+                        color = AresCyan,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                val isConnected by nt4ClientService.isConnected.collectAsState()
+                Text(
+                    when {
+                        currentFrame != null -> "Replay"
+                        isConnected -> "Live Connected"
+                        else -> "Live Disconnected"
+                    },
+                    color = if (currentFrame != null || isConnected) AresGreen else AresTextTertiary,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         HorizontalDivider(color = AresBorder, thickness = 1.dp)
@@ -115,6 +171,14 @@ fun SwerveModuleVisualizer(
                     fontSize = 11.sp,
                 )
             }
+        } else if (showChassis2dView) {
+            SwerveChassisVectorView(
+                speedsTarget = speedsTarget,
+                anglesTarget = anglesTarget,
+                speedsActual = speedsActual,
+                anglesActual = anglesActual,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            )
         } else {
             Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(modifier = Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -240,4 +304,3 @@ private fun ModuleCard(
         }
     }
 }
-

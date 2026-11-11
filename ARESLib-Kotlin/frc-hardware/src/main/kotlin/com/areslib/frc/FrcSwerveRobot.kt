@@ -92,7 +92,7 @@ class FrcSwerveRobot(
     val drive = DriveSubsystem(store)
 
     /** High-level swerve drive API (field-centric, robot-centric, path following). */
-    val swerveDrive = SwerveDriveFacade(store)
+    val swerveDrive = SwerveDriveFacade(store, mirroredAlliance = com.areslib.state.Alliance.RED)
 
     // ── Modular Managers ──
     /** Direct access to the swerve drivetrain IO layer. */

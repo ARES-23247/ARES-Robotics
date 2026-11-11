@@ -1,6 +1,7 @@
 package com.areslib.reducer
 
 import com.areslib.action.RobotAction
+import com.areslib.state.SubsystemStateTable
 import com.areslib.state.SuperstructureState
 
 /**
@@ -18,8 +19,8 @@ object SuperstructureReducer {
                 if (state.custom === action.state) state else state.copy(custom = action.state)
             }
             is RobotAction.UpdateNamedSubsystemState -> {
-                if (state.subsystems[action.subsystemId] === action.state) state
-                else state.copy(subsystems = state.subsystems + (action.subsystemId to action.state))
+                val updated = SubsystemStateTable.withUpdated(state.subsystems, action.subsystemId, action.state)
+                if (updated === state.subsystems) state else state.copy(subsystems = updated)
             }
             is RobotAction.SetIndicatorLight -> {
                 val current = state.indicatorLights[action.name]

@@ -5,8 +5,10 @@ import com.areslib.control.feedback.LinearADRC
 import com.areslib.math.geometry.ChassisSpeeds
 import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.sign
 
 /**
  * Pure Mathematical Holonomic Trajectory Tracking Controller for Mecanum and Swerve Drivetrains.
@@ -56,7 +58,10 @@ class HolonomicDriveController(
     private val maxOutputMps: Double = 4.0,
     private val xAdrc: LinearADRC? = null,
     private val yAdrc: LinearADRC? = null,
-    private val thetaAdrc: LinearADRC? = null
+    private val thetaAdrc: LinearADRC? = null,
+    val prioritizeCorrectiveEffort: Boolean = false,
+    val maxStrafeOutputMps: Double = Double.NaN,
+    val maxOpposingBrakingMps: Double = Double.NaN
 ) {
     init {
         thetaController.enableContinuousInput(-Math.PI, Math.PI)
@@ -161,12 +166,15 @@ class HolonomicDriveController(
         out.vxMetersPerSecond = 0.0
         out.vyMetersPerSecond = 0.0
         out.omegaRadiansPerSecond = 0.0
+        val strafeLimitValid = maxStrafeOutputMps.isNaN() || (maxStrafeOutputMps.isFinite() && maxStrafeOutputMps > 0.0)
+        val brakingLimitValid = maxOpposingBrakingMps.isNaN() || (maxOpposingBrakingMps.isFinite() && maxOpposingBrakingMps > 0.0)
         if (!currentX.isFinite() || !currentY.isFinite() || !currentHeadingRad.isFinite() ||
             !targetX.isFinite() || !targetY.isFinite() || !targetHeadingRad.isFinite() ||
             !targetVelocityMps.isFinite() || !dtSeconds.isFinite() || dtSeconds <= 0.0 ||
             pathTangentRadians.isInfinite() || !curvature.isFinite() ||
             !maxCentripetalAccel.isFinite() || maxCentripetalAccel <= 0.0 ||
-            !maxOutputMps.isFinite() || maxOutputMps <= 0.0 || !progressPercentage.isFinite()
+            !maxOutputMps.isFinite() || maxOutputMps <= 0.0 || !progressPercentage.isFinite() ||
+            !strafeLimitValid || !brakingLimitValid
         ) {
             resetFeedback(currentX, currentY, currentHeadingRad)
             return
@@ -226,16 +234,54 @@ class HolonomicDriveController(
         val xFF = limitedVelocity * cosTangent
         val yFF = limitedVelocity * sinTangent
 
-        val fieldRelativeX = xFF + xFeedback
-        val fieldRelativeY = yFF + yFeedback
+        val cosHeading = cos(currentHeading)
+        val sinHeading = sin(currentHeading)
+
+        val fieldRelativeX: Double
+        val fieldRelativeY: Double
+        if (prioritizeCorrectiveEffort) {
+            val crossFeedback = -xFeedback * sinTangent + yFeedback * cosTangent
+            var alongFeedback = xFeedback * cosTangent + yFeedback * sinTangent
+            if (!maxOpposingBrakingMps.isNaN()) {
+                val motionSign = if (limitedVelocity != 0.0) sign(limitedVelocity) else 1.0
+                if (alongFeedback * motionSign < 0.0 && abs(alongFeedback) > maxOpposingBrakingMps) {
+                    alongFeedback = -motionSign * maxOpposingBrakingMps
+                }
+            }
+            val alongDemand = limitedVelocity + alongFeedback
+            val rawFieldX = -crossFeedback * sinTangent + alongDemand * cosTangent
+            val rawFieldY = crossFeedback * cosTangent + alongDemand * sinTangent
+            val rawMag = kotlin.math.hypot(rawFieldX, rawFieldY)
+            val directionalBudget = if (!maxStrafeOutputMps.isNaN() && rawMag > 1e-9) {
+                val robotDirX = (rawFieldX * cosHeading + rawFieldY * sinHeading) / rawMag
+                val robotDirY = (-rawFieldX * sinHeading + rawFieldY * cosHeading) / rawMag
+                val denom = kotlin.math.hypot(robotDirX / maxOutputMps, robotDirY / maxStrafeOutputMps)
+                if (denom > 1e-9) 1.0 / denom else maxOutputMps
+            } else {
+                maxOutputMps
+            }
+            if (rawMag > directionalBudget && directionalBudget > 0.0) {
+                val clampedCross = crossFeedback.coerceIn(-directionalBudget, directionalBudget)
+                val remainingAlongBudget = kotlin.math.sqrt(
+                    maxOf(0.0, directionalBudget * directionalBudget - clampedCross * clampedCross)
+                )
+                val clampedAlong = alongDemand.coerceIn(-remainingAlongBudget, remainingAlongBudget)
+                fieldRelativeX = -clampedCross * sinTangent + clampedAlong * cosTangent
+                fieldRelativeY = clampedCross * cosTangent + clampedAlong * sinTangent
+            } else {
+                fieldRelativeX = rawFieldX
+                fieldRelativeY = rawFieldY
+            }
+        } else {
+            fieldRelativeX = xFF + xFeedback
+            fieldRelativeY = yFF + yFeedback
+        }
 
         if (!fieldRelativeX.isFinite() || !fieldRelativeY.isFinite()) {
             resetFeedback(currentX, currentY, currentHeading)
             return
         }
 
-        val cosHeading = cos(currentHeading)
-        val sinHeading = sin(currentHeading)
         // Rotate and discretize a scaled vector; large finite commands must not overflow before
         // the final norm limit. Both operations are linear in translation, so restore scale last.
         val fieldScale = maxOf(kotlin.math.abs(fieldRelativeX), kotlin.math.abs(fieldRelativeY))
@@ -254,7 +300,12 @@ class HolonomicDriveController(
         if (component > 0.0) {
             val unitX = out.vxMetersPerSecond / component
             val unitY = out.vyMetersPerSecond / component
-            val limit = maxOutputMps / kotlin.math.hypot(unitX, unitY)
+            val limit = if (!maxStrafeOutputMps.isNaN()) {
+                val denom = kotlin.math.hypot(unitX / maxOutputMps, unitY / maxStrafeOutputMps)
+                if (denom > 0.0) 1.0 / denom else 0.0
+            } else {
+                maxOutputMps / kotlin.math.hypot(unitX, unitY)
+            }
             val amplitude = minOf(component * fieldScale, limit)
             out.vxMetersPerSecond = unitX * amplitude
             out.vyMetersPerSecond = unitY * amplitude

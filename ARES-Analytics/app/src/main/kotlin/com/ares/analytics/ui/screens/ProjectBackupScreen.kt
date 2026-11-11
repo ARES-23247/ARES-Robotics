@@ -297,6 +297,14 @@ private fun IdentityFields(
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Who is saving this version?", fontWeight = FontWeight.Bold)
             Text("This name appears in project history so teammates know who made a change.", color = AresTextSecondary)
+            StudentPitRoleIdentityBar(
+                authorName = name,
+                authorEmail = email,
+                onSelectRole = { role ->
+                    onNameChanged(role.authorName)
+                    onEmailChanged(role.authorEmail)
+                },
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AresTextField(name, onNameChanged, label = "Your name", singleLine = true, modifier = Modifier.weight(1f))
                 AresTextField(email, onEmailChanged, label = "Email", singleLine = true, modifier = Modifier.weight(1f))
@@ -327,10 +335,34 @@ private fun LocalVersionStep(
                 color = AresError,
             )
         }
+        SmartPitCheckpointRecommendationBanner(
+            changes = plan.changes,
+            onApplyRecommendation = { rec -> onMessageChanged(rec.recommendedMessage) },
+        )
         plan.changes.take(30).forEach { change ->
-            Text("${change.kind.name.lowercase().replaceFirstChar(Char::uppercase)}  •  ${change.path}")
+            val area = projectArea(change.path)
+            Text("$area  •  ${change.kind.name.lowercase().replaceFirstChar(Char::uppercase)}  •  ${change.path}")
         }
         if (plan.changes.size > 30) Text("…and ${plan.changes.size - 30} more files", color = AresTextSecondary)
+        StudentPitCheckpointBar(
+            currentMessage = message,
+            canSaveNow = !busy && plan.confirmationToken != null && plan.changes.isNotEmpty() && plan.blockedSensitivePaths.isEmpty() && authorName.isNotBlank() && authorEmail.isNotBlank(),
+            onSelectMessage = onMessageChanged,
+            onQuickSaveCheckpoint = { preset ->
+                onMessageChanged(preset.commitMessage)
+                val token = plan.confirmationToken
+                if (token != null) {
+                    viewModel.onIntent(
+                        ProjectBackupIntent.SaveVersion(
+                            confirmationToken = token,
+                            message = preset.commitMessage,
+                            authorName = authorName,
+                            authorEmail = authorEmail,
+                        ),
+                    )
+                }
+            },
+        )
         if (plan.changes.isNotEmpty()) {
             AresTextField(
                 value = message,
@@ -487,208 +519,6 @@ private fun GitHubBackupStep(
                         viewModel = viewModel,
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GitHubRestorePreview(
-    restore: ProjectRestorePlan,
-    busy: Boolean,
-    viewModel: ProjectBackupViewModel,
-) {
-    when (restore.disposition) {
-        ProjectRestoreDisposition.UP_TO_DATE -> Text(
-            "GitHub and this computer contain the same saved version.",
-            color = AresGreen,
-        )
-        ProjectRestoreDisposition.LOCAL_AHEAD -> Text(
-            "This computer is newer than GitHub. Use Sync backup now after reviewing local changes.",
-            color = AresTextSecondary,
-        )
-        ProjectRestoreDisposition.REMOTE_AHEAD -> {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-                border = BorderStroke(1.dp, AresCyan),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text("Review newer GitHub version", fontWeight = FontWeight.Bold)
-                    Text(
-                        "ARES will only fast-forward to this exact reviewed version. It creates a local safety checkpoint first and never force-pushes or guesses through conflicting histories.",
-                        color = AresTextSecondary,
-                    )
-                    ReviewedChanges(
-                        changes = restore.changes,
-                        fromLabel = "This computer ${restore.localCommit.take(8)}",
-                        toLabel = "GitHub ${restore.remoteCommit.take(8)}",
-                    )
-                    Button(
-                        onClick = {
-                            viewModel.onIntent(
-                                ProjectBackupIntent.ConfirmGitHubRestore(requireNotNull(restore.confirmationToken)),
-                            )
-                        },
-                        enabled = !busy && restore.canRestore,
-                    ) { Text("Restore this reviewed version") }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReviewedChanges(changes: List<ProjectChange>, fromLabel: String, toLabel: String) {
-    Text("$fromLabel  →  $toLabel", color = AresCyan, fontWeight = FontWeight.Bold)
-    changes.take(30).groupBy { projectArea(it.path) }.forEach { (area, areaChanges) ->
-        Text(area, fontWeight = FontWeight.Bold)
-        areaChanges.forEach { change ->
-            val verb = change.kind.name.lowercase().replaceFirstChar(Char::uppercase)
-            Text("$verb • ${change.path}", color = AresTextSecondary)
-        }
-    }
-    if (changes.size > 30) Text("…and ${changes.size - 30} more files", color = AresTextSecondary)
-}
-
-private fun projectArea(path: String): String = when {
-    path == ".ares/project.json" -> "Robot identity"
-    path.startsWith(".ares/drivetrains/") -> "Drivebase"
-    path.startsWith(".ares/subsystems/") -> "Subsystems"
-    path.startsWith(".ares/controllers/") || path.startsWith(".ares/controls/") -> "Controller bindings"
-    path.startsWith(".ares/routines/") || path.contains("autonomous") -> "Autonomous routines"
-    path.startsWith(".ares/tuning/") -> "Tuning"
-    path.startsWith(".ares/fields/") || path.contains("apriltag", ignoreCase = true) -> "Field and AprilTags"
-    path.startsWith("docs/") || path.endsWith(".md", ignoreCase = true) -> "Documentation"
-    path.contains("generated", ignoreCase = true) -> "Generated project plumbing"
-    else -> "Project files"
-}
-
-private fun chooseProjectArchive(projectPath: String): File? {
-    val root = File(projectPath).canonicalFile
-    val safeName = root.name.replace(Regex("[^A-Za-z0-9._-]+"), "-").trim('-').ifBlank { "ares-robot" }
-    return DesktopFileChoosers.chooseSaveFile(
-        dialogTitle = "Export portable ARES robot project",
-        defaultFileName = "$safeName.aresproject.zip",
-        initialDirectory = root.parentFile,
-        filterDescription = "ARES project archive (*.aresproject.zip)",
-        extensions = listOf("zip"),
-    )
-}
-
-private fun formatVersionTime(epochSeconds: Long): String =
-    AresFormatters.formatDateTimeShort(epochSeconds * 1000L)
-
-
-@Composable
-private fun RepositoryDestinationPicker(
-    plan: ProjectBackupPlan,
-    catalog: GitHubBackupCatalog,
-    selectedInstallationId: Long?,
-    busy: Boolean,
-    viewModel: ProjectBackupViewModel,
-) {
-    if (catalog.accounts.isEmpty()) {
-        Text(
-            "No approved personal or team destination is visible. A team owner can install ARES for selected repositories, then you can refresh this list.",
-            color = AresTextSecondary,
-        )
-        return
-    }
-    Text("1. Choose who owns the backup", fontWeight = FontWeight.Bold)
-    catalog.accounts.forEach { account ->
-        GitHubAccountRow(
-            account = account,
-            selected = account.installationId == selectedInstallationId,
-            busy = busy,
-            onSelect = { viewModel.onIntent(ProjectBackupIntent.SelectGitHubInstallation(account.installationId)) },
-        )
-    }
-    val selected = catalog.accounts.firstOrNull { it.installationId == selectedInstallationId } ?: return
-    Text("2. Choose an approved private repository", fontWeight = FontWeight.Bold)
-    val repositories = catalog.repositoriesFor(selected.installationId)
-    if (repositories.isEmpty()) {
-        Text(
-            "No repositories are approved for ${selected.login}. Ask a team owner to add one under Install or manage ARES access.",
-            color = AresTextSecondary,
-        )
-    } else {
-        repositories.forEach { repository ->
-            GitHubRepositoryRow(
-                repository = repository,
-                accountCanWrite = selected.canWriteContents,
-                canConnect = plan.lastCommit != null && plan.changes.isEmpty(),
-                busy = busy,
-                onConnect = {
-                    viewModel.onIntent(
-                        ProjectBackupIntent.ConnectGitHubRepository(
-                            installationId = selected.installationId,
-                            repositoryId = repository.repositoryId,
-                        ),
-                    )
-                },
-            )
-        }
-    }
-    if (plan.lastCommit == null || plan.changes.isNotEmpty()) {
-        Text("Save a clean local version before connecting the online backup.", color = AresTextSecondary)
-    }
-}
-
-@Composable
-private fun GitHubAccountRow(
-    account: GitHubBackupAccount,
-    selected: Boolean,
-    busy: Boolean,
-    onSelect: () -> Unit,
-) {
-    val kind = if (account.kind == GitHubAccountKind.ORGANIZATION) "Team organization" else "Personal account"
-    val access = if (account.canWriteContents) "Repository contents: read and write" else "Repository contents: not writable"
-    OutlinedButton(
-        onClick = onSelect,
-        enabled = !busy,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.fillMaxWidth()) {
-            Text("${if (selected) "Selected • " else ""}${account.login} — $kind", fontWeight = FontWeight.Bold)
-            Text("$access • ${account.repositorySelection.lowercase()} repositories", color = AresTextSecondary)
-        }
-    }
-}
-
-@Composable
-private fun GitHubRepositoryRow(
-    repository: GitHubBackupRepository,
-    accountCanWrite: Boolean,
-    canConnect: Boolean,
-    busy: Boolean,
-    onConnect: () -> Unit,
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = AresSurfaceElevated),
-        border = BorderStroke(1.dp, AresBorder),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(repository.fullName, fontWeight = FontWeight.Bold)
-                val status = when {
-                    !accountCanWrite -> "Unavailable • ARES App needs Contents: write permission"
-                    repository.unavailableReason != null -> "Unavailable • ${repository.unavailableReason}"
-                    else -> "Ready • Private • Read and write"
-                }
-                Text(status, color = if (repository.canUseForBackup && accountCanWrite) AresGreen else AresError)
-            }
-            Button(
-                onClick = onConnect,
-                enabled = !busy && canConnect && accountCanWrite && repository.canUseForBackup,
-            ) {
-                Text("Use this repository")
             }
         }
     }

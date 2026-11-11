@@ -284,4 +284,54 @@ class AresGamepadDslTest {
         )
         assertTrue(sink[0].isFinite() && sink[1].isFinite())
     }
+
+    @Test
+    fun `axis inversion whileHeld alias and digital trigger threshold bindings respect init quarantine`() {
+        var buttonHeldCount = 0
+        var triggerPresses = 0
+        var triggerHeldCount = 0
+        var triggerReleases = 0
+
+        gamepad.a.whileHeld("Button Held") { buttonHeldCount++ }
+        gamepad.leftStickY.withDeadband(0.0).withInversion()
+        gamepad.rightTrigger
+            .onPress("Trigger Press", threshold = 0.6) { triggerPresses++ }
+            .whileHeld("Trigger Held", threshold = 0.6) { triggerHeldCount++ }
+            .onRelease("Trigger Release", threshold = 0.6) { triggerReleases++ }
+
+        // Held during INIT (prime): should be quarantined until released below threshold
+        state.a = true
+        state.leftStickY = 0.5f
+        state.rightTrigger = 0.8f
+        gamepad.prime(state)
+        assertEquals(-0.5, gamepad.leftStickY.shapedValue, 1e-6)
+
+        RobotClock.useMockTime(20L)
+        gamepad.update(state)
+        assertEquals(0, buttonHeldCount)
+        assertEquals(0, triggerPresses)
+        assertEquals(0, triggerHeldCount)
+
+        // Release both
+        state.a = false
+        state.rightTrigger = 0.2f
+        RobotClock.useMockTime(40L)
+        gamepad.update(state)
+        assertEquals(0, triggerReleases)
+
+        // Press both after release -> should fire normally
+        state.a = true
+        state.rightTrigger = 0.75f
+        RobotClock.useMockTime(60L)
+        gamepad.update(state)
+        assertEquals(1, buttonHeldCount)
+        assertEquals(1, triggerPresses)
+        assertEquals(1, triggerHeldCount)
+
+        // Release trigger -> onRelease fires
+        state.rightTrigger = 0.1f
+        RobotClock.useMockTime(80L)
+        gamepad.update(state)
+        assertEquals(1, triggerReleases)
+    }
 }

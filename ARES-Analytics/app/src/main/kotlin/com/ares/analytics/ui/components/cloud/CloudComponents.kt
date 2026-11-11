@@ -166,10 +166,10 @@ fun RobotRunRow(
                 colors = CheckboxDefaults.colors(checkedColor = AresCyan)
             )
             Column {
-                Text("Run: ", color = AresTextPrimary, fontWeight = FontWeight.Bold)
+                Text("Run: ${run.runId}", color = AresTextPrimary, fontWeight = FontWeight.Bold)
                 val statusText = if (run.isActive) " | ACTIVE RECORDING..." else ""
                 Text(
-                    "Files:  | Size:  KB | ",
+                    "Files: ${run.files.size} | Size: ${run.totalSizeBytes / 1024} KB | ${run.lastModifiedFmt}$statusText",
                     color = if (run.isActive) AresCyan else AresTextSecondary,
                     fontSize = 12.sp
                 )
@@ -233,8 +233,8 @@ fun SessionSyncRow(
                 } catch (e: Exception) {
                     "Unknown Date"
                 }
-                Text("Session: ", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                val sizeStr = if (summary.fileSizeBytes > 0) " | Size:  KB" else ""
+                Text("Session: $runName", color = AresTextPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                val sizeStr = if (summary.fileSizeBytes > 0) " | Size: ${summary.fileSizeBytes / 1024} KB" else ""
                 val dateStr = try {
                     AresFormatters.formatDateTimeShort(summary.createdAt)
                 } catch (e: Exception) {
@@ -242,7 +242,7 @@ fun SessionSyncRow(
                 }
 
                 Text(
-                    "Match:  | ",
+                    "Match: ${summary.matchNumber ?: "None"}$sizeStr | $dateStr",
                     color = AresTextSecondary,
                     fontSize = 11.sp
                 )

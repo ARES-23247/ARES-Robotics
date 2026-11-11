@@ -95,6 +95,7 @@ internal fun BoxScope.MainScreenOverlays(
     if (state.commandPaletteOpen) {
         CommandPalette(
             developerMode = state.developerMode,
+            projectPath = state.projectPath,
             onDismiss = actions.dismissCommandPalette,
             onNavigate = actions.navigate,
             onOpenGlossaryTerm = actions.openGlossaryTerm,

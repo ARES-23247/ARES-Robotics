@@ -126,6 +126,15 @@ class FrcStudioSimulationBridgeTest {
         assertTrue(receipt.contains("\"sha256\":\"${application.sha256}\""))
     }
 
+    @Test
+    fun `drive frame gate decodes red alliance flag explicitly`() {
+        val gate = FrcStudioDriveFrameGate()
+        val redFlags = ((1L shl 3) or (1L shl 4) or (1L shl 5)).toDouble()
+        val raw = doubleArrayOf(2.0, 12.0, 0.0, 0.0, 0.0, 0.0, 0.0, redFlags)
+        assertTrue(gate.accept(raw, nowMs = 50L))
+        assertTrue(gate.current(50L)?.isRedAlliance == true)
+    }
+
     private fun frame(
         session: Double,
         sequence: Double,

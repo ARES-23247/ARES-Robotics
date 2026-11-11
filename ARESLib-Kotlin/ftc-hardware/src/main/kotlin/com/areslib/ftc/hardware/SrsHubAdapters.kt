@@ -295,6 +295,7 @@ class SrsHubRevColorSensorV3(
     private val srsHub: SrsHubDriver,
     private val port: Int
 ) : ColorSensorIO, DistanceSensorIO {
+    private val rgbaScratch = IntArray(4)
     override val red: Int
         get() = srsHub.getI2cColorRed(port)
     override val green: Int
@@ -309,10 +310,11 @@ class SrsHubRevColorSensorV3(
 
     override fun copyNormalizedRgbInto(destination: DoubleArray) {
         require(destination.size >= 4) { "Normalized RGBA destination must contain at least four elements" }
-        val r = red
-        val g = green
-        val b = blue
-        val a = alpha
+        srsHub.copyI2cColorRgbaInto(port, rgbaScratch)
+        val r = rgbaScratch[0]
+        val g = rgbaScratch[1]
+        val b = rgbaScratch[2]
+        val a = rgbaScratch[3]
         val sum = (r + g + b + a).toDouble()
         if (sum < 0.1) {
             destination[0] = 0.0
@@ -360,6 +362,7 @@ class SrsHubPinpointOdometry(
     private val port: Int
 ) : OdometryIO {
     private val frameTransform = SrsHubPinpointFrameTransform()
+    private val rawOdoScratch = DoubleArray(6)
     private var requestedStartPose = Pose2d()
     private var frameInitialized = false
 
@@ -371,12 +374,13 @@ class SrsHubPinpointOdometry(
         }
         requestedStartPose = startPose
         frameInitialized = false
-        initializeFrameFromCacheIfFresh()
+        val ts = srsHub.copyI2cOdometryInto(port, rawOdoScratch)
+        initializeFrameFromSnapshotIfFresh(ts)
     }
 
     /** Updates odometry pose inputs into [OdometryInputs] container in meters ($m$) and radians ($rad$, CCW+). */
     override fun updateInputs(inputs: com.areslib.hardware.drive.OdometryInputs) {
-        val sampleTimestampMs = srsHub.lastSuccessfulPollTimestampMs
+        val sampleTimestampMs = srsHub.copyI2cOdometryInto(port, rawOdoScratch)
         if (sampleTimestampMs <= 0L) {
             inputs.posX = requestedStartPose.x
             inputs.posY = requestedStartPose.y
@@ -387,26 +391,26 @@ class SrsHubPinpointOdometry(
             inputs.timestampMs = 0L
             return
         }
-        initializeFrameFromCacheIfFresh()
+        initializeFrameFromSnapshotIfFresh(sampleTimestampMs)
         frameTransform.apply(
-            rawXMeters = srsHub.getI2cOdometryX(port) / 1000.0,
-            rawYMeters = srsHub.getI2cOdometryY(port) / 1000.0,
-            rawHeadingRadians = srsHub.getI2cOdometryHeading(port),
-            rawVelocityXMps = srsHub.getI2cOdometryVelX(port) / 1000.0,
-            rawVelocityYMps = srsHub.getI2cOdometryYVel(port) / 1000.0,
-            rawHeadingVelocity = srsHub.getI2cOdometryHeadingVel(port),
+            rawXMeters = rawOdoScratch[0] / 1000.0,
+            rawYMeters = rawOdoScratch[1] / 1000.0,
+            rawHeadingRadians = rawOdoScratch[2],
+            rawVelocityXMps = rawOdoScratch[3] / 1000.0,
+            rawVelocityYMps = rawOdoScratch[4] / 1000.0,
+            rawHeadingVelocity = rawOdoScratch[5],
             inputs = inputs
         )
         inputs.timestampMs = sampleTimestampMs
     }
 
-    private fun initializeFrameFromCacheIfFresh() {
-        if (frameInitialized || srsHub.lastSuccessfulPollTimestampMs <= 0L) return
+    private fun initializeFrameFromSnapshotIfFresh(sampleTimestampMs: Long) {
+        if (frameInitialized || sampleTimestampMs <= 0L) return
         frameTransform.initialize(
             requestedStartPose,
-            srsHub.getI2cOdometryX(port) / 1000.0,
-            srsHub.getI2cOdometryY(port) / 1000.0,
-            srsHub.getI2cOdometryHeading(port)
+            rawOdoScratch[0] / 1000.0,
+            rawOdoScratch[1] / 1000.0,
+            rawOdoScratch[2]
         )
         frameInitialized = true
     }

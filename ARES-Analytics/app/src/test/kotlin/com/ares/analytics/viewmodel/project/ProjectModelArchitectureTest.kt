@@ -114,7 +114,7 @@ class ProjectModelArchitectureTest {
             "beginDeviceAuthorization",
             "ProjectGitHubCredentialRepository",
             "ProjectBackupAutoSyncStatus",
-            "Channel<String>",
+            "Channel<",
             "AUTO_SYNC_RETRY",
             "previewGitHubRestore",
             "recoverToSafetyPoint",
@@ -131,7 +131,7 @@ class ProjectModelArchitectureTest {
         }
         assertTrue("beginDeviceAuthorization" in authentication)
         assertTrue("ProjectGitHubCredentialRepository" in authentication)
-        assertTrue("Channel<String>" in autoSync)
+        assertTrue("Channel<" in autoSync && "pendingPaths" in autoSync)
         assertTrue("ProjectBackupAutoSyncStatus" in autoSync)
         assertTrue("connectApprovedRepository" in remoteBackup)
         assertTrue("pushBackup" in remoteBackup)

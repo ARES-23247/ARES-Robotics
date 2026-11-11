@@ -4,7 +4,9 @@ import com.areslib.math.geometry.Pose2d
 import com.areslib.math.geometry.Rotation2d
 import com.areslib.math.geometry.Translation2d
 import com.areslib.math.wrapAngle
+import com.areslib.routine.RoutineHeadingMode
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
@@ -51,7 +53,9 @@ data class TrajectoryRequest(
     val startVelocityMps: Double = 0.0,
     val endVelocityMps: Double = 0.0,
     val preferredEngine: TrajectoryEngine? = null,
-    val sampleSpacingMeters: Double = 0.02
+    val sampleSpacingMeters: Double = 0.02,
+    val headingMode: RoutineHeadingMode = RoutineHeadingMode.LINEAR,
+    val lookAtPoint: Translation2d? = null
 )
 
 /** Optional per-module force feedforward emitted by a dynamics optimizer. */
@@ -209,7 +213,7 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
                 endVelocityMps = request.endVelocityMps,
                 spacingMeters = request.sampleSpacingMeters
             )
-            applyWaypointHeadings(path, distinctWaypoints)
+            applyWaypointHeadings(path, distinctWaypoints, request.headingMode, request.lookAtPoint)
             val trajectory = timeParameterize(path, request.limits)
             val diagnostics = mutableListOf(TrajectoryDiagnostic(
                 TrajectoryDiagnosticSeverity.INFO,
@@ -237,7 +241,12 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
     }
 
     /** Preserve each requested orientation, independently of the spatial seed's endpoint heading. */
-    private fun applyWaypointHeadings(path: Path, waypoints: List<Pose2d>) {
+    private fun applyWaypointHeadings(
+        path: Path,
+        waypoints: List<Pose2d>,
+        headingMode: RoutineHeadingMode = RoutineHeadingMode.LINEAR,
+        lookAtPoint: Translation2d? = null
+    ) {
         var segment = 0
         var segmentStart = 0.0
         var segmentEnd = hypot(waypoints[1].x - waypoints[0].x, waypoints[1].y - waypoints[0].y)
@@ -250,7 +259,21 @@ object JerkLimitedTrajectoryProvider : TrajectoryProvider {
             }
             val fraction = ((point.distanceMeters - segmentStart) / (segmentEnd - segmentStart)).coerceIn(0.0, 1.0)
             val start = waypoints[segment].heading.radians
-            val heading = start + wrapAngle(waypoints[segment + 1].heading.radians - start) * fraction
+            val end = waypoints[segment + 1].heading.radians
+            val heading = when (headingMode) {
+                RoutineHeadingMode.LINEAR -> start + wrapAngle(end - start) * fraction
+                RoutineHeadingMode.CONSTANT -> start
+                RoutineHeadingMode.TANGENTIAL -> point.tangentRadians
+                RoutineHeadingMode.TANGENTIAL_REVERSE -> wrapAngle(point.tangentRadians + Math.PI)
+                RoutineHeadingMode.POINT_TOWARDS -> {
+                    val target = lookAtPoint
+                    if (target != null && hypot(target.x - point.pose.x, target.y - point.pose.y) > 1e-6) {
+                        atan2(target.y - point.pose.y, target.x - point.pose.x)
+                    } else {
+                        end
+                    }
+                }
+            }
             point.pose = Pose2d(point.pose.x, point.pose.y, Rotation2d(heading))
         }
     }
@@ -414,6 +437,12 @@ fun validateTrajectoryRequest(request: TrajectoryRequest): List<TrajectoryDiagno
                 }
             }
             previous = pose
+        }
+    }
+    if (request.headingMode == RoutineHeadingMode.POINT_TOWARDS) {
+        val target = request.lookAtPoint
+        if (target == null || !target.x.isFinite() || !target.y.isFinite()) {
+            diagnostics += errorDiagnostic("invalid_look_at_point", "POINT_TOWARDS heading mode requires a finite lookAtPoint")
         }
     }
     return diagnostics

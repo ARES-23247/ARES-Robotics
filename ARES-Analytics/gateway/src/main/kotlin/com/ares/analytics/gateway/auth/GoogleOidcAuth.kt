@@ -8,6 +8,8 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.response.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 
 private val oidcLogger = LoggerFactory.getLogger("GoogleOidcAuth")
@@ -74,7 +76,7 @@ class GoogleOidcAuthenticationProvider(config: Config) : AuthenticationProvider(
         }
         val token = authHeader.substring(7)
         try {
-            val principal = tokenVerifier(token)
+            val principal = withContext(Dispatchers.IO) { tokenVerifier(token) }
             if (principal == null) {
                 context.challenge("GoogleOidc", AuthenticationFailedCause.InvalidCredentials) { challenge, call ->
                     call.respond(HttpStatusCode.Unauthorized, "Invalid Google ID token")

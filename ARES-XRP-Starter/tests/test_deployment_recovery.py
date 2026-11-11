@@ -16,7 +16,10 @@ class Device:
                       "/ares_slots/slot-old/main.py": b"pass", "/ares_slots/slot-older/main.py": b"pass"}
         self.dirs = {"/", "/ares_slots", "/ares_slots/slot-old", "/ares_slots/slot-older"}
         self.ops = 0; self.cut = cut
-        self.os = types.SimpleNamespace(rename=self.rename, sync=self.mutation, mkdir=self.mkdir, ilistdir=self.ilistdir)
+        self.os = types.SimpleNamespace(
+            rename=self.rename, sync=self.mutation, mkdir=self.mkdir,
+            ilistdir=self.ilistdir, remove=self.remove, rmdir=self.rmdir,
+        )
     def mutation(self):
         self.ops += 1
         if self.ops == self.cut: raise PowerLoss()
@@ -25,6 +28,13 @@ class Device:
         self.dirs.add(path); self.mutation()
     def rename(self, old, new):
         self.files[new] = self.files.pop(old); self.mutation()
+    def remove(self, path):
+        if path not in self.files: raise OSError(2, "missing")
+        del self.files[path]; self.mutation()
+    def rmdir(self, path):
+        if path not in self.dirs or any(p.startswith(path + "/") for p in (self.files.keys() | self.dirs)):
+            raise OSError(39, "not empty")
+        self.dirs.remove(path); self.mutation()
     def ilistdir(self, root):
         for path in sorted(self.files.keys() | self.dirs):
             if path.startswith(root + "/") and "/" not in path[len(root)+1:]:

@@ -93,15 +93,40 @@ class ProjectBackupViewModelTest {
         verify(f.service, never()).inspect("second")
     }
 
+    @Test fun `auto-sync updates from another project do not overwrite the loaded project state`() = runTest {
+        val f = Fixture(this)
+        `when`(f.service.inspect("first")).thenReturn(plan("first"))
+        f.vm.onIntent(ProjectBackupIntent.Load("first")); runCurrent()
+        f.autoState.value = ProjectBackupAutoSyncState(
+            projectPath = "first",
+            enabled = true,
+            status = ProjectBackupAutoSyncStatus.UP_TO_DATE,
+            message = "First synced",
+        )
+        runCurrent()
+        assertEquals("first", f.vm.state.value.autoSync.projectPath)
+
+        f.autoState.value = ProjectBackupAutoSyncState(
+            projectPath = "other-project",
+            enabled = true,
+            status = ProjectBackupAutoSyncStatus.OFFLINE_RETRY,
+            message = "Other retrying",
+        )
+        runCurrent()
+        assertEquals("first", f.vm.state.value.autoSync.projectPath)
+        assertEquals(ProjectBackupAutoSyncStatus.UP_TO_DATE, f.vm.state.value.autoSync.status)
+    }
+
     private class Fixture(test: TestScope) {
         val service = mock(ProjectVersionControlService::class.java)
         val auth = mock(GitHubAuthenticationService::class.java)
         val authState = MutableStateFlow<GitHubConnectionState>(GitHubConnectionState.Disconnected)
+        val autoState = MutableStateFlow(ProjectBackupAutoSyncState())
         val auto = mock(ProjectBackupAutoSyncService::class.java)
         val vm: ProjectBackupViewModel
         init {
             `when`(auth.state).thenReturn(authState)
-            `when`(auto.state).thenReturn(MutableStateFlow(ProjectBackupAutoSyncState()))
+            `when`(auto.state).thenReturn(autoState)
             vm = ProjectBackupViewModel(service, mock(ProjectRemoteBackupService::class.java), mock(ProjectRecoveryService::class.java),
                 auth, auto, mock(ProjectArchiveExporter::class.java), test.backgroundScope)
         }

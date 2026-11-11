@@ -1,15 +1,42 @@
 package com.ares.analytics.ui.components.dashboard
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.DesktopWindows
+import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,14 +48,24 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.analytics.di.KeyboardDriveState
 import com.ares.analytics.service.ReplayEngineService
 import com.ares.analytics.service.ReplayState
 import com.ares.analytics.service.VideoSyncService
+import com.ares.analytics.service.XrpLinkService
+import com.ares.analytics.service.XrpRequestedMode
+import com.ares.analytics.service.project.persistence.AutonomousCatalogProjectRepository
+import com.ares.analytics.shared.models.Session
 import com.ares.analytics.ui.components.core.AresEmptyState
 import com.ares.analytics.ui.theme.*
-import kotlinx.coroutines.launch
+import com.ares.analytics.ui.theme.AresBorder
+import com.ares.analytics.ui.theme.AresError
+import com.ares.analytics.ui.theme.AresSurface
 import com.ares.analytics.ui.util.DesktopFileChoosers
 import kotlin.math.sin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun VideoPlayerPanel(
@@ -76,25 +113,49 @@ fun VideoPlayerPanel(
                 Text("MATCH VIDEO SYNCHRONIZATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = AresCyan)
             }
 
-            // Load Video Button
-            Button(
-                onClick = {
-                    DesktopFileChoosers.chooseOpenFile(
-                        dialogTitle = "Select Match Video",
-                        filterDescription = "Video Files",
-                        extensions = listOf("mp4", "mkv", "avi", "mov")
-                    )?.let { file ->
-                        videoSyncService.loadVideo(file)
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = AresBorder),
-                shape = RoundedCornerShape(6.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                modifier = Modifier.height(32.dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Default.FolderOpen, null, tint = AresTextPrimary, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Load Video", color = AresTextPrimary, fontSize = 11.sp)
+                videoFile?.let { loadedFile ->
+                    OutlinedButton(
+                        onClick = {
+                            runCatching {
+                                if (java.awt.Desktop.isDesktopSupported()) {
+                                    java.awt.Desktop.getDesktop().open(loadedFile)
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.height(32.dp),
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, tint = AresCyan, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Open in System Player", color = AresCyan, fontSize = 11.sp)
+                    }
+                }
+
+                // Load Video Button
+                Button(
+                    onClick = {
+                        DesktopFileChoosers.chooseOpenFile(
+                            dialogTitle = "Select Match Video",
+                            filterDescription = "Video Files",
+                            extensions = listOf("mp4", "mkv", "avi", "mov")
+                        )?.let { file ->
+                            videoSyncService.loadVideo(file)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AresBorder),
+                    shape = RoundedCornerShape(6.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Icon(Icons.Default.FolderOpen, null, tint = AresTextPrimary, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Load Video", color = AresTextPrimary, fontSize = 11.sp)
+                }
             }
         }
 

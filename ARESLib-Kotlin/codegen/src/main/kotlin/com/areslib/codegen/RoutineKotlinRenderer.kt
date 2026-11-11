@@ -97,6 +97,15 @@ internal object RoutineKotlinRenderer {
         if (drive.arrivalActionKeys.isNotEmpty()) {
             appendIndent(indent + 1, "arrivalActionKeys = ${renderStringList(drive.arrivalActionKeys, indent + 1)},\n")
         }
+        if (drive.headingMode != com.areslib.routine.RoutineHeadingMode.LINEAR) {
+            appendIndent(indent + 1, "headingMode = com.areslib.routine.RoutineHeadingMode.${drive.headingMode.name},\n")
+        }
+        drive.lookAtPoint?.let { lookAt ->
+            appendIndent(indent + 1, "lookAtPoint = ${renderPose(lookAt, indent + 1)},\n")
+        }
+        if (drive.blendHandoff) {
+            appendIndent(indent + 1, "blendHandoff = true,\n")
+        }
         appendIndent(indent, ")")
     }
 

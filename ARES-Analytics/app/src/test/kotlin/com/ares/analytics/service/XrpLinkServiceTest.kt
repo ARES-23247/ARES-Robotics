@@ -268,4 +268,65 @@ class XrpLinkServiceTest {
             serverJob.cancel()
         }
     }
+
+    @Test
+    fun `non-loopback XRP host carries telemetry while rejecting drive control and field mutation`() = runBlocking {
+        val database = DatabaseService(tempDir.resolve("remote-xrp.duckdb").toString())
+        val telemetry = Nt4ClientService(database)
+        val server = ServerSocket(0)
+        val service = XrpLinkService(telemetry) {
+            object : java.net.Socket() {
+                override fun connect(endpoint: java.net.SocketAddress, timeout: Int) {
+                    super.connect(java.net.InetSocketAddress("127.0.0.1", server.localPort), timeout)
+                }
+            }
+        }
+        val received = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val holdPeer = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val serverJob = launch(Dispatchers.IO) {
+            server.accept().use { socket ->
+                val writer = socket.getOutputStream().bufferedWriter()
+                writer.write(
+                    "{\"protocol\":\"ares-xrp/1\",\"type\":\"hello\",\"role\":\"robot\"," +
+                        "\"projectId\":\"remote-project\",\"canonicalContentSha256\":\"${"a".repeat(64)}\"," +
+                        "\"contentSha256\":\"${"a".repeat(64)}\",\"drivetrainType\":\"differential\"}\n",
+                )
+                writer.write(
+                    "{\"protocol\":\"ares-xrp/1\",\"type\":\"telemetry\",\"sequence\":1," +
+                        "\"poseX\":1.25,\"poseY\":-0.5,\"heading\":0.2}\n",
+                )
+                writer.flush()
+                socket.soTimeout = 150
+                runCatching {
+                    socket.getInputStream().bufferedReader().readLine()?.let(received::add)
+                }
+                holdPeer.await()
+            }
+        }
+        try {
+            service.start("192.168.4.1", server.localPort, "remote-project", "a".repeat(64))
+            withTimeout(3_000) {
+                while (!service.isConnected.value) delay(10)
+            }
+            assertEquals("192.168.4.1", service.serverHost)
+            withTimeout(3_000) {
+                while (telemetry.latestValues["ARES/TruePose/0"]?.value != 1.25) delay(10)
+            }
+            assertFalse(service.publishControl("remote-session", 0, 1, true, 0.5, 0.0, 0.0))
+            assertFalse(
+                service.publishFieldConfig(
+                    """{"id":"tabletop","revision":1,"fieldType":"xrp","widthMeters":2.54,"heightMeters":1.4224}""",
+                ),
+            )
+            delay(200)
+            assertTrue(received.isEmpty(), "Non-loopback XRP link must never transmit control or field frames")
+        } finally {
+            holdPeer.complete(Unit)
+            service.disposeAndJoin()
+            telemetry.disposeAndJoin()
+            database.closeAndJoin()
+            withContext(Dispatchers.IO) { server.close() }
+            serverJob.join()
+        }
+    }
 }

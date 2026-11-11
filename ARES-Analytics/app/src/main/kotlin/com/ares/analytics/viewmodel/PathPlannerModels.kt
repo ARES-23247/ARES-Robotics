@@ -1,24 +1,54 @@
 package com.ares.analytics.viewmodel
 
+import androidx.compose.ui.graphics.ImageBitmap
 import com.ares.analytics.service.AresGenerationPhase
-import com.ares.analytics.service.project.ProjectSessionRevision
+import com.ares.analytics.service.DatabaseService
+import com.ares.analytics.service.EnvironmentService
+import com.ares.analytics.service.Nt4ClientService
 import com.ares.analytics.service.project.persistence.ProjectRevisionSummary
+import com.ares.analytics.service.project.ProjectSessionRevision
+import com.ares.analytics.service.project.RobotProjectTemplateService
+import com.ares.analytics.shared.AprilTagPlacement
+import com.ares.analytics.shared.FieldImageConfig
+import com.ares.analytics.shared.FieldWaypoint
+import com.ares.analytics.shared.GamePiece
+import com.ares.analytics.shared.GamePieceType
 import com.ares.analytics.shared.models.League
 import com.ares.analytics.shared.models.Trajectory
+import com.ares.analytics.shared.models.WorkspaceConfig
+import com.ares.analytics.shared.Obstacle
 import com.ares.analytics.ui.components.pathplanner.Waypoint
+import com.ares.analytics.viewmodel.field.FieldCameraGestureController
+import com.ares.analytics.viewmodel.field.FieldEditorLayout
+import com.ares.analytics.viewmodel.field.FieldMeasurementUnit
+import com.ares.analytics.viewmodel.field.FieldPoseBufferManager
+import com.ares.analytics.viewmodel.field.FieldTopicSubscriber
+import com.ares.analytics.viewmodel.field.FieldValidationIssue
+import com.ares.analytics.viewmodel.field.StudentPracticeFieldPreset
 import com.ares.analytics.viewmodel.pathing.RobotDimensions
 import com.ares.analytics.viewmodel.routine.GuidedFirstRoutinePlan
+import com.ares.analytics.viewmodel.routine.RoutinePreviewAction
 import com.areslib.catalog.ActionDescriptor
 import com.areslib.catalog.CapabilityCatalogDocument
 import com.areslib.catalog.ConditionDescriptor
 import com.areslib.project.AresProjectMetadataDocument
 import com.areslib.routine.AutonomousCatalogEntry
-import com.ares.analytics.viewmodel.routine.RoutinePreviewAction
 import com.areslib.routine.RoutineDocument
 import com.areslib.routine.RoutineStep
 import com.areslib.routine.RoutineStepKind
 import com.areslib.routine.RoutineValidationIssue
+import com.areslib.state.AprilTagMapFormat
+import com.areslib.state.RobotFieldConfig
+import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal fun safeRoutineDocumentId(name: String): String = name.trim().lowercase()
     .replace(Regex("[^a-z0-9._-]+"), "-")
@@ -99,6 +129,7 @@ data class PathPlannerState(
     val previewActions: List<RoutinePreviewAction> = emptyList(),
     val isPlaying: Boolean = false,
     val playbackTime: Double = 0.0,
+    val playbackSpeed: Double = 1.0,
     /** Non-null when invalid steps, ambiguous control flow, or generation failure suppress preview. */
     val routinePreviewWarning: String? = null,
     val capabilityStatus: String = "Select a project to discover robot actions",
@@ -127,6 +158,8 @@ sealed class PathPlannerIntent {
     data class RefreshProject(val projectPath: String?, val league: League) : PathPlannerIntent()
     data class UpdateViewRotation(val viewRotation: Float) : PathPlannerIntent()
     object TogglePlayback : PathPlannerIntent()
+    data class SeekPlayback(val timeSeconds: Double) : PathPlannerIntent()
+    data class SetPlaybackSpeed(val speedMultiplier: Double) : PathPlannerIntent()
     data class ConfigureField(val league: League, val robotDimensions: RobotDimensions) : PathPlannerIntent()
     data class UpdateCanonicalRobotDimensions(
         val projectPath: String?,
@@ -145,6 +178,7 @@ sealed class PathPlannerIntent {
     data class RestoreRoutine(val projectPath: String?, val contentHash: String) : PathPlannerIntent()
     data class CreateRoutine(val name: String = "New Routine") : PathPlannerIntent()
     data class CreateGuidedFirstRoutine(val plan: GuidedFirstRoutinePlan) : PathPlannerIntent()
+    data class ApplyStarterRecipe(val recipe: com.ares.analytics.viewmodel.routine.StudentAutonomousRecipe) : PathPlannerIntent()
     data class UpdateRoutineName(val name: String) : PathPlannerIntent()
     data class UpdateRoutineDescription(val description: String) : PathPlannerIntent()
     data class AddRoutineStep(val kind: RoutineStepKind) : PathPlannerIntent()
@@ -162,3 +196,5 @@ sealed class PathPlannerIntent {
     data class UpdateAutonomousEntry(val entry: AutonomousCatalogEntry, val league: League) : PathPlannerIntent()
     data class UpdateRoutineFieldWaypoints(val waypoints: List<Waypoint>, val league: League) : PathPlannerIntent()
 }
+
+/** Latest live field measurements, expressed in meters and CCW-positive radians. */

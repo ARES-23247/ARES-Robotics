@@ -19,14 +19,18 @@ class SubsystemGeneratorCharacterizationTest {
     // Lifecycle bridges now enforce timestamp ordering, close every owner after failures, and
     // reject post-close work. GeneratedSubsystemLifecycleAuditTest executes those behaviors.
     // Homing dwell tests now refresh feedback on the mock clock before every controller step.
+    // Homing adapters now restore FTC RunMode, track FTC home offsets, drive followers, roll back
+    // partial FRC constructor ownership, and invert solenoids/mocks consistently.
+    // Generated FTC, FRC, and Mock IO adapters now cache prefix-qualified telemetry topic names per
+    // prefix so steady-state 50 Hz telemetry logging allocates zero topic strings.
     @Test
     fun `all supported FTC templates retain their deterministic artifact manifest`() {
-        assertEquals("b270f733b3a8e2b7db6bc7528e9c09d797f6f6537089bea85e24c278303b4ee3", manifestDigest(SubsystemPlatform.FTC))
+        assertEquals("d3d766803172abd666924f9d147012d20c78654e24c7612848029a0682dc4031", manifestDigest(SubsystemPlatform.FTC))
     }
 
     @Test
     fun `all supported FRC templates retain their deterministic artifact manifest`() {
-        assertEquals("40843950c1c7acea62dca7d9f6103f853fdb7426023660aabc144f66aa7b7919", manifestDigest(SubsystemPlatform.FRC))
+        assertEquals("cf75e70b0a8e906c779d48f13e84c8673aee6b0ce18a73e9a2eebca06f628327", manifestDigest(SubsystemPlatform.FRC))
     }
 
     private fun manifestDigest(platform: SubsystemPlatform): String {

@@ -98,6 +98,37 @@ internal class SubsystemCreationOps(
         }
     }
 
+    fun applyCookbookPreset(preset: SubsystemCookbookPreset) {
+        if (blockDraftReplacement()) return
+        require(preset.template.supportsPlatform(platform)) {
+            "${preset.title} is designed for ${preset.targetLeague} and is not supported on $platform."
+        }
+        aiProposalGeneration.incrementAndGet()
+        val document = createCookbookPresetDocument(preset, platform, getState().documents)
+        updateState { current ->
+            revalidate(
+                current.copy(
+                    documents = current.documents + document,
+                    selectedDocumentId = document.documentId,
+                    draft = SubsystemEditorDraft(document),
+                    selectedHardwareUid = null,
+                    selectedFieldUid = null,
+                    selectedLoopUid = null,
+                    selectedTuningParameterUid = null,
+                    activeStage = SubsystemBuilderStage.PURPOSE,
+                    visitedStages = setOf(SubsystemBuilderStage.PURPOSE),
+                    selectedTemplate = document.template,
+                    dirty = true,
+                    status = "Loaded '${preset.title}' cookbook preset. Review Hardware & State, then Save & Generate.",
+                    aiProposalInProgress = false,
+                    aiProposal = null,
+                    aiProposalError = null,
+                    showTemplatePicker = false,
+                ),
+            )
+        }
+    }
+
     fun registerHandAuthoredSubsystem() {
         if (blockDraftReplacement()) return
         aiProposalGeneration.incrementAndGet()

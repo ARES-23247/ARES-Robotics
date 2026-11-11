@@ -82,6 +82,9 @@ class ARESRobot : TimedRobot() {
     private lateinit var robot: FrcSwerveRobot
     private var sim: Dyn4jSimulation? = null
     private var dashboardDriveInput: FrcDashboardDriveInput? = null
+    private var dashboardDriveActive = false
+    private lateinit var tuningRuntime: com.areslib.tuning.TypedTuningRuntime
+    private val generatedTuningConsumers = ArrayList<com.areslib.tuning.TypedTuningConsumer>()
     private lateinit var marvinShooter: MarvinShooterSubsystem
 
     private val controller = XboxController(0)
@@ -235,7 +238,7 @@ class ARESRobot : TimedRobot() {
             flywheelTuningStatus = flywheelIO as? org.aresfirst.marvin.hardware.FrcFlywheelTuningStatus,
         )
 
-        val tuningRuntime = org.aresfirst.marvin.generated.drivebase.GeneratedAresTuningConfig.createRuntime()
+        tuningRuntime = org.aresfirst.marvin.generated.drivebase.GeneratedAresTuningConfig.createRuntime()
         robot.tuningManager = com.areslib.tuning.TuningManager(
             runtime = tuningRuntime,
             telemetry = robot.telemetryManager.dataLoggingTelemetry,
@@ -247,7 +250,7 @@ class ARESRobot : TimedRobot() {
                     robotDisabled = DriverStation.isDisabled(),
                 )
             },
-            onApplied = { parameterUid, _ ->
+            onApplied = { parameterUid, value ->
                 if (org.aresfirst.marvin.config.CanonicalDrivebaseConfig.supportsRuntimeParameter(parameterUid)) {
                     robot.store.dispatch(
                         RobotAction.UpdateTuningState(
@@ -259,10 +262,10 @@ class ARESRobot : TimedRobot() {
                     )
                     true
                 } else {
-                    false
+                    applyGeneratedSubsystemTuning(parameterUid, value)
                 }
             },
-            isConsumerSupported = org.aresfirst.marvin.config.CanonicalDrivebaseConfig::supportsRuntimeParameter,
+            isConsumerSupported = ::supportsRuntimeParameter,
         )
 
         if (swerveIO != null) {
@@ -327,10 +330,16 @@ class ARESRobot : TimedRobot() {
         mechanismCommissioning.applySafetyPolicy("initialization")
 
         // Generated subsystem DSL participates in the same lifecycle as handwritten mechanisms.
-        GeneratedSubsystemRegistry.createAll(isReal, hardwareRegistry).forEach(robot::registerSubsystem)
+        registerGeneratedSubsystems(GeneratedSubsystemRegistry.createAll(isReal, hardwareRegistry)).forEach { subsystem ->
+            if (subsystem is com.areslib.tuning.TypedTuningConsumer) {
+                generatedTuningConsumers += subsystem
+                applyCanonicalTuningValues(subsystem)
+            }
+        }
         // Generated superstructures coordinate only generated Redux targets and must run after
         // those generated subsystem lifecycles have been installed.
-        GeneratedSuperstructureRegistry.createAll().forEach(robot::registerSubsystem)
+        registerGeneratedSubsystems(GeneratedSuperstructureRegistry.createAll())
+        robot.tuningManager?.publishMetadataAndValues()
 
         // 5. Create and register the MarvinSuperstructure subsystem
         val superstructureSubsystem = MarvinSuperstructure(
@@ -414,8 +423,9 @@ class ARESRobot : TimedRobot() {
             dispatch = robot.store::dispatch,
             capabilities = teleopGeneratedCapabilities,
             // The hand controller runs first; while one of its assists (copilot X-lock or
-            // speaker/shuttle aiming) owns the frame, scheme stick drive must stay silent.
-            driveEmissionGate = { !teleOpController.drivetrainAssistActive },
+            // speaker/shuttle aiming) or ARES Studio remote drive owns the frame, scheme stick
+            // drive must stay silent so WPILib's idle USB port cannot overwrite it.
+            driveEmissionGate = { !teleOpController.drivetrainAssistActive && !dashboardDriveActive },
         )
         autoOrchestrator = FRCAutoOrchestrator(robot, sim)
         autoOrchestrator.publishCatalog()
@@ -466,7 +476,9 @@ class ARESRobot : TimedRobot() {
         }
         controller.updateState(controllerState)
         coPilotController.updateState(coPilotControllerState)
-        dashboardDriveInput?.poll()?.let { command ->
+        val dashboardCommand = dashboardDriveInput?.poll()
+        dashboardDriveActive = dashboardCommand != null
+        dashboardCommand?.let { command ->
             command.applyTo(controllerState)
             val requestedAlliance = if (command.isRedAlliance) {
                 DriverStation.Alliance.Red
@@ -493,6 +505,7 @@ class ARESRobot : TimedRobot() {
     }
 
     override fun disabledInit() {
+        dashboardDriveActive = false
         runFrcDisableCleanup(
             cancelControls = { cancelGeneratedControls("FRC disabled") },
             stopAuto = { if (::autoOrchestrator.isInitialized) autoOrchestrator.stop() },
@@ -610,6 +623,61 @@ class ARESRobot : TimedRobot() {
             isDisabled = DriverStation.isDisabled(),
             isTestEnabled = DriverStation.isTestEnabled(),
         )
+    }
+
+    private fun supportsRuntimeParameter(parameterUid: String): Boolean {
+        if (org.aresfirst.marvin.config.CanonicalDrivebaseConfig.supportsRuntimeParameter(parameterUid)) return true
+        var matches = 0
+        for (index in generatedTuningConsumers.indices) {
+            if (generatedTuningConsumers[index].supportsTuningParameter(parameterUid)) matches += 1
+        }
+        return matches == 1
+    }
+
+    private fun applyGeneratedSubsystemTuning(parameterUid: String, value: com.areslib.tuning.TuningValue): Boolean {
+        var matchIndex = -1
+        for (index in generatedTuningConsumers.indices) {
+            if (!generatedTuningConsumers[index].supportsTuningParameter(parameterUid)) continue
+            if (matchIndex >= 0) return false
+            matchIndex = index
+        }
+        return matchIndex >= 0 && generatedTuningConsumers[matchIndex].applyTuningParameter(parameterUid, value)
+    }
+
+    private fun applyCanonicalTuningValues(consumer: com.areslib.tuning.TypedTuningConsumer) {
+        tuningRuntime.metadata.declarations.forEach { declaration ->
+            if (consumer.supportsTuningParameter(declaration.uid)) {
+                check(consumer.applyTuningParameter(declaration.uid, requireNotNull(tuningRuntime.value(declaration.uid)))) {
+                    "Generated subsystem rejected canonical tuning parameter '${declaration.uid}'"
+                }
+            }
+        }
+    }
+
+    private fun registerGeneratedSubsystems(
+        subsystems: List<com.areslib.subsystem.Subsystem>,
+    ): List<com.areslib.subsystem.Subsystem> {
+        var registered = 0
+        try {
+            while (registered < subsystems.size) {
+                robot.registerSubsystem(subsystems[registered])
+                registered++
+            }
+            return subsystems
+        } catch (failure: Throwable) {
+            val released = java.util.Collections.newSetFromMap(
+                java.util.IdentityHashMap<com.areslib.subsystem.Subsystem, Boolean>(),
+            )
+            for (index in 0 until registered) released.add(subsystems[index])
+            for (index in subsystems.lastIndex downTo registered) {
+                val subsystem = subsystems[index]
+                if (!released.add(subsystem)) continue
+                runCatching { subsystem.close() }.exceptionOrNull()?.let { cleanup ->
+                    if (cleanup !== failure) failure.addSuppressed(cleanup)
+                }
+            }
+            throw failure
+        }
     }
 
     private fun cancelGeneratedControls(reason: String) {

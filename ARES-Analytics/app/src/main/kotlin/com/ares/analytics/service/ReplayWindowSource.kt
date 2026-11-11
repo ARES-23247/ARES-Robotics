@@ -1,5 +1,6 @@
 package com.ares.analytics.service
 
+import com.ares.analytics.service.db.TelemetryExportCursor
 import com.ares.analytics.shared.models.TelemetryFrame
 
 /** A complete ordered window and the latched values immediately before it. */
@@ -18,7 +19,7 @@ internal fun interface ReplayWindowSource {
 internal class DatabaseReplayWindowSource(private val database: DatabaseService) : ReplayWindowSource {
     override suspend fun load(sessionId: String, startMs: Long, endMs: Long, sessionStartMs: Long): ReplayWindow {
         val baseline = if (startMs > sessionStartMs) database.getLatestTelemetryBefore(sessionId, startMs) else emptyList()
-        val frames = loadTelemetryWindowPages(database, sessionId, startMs, endMs, 50_000)
+        val frames = database.getTelemetryRange(sessionId, startMs, endMs)
         return ReplayWindow(sessionId, startMs, endMs, baseline, frames)
     }
 }
@@ -32,17 +33,20 @@ internal suspend fun loadTelemetryWindowPages(
 ): List<TelemetryFrame> {
     require(pageSize > 0)
     val frames = ArrayList<TelemetryFrame>()
-    var offset = 0L
+    var cursor: TelemetryExportCursor? = null
     do {
-        val page = databaseService.getTelemetryRangeBatched(
+        val page = databaseService.getTelemetryWindowPageAfter(
             sessionId = sessionId,
             startMs = startMs,
             endMs = endMs,
-            limit = pageSize.toLong(),
-            offset = offset,
+            after = cursor,
+            limit = pageSize,
         )
         frames.addAll(page)
-        offset += page.size
+        if (page.isNotEmpty()) {
+            val last = page[page.lastIndex]
+            cursor = TelemetryExportCursor(last.timestampUs, last.sampleOrder, last.key)
+        }
     } while (page.size == pageSize)
     return frames
 }

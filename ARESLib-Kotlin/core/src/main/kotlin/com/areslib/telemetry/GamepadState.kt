@@ -1,5 +1,9 @@
 package com.areslib.telemetry
 
+import kotlin.math.abs
+import kotlin.math.pow
+import kotlin.math.sign
+
 /**
  * Platform-agnostic snapshot of a single gamepad's state.
  * Lives in :core so the logging/replay pipeline can serialize it
@@ -148,8 +152,43 @@ internal fun slewIntervalSeconds(timestampMs: Long, previousMs: Long, initialize
     return if (elapsedMs < 0L || elapsedMs >= 200L) ANALOG_MAX_SLEW_DT_SECONDS else elapsedMs / 1_000.0
 }
 
+/** Shapes a 1D axis sample with deadband, exponential curve, inversion, and optional slew limiting. */
+internal fun shapeSingleAxisSample(
+    selected: Double,
+    raw: Double,
+    deadbandThreshold: Double,
+    curveExponent: Double,
+    inverted: Boolean,
+    slewRateLimit: Double,
+    lastSlewValue: Double,
+    timestampMs: Long,
+    lastUpdateTimeMs: Long,
+    hasSlewTimestamp: Boolean,
+    resetSlew: Boolean,
+): Double {
+    if (!selected.isFinite()) return 0.0
+    val afterDeadband = if (abs(raw) < deadbandThreshold) {
+        0.0
+    } else {
+        sign(raw) * (abs(raw) - deadbandThreshold) / (1.0 - deadbandThreshold)
+    }
+    val afterCurve = if (curveExponent == 1.0) {
+        afterDeadband
+    } else {
+        sign(afterDeadband) * abs(afterDeadband).pow(curveExponent)
+    }
+    val signedTarget = if (inverted) -afterCurve else afterCurve
+    return when {
+        resetSlew || slewRateLimit <= 0.0 -> signedTarget
+        else -> {
+            val dt = slewIntervalSeconds(timestampMs, lastUpdateTimeMs, hasSlewTimestamp)
+            val maxDelta = slewRateLimit * dt
+            lastSlewValue + (signedTarget - lastSlewValue).coerceIn(-maxDelta, maxDelta)
+        }
+    }
+}
+
 /** Primitive gamepad-axis source. Its [Float] return avoids boxed values in the robot loop. */
 fun interface GamepadAxisSource {
     fun read(state: GamepadState): Float
 }
-

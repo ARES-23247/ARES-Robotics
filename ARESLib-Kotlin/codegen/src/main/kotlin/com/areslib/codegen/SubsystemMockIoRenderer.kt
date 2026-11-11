@@ -12,7 +12,7 @@ internal object SubsystemMockIoRenderer {
             "    override var ${field.fieldId}: ${field.kotlinType()} = ${field.defaultKotlinLiteral()}"
         }
         val commandFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
-            "    var ${device.hardwareId}Command: Double = ${requireNotNull(device.safeOutput).kotlinDouble()}\n        private set"
+            "    var ${device.hardwareId}Command: Double = ${device.invertedExpression(requireNotNull(device.safeOutput).kotlinDouble())}\n        private set"
         }
         val simSignalFields = document.hardware.filter { it.kind.isActuator() }.joinToString("\n") { device ->
             "    private val ${device.hardwareId}SimSignal = com.areslib.simulation.SimAppliedOutputRegistry.register(${document.uid.quoted()}, ${device.hardwareId.quoted()})"
@@ -105,6 +105,7 @@ internal object SubsystemMockIoRenderer {
         val currentValidity = if (document.safety.requiresCurrentMonitoring) {
             currentFields.joinToString(" && ") { "$it.isFinite() && $it >= 0.0" }.ifBlank { "false" }
         } else "true"
+        val telemetryCache = SubsystemIoRenderingSupport.telemetryCacheDeclaration(document)
         val telemetry = SubsystemIoRenderingSupport.telemetryBody(document)
         val mockHomingCondition = SubsystemIoRenderingSupport.homingConditionExpression(document, "")
         return """
@@ -147,6 +148,7 @@ internal object SubsystemMockIoRenderer {
                 /** True after idempotent resource cleanup. */
                 var closed: Boolean = false
                     private set
+$telemetryCache
 
                 override fun refresh() {
                     if (closed) return

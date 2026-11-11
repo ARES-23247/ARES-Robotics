@@ -55,4 +55,27 @@ class AutonomousCatalogTest {
         assertTrue(issues.any { it.code == "unknown_routine" })
         assertTrue(issues.any { it.code == "disabled_default" })
     }
+
+    @Test
+    fun `autonomousCatalog DSL auto-selects first enabled entry when earlier entries are disabled`() {
+        val catalog = autonomousCatalog("team23247") {
+            entry(
+                id = "disabled-draft",
+                routineId = "draft",
+                enabled = false,
+            )
+            entry(
+                id = "ready-auto",
+                routineId = "score-preload",
+                enabled = true,
+            )
+            entry(
+                id = "backup-auto",
+                routineId = "park",
+                enabled = true,
+            )
+        }
+
+        assertEquals("ready-auto", catalog.defaultEntryId)
+    }
 }
